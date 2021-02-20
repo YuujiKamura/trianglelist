@@ -1,0 +1,85 @@
+<resources>
+    <string name="app_name">Triangle List</string>
+    <string name="action_settings">設定</string>
+    <string name="action_new">新規作成</string>
+    <string name="action_save_csv">CSVを保存</string>
+    <string name="action_load_csv">CSVを読込</string>
+    <string name="action_save_dxf">DXF出力</string>
+    <string name="action_save_pdf">PDF出力</string>
+    <string name="action_send_mail">メールを送信</string>
+
+    <string name="tenkai_title">面 積 展 開 図</string>
+    <string name="tenkai_koujimei">工 事 名</string>
+    <string name="tenkai_zumenmei">図 面 名</string>
+    <string name="tenkai_rosenmei">路 線 名</string>
+    <string name="tenkai_syukusyaku">縮    尺</string>
+    <string name="tenkai_zuban">図面番号</string>
+    <string name="tenkai_sakuseibi">作　成　日</string>
+
+    <string name="tenkai_nengappi">　　　年　　月　　日</string>
+    <string name="tenkai_sekousya">施 工 者</string>
+    <string name="menseki">面積</string>
+    <string name="menseki_title">面 積 計 算 書</string>
+    <string name="menseki_koujimei">工事名：</string>
+    <string name="menseki_syoukei"> 小計</string>
+    <string name="menseki_goukei">合計</string>
+    <string name="editor_number">番号</string>
+    <string name="editor_name">名称</string>
+    <string name="editor_sokuten">測点</string>
+    <string name="editor_lA">辺長Ａ</string>
+    <string name="editor_lB">辺長Ｂ</string>
+    <string name="editor_lC">辺長Ｃ</string>
+    <string name="editor_parent">親</string>
+    <string name="editor_setuzoku">接続</string>
+    <string name="editor_syozoku">所属</string>
+    <string name="editor_form">形状</string>
+    <string name="editor_koujyo">控除</string>
+    <string name="credit">※ この図面はスマートフォンアプリ 「Triangle List」 を使用して作成されました。</string>
+
+    <string name="rosen1">路線1</string>
+    <string name="savecurrent">現在の図形を保存しますか？</string>
+    <string name="inputcname">工事名を入力できます（空白可）</string>
+    <string name="inputdname">路線名を入力できます（空白可）</string>
+    <string name="inputdnum">図面番号を入力できます</string>
+    <string name="inputaname">施工者名を入力できます（空白可）</string>
+    <string name="space">半角スペースで改行します。</string>
+
+
+    <!-- Strings used for fragments for navigation -->
+    <string name="first_fragment_label">First Fragment</string>
+    <string name="second_fragment_label">Second Fragment</string>
+    <string name="next">Next</string>
+    <string name="previous">Previous</string>
+    <string name="zero">zero</string>
+    <string name="b">B</string>
+    <string name="first">1</string>
+    <string name="second">2</string>
+    <string name="rosenname">路線名</string>
+
+    <string name="hello_first_fragment">三角形の辺長ＡＢＣを入力</string>
+    <string name="hello_second_fragment">select a form to connection. Arg: %1$s</string>
+
+    <string-array name="TriNumList">
+        <item>1</item>
+    </string-array>
+
+    <string-array name="DeductionFormList">
+        <item>-</item>
+        <item>Box</item>
+        <item>Circle</item>
+    </string-array>
+
+    <string-array name="ParentList">
+        <item>-</item>
+        <item>B</item>
+        <item>C</item>
+        <item>BR</item>
+        <item>BL</item>
+        <item>CR</item>
+        <item>CL</item>
+        <item>BC</item>
+        <item>CC</item>
+        <item>BF</item>
+        <item>CF</item>
+    </string-array>
+</resources>

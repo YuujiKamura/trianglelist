@@ -1,0 +1,367 @@
+
+        // ded rotate
+            else {
+                val konoList = my_view.myDeductionList
+                val korenoKoujyo = konoList.get(konoList.lastTapIndex_+1)
+                if( korenoKoujyo != null ) korenoKoujyo.rotateShape( korenoKoujyo.point, -5f)
+            }
+
+        // setTargetEditTextLine
+        if(deductionMode_ == false && my_view.tapTL_ != "0") {
+            //Toast.makeText(this, "Triangle tap", Toast.LENGTH_SHORT).show()
+
+            myEditor.scroll(
+                my_view.getTriangleList().lastTapNum_ - my_view.getTriangleList().getCurrent(),
+                getList(deductionMode_), myELSecond, myELThird
+            )
+
+            my_view.getTriangleList().setCurrent(my_view.getTriangleList().lastTapNum_)
+            myTriangleList.setCurrent(my_view.getTriangleList().lastTapNum_)
+            myTriangleList.lastTapNum_ = my_view.getTriangleList().lastTapNum_
+            myTriangleList.lastTapSide_ = my_view.getTriangleList().lastTapSide_
+            findViewById<EditText>(R.id.ParentNumber).setText(myTriangleList.lastTapNum_.toString())
+            findViewById<EditText>(R.id.triNumber).setText(myTriangleList.size().toString())
+
+            colorindex_ = myTriangleList.get(myTriangleList.lastTapNum_).color_
+            colorMovementFabs()
+            printDebugConsole()
+            if( my_view.myTriangleList.lastTapSide_ == 0 ) {
+
+                findViewById<EditText>(R.id.editText4).requestFocus()
+                findViewById<EditText>(R.id.editText4).setSelection(findViewById<EditText>(R.id.editText4).getText().length)
+                inputMethodManager.showSoftInput(findViewById(R.id.editText4), 0)
+                my_view.setParentSide(my_view.getTriangleList().lastTapNum_, 3)
+            }
+            if(my_view.myTriangleList.lastTapSide_ == 1) {
+                autoConnection(1)
+                //findViewById<EditText>(R.id.editText5).requestFocus()
+                //inputMethodManager.showSoftInput(findViewById(R.id.editText5), 0)
+            }
+            if(my_view.myTriangleList.lastTapSide_ == 2) {
+                autoConnection(2)
+                //findViewById<EditText>(R.id.editText6).requestFocus()
+                //inputMethodManager.showSoftInput(findViewById(R.id.editText6), 0)
+            }
+        }
+        if(deductionMode_ == true){
+            val tapIndex = my_view.myDeductionList.lastTapNum_+1
+            if( -1 < tapIndex ) {
+                Toast.makeText(this, "deduction tap", Toast.LENGTH_SHORT).show()
+                myEditor.scroll(
+                    tapIndex - myDeductionList.getCurrent(),
+                    getList(deductionMode_), myELSecond, myELThird
+                )
+
+            }
+        }
+
+        // 追加するボタンが押されたとき
+        /*fab.setOnClickListener { view ->
+            dParams_ = myEditor.ReadLineTo(dParams_, myELFirst)
+
+            if(!deductionMode_) {
+                if (validTriangle(dParams_)) {
+                    var myTri: Triangle = Triangle(
+                        myTriangleList.getTriangle(dParams_.pn),
+                        dParams_
+                    )
+                    myTriangleList.add(myTri)
+                    findViewById<EditText>(R.id.editText).requestFocus()
+                    my_view.setTriangleList(myTriangleList, mScale)
+                    my_view.resetView()
+
+                }
+            }
+            else {
+                dParams_.pt = my_view.getTapPoint()
+                dParams_.pts = PointXY(0f, 0f)
+                dParams_.pn = my_view.myTriangleList.lastTapCollideNum_//isCollide(my_view.getTapPoint())
+                if(validDeduction(dParams_) == true) {
+                    if(dParams_.pt.x == 0f || dParams_.pt.y == 0f) dParams_.pt = myTriangleList.get(
+                        myTriangleList.size()
+                    ).getPointNumberAutoAligned_()
+                    myDeductionList.add(dParams_)
+                    my_view.setDeductionList(myDeductionList)
+                    lastParams_ = dParams_
+                }
+            }
+
+            if(validDeduction(dParams_) == true || validTriangle(dParams_) == true) EditorReset(
+                getList(
+                    deductionMode_
+                ), getList(deductionMode_).size()
+            )
+            printDebugConsole()
+            AutoSaveCSV()
+            colorMovementFabs()
+            setTitles()
+
+        }*/
+
+
+//RIP zoomin out
+
+        fab_zoomin.setOnClickListener { view ->
+            my_view.zoom(0.2f)
+        }
+
+        fab_zoomout.setOnClickListener { view ->
+            my_view.zoom(-0.2f)
+        }
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_zoomin"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:layout_marginStart="16dp"
+        android:layout_alignTop="@id/fab_resetView"
+        android:layout_marginTop="50dp"
+        android:visibility="visible"
+        app:fabSize="mini"
+        app:layout_constraintTop_toBottomOf="@id/fab_resetView"
+        app:srcCompat="@android:drawable/ic_menu_zoom"
+        android:contentDescription="zoom in"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_zoomout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:layout_marginStart="16dp"
+        android:layout_alignTop="@id/fab_zoomin"
+        android:layout_marginTop="50dp"
+        android:visibility="visible"
+        app:fabSize="mini"
+        app:layout_constraintTop_toBottomOf="@id/fab_zoomin"
+        app:srcCompat="@drawable/zoomout"
+        android:contentDescription="zoom out" />
+
+//RIP add fab
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignRight="@id/toolbarLayout"
+            android:layout_gravity="top|end"
+            android:layout_marginTop="@dimen/top_btn"
+            android:layout_marginEnd="16dp"
+            android:visibility="visible"
+            app:fabSize="mini"
+            app:layout_constraintTop_toBottomOf="parent"
+            app:srcCompat="@android:drawable/ic_input_add"
+            android:contentDescription="add a shape" />
+
+
+//third line rewrite
+/*
+                        val childside = myTriangleList.get(dParams_.n - 1).childSide_
+                        if( dParams_.pl == childside) {
+                            if( childside == 1 ) findViewById<EditText>(R.id.editText8).setText(
+                                dParams_.a.toString()
+                            )
+                            if( childside == 2 ) findViewById<EditText>(R.id.editText9).setText(
+                                dParams_.a.toString()
+                            )
+                        }
+*/
+
+// fab replace third
+/*
+                dParams_ = myEditor.ReadLine(dParams_, myELThird)
+                if ( dParams_.n >= 1 && validTriangle(dParams_) == true){
+                    if( dParams_.n == 1 ) myTriangleList.resetTriangle(
+                        dParams_.n, Triangle(
+                            dParams_,
+                            ag
+                        )
+                    )
+                    else {
+                        myTriangleList.resetTriangle( dParams_ )
+                        /*myTriangleList.resetTriangle(
+                            dParams_.n, Triangle(
+                                myTriangleList.getTriangle(
+                                    dParams_.pn
+                                ), dParams_
+                            )
+                        )*/
+                    }
+                }*/
+//                myTriangleList.setCurrent(dParams_.n + 1)
+//                my_view.getTriangleList().setCurrent(dParams_.n + 1)
+
+// fab replace third
+/*                dParams_ = myEditor.ReadLine(dParams_, myELThird)
+                if( dParams_.n >= 1 ) {
+                    dParams_.pt = myDeductionList.get(dParams_.n).point
+                    dParams_.pts = myDeductionList.get(dParams_.n).pointFlag
+                    dParams_.pn = my_view.myTriangleList.lastTapCollideNum_
+                    myTriangleList.current = dParams_.pn
+
+                    if (validDeduction(dParams_) == true) {
+                        myDeductionList.replace(dParams_.n, dParams_)
+                        //EditorReset(getList(myDeductionMode), getList(myDeductionMode).size())
+                    }
+                }*/
+
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:background="?attr/colorPrimary"
+            app:popupTheme="@style/AppTheme.PopupOverlay" />
+
+
+0
+            TABLE
+            2
+            STYLE
+            5
+            3
+            330
+            0
+            100
+            AcDbSymbolTable
+            70
+            5
+            0
+            STYLE
+            5
+            11
+            330
+            3
+            100
+            AcDbSymbolTableRecord
+            100
+            AcDbTextStyleTableRecord
+            2
+            DimStandard
+            70
+            0
+            40
+            0.0
+            41
+            1.0
+            50
+            0.0
+            71
+            0
+            42
+            0.2
+            3
+            msgothic.ttc
+            4
+
+            1001
+            ACAD
+            1000
+            MS PGothic
+            1071
+            32818
+            0
+            ENDTAB
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_right"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="530dp"
+        android:layout_marginEnd="16dp"
+        app:fabSize="mini"
+        app:layout_constraintTop_toBottomOf="@+id/fab_deduction"
+        app:srcCompat="@android:drawable/ic_media_next" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_left"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="580dp"
+        android:layout_marginEnd="16dp"
+        app:fabSize="mini"
+        app:layout_constraintTop_toBottomOf="@+id/fab_deduction"
+        app:srcCompat="@android:drawable/ic_media_previous" />
+
+            if(!myDeductionMode) {
+                dP = myEditor.ReadLine(dP, myELSecond)
+                myTriangleList.replace(dP, Triangle( myTriangleList.getTriangle(dP.pn), dP))
+
+                dP = myEditor.ReadLine(dP, myELThird)
+                myTriangleList.replace(dP, Triangle( myTriangleList.getTriangle(dP.pn), dP))
+
+                my_view.setTriangleList(myTriangleList)
+
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+        setSupportActionBar(toolbar)
+/*
+        val myEditLineFirst: EditTextViewLine =
+            EditTextViewLine(findViewById(R.id.triNumber),
+                findViewById(R.id.editText),
+                findViewById(R.id.editText2),
+                findViewById(R.id.editText3),
+                findViewById(R.id.ParentNumber),
+                findViewById(R.id.editParent))
+
+        val myEditLineSecond: EditTextViewLine =
+            EditTextViewLine(findViewById(R.id.triNumber2),
+                findViewById(R.id.editText4),
+                findViewById(R.id.editText5),
+                findViewById(R.id.editText6),
+                findViewById(R.id.ParentNumber2),
+                findViewById(R.id.editParent2))
+
+        val myEditLineThird: EditTextViewLine =
+            EditTextViewLine(findViewById(R.id.triNumber3),
+                findViewById(R.id.editText7),
+                findViewById(R.id.editText8),
+                findViewById(R.id.editText9),
+                findViewById(R.id.ParentNumber3),
+                findViewById(R.id.editParent3))
+*/
+
+/*        writer.newLine()
+        for(index in 1 .. myDeductionList.length()){
+            var dd: Deduction = myDeductionList.getDeduction(index)
+            writer.write(
+                    "Deduction, "+
+                    dd.num.toString()+", "+
+                    dd.name+", "+
+                    dd.lengthX.toString()+", "+
+                    dd.lengthY.toString()+", "+
+                    dd.parentNum.toString()+", "+
+                    dd.type.toString()+", "+
+                    dd.angle.toString()+", "+
+                    dd.point.x.toString()+", "+
+                    dd.point.y.toString()+", ")
+            writer.newLine()
+        }*/
+
+         //           if(chunks[0]!! == "Deduction"){
+        //                myDeductionList.add(DeductionParams(chunks[1]!!.toInt(),chunks[2]!!.toString(),chunks[3]!!.toFloat(),chunks[4]!!.toFloat(),chunks[5]!!.toInt(),chunks[6]!!.toString(),chunks[7]!!.toFloat(),PointXY(chunks[8]!!.toFloat(),chunks[9]!!.toFloat())))
+        //                continue
+          //          }
+
+                              "Deduction, "+              //0
+                              dd.name+", "+                   //1
+                              dd.type.toString()+", "+        //2
+                              dd.num.toString()+", "+         //3
+                              dd.lengthX.toString()+", "+     //4
+                              dd.lengthY.toString()+", "+     //5
+                              dd.parentNum.toString()+", "+   //6
+                              dd.angle.toString()+", "+       //7
+                              dd.point.x.toString()+", "+     //8
+                              dd.point.y.toString()+", "+     //9
+                              dd.pointFlag.x.toString()+", "+ //10
+                              dd.pointFlag.y.toString()+", ") //11
+
+
+                                              dedlist.add(Params(chunks[1]!!.toString(),chunks[2]!!.toString(),chunks[3]!!.toInt(),
+                                                                  chunks[4]!!.toFloat(),chunks[5]!!.toFloat(), chunks[6]!!.toFloat(),
+                                                                  chunks[7]!!.toInt(), typeToInt(chunks[2]!!.toString()),
+                                                                      PointXY(chunks[8]!!.toFloat(),chunks[9]!!.toFloat()),
+                                                                      PointXY(chunks[10]!!.toFloat(),chunks[11]!!.toFloat())))

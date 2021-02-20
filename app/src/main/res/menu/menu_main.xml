@@ -1,0 +1,35 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.jpaver.trianglelist.MainActivity">
+    <item
+        android:id="@+id/action_new"
+        android:orderInCategory="100"
+        android:title="@string/action_new"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_save_csv"
+        android:orderInCategory="100"
+        android:title="@string/action_save_csv"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_load_csv"
+        android:orderInCategory="100"
+        android:title="@string/action_load_csv"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_save_dxf"
+        android:orderInCategory="100"
+        android:title="@string/action_save_dxf"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_save_pdf"
+        android:orderInCategory="100"
+        android:title="@string/action_save_pdf"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_send_mail"
+        android:orderInCategory="100"
+        android:title="@string/action_send_mail"
+        app:showAsAction="never" />
+</menu>

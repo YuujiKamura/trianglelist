@@ -1,0 +1,84 @@
+<resources>
+    <string name="app_name">Triangle List</string>
+    <string name="action_settings">Settings</string>
+    <string name="action_new">Create New</string>
+    <string name="action_save_csv">Save CSV</string>
+    <string name="action_load_csv">Load CSV</string>
+    <string name="action_save_dxf">Export DXF (popAD)</string>
+    <string name="action_save_pdf">Export PDF (popAD)</string>
+    <string name="action_send_mail">Send Mail</string>
+
+    <string name="tenkai_title">Area Triangles</string>
+    <string name="tenkai_koujimei">Cons name</string>
+    <string name="tenkai_zumenmei">Draw type</string>
+    <string name="tenkai_rosenmei">Draw name</string>
+    <string name="tenkai_syukusyaku">Draw Scale</string>
+    <string name="tenkai_zuban">Draw Number</string>
+    <string name="tenkai_sakuseibi">Date</string>
+
+    <string name="tenkai_nengappi">Y/      M/      D</string>
+    <string name="tenkai_sekousya">Author name</string>
+    <string name="menseki">Area</string>
+    <string name="menseki_title">Area Calc Sheet</string>
+    <string name="menseki_koujimei">Cons name : </string>
+    <string name="menseki_syoukei"> Sum</string>
+    <string name="menseki_goukei">Sum</string>
+    <string name="editor_number">Num</string>
+    <string name="editor_name">Name</string>
+    <string name="editor_sokuten">Name</string>
+    <string name="editor_lA">LenA</string>
+    <string name="editor_lB">LenB</string>
+    <string name="editor_lC">LenC</string>
+    <string name="editor_parent">Pare</string>
+    <string name="editor_setuzoku">Conn</string>
+    <string name="editor_syozoku">inside</string>
+    <string name="editor_form">Form</string>
+    <string name="editor_koujyo">Deduction</string>
+    <string name="credit">This drawing exported by an App "Triangle List".</string>
+
+    <string name="rosen1">Drawing1</string>
+    <string name="savecurrent">Save current drawing?</string>
+    <string name="inputcname">You can input Constrution name here.</string>
+    <string name="inputdname">You can input Drawing name here.</string>
+    <string name="inputdnum">You can input Drawing number here.</string>
+    <string name="inputaname">You can input Author name here.</string>
+    <string name="space">Name layout to double line when you input a space.</string>
+
+    <!-- Strings used for fragments for navigation -->
+    <string name="first_fragment_label">First Fragment</string>
+    <string name="second_fragment_label">Second Fragment</string>
+    <string name="next">Next</string>
+    <string name="previous">Previous</string>
+    <string name="zero">zero</string>
+    <string name="b">B</string>
+    <string name="first">1</string>
+    <string name="second">2</string>
+    <string name="rosenname">Drawing Name</string>
+
+    <string name="hello_first_fragment">input triangles ABC</string>
+    <string name="hello_second_fragment">select a form to connection. Arg: %1$s</string>
+
+    <string-array name="TriNumList">
+        <item>1</item>
+    </string-array>
+
+    <string-array name="DeductionFormList">
+        <item>-</item>
+        <item>Box</item>
+        <item>Circle</item>
+    </string-array>
+
+    <string-array name="ParentList">
+        <item>-</item>
+        <item>B</item>
+        <item>C</item>
+        <item>BR</item>
+        <item>BL</item>
+        <item>CR</item>
+        <item>CL</item>
+        <item>BC</item>
+        <item>CC</item>
+        <item>BF</item>
+        <item>CF</item>
+    </string-array>
+</resources>

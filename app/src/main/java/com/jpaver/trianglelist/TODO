@@ -1,0 +1,30 @@
+
+Roadmap
+2020/
+6/
+16~:1h:early deduction save size normalize
+16~:1h:early Deduction[1] Loading error fix.
+16~:2h:early app icon fix
+16~:2h:early capture icon screens
+16~:1h:early write release notes
+16~:2h:early some toast notification
+    1h delete fab notification
+    1h setB/C fab notification
+    1h deduction mode notification
+16~:1h:early dxf scale 1000
+16~:1h:early measure writed list
+16~:1h:early set list size category
+16~:4h:early dxf write by two sheets
+16~:1h:early png write
+16~:1h auto save default off
+16~:2h switch auto save
+
+17~:4h:done test trilist boundary
+17~:0.5h:done test trilist center
+17~:0.5h:done test trilist measure
+17~:suspend test trilist rotate by size
+        -180
+
+17~:0.5h test trilist divide by size
+
+18~:1h:suspend dxf write frame
