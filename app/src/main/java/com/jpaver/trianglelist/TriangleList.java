@@ -863,6 +863,20 @@ public class TriangleList extends EditList implements Cloneable {
         return trilist_.size();
     }
 
+    public TriangleList reverse(){
+        TriangleList rev = new TriangleList();
+
+        int iforward = 1;
+
+        for( int iback = trilist_.size(); iback > 0; iback-- ){
+            rev.trilist_.add( trilist_.get( iback - 1 ).clone() ); // arraylist add. no sideEffect.
+            rev.get(iforward).myNumber_ = iforward;
+            iforward++;
+        }
+
+        return rev;
+    }
+
 }// end of class
 
 

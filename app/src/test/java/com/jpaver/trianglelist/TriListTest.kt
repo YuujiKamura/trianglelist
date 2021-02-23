@@ -7,6 +7,26 @@ import org.junit.Test
 class TriListTest {
 
     @Test
+    fun testTriListReverse(){
+        val trilist = TriangleList()
+        // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
+        trilist.add( Triangle(5f, 5f, 5f))
+        trilist.add( 1, 4,6f, 5f, 5f )
+        //trilist.add( 2, 5,6f, 5f, 5f )
+        //trilist.add( 3, 1,5f, 5f )
+
+        // test trilist get(n) is returned number, not index
+        // wrapped arraylist get(i). ex, trilist.trilist_.get(i) is required index, not number.
+        assertEquals( 1, trilist.get(0).myNumber_ )
+        assertEquals( 1, trilist.get(1).myNumber_ )
+        assertEquals( 2, trilist.get(2).myNumber_ )
+
+        val trilist2 = trilist.reverse()
+        assertEquals( 1, trilist2.get(1).myNumber_ )
+
+    }
+
+    @Test
     fun testTriListOutline(){
         val trilist = TriangleList()
         // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
