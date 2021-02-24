@@ -24,6 +24,10 @@ class TriListTest {
         val trilist2 = trilist.reverse()
         assertEquals( 1, trilist2.get(1).myNumber_ )
 
+        val trilist3 = trilist.numbered(5)
+        assertEquals( 5, trilist3.get(1).myNumber_ )
+
+
     }
 
     @Test
