@@ -881,7 +881,7 @@ public class TriangleList extends EditList implements Cloneable {
         TriangleList rev = new TriangleList();
 
         for( int i = 0; i < trilist_.size(); i++ ) {
-            Triangle ti = trilist_.get( i );
+            Triangle ti = trilist_.get( i ).clone();
             ti.myNumber_ = start + i;
             rev.trilist_.add( ti );
         }

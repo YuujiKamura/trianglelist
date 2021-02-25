@@ -43,6 +43,7 @@
     <string name="inputdnum">You can input Drawing number here.</string>
     <string name="inputaname">You can input Author name here.</string>
     <string name="space">Name layout to double line when you input a space.</string>
+    <string name="inputtnum">You can input a number of triangles start here.</string>
 
     <!-- Strings used for fragments for navigation -->
     <string name="first_fragment_label">First Fragment</string>

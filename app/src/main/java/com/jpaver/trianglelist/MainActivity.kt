@@ -130,6 +130,7 @@ class MainActivity : AppCompatActivity(),
     var rosenname_ = ""
     var gyousyaname_ = ""
     var zumennum_ = "1/1"
+    var dxfStartNumber_ = 1
 
     var colorindex_ = 4
     val RColors = arrayOf(
@@ -1233,11 +1234,30 @@ class MainActivity : AppCompatActivity(),
 
             R.id.action_save_dxf -> {
 
-                fileType = "DXF"
-                var i: Intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
-                i.setType("text/dxf")
-                i.putExtra(Intent.EXTRA_TITLE, rosenname_ + " " + LocalDate.now() + ".dxf")
-                startActivityForResult(i, 1)
+                val hTstart = getString( R.string.inputtnum )
+                val editText5 = EditText(this)
+                editText5.hint = hTstart
+                val filter2 = arrayOf(InputFilter.LengthFilter(3))
+                editText5.setFilters(filter2)
+                editText5.setText( dxfStartNumber_.toString() )
+
+                AlertDialog.Builder(this)
+                    .setTitle("Save DXF")
+                    .setMessage(R.string.inputtnum)
+                    .setView(editText5)
+                    .setPositiveButton("OK",
+                        DialogInterface.OnClickListener { dialog, which ->
+                            dxfStartNumber_ = editText5.getText().toString().toInt()
+
+                            fileType = "DXF"
+                            var i: Intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
+                            i.setType("text/dxf")
+                            i.putExtra(Intent.EXTRA_TITLE, rosenname_ + " " + LocalDate.now() + ".dxf")
+                            startActivityForResult(i, 1)
+
+                        })
+                    .show()
+
 
                 return true
             }
@@ -1822,6 +1842,9 @@ class MainActivity : AppCompatActivity(),
         dxfWriter.deductionList_ = myDeductionList
         dxfWriter.setNames(koujiname_, rosenname_, gyousyaname_, zumennum_)
         dxfWriter.isDebug_ = my_view.isDebug_
+
+        dxfWriter.startTriNumber_ = dxfStartNumber_
+
         dxfWriter.saveDXF(writer)
         if( BuildConfig.FLAVOR == "free" ) showInterStAd()
         return writer

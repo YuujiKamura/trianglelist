@@ -12,6 +12,8 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
     var myDXFscale = 1000f //* setScale(drawingLength)    //metric to mill
     val mScale = 11.9f*4f//12.5f
 
+    var startTriNumber_ = 1
+
     var isDebug_ = false
 
     val texScale = triangleList_.getPrintTextScale( 1f , "dxf")
@@ -455,13 +457,18 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
         """.trimIndent())
         wrtr.newLine()
 
+
+        val trilistNumbered = myDXFTriList.numbered( startTriNumber_ )
+
         for (index in 1 .. myDXFTriList.size()) {
-            writeDXFTriangle(wrtr, myDXFTriList.get(index))
+            writeDXFTriangle(wrtr, trilistNumbered.get(index))
         }
 
-        myDXFTriList.setChildsToAllParents()
-        val array = myDXFTriList.olpLists
-        for ( i in 0 .. array.size - 1 ) writeDXFTriOutlines( wrtr, array.get(i) )
+
+        // アウトラインの描画
+        //myDXFTriList.setChildsToAllParents()
+        //val array = myDXFTriList.olpLists
+        //for ( i in 0 .. array.size - 1 ) writeDXFTriOutlines( wrtr, array.get(i) )
 
         for (index in 1 .. myDXFDedList.size()) {
             writeDXFDeduction(wrtr, myDXFDedList.get(index))
