@@ -778,6 +778,11 @@ public class TriangleList extends EditList implements Cloneable {
 
         int endnum = searchFloatintTriangleFrom( start );
 
+        //olp = outlineForward( trilist_, start)
+        //olp = outlineBackward( trilist_, endnum)
+        // 右回りに前進。順繰り戻るのではなく子の番号に移る。接続がなくなるまで。フロート接続を含む。
+        // 右回りに後退。順繰り戻るのではなく親の番号に移る。子接続があったら、上に戻って前進する。接続がなくなるまで。フロート接続を含む。
+
         //往路
         olp = goAroundCaveBySetRightHand( start, endnum );
 
@@ -811,10 +816,46 @@ public class TriangleList extends EditList implements Cloneable {
         return olp;
     }
 
+    public ArrayList<PointXY> traceOrJumpForward( int startindex, ArrayList<PointXY> olp ){
+        Triangle t = trilist_.get( startindex );
+        PointXY before = olp.get( olp.size() - 1 );
+        //AB点を取る。すでにあったらキャンセル
+        if( before.equals( t.pointAB_ ) == false ) olp.add( t.pointAB_ );
+
+        // 派生方向に右手伝いにのびていく
+        if( t.isChildB_ == true ) traceOrJumpForward( t.childB_.myNumber_ - 1, olp );
+
+        //BC点を取る。すでにあったらキャンセル
+        if( before.equals( t.pointBC_ ) == false ) olp.add( t.pointBC_ );
+
+        if( t.isChildC_ == true ) traceOrJumpForward( t.childC_.myNumber_ - 1, olp );
+
+        traceOrJumpBackward( startindex, olp );
+
+        return olp;
+    }
+
+    public ArrayList<PointXY> traceOrJumpBackward( int startindex, ArrayList<PointXY> olp ){
+        Triangle t = trilist_.get( startindex );
+        PointXY before = olp.get( olp.size() - 1 );
+        //CA点を取る。すでにあったらキャンセル
+        if( before.equals( t.pointCA_ ) == false ) olp.add( t.pointCA_ );
+
+        // これだと２つ戻った時にぐるぐる回ってしまう。
+        // if( t.isChildB_ == true ) traceOrJumpForward( t.childB_.myNumber_ - 1, olp );
+
+        if( t.isChildC_ == true ) traceOrJumpForward( t.childC_.myNumber_ - 1, olp );
+
+        // 0まで戻る。
+        if( t.myParentNumber_ > 0 ) traceOrJumpBackward( t.myParentNumber_ - 1, olp );
+
+        return olp;
+    }
+
     public ArrayList<PointXY> goAroundCaveBySetRightHand( int start, int endnum ){
         ArrayList<PointXY> olp = new ArrayList<PointXY>();
 
-        Triangle t1 = trilist_.get( start - 1 );
+        Triangle t1 = trilist_.get( start );
         olp.add( t1.pointAB_ );
 
         // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
