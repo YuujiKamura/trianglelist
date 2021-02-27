@@ -844,7 +844,7 @@ public class TriangleList extends EditList implements Cloneable {
         // これだと２つ戻った時にぐるぐる回ってしまう。
         // if( t.isChildB_ == true ) traceOrJumpForward( t.childB_.myNumber_ - 1, olp );
 
-        if( t.isChildC_ == true ) traceOrJumpForward( t.childC_.myNumber_ - 1, olp );
+        //if( t.isChildC_ == true ) traceOrJumpForward( t.childC_.myNumber_ - 1, olp );
 
         // 0まで戻る。
         if( t.myParentNumber_ > 0 ) traceOrJumpBackward( t.myParentNumber_ - 1, olp );
