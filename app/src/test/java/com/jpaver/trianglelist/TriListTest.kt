@@ -35,13 +35,14 @@ class TriListTest {
         val trilist = TriangleList()
         // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
         trilist.add( Triangle(5f, 5f, 5f))
-        trilist.add( 1, 4,6f, 5f, 5f )
+        trilist.add( 1, 1,5f, 5f, 5f )
         trilist.add( 2, 5,6f, 5f, 5f )
         trilist.add( 3, 1,5f, 5f )
         trilist.add( 4, 9,5f,5f, 5f )
 
-        val tlop = trilist.getOutLinePoints( 0 )
-        assertEquals( 8, tlop.size )
+        val op = ArrayList<PointXY>()
+        val tlop = trilist.traceOrJumpForward( 0, op ) //getOutLinePoints( 0 )
+        assertEquals( 7, tlop.size )
     }
 
     @Test
@@ -98,7 +99,7 @@ class TriListTest {
         val pca = tri.pointCA_
         val pab = tri.pointAB_
         val pbc = tri.pointBC_
-        var alignVdimA = dxfwriter.alignVByVector(tri.myDimAlignA_, pca, pab)
+        val alignVdimA = dxfwriter.alignVByVector(tri.myDimAlignA_, pca, pab)
         val alignVdimB = dxfwriter.alignVByVector(tri.myDimAlignB_, pab, pbc)//flip(tri.myDimAlignB_, tri.dimAngleB_ )
         val alignVdimC = dxfwriter.alignVByVector(tri.myDimAlignC_, pbc, pca)//flip(tri.myDimAlignC_, tri.dimAngleC_ )
 
@@ -119,7 +120,7 @@ class TriListTest {
         trilist.add(Triangle(trilist.get(1), 2, 7f, 7f))
         trilist.add(Triangle(trilist.get(1), 1, 6f, 6f))
 
-        val pdfwriter = PdfWriter( 1f, trilist )
+        //val pdfwriter = PdfWriter( 1f, trilist )
     }
 
     @Test
@@ -407,8 +408,8 @@ class TriListTest {
 
     @Test
     fun testClone() {
-        val p1 = PointXY(0f, 0f)
-        val p2 = p1.clone()
+        //val p1 = PointXY(0f, 0f)
+        //val p2 = p1.clone()
         val mytri1 = Triangle(3.0f, 4.0f, 5.0f, PointXY(0f, 0f), 180.0f)
         val t2 = mytri1.clone()
         mytri1.setNumber(10)

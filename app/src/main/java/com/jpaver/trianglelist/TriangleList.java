@@ -11,7 +11,7 @@ public class TriangleList extends EditList implements Cloneable {
     ArrayList<Triangle> myTriListAtView;
     ArrayList<Collision> myCollisionList;
 
-    int current = 0;
+    int current;// = 0;
     float myScale = 1f;
     boolean imScaled = false;
 
@@ -100,7 +100,7 @@ public class TriangleList extends EditList implements Cloneable {
     public ArrayList<Triangle> getAllSokutenList( ) {
         ArrayList<Triangle> numTriList = new ArrayList<Triangle>();
         for (int i = 0; i < trilist_.size(); i++ ){
-            if( trilist_.get(i).myName_.contains( "No." ) == true ) {
+            if( trilist_.get(i).myName_.contains( "No." ) ) {
                 numTriList.add( trilist_.get(i).clone() );
             }
         }
@@ -125,7 +125,7 @@ public class TriangleList extends EditList implements Cloneable {
     public PointXY getUnScaledPointOfName(String name ){
 
         for (int i = 1; i < trilist_.size()+1; i++ ){
-            if( trilist_.get(i).myName_ == name ) return trilist_.get(i).pointCA_.scale( 1/myScale );
+            if( trilist_.get(i).myName_.equals( name ) ) return trilist_.get(i).pointCA_.scale( 1/myScale );
         }
 
         return new PointXY( 0f, 0f );
@@ -134,46 +134,37 @@ public class TriangleList extends EditList implements Cloneable {
     public float getPrintTextScale (float drawingScale, String type){
         float ts = 10f;
         float dxfts = 0.4f;
+        if( type.equals( "dxf" ) ) return dxfts;
 
         switch((int)(getPrintScale(drawingScale)*10)){
             case 100:
-                if(type == "dxf") return dxfts;
                 ts = 2f;
                 break;
             case 50:
-                if(type == "dxf") return dxfts;
                 ts = 3.5f;
                 break;
             case 45:
-                if(type == "dxf") return dxfts;
                 ts = 3.5f;
                 break;
             case 40:
-                if(type == "dxf") return dxfts;
                 ts = 3.5f;
                 break;
             case 30:
-                if(type == "dxf") return dxfts;
                 ts = 5f;
                 break;
             case 25:
-                if(type == "dxf") return dxfts;
                 ts = 8f;
                 break;
             case 20:
-                if(type == "dxf") return dxfts;
                 ts = 8f;
                 break;
             case 15:
-                if(type == "dxf") return dxfts;
                 ts = 10f;
                 break;
             case 10:
-                if(type == "dxf") return dxfts;
                 ts = 10f;
                 break;
             case 5:
-                if(type == "dxf") return dxfts;
                 ts = 12f;
                 break;
         }
@@ -818,15 +809,18 @@ public class TriangleList extends EditList implements Cloneable {
 
     public ArrayList<PointXY> traceOrJumpForward( int startindex, ArrayList<PointXY> olp ){
         Triangle t = trilist_.get( startindex );
-        PointXY before = olp.get( olp.size() - 1 );
-        //AB点を取る。すでにあったらキャンセル
-        if( before.equals( t.pointAB_ ) == false ) olp.add( t.pointAB_ );
 
-        // 派生方向に右手伝いにのびていく
+        //フロート接続はリターン
+        if( t.isFloating() ) return olp;
+
+        //AB点を取る。すでにあったらキャンセル
+        if( exist( t.pointAB_, olp )  == false ) olp.add( t.pointAB_ );
+
+        // 再起呼び出しで派生方向に右手伝いにのびていく
         if( t.isChildB_ == true ) traceOrJumpForward( t.childB_.myNumber_ - 1, olp );
 
         //BC点を取る。すでにあったらキャンセル
-        if( before.equals( t.pointBC_ ) == false ) olp.add( t.pointBC_ );
+        if( exist( t.pointBC_, olp )  == false ) olp.add( t.pointBC_ );
 
         if( t.isChildC_ == true ) traceOrJumpForward( t.childC_.myNumber_ - 1, olp );
 
@@ -837,19 +831,22 @@ public class TriangleList extends EditList implements Cloneable {
 
     public ArrayList<PointXY> traceOrJumpBackward( int startindex, ArrayList<PointXY> olp ){
         Triangle t = trilist_.get( startindex );
-        PointXY before = olp.get( olp.size() - 1 );
+
         //CA点を取る。すでにあったらキャンセル
-        if( before.equals( t.pointCA_ ) == false ) olp.add( t.pointCA_ );
-
-        // これだと２つ戻った時にぐるぐる回ってしまう。
-        // if( t.isChildB_ == true ) traceOrJumpForward( t.childB_.myNumber_ - 1, olp );
-
-        //if( t.isChildC_ == true ) traceOrJumpForward( t.childC_.myNumber_ - 1, olp );
+        if( exist( t.pointCA_, olp ) == false ) olp.add( t.pointCA_ );
 
         // 0まで戻る。
         if( t.myParentNumber_ > 0 ) traceOrJumpBackward( t.myParentNumber_ - 1, olp );
 
         return olp;
+    }
+
+    // 同じポイントは二ついらない
+    public boolean exist( PointXY it, ArrayList<PointXY> inthis ){
+        for( int i=0; i<inthis.size(); i++ )
+         if( true == it.nearBy( inthis.get(i), 0.001f ) ) return true;
+
+        return false;
     }
 
     public ArrayList<PointXY> goAroundCaveBySetRightHand( int start, int endnum ){

@@ -466,9 +466,10 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
 
 
         // アウトラインの描画
-        //myDXFTriList.setChildsToAllParents()
-        //val array = myDXFTriList.olpLists
-        //for ( i in 0 .. array.size - 1 ) writeDXFTriOutlines( wrtr, array.get(i) )
+        myDXFTriList.setChildsToAllParents()
+        val array = ArrayList<PointXY>()
+        myDXFTriList.traceOrJumpForward(0, array )
+        if( array.size > 0 ) writeDXFTriOutlines( wrtr, array )
 
         for (index in 1 .. myDXFDedList.size()) {
             writeDXFDeduction(wrtr, myDXFDedList.get(index))
