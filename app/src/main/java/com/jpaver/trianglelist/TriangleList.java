@@ -749,15 +749,17 @@ public class TriangleList extends EditList implements Cloneable {
         return (float)(Math.round( area * 100.0) / 100.0);
     }
 
-    public ArrayList<ArrayList<PointXY>> getOLPLists(){
+    public ArrayList<ArrayList<PointXY>> getOutlineLists(){
         ArrayList<ArrayList<PointXY>> olplists = new ArrayList<ArrayList<PointXY>>();
-        int endnum = searchFloatintTriangleFrom( 0 );
-        int startnum = endnum + 1;
-        olplists.add( getOutLinePoints( 1 ) );
+        olplists.add( new ArrayList<>() );
 
-        for( int i = startnum; i < trilist_.size(); i = searchFloatintTriangleFrom( startnum ) ){
-            olplists.add( getOutLinePoints( startnum ) );
-            startnum = i;
+        traceOrJumpForward( 0, olplists.get(0) );
+
+        for( int i = 0; i < trilist_.size(); i ++ ){
+            if( trilist_.get( i ).isFloating() ) {
+                olplists.add( new ArrayList<>() );
+                traceOrJumpForward( i, olplists.get(i) );
+            }
         }
 
         return olplists;
