@@ -39,10 +39,17 @@ class TriListTest {
         trilist.add( 2, 5,6f, 5f, 5f )
         trilist.add( 3, 1,5f, 5f )
         trilist.add( 4, 9,5f,5f, 5f )
+        trilist.add( 5, 9,5f,5f, 5f )
 
         val op = ArrayList<PointXY>()
-        val tlop = trilist.traceOrJumpForward( 0, op ) //getOutLinePoints( 0 )
+        val tlop = trilist.traceOrJumpForward( 0, 0, op ) //getOutLinePoints( 0 )
         assertEquals( 7, tlop.size )
+        assertEquals( "0ab,1bc,2ab,3bc,3ca,2ca,0ca,", trilist.outlineStr_ )
+
+        val aop = trilist.getOutlineLists( )
+        assertEquals( 2, aop.size )
+        assertEquals( "0ab,1bc,2ab,3bc,3ca,2ca,0ca,4ab,4bc,4ca,", trilist.outlineStr_ )
+
     }
 
     @Test

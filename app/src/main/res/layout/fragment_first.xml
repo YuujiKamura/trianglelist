@@ -153,6 +153,7 @@
                 android:text="@string/zero"
                 android:maxLength="5"
                 android:background="@drawable/border"
+                android:selectAllOnFocus="true"
                 android:nextFocusDown="@+id/editText5"
                 android:textSize="14sp"/>
 
@@ -166,6 +167,7 @@
                 android:text="@string/zero"
                 android:maxLength="5"
                 android:background="@drawable/border"
+                android:selectAllOnFocus="true"
                 android:nextFocusDown="@+id/editText6"
                 android:textSize="14sp"/>
 
@@ -179,6 +181,7 @@
                 android:text="@string/zero"
                 android:maxLength="5"
                 android:background="@drawable/border"
+                android:selectAllOnFocus="true"
                 android:textSize="14sp"/>
 
             <EditText
@@ -190,6 +193,7 @@
                 android:text="@string/zero"
                 android:maxLength="5"
                 android:background="@drawable/border"
+                android:selectAllOnFocus="true"
                 android:textSize="14sp"/>
 
             <Spinner
@@ -233,6 +237,7 @@
                 android:text=""
                 android:maxLength="15"
                 android:background="@drawable/border"
+                android:selectAllOnFocus="true"
                 android:textSize="14sp"/>
 
             <EditText
@@ -246,6 +251,7 @@
                 android:text="@string/zero"
                 android:maxLength="5"
                 android:background="@drawable/border"
+                android:selectAllOnFocus="true"
                 android:nextFocusDown="@+id/editText2"
                 android:textSize="14sp">
                 <requestFocus />
@@ -262,6 +268,7 @@
                 android:gravity="center_horizontal"
                 android:inputType="numberDecimal"
                 android:nextFocusDown="@+id/editText3"
+                android:selectAllOnFocus="true"
                 android:text="@string/zero"
                 android:textSize="14sp"/>
 
@@ -277,6 +284,7 @@
                 android:maxLength="5"
                 android:background="@drawable/border"
                 android:nextFocusDown="@+id/ParentNumber"
+                android:selectAllOnFocus="true"
                 android:textSize="14sp"/>
 
             <EditText
@@ -289,6 +297,7 @@
                 android:maxLength="5"
                 android:background="@drawable/border"
                 android:nextFocusDown="@+id/editText"
+                android:selectAllOnFocus="true"
                 android:textSize="14sp"/>
 
             <Spinner
@@ -329,9 +338,10 @@
             android:layout_height="@dimen/et_size"
             android:gravity="center_horizontal"
             android:inputType="textAutoComplete|textAutoCorrect"
-                android:maxLength="15"
+            android:maxLength="15"
             android:text=""
             android:background="@drawable/border"
+            android:selectAllOnFocus="true"
             android:textSize="14sp"/>
 
         <EditText
@@ -345,6 +355,7 @@
             android:text="@string/zero"
             android:background="@drawable/border"
             android:nextFocusDown="@+id/editText8"
+            android:selectAllOnFocus="true"
             android:textSize="14sp"/>
 
         <EditText
@@ -358,6 +369,7 @@
             android:text="@string/zero"
             android:background="@drawable/border"
             android:nextFocusDown="@+id/editText9"
+            android:selectAllOnFocus="true"
             android:textSize="14sp"/>
 
         <EditText
@@ -370,6 +382,7 @@
             android:inputType="numberDecimal"
             android:text="@string/zero"
             android:background="@drawable/border"
+            android:selectAllOnFocus="true"
             android:textSize="14sp"/>
 
         <EditText
@@ -381,6 +394,7 @@
             android:text="@string/zero"
             android:maxLength="5"
             android:background="@drawable/border"
+            android:selectAllOnFocus="true"
             android:textSize="14sp"/>
 
         <Spinner

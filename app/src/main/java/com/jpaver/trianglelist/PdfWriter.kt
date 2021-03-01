@@ -426,21 +426,21 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
         writeText( credit, PointXY(50f, yb+10f), 1f, 7, 7f, 0 )
 
 
-        if( koujiname_.length > 14 ) {
+        if( koujiname_.length > 20 ) {
             if( koujiname_.contains(" ") ){
                 val array = koujiname_.split(' ')
-                writeText(array[0], PointXY(xr - tt, yb - 100f), 1f, 7, 7f, 0)
-                writeText(array[1], PointXY(xr - tt, yb - 85f), 1f, 7, 7f, 0)
+                writeText(array[0], PointXY(xr - tt, yb - 100f), 1f, 7, 8f, 0)
+                writeText(array[1], PointXY(xr - tt, yb - 85f), 1f, 7, 8f, 0)
             }
             else{
-                val array1 = koujiname_.substring(0, 12)
-                val array2 = koujiname_.substring(12, koujiname_.length)
-                writeText(array1, PointXY(xr - tt, yb - 100f), 1f, 7, 7f, 0)
-                writeText(array2, PointXY(xr - tt, yb - 85f), 1f, 7, 7f, 0)
+                val array1 = koujiname_.substring(0, 20)
+                val array2 = koujiname_.substring(20, koujiname_.length)
+                writeText(array1, PointXY(xr - tt, yb - 100f), 1f, 7, 8f, 0)
+                writeText(array2, PointXY(xr - tt, yb - 85f), 1f, 7, 8f, 0)
             }
         }
         else {
-            writeText(koujiname_, PointXY(xr-tt, yb-95f+ofs ), 1f, 7, 6f, 0 )
+            writeText(koujiname_, PointXY(xr-tt, yb-95f+ofs ), 1f, 7, 8f, 0 )
         }
         //}
         //else writeText(koujiname_, PointXY(xr-tt, yb-95f+ofs ), 1f, 7, 8f, 0 )

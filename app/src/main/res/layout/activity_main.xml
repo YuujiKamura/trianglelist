@@ -51,7 +51,6 @@
             app:srcCompat="@drawable/rot_r"
             android:contentDescription="rotate to right" />
 
-
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_resetView"
             android:layout_width="wrap_content"

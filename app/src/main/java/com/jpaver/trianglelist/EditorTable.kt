@@ -34,6 +34,8 @@ data class Params(var name: String = "",
                   var pts: PointXY = PointXY(0f, 0f))//,
 //                  var an: Float = 0f)
 
+data class OutlinePoints( var points: ArrayList<PointXY>, var opstr: String )
+
 class EditorTable {
     var myCurrentTriNumber: Int = 0
     var myCurrentDeductionNumber: Int = 0

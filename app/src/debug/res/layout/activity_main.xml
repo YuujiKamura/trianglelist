@@ -56,6 +56,7 @@
         android:layout_gravity="top|start"
         android:layout_marginStart="186dp"
         android:layout_marginTop="@dimen/top_btn"
+        android:visibility="invisible"
         app:fabSize="mini"
         app:layout_constraintStart_toEndOf="@+id/rot_r"
         app:srcCompat="@drawable/ic_trilist_playstore"

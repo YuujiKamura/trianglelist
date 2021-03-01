@@ -375,15 +375,15 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
         val tt = 0
         val ofs = 3f
 
-        if( koujiname_.length > 14 ) {
+        if( koujiname_.length > 20 ) {
             if( koujiname_.contains(" ") ){
                 val array = koujiname_.split(' ')
                 writeDXFText(wrtr, array[0], PointXY(xr - tt, yb + yo ), 7, tss, 0)
                 writeDXFText(wrtr, array[1], PointXY(xr - tt, yb - yo ), 7, tss, 0)
             }
             else{
-                val array1 = koujiname_.substring(0, 12)
-                val array2 = koujiname_.substring(12, koujiname_.length)
+                val array1 = koujiname_.substring(0, 20)
+                val array2 = koujiname_.substring(20, koujiname_.length)
                 writeDXFText(wrtr, array1, PointXY(xr - tt, yb + yo ), 7, tss, 0)
                 writeDXFText(wrtr, array2, PointXY(xr - tt, yb - yo ), 7, tss, 0)
             }
@@ -467,9 +467,12 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
 
         // アウトラインの描画
         myDXFTriList.setChildsToAllParents()
-        val array = myDXFTriList.outlineLists //ArrayList<PointXY>()
-        //myDXFTriList.traceOrJumpForward(0, array )
-        if( array.size > 0 ) for( index in 0 .. array.size ) writeDXFTriOutlines( wrtr, array.get( index ) )
+        val arrayarray = myDXFTriList.getOutlineLists( ) //ArrayList<PointXY>()
+        val array = ArrayList<PointXY>()
+        myDXFTriList.traceOrJumpForward(0, 0, array )
+        if( array.size > 0 ) writeDXFTriOutlines( wrtr, array )
+//
+//        if( arrayarray.size > 0 ) for( index in 0 .. arrayarray.size ) writeDXFTriOutlines( wrtr, arrayarray.get( index ) )
 
         // deduction
         for (index in 1 .. myDXFDedList.size()) {

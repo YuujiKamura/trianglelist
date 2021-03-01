@@ -22,6 +22,8 @@ public class TriangleList extends EditList implements Cloneable {
     PointXY myCenter = new PointXY(0f,0f);
     PointXY myLength = new PointXY(0f,0f);
 
+    String outlineStr_ = "";
+
     int lastTapNum_ = 0;
     int lastTapSide_ = -1;
     int lastTapCollideNum_ = 0;
@@ -749,21 +751,72 @@ public class TriangleList extends EditList implements Cloneable {
         return (float)(Math.round( area * 100.0) / 100.0);
     }
 
-    public ArrayList<ArrayList<PointXY>> getOutlineLists(){
+
+    public ArrayList<ArrayList<PointXY>> getOutlineLists( ){
         ArrayList<ArrayList<PointXY>> olplists = new ArrayList<ArrayList<PointXY>>();
         olplists.add( new ArrayList<>() );
 
-        traceOrJumpForward( 0, olplists.get(0) );
+
+        traceOrJumpForward( 0, 0, olplists.get(0) );
 
         for( int i = 0; i < trilist_.size(); i ++ ){
             if( trilist_.get( i ).isFloating() ) {
                 olplists.add( new ArrayList<>() );
-                traceOrJumpForward( i, olplists.get(i) );
+                traceOrJumpForward( i, i, olplists.get( olplists.size() - 1 ) );
             }
         }
 
         return olplists;
     }
+
+    public ArrayList<PointXY> traceOrJumpForward( int startindex, int origin, ArrayList<PointXY> olp ){
+        Triangle t = trilist_.get( startindex );
+
+        //AB点を取る。すでにあったらキャンセル
+        if( exist( t.pointAB_, olp )  == false ) {
+            olp.add( t.pointAB_ );
+            outlineStr_ += startindex + "ab,";
+        }
+
+        // 再起呼び出しで派生方向に右手伝いにのびていく
+        if( t.isChildB_ == true && !t.childB_.isFloating() ) traceOrJumpForward( t.childB_.myNumber_ - 1, origin, olp );
+
+        //BC点を取る。すでにあったらキャンセル
+        if( exist( t.pointBC_, olp )  == false ){
+            olp.add( t.pointBC_ );
+            outlineStr_ += startindex + "bc,";
+        }
+
+        if( t.isChildC_ == true && !t.childC_.isFloating() ) traceOrJumpForward( t.childC_.myNumber_ - 1, origin, olp );
+
+        traceOrJumpBackward( startindex, origin, olp );
+
+        return olp;
+    }
+
+    public ArrayList<PointXY> traceOrJumpBackward( int startindex, int origin,  ArrayList<PointXY> olp ){
+        Triangle t = trilist_.get( startindex );
+
+        //CA点を取る。すでにあったらキャンセル
+        if( exist( t.pointCA_, olp ) == false ) {
+            olp.add( t.pointCA_ );
+            outlineStr_ += startindex + "ca,";
+        }
+
+        // 0まで戻る。
+        if( t.myParentNumber_ > origin ) traceOrJumpBackward( t.myParentNumber_ - 1, origin, olp );
+
+        return olp;
+    }
+
+    // 同じポイントは二ついらない
+    public boolean exist( PointXY it, ArrayList<PointXY> inthis ){
+        for( int i=0; i<inthis.size(); i++ )
+         if( true == it.nearBy( inthis.get(i), 0.001f ) ) return true;
+
+        return false;
+    }
+
 
     //壁に右手をあてて洞窟を回る方式。
     public ArrayList<PointXY> getOutLinePoints( int start ){
@@ -807,48 +860,6 @@ public class TriangleList extends EditList implements Cloneable {
         }
 
         return olp;
-    }
-
-    public ArrayList<PointXY> traceOrJumpForward( int startindex, ArrayList<PointXY> olp ){
-        Triangle t = trilist_.get( startindex );
-
-        //フロート接続はリターン
-        if( t.isFloating() ) return olp;
-
-        //AB点を取る。すでにあったらキャンセル
-        if( exist( t.pointAB_, olp )  == false ) olp.add( t.pointAB_ );
-
-        // 再起呼び出しで派生方向に右手伝いにのびていく
-        if( t.isChildB_ == true ) traceOrJumpForward( t.childB_.myNumber_ - 1, olp );
-
-        //BC点を取る。すでにあったらキャンセル
-        if( exist( t.pointBC_, olp )  == false ) olp.add( t.pointBC_ );
-
-        if( t.isChildC_ == true ) traceOrJumpForward( t.childC_.myNumber_ - 1, olp );
-
-        traceOrJumpBackward( startindex, olp );
-
-        return olp;
-    }
-
-    public ArrayList<PointXY> traceOrJumpBackward( int startindex, ArrayList<PointXY> olp ){
-        Triangle t = trilist_.get( startindex );
-
-        //CA点を取る。すでにあったらキャンセル
-        if( exist( t.pointCA_, olp ) == false ) olp.add( t.pointCA_ );
-
-        // 0まで戻る。
-        if( t.myParentNumber_ > 0 ) traceOrJumpBackward( t.myParentNumber_ - 1, olp );
-
-        return olp;
-    }
-
-    // 同じポイントは二ついらない
-    public boolean exist( PointXY it, ArrayList<PointXY> inthis ){
-        for( int i=0; i<inthis.size(); i++ )
-         if( true == it.nearBy( inthis.get(i), 0.001f ) ) return true;
-
-        return false;
     }
 
     public ArrayList<PointXY> goAroundCaveBySetRightHand( int start, int endnum ){
