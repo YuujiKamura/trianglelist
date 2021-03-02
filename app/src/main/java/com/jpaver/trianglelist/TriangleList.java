@@ -797,6 +797,9 @@ public class TriangleList extends EditList implements Cloneable {
     public ArrayList<PointXY> traceOrJumpBackward( int startindex, int origin,  ArrayList<PointXY> olp ){
         Triangle t = trilist_.get( startindex );
 
+        // C派生（ふたつとも接続）していたらそっちに伸びる、フロート接続だったり、すでに持っている点を見つけたらスルー
+        if( t.isChildB_ == true &&  t.isChildC_ == true ) if( exist( t.childC_.pointCA_, olp ) == false && !t.childC_.isFloating() ) traceOrJumpForward( t.childC_.myNumber_ - 1, origin, olp );
+
         //CA点を取る。すでにあったらキャンセル
         if( exist( t.pointCA_, olp ) == false ) {
             olp.add( t.pointCA_ );

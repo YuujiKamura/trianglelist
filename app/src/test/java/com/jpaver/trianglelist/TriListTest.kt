@@ -34,21 +34,31 @@ class TriListTest {
     fun testTriListOutline(){
         val trilist = TriangleList()
         // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
-        trilist.add( Triangle(5f, 5f, 5f))
-        trilist.add( 1, 1,5f, 5f, 5f )
-        trilist.add( 2, 5,6f, 5f, 5f )
-        trilist.add( 3, 1,5f, 5f )
-        trilist.add( 4, 9,5f,5f, 5f )
-        trilist.add( 5, 9,5f,5f, 5f )
+        trilist.add( Triangle(8f, 6f, 8f))//1
+        trilist.add( 1, 2,9f,8f )//2
+        trilist.add( 2, 1,2f,9f )//3
+        trilist.add( 3, 2,2f,9f )//4
+        trilist.add( 4, 2,9f,2f )//5
+        trilist.add( 5, 1,5f,5f )//6
+        trilist.add( 6, 2,5f,2f )//7
+        trilist.add( 6, 1,2f,5f )//8
+        trilist.add( 8, 2,5f,5f )//9
+        trilist.add( 9, 1,2f,5f )//10
+        trilist.add( 9, 2,5f,5f )//11
+
+        trilist.setChildsToAllParents()
 
         val op = ArrayList<PointXY>()
         val tlop = trilist.traceOrJumpForward( 0, 0, op ) //getOutLinePoints( 0 )
-        assertEquals( 7, tlop.size )
-        assertEquals( "0ab,1bc,2ab,3bc,3ca,2ca,0ca,", trilist.outlineStr_ )
+//        assertEquals( 12, tlop.size )
+//        assertEquals( "0ab,1bc,2ab,3bc,3ca,2ca,0ca,", trilist.outlineStr_ )
 
-        val aop = trilist.getOutlineLists( )
-        assertEquals( 2, aop.size )
-        assertEquals( "0ab,1bc,2ab,3bc,3ca,2ca,0ca,4ab,4bc,4ca,", trilist.outlineStr_ )
+ //       val tlop = trilist.traceOrJumpBackward( 10, 0, op ) //getOutLinePoints( 0 )
+
+
+//        val aop = trilist.getOutlineLists( )
+  //      assertEquals( 2, aop.size )
+    //    assertEquals( "0ab,1bc,2ab,3bc,3ca,2ca,0ca,4ab,4bc,4ca,", trilist.outlineStr_ )
 
     }
 
