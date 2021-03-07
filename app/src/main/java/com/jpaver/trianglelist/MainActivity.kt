@@ -1,9 +1,11 @@
 package com.jpaver.trianglelist
 
+import android.Manifest
 import android.app.AlertDialog
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.content.res.Resources
 import android.graphics.Color
@@ -19,7 +21,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
-import android.view.View.*
+import android.view.View.INVISIBLE
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import androidx.annotation.RequiresApi
@@ -36,28 +38,67 @@ import java.time.LocalDate
 import java.util.*
 
 
-data class ResStr (
+data class ResStr(
     // 文字列リソースをstringに変換して保持する。
-    var tTitle_ : String = "",
-    var eRName_ : String = "",
-    var tCname_ : String = "",
-    var tDtype_ : String = "",
-    var tDname_ : String = "",
-    var tScale_ : String = "",
-    var tNum_ : String = "",
-    var tDateHeader_ : String = "",
-    var tDate_ : String = "",
-    var tAname_ : String = "",
-    var menseki_ : String = "",
-    var mTitle_ : String = "",
-    var mCname_ : String = "",
-    var mSyoukei_ : String = "",
-    var mGoukei_ : String = "",
-    var tCredit_ : String = ""
+    var tTitle_: String = "",
+    var eRName_: String = "",
+    var tCname_: String = "",
+    var tDtype_: String = "",
+    var tDname_: String = "",
+    var tScale_: String = "",
+    var tNum_: String = "",
+    var tDateHeader_: String = "",
+    var tDate_: String = "",
+    var tAname_: String = "",
+    var menseki_: String = "",
+    var mTitle_: String = "",
+    var mCname_: String = "",
+    var mSyoukei_: String = "",
+    var mGoukei_: String = "",
+    var tCredit_: String = ""
 )
 
 class MainActivity : AppCompatActivity(),
         MyDialogFragment.NoticeDialogListener {
+
+    private val PERMISSIONS = arrayOf(
+        Manifest.permission.WRITE_EXTERNAL_STORAGE
+    )
+    private val REQUEST_PERMISSION = 1000
+
+    private fun checkPermission() {
+        if (isGranted()) {
+            //setEvent()
+        } else {
+            requestPermissions(PERMISSIONS, REQUEST_PERMISSION)
+        }
+    }
+
+    private fun isGranted(): Boolean {
+        for (i in 0 until PERMISSIONS.size) {
+            //初回はPERMISSION_DENIEDが返る
+            if (checkSelfPermission(PERMISSIONS[i]) != PackageManager.PERMISSION_GRANTED) {
+                //一度リクエストが拒絶された場合にtrueを返す．初回，または「今後表示しない」が選択された場合，falseを返す．
+                if (shouldShowRequestPermissionRationale(PERMISSIONS[i])) {
+                    Toast.makeText(this, "アプリを実行するためには許可が必要です", Toast.LENGTH_LONG).show()
+                }
+                return false
+            }
+        }
+        return true
+    }
+
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String?>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_PERMISSION) {
+            checkPermission()
+        }
+    }
 
     var TriLists_ = ArrayList<TriangleList>()
 
@@ -397,7 +438,7 @@ class MainActivity : AppCompatActivity(),
         myDeductionList = DeductionList()
 
         fab_replace.setOnClickListener { view ->
-            fabReplace( dParams_, false)
+            fabReplace(dParams_, false)
 /*
             if(deductionMode_ == false) {
                 if( findViewById<TextView>(R.id.editText2).getText().toString() == "" )
@@ -429,17 +470,17 @@ class MainActivity : AppCompatActivity(),
                 dParams_.pts = my_view.getTapPoint()
                 dParams_.pt = myDeductionList.get(dParams_.n).point
                 var ded = myDeductionList.get(dParams_.n)
-                val tp = my_view.getTapPoint().scale( PointXY(0f, 0f ), 1 / mScale, -1 / mScale )
+                val tp = my_view.getTapPoint().scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
                 if( validDeduction(dParams_) == true ) {// あまり遠い時はスルー
                     myDeductionList.replace(dParams_.n, dParams_)
 //                    EditorReset(getList(myDeductionMode),getList(myDeductionMode).length())
-                    my_view.setDeductionList(myDeductionList, mScale )
+                    my_view.setDeductionList(myDeductionList, mScale)
                 }
             }
             else{
                 var tri = myTriangleList.get(dParams_.n)
-                var tp = my_view.getTapPoint().scale( PointXY(0f, 0f ), 1 / mScale, -1 / mScale )
-                if( tp.lengthTo( tri.pointCenter_ ) < 10f ){ // あまり遠い時はスルー
+                var tp = my_view.getTapPoint().scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
+                if( tp.lengthTo(tri.pointCenter_) < 10f ){ // あまり遠い時はスルー
                     tri.pointNumber_ = tp
                     tri.isPointNumberMoved_ = true
                     my_view.setTriangleList(myTriangleList, mScale)
@@ -447,7 +488,11 @@ class MainActivity : AppCompatActivity(),
             }
 
             my_view.invalidate()
-            if( BuildConfig.BUILD_TYPE == "debug" ) Toast.makeText(this, " Test Done.", Toast.LENGTH_SHORT).show()
+            if( BuildConfig.BUILD_TYPE == "debug" ) Toast.makeText(
+                this,
+                " Test Done.",
+                Toast.LENGTH_SHORT
+            ).show()
 
             AutoSaveCSV()
         }
@@ -497,7 +542,7 @@ class MainActivity : AppCompatActivity(),
                 myTriangleList.rotateCurrentTriLCR()
                 //myTriangleList.resetTriConnection(myTriangleList.lastTapNum_, );
                 my_view.setTriangleList(myTriangleList, mScale)
-                my_view.resetView( my_view.lstp() )
+                my_view.resetView(my_view.lstp())
 
                 AutoSaveCSV()
             }
@@ -516,7 +561,7 @@ class MainActivity : AppCompatActivity(),
                 if (len > 0) {
                     getList(deductionMode_).remove(len)
                     //my_view.removeTriangle()
-                    my_view.setDeductionList(myDeductionList, mScale )
+                    my_view.setDeductionList(myDeductionList, mScale)
                     my_view.setTriangleList(myTriangleList, mScale)
 
                     EditorClear(getList(deductionMode_), getList(deductionMode_).size())
@@ -581,15 +626,15 @@ class MainActivity : AppCompatActivity(),
                 myTriangleList.rotate(PointXY(0f, 0f), 5f)
                 myDeductionList.rotate(PointXY(0f, 0f), -5f)
                 my_view.setTriangleList(myTriangleList, mScale)
-                my_view.setDeductionList(myDeductionList, mScale )
+                my_view.setDeductionList(myDeductionList, mScale)
                 my_view.resetViewToLSTP()
                 printDebugConsole()
             }
             // ded rotate
             else {
                 val vdltip = my_view.myDeductionList.lastTapIndex_+1
-                myDeductionList.get( vdltip ).rotateShape( myDeductionList.get( vdltip ).point, -5f)
-                my_view.setDeductionList(myDeductionList, mScale )
+                myDeductionList.get(vdltip).rotateShape(myDeductionList.get(vdltip).point, -5f)
+                my_view.setDeductionList(myDeductionList, mScale)
                 my_view.invalidate()
             }
             AutoSaveCSV()
@@ -600,7 +645,7 @@ class MainActivity : AppCompatActivity(),
                 myTriangleList.rotate(PointXY(0f, 0f), -5f)
                 myDeductionList.rotate(PointXY(0f, 0f), 5f)
                 my_view.setTriangleList(myTriangleList, mScale)
-                my_view.setDeductionList(myDeductionList, mScale )
+                my_view.setDeductionList(myDeductionList, mScale)
                 my_view.resetViewToLSTP()
                 printDebugConsole()
                 AutoSaveCSV()
@@ -608,8 +653,8 @@ class MainActivity : AppCompatActivity(),
             // ded rotate
             else {
                 val vdltip = my_view.myDeductionList.lastTapIndex_+1
-                myDeductionList.get( vdltip ).rotateShape( myDeductionList.get( vdltip ).point, 5f)
-                my_view.setDeductionList(myDeductionList, mScale )
+                myDeductionList.get(vdltip).rotateShape(myDeductionList.get(vdltip).point, 5f)
+                my_view.setDeductionList(myDeductionList, mScale)
                 my_view.invalidate()
             }
             AutoSaveCSV()
@@ -661,13 +706,20 @@ class MainActivity : AppCompatActivity(),
             //CreateNew()
 
             findViewById<TextView>(R.id.editText2).setText("") // reset
-            fabReplace( Params("", "", 1, 7f, 7f, 7f, 0, 0, ), true )
+            fabReplace(Params("", "", 1, 7f, 7f, 7f, 0, 0), true)
             findViewById<TextView>(R.id.editText2).setText("6f") // add
-            fabReplace( Params("", "", 2, 7f, 6f, 6f, 1, 2, ), true )
+            fabReplace(Params("", "", 2, 7f, 6f, 6f, 1, 2), true)
 
             findViewById<TextView>(R.id.editText).setText("0.23f") // add
             deductionMode_ = true
-            fabReplace( Params("仕切弁", "Circle", 1, 0.23f, 0f, 0f, 1, 0, PointXY( 1f, 0f ), PointXY( 0f, 0f ) ), true )
+            fabReplace(
+                Params(
+                    "仕切弁", "Circle", 1, 0.23f, 0f, 0f, 1, 0, PointXY(1f, 0f), PointXY(
+                        0f,
+                        0f
+                    )
+                ), true
+            )
             deductionMode_ = false
 
 
@@ -676,15 +728,15 @@ class MainActivity : AppCompatActivity(),
 
     }
 
-    fun fabReplace( params: Params, useit: Boolean ){
+    fun fabReplace(params: Params, useit: Boolean){
         val editor = myEditor
         val dedmode = deductionMode_
         val editlist = getList(deductionMode_)
 
         var readedFirst  = Params()
         var readedSecond = Params()
-        myEditor.ReadLineTo( readedFirst, myELFirst )
-        myEditor.ReadLineTo( readedSecond, myELSecond )
+        myEditor.ReadLineTo(readedFirst, myELFirst)
+        myEditor.ReadLineTo(readedSecond, myELSecond)
         if( useit == true ){
             readedFirst = params
             readedSecond = params
@@ -698,31 +750,35 @@ class MainActivity : AppCompatActivity(),
         var isSucceed = false
 
         if( dedmode == false ) {
-            if( strTopB == "" ) isSucceed = resetTrianglesBy( readedSecond )
+            if( strTopB == "" ) isSucceed = resetTrianglesBy(readedSecond)
             else
                 if( strTopC == "" && useit == false ) return
-                else isSucceed = addTriangleBy( readedFirst )
+                else isSucceed = addTriangleBy(readedFirst)
 
         } else { // if in deduction mode
             if( strTopA == "" ) {
-                isSucceed = resetDeductionsBy( readedSecond )
-                usedDedPoint = my_view.myDeductionList.get( readedSecond.n ).point
+                isSucceed = resetDeductionsBy(readedSecond)
+                usedDedPoint = my_view.myDeductionList.get(readedSecond.n).point
             }
             else{
-                addDeductionBy( readedFirst )
-                usedDedPoint = my_view.myDeductionList.get( readedFirst.n ).point
+                addDeductionBy(readedFirst)
+                usedDedPoint = my_view.myDeductionList.get(readedFirst.n).point
             }
         }
 
         EditorClear(editlist, editlist.getCurrent())
         my_view.setTriangleList(myTriangleList, mScale)
-        my_view.setDeductionList(myDeductionList, mScale )
+        my_view.setDeductionList(myDeductionList, mScale)
         printDebugConsole()
         AutoSaveCSV()
         setTitles()
-        if( dedmode == false ) my_view.resetView( my_view.lstp() )
-        if( dedmode == true  ) my_view.resetView( usedDedPoint.scale( PointXY( 0f, 0f ), 1f, -1f ) )//resetViewToTP()
-        if( BuildConfig.BUILD_TYPE == "debug" ) Toast.makeText(this, isSucceed.toString(), Toast.LENGTH_SHORT).show()
+        if( dedmode == false ) my_view.resetView(my_view.lstp())
+        if( dedmode == true  ) my_view.resetView(usedDedPoint.scale(PointXY(0f, 0f), 1f, -1f))//resetViewToTP()
+        if( BuildConfig.BUILD_TYPE == "debug" ) Toast.makeText(
+            this,
+            isSucceed.toString(),
+            Toast.LENGTH_SHORT
+        ).show()
     }
 
     fun moveTrilist(){
@@ -738,7 +794,7 @@ class MainActivity : AppCompatActivity(),
         if (validDeduction(params) == true) {
 
             myDeductionList.add(params)
-            my_view.setDeductionList(myDeductionList, mScale )
+            my_view.setDeductionList(myDeductionList, mScale)
             lastParams_ = params
             return true
         }
@@ -863,8 +919,8 @@ class MainActivity : AppCompatActivity(),
 
 
         if(deductionMode_ == true ){
-            my_view.myDeductionList.setScale( my_view.myScale )
-            my_view.myDeductionList.getTapIndex( my_view.localPressPoint )
+            my_view.myDeductionList.setScale(my_view.myScale)
+            my_view.myDeductionList.getTapIndex(my_view.localPressPoint)
 
             if ( my_view.myDeductionList.lastTapIndex_ > -1 ) {
                 val tapIndex = my_view.myDeductionList.lastTapIndex_+1
@@ -1101,11 +1157,66 @@ class MainActivity : AppCompatActivity(),
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
 
-        rStr_ = ResStr( getString( R.string.tenkai_title ), getString( R.string.rosen1 ), getString( R.string.tenkai_koujimei ), getString( R.string.tenkai_zumenmei ), getString( R.string.tenkai_rosenmei ), getString( R.string.tenkai_syukusyaku ), getString( R.string.tenkai_zuban ), getString( R.string.tenkai_sakuseibi ), getString( R.string.tenkai_nengappi ), getString( R.string.tenkai_sekousya ), getString( R.string.menseki ), getString( R.string.menseki_title ), getString( R.string.menseki_koujimei ), getString( R.string.menseki_syoukei ), getString( R.string.menseki_goukei ), getString( R.string.credit ) )
-        titleTri_ = TitleParams( R.string.menseki, R.string.editor_number, R.string.editor_sokuten, R.string.editor_lA, R.string.editor_lB, R.string.editor_lC, R.string.editor_parent, R.string.editor_setuzoku )
-        titleDed_ = TitleParams( R.string.menseki, R.string.editor_number, R.string.editor_name, R.string.editor_lA, R.string.editor_lB, R.string.editor_lC, R.string.editor_syozoku, R.string.editor_form )
-        titleTriStr_ = TitleParamStr( getString( titleTri_.type ), getString( titleTri_.n ), getString( titleTri_.name ), getString( titleTri_.a ), getString( titleTri_.b ), getString( titleTri_.c ), getString( titleTri_.pn ), getString( titleTri_.pl ) )
-        titleDedStr_ = TitleParamStr( getString( titleDed_.type ), getString( titleDed_.n ), getString( titleDed_.name ), getString( titleDed_.a ), getString( titleDed_.b ), getString( titleDed_.c ), getString( titleDed_.pn ), getString( titleDed_.pl ) )
+        rStr_ = ResStr(
+            getString(R.string.tenkai_title),
+            getString(R.string.rosen1),
+            getString(R.string.tenkai_koujimei),
+            getString(
+                R.string.tenkai_zumenmei
+            ),
+            getString(R.string.tenkai_rosenmei),
+            getString(R.string.tenkai_syukusyaku),
+            getString(R.string.tenkai_zuban),
+            getString(
+                R.string.tenkai_sakuseibi
+            ),
+            getString(R.string.tenkai_nengappi),
+            getString(R.string.tenkai_sekousya),
+            getString(R.string.menseki),
+            getString(
+                R.string.menseki_title
+            ),
+            getString(R.string.menseki_koujimei),
+            getString(R.string.menseki_syoukei),
+            getString(R.string.menseki_goukei),
+            getString(
+                R.string.credit
+            )
+        )
+        titleTri_ = TitleParams(
+            R.string.menseki,
+            R.string.editor_number,
+            R.string.editor_sokuten,
+            R.string.editor_lA,
+            R.string.editor_lB,
+            R.string.editor_lC,
+            R.string.editor_parent,
+            R.string.editor_setuzoku
+        )
+        titleDed_ = TitleParams(
+            R.string.menseki,
+            R.string.editor_number,
+            R.string.editor_name,
+            R.string.editor_lA,
+            R.string.editor_lB,
+            R.string.editor_lC,
+            R.string.editor_syozoku,
+            R.string.editor_form
+        )
+        titleTriStr_ = TitleParamStr(
+            getString(titleTri_.type), getString(titleTri_.n), getString(
+                titleTri_.name
+            ), getString(titleTri_.a), getString(titleTri_.b), getString(titleTri_.c), getString(
+                titleTri_.pn
+            ), getString(titleTri_.pl)
+        )
+        titleDedStr_ = TitleParamStr(
+            getString(titleDed_.type), getString(titleDed_.n), getString(
+                titleDed_.name
+            ), getString(titleDed_.a), getString(titleDed_.b), getString(titleDed_.c), getString(
+                titleDed_.pn
+            ), getString(titleDed_.pl)
+        )
 
         val filepath = this.filesDir.absolutePath + "/" + "myLastTriList.csv"
         val file: File = File(filepath)
@@ -1116,6 +1227,8 @@ class MainActivity : AppCompatActivity(),
         //fab.setBackgroundTintList(getColorStateList(R.color.colorLime))
         fab_replace.setBackgroundTintList(getColorStateList(R.color.colorLime))
         setEditNameAdapter(sNumberList)
+
+        checkPermission()
 
     }
 
@@ -1138,7 +1251,7 @@ class MainActivity : AppCompatActivity(),
         setTitles()
 
         my_view.setTriangleList(trilist, mScale)
-        my_view.setDeductionList(myDeductionList, mScale )
+        my_view.setDeductionList(myDeductionList, mScale)
         my_view.myTriangleList.lastTapNum_ = my_view.myTriangleList.size()
         my_view.resetViewToLSTP()
 
@@ -1200,6 +1313,7 @@ class MainActivity : AppCompatActivity(),
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
+
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
@@ -1212,6 +1326,7 @@ class MainActivity : AppCompatActivity(),
             R.id.action_save_csv -> {
                 fileType = "CSV"
                 var i: Intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
+                i.addCategory(Intent.CATEGORY_OPENABLE)
                 i.setType("text/csv")
                 i.putExtra(
                     Intent.EXTRA_TITLE,
@@ -1225,6 +1340,7 @@ class MainActivity : AppCompatActivity(),
             }
             R.id.action_load_csv -> {
                 var i: Intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
+                i.addCategory(Intent.CATEGORY_OPENABLE)
                 i.setType("text/csv")
                 i.putExtra(Intent.EXTRA_TITLE, ".csv")
                 startActivityForResult(i, 2)
@@ -1234,12 +1350,12 @@ class MainActivity : AppCompatActivity(),
 
             R.id.action_save_dxf -> {
 
-                val hTstart = getString( R.string.inputtnum )
+                val hTstart = getString(R.string.inputtnum)
                 val editText5 = EditText(this)
                 editText5.hint = hTstart
                 val filter2 = arrayOf(InputFilter.LengthFilter(3))
                 editText5.setFilters(filter2)
-                editText5.setText( dxfStartNumber_.toString() )
+                editText5.setText(dxfStartNumber_.toString())
 
                 AlertDialog.Builder(this)
                     .setTitle("Save DXF")
@@ -1252,7 +1368,10 @@ class MainActivity : AppCompatActivity(),
                             fileType = "DXF"
                             var i: Intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
                             i.setType("text/dxf")
-                            i.putExtra(Intent.EXTRA_TITLE, rosenname_ + " " + LocalDate.now() + ".dxf")
+                            i.putExtra(
+                                Intent.EXTRA_TITLE,
+                                rosenname_ + " " + LocalDate.now() + ".dxf"
+                            )
                             startActivityForResult(i, 1)
 
                         })
@@ -1264,11 +1383,11 @@ class MainActivity : AppCompatActivity(),
 
             R.id.action_save_pdf -> {
                 // 入力ヒントの表示
-                val hCname = getString( R.string.inputcname )
-                val hSpace = getString( R.string.space )
-                val hRname = getString( R.string.inputdname )
-                val hAname = getString( R.string.inputaname )
-                val hRnum = getString( R.string.inputdnum )
+                val hCname = getString(R.string.inputcname)
+                val hSpace = getString(R.string.space)
+                val hRname = getString(R.string.inputdname)
+                val hAname = getString(R.string.inputaname)
+                val hRnum = getString(R.string.inputdnum)
                 val editText = EditText(this)
                 editText.hint = hCname + " " + hSpace
                 val filter = arrayOf(InputFilter.LengthFilter(50))
@@ -1382,7 +1501,7 @@ class MainActivity : AppCompatActivity(),
                 )
                 if (fileType == "DXF") saveDXF(writer)
                 if (fileType == "CSV") saveCSV(writer)
-                if (fileType == "PDF") savePDF(getContentResolver().openOutputStream(title)!!, true )
+                if (fileType == "PDF") savePDF(getContentResolver().openOutputStream(title)!!, true)
 
                 AutoSaveCSV() // オートセーブ
             } catch (e: IOException) {
@@ -1410,17 +1529,17 @@ class MainActivity : AppCompatActivity(),
 
     fun makeRStr() : ResStr {
         return ResStr(
-            getString( R.string.tenkai_title ),
+            getString(R.string.tenkai_title),
             koujiname_,
-            getString( R.string.tenkai_zumenmei ),
+            getString(R.string.tenkai_zumenmei),
             rosenname_,
-            getString( R.string.tenkai_nengappi ),
+            getString(R.string.tenkai_nengappi),
             gyousyaname_,
-            getString( R.string.menseki ),
-            getString( R.string.menseki_title ),
-            getString( R.string.menseki_koujimei ),
-            getString( R.string.menseki_syoukei ),
-            getString( R.string.menseki_goukei ),
+            getString(R.string.menseki),
+            getString(R.string.menseki_title),
+            getString(R.string.menseki_koujimei),
+            getString(R.string.menseki_syoukei),
+            getString(R.string.menseki_goukei),
         )
     }
 
@@ -1430,7 +1549,11 @@ class MainActivity : AppCompatActivity(),
             myTriangleList
         )
 
-        myWriter.startNewPage(myWriter.sizeX_.toInt(), myWriter.sizeY_.toInt(), myWriter.currentPageIndex_)
+        myWriter.startNewPage(
+            myWriter.sizeX_.toInt(),
+            myWriter.sizeY_.toInt(),
+            myWriter.currentPageIndex_
+        )
         myWriter.initPaints()
         myWriter.titleTri_ = titleTriStr_
         myWriter.titleDed_ = titleDedStr_
@@ -1460,7 +1583,7 @@ class MainActivity : AppCompatActivity(),
         )
 
         // translate back by view pointer
-        myWriter.translate( myWriter.currentCanvas_, -viewPointer.x, -viewPointer.y )
+        myWriter.translate(myWriter.currentCanvas_, -viewPointer.x, -viewPointer.y)
         myWriter.writeTitleFrame(myWriter.currentCanvas_)
 
         myWriter.close()
@@ -1497,7 +1620,7 @@ class MainActivity : AppCompatActivity(),
 
     fun AutoSavePDF(){
         try {
-            savePDF(openFileOutput("myLastTriList.pdf", Context.MODE_PRIVATE ), false )
+            savePDF(openFileOutput("myLastTriList.pdf", Context.MODE_PRIVATE), false)
         } catch (e: IOException) {
             e.printStackTrace()
         }
@@ -1543,7 +1666,7 @@ class MainActivity : AppCompatActivity(),
         for (index in 1 .. myTriangleList.size()){
             var mt: Triangle = myTriangleList.getTriangle(index)
             var pt: PointXY = mt.pointNumber_
-            val cp = parentBCtoCParam( mt.parentBC, mt.lengthAforce_, mt.cParam_ )
+            val cp = parentBCtoCParam(mt.parentBC, mt.lengthAforce_, mt.cParam_)
             //if( mt.isPointNumberMoved_ == true ) pt.scale(PointXY(0f,0f),1f,-1f)
             writer.write(
                 mt.getMyNumber_().toString() + ", " +           //0
@@ -1574,7 +1697,7 @@ class MainActivity : AppCompatActivity(),
         writer.newLine()
         writer.write("ListScale, " + myTriangleList.getScale())
         writer.newLine()
-        writer.write("TextSize, " + my_view.ts_ )
+        writer.write("TextSize, " + my_view.ts_)
         writer.newLine()
 
         for(index in 1 .. myDeductionList.size()){
@@ -1610,7 +1733,7 @@ class MainActivity : AppCompatActivity(),
         return pl
     }
 
-    fun parentBCtoCParam(pbc: Int, lenA: Float, cp: ConneParam ) : ConneParam{
+    fun parentBCtoCParam(pbc: Int, lenA: Float, cp: ConneParam) : ConneParam{
         when(pbc){
             1 -> return ConneParam(1, 0, 2, 0f)//B
             2 -> return ConneParam(2, 0, 2, 0f)//C
@@ -1711,7 +1834,7 @@ class MainActivity : AppCompatActivity(),
                 continue
             }
             if(chunks[0]!! == "TextSize") {
-                my_view.setAllTextSize( chunks[1]!!.toFloat() )
+                my_view.setAllTextSize(chunks[1]!!.toFloat())
                 continue
             }
             if(chunks[0]!! == "Deduction"){
@@ -1759,7 +1882,14 @@ class MainActivity : AppCompatActivity(),
                 trilist.getTriangle(trilist.size()).myParentBC_ = chunks[5]!!.toInt()
             }
             else{
-                val cp = parentBCtoCParam(chunks[5]!!.toInt(), chunks[1]!!.toFloat(), ConneParam( 0, 0, 0, 0f ) )
+                val cp = parentBCtoCParam(
+                    chunks[5]!!.toInt(), chunks[1]!!.toFloat(), ConneParam(
+                        0,
+                        0,
+                        0,
+                        0f
+                    )
+                )
 
                 trilist.add(
                     Triangle(
@@ -1827,7 +1957,7 @@ class MainActivity : AppCompatActivity(),
 
     fun setTitles(){
         findViewById<EditText>(R.id.rosenname).setText(rosenname_)
-        setTitle( rStr_.menseki_ + ": ${myTriangleList.getArea() - myDeductionList.getArea()} m^2");
+        setTitle(rStr_.menseki_ + ": ${myTriangleList.getArea() - myDeductionList.getArea()} m^2");
     }
 
     fun saveDXF(writer: BufferedWriter) :BufferedWriter{

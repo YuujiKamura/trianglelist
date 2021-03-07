@@ -724,6 +724,16 @@ class MyView(context: Context?, attrs: AttributeSet?) :
             canvas.translate(myTriangleList.center.x, -myTriangleList.center.y)
         }
 
+        // canvas を大きくしてより小さいテキストを描画するテスト
+        // textsizeが小さすぎて字間が崩れているわけではないのか
+        val paintmin = Paint()
+        paintmin.textSize =20f
+//        paintmin.fontSpacing = 0.5f
+        paintmin.color = Gray_
+        canvas.scale( 4f,4f )
+        canvas.drawText( "Text minimalize test", 0f, 0f, paintmin )
+        canvas.scale( 0.25f,0.25f )
+
 
         //scale back
         myScale /= scaleFactor
