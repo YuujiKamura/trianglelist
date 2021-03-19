@@ -727,12 +727,21 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         // canvas を大きくしてより小さいテキストを描画するテスト
         // textsizeが小さすぎて字間が崩れているわけではないのか
         val paintmin = Paint()
-        paintmin.textSize =20f
+        paintmin.textSize = 10f
 //        paintmin.fontSpacing = 0.5f
         paintmin.color = Gray_
-        canvas.scale( 4f,4f )
-        canvas.drawText( "Text minimalize test", 0f, 0f, paintmin )
-        canvas.scale( 0.25f,0.25f )
+
+        paintmin.letterSpacing = 0.05f
+        //canvas.drawText( "Text minimalize test", 0f, -60f, paintmin )
+
+
+//        canvas.scale( 4f,4f )
+
+    //    paintmin.letterSpacing = 0.5f
+  //      canvas.drawText( "Text minimalize test", 0f, 0f, paintmin )
+
+      //  canvas.scale( 0.25f,0.25f )
+        //canvas.drawText( "Text minimalize test", 0f, 30f, paintmin )
 
 
         //scale back
