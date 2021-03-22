@@ -355,18 +355,9 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
 
         val tss = 0.2f
 
-        writeDXFText(wrtr, rStr_.tCname_, PointXY(32f, 6.7f), 7, tss, 1)
-        writeDXFText(wrtr, rStr_.tDtype_, PointXY(32f, 5.7f), 7, tss, 1)
-        writeDXFText(wrtr, rStr_.tDname_, PointXY(32f, 4.7f), 7, tss, 1)
-        writeDXFText(wrtr, rStr_.tDateHeader_, PointXY(32f, 3.7f), 7, tss, 1)
-        writeDXFText(wrtr, rStr_.tScale_, PointXY(32f, 2.7f), 7, tss, 1)
-        writeDXFText(wrtr, rStr_.tNum_, PointXY(37f, 2.7f), 7, tss, 1)
-        writeDXFText(wrtr, rStr_.tAname_, PointXY(32f, 1.7f), 7, tss, 1)
 
         val st = scale_*100f
         val strx = 33.5f
-
-        //writeDXFText(wrtr, koujiname_, PointXY(strx, 6.7f), 7, tss, 0)
 
         val xr = strx
         val yb = 6.7f
@@ -374,6 +365,16 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
         val uw = 160f
         val tt = 0
         val ofs = 3f
+
+        writeDXFText(wrtr, rStr_.tCname_, PointXY(32f, 6.7f), 7, tss, 1)
+        writeDXFText(wrtr, rStr_.tDtype_, PointXY(32f, 5.7f), 7, tss, 1)
+        writeDXFText(wrtr, rStr_.tDname_, PointXY(32f, 4.7f), 7, tss, 1)
+        writeDXFText(wrtr, rStr_.tDateHeader_, PointXY(32f, 3.7f), 7, tss, 1)
+        writeDXFText(wrtr, rStr_.tScale_, PointXY(32f, 2.7f), 7, tss, 1)
+        writeDXFText(wrtr, rStr_.tNum_, PointXY(37f, 2.7f), 7, tss, 1)
+        writeDXFText(wrtr, rStr_.tAname_, PointXY(32f, 1.7f), 7, tss, 1)
+        writeDXFText(wrtr, rStr_.tCredit_, PointXY(7f, 1f), 7, tss, 1 )
+
 
         if( koujiname_.length > 20 ) {
             if( koujiname_.contains(" ") ){

@@ -423,7 +423,7 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
         writeText( rStr_.tScale_, PointXY(xr-kt, yb-30f+ofs), 1f, 7, 8f, 1 )
         writeText( rStr_.tNum_, PointXY(xr-75, yb-30f+ofs), 1f, 7, 8f, 1 )
         writeText( rStr_.tAname_, PointXY(xr-kt, yb-10f+ofs), 1f, 7, 8f, 1 )
-        writeText( credit, PointXY(50f, yb+10f), 1f, 7, 7f, 0 )
+        writeText( rStr_.tCredit_, PointXY(50f, yb+10f), 1f, 7, 7f, 0 )
 
 
         if( koujiname_.length > 20 ) {
