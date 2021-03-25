@@ -761,9 +761,10 @@ class MainActivity : AppCompatActivity(),
                 usedDedPoint = my_view.myDeductionList.get(readedSecond.n).point
             }
             else{
-                addDeductionBy(readedFirst)
+                isSucceed = addDeductionBy(readedFirst)
                 usedDedPoint = my_view.myDeductionList.get(readedFirst.n).point
             }
+            findViewById<EditText>(R.id.editName1).requestFocus()
         }
 
         EditorClear(editlist, editlist.getCurrent())

@@ -174,7 +174,7 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
 
         //引き出し矢印線の描画
         if( tri.isCollide(tri.pointNumber_) == false ){
-            val pcOffsetToN = pc//.offset(pn, circleSize)
+            val pcOffsetToN = pc.offset(pn, circleSize)
             val pnOffsetToC = pn.offset(pc, circleSize)
             val arrowTail = pcOffsetToN.offset(pn, pcOffsetToN.lengthTo(pnOffsetToC) * 0.7f).rotate(pcOffsetToN, 5f)
 

@@ -11,7 +11,7 @@ open class EditList {
     open fun remove(i:Int) {}
 
     open fun size() :Int { return 0 }
-    open fun get(i: Int) :EditObject { return EditObject() }
+    open fun get(number: Int) :EditObject { return EditObject() }
     open fun getArea(): Float { return 0f }
 }
 

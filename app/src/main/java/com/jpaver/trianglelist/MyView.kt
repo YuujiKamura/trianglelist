@@ -550,7 +550,8 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     fun drawShadowTriangle( canvas: Canvas, myTriangleList: TriangleList ){
         if( isPrintPDF_ == true || myTriangleList.lastTapSide_ < 1 || myTriangleList.isDoubleTap_ == false ) return
 
-        val shadowParent = myTriangleList.get(i = myTriangleList.lastTapNum_ )
+        if( myTriangleList.lastTapNum_ < 1 ) myTriangleList.lastTapNum_ = myTriangleList.size()
+        val shadowParent = myTriangleList.get(number = myTriangleList.lastTapNum_ )
         val shadowTapSide = myTriangleList.lastTapSide_
 
         //番号選択されてるときは以下略。
@@ -1045,7 +1046,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         if( tri.isCollide(tri.pointNumber_) == false ){
             val pc = tri.pointCenter_
             val pn = tri.pointNumber_
-            val pcOffsetToN = pc//.offset(pn, circleSize)
+            val pcOffsetToN = pc.offset(pn, circleSize)
             val pnOffsetToC = pn.offset(pc, circleSize)
             val arrowTail = pcOffsetToN.offset(pn, pcOffsetToN.lengthTo(pnOffsetToC) * 0.7f).rotate(pcOffsetToN, 5f)
                 canvas.drawLine(

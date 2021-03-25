@@ -3,6 +3,6 @@
     <dimen name="fab_icon_size">30dp</dimen>
     <dimen name="design_fab_image_size" tools:override="true">@dimen/fab_icon_size</dimen>
     <dimen name="et_size">0dp</dimen>
-    <dimen name="top_btn">160dp</dimen>
+    <dimen name="top_btn">170dp</dimen>
 
 </resources>

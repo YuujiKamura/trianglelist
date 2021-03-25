@@ -8,22 +8,22 @@
 
     <TableLayout
         android:id="@+id/editTextLayout"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:importantForAutofill="noExcludeDescendants"
         android:gravity="center_horizontal"
         android:autoSizeTextType="uniform"
-        app:autoSizeMinTextSize="5sp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:autoSizeMinTextSize="4sp"
+        android:layout_gravity="top|start"
         android:shrinkColumns="0,2,3,4,5"
         tools:ignore="MissingConstraints">
 
         <TableRow
             android:id="@+id/LRosenName"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="1dp"
+            android:padding="0dp"
+            android:gravity="center_horizontal"
             >
             <EditText
                 android:id="@+id/rosenname"
@@ -40,8 +40,9 @@
 
         <TableRow
             android:id="@+id/LL1"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
             android:background="@drawable/border_green"
             android:padding="1dp"
             >
@@ -116,10 +117,11 @@
 
         </TableRow>
         <TableRow
-        android:id="@+id/LL2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:padding="2dp"
+            android:id="@+id/LL2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:padding="2dp"
             >
             <EditText
                 android:id="@+id/triNumber2"
@@ -210,10 +212,11 @@
 
         </TableRow>
         <TableRow
-        android:id="@+id/LL3"
-        android:layout_width="wrap_content"
-        android:layout_height="0dp"
-        android:padding="2dp"
+            android:id="@+id/LL3"
+            android:gravity="center_horizontal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="2dp"
             >
             <EditText
                 android:id="@+id/triNumber"
@@ -315,102 +318,103 @@
 
         </TableRow>
         <TableRow
-        android:id="@+id/LL4"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:padding="2dp"
+            android:id="@+id/LL4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="2dp"
             >
 
-        <EditText
-            android:id="@+id/triNumber3"
-            android:layout_width="wrap_content"
-            android:layout_height="@dimen/et_size"
-            android:gravity="center_horizontal"
-            android:inputType="number"
-            android:text="@string/first"
-            android:maxLength="5"
-            android:background="@drawable/border"
-            android:textSize="14sp"/>
+            <EditText
+                android:id="@+id/triNumber3"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/et_size"
+                android:gravity="center_horizontal"
+                android:inputType="number"
+                android:text="@string/first"
+                android:maxLength="5"
+                android:background="@drawable/border"
+                android:textSize="14sp"/>
 
             <AutoCompleteTextView
-            android:id="@+id/editName3"
-            android:layout_width="wrap_content"
-            android:layout_height="@dimen/et_size"
-            android:gravity="center_horizontal"
-            android:inputType="textAutoComplete|textAutoCorrect"
-            android:maxLength="15"
-            android:text=""
-            android:background="@drawable/border"
-            android:selectAllOnFocus="true"
-            android:textSize="14sp"/>
+                android:id="@+id/editName3"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/et_size"
+                android:gravity="center_horizontal"
+                android:inputType="textAutoComplete|textAutoCorrect"
+                android:maxLength="15"
+                android:text=""
+                android:background="@drawable/border"
+                android:selectAllOnFocus="true"
+                android:textSize="14sp"/>
 
-        <EditText
-            android:id="@+id/editText7"
-            android:layout_width="wrap_content"
-            android:layout_height="@dimen/et_size"
-            android:ems="2"
-            android:maxLength="5"
-            android:gravity="center_horizontal"
-            android:inputType="numberDecimal"
-            android:text="@string/zero"
-            android:background="@drawable/border"
-            android:nextFocusDown="@+id/editText8"
-            android:selectAllOnFocus="true"
-            android:textSize="14sp"/>
+            <EditText
+                android:id="@+id/editText7"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/et_size"
+                android:ems="2"
+                android:maxLength="5"
+                android:gravity="center_horizontal"
+                android:inputType="numberDecimal"
+                android:text="@string/zero"
+                android:background="@drawable/border"
+                android:nextFocusDown="@+id/editText8"
+                android:selectAllOnFocus="true"
+                android:textSize="14sp"/>
 
-        <EditText
-            android:id="@+id/editText8"
-            android:layout_width="wrap_content"
-            android:layout_height="@dimen/et_size"
-            android:ems="2"
-            android:maxLength="5"
-            android:gravity="center_horizontal"
-            android:inputType="numberDecimal"
-            android:text="@string/zero"
-            android:background="@drawable/border"
-            android:nextFocusDown="@+id/editText9"
-            android:selectAllOnFocus="true"
-            android:textSize="14sp"/>
+            <EditText
+                android:id="@+id/editText8"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/et_size"
+                android:ems="2"
+                android:maxLength="5"
+                android:gravity="center_horizontal"
+                android:inputType="numberDecimal"
+                android:text="@string/zero"
+                android:background="@drawable/border"
+                android:nextFocusDown="@+id/editText9"
+                android:selectAllOnFocus="true"
+                android:textSize="14sp"/>
 
-        <EditText
-            android:id="@+id/editText9"
-            android:layout_width="wrap_content"
-            android:layout_height="@dimen/et_size"
-            android:ems="2"
-            android:maxLength="5"
-            android:gravity="center_horizontal"
-            android:inputType="numberDecimal"
-            android:text="@string/zero"
-            android:background="@drawable/border"
-            android:selectAllOnFocus="true"
-            android:textSize="14sp"/>
+            <EditText
+                android:id="@+id/editText9"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/et_size"
+                android:ems="2"
+                android:maxLength="5"
+                android:gravity="center_horizontal"
+                android:inputType="numberDecimal"
+                android:text="@string/zero"
+                android:background="@drawable/border"
+                android:selectAllOnFocus="true"
+                android:textSize="14sp"/>
 
-        <EditText
-            android:id="@+id/ParentNumber3"
-            android:layout_width="wrap_content"
-            android:layout_height="@dimen/et_size"
-            android:gravity="center_horizontal"
-            android:inputType="number"
-            android:text="@string/zero"
-            android:maxLength="5"
-            android:background="@drawable/border"
-            android:selectAllOnFocus="true"
-            android:textSize="14sp"/>
+            <EditText
+                android:id="@+id/ParentNumber3"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/et_size"
+                android:gravity="center_horizontal"
+                android:inputType="number"
+                android:text="@string/zero"
+                android:maxLength="5"
+                android:background="@drawable/border"
+                android:selectAllOnFocus="true"
+                android:textSize="14sp"/>
 
-        <Spinner
-            android:id="@+id/editParent3"
-            android:layout_width="wrap_content"
-            android:layout_height="@dimen/et_size"
-            android:ems="3"
-            android:maxLength="5"
-            android:entries="@array/ParentList"
-            android:layout_gravity="center"
-            android:background="@drawable/border"
-            android:spinnerMode="dropdown"
-            android:textSize="14sp"/>
+            <Spinner
+                android:id="@+id/editParent3"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/et_size"
+                android:ems="3"
+                android:maxLength="5"
+                android:entries="@array/ParentList"
+                android:layout_gravity="center"
+                android:background="@drawable/border"
+                android:spinnerMode="dropdown"
+                android:textSize="14sp"/>
 
         </TableRow>
     </TableLayout>
+
 
     <com.jpaver.trianglelist.MyView
         android:id="@+id/my_view"

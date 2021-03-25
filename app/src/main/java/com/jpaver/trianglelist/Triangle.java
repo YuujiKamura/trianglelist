@@ -451,7 +451,8 @@ public class Triangle extends EditObject implements Cloneable {
         if(!validTriangle()) return null;
 
         calcPoints(pointCA_, myAngle_);
-        //autoSetDimAlign();
+
+        setDimAlignByChild();
 
         parent_.setChild(this, cParam.getSide() );
 
@@ -577,6 +578,13 @@ public class Triangle extends EditObject implements Cloneable {
         return this.clone();
     }
 
+    public void setDimAlignByChild(){
+        if( isChildB_ == false ) myDimAlignB_ = 1;
+        else myDimAlignB_ = 3;
+        if( isChildC_ == false ) myDimAlignC_ = 1;
+        else myDimAlignC_ = 3;
+    }
+
     Triangle set(Triangle parent, int A, float B, float C){
         if(parent == null) {
             resetLength(A,B,C);
@@ -699,7 +707,7 @@ public class Triangle extends EditObject implements Cloneable {
             set(parent_, cParam, lengthB_, myChild.lengthA_);
             childC_ = myChild.clone();
         }
-        //autoSetDimAlign();
+        setDimAlignByChild();
     }
 
     // reset by parent.
@@ -729,7 +737,7 @@ public class Triangle extends EditObject implements Cloneable {
             set(parent_, myParentBC_, lengthA_, lengthB_, myChild.lengthA_);
             childC_ = myChild.clone();
         }
-        //autoSetDimAlign();
+        setDimAlignByChild();
     }
 
     public void setDimAligns(int sa, int sb, int sc, int ha, int hb, int hc){
@@ -921,8 +929,8 @@ public class Triangle extends EditObject implements Cloneable {
                 if( myParentBC_ == 9 || myParentBC_ == 10 ) return 1;
                 if( myParentBC_ > 2 || childB_ != null || childC_ != null ) return 3;
             }
-            if (ABC == 1 && ( childB_ != null ) ) return 3;
-            if (ABC == 2 && ( childC_ != null ) ) return 3;
+            if (ABC == 1 && ( childB_ != null ) ) return 1;
+            if (ABC == 2 && ( childC_ != null ) ) return 1;
             return 3; // if ABC = 0
         }
 
@@ -1039,9 +1047,9 @@ public class Triangle extends EditObject implements Cloneable {
         //if( myAngleAB > 90 ) return pointNumber.offset(pointAB, pointNumber.calcMidPoint(pointCA).vectorTo(pointAB).lengthXY()*0.2f);
         //if( myAngleCA > 90 ) return pointNumber.offset(pointCA, pointNumber.calcMidPoint(pointBC).vectorTo(pointCA).lengthXY()*0.2f);
 
-        if( lengthAforce_ < 2.5f ) return pointNumber_.offset(pointBC_, pointNumber_.vectorTo(pointBC_).lengthXY()*-0.275f);
-        if( lengthBforce_ < 2.5f ) return pointNumber_.offset(pointCA_, pointNumber_.vectorTo(pointCA_).lengthXY()*-0.275f);
-        if( lengthCforce_ < 2.5f ) return pointNumber_.offset(pointAB_, pointNumber_.vectorTo(pointAB_).lengthXY()*-0.275f);
+        if( lengthAforce_ < 2.5f ) return pointNumber_.offset(pointBC_, pointNumber_.vectorTo(pointBC_).lengthXY()*-0.35f);
+        if( lengthBforce_ < 2.5f ) return pointNumber_.offset(pointCA_, pointNumber_.vectorTo(pointCA_).lengthXY()*-0.35f);
+        if( lengthCforce_ < 2.5f ) return pointNumber_.offset(pointAB_, pointNumber_.vectorTo(pointAB_).lengthXY()*-0.35f);
 
         return pointNumber_;
     }
@@ -1130,7 +1138,7 @@ public class Triangle extends EditObject implements Cloneable {
                 childC_ = newchild.clone();
                 isChildC_ = true;
         }
-        //autoSetDimAlign();
+        setDimAlignByChild();
     }
 
     public boolean alreadyHaveChild(int pbc){
