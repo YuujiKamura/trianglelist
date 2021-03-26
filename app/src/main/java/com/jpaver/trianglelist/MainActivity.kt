@@ -366,7 +366,7 @@ class MainActivity : AppCompatActivity(),
     }
 
     fun validDeduction(dp: Params): Boolean {
-        if(dp.name == "" || dp.a < 0.1f || dp.pl == 0 ) return false
+        if( dp.name == "" || dp.a < 0.1f ) return false
         if( dp.type == "Box" && ( dp.a < 0.1f || dp.b < 0.1f ) ) return false
         return true
     }
@@ -466,11 +466,14 @@ class MainActivity : AppCompatActivity(),
         fab_flag.setOnClickListener { view ->
             dParams_ = myEditor.ReadLineTo(dParams_, myELSecond)// 200703 // if式の中に入っていると当然ながら更新されない時があるので注意
 
+            var resetPoint: PointXY = PointXY(0f,0f)
+
             if(deductionMode_ == true){
                 dParams_.pts = my_view.getTapPoint()
                 dParams_.pt = myDeductionList.get(dParams_.n).point
                 var ded = myDeductionList.get(dParams_.n)
                 val tp = my_view.getTapPoint().scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
+                resetPoint = tp
                 if( validDeduction(dParams_) == true ) {// あまり遠い時はスルー
                     myDeductionList.replace(dParams_.n, dParams_)
 //                    EditorReset(getList(myDeductionMode),getList(myDeductionMode).length())
@@ -486,8 +489,11 @@ class MainActivity : AppCompatActivity(),
                     my_view.setTriangleList(myTriangleList, mScale)
                 }
             }
+            resetPoint = my_view.getTapPoint().scale( PointXY( 0f, 0f ), 1f, -1f  )
 
-            my_view.invalidate()
+            //my_view.invalidate()
+            my_view.resetView( resetPoint )
+
             if( BuildConfig.BUILD_TYPE == "debug" ) Toast.makeText(
                 this,
                 " Test Done.",
@@ -792,6 +798,11 @@ class MainActivity : AppCompatActivity(),
         params.pt = my_view.getTapPoint()
         params.pts = PointXY(0f, 0f)
         params.pn = my_view.myTriangleList.isCollide(dParams_.pt)
+
+        //形状の自動判定
+        if( params.b > 0f ) params.type = "Box"
+        else params.type = "Circle"
+
         if (validDeduction(params) == true) {
 
             myDeductionList.add(params)

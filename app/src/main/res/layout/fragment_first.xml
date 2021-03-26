@@ -54,6 +54,8 @@
                 android:text="@string/editor_number"
                 android:gravity="center"
                 android:ems="2"
+                android:textSize="@dimen/ts"
+                android:padding="0dp"
                 tools:visibility="visible" />
             <TextView
                 android:id="@+id/TV_Name"
@@ -63,6 +65,8 @@
                 android:text="@string/editor_sokuten"
                 android:gravity="center"
                 android:ems="3"
+                android:textSize="@dimen/ts"
+                android:padding="0dp"
                 tools:visibility="visible" />
 
             <TextView
@@ -73,6 +77,8 @@
                 android:text="@string/editor_lA"
                 android:gravity="center"
                 android:ems="3"
+                android:textSize="@dimen/ts"
+                android:padding="0dp"
                 tools:visibility="visible" />
 
             <TextView
@@ -83,6 +89,8 @@
                 android:text="@string/editor_lB"
                 android:gravity="center"
                 android:ems="3"
+                android:textSize="@dimen/ts"
+                android:padding="0dp"
                 tools:visibility="visible" />
 
             <TextView
@@ -93,6 +101,8 @@
                 android:text="@string/editor_lC"
                 android:gravity="center"
                 android:ems="3"
+                android:textSize="@dimen/ts"
+                android:padding="0dp"
                 tools:visibility="visible" />
 
             <TextView
@@ -103,6 +113,8 @@
                 android:text="@string/editor_parent"
                 android:gravity="center"
                 android:ems="2"
+                android:textSize="@dimen/ts"
+                android:padding="0dp"
                 tools:visibility="visible" />
 
             <TextView
@@ -113,6 +125,8 @@
                 android:text="@string/editor_setuzoku"
                 android:gravity="center"
                 android:ems="2"
+                android:textSize="@dimen/ts"
+                android:padding="0dp"
                 tools:visibility="visible" />
 
         </TableRow>
