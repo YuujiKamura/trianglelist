@@ -50,7 +50,9 @@ public class Triangle extends EditObject implements Cloneable {
     protected int myDimAlignA_ = 3;
     protected int myDimAlignB_ = 3;
     protected int myDimAlignC_ = 3;
-
+    protected boolean isChangeDimAlignA_ = false;
+    protected boolean isChangeDimAlignB_ = false;
+    protected boolean isChangeDimAlignC_ = false;
 
     protected int dimSideAlignA_ = 0;
     protected int dimSideAlignB_ = 0;
@@ -579,10 +581,14 @@ public class Triangle extends EditObject implements Cloneable {
     }
 
     public void setDimAlignByChild(){
-        if( isChildB_ == false ) myDimAlignB_ = 1;
-        else myDimAlignB_ = 3;
-        if( isChildC_ == false ) myDimAlignC_ = 1;
-        else myDimAlignC_ = 3;
+        if( isChangeDimAlignB_ == false ){
+            if( isChildB_ == false ) myDimAlignB_ = 1;
+            else myDimAlignB_ = 3;
+        }
+        if( isChangeDimAlignC_ == false ){
+            if( isChildC_ == false ) myDimAlignC_ = 1;
+            else myDimAlignC_ = 3;
+        }
     }
 
     Triangle set(Triangle parent, int A, float B, float C){
@@ -966,8 +972,14 @@ public class Triangle extends EditObject implements Cloneable {
 
     public void flipDimAlignH(int side){
         if(side == 0) myDimAlignA_ = flipOneToThree( myDimAlignA_ );
-        if(side == 1) myDimAlignB_ = flipOneToThree( myDimAlignB_ );
-        if(side == 2) myDimAlignC_ = flipOneToThree( myDimAlignC_ );
+        if(side == 1) {
+            myDimAlignB_ = flipOneToThree( myDimAlignB_ );
+            isChangeDimAlignB_ = true;
+        }
+        if(side == 2){
+            myDimAlignC_ = flipOneToThree( myDimAlignC_ );
+            isChangeDimAlignC_ = true;
+        }
         if(side == 4) nameAlign_ = flipOneToThree( nameAlign_ );
     }
 

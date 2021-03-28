@@ -1,23 +1,23 @@
 <resources>
-    <string name="app_name">Triangle List</string>
-    <string name="action_settings">設定</string>
-    <string name="action_new">新規作成</string>
-    <string name="action_save_csv">CSVを保存</string>
-    <string name="action_load_csv">CSVを読込</string>
-    <string name="action_save_dxf">DXF出力</string>
-    <string name="action_save_pdf">PDF出力</string>
-    <string name="action_send_mail">メールを送信</string>
+    <string name="app_name" translatable="false">Triangle List</string>
+    <string name="action_settings" translatable="false">設定</string>
+    <string name="action_new" translatable="false">新規作成</string>
+    <string name="action_save_csv" translatable="false">CSVを保存</string>
+    <string name="action_load_csv" translatable="false">CSVを読込</string>
+    <string name="action_save_dxf" translatable="false">DXF出力</string>
+    <string name="action_save_pdf" translatable="false">PDF出力</string>
+    <string name="action_send_mail" translatable="false">メールを送信</string>
 
-    <string name="tenkai_title">面 積 展 開 図</string>
-    <string name="tenkai_koujimei">工 事 名</string>
-    <string name="tenkai_zumenmei">図 面 名</string>
-    <string name="tenkai_rosenmei">路 線 名</string>
-    <string name="tenkai_syukusyaku">縮    尺</string>
-    <string name="tenkai_zuban">図面番号</string>
-    <string name="tenkai_sakuseibi">作　成　日</string>
+    <string name="tenkai_title" translatable="false">面 積 展 開 図</string>
+    <string name="tenkai_koujimei" translatable="false">工 事 名</string>
+    <string name="tenkai_zumenmei" translatable="false">図 面 名</string>
+    <string name="tenkai_rosenmei" translatable="false">路 線 名</string>
+    <string name="tenkai_syukusyaku" translatable="false">縮    尺</string>
+    <string name="tenkai_zuban" translatable="false">図面番号</string>
+    <string name="tenkai_sakuseibi" translatable="false">作　成　日</string>
 
-    <string name="tenkai_nengappi">　　　年　　月　　日</string>
-    <string name="tenkai_sekousya">施 工 者</string>
+    <string name="tenkai_nengappi" translatable="false">　　　年　　月　　日</string>
+    <string name="tenkai_sekousya" translatable="false">施 工 者</string>
     <string name="menseki">面積</string>
     <string name="menseki_title">面 積 計 算 書</string>
     <string name="menseki_koujimei">工事名：</string>

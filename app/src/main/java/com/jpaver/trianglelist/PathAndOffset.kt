@@ -25,25 +25,26 @@ class PathAndOffset(myscale: Float, p1_: PointXY, p2_: PointXY, p3_: PointXY, le
         val vlP1P3 = p1_.vectorTo(p3_).lengthXY()
 
 
-        // 幅寄せ
-        val haba = 0.22f
 /*        if( vlP2P3 < 2.0f*myScale_ ) offsetH_ = p1_.vectorTo(p2_).lengthXY()*haba
         if( vlP1P3 < 2.0f*myScale_ ) offsetH_ = -p1_.vectorTo(p2_).lengthXY()*haba
         if( vlP2P3 < 1.0f*myScale_ ) offsetH_ = p1_.vectorTo(p2_).lengthXY()*haba*2
         if( vlP1P3 < 1.0f*myScale_ ) offsetH_ = -p1_.vectorTo(p2_).lengthXY()*haba*2
 */
-        if( alignSide_ == 1 ) offsetH_ = -p1_.vectorTo(p2_).lengthXY()*haba
-        if( alignSide_ == 2 ) offsetH_ = p1_.vectorTo(p2_).lengthXY()*haba
 
 
-
-        else if(length_ < 1.0){
+        val len = p1_.vectorTo(p2_).lengthXY()*10
+        if(length_ < 1.0){
             // 1mより短い場合はパスを広げる
-            p1 = p1.offset(p2, -2f*myScale_)//p1.lengthTo(p2)*-1.5f )
-            p2 = p2.offset(p1, -2f*myScale_)//p2.lengthTo(p1)*-1.5f )
+            p1 = p1.offset(p2, -len )//p1.lengthTo(p2)*-1.5f )
+            p2 = p2.offset(p1, -len )//p2.lengthTo(p1)*-1.5f )
         }
-/*
+        val llen = p1_.vectorTo(p2_).lengthXY()
+        // 幅寄せ
+        val haba = llen*0.002f
 
+        if( alignSide_ == 1 ) offsetH_ = -llen*haba
+        if( alignSide_ == 2 ) offsetH_ = llen*haba
+/*
         if(length < 1.0f){  // 短い辺の寸法を立てる
             p3 = p1.calcMidPoint(p2).offset(p3_, -0.3f*myScale_)
             p4 = p3.offset(p3_, -1.3f*myScale_)

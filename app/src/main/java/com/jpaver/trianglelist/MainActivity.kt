@@ -1700,7 +1700,9 @@ class MainActivity : AppCompatActivity(),
                         mt.myDimAlignC_ + ", " +                       //16
                         cp.side + ", " +                       //17
                         cp.type + ", " +                       //18
-                        cp.lcr                               //19
+                        cp.lcr + ", " +                               //19
+                        mt.isChangeDimAlignB_ + ", " +                //20
+                        mt.isChangeDimAlignC_                          //21
             )
             writer.newLine()
         }
@@ -1801,26 +1803,33 @@ class MainActivity : AppCompatActivity(),
                 ), 180f
             )
         )
-        trilist.getTriangle(trilist.size()).setMyName_(chunks[6]!!.toString())
-        if(chunks[9]!! == "true") trilist.getTriangle(trilist.size()).setPointNumberMoved_(
+        val mt = trilist.getTriangle(trilist.size())
+
+
+        mt.setMyName_(chunks[6]!!.toString())
+        if(chunks[9]!! == "true") mt.setPointNumberMoved_(
             PointXY(
                 chunks[7]!!.toFloat(),
                 chunks[8]!!.toFloat()
             )
         )
         // 色
-        if( chunks.size > 10 ) trilist.getTriangle(trilist.size()).setColor(chunks[10]!!.toInt())
+        if( chunks.size > 10 ) mt.setColor(chunks[10]!!.toInt())
 
         // dimaligns
         if( chunks.size > 11 ) {
-            trilist.getTriangle(trilist.size()).setDimAligns(
+            mt.setDimAligns(
                 chunks[11]!!.toInt(), chunks[12]!!.toInt(), chunks[13]!!.toInt(),
                 chunks[14]!!.toInt(), chunks[15]!!.toInt(), chunks[16]!!.toInt()
             )
         }
+        if( chunks.size > 20 ) {
+            mt.isChangeDimAlignB_ = chunks[20]!!.toBoolean()
+            mt.isChangeDimAlignC_ = chunks[21]!!.toBoolean()
+        }
 
         if( chunks.size > 17 ) {
-            trilist.getTriangle(trilist.size()).cParam_ = ConneParam(
+            mt.cParam_ = ConneParam(
                 chunks[17]!!.toInt(),
                 chunks[18]!!.toInt(),
                 chunks[19]!!.toInt(),
@@ -1918,10 +1927,11 @@ class MainActivity : AppCompatActivity(),
                 trilist.getTriangle(trilist.size()).myParentBC_ = chunks[5]!!.toInt()
                // trilist.getTriangle(trilist.size()).setCParamFromParentBC( chunks[5]!!.toInt() )
             }
-            trilist.getTriangle(trilist.size()).setMyName_(chunks[6]!!.toString())
+            val mT = trilist.getTriangle(trilist.size())
+            mT.setMyName_(chunks[6]!!.toString())
             if( trilist.size() > 1 ) trilist.get(trilist.size() - 1).childSide_ = chunks[5]!!.toInt()
 
-            if(chunks[9]!! == "true") trilist.getTriangle(trilist.size()).setPointNumberMoved_(
+            if(chunks[9]!! == "true") mT.setPointNumberMoved_(
                 PointXY(
                     chunks[7]!!.toFloat(),
                     chunks[8]!!.toFloat()
@@ -1929,16 +1939,20 @@ class MainActivity : AppCompatActivity(),
             )
 
             // 色
-            if( chunks.size > 10 ) trilist.getTriangle(trilist.size()).setColor(chunks[10]!!.toInt())
+            if( chunks.size > 10 ) mT.setColor(chunks[10]!!.toInt())
 
             // dimaligns
             if( chunks.size > 11 ) {
-                trilist.getTriangle(trilist.size()).setDimAligns(
+                mT.setDimAligns(
                     chunks[11]!!.toInt(), chunks[12]!!.toInt(), chunks[13]!!.toInt(),
                     chunks[14]!!.toInt(), chunks[15]!!.toInt(), chunks[16]!!.toInt()
                 )
             }
 
+            if( chunks.size > 20 ) {
+                mT.isChangeDimAlignB_ = chunks[20]!!.toBoolean()
+                mT.isChangeDimAlignC_ = chunks[21]!!.toBoolean()
+            }
 
 
 

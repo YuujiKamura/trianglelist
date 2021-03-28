@@ -81,7 +81,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
     var isDoubleTap_ = 0
 
-    var zoomSize: Float = 2.0f
+    var zoomSize: Float = 1.0f
 
     var parentNum: Int = 0
     var parentSide: Int = 0
@@ -215,7 +215,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         paintYellow.textAlign = Paint.Align.CENTER
         paintYellow.setTextSize(ts_*1.5f)
 
-        paintRed.strokeWidth = 1f
+        paintRed.strokeWidth = 2f
         paintRed.color = Color.argb(255, 255, 0, 0)
         paintRed.style = Paint.Style.FILL
         paintRed.textSize = ts_
@@ -362,7 +362,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
     fun zoom(zoomstep: Float){
         zoomSize += zoomstep
-        if(zoomSize<=0.5f) zoomSize = 0.5f
+        if(zoomSize<=0.3f) zoomSize = 0.3f
         if(zoomSize>=5) zoomSize = 5f
         //myTriangleList.scale(PointXY(0f,0f), myScale)
 
@@ -453,12 +453,12 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     fun drawLocalPressPoint(canvas: Canvas, point: PointXY){
         if(point.getX() != 0f){
             canvas.drawLine(
-                point.getX() - 10f, point.getY(),
-                point.getX() + 10f, point.getY(), paintRed
+                point.getX() - 20f, point.getY(),
+                point.getX() + 20f, point.getY(), paintRed
             )
             canvas.drawLine(
-                point.getX(), point.getY() - 10f,
-                point.getX(), point.getY() + 10f, paintRed
+                point.getX(), point.getY() - 20f,
+                point.getX(), point.getY() + 20f, paintRed
             )
 
             // draw pdf の時だけ使う
@@ -898,7 +898,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
             pab,
             pca,
             pbc,
-            tri.getLengthAS(1 / triScale),
+            tri.lengthAforce_,//getLengthAS(1 / triScale),
             tri.myDimAlignA_,
             tri.dimSideAlignA_,
             paintDim.textSize
@@ -908,7 +908,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
             pbc,
             pab,
             pca,
-            tri.getLengthBS(1 / triScale),
+            tri.lengthBforce_,//getLengthBS(1 / triScale),
             tri.myDimAlignB_,
             tri.dimSideAlignB_,
             paintDim.textSize
@@ -918,7 +918,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
             pca,
             pbc,
             pab,
-            tri.getLengthCS(1 / triScale),
+            tri.lengthCforce_,//getLengthCS(1 / triScale),
             tri.myDimAlignC_,
             tri.dimSideAlignC_,
             paintDim.textSize
