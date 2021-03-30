@@ -15,8 +15,8 @@ class PathAndOffset(myscale: Float, p1_: PointXY, p2_: PointXY, p3_: PointXY, le
     var textSpacer_ = 5f
 
     init {
-        var p1 = p1_
-        var p2 = p2_
+        var p1 = p1_.clone()
+        var p2 = p2_.clone()
         var p3: PointXY = PointXY(0f,0f)
         var p4: PointXY = PointXY(0f,0f)
         setOffset(0, align, length)
@@ -32,18 +32,18 @@ class PathAndOffset(myscale: Float, p1_: PointXY, p2_: PointXY, p3_: PointXY, le
 */
 
 
-        val len = p1_.vectorTo(p2_).lengthXY()*10
-        if(length_ < 1.0){
-            // 1mより短い場合はパスを広げる
-            p1 = p1.offset(p2, -len )//p1.lengthTo(p2)*-1.5f )
-            p2 = p2.offset(p1, -len )//p2.lengthTo(p1)*-1.5f )
+        val len = p1.lengthTo(p2)*2f
+        if(length_ < 2.0){
+            // 2mより短い場合はパスを広げる
+            p1.set(p1.offset(p2, -len ))// )
+            p2.set(p2.offset(p1, -len ))//p2.lengthTo(p1)*-1.5f )
         }
-        val llen = p1_.vectorTo(p2_).lengthXY()
+        val llen = p1.vectorTo(p2).lengthXY()
         // 幅寄せ
-        val haba = llen*0.002f
+        val haba = llen*0.275f
 
-        if( alignSide_ == 1 ) offsetH_ = -llen*haba
-        if( alignSide_ == 2 ) offsetH_ = llen*haba
+        if( alignSide_ == 1 ) offsetH_ = -haba
+        if( alignSide_ == 2 ) offsetH_ = haba
 /*
         if(length < 1.0f){  // 短い辺の寸法を立てる
             p3 = p1.calcMidPoint(p2).offset(p3_, -0.3f*myScale_)
