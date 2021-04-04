@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/app/src/main/cpp/sfc/common_lib/ComSplitStringC.h" charset="windows-31j" />
+    <file url="file://$PROJECT_DIR$/app/src/main/cpp/sfc/common_lib/SXFDiameterDim_checkC.cpp" charset="windows-31j" />
+    <file url="file://$PROJECT_DIR$/app/src/main/cpp/sfc/common_lib/SXFWidth_checkC.cpp" charset="windows-31j" />
+    <file url="file://$PROJECT_DIR$/app/src/main/cpp/sfc/common_lib/StdAfx.cpp" charset="windows-31j" />
+    <file url="file://$PROJECT_DIR$/app/src/main/cpp/sfc/common_lib/StdAfx.h" charset="windows-31j" />
+    <file url="file://$PROJECT_DIR$/app/src/main/cpp/sfc/common_lib/max.h" charset="windows-31j" />
+  </component>
+</project>
