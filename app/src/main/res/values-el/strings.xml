@@ -1,0 +1,86 @@
+<resources>
+    <string name = "app_name"> Λίστα τριγώνων </string>
+    <string name = "action_settings"> ρυθμίσεις </string>
+    <string name = "action_new"> δημιουργία νέου </string>
+    <string name = "action_save_csv"> Αποθήκευση CSV </string>
+    <string name = "action_load_csv"> Διαβάστε CSV </string>
+    <string name = "action_save_dxf"> Έξοδος DXF </string>
+    <string name = "action_save_pdf"> Έξοδος PDF </string>
+    <string name = "action_send_mail"> Αποστολή email </string>
+
+    <string name = "tenkai_title"> Εικόνα επέκτασης περιοχής </string>
+    <string name = "tenkai_koujimei"> Όνομα μηχανικής υπόθεσης </string>
+    <string name = "tenkai_zumenmei"> Όνομα σχεδίασης </string>
+    Όνομα γραμμής ως <string name = "tenkai_rosenmei"> </string>
+    <string name = "tenkai_syukusyaku"> κλίμακα </string>
+    <string name = "tenkai_zuban"> Αριθμός σχεδίασης </string>
+    <string name = "tenkai_sakuseibi"> Ημερομηνία δημιουργίας </string>
+
+    <string name = "tenkai_nengappi"> έτος μήνα ημέρα </string>
+    <string name = "tenkai_sekousya"> Κατασκευαστής </string>
+    <string name = "menseki"> περιοχή </string>
+    <string name = "menseki_title"> Δήλωση περιοχής </string>
+    <string name = "menseki_koujimei"> Όνομα κατασκευής: </string>
+    <string name = "menseki_syoukei"> υποσύνολο </string>
+    <string name = "menseki_goukei"> σύνολο </string>
+    <string name = "editor_number">αριθμός</string>
+    <string name = "editor_name">όνομα</string>
+    <string name = "editor_sokuten">σταθμός</string>
+    <string name = "editor_lA">Μήκος A</string>
+    <string name = "editor_lB">Μήκος B</string>
+    <string name = "editor_lC">Μήκος C</string>
+    <string name = "editor_parent">γονέας</string>
+    <string name = "editor_setuzoku">σύνδεση</string>
+    <string name = "editor_syozoku">ανήκει</string>
+    <string name = "editor_form">σχήμα</string>
+    <string name = "editor_koujyo">αφαίρεση</string>
+    <string name = "credit"> ※ Αυτό το σχέδιο δημιουργήθηκε χρησιμοποιώντας την εφαρμογή smartphone "Triangle List". </string>
+
+    <string name = "rosen1"> διαδρομή 1 </string>
+    <string name = "savecurrent"> Θέλετε να αποθηκεύσετε την τρέχουσα εικόνα; </string>
+    <string name = "inputcname"> Μπορείτε να εισαγάγετε το όνομα της κατασκευής (επιτρεπόμενοι χώροι) </string>
+    <string name = "inputdname"> Μπορείτε να εισαγάγετε το όνομα της διαδρομής (μπορεί να είναι κενό) </string>
+    <string name = "inputdnum"> Μπορείτε να εισαγάγετε τον αριθμό σχεδίασης </string>
+    <string name = "inputaname"> Μπορείτε να εισαγάγετε το όνομα του εργολάβου (μπορεί να είναι κενό) </string>
+    <string name = "space"> Διακοπή γραμμής με κενά. </string>
+    <string name = "inputtnum"> Μπορείτε να εισαγάγετε τον αρχικό αριθμό του τριγώνου </string>
+
+
+    <!-- Συμβολοσειρές που χρησιμοποιούνται για θραύσματα για πλοήγηση -->
+    <string name = "first_fragment_label"> Πρώτο θραύσμα </string>
+    <string name = "second_fragment_label"> Δεύτερο θραύσμα </string>
+    <string name = "next"> Επόμενο </string>
+    <string name = "previous"> Προηγούμενο </string>
+    <string name = "zero"> zero </string>
+    <string name = "b"> B </string>
+    <string name = "first"> 1 </string>
+    <string name = "second"> 2 </string>
+    <string name = "rosenname"> όνομα διαδρομής </string>
+
+    <string name = "hello_first_fragment"> Εισαγάγετε το μήκος ABC της πλευράς του τριγώνου </string>
+    <string name = "hello_second_fragment"> επιλέξτε μια φόρμα για σύνδεση. Arg:% 1 $ s </string>
+
+    <string-array name = "TriNumList">
+        <item> 1 </item>
+    </string-array>
+
+    <string-array name = "DeductionFormList">
+        <item> - </item>
+        <item> Πλαίσιο </item>
+        <item> Κύκλος </item>
+    </string-array>
+
+    <string-array name = "ParentList">
+        <item> - </item>
+        <item> B </item>
+        <item> C </item>
+        <item> BR </item>
+        <item> BL </item>
+        <item> CR </item>
+        <item> CL </item>
+        <item> π.Χ. </item>
+        <item> CC </item>
+        <item> BF </item>
+        <item> CF </item>
+    </string-array>
+</resources>

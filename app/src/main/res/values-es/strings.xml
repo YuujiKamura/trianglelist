@@ -1,0 +1,86 @@
+<resources>
+    <string name = "app_name"> Lista de triángulos </string>
+    <string name = "action_settings"> configuración </string>
+    <string name = "action_new"> crear nuevo </string>
+    <string name = "action_save_csv"> Guardar CSV </string>
+    <string name = "action_load_csv"> Leer CSV </string>
+    <string name = "action_save_dxf"> Salida DXF </string>
+    <string name = "action_save_pdf"> Salida en PDF </string>
+    <string name = "action_send_mail"> Enviar correo electrónico </string>
+
+    <string name = "tenkai_title"> Imagen de expansión del área </string>
+    <string name = "tenkai_koujimei"> Nombre del caso de ingeniería </string>
+    <string name = "tenkai_zumenmei"> Nombre del dibujo </string>
+    Nombre de línea como <string name = "tenkai_rosenmei"> </string>
+    <string name = "tenkai_syukusyaku"> escala </string>
+    <string name = "tenkai_zuban"> Número de dibujo </string>
+    <string name = "tenkai_sakuseibi"> Fecha de creación </string>
+
+    <string name = "tenkai_nengappi"> año mes día </string>
+    <string name = "tenkai_sekousya"> Constructor </string>
+    <string name = "menseki"> área </string>
+    <string name = "menseki_title"> Declaración de área </string>
+    <string name = "menseki_koujimei"> Nombre de la construcción: </string>
+    <string name = "menseki_syoukei"> subtotal </string>
+    <string name = "menseki_goukei"> total </string>
+    <string name = "editor_number">núm</string>
+    <string name = "editor_name">nombre</string>
+    <string name = "editor_sokuten">estació</string>
+    <string name = "editor_lA">Long A</string>
+    <string name = "editor_lB">Long B</string>
+    <string name = "editor_lC">Long C</string>
+    <string name = "editor_parent">padre</string>
+    <string name = "editor_setuzoku">conec</string>
+    <string name = "editor_syozoku">pertene</string>
+    <string name = "editor_form">forma</string>
+    <string name = "editor_koujyo">deducción</string>
+    <string name = "credit"> ※ Este dibujo fue creado usando la aplicación para teléfonos inteligentes "Triangle List". </string>
+
+    <string name = "rosen1"> ruta 1 </string>
+    <string name = "savecurrent"> ¿Desea guardar la imagen actual? </string>
+    <string name = "inputcname"> Puede ingresar el nombre de la construcción (espacios permitidos) </string>
+    <string name = "inputdname"> Puede ingresar el nombre de la ruta (puede estar en blanco) </string>
+    <string name = "inputdnum"> Puede ingresar el número de dibujo </string>
+    <string name = "inputaname"> Puede ingresar el nombre del contratista (puede estar en blanco) </string>
+    <string name = "space"> Saltos de línea con espacios. </string>
+    <string name = "inputtnum"> Puede ingresar el número inicial del triángulo </string>
+
+
+    <!-- Cadenas utilizadas para fragmentos de navegación -->
+    <string name = "first_fragment_label"> Primer fragmento </string>
+    <string name = "second_fragment_label"> Segundo fragmento </string>
+    <string name = "next"> Siguiente </string>
+    <string name = "previous"> Anterior </string>
+    <string name = "zero"> cero </string>
+    <string name = "b"> B </string>
+    <string name = "first"> 1 </string>
+    <string name = "second"> 2 </string>
+    <string name = "rosenname"> nombre de la ruta </string>
+
+    <string name = "hello_first_fragment"> Ingrese la longitud ABC del lado del triángulo </string>
+    <string name = "hello_second_fragment"> seleccione un formulario para conectarse. Arg:% 1 $ s </string>
+
+    <string-array name = "TriNumList">
+        <item> 1 </item>
+    </string-array>
+
+    <string-array name = "DeductionFormList">
+        <item> - </item>
+        <item> Caja </item>
+        <item> Círculo </item>
+    </string-array>
+
+    <string-array name = "ParentList">
+        <item> - </item>
+        <item> B </item>
+        <item> C </item>
+        <item> BR </item>
+        <item> BL </item>
+        <item> CR </item>
+        <item> CL </item>
+        <item> BC </item>
+        <item> CC </item>
+        <item> BF </item>
+        <item> CF </item>
+    </string-array>
+</resources>

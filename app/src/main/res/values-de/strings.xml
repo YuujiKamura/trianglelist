@@ -1,0 +1,86 @@
+<resources>
+    <string name = "app_name"> Dreiecksliste </string>
+    <string name = "action_settings"> Einstellungen </string>
+    <string name = "action_new"> neue </string> erstellen
+    <string name = "action_save_csv"> CSV speichern </string>
+    <string name = "action_load_csv"> CSV lesen </string>
+    <string name = "action_save_dxf"> DXF-Ausgabe </string>
+    <string name = "action_save_pdf"> PDF-Ausgabe </string>
+    <string name = "action_send_mail"> E-Mail senden </string>
+
+    <string name = "tenkai_title"> Bereichserweiterungsbild </string>
+    <string name = "tenkai_koujimei"> Name des technischen Falls </string>
+    <string name = "tenkai_zumenmei"> Zeichnungsname </string>
+    Zeilenname als <string name = "tenkai_rosenmei"> </string>
+    <string name = "tenkai_syukusyaku"> scale </string>
+    <string name = "tenkai_zuban"> Zeichnungsnummer </string>
+    <string name = "tenkai_sakuseibi"> Erstellungsdatum </string>
+
+    <string name = "tenkai_nengappi"> Jahr Monat Tag </string>
+    <string name = "tenkai_sekousya"> Konstruktor </string>
+    <string name = "menseki"> Bereich </string>
+    <string name = "menseki_title"> Bereichsanweisung </string>
+    <string name = "menseki_koujimei"> Konstruktionsname: </string>
+    <string name = "menseki_syoukei"> Zwischensumme </string>
+    <string name = "menseki_goukei"> total </string>
+    <string name = "editor_number">number</string>
+    <string name = "editor_name">name</string>
+    <string name = "editor_sokuten">stati</string>
+    <string name = "editor_lA">längeA</string>
+    <string name = "editor_lB">längeB</string>
+    <string name = "editor_lC">längeC</string>
+    <string name = "editor_parent">Eltern</string>
+    <string name = "editor_setuzoku">conne</string>
+    <string name = "editor_syozoku">Zugehör</string>
+    <string name = "editor_form">Form</string>
+    <string name = "editor_koujyo">Abzug</string>
+    <string name = "credit"> ※ Diese Zeichnung wurde mit der Smartphone-Anwendung "Triangle List" erstellt. </string>
+
+    <string name = "rosen1"> Route 1 </string>
+    <string name = "savecurrent"> Möchten Sie das aktuelle Bild speichern? </string>
+    <string name = "inputcname"> Sie können den Namen der Konstruktion eingeben (Leerzeichen zulässig) </string>
+    <string name = "inputdname"> Sie können den Routennamen eingeben (kann leer sein) </string>
+    <string name = "inputdnum"> Sie können die Zeichnungsnummer </string> eingeben
+    <string name = "inputaname"> Sie können den Namen des Auftragnehmers eingeben (kann leer sein) </string>
+    <string name = "space"> Zeilenumbrüche mit Leerzeichen. </string>
+    <string name = "inputtnum"> Sie können die Startnummer des Dreiecks </string> eingeben
+
+
+    <!-- Zeichenfolgen für Fragmente zur Navigation -->
+    <string name = "first_fragment_label"> Erstes Fragment </string>
+    <string name = "second_fragment_label"> Zweites Fragment </string>
+    <string name = "next"> Weiter </string>
+    <string name = "previous"> Zurück </string>
+    <string name = "zero"> zero </string>
+    <string name = "b"> B </string>
+    <string name = "first"> 1 </string>
+    <string name = "second"> 2 </string>
+    <string name = "rosenname"> Routenname </string>
+
+    <string name = "hello_first_fragment"> Geben Sie die Länge ABC der Seite des Dreiecks </string> ein
+    <string name = "hello_second_fragment"> Wählen Sie ein Formular für die Verbindung aus. Arg:% 1 $ s </string>
+
+    <string-array name = "TriNumList">
+        <item> 1 </item>
+    </string-array>
+
+    <string-array name = "DeductionFormList">
+        <item> - </item>
+        <item> Box </item>
+        <item> Circle </item>
+    </string-array>
+
+    <string-array name = "ParentList">
+        <item> - </item>
+        <item> B </item>
+        <item> C </item>
+        <item> BR </item>
+        <item> BL </item>
+        <item> CR </item>
+        <item> CL </item>
+        <item> BC </item>
+        <item> CC </item>
+        <item> BF </item>
+        <item> CF </item>
+    </string-array>
+</resources>

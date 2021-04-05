@@ -1,0 +1,86 @@
+<resources>
+    <string name = "app_name"> Rhestr Triongl </string>
+    <string name = "action_settings"> gosodiadau </string>
+    <string name = "action_new"> creu </string> newydd
+    <string name = "action_save_csv"> Cadw CSV </string>
+    <string name = "action_load_csv"> Darllenwch CSV </string>
+    <string name = "action_save_dxf"> Allbwn DXF </string>
+    <string name = "action_save_pdf"> Allbwn PDF </string>
+    <string name = "action_send_mail"> Anfon e-bost </string>
+
+    <string name = "tenkai_title"> Llun ehangu ardal </string>
+    <string name = "tenkai_koujimei"> Enw achos peirianneg </string>
+    <string name = "tenkai_zumenmei"> Enw lluniadu </string>
+    Enw'r llinell fel <string name = "tenkai_rosenmei"> </string>
+    <string name = "tenkai_syukusyaku"> graddfa </string>
+    <string name = "tenkai_zuban"> Rhif lluniadu </string>
+    <string name = "tenkai_sakuseibi"> Dyddiad creu </string>
+
+    <string name = "tenkai_nengappi"> diwrnod mis blwyddyn </string>
+    <string name = "tenkai_sekousya"> Adeiladwr </string>
+    <string name = "menseki"> ardal </string>
+    <string name = "menseki_title"> Datganiad ardal </string>
+    <string name = "menseki_koujimei"> Enw adeiladu: </string>
+    <string name = "menseki_syoukei"> subtotal </string>
+    <string name = "menseki_goukei"> cyfanswm </string>
+    <string name = "editor_number">rhif</string>
+    <string name = "editor_name">enw</string>
+    <string name = "editor_sokuten">gorsaf</string>
+    <string name = "editor_lA">Hyd A</string>
+    <string name = "editor_lB">Hyd B</string>
+    <string name = "editor_lC">Hyd C</string>
+    <string name = "editor_parent">rhiant</string>
+    <string name = "editor_setuzoku">cysyl</string>
+    <string name = "editor_syozoku">perth</string>
+    <string name = "editor_form">siâp</string>
+    <string name = "editor_koujyo">didyniad</string>
+    <string name = "credit"> ※ Crëwyd y lluniad hwn gan ddefnyddio\'r cymhwysiad ffôn clyfar "Rhestr Triongl". </string>
+
+    <string name = "rosen1"> llwybr 1 </string>
+    <string name = "savecurrent"> Ydych chi am achub y llun cyfredol? </string>
+    <string name = "inputcname"> Gallwch nodi enw\'r gwaith adeiladu (caniateir lleoedd) </string>
+    <string name = "inputdname"> Gallwch nodi enw\'r llwybr (gall fod yn wag) </string>
+    <string name = "inputdnum"> Gallwch nodi\'r rhif lluniadu </string>
+    <string name = "inputaname"> Gallwch nodi enw\'r contractwr (gall fod yn wag) </string>
+    <string name = "space"> Mae\'r llinell yn torri gyda bylchau. </string>
+    <string name = "inputtnum"> Gallwch nodi rhif cychwyn y triongl </string>
+
+
+    <!-- Llinynnau a ddefnyddir ar gyfer darnau ar gyfer llywio -->
+    <string name = "first_fragment_label"> Y Darn Cyntaf </string>
+    <string name = "second_fragment_label"> Ail Darn </string>
+    <string name = "next"> Nesaf </string>
+    <string name = "previous"> Blaenorol </string>
+    <string name = "zero"> sero </string>
+    <string name = "b"> B </string>
+    <string name = "first"> 1 </string>
+    <string name = "second"> 2 </string>
+    <string name = "rosenname"> enw\'r llwybr </string>
+
+    <string name = "hello_first_fragment"> Rhowch hyd ABC ochr y triongl </string>
+    <string name = "hello_second_fragment"> dewiswch ffurflen i\'w chysylltu. Arg:% 1 $ s </string>
+
+    <string-array name = "TriNumList">
+        <item> 1 </item>
+    </string-array>
+
+    <string-array name = "DeductionFormList">
+        <item> - </item>
+        Blwch <item> </item>
+        Cylch <item> </item>
+    </string-array>
+
+    <string-array name = "ParentList">
+        <item> - </item>
+        <item> B </item>
+        <item> C </item>
+        <item> BR </item>
+        <item> BL </item>
+        <item> CR </item>
+        <item> CL </item>
+        <item> BC </item>
+        <item> CC </item>
+        <item> BF </item>
+        <item> CF </item>
+    </string-array>
+</resources>

@@ -1,0 +1,86 @@
+<resources>
+    <string name = "app_name"> Listi yfir þríhyrninga </string>
+    <string name = "action_settings"> stillingar </string>
+    <string name = "action_new"> búðu til nýtt </string>
+    <string name = "action_save_csv"> Vista CSV </string>
+    <string name = "action_load_csv"> Lestu CSV </string>
+    <string name = "action_save_dxf"> DXF framleiðsla </string>
+    <string name = "action_save_pdf"> PDF framleiðsla </string>
+    <string name = "action_send_mail"> Senda tölvupóst </string>
+
+    <string name = "tenkai_title"> Stækkunarmynd svæðis </string>
+    <string name = "tenkai_koujimei"> Málverkheiti </string>
+    <string name = "tenkai_zumenmei"> Teikningarheiti </string>
+    Línanafn sem <string name = "tenkai_rosenmei"> </string>
+    <string name = "tenkai_syukusyaku"> kvarði </string>
+    <string name = "tenkai_zuban"> Teikninganúmer </string>
+    <string name = "tenkai_sakuseibi"> Sköpunardagur </string>
+
+    <string name = "tenkai_nengappi"> mánaðardagur ársins </string>
+    <string name = "tenkai_sekousya"> smiður </string>
+    <string name = "menseki"> svæði </string>
+    <string name = "menseki_title"> Svæðisyfirlýsing </string>
+    <string name = "menseki_koujimei"> Heiti byggingar: </string>
+    <string name = "menseki_syoukei"> undirsumma </string>
+    <string name = "menseki_goukei"> samtals </string>
+    <string name = "editor_number">númer</string>
+    <string name = "editor_name">nafn</string>
+    <string name = "editor_sokuten">stöð</string>
+    <string name = "editor_lA">lengd A</string>
+    <string name = "editor_lB">lengd B</string>
+    <string name = "editor_lC">lengd C</string>
+    <string name = "editor_parent">foreld</string>
+    <string name = "editor_setuzoku">tengja</string>
+    <string name = "editor_syozoku">tilheyr</string>
+    <string name = "editor_form">lögun</string>
+    <string name = "editor_koujyo"> frádráttur </string>
+    <string name = "credit"> ※ Þessi teikning var búin til með snjallsímaforritinu "Triangle List". </string>
+
+    <string name = "rosen1"> leið 1 </string>
+    <string name = "savecurrent"> Viltu vista núverandi mynd? </string>
+    <string name = "inputcname"> Þú getur slegið inn nafnið á byggingunni (rými leyfð) </string>
+    <string name = "inputdname"> Þú getur slegið inn leiðarheitið (getur verið autt) </string>
+    <string name = "inputdnum"> Þú getur slegið inn teikninúmerið </string>
+    <string name = "inputaname"> Þú getur slegið inn nafn verktaka (getur verið autt) </string>
+    <string name = "space"> Línubrot með bilum. </string>
+    <string name = "inputtnum"> Þú getur slegið inn upphafsnúmer þríhyrningsins </string>
+
+
+    <!-- Strengir notaðir fyrir brot til siglingar -->
+    <string name = "first_fragment_label"> Fyrsta brot </string>
+    <string name = "second_fragment_label"> Annað brot </string>
+    <string name = "next"> Næsta </string>
+    <string name = "previous"> Fyrri </string>
+    <string name = "zero"> núll </string>
+    <string name = "b"> B </string>
+    <string name = "first"> 1 </string>
+    <string name = "second"> 2 </string>
+    <string name = "rosenname"> leiðarheiti </string>
+
+    <string name = "hello_first_fragment"> Sláðu inn lengd ABC hliðar þríhyrningsins </string>
+    <string name = "hello_second_fragment"> veldu eyðublað til að tengja. Arg:% 1 $ s </string>
+
+    <string-array name = "TriNumList">
+        <item> 1 </item>
+    </string-array>
+
+    <string-array name = "DeductionFormList">
+        <item> - </item>
+        <item> Box </item>
+        <item> Hringur </item>
+    </string-array>
+
+    <string-array name = "ParentList">
+        <item> - </item>
+        <item> B </item>
+        <item> C </item>
+        <item> BR </item>
+        <item> BL </item>
+        <item> CR </item>
+        <item> CL </item>
+        <item> BC </item>
+        <item> CC </item>
+        <item> BF </item>
+        <item> CF </item>
+    </string-array>
+</resources>

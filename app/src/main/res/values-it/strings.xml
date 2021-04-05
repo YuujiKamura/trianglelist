@@ -1,0 +1,86 @@
+<resources>
+    <string name = "app_name"> Elenco triangoli </string>
+    <string name = "action_settings"> impostazioni </string>
+    <string name = "action_new"> crea nuovo </string>
+    <string name = "action_save_csv"> Salva CSV </string>
+    <string name = "action_load_csv"> Leggi CSV </string>
+    <string name = "action_save_dxf"> Output DXF </string>
+    <string name = "action_save_pdf"> Output PDF </string>
+    <string name = "action_send_mail"> Invia email </string>
+
+    <string name = "tenkai_title"> Immagine di espansione dell\'area </string>
+    <string name = "tenkai_koujimei"> Nome caso tecnico </string>
+    <string name = "tenkai_zumenmei"> Nome disegno </string>
+    Nome riga come <string name = "tenkai_rosenmei"> </string>
+    <string name = "tenkai_syukusyaku"> scala </string>
+    <string name = "tenkai_zuban"> Numero disegno </string>
+    <string name = "tenkai_sakuseibi"> Data di creazione </string>
+
+    <string name = "tenkai_nengappi"> anno mese giorno </string>
+    <string name = "tenkai_sekousya"> Costruttore </string>
+    <string name = "menseki"> area </string>
+    <string name = "menseki_title"> Dichiarazione di area </string>
+    <string name = "menseki_koujimei"> Nome di costruzione: </string>
+    <string name = "menseki_syoukei"> subtotale </string>
+    <string name = "menseki_goukei"> totale </string>
+    <string name = "editor_number">numero</string>
+    <string name = "editor_name">nome</string>
+    <string name = "editor_sokuten">stazio</string>
+    <string name = "editor_lA">Lung A</string>
+    <string name = "editor_lB">Lung B</string>
+    <string name = "editor_lC">Lung C</string>
+    <string name = "editor_parent">genitor</string>
+    <string name = "editor_setuzoku">connet</string>
+    <string name = "editor_syozoku">appart</string>
+    <string name = "editor_form">forma</string>
+    <string name = "editor_koujyo"> deduzione </string>
+    <string name = "credit"> ※ Questo disegno è stato creato utilizzando l\'applicazione per smartphone "Triangle List". </string>
+
+    <string name = "rosen1"> route 1 </string>
+    <string name = "savecurrent"> Vuoi salvare l\'immagine corrente? </string>
+    <string name = "inputcname"> Puoi inserire il nome della costruzione (spazi consentiti) </string>
+    <string name = "inputdname"> Puoi inserire il nome della rotta (può essere vuoto) </string>
+    <string name = "inputdnum"> Puoi inserire il numero del disegno </string>
+    <string name = "inputaname"> Puoi inserire il nome del contraente (può essere vuoto) </string>
+    <string name = "space"> Interruzioni di riga con spazi. </string>
+    <string name = "inputtnum"> Puoi inserire il numero iniziale del triangolo </string>
+
+
+    <!-- Stringhe usate per i frammenti per la navigazione -->
+    <string name = "first_fragment_label"> Primo frammento </string>
+    <string name = "second_fragment_label"> Secondo frammento </string>
+    <string name = "next"> Avanti </string>
+    <string name = "previous"> Precedente </string>
+    <string name = "zero"> zero </string>
+    <string name = "b"> B </string>
+    <string name = "first"> 1 </string>
+    <string name = "second"> 2 </string>
+    <string name = "rosenname"> nome della rotta </string>
+
+    <string name = "hello_first_fragment"> Inserisci la lunghezza ABC del lato del triangolo </string>
+    <string name = "hello_second_fragment"> seleziona un modulo per la connessione. Arg:% 1 $ s </string>
+
+    <string-array name = "TriNumList">
+        <item> 1 </item>
+    </string-array>
+
+    <string-array name = "DeductionFormList">
+        <item> - </item>
+        <item> Box </item>
+        <item> Cerchio </item>
+    </string-array>
+
+    <string-array name = "ParentList">
+        <item> - </item>
+        <item> B </item>
+        <item> C </item>
+        <item> BR </item>
+        <item> BL </item>
+        <item> CR </item>
+        <item> CL </item>
+        <item> BC </item>
+        <item> CC </item>
+        <item> BF </item>
+        <item> CF </item>
+    </string-array>
+</resources>
