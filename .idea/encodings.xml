@@ -2,10 +2,20 @@
 <project version="4">
   <component name="Encoding">
     <file url="file://$PROJECT_DIR$/app/src/main/cpp/sfc/common_lib/ComSplitStringC.h" charset="windows-31j" />
+    <file url="file://$PROJECT_DIR$/app/src/main/cpp/sfc/common_lib/SXFAngularDim_checkC.h" charset="windows-31j" />
+    <file url="file://$PROJECT_DIR$/app/src/main/cpp/sfc/common_lib/SXFArc_checkC.h" charset="windows-31j" />
     <file url="file://$PROJECT_DIR$/app/src/main/cpp/sfc/common_lib/SXFDiameterDim_checkC.cpp" charset="windows-31j" />
+    <file url="file://$PROJECT_DIR$/app/src/main/cpp/sfc/common_lib/SXFPart21FileC.cpp" charset="windows-31j" />
     <file url="file://$PROJECT_DIR$/app/src/main/cpp/sfc/common_lib/SXFWidth_checkC.cpp" charset="windows-31j" />
+    <file url="file://$PROJECT_DIR$/app/src/main/cpp/sfc/common_lib/SXF_EXT.h" charset="windows-31j" />
+    <file url="file://$PROJECT_DIR$/app/src/main/cpp/sfc/common_lib/SXFopen_part21.cpp" charset="windows-31j" />
+    <file url="file://$PROJECT_DIR$/app/src/main/cpp/sfc/common_lib/SXFwrite_assembly_name.cpp" charset="windows-31j" />
     <file url="file://$PROJECT_DIR$/app/src/main/cpp/sfc/common_lib/StdAfx.cpp" charset="windows-31j" />
     <file url="file://$PROJECT_DIR$/app/src/main/cpp/sfc/common_lib/StdAfx.h" charset="windows-31j" />
     <file url="file://$PROJECT_DIR$/app/src/main/cpp/sfc/common_lib/max.h" charset="windows-31j" />
+    <file url="file://$PROJECT_DIR$/app/src/main/cpp/sfc/dev_tool/SXFStruct.h" charset="windows-31j" />
+    <file url="file://$PROJECT_DIR$/app/src/main/cpp/sfc/dev_tool/max.h" charset="windows-31j" />
+    <file url="file://$PROJECT_DIR$/app/src/main/cpp/sfc/sample_main/SXFStruct.h" charset="windows-31j" />
+    <file url="file://$PROJECT_DIR$/app/src/main/cpp/sfc/sample_main/main.cpp" charset="windows-31j" />
   </component>
 </project>
