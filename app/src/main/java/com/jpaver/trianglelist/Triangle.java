@@ -1170,8 +1170,8 @@ public class Triangle extends EditObject implements Cloneable {
         pointAB_.add(to);
         pointBC_.add(to);
         pointCA_.add(to);
-        pointCenter_.add(to);
-        pointNumber_.add(to);
+        pointCenter_ = pointCenter_.plus(to);
+        pointNumber_ = pointNumber_.plus(to);
         dimPointA_.add(to);
         dimPointB_.add(to);
         dimPointC_.add(to);

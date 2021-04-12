@@ -12,8 +12,6 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
     var myDXFscale = 1000f //* setScale(drawingLength)    //metric to mill
     val mScale = 11.9f*4f//12.5f
 
-    var startTriNumber_ = 1
-
     var isDebug_ = false
 
     val texScale = triangleList_.getPrintTextScale( 1f , "dxf")
@@ -53,7 +51,7 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
         return writer
     }
 
-    fun writeDXFLine(wrtr: BufferedWriter, p1: PointXY, p2: PointXY, color: Int){
+    fun writeLine(wrtr: BufferedWriter, p1: PointXY, p2: PointXY, color: Int){
         val ax = p1.getX()*myDXFscale
         val ay = p1.getY()*myDXFscale
         val bx = p2.getX()*myDXFscale
@@ -154,9 +152,9 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
         }
 
         // TriLines
-        writeDXFLine(wrtr, pca, pab, 7)
-        writeDXFLine(wrtr, pab, pbc, 7)
-        writeDXFLine(wrtr, pbc, pca, 7)
+        writeLine(wrtr, pca, pab, 7)
+        writeLine(wrtr, pab, pbc, 7)
+        writeLine(wrtr, pbc, pca, 7)
 
         // DimTexts
         if(tri.getMyNumber_()==1 || tri.getParentBC() > 2)
@@ -178,15 +176,15 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
             val pnOffsetToC = pn.offset(pc, circleSize)
             val arrowTail = pcOffsetToN.offset(pn, pcOffsetToN.lengthTo(pnOffsetToC) * 0.7f).rotate(pcOffsetToN, 5f)
 
-            writeDXFLine(wrtr, pcOffsetToN, pnOffsetToC, 5)
-            writeDXFLine(wrtr, pcOffsetToN, arrowTail, 5)
+            writeLine(wrtr, pcOffsetToN, pnOffsetToC, 5)
+            writeLine(wrtr, pcOffsetToN, arrowTail, 5)
         }
 
 
         // 測点
         if(tri.getMyName_() != "") {
             writeDXFText(wrtr, tri.getMyName_(), pab.offset(pca, -1.25f), 5, textsize2, 1, 1, pab.calcSokAngle( pca, numvector_ ) )
-            writeDXFLine(wrtr, pab.offset(pca, -tri.getMyName_().length*0.5f), pab.offset(pca, -0.25f), 5)
+            writeLine(wrtr, pab.offset(pca, -tri.getMyName_().length*0.5f), pab.offset(pca, -0.25f), 5)
         }
     }
 
@@ -278,7 +276,7 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
     }
 
     override fun writeLine(p1: PointXY, p2: PointXY, color: Int) {
-        writeDXFLine(writer_, p1, p2, color)
+        writeLine(writer_, p1, p2, color)
     }
 
     fun writeDXFCircle(wrtr: BufferedWriter, point: PointXY, size: Float, color: Int){
@@ -315,42 +313,42 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
         wrtr.newLine()
     }
 
-    fun writeDXFRect(wrtr: BufferedWriter, point: PointXY, sizeX: Float, sizeY: Float, color: Int){
+    fun writeRect(wrtr: BufferedWriter, point: PointXY, sizeX: Float, sizeY: Float, color: Int){
         val sizex: Float = sizeX/2
         val sizey: Float = sizeY/2
-        writeDXFLine(wrtr, point.plus(-sizex, -sizey), point.plus(sizex, -sizey), color)
-        writeDXFLine(wrtr, point.plus(-sizex, sizey), point.plus(sizex, sizey), color)
-        writeDXFLine(wrtr, point.plus(-sizex, -sizey), point.plus(-sizex, sizey), color)
-        writeDXFLine(wrtr, point.plus(sizex, -sizey), point.plus(sizex, sizey), color)
+        writeLine(wrtr, point.plus(-sizex, -sizey), point.plus(sizex, -sizey), color)
+        writeLine(wrtr, point.plus(-sizex, sizey), point.plus(sizex, sizey), color)
+        writeLine(wrtr, point.plus(-sizex, -sizey), point.plus(-sizex, sizey), color)
+        writeLine(wrtr, point.plus(sizex, -sizey), point.plus(sizex, sizey), color)
     }
 
-    fun writeDedText(wrtr: BufferedWriter, st: String, p1: PointXY, p2: PointXY, textsize: Float){
+    fun writeTextAndLine(wrtr: BufferedWriter, st: String, p1: PointXY, p2: PointXY, textsize: Float){
         writeDXFText(wrtr, st, p1.plus(0.2f,0.1f), 1, textsize, 0)
-        writeDXFLine(wrtr, p1, p2, 1)
+        writeLine(wrtr, p1, p2, 1)
     }
 
-    fun writeDXFFrame(wrtr: BufferedWriter){
+    fun writeFrame(wrtr: BufferedWriter){
         myDXFscale = 1000f  * scale_//setScale(drawingLength_)  // 1:scale
 
-        writeDXFRect(wrtr, PointXY(21f,14.85f),40f,27f, 7)
+        writeRect(wrtr, PointXY(21f,14.85f),40f,27f, 7)
 
         writeDXFText(wrtr, rStr_.tTitle_, PointXY(21f, 27.1f), 7, 0.35f, 1)
         writeText( rosenname_, PointXY(21f,26f), scale_, 7, 0.3f, 1 )
 
-        writeDXFLine(wrtr, PointXY(19f,27f), PointXY(23f,27f),7)
-        writeDXFLine(wrtr, PointXY(19f,26.9f), PointXY(23f,26.9f),7)
+        writeLine(wrtr, PointXY(19f,27f), PointXY(23f,27f),7)
+        writeLine(wrtr, PointXY(19f,26.9f), PointXY(23f,26.9f),7)
 
-        writeDXFLine(wrtr, PointXY(31f,7.35f), PointXY(41f,7.35f),7) //yoko
-        writeDXFLine(wrtr, PointXY(31f,1.35f), PointXY(31f,7.35f),7) //tate
-        writeDXFLine(wrtr, PointXY(33f,1.35f), PointXY(33f,7.35f),7) //uchi-tate
+        writeLine(wrtr, PointXY(31f,7.35f), PointXY(41f,7.35f),7) //yoko
+        writeLine(wrtr, PointXY(31f,1.35f), PointXY(31f,7.35f),7) //tate
+        writeLine(wrtr, PointXY(33f,1.35f), PointXY(33f,7.35f),7) //uchi-tate
 
-        writeDXFLine(wrtr, PointXY(31f,6.35f), PointXY(41f,6.35f),7)
-        writeDXFLine(wrtr, PointXY(31f,5.35f), PointXY(41f,5.35f),7)
-        writeDXFLine(wrtr, PointXY(31f,4.35f), PointXY(41f,4.35f),7)
-        writeDXFLine(wrtr, PointXY(31f,3.35f), PointXY(41f,3.35f),7)
-        writeDXFLine(wrtr, PointXY(31f,2.35f), PointXY(41f,2.35f),7)
-        writeDXFLine(wrtr, PointXY(36f,2.35f), PointXY(36f,3.35f),7)
-        writeDXFLine(wrtr, PointXY(38f,2.35f), PointXY(38f,3.35f),7)
+        writeLine(wrtr, PointXY(31f,6.35f), PointXY(41f,6.35f),7)
+        writeLine(wrtr, PointXY(31f,5.35f), PointXY(41f,5.35f),7)
+        writeLine(wrtr, PointXY(31f,4.35f), PointXY(41f,4.35f),7)
+        writeLine(wrtr, PointXY(31f,3.35f), PointXY(41f,3.35f),7)
+        writeLine(wrtr, PointXY(31f,2.35f), PointXY(41f,2.35f),7)
+        writeLine(wrtr, PointXY(36f,2.35f), PointXY(36f,3.35f),7)
+        writeLine(wrtr, PointXY(38f,2.35f), PointXY(38f,3.35f),7)
 
 
         val tss = 0.2f
@@ -413,11 +411,11 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
         if( ded.type == "Box" ) lineOffset = -0.5f
 
         if(point.x <= pointFlag.x) {  //ptFlag is RIGHT from pt
-            writeDXFLine(wrtr, point, pointFlag, 1)
-            writeDedText(wrtr, ded.getInfo(), pointFlag, pointFlag.plus(infoStrLength + lineOffset,0f), textsize)
+            writeLine(wrtr, point, pointFlag, 1)
+            writeTextAndLine(wrtr, ded.getInfo(), pointFlag, pointFlag.plus(infoStrLength + lineOffset,0f), textsize)
         } else {                     //ptFlag is LEFT from pt
-            writeDXFLine(wrtr, point, pointFlag, 1)
-            writeDedText(wrtr, ded.getInfo(), pointFlag.plus(-ded.getInfo().length*textsize - lineOffset,0f), pointFlag, textsize)
+            writeLine(wrtr, point, pointFlag, 1)
+            writeTextAndLine(wrtr, ded.getInfo(), pointFlag.plus(-ded.getInfo().length*textsize - lineOffset,0f), pointFlag, textsize)
         }
 
         if(ded.type == "Circle") writeDXFCircle(wrtr, point, ded.lengthX/2, 1)
@@ -428,10 +426,10 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
     fun writeDXFDedRect(wrtr: BufferedWriter, ded: Deduction, color: Int){
         ded.shapeAngle_ = -ded.shapeAngle_ // 逆回転
         ded.setBox( 1f )
-        writeDXFLine(wrtr, ded.plt, ded.plb, color)
-        writeDXFLine(wrtr, ded.plt, ded.prt, color)
-        writeDXFLine(wrtr, ded.prt, ded.prb, color)
-        writeDXFLine(wrtr, ded.plb, ded.prb, color)
+        writeLine(wrtr, ded.plt, ded.plb, color)
+        writeLine(wrtr, ded.plt, ded.prt, color)
+        writeLine(wrtr, ded.prt, ded.prb, color)
+        writeLine(wrtr, ded.plb, ded.prb, color)
     }
 
     fun writeDXFEntities(wrtr: BufferedWriter){
@@ -479,7 +477,7 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
         for (index in 1 .. myDXFDedList.size()) {
             writeDXFDeduction(wrtr, myDXFDedList.get(index))
         }
-        writeDXFFrame(wrtr)
+        writeFrame(wrtr)
         wrtr.write("""
             0
             ENDSEC

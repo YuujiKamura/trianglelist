@@ -1,2 +1,0 @@
-#include "StdAfxUnitTests.h"
-

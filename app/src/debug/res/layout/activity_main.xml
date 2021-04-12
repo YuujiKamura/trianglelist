@@ -293,6 +293,14 @@
         app:srcCompat="@android:drawable/ic_menu_close_clear_cancel"
         android:contentDescription="delete a shape, tap twice"/>
 
+        <ProgressBar
+            android:id="@+id/progressbar"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:layout_margin="30dp"
+            android:indeterminate="true"
+            style="@android:style/Widget.ProgressBar.Horizontal" />
+
     <com.google.android.gms.ads.AdView
         xmlns:ads="http://schemas.android.com/apk/res-auto"
         android:id="@+id/adView"

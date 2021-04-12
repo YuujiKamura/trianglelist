@@ -135,7 +135,7 @@ public class TriangleList extends EditList implements Cloneable {
 
     public float getPrintTextScale (float drawingScale, String type){
         float ts = 10f;
-        float dxfts = 0.4f;
+        float dxfts = 0.45f;
         if( type.equals( "dxf" ) ) return dxfts;
 
         switch((int)(getPrintScale(drawingScale)*10)){
@@ -143,19 +143,19 @@ public class TriangleList extends EditList implements Cloneable {
                 ts = 2f;
                 break;
             case 50:
-                ts = 3.5f;
+                ts = 2.5f;
                 break;
             case 45:
-                ts = 3.5f;
+                ts = 3f;
                 break;
             case 40:
                 ts = 3.5f;
                 break;
             case 30:
-                ts = 5f;
+                ts = 4f;
                 break;
             case 25:
-                ts = 8f;
+                ts = 5f;
                 break;
             case 20:
                 ts = 8f;
@@ -533,13 +533,14 @@ public class TriangleList extends EditList implements Cloneable {
 
     public boolean resetConnectedTriangles(Params tParams ){
 
-        Triangle curTri = trilist_.get( tParams.getN()-1 );
+        int cIndex = tParams.getN()-1;
+        Triangle curTri = trilist_.get( cIndex );
 
         // 親番号が書き換わっている時は入れ替える。ただし現在のリストの範囲外の番号は除く。
-        int pn = tParams.getPn();
-
-        if( pn != curTri.myParentNumber_ && pn < trilist_.size() && pn > 0 )
-            curTri.parent_ = trilist_.get( pn - 1 );
+        int pNum = tParams.getPn();
+        int pIndex = pNum -1;
+        if( pNum != curTri.myParentNumber_ && pNum < trilist_.size() && pNum > 0 )
+            curTri.parent_ = trilist_.get( pNum - 1 );
 
         curTri.reset( tParams );
 
@@ -550,27 +551,27 @@ public class TriangleList extends EditList implements Cloneable {
     }
 
 
-    public boolean resetConnectedTriangles(int index, Triangle nextTriangle){
+    public boolean resetConnectedTriangles(int cNum, Triangle nextTriangle){
         if(nextTriangle == null)  return false;
         if(!nextTriangle.validTriangle()) return false;
 
-        nextTriangle.myNumber_ = index; //useless?
+        nextTriangle.myNumber_ = cNum; //useless?
 
-        // ひとつ前の三角形の子接続を書き換える？
-        if(index > 1) trilist_.get(index-2).childSide_ = nextTriangle.myParentBC_;
+        // ひとつ前の三角形の子接続を書き換える
+        if(cNum > 1) trilist_.get(cNum-2).childSide_ = nextTriangle.myParentBC_;
 
         // 自分の親番号と、親の三角形の番号が一致したとき？
-        int parentNumber = trilist_.get(index-1).myParentNumber_;
-        if(index > 1 && parentNumber == trilist_.get(parentNumber-1).myNumber_ ){
+        int parentNumber = trilist_.get(cNum-1).myParentNumber_;
+        if(cNum > 1 && parentNumber == trilist_.get(parentNumber-1).myNumber_ ){
 
             trilist_.get(parentNumber-1).resetByChild(nextTriangle);
         }
 
         // 自身の書き換え
-        trilist_.get(index-1).reset(nextTriangle);
+        trilist_.get(cNum-1).reset(nextTriangle);
 
         // 子をすべて書き換える
-        if( trilist_.size() > 1 ) resetMyChild(trilist_.get(index-1));
+        if( trilist_.size() > 1 ) resetMyChild(trilist_.get(cNum-1));
 
         //lastTapNum_ = 0;
         //lastTapSide_ = -1;

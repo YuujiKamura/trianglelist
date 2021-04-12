@@ -17,6 +17,7 @@ public class PointXY implements Cloneable {
 
     @Override
     public PointXY clone(){
+        //super.clone();
         PointXY b = new PointXY(0f,0f);
         try {
             b.X = X;
@@ -68,8 +69,7 @@ public class PointXY implements Cloneable {
 
     public Boolean equals( float x, float y){
         float range = 0.001f;
-        if( X < x+range && X > x-range && Y < y+range && Y > y-range ) return true;
-        else return false;
+        return X < x + range && X > x - range && Y < y + range && Y > y - range;
     }
 
     public float getX(){ return this.X; }
@@ -206,6 +206,8 @@ public class PointXY implements Cloneable {
         angle += 90f;
         if(90 < angle) angle -= 180;
 
+        if( angle < 0 ) angle += 360;
+
         return angle;
     }
 
@@ -242,13 +244,11 @@ public class PointXY implements Cloneable {
     }
 
     public boolean Equals(PointXY target){
-        if (this.X == target.X && this.Y == target.Y) return true;
-        else return false;
+        return this.X == target.X && this.Y == target.Y;
     }
 
     public boolean nearBy( PointXY target, float range){
-        if (this.X > target.X-range && this.X < target.X+range  && this.Y > target.Y-range && this.Y < target.Y+range ) return true;
-        else return false;
+        return this.X > target.X - range && this.X < target.X + range && this.Y > target.Y - range && this.Y < target.Y + range;
     }
 
     public boolean isCollide(PointXY ab, PointXY bc, PointXY ca){

@@ -10,6 +10,7 @@ open class DrawingFileWriter() {
     var rosenname_ = ""
     var gyousyaname_ = ""
     var zumennum_ = "1/1"
+    var startTriNumber_ = 1
 
     val paintTri_: Paint = Paint()
     var paintTexS_: Paint = Paint()
@@ -40,6 +41,11 @@ open class DrawingFileWriter() {
         } //1/150 (x:40m以下
         return scale
     }*/
+
+    fun setStartNumber( num: Int ) :Int{
+        if( num > 1 ) startTriNumber_ = num
+        return startTriNumber_
+    }
 
     fun Float?.formattedString(fractionDigits:Int): String{
         // nullの場合は空文字

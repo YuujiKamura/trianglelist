@@ -961,16 +961,27 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
         drawTriLines( canvas, tri, paintTri )
 
+        val margin = paintDim.textSize*0.52f
+
         // 寸法
         if(tri.getMyNumber_() == 1 || tri.getParentBC() > 2 || tri.cParam_.type != 0 )
-            canvas.drawTextOnPath(la, makePath(abca), abca.offsetH_, abca.offsetV_, paintDim)
-        canvas.drawTextOnPath(lb, makePath(abbc), abbc.offsetH_, abbc.offsetV_, paintDim)
-        canvas.drawTextOnPath(lc, makePath(bcca), bcca.offsetH_, bcca.offsetV_, paintDim)
+            drawDigits( canvas, la, makePath(abca), abca.offsetH_, abca.offsetV_, paintDim, margin )
+            //canvas.drawTextOnPath(la, makePath(abca), abca.offsetH_, abca.offsetV_, paintDim)
+        drawDigits( canvas, lb, makePath(abbc), abbc.offsetH_, abbc.offsetV_, paintDim, margin )
+        drawDigits( canvas, lc, makePath(bcca), bcca.offsetH_, bcca.offsetV_, paintDim, margin )
+        //canvas.drawTextOnPath(lb, makePath(abbc), abbc.offsetH_, abbc.offsetV_, paintDim)
+        //canvas.drawTextOnPath(lc, makePath(bcca), bcca.offsetH_, bcca.offsetV_, paintDim)
 
         // 測点
         if(tri.getMyName_() != ""){
             canvas.drawTextOnPath(tri.getMyName_(), makePath(sokt), 0f, -2f, paintSok)
             canvas.drawPath(makePath(sokt), paintTri)
+        }
+    }
+
+    fun drawDigits( canvas: Canvas, str: String, path: Path, offsetH: Float, offsetV: Float, paint: Paint, margin: Float ){
+        for( index in 0 .. str.length-1 ){
+            canvas.drawTextOnPath(str.get(index).toString(), path, offsetH+((index-2)*margin), offsetV, paint )
         }
     }
 

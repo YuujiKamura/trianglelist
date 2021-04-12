@@ -161,6 +161,7 @@ class MainActivity : AppCompatActivity(),
     lateinit var myDeductionList: DeductionList
 
     var fileType: String = "notyet"
+    var filename_ = "notyet"
     var deductionMode_: Boolean = false
     var mIsCreateNew: Boolean = false
     val onetohandred_ = 11.9f
@@ -171,7 +172,7 @@ class MainActivity : AppCompatActivity(),
     var rosenname_ = ""
     var gyousyaname_ = ""
     var zumennum_ = "1/1"
-    var dxfStartNumber_ = 1
+    var drawingStartNumber_ = 1
 
     var colorindex_ = 4
     val RColors = arrayOf(
@@ -1168,6 +1169,8 @@ class MainActivity : AppCompatActivity(),
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
+        val progressBar = findViewById<ProgressBar>(R.id.progressbar)
+        progressBar.setVisibility(android.widget.ProgressBar.INVISIBLE)
 
         rStr_ = ResStr(
             getString(R.string.tenkai_title),
@@ -1326,6 +1329,8 @@ class MainActivity : AppCompatActivity(),
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
 
+
+
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
@@ -1361,13 +1366,12 @@ class MainActivity : AppCompatActivity(),
             }
 
             R.id.action_save_dxf -> {
-
                 val hTstart = getString(R.string.inputtnum)
                 val editText5 = EditText(this)
                 editText5.hint = hTstart
                 val filter2 = arrayOf(InputFilter.LengthFilter(3))
                 editText5.setFilters(filter2)
-                editText5.setText(dxfStartNumber_.toString())
+                editText5.setText(drawingStartNumber_.toString())
 
                 AlertDialog.Builder(this)
                     .setTitle("Save DXF")
@@ -1375,7 +1379,7 @@ class MainActivity : AppCompatActivity(),
                     .setView(editText5)
                     .setPositiveButton("OK",
                         DialogInterface.OnClickListener { dialog, which ->
-                            dxfStartNumber_ = editText5.getText().toString().toInt()
+                            drawingStartNumber_ = editText5.getText().toString().toInt()
 
                             fileType = "DXF"
                             var i: Intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
@@ -1385,13 +1389,41 @@ class MainActivity : AppCompatActivity(),
                                 rosenname_ + " " + LocalDate.now() + ".dxf"
                             )
                             startActivityForResult(i, 1)
-
-                        })
-                    .show()
-
-
+                        }
+                    ).show()
                 return true
             }
+
+            R.id.action_save_sfc -> {
+                val hTstart = getString(R.string.inputtnum)
+                val editText5 = EditText(this)
+                editText5.hint = hTstart
+                val filter2 = arrayOf(InputFilter.LengthFilter(3))
+                editText5.setFilters(filter2)
+                editText5.setText(drawingStartNumber_.toString())
+
+                filename_ = rosenname_ + " " + LocalDate.now() + ".sfc"
+                AlertDialog.Builder(this)
+                        .setTitle("Save SFC")
+                        .setMessage(R.string.inputtnum)
+                        .setView(editText5)
+                        .setPositiveButton("OK",
+                                DialogInterface.OnClickListener { dialog, which ->
+                                    drawingStartNumber_ = editText5.getText().toString().toInt()
+
+                                    fileType = "SFC"
+                                    var i: Intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
+                                    i.setType("text/sfc")
+                                    i.putExtra(
+                                            Intent.EXTRA_TITLE,
+                                            rosenname_ + " " + LocalDate.now() + ".sfc"
+                                    )
+                                    startActivityForResult(i, 1)
+                                }
+                        ).show()
+                return true
+            }
+
 
             R.id.action_save_pdf -> {
                 // 入力ヒントの表示
@@ -1511,9 +1543,12 @@ class MainActivity : AppCompatActivity(),
                 var writer: BufferedWriter = BufferedWriter(
                     OutputStreamWriter(getContentResolver().openOutputStream(title), charset)
                 )
+
+
                 if (fileType == "DXF") saveDXF(writer)
                 if (fileType == "CSV") saveCSV(writer)
                 if (fileType == "PDF") savePDF(getContentResolver().openOutputStream(title)!!, true)
+                if (fileType == "SFC") saveSFC( BufferedOutputStream( getContentResolver().openOutputStream(title) ), true)
 
                 AutoSaveCSV() // オートセーブ
             } catch (e: IOException) {
@@ -1553,6 +1588,39 @@ class MainActivity : AppCompatActivity(),
             getString(R.string.menseki_syoukei),
             getString(R.string.menseki_goukei),
         )
+    }
+    fun saveDXF(writer: BufferedWriter) :BufferedWriter{
+
+        val dxfWriter = DxfFileWriter(
+                myTriangleList
+        )
+        dxfWriter.rStr_ = rStr_
+
+        dxfWriter.writer_ = writer
+        dxfWriter.drawingLength_ = myTriangleList.measureMostLongLine()
+        dxfWriter.deductionList_ = myDeductionList
+        dxfWriter.setNames(koujiname_, rosenname_, gyousyaname_, zumennum_)
+        dxfWriter.isDebug_ = my_view.isDebug_
+
+        dxfWriter.setStartNumber( drawingStartNumber_ )
+
+        dxfWriter.saveDXF(writer)
+        if( BuildConfig.FLAVOR == "free" ) showInterStAd()
+        return writer
+    }
+
+    fun saveSFC(out: BufferedOutputStream, isShowAd: Boolean) {
+        val progressBar = findViewById<ProgressBar>(R.id.progressbar)
+        progressBar.setVisibility(android.widget.ProgressBar.VISIBLE)
+
+        val writer = SfcWriter( myTriangleList, myDeductionList, out, filename_ , drawingStartNumber_ )
+        writer.writeHeader()
+        writer.writeList()
+        writer.writeFooter()
+        out.close()
+
+        progressBar.setVisibility(android.widget.ProgressBar.INVISIBLE)
+        if( BuildConfig.FLAVOR == "free" ) showInterStAd()
     }
 
     fun savePDF(out: OutputStream, isShowAd: Boolean){
@@ -1986,24 +2054,5 @@ class MainActivity : AppCompatActivity(),
         setTitle(rStr_.menseki_ + ": ${myTriangleList.getArea() - myDeductionList.getArea()} m^2");
     }
 
-    fun saveDXF(writer: BufferedWriter) :BufferedWriter{
-
-        val dxfWriter = DxfFileWriter(
-            myTriangleList
-        )
-        dxfWriter.rStr_ = rStr_
-
-        dxfWriter.writer_ = writer
-        dxfWriter.drawingLength_ = myTriangleList.measureMostLongLine()
-        dxfWriter.deductionList_ = myDeductionList
-        dxfWriter.setNames(koujiname_, rosenname_, gyousyaname_, zumennum_)
-        dxfWriter.isDebug_ = my_view.isDebug_
-
-        dxfWriter.startTriNumber_ = dxfStartNumber_
-
-        dxfWriter.saveDXF(writer)
-        if( BuildConfig.FLAVOR == "free" ) showInterStAd()
-        return writer
-    }
 
 } // end of class
