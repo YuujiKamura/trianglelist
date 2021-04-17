@@ -10,6 +10,7 @@
     <color name="colorOrange">#FFAA99</color>
     <color name="colorYellow">#FFFF99</color>
     <color name="colorLime">#AAFFAA</color>
+    <color name="colorLine">#22DD55</color>
     <color name="colorSky">#88CCFF</color>
 
 </resources>

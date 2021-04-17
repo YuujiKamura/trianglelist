@@ -10,21 +10,11 @@ android {
         applicationId "com.jpaver.myapplication"
         minSdkVersion 23
         targetSdkVersion 29
-        versionCode 107
-        versionName "5.03"
+        versionCode 112
+        versionName "5.31"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    // Encapsulates your external native build configurations.
-    externalNativeBuild {
-
-        // Encapsulates your CMake build configurations.
-        cmake {
-
-            // Provides a relative path to your CMake build script.
-            path "CMakeLists.txt"
-        }
-    }
 
     buildTypes {
         release {
@@ -61,11 +51,6 @@ android {
     }
     kotlinOptions {
         jvmTarget = "1.8"
-    }
-    externalNativeBuild {
-        cmake {
-            path file('src/main/cpp/CMakeLists.txt')
-        }
     }
 
 }

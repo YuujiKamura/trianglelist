@@ -1,4 +1,6 @@
 
+        /data/data/com.jpaver.myapplication/files/myLastTriList.pdf
+
         // ded rotate
             else {
                 val konoList = my_view.myDeductionList
