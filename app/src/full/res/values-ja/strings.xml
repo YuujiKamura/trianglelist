@@ -5,6 +5,7 @@
     <string name="action_save_csv">CSVを保存</string>
     <string name="action_load_csv">CSVを読込</string>
     <string name="action_save_dxf">DXF出力</string>
+    <string name="action_save_sfc">SFC出力</string>
     <string name="action_save_pdf">PDF出力</string>
     <string name="action_send_mail">メールを送信</string>
 

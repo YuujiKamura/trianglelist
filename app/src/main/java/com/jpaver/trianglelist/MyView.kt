@@ -3,6 +3,7 @@ package com.jpaver.trianglelist
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
+import android.util.Log
 import android.view.*
 import android.view.ScaleGestureDetector.OnScaleGestureListener
 import java.util.*
@@ -87,6 +88,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     var parentSide: Int = 0
     var alpha: Int = 255
 
+    val isSkipDraw_ = true
     var isDebug_ = false
     var isPrintPDF_ = false
     var isAreaOff_ = true
@@ -147,6 +149,9 @@ class MyView(context: Context?, attrs: AttributeSet?) :
                         //pass
                     }
                 }
+
+                Log.d("MyView", "OnAttachedToWindow Process Done.")
+
                 return true
             }
 
@@ -352,11 +357,13 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         // 背景
         val zero = 0
         canvas.drawColor(Color.argb(255, zero, zero, zero))
+        myCanvas = canvas
+
+        //if( isSkipDraw_ == true ) return
+
         drawEntities(canvas, paintTri, paintTexS, paintRed, darkColors_, myTriangleList, myDeductionList )
         //drawDebugData(canvas, PointXY(0.5f*myScale, 0.5f*myScale))
         drawLocalPressPoint( canvas, localPressPoint )
-
-        myCanvas = canvas
     }
 
 

@@ -1,5 +1,6 @@
 package com.jpaver.trianglelist
 
+import android.util.Log
 import java.io.BufferedWriter
 
 class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
@@ -48,6 +49,9 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
         writeDXFEntities(writer)
         writeDXFEOF(writer)
         writer.close()
+
+        Log.d("DxfFileWriter", "Writer Process Done.")
+
         return writer
     }
 

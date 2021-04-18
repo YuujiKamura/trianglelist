@@ -7,8 +7,6 @@ import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.content.res.Configuration
-import android.content.res.Resources
 import android.graphics.Color
 import android.graphics.drawable.Icon
 import android.net.Uri
@@ -23,11 +21,13 @@ import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
 import android.view.View.INVISIBLE
+import android.view.View.VISIBLE
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider.getUriForFile
+import androidx.core.view.isVisible
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.InterstitialAd
@@ -392,23 +392,12 @@ class MainActivity : AppCompatActivity(),
     private val TestAdID_ = "ca-app-pub-3940256099942544/6300978111"
     private val UnitAdID_ = "ca-app-pub-6982449551349060/2369695624"
 
-        override fun onCreate(savedInstanceState: Bundle?) {
+    override fun onCreate(savedInstanceState: Bundle?) {
+
         super.onCreate(savedInstanceState)
-
-//        setContentView(R.layout.activity_main)
-
-        var locale = Locale.getDefault()
-        locale = if (locale.equals(Locale.JAPAN)) Locale.US else Locale.JAPAN
-        //言語を環境に合わせて変える。
-        //locale.setDefault(locale)
-        //言語を設定
-        val config = Configuration()
-        //config.locale = locale
-        val resources: Resources = baseContext.resources
-        //resources.updateConfiguration(config, null)
-        //言語ファイルなどのリソースを更新する。
+        setTheme(R.style.AppTheme_NoActionBar)
         setContentView(R.layout.activity_main)
-        //新たにレイアウトを描画しなおす
+
 
         if( BuildConfig.FLAVOR == "free" ){
             // must after setContentView
@@ -440,30 +429,9 @@ class MainActivity : AppCompatActivity(),
         setSupportActionBar(toolbar)
         myDeductionList = DeductionList()
 
+
         fab_replace.setOnClickListener { view ->
             fabReplace(dParams_, false)
-/*
-            if(deductionMode_ == false) {
-                if( findViewById<TextView>(R.id.editText2).getText().toString() == "" )
-                    resetTrianglesBy( myEditor.ReadLineTo( dParams_, myELSecond ) )
-                else
-                    if( findViewById<TextView>(R.id.editText3).getText().toString() == "" ) return@setOnClickListener
-                    addTriangleBy( myEditor.ReadLineTo( dParams_, myELFirst ) )
-
-            } else { // if deduction mode
-                if( findViewById<TextView>(R.id.editText).getText().toString() == "" )
-                    resetDeductionsBy( myEditor.ReadLineTo( dParams_, myELSecond ) )
-                else
-                    addDeductionBy( myEditor.ReadLineTo( dParams_, myELFirst ) )
-            }
-            EditorClear(getList(deductionMode_), getList(deductionMode_).getCurrent())
-            my_view.setTriangleList(myTriangleList, mScale)
-            my_view.setDeductionList(myDeductionList, mScale )
-            printDebugConsole()
-            AutoSaveCSV()
-            setTitles()
-            if(!deductionMode_) my_view.resetViewNotMove()
-*/
         }
 
         fab_flag.setOnClickListener { view ->
@@ -740,9 +708,18 @@ class MainActivity : AppCompatActivity(),
                 ViewPdf( this )
             }
 
-
             fab_share.setOnClickListener { view ->
                 sendPdf(this)
+            }
+
+            fab_mail.setOnClickListener { view ->
+                //findViewById<ProgressBar>(R.id.indeterminateBar).visibility = View.VISIBLE
+                //progressBar.visibility = View.VISIBLE
+
+                sendMail()
+
+            //    progressBar.visibility = View.INVISIBLE
+
             }
     }
 
@@ -1033,7 +1010,6 @@ class MainActivity : AppCompatActivity(),
         )
     }
 
-
     fun colorMovementFabs() : Int{
         val max: Int = getList(deductionMode_).size()
         val current: Int = getList(deductionMode_).getCurrent()
@@ -1183,8 +1159,6 @@ class MainActivity : AppCompatActivity(),
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        val progressBar = findViewById<ProgressBar>(R.id.progressbar)
-        progressBar.setVisibility(android.widget.ProgressBar.INVISIBLE)
 
         rStr_ = ResStr(
                 getString(R.string.tenkai_title),
@@ -1259,8 +1233,9 @@ class MainActivity : AppCompatActivity(),
 
         checkPermission()
 
-    }
+        Log.d("OnAttachedToWindow", "Process Done.")
 
+    }
 
     fun rotateColor(index: Int): Int{
         return R.color.colorPink
@@ -1302,7 +1277,7 @@ class MainActivity : AppCompatActivity(),
     override fun onRestart() {
         super.onRestart()
 
-        // 広告の再表示
+        // 広告の非表示
         if( BuildConfig.FLAVOR == "free" ) mAdView.visibility = INVISIBLE
     }
 
@@ -1525,22 +1500,7 @@ class MainActivity : AppCompatActivity(),
             }
 
             R.id.action_send_mail -> {
-                //saveDXF()
-                var intent: Intent = Intent(Intent.ACTION_SEND)
-                ///myIntent.putExtra(Intent.EXTRA_STREAM,"myTriangleListDXF.dxf")
-                intent.putExtra(Intent.EXTRA_EMAIL, "Input Mail Addres")
-                intent.putExtra(Intent.EXTRA_SUBJECT, "Input Subject")
-                intent.putExtra(Intent.EXTRA_TEXT, getString(R.string.app_name))
-
-                val contentUri = getInnerFile( this, "myLastTriList.pdf" )
-                intent.putExtra(Intent.EXTRA_STREAM, contentUri )
-                val contentUri2 = getInnerFile( this, "myLastTriList.csv" )
-                intent.putExtra(Intent.EXTRA_STREAM, contentUri2 )
-
-
-                intent.setType("message/rfc822")
-                intent.setPackage("com.google.android.gm")
-                startActivity(intent)
+                sendMail()
                 return true
             }
 
@@ -1567,7 +1527,7 @@ class MainActivity : AppCompatActivity(),
                 if (fileType == "DXF") saveDXF(writer)
                 if (fileType == "CSV") saveCSV(writer)
                 if (fileType == "PDF") savePDF(getContentResolver().openOutputStream(title)!!, true)
-                if (fileType == "SFC") saveSFC(BufferedOutputStream(getContentResolver().openOutputStream(title)), true)
+                if (fileType == "SFC") saveSFC(BufferedOutputStream( getContentResolver().openOutputStream( title ) ), true)
 
                 AutoSaveCSV() // オートセーブ
             } catch (e: IOException) {
@@ -1593,48 +1553,14 @@ class MainActivity : AppCompatActivity(),
         setTitles()
     }
 
-    fun ViewPdf( context: Context ){
-        AutoSavePDF()
-
-        val contentUri = getInnerFile( context, "myLastTriList.pdf" )
-
-        if ( contentUri != Uri.EMPTY ) {
-            val intent = Intent(Intent.ACTION_VIEW)
-            intent.setFlags( Intent.FLAG_GRANT_READ_URI_PERMISSION )
-            intent.setDataAndType(contentUri, "application/pdf")
-            try {
-                startActivity(intent)
-            } catch (e: ActivityNotFoundException) {
-                //if user doesn't have pdf reader instructing to download a pdf reader
-            }
+    fun showInterStAd(){
+        if ( mInterstitialAd.isLoaded && BuildConfig.FLAVOR == "free" ) {
+            // 広告の再表示
+            //mInterstitialAd.loadAd(AdRequest.Builder().build())
+            mInterstitialAd.show()
+        } else {
+            Log.d("TAG", "The interstitial wasn't loaded yet.")
         }
-    }
-
-    fun getInnerFile( context: Context, filename: String ) :Uri {
-        val filepathC = context.filesDir
-        val newFile = File( filepathC, filename )
-        if (newFile.exists())
-            return getUriForFile( context, BuildConfig.APPLICATION_ID + ".fileprovider", newFile )
-        else return Uri.EMPTY
-    }
-
-    fun sendPdf(context: Context){
-        AutoSavePDF()
-
-        val contentUri = getInnerFile( context, "myLastTriList.pdf" )
-
-        if ( contentUri != Uri.EMPTY ) {
-           val intent = Intent(Intent.ACTION_SEND)
-            intent.setDataAndType(contentUri, "application/pdf")
-            intent.putExtra(Intent.EXTRA_STREAM, contentUri )
-            intent.setFlags( Intent.FLAG_GRANT_READ_URI_PERMISSION )
-            try {
-                startActivity(intent)
-            } catch (e: ActivityNotFoundException) {
-                //if user doesn't have pdf reader instructing to download a pdf reader
-            }
-        }
-
     }
 
     fun makeRStr() : ResStr {
@@ -1652,6 +1578,81 @@ class MainActivity : AppCompatActivity(),
                 getString(R.string.menseki_goukei),
         )
     }
+
+    fun ViewPdf( context: Context ){
+        AutoSavePDF()
+
+        val contentUri = getAppLocalFile( context, "myLastTriList.pdf" )
+
+        if ( contentUri != Uri.EMPTY ) {
+            val intent = Intent(Intent.ACTION_VIEW)
+            intent.setFlags( Intent.FLAG_GRANT_READ_URI_PERMISSION )
+            intent.setDataAndType(contentUri, "application/pdf")
+            try {
+                startActivity(intent)
+            } catch (e: ActivityNotFoundException) {
+                //if user doesn't have pdf reader instructing to download a pdf reader
+            }
+        }
+    }
+
+    fun sendMail(){
+
+        AutoSaveCSV()
+        AutoSavePDF()
+        AutoSaveDXF()
+        AutoSaveSFC()
+
+        var intent: Intent = Intent( Intent.ACTION_SEND_MULTIPLE )
+        val contentUri = getAppLocalFile( this, "myLastTriList.pdf" )
+        val contentUri2 = getAppLocalFile( this, "myLastTriList.csv" )
+        val contentUri3 = getAppLocalFile( this, "myLastTriList.dxf" )
+        val contentUri4 = getAppLocalFile( this, "myLastTriList.sfc" )
+
+        val ar = ArrayList<Uri>()
+        ar.add( contentUri )
+        ar.add( contentUri2 )
+        ar.add( contentUri3 )
+        ar.add( contentUri4 )
+
+        intent.putExtra(Intent.EXTRA_STREAM, ar )
+
+        intent.setType("message/rfc822")
+        intent.setPackage("com.google.android.gm")
+
+        startActivity(intent)
+        return
+
+    }
+
+    fun getAppLocalFile(context: Context, filename: String ) :Uri {
+        val filepathC = context.filesDir
+        val newFile = File( filepathC, filename )
+        if (newFile.exists())
+            return getUriForFile( context, BuildConfig.APPLICATION_ID + ".fileprovider", newFile )
+        else return Uri.EMPTY
+    }
+
+    fun sendPdf(context: Context){
+        AutoSavePDF()
+
+        val contentUri = getAppLocalFile( context, "myLastTriList.pdf" )
+
+        if ( contentUri != Uri.EMPTY ) {
+           val intent = Intent(Intent.ACTION_SEND)
+            intent.setDataAndType(contentUri, "application/pdf")
+            intent.putExtra(Intent.EXTRA_STREAM, contentUri )
+            intent.setFlags( Intent.FLAG_GRANT_READ_URI_PERMISSION )
+            try {
+                startActivity(intent)
+            } catch (e: ActivityNotFoundException) {
+                //if user doesn't have pdf reader instructing to download a pdf reader
+            }
+        }
+
+        //showInterStAd()
+    }
+
     fun saveDXF(writer: BufferedWriter) :BufferedWriter{
 
         val dxfWriter = DxfFileWriter(
@@ -1673,8 +1674,6 @@ class MainActivity : AppCompatActivity(),
     }
 
     fun saveSFC(out: BufferedOutputStream, isShowAd: Boolean) {
-        val progressBar = findViewById<ProgressBar>(R.id.progressbar)
-        progressBar.setVisibility(android.widget.ProgressBar.VISIBLE)
 
         val writer = SfcWriter(myTriangleList, myDeductionList, out, filename_, drawingStartNumber_)
         writer.writeHeader()
@@ -1682,8 +1681,9 @@ class MainActivity : AppCompatActivity(),
         writer.writeFooter()
         out.close()
 
-        progressBar.setVisibility(android.widget.ProgressBar.INVISIBLE)
-        if( BuildConfig.FLAVOR == "free" ) showInterStAd()
+        if( isShowAd == true && BuildConfig.FLAVOR == "free" ){
+            showInterStAd()
+        }
     }
 
     fun savePDF(out: OutputStream, isShowAd: Boolean){
@@ -1735,7 +1735,36 @@ class MainActivity : AppCompatActivity(),
             showInterStAd()
         }
 
+    }
 
+    fun AutoSavePDF(){
+        try {
+            savePDF(openFileOutput("myLastTriList.pdf", Context.MODE_PRIVATE), false)
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+    }
+
+    // show ad.
+    fun AutoSaveDXF(){
+        try {
+            val charset: String = "Shift-JIS"
+            var writer: BufferedWriter = BufferedWriter(
+                    OutputStreamWriter( openFileOutput("myLastTriList.dxf", Context.MODE_PRIVATE ), charset )
+            )
+            writer = saveDXF(writer)
+
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+    }
+
+    fun AutoSaveSFC(){
+        try {
+            saveSFC(BufferedOutputStream( openFileOutput("myLastTriList.sfc", Context.MODE_PRIVATE) ), false)
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
     }
 
     fun AutoSaveCSV(){
@@ -1751,33 +1780,6 @@ class MainActivity : AppCompatActivity(),
         // 広告の再表示
         //if( BuildConfig.FLAVOR == "free" ) mAdView.visibility = VISIBLE
 
-    }
-
-    fun showInterStAd(){
-        if ( mInterstitialAd.isLoaded && BuildConfig.FLAVOR == "free" ) {
-            mInterstitialAd.show()
-        } else {
-            Log.d("TAG", "The interstitial wasn't loaded yet.")
-        }
-    }
-
-    fun AutoSavePDF(){
-        try {
-            savePDF(openFileOutput("myLastTriList.pdf", Context.MODE_PRIVATE), false)
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-    }
-
-    fun AutoSaveDXF(){
-        try {
-            var writer: BufferedWriter = BufferedWriter(
-                    OutputStreamWriter(openFileOutput("myLastTriList.dxf", Context.MODE_PRIVATE))
-            )
-            saveDXF(writer)
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
     }
 
     fun ResumeCSV(){
@@ -1869,30 +1871,6 @@ class MainActivity : AppCompatActivity(),
             dd.scale(PointXY(0f, 0f), 1f, -1f)
         }
         writer.close()
-    }
-
-    fun typeToInt(type: String) :Int{
-        var pl: Int = 0
-        if(type == "Box") pl = 1
-        if(type == "Circle") pl = 2
-        return pl
-    }
-
-    fun parentBCtoCParam(pbc: Int, lenA: Float, cp: ConneParam) : ConneParam{
-        when(pbc){
-            1 -> return ConneParam(1, 0, 2, 0f)//B
-            2 -> return ConneParam(2, 0, 2, 0f)//C
-            3 -> return ConneParam(1, 1, 2, lenA)//BR
-            4 -> return ConneParam(1, 1, 0, lenA)//BL
-            5 -> return ConneParam(2, 1, 2, lenA)//CR
-            6 -> return ConneParam(2, 1, 0, lenA)//CL
-            7 -> return ConneParam(1, 1, 1, lenA)//BC
-            8 -> return ConneParam(2, 1, 1, lenA)//CC
-            9 -> return ConneParam(1, 2, cp.lcr, lenA)//BF
-            10 -> return ConneParam(2, 2, cp.lcr, lenA)//CF
-        }
-
-        return ConneParam(0, 0, 0, 0f)
     }
 
     fun loadCSV(reader: BufferedReader) :Boolean{
@@ -1991,10 +1969,10 @@ class MainActivity : AppCompatActivity(),
             }
             if(chunks[0]!! == "Deduction"){
 //                dedlist.add(Params(chunks[2]!!.toString(),chunks[6]!!.toString(), chunks[1]!!.toInt(),
-  //                  chunks[3]!!.toFloat(),chunks[4]!!.toFloat(),0f,
-    //                chunks[5]!!.toInt(),typeToInt(chunks[6]!!.toString()),
-      //              PointXY(chunks[8]!!.toFloat(),-chunks[9]!!.toFloat()).scale(mScale),
-        //            PointXY(chunks[10]!!.toFloat(),-chunks[11]!!.toFloat()).scale(mScale)))
+                //                  chunks[3]!!.toFloat(),chunks[4]!!.toFloat(),0f,
+                //                chunks[5]!!.toInt(),typeToInt(chunks[6]!!.toString()),
+                //              PointXY(chunks[8]!!.toFloat(),-chunks[9]!!.toFloat()).scale(mScale),
+                //            PointXY(chunks[10]!!.toFloat(),-chunks[11]!!.toFloat()).scale(mScale)))
                 dedlist.add(
                         Deduction(
                                 Params(
@@ -2056,7 +2034,7 @@ class MainActivity : AppCompatActivity(),
                         )
                 )
                 trilist.getTriangle(trilist.size()).myParentBC_ = chunks[5]!!.toInt()
-               // trilist.getTriangle(trilist.size()).setCParamFromParentBC( chunks[5]!!.toInt() )
+                // trilist.getTriangle(trilist.size()).setCParamFromParentBC( chunks[5]!!.toInt() )
             }
             val mT = trilist.getTriangle(trilist.size())
             mT.setMyName_(chunks[6]!!.toString())
@@ -2110,6 +2088,30 @@ class MainActivity : AppCompatActivity(),
         flipDeductionMode(deductionMode_)
         //printDebugConsole()
         return true
+    }
+
+    fun typeToInt(type: String) :Int{
+        var pl: Int = 0
+        if(type == "Box") pl = 1
+        if(type == "Circle") pl = 2
+        return pl
+    }
+
+    fun parentBCtoCParam(pbc: Int, lenA: Float, cp: ConneParam) : ConneParam{
+        when(pbc){
+            1 -> return ConneParam(1, 0, 2, 0f)//B
+            2 -> return ConneParam(2, 0, 2, 0f)//C
+            3 -> return ConneParam(1, 1, 2, lenA)//BR
+            4 -> return ConneParam(1, 1, 0, lenA)//BL
+            5 -> return ConneParam(2, 1, 2, lenA)//CR
+            6 -> return ConneParam(2, 1, 0, lenA)//CL
+            7 -> return ConneParam(1, 1, 1, lenA)//BC
+            8 -> return ConneParam(2, 1, 1, lenA)//CC
+            9 -> return ConneParam(1, 2, cp.lcr, lenA)//BF
+            10 -> return ConneParam(2, 2, cp.lcr, lenA)//CF
+        }
+
+        return ConneParam(0, 0, 0, 0f)
     }
 
     fun setTitles(){

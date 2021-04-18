@@ -195,15 +195,15 @@
             android:id="@+id/fab_mail"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_alignTop="@id/fab_share"
             android:layout_gravity="top|start"
             android:layout_marginStart="16dp"
-            android:layout_alignTop="@id/fab_share"
             android:layout_marginTop="70dp"
             android:visibility="visible"
             app:fabSize="mini"
             app:layout_constraintTop_toBottomOf="@id/fab_share"
-            app:srcCompat="@android:drawable/ic_dialog_email"
-            android:contentDescription="share pdf to"/>
+            app:srcCompat="@drawable/mail"
+            android:contentDescription="send email to" />
 
 
 
@@ -339,12 +339,15 @@
         android:contentDescription="delete a shape, tap twice"/>
 
         <ProgressBar
-            android:id="@+id/progressbar"
-            android:layout_height="wrap_content"
+            android:id="@+id/indeterminateBar"
             android:layout_width="wrap_content"
-            android:layout_margin="30dp"
-            android:indeterminate="true"
-            style="@android:style/Widget.ProgressBar.Horizontal" />
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:background="@drawable/border"
+            android:backgroundTint="@color/colorWhite"
+            android:maxWidth="300dp"
+            android:maxHeight="300dp"
+            android:visibility="invisible" />
 
     <com.google.android.gms.ads.AdView
         xmlns:ads="http://schemas.android.com/apk/res-auto"
