@@ -1626,8 +1626,7 @@ class MainActivity : AppCompatActivity(),
     }
 
     fun getAppLocalFile(context: Context, filename: String ) :Uri {
-        val filepathC = context.filesDir
-        val newFile = File( filepathC, filename )
+        val newFile = File( context.filesDir, filename )
         if (newFile.exists())
             return getUriForFile( context, BuildConfig.APPLICATION_ID + ".fileprovider", newFile )
         else return Uri.EMPTY
