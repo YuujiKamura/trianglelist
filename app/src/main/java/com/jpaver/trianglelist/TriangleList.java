@@ -167,7 +167,7 @@ public class TriangleList extends EditList implements Cloneable {
                 ts = 10f;
                 break;
             case 5:
-                ts = 12f;
+                ts = 15f;
                 break;
         }
 
@@ -358,11 +358,9 @@ public class TriangleList extends EditList implements Cloneable {
 
     public boolean validTriangle(Triangle tri){
         if (tri.lengthA_ <= 0.0f || tri.lengthB_ <= 0.0f || tri.lengthC_ <=0.0f) return false;
-        if ((tri.lengthA_ + tri.lengthB_) <= tri.lengthC_ ||
-                (tri.lengthB_ + tri.lengthC_) <= tri.lengthA_ ||
-                (tri.lengthC_ + tri.lengthA_) <= tri.lengthB_) return false;
-        else
-         return true;
+        return !((tri.lengthA_ + tri.lengthB_) <= tri.lengthC_) &&
+                !((tri.lengthB_ + tri.lengthC_) <= tri.lengthA_) &&
+                !((tri.lengthC_ + tri.lengthA_) <= tri.lengthB_);
     }
 
     public PointXY vectorToNextFrom( int i ){
@@ -636,10 +634,9 @@ public class TriangleList extends EditList implements Cloneable {
 
     public boolean validTriangle(Params prm){
         if (prm.getA()<=0.0f || prm.getB()<=0.0f || prm.getC()<=0.0f) return false;
-        if ((prm.getA() + prm.getB()) <= prm.getC() ||
-                (prm.getB() + prm.getC()) <= prm.getA() ||
-                (prm.getC() + prm.getA()) <= prm.getB() ) return false;
-        else return true;
+        return !((prm.getA() + prm.getB()) <= prm.getC()) &&
+                !((prm.getB() + prm.getC()) <= prm.getA()) &&
+                !((prm.getC() + prm.getA()) <= prm.getB());
     }
 
     public Triangle getTriangle(int index){
@@ -676,7 +673,7 @@ public class TriangleList extends EditList implements Cloneable {
     }
 
     public int[] getTapIndexArray(PointXY tapP){
-        int tapIndexArray[] = new int[trilist_.size()];
+        int[] tapIndexArray = new int[trilist_.size()];
         for(int i = 0; i < trilist_.size(); i++) {
             tapIndexArray[i] = trilist_.get(i).getTapLength( tapP );
         }

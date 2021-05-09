@@ -11,8 +11,8 @@ import androidx.fragment.app.DialogFragment;
 public class MyDialogFragment extends DialogFragment {
 
     public interface NoticeDialogListener{
-        public void onDialogPositiveClick(DialogFragment dialog);
-        public void onDialogNegativeClick(DialogFragment dialog);
+        void onDialogPositiveClick(DialogFragment dialog);
+        void onDialogNegativeClick(DialogFragment dialog);
     }
 
     NoticeDialogListener listener;

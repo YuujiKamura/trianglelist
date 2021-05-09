@@ -19,8 +19,8 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
     // A4の縦　595pt = 2.833.. * 210mm
     // PostScript 1 point in CSS = 0.3527mm = 1 / 2.835270768
     val kai_ = 1f
-    var sizeX_ = 1190f * kai_// * scale_ //420f * scale_
-    var sizeY_ = 842f * kai_// * scale_ //297f * scale_
+    override var sizeX_ = 1190f * kai_// * scale_ //420f * scale_
+    override var sizeY_ = 842f * kai_// * scale_ //297f * scale_
 
     val scale2_ = 2.5f//printScale_
     var p2sizeX_ = 595f * kai_// * scale2_ //210f * scale2_
@@ -140,13 +140,13 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
         //1/250 (x:80m以上
         if(drawingLength.x > 80 || drawingLength.y > 55 ) {
             scale = 2.5f
-            paintTexS_.setTextSize(2f)
+            paintTexS_.textSize = 2f
         }
 
         //1/350 (x:120m以上
         if(drawingLength.x > 40*3 || drawingLength.y > 27*3 ) {
             scale = 3.5f
-            paintTexS_.setTextSize(0.5f)
+            paintTexS_.textSize = 0.5f
         }
 
         //1/150 (x:40m以下
@@ -457,7 +457,7 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
         //  translateCenter()
     }
 
-    override fun writeRect(point: PointXY, sizeX: Float, sizeY: Float, scale: Float, color: Int){
+    fun writeRect(point: PointXY, sizeX: Float, sizeY: Float, scale: Float, color: Int){
         val sizex = sizeX/2
         val sizey = sizeY/2
         writeLine(point.plus(-sizex, -sizey), point.plus(sizex, -sizey), scale, color)

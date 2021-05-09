@@ -3,10 +3,10 @@ package com.jpaver.trianglelist
 import android.util.Log
 import java.io.BufferedWriter
 
-class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
-    val triangleList_ = triangleList
-    val numvector_ = triangleList_.sokutenListVector
-    lateinit var deductionList_: DeductionList// = deductionList
+class DxfFileWriter(trilist: TriangleList ): DrawingFileWriter() {
+    val trilist_ = trilist
+    val numvector_ = trilist_.sokutenListVector
+    lateinit var dedlist_: DeductionList// = deductionList
     lateinit var writer_: BufferedWriter// = writer
     lateinit var drawingLength_: PointXY // = drawingLength
     val pageNum_ = 0
@@ -15,30 +15,14 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
 
     var isDebug_ = false
 
-    val texScale = triangleList_.getPrintTextScale( 1f , "dxf")
-    var scale_ = triangleList_.getPrintScale(1f)//setScale(drawingLength)
-    var sizeX_ = 42000f * scale_
-    var sizeY_ = 29700f * scale_
+    val texScale = trilist_.getPrintTextScale( 1f , "dxf")
+    var scale_ = trilist_.getPrintScale(1f)//setScale(drawingLength)
+    override var sizeX_ = 42000f * scale_
+    override var sizeY_ = 29700f * scale_
     val vpCenterX_ = sizeX_ * 0.5f
     val vpCenterY_ = sizeY_ * 0.5f
 
     var entityHandle = 100
-
-    fun setScale(drawingLength: PointXY) :Float{
-        var scale = 2f //1/200　x:80m~40m
-        paintTexS_.textSize = 5f
-        if(drawingLength.x > 80 || drawingLength.y > 55 ) {
-            scale = 2.5f
-            paintTexS_.setTextSize(8f)
-        } //1/250 (x:80m以上
-
-        if(drawingLength.x < 50 && drawingLength.y < 30 ){
-            scale = 1.5f
-            paintTexS_.textSize = 4f
-        } //1/150 (x:40m以下
-        return scale
-    }
-
 
     fun saveDXF(writer: BufferedWriter) :BufferedWriter{
 
@@ -56,10 +40,10 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
     }
 
     fun writeLine(wrtr: BufferedWriter, p1: PointXY, p2: PointXY, color: Int){
-        val ax = p1.getX()*myDXFscale
-        val ay = p1.getY()*myDXFscale
-        val bx = p2.getX()*myDXFscale
-        val by = p2.getY()*myDXFscale
+        val ax = p1.x *myDXFscale
+        val ay = p1.y *myDXFscale
+        val bx = p2.x *myDXFscale
+        val by = p2.y *myDXFscale
 
         entityHandle += 1
 
@@ -68,7 +52,7 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
                 0
                 LINE
                 5
-                ${entityHandle.toString()}
+                $entityHandle
                 330
                 36
                 100
@@ -78,19 +62,19 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
                 100
                 AcDbLine
                 10
-                ${ax.toString()}
+                $ax
                 20
-                ${ay.toString()}
+                $ay
                 30
                 0.0
                 11
-                ${bx.toString()}
+                $bx
                 21
-                ${by.toString()}
+                $by
                 31
                 0.0
                 62
-                ${color.toString()}
+                $color
             """.trimIndent()
         )
         wrtr.newLine()
@@ -161,13 +145,13 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
         writeLine(wrtr, pbc, pca, 7)
 
         // DimTexts
-        if(tri.getMyNumber_()==1 || tri.getParentBC() > 2)
+        if(tri.getMyNumber_()==1 || tri.parentBC > 2)
             writeDXFTextDimension(wrtr, dimA, la, tri.dimPointA_, pab.calcDimAngle(pca))
         writeDXFTextDimension(wrtr, dimB, lb, tri.dimPointB_, pbc.calcDimAngle(pab))
         writeDXFTextDimension(wrtr, dimC, lc, tri.dimPointC_, pca.calcDimAngle(pbc))
 
         // 番号
-        val pn = tri.getPointNumberAutoAligned_()
+        val pn = tri.pointNumberAutoAligned_
         val pc = tri.pointCenter_
         val circleSize = textsize *0.7f
         // 本体
@@ -197,7 +181,7 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
     }
 
     fun writeDXFTextNumber(wrtr: BufferedWriter, tri: Triangle){
-        writeDXFText(wrtr, tri.getMyNumber_().toString(), tri.getPointNumberAutoAligned_(), 5, texScale, 1, 2,0f)
+        writeDXFText(wrtr, tri.getMyNumber_().toString(), tri.pointNumberAutoAligned_, 5, texScale, 1, 2,0f)
     }
 
     fun writeDXFText(wrtr: BufferedWriter, text: String, point: PointXY, color: Int, textsize: Float, alignH: Int){
@@ -205,8 +189,8 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
     }
 
     fun writeDXFText(wrtr: BufferedWriter, text: String, point: PointXY, color: Int, textsize: Float, alignH: Int, alignV:Int, angle: Float){
-        var x = point.getX()*myDXFscale //- ( alignV * 30 - 60 )// a offset when V is 3 to 1. V is 1 to -1.
-        var y = point.getY()*myDXFscale //- ( alignV * 30 - 60 )
+        var x = point.x *myDXFscale //- ( alignV * 30 - 60 )// a offset when V is 3 to 1. V is 1 to -1.
+        var y = point.y *myDXFscale //- ( alignV * 30 - 60 )
         val ts = textsize * myDXFscale
 
         // its not effective..?
@@ -223,7 +207,7 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
             0
             TEXT
             5
-            ${entityHandle.toString()}
+            $entityHandle
             330
             36
             100
@@ -235,9 +219,9 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
             100
             AcDbText
             10
-            ${x.toString()}
+            $x
             20
-            ${y.toString()}
+            $y
             30
             0.0
             40
@@ -251,13 +235,13 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
             72
             ${alignH}
             11
-            ${x.toString()}
+            $x
             21
-            ${y.toString()}
+            $y
             31
             0.0
             50
-            ${angle.toString()}
+            $angle
             51
             0.0
             100
@@ -284,8 +268,8 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
     }
 
     fun writeDXFCircle(wrtr: BufferedWriter, point: PointXY, size: Float, color: Int){
-        val x = point.getX()*myDXFscale
-        val y = point.getY()*myDXFscale
+        val x = point.x *myDXFscale
+        val y = point.y *myDXFscale
         val s = size * myDXFscale
 
         entityHandle += 1
@@ -294,7 +278,7 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
             0
             CIRCLE
             5
-            ${entityHandle.toString()}
+            $entityHandle
             330
             36
             100
@@ -302,13 +286,13 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
             8
             0
             62
-            ${color.toString()}
+            $color
             100
             AcDbCircle
             10
-            ${x.toString()}
+            $x
             20
-            ${y.toString()}
+            $y
             30
             0.0
             40
@@ -438,8 +422,8 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
 
     fun writeDXFEntities(wrtr: BufferedWriter){
 
-        var myDXFTriList = triangleList_.clone()
-        var myDXFDedList = deductionList_.clone()
+        var myDXFTriList = trilist_.clone()
+        var myDXFDedList = dedlist_.clone()
 
 //        myDXFDedList.rotate(PointXY(0f,0f), myDXFTriList.rotateByLength("laydown"))
         // Ｙ軸方向反転
@@ -470,7 +454,7 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
 
         // アウトラインの描画
         myDXFTriList.setChildsToAllParents()
-        val arrayarray = myDXFTriList.getOutlineLists( ) //ArrayList<PointXY>()
+        val arrayarray = myDXFTriList.outlineLists //ArrayList<PointXY>()
         val array = ArrayList<PointXY>()
         myDXFTriList.traceOrJumpForward(0, 0, array )
         if( array.size > 0 ) writeDXFTriOutlines( wrtr, array )
@@ -498,7 +482,7 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
             0
             LWPOLYLINE
             5
-            ${entityHandle.toString()}
+            $entityHandle
             100
             AcDbEntity
             8
@@ -517,9 +501,9 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
         for( index in 0 .. array.size - 1 ){
             wrtr.write("""
                 10
-                ${ ( array.get( index ).x*myDXFscale ).toString()}
+                ${( array.get( index ).x*myDXFscale )}
                 20
-                ${ ( array.get( index ).y*myDXFscale ).toString()}                
+                ${( array.get( index ).y*myDXFscale )}                
             """.trimIndent())
             wrtr.newLine()
         }
@@ -580,9 +564,9 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
              21
             1.0
              12
-            ${vpCenterX_.toString()}
+            $vpCenterX_
              22
-            ${(vpCenterY_*0.1f).toString()}
+            ${(vpCenterY_*0.1f)}
              13
             0.0
              23
@@ -608,9 +592,9 @@ class DxfFileWriter( triangleList: TriangleList ): DrawingFileWriter() {
              37
             0.0
              40
-            ${(sizeX_*0.006f).toString()}
+            ${(sizeX_*0.006f)}
              41
-            ${(sizeY_*0.006f).toString()}
+            ${(sizeY_*0.006f)}
              42
             50.0
              43

@@ -70,10 +70,10 @@ class Deduction(var num: Int = 0,
 
     fun setBox(scale: Float){
         scale_ = scale
-        plt = PointXY(point.getX()-lengthX*scale_*0.5f, point.getY()-lengthY*scale_*0.5f ).rotate(point, shapeAngle_)
-        plb = PointXY(point.getX()-lengthX*scale_*0.5f, point.getY()+lengthY*scale_*0.5f ).rotate(point, shapeAngle_)
-        prt = PointXY(point.getX()+lengthX*scale_*0.5f, point.getY()-lengthY*scale_*0.5f ).rotate(point, shapeAngle_)
-        prb = PointXY(point.getX()+lengthX*scale_*0.5f, point.getY()+lengthY*scale_*0.5f ).rotate(point, shapeAngle_)
+        plt = PointXY(point.x -lengthX*scale_*0.5f, point.y -lengthY*scale_*0.5f ).rotate(point, shapeAngle_)
+        plb = PointXY(point.x -lengthX*scale_*0.5f, point.y +lengthY*scale_*0.5f ).rotate(point, shapeAngle_)
+        prt = PointXY(point.x +lengthX*scale_*0.5f, point.y -lengthY*scale_*0.5f ).rotate(point, shapeAngle_)
+        prb = PointXY(point.x +lengthX*scale_*0.5f, point.y +lengthY*scale_*0.5f ).rotate(point, shapeAngle_)
     }
 
     public override fun clone(): Deduction {

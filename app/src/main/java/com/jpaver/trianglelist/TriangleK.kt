@@ -288,7 +288,7 @@ class TriangleK: EditObject(), Cloneable {
         lengthA = A
         lengthB = B
         lengthC = C
-        valid = if (validTriangle()) true else false
+        valid = validTriangle()
         pointCA = PointXY(pCA.x, pCA.y)
         pointAB = PointXY(0.0f, 0.0f)
         pointBC = PointXY(0.0f, 0.0f)
@@ -312,8 +312,7 @@ class TriangleK: EditObject(), Cloneable {
 
     fun validTriangle(): Boolean {
         if (lengthA <= 0.0f || lengthB <= 0.0f || lengthC <= 0.0f) return false
-        return if (lengthA + lengthB <= lengthC || lengthB + lengthC <= lengthA || lengthC + lengthA <= lengthB
-        ) false else true
+        return !(lengthA + lengthB <= lengthC || lengthB + lengthC <= lengthA || lengthC + lengthA <= lengthB)
     }
 
     fun calculateInternalAngle(p1: PointXY, p2: PointXY?, p3: PointXY): Double {

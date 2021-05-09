@@ -114,8 +114,8 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
 
-        screen_width = this.width;
-        screen_height = this.height;
+        screen_width = this.width
+        screen_height = this.height
         //対角線の長さを求める
         screen_diagonal = Math.sqrt(
             (Math.pow(screen_width.toDouble(), 2.0).toInt() + Math.pow(
@@ -194,31 +194,31 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         paintTexL.textAlign = Paint.Align.CENTER
         paintTexL.style = Paint.Style.FILL_AND_STROKE
         //paintText1.letterSpacing = 0.2f
-        paintTexL.setTextSize(ts_)
+        paintTexL.textSize = ts_
 
         paintTexDbg.color = Color.argb(255, 100, 100, 100)
         paintTexDbg.textAlign = Paint.Align.LEFT
         paintTexDbg.style = Paint.Style.FILL_AND_STROKE
         paintTexDbg.letterSpacing = 0.1f
-        paintTexDbg.setTextSize(ts_)
+        paintTexDbg.textSize = ts_
 
         paintTexM.color = Color.argb(255, niigogo, niigogo, niigogo)
         paintTexM.textAlign = Paint.Align.CENTER
         paintTexM.style = Paint.Style.FILL_AND_STROKE
         //paintTexM.letterSpacing = 0.1f
-        paintTexM.setTextSize(ts_ + 1f)
+        paintTexM.textSize = ts_ + 1f
 
         paintTexS.color = Color.argb(255, niigogo, niigogo, niigogo)
         paintTexS.textAlign = Paint.Align.CENTER
         paintTexS.style = Paint.Style.FILL
         //paintText4.letterSpacing = 0.1f
-        paintTexS.setTextSize(ts_)
+        paintTexS.textSize = ts_
         //paintTexS.set
 
         paintYellow.strokeWidth = 3f
         paintYellow.color = Color.argb(255, 255, 255, 0)
         paintYellow.textAlign = Paint.Align.CENTER
-        paintYellow.setTextSize(ts_*1.5f)
+        paintYellow.textSize = ts_*1.5f
 
         paintRed.strokeWidth = 2f
         paintRed.color = Color.argb(255, 255, 0, 0)
@@ -231,7 +231,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         paintBlue.style = Paint.Style.STROKE
         paintBlue.letterSpacing = 0.1f
         paintBlue.textAlign = Paint.Align.CENTER
-        paintBlue.setTextSize(ts_)
+        paintBlue.textSize = ts_
 
 
 
@@ -239,14 +239,14 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
     fun setTextSize(tsPlus: Float){
         ts_ = tsPlus
-        paintTexL.setTextSize(ts_)
-        paintTexM.setTextSize(ts_)
-        paintTexS.setTextSize(ts_)
-        paintRed.setTextSize(ts_)
-        paintBlue.setTextSize(ts_)
-        paintTexL.setTextSize(ts_)
-        paintGray.setTextSize(ts_)
-        paintYellow.setTextSize(ts_)
+        paintTexL.textSize = ts_
+        paintTexM.textSize = ts_
+        paintTexS.textSize = ts_
+        paintRed.textSize = ts_
+        paintBlue.textSize = ts_
+        paintTexL.textSize = ts_
+        paintGray.textSize = ts_
+        paintYellow.textSize = ts_
 
     }
 
@@ -353,7 +353,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         transViewPoint()
         canvas.translate(BasePoint.x, BasePoint.y)
         canvas.scale(zoomSize, zoomSize)
-        canvas.translate(-drawPoint.getX(), drawPoint.getY())
+        canvas.translate(-drawPoint.x, drawPoint.y)
         // 背景
         val zero = 0
         canvas.drawColor(Color.argb(255, zero, zero, zero))
@@ -379,34 +379,34 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
 
     fun drawDebugData(canvas: Canvas, dp: PointXY){
-        var dpY = dp.getY()
+        var dpY = dp.y
         val dpPlus = 6f
 
         canvas.drawText(
-            "localpress_x:" + localPressPoint.getX().toString(),
-            dp.getX(),
+            "localpress_x:" + localPressPoint.x.toString(),
+            dp.x,
             dpY,
             paintTexDbg
         )
         dpY = dpY+dpPlus
         canvas.drawText(
-            "localpress_y:" + localPressPoint.getY().toString(),
-            dp.getX(),
+            "localpress_y:" + localPressPoint.y.toString(),
+            dp.x,
             dpY,
             paintTexDbg
         )
         dpY = dpY+dpPlus
-        canvas.drawText("TapTL:" + tapTL_, dp.getX(), dpY, paintTexDbg)
+        canvas.drawText("TapTL:" + tapTL_, dp.x, dpY, paintTexDbg)
         dpY = dpY+dpPlus
         canvas.drawText(
             "TriList" + myTriangleList.size() + "-B:" + myTriangleList.get(myTriangleList.size()).dimPointB_.x + " " + myTriangleList.get(
                 myTriangleList.size()
-            ).dimPointB_.y, dp.getX(), dpY, paintTexDbg
+            ).dimPointB_.y, dp.x, dpY, paintTexDbg
         )
         dpY = dpY+dpPlus
         canvas.drawText(
             "Tap in triangle number - " + myTriangleList.lastTapCollideNum_.toString(),
-            dp.getX(),
+            dp.x,
             dpY,
             paintTexDbg
         )
@@ -449,23 +449,23 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     }
 
     fun drawLongPressPoint(canvas: Canvas){
-        if(myLongPressPoint.getX() != 0f){
+        if(myLongPressPoint.x != 0f){
             canvas.drawLine(
-                myLongPressPoint.getX() - 5f, myLongPressPoint.getY() - 5f,
-                myLongPressPoint.getX() + 5f, myLongPressPoint.getY() + 5f, paintRed
+                myLongPressPoint.x - 5f, myLongPressPoint.y - 5f,
+                myLongPressPoint.x + 5f, myLongPressPoint.y + 5f, paintRed
             )
         }
     }
 
     fun drawLocalPressPoint(canvas: Canvas, point: PointXY){
-        if(point.getX() != 0f){
+        if(point.x != 0f){
             canvas.drawLine(
-                point.getX() - 20f, point.getY(),
-                point.getX() + 20f, point.getY(), paintRed
+                point.x - 20f, point.y,
+                point.x + 20f, point.y, paintRed
             )
             canvas.drawLine(
-                point.getX(), point.getY() - 20f,
-                point.getX(), point.getY() + 20f, paintRed
+                point.x, point.y - 20f,
+                point.x, point.y + 20f, paintRed
             )
 
             // draw pdf の時だけ使う
@@ -618,7 +618,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         textscale: Float,
         experience: Float
     ): PointXY { // 追跡されたcanvasの移動ベクトルを返す
-        this.paintBlue.setTextSize(textscale)
+        this.paintBlue.textSize = textscale
         this.paintBlue.strokeWidth = 0.05f
 
         isAreaOff_ = true
@@ -759,7 +759,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         myDeductionList.setScale(myScale)
 
         isPrintPDF_ = false
-        this.paintBlue.setTextSize(ts_)
+        this.paintBlue.textSize = ts_
         this.paintBlue.strokeWidth = 2f
         //this.paintFill.color = darkColors_.get(colorindex_)
         textSpacer_ = 5f
@@ -854,7 +854,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     }
 
     fun drawLine(canvas: Canvas, p1: PointXY, p2: PointXY, sx: Float, sy: Float, paint: Paint){
-        canvas.drawLine(p1.getX() * sx, p1.getY() * sy, p2.getX() * sx, p2.getY() * sy, paint)
+        canvas.drawLine(p1.x * sx, p1.y * sy, p2.x * sx, p2.y * sy, paint)
     }
 
     fun calcAlignByInnerAngleOf(tri: Triangle, ABC: Int): Int{
@@ -971,7 +971,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         val margin = paintDim.textSize*0.52f
 
         // 寸法
-        if(tri.getMyNumber_() == 1 || tri.getParentBC() > 2 || tri.cParam_.type != 0 )
+        if(tri.getMyNumber_() == 1 || tri.parentBC > 2 || tri.cParam_.type != 0 )
             drawDigits( canvas, la, makePath(abca), abca.offsetH_, abca.offsetV_, paintDim, margin )
             //canvas.drawTextOnPath(la, makePath(abca), abca.offsetH_, abca.offsetV_, paintDim)
         drawDigits( canvas, lb, makePath(abbc), abbc.offsetH_, abbc.offsetV_, paintDim, margin )
@@ -1042,8 +1042,8 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         paint2: Paint, myTriangleList: TriangleList
     ){
         var mn: String = tri.getMyNumber_().toString()
-        val pnX = tri.getPointNumberAutoAligned_().getX()
-        val pnY = -tri.getPointNumberAutoAligned_().getY()
+        val pnX = tri.pointNumberAutoAligned_.x
+        val pnY = -tri.pointNumberAutoAligned_.y
         val pnpY = getPaintCenterY(pnY, paint1)
         val circleSize = paint2.textSize *0.8f
         val areaoffsetY = paint2.textSize *1.5f
@@ -1097,17 +1097,17 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         mPointerCount = event.pointerCount
         mActivePointerId = event.getPointerId(0)
 
-            when (event.getAction()) {
+            when (event.action) {
                 MotionEvent.ACTION_MOVE -> {
                     if( mActivePointerId != 1 ) {
-                        clickPoint.set(event.getX(), event.getY())
+                        clickPoint.set(event.x, event.y)
                         moveVector.set(
-                            clickPoint.getX() - lastCPoint.getX(),
-                            clickPoint.getY() - lastCPoint.getY()
+                            clickPoint.x - lastCPoint.x,
+                            clickPoint.y - lastCPoint.y
                         )
                         BasePoint.set(
-                            movePoint.getX() + moveVector.getX(),
-                            movePoint.getY() + moveVector.getY()
+                            movePoint.x + moveVector.x,
+                            movePoint.y + moveVector.y
                         )
                     }
 
@@ -1116,8 +1116,8 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
                     if( event.pointerCount == 1 ) {
 
-                        clickPoint.set(event.getX(), event.getY())
-                        lastCPoint.set(event.getX(), event.getY())
+                        clickPoint.set(event.x, event.y)
+                        lastCPoint.set(event.x, event.y)
                         localpressReset()
                     }
                 }
@@ -1143,7 +1143,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     }
 
     fun localpressReset(){
-        movePoint.set(BasePoint.getX(), BasePoint.getY())
+        movePoint.set(BasePoint.x, BasePoint.y)
         localPressPoint = clickPoint.convertToLocal(
             BasePoint,
             zoomSize,

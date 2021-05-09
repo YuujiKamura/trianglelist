@@ -15,7 +15,7 @@ open class EditList {
     open fun getArea(): Float { return 0f }
 }
 
-open class EditObject() :Cloneable {
+open class EditObject :Cloneable {
     open fun getParams() :Params { return Params() }
     open fun getArea(): Float { return 0f }
 

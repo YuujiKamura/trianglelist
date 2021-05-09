@@ -13,16 +13,15 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
     val filename_ = filename
     var strPool_ = "" // ここにどんどん書き込む
     var assembryNumber_ = 10
-    val drawscale_ = 1000f
-    val viewscale_ = 47.6f
-    var sheetscale_ = trilist_.getPrintScale(1f)
-    val textscale_ = trilist_.getPrintTextScale( 1f , "dxf") * drawscale_
-    var sizeX_ = 420 * sheetscale_
-    var sizeY_ = 297 * sheetscale_
-    val centerX_ = sizeX_ * 0.5f
-    val centerY_ = sizeY_ * 0.5f
+
+    override var textscale_ = trilist_.getPrintTextScale( 1f , "dxf") * drawscale_
+    override var sizeX_ = 420 * sheetscale_
+    override var sizeY_ = 297 * sheetscale_
+    override var centerX_ = sizeX_ * 0.5f
+    override var centerY_ = sizeY_ * 0.5f
     val charset = Charset.forName("SJIS")
     val tsxhalf_ = 0.5f*textscale_
+    val circleSize = textscale_ * 0.7f
 
     fun compare(byteArray: ByteArray ): Boolean{
         return Arrays.equals( byteArray, strPool_.toByteArray() )
@@ -33,17 +32,17 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
     }
 
     fun apnd(str: String ){
-        strPool_ += str
-        crcn()
+        strPool_ += "${str}\r\n"
+        //crcn()
     }
 
     fun adas(str: String ){
-        strPool_ += "/*SXF"
-        crcn()
-        strPool_ += "#${assembryNumber_} = ${str}"
-        crcn()
-        strPool_ += "SXF*/"
-        crcn()
+        strPool_ += "/*SXF\r\n#${assembryNumber_} = ${str}\r\nSXF*/\r\n"
+        //crcn()
+        //strPool_ += "#${assembryNumber_} = ${str}"
+        //crcn()
+        //strPool_ += "SXF*/"
+        //crcn()
 
         assembryNumber_ += 10
     }
@@ -75,6 +74,9 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
     }
 
     fun writeList(){
+
+        sheetscale_ = trilist_.getPrintScale(1f)
+
         trilist_.scale( PointXY(0f,0f), drawscale_ )
         dedlist_.scale( PointXY(0f,0f), drawscale_/viewscale_, -drawscale_/viewscale_ ) // アプリの画面に合わせて拡大されているのを戻し、Y軸も反転
 
@@ -93,17 +95,17 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
 
         // deduction
         for (dednumber in 1 .. dedlist_.size()) {
-            writeDeduction( dednumber )
+           writeDeduction( dednumber )
         }
 
-        writeFrame()
+        writeFrame( drawscale_ * 0.1f * sheetscale_, sheetscale_, centerX_, centerY_, sizeX_, sizeY_ )
     }
 
     fun writeDeduction( dednumber: Int ){
 
         val ded = dedlist_.get( dednumber )
-        val textsize: Float = textscale_
-        val infoStrLength = ded.getInfo().length*textsize+100f
+        //val textsize: Float = textscale_
+        val infoStrLength = ded.getInfo().length*textscale_+100f
         val point = ded.point
         val pointFlag = ded.pointFlag
         var textOffsetX = 200f
@@ -112,11 +114,11 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
         if(point.x <= pointFlag.x) {  //ptFlag is RIGHT from pt
             writeLine( 2, point, pointFlag )
             writeLine( 2, pointFlag.plus(infoStrLength,0f), pointFlag )
-            writeText( 2, ded.getInfo(), pointFlag.plus( textOffsetX,0f ), textsize, textsize, 0f, 1)
+            writeText( 2, ded.getInfo(), pointFlag.plus( textOffsetX,0f ), textscale_, 0f, 1)
         } else {                     //ptFlag is LEFT from pt
             writeLine( 2, point, pointFlag )
             writeLine( 2, pointFlag.plus(-infoStrLength,0f), pointFlag )
-            writeText( 2, ded.getInfo(), pointFlag.plus(-infoStrLength + textOffsetX,0f), textsize, textsize, 0f, 1)
+            writeText( 2, ded.getInfo(), pointFlag.plus(-infoStrLength + textOffsetX,0f), textscale_, 0f, 1)
         }
 
         if(ded.type == "Circle") writeCircle( 2, point, ded.lengthX/2*1000f )
@@ -175,18 +177,17 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
         writeLine( 8, pbc, pca )
 
         // DimTexts
-        if(tri.getMyNumber_()==1 || tri.getParentBC() > 2)
-            writeText( 8, la, tri.dimPointA_, ts, ts, pab.calcDimAngle(pca), dimA )
-        writeText( 8, lb, tri.dimPointB_, ts, ts, pbc.calcDimAngle(pab), dimB )
-        writeText( 8, lc, tri.dimPointC_, ts, ts, pca.calcDimAngle(pbc), dimC )
+        if(tri.getMyNumber_()==1 || tri.parentBC > 2)
+            writeText( 8, la, tri.dimPointA_, ts, pab.calcDimAngle(pca), dimA )
+        writeText( 8, lb, tri.dimPointB_, ts, pbc.calcDimAngle(pab), dimB )
+        writeText( 8, lc, tri.dimPointC_, ts, pca.calcDimAngle(pbc), dimC )
 
         // 番号
-        val pn = tri.getPointNumberAutoAligned_()
+        val pn = tri.pointNumberAutoAligned_
         val pc = tri.pointCenter_
-        val circleSize = ts * 0.7f
         // 本体
         writeCircle( 4, pn, circleSize )
-        writeText( 4, tri.getMyNumber_().toString(), tri.getPointNumberAutoAligned_(), ts, ts, 0f, 5 )
+        writeText( 4, tri.getMyNumber_().toString(), tri.pointNumberAutoAligned_, ts, 0f, 5 )
 
         //引き出し矢印線の描画
         if( tri.isCollide(tri.pointNumber_) == false ){
@@ -198,33 +199,27 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
             writeLine( 4, pcOffsetToN, arrowTail )
         }
 
+        // 測点
+        if(tri.getMyName_() != "") {
+            //writeText(4, tri.getMyName_(), pab.offset(pca, -1.25f), ts, pab.calcSokAngle( pca, trilist_.sokutenListVector ),8 )
+            //writeLine(4, pab.offset(pca, -tri.getMyName_().length*0.5f), pab.offset(pca, -0.25f) )
+        }
+
     }
 
-    fun writeFrame(){
-        writeRect( PointXY( centerX_*100,centerY_*100 ),sizeX_*95,sizeY_*95, 8 )
-    }
-
-    fun writeRect( point: PointXY, sizeX: Float, sizeY: Float, color: Int ){
-        val sizex: Float = sizeX/2
-        val sizey: Float = sizeY/2
-        writeLine( color, point.plus(-sizex, -sizey), point.plus(sizex, -sizey) )
-        writeLine( color, point.plus(-sizex, sizey ), point.plus(sizex, sizey ) )
-        writeLine( color, point.plus(-sizex, -sizey), point.plus(-sizex, sizey) )
-        writeLine( color, point.plus( sizex, -sizey), point.plus(sizex, sizey ) )
-    }
 
     fun writeCircle( color: Int = 8, point: PointXY, radius: Float ){
         adas( "circle_feature('1','${color}','1','1','${point.x}','${point.y}','${radius}')" )
         //レイヤ、２番目がプリセット色指定(８が白、４が青、２が赤)、続いて、線種、線幅、座標XYと、半径
     }
 
-    fun writeLine( color: Int = 8, point1: PointXY, point2: PointXY ){
+    override fun writeLine( color: Int, point1: PointXY, point2: PointXY ){
         adas("line_feature('1','${color}','1','1','${point1.x}','${point1.y}','${point2.x}','${point2.y}')" )
         //レイヤ、色、線種、線幅、始点ＸＹ、終点ＸＹ SXF*/
     }
 
-    fun writeText( color: Int = 8, str: String, point: PointXY, tsy: Float,  tsx: Float, angle : Float = 0.0f, align: Int = 2 ){
-        val tsxb = str.toByteArray(charset).size*tsxhalf_
+    override fun writeText( color: Int, str: String, point: PointXY, tsy: Float, angle : Float, align: Int ){
+        val tsxb = str.length*tsxhalf_//toByteArray(charset).size*tsxhalf_
         adas("text_string_feature('1','${color}','1',\'${str}\','${point.x}','${point.y}','${tsy}','${tsxb}','0.00','${angle}','0.00','${align}','1')" )
         //レイヤ、色、フォントコード、文字内容、座標ＸＹ、大きさ縦横、文字間隔、文字回転角、スラント角、配置９方向で指定２が上センター８が下センター、１が左、書き出し方向　SXF*/
     }
@@ -238,14 +233,15 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
         apnd( "END-ISO-10303-21;" )
 
         // fileStr_ to outputStream
-        val charset = Charset.forName("SJIS")
+        //val charset = Charset.forName("SJIS")
         //val strUtf = "012ABC亜漢字表示"
         val strSjis = strPool_.toByteArray(charset)
+        /*
         for(i in 0..strSjis.size-1){
             var c : Byte = strSjis[i]
             var s = "%X".format(c)
             Log.d("Sample","$s")
-        }
+        }*/
 
         outputStream_.write( strSjis )
         return

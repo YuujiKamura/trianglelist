@@ -206,8 +206,7 @@ public class Triangle extends EditObject implements Cloneable {
         this.lengthAforce_ = A;
         this.lengthBforce_ = B;
         this.lengthCforce_ = C;
-        if(validTriangle()) valid_ = true;
-        else valid_ = false;
+        valid_ = validTriangle();
 
         //this.pointCA_ = new PointXY( pCA.getX(), pCA.getY() );
         this.pointAB_ = new PointXY(0.0f, 0.0f);
@@ -382,8 +381,7 @@ public class Triangle extends EditObject implements Cloneable {
 
     public Boolean hasConstantParent(){
         int iscons = myNumber_ - myParentNumber_;
-        if( iscons > 1 ) return false;
-        else return true;
+        return iscons <= 1;
     }
 
     public PointXY getPointByBackSide(int i){
@@ -693,8 +691,7 @@ public class Triangle extends EditObject implements Cloneable {
 
     public boolean resetByParent(Triangle prnt, ConneParam cParam){
         Triangle triIsValid = set(prnt, cParam, lengthB_, lengthC_);
-        if( triIsValid == null ) return false;
-        else return true;
+        return triIsValid != null;
     }
 
     public void resetByChild(Triangle myChild, ConneParam cParam){
@@ -723,8 +720,7 @@ public class Triangle extends EditObject implements Cloneable {
         if(pbc == 1 ) triIsValid = set(prnt, pbc, lengthA_, parentLength, lengthC_);
         if(pbc == 2 ) triIsValid = set(prnt, pbc, lengthA_, lengthB_, parentLength);
         if(pbc >  2 ) triIsValid = set(prnt, pbc, lengthA_, lengthB_, lengthC_);
-        if( triIsValid == null ) return false;
-        else return true;
+        return triIsValid != null;
     }
 
     public void resetByChild(Triangle myChild){
@@ -810,10 +806,9 @@ public class Triangle extends EditObject implements Cloneable {
 
     public boolean validTriangle(){
         if (lengthA_ <=0.0f || lengthB_ <=0.0f || lengthC_ <=0.0f) return false;
-        if ((this.lengthA_ + this.lengthB_) <= this.lengthC_ ||
-            (this.lengthB_ + this.lengthC_) <= this.lengthA_ ||
-            (this.lengthC_ + this.lengthA_) <= this.lengthB_) return false;
-        else return true;
+        return !((this.lengthA_ + this.lengthB_) <= this.lengthC_) &&
+                !((this.lengthB_ + this.lengthC_) <= this.lengthA_) &&
+                !((this.lengthC_ + this.lengthA_) <= this.lengthB_);
     }
 
     public double calculateInternalAngle(PointXY p1, PointXY p2, PointXY p3) {
@@ -1156,14 +1151,12 @@ public class Triangle extends EditObject implements Cloneable {
     public boolean alreadyHaveChild(int pbc){
         if( pbc < 1 ) return false;
         if( getSideByIndex(pbc) == "B" && isChildB_ == true ) return true;
-        if( getSideByIndex(pbc) == "C" && isChildC_ == true ) return true;
-        return false;
+        return getSideByIndex(pbc) == "C" && isChildC_ == true;
     }
 
     public Boolean hasChildIn(int cbc ){
         if ( ( childB_ != null || isChildB_ == true ) && cbc == 1 ) return true;
-        if ( ( childC_ != null || isChildC_ == true ) && cbc == 2 ) return true;
-        return false;
+        return (childC_ != null || isChildC_ == true) && cbc == 2;
     }
 
     public void move(PointXY to){
@@ -1280,7 +1273,6 @@ public class Triangle extends EditObject implements Cloneable {
     }
 
     public boolean isFloating(){
-        if( myParentBC_ == 9 || myParentBC_ == 10 ) return true;
-        return false;
+        return myParentBC_ == 9 || myParentBC_ == 10;
     }
 }

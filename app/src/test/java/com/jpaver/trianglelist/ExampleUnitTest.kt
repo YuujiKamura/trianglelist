@@ -9,6 +9,16 @@ import org.junit.Test
  * See [testing documentation](http://d.android.com/tools/testing).
  */
 class ExampleUnitTest {
+
+    @Test
+    fun testPolymorph(){
+        val baseClass = BaseClass()
+        val extendedClass = ExtendedClass()
+
+        assertEquals( 2, extendedClass.DoAnything() )
+
+    }
+
     @Test
     fun addition_isCorrect() {
         assertEquals(4, 2 + 2)

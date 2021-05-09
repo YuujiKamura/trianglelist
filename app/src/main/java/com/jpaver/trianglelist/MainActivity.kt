@@ -21,13 +21,11 @@ import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
 import android.view.View.INVISIBLE
-import android.view.View.VISIBLE
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider.getUriForFile
-import androidx.core.view.isVisible
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.InterstitialAd
@@ -212,9 +210,9 @@ class MainActivity : AppCompatActivity(),
 
             //　fab群の見かけの変更
             //fab.setBackgroundTintList(getColorStateList(R.color.colorTT2))
-            fab_replace.setBackgroundTintList(getColorStateList(R.color.colorTT2))
-            fab_deduction.setBackgroundTintList(getColorStateList(R.color.colorWhite))
-            fab_flag.setBackgroundTintList(getColorStateList(R.color.colorWhite))
+            fab_replace.backgroundTintList = getColorStateList(R.color.colorTT2)
+            fab_deduction.backgroundTintList = getColorStateList(R.color.colorWhite)
+            fab_flag.backgroundTintList = getColorStateList(R.color.colorWhite)
             val iconB: Icon = Icon.createWithResource(this, R.drawable.box)
             val iconC: Icon = Icon.createWithResource(this, R.drawable.circle)
             val iconF: Icon = Icon.createWithResource(this, R.drawable.flag)
@@ -231,9 +229,9 @@ class MainActivity : AppCompatActivity(),
             val spinnerArrayAdapter: ArrayAdapter<String> = ArrayAdapter<String>(
                     this, android.R.layout.simple_spinner_item, dArray
             )
-            findViewById<Spinner>(R.id.editParent).setAdapter(spinnerArrayAdapter)
-            findViewById<Spinner>(R.id.editParent2).setAdapter(spinnerArrayAdapter)
-            findViewById<Spinner>(R.id.editParent3).setAdapter(spinnerArrayAdapter)
+            findViewById<Spinner>(R.id.editParent).adapter = spinnerArrayAdapter
+            findViewById<Spinner>(R.id.editParent2).adapter = spinnerArrayAdapter
+            findViewById<Spinner>(R.id.editParent3).adapter = spinnerArrayAdapter
             findViewById<EditText>(R.id.editName1).requestFocus()
             inputMethodManager.showSoftInput(findViewById(R.id.editName1), 0)
             setEditNameAdapter(dedNameListC)
@@ -259,9 +257,9 @@ class MainActivity : AppCompatActivity(),
 
             //　fab群の見かけの変更
             //fab.setBackgroundTintList(getColorStateList(R.color.colorLime))
-            fab_replace.setBackgroundTintList(getColorStateList(R.color.colorLime))
-            fab_deduction.setBackgroundTintList(getColorStateList(R.color.colorAccent))
-            fab_flag.setBackgroundTintList(getColorStateList(R.color.colorAccent))
+            fab_replace.backgroundTintList = getColorStateList(R.color.colorLime)
+            fab_deduction.backgroundTintList = getColorStateList(R.color.colorAccent)
+            fab_flag.backgroundTintList = getColorStateList(R.color.colorAccent)
             val iconB: Icon = Icon.createWithResource(this, R.drawable.set_b)
             val iconC: Icon = Icon.createWithResource(this, R.drawable.set_c)
             val iconF: Icon = Icon.createWithResource(this, R.drawable.flag_b)
@@ -278,9 +276,9 @@ class MainActivity : AppCompatActivity(),
             val spinnerArrayAdapter: ArrayAdapter<String> = ArrayAdapter<String>(
                     this, android.R.layout.simple_spinner_item, tArray
             )
-            findViewById<Spinner>(R.id.editParent).setAdapter(spinnerArrayAdapter)
-            findViewById<Spinner>(R.id.editParent2).setAdapter(spinnerArrayAdapter)
-            findViewById<Spinner>(R.id.editParent3).setAdapter(spinnerArrayAdapter)
+            findViewById<Spinner>(R.id.editParent).adapter = spinnerArrayAdapter
+            findViewById<Spinner>(R.id.editParent2).adapter = spinnerArrayAdapter
+            findViewById<Spinner>(R.id.editParent3).adapter = spinnerArrayAdapter
             findViewById<EditText>(R.id.editText).requestFocus()
             setEditNameAdapter(sNumberList)
         }
@@ -428,6 +426,7 @@ class MainActivity : AppCompatActivity(),
 
         setSupportActionBar(toolbar)
         myDeductionList = DeductionList()
+        //Toast.makeText(this, "Welcome back!", Toast.LENGTH_SHORT).show()
 
 
         fab_replace.setOnClickListener { view ->
@@ -531,7 +530,7 @@ class MainActivity : AppCompatActivity(),
 
             if(len > 0 && deleteWarning == 0) {
                 deleteWarning = 1
-                fab_minus.setBackgroundTintList(getColorStateList(R.color.colorTT2))
+                fab_minus.backgroundTintList = getColorStateList(R.color.colorTT2)
 
             }
             else {
@@ -544,7 +543,7 @@ class MainActivity : AppCompatActivity(),
                     EditorClear(getList(deductionMode_), getList(deductionMode_).size())
                 }
                 deleteWarning = 0
-                fab_minus.setBackgroundTintList(getColorStateList(R.color.colorAccent))
+                fab_minus.backgroundTintList = getColorStateList(R.color.colorAccent)
             }
             printDebugConsole()
             colorMovementFabs()
@@ -561,7 +560,7 @@ class MainActivity : AppCompatActivity(),
             if(!deductionMode_){
                 colorindex_ ++
                 if(colorindex_ == RColors.size) colorindex_ = 0
-                fab_fillcolor.setBackgroundTintList(getColorStateList(RColors.get(colorindex_)))
+                fab_fillcolor.backgroundTintList = getColorStateList(RColors.get(colorindex_))
 
                 //dParams_ = myEditor.ReadLine(dParams_, myELSecond)
                 myTriangleList.get(my_view.myTriangleList.current).color_ = colorindex_
@@ -640,7 +639,7 @@ class MainActivity : AppCompatActivity(),
 
         fab_deduction.setOnClickListener { view ->
             deleteWarning = 0
-            fab_minus.setBackgroundTintList(getColorStateList(R.color.colorAccent))
+            fab_minus.backgroundTintList = getColorStateList(R.color.colorAccent)
             flipDeductionMode(deductionMode_)
             colorMovementFabs()
         }
@@ -668,8 +667,8 @@ class MainActivity : AppCompatActivity(),
             //my_view.isDebug_ = !my_view.isDebug_
             //my_view.invalidate()
 
-            if(my_view.isDebug_==true) fab_debug.setBackgroundTintList(getColorStateList(R.color.colorLime))
-            else  fab_debug.setBackgroundTintList(getColorStateList(R.color.colorAccent))
+            if(my_view.isDebug_==true) fab_debug.backgroundTintList = getColorStateList(R.color.colorLime)
+            else fab_debug.backgroundTintList = getColorStateList(R.color.colorAccent)
 
             // オートセーブpdf, dxf
             if( BuildConfig.BUILD_TYPE == "debug" ) {
@@ -682,12 +681,12 @@ class MainActivity : AppCompatActivity(),
         fab_testbasic.setOnClickListener { view ->
             //CreateNew()
 
-            findViewById<TextView>(R.id.editText2).setText("") // reset
+            findViewById<TextView>(R.id.editText2).text = "" // reset
             fabReplace(Params("", "", 1, 7f, 7f, 7f, 0, 0), true)
-            findViewById<TextView>(R.id.editText2).setText("6f") // add
+            findViewById<TextView>(R.id.editText2).text = "6f" // add
             fabReplace(Params("", "", 2, 7f, 6f, 6f, 1, 2), true)
 
-            findViewById<TextView>(R.id.editText).setText("0.23f") // add
+            findViewById<TextView>(R.id.editText).text = "0.23f" // add
             deductionMode_ = true
             fabReplace(
                     Params(
@@ -736,9 +735,9 @@ class MainActivity : AppCompatActivity(),
             readedFirst = params
             readedSecond = params
         }
-        val strTopA = findViewById<TextView>(R.id.editText).getText().toString()
-        val strTopB = findViewById<TextView>(R.id.editText2).getText().toString()
-        val strTopC = findViewById<TextView>(R.id.editText3).getText().toString()
+        val strTopA = findViewById<TextView>(R.id.editText).text.toString()
+        val strTopB = findViewById<TextView>(R.id.editText2).text.toString()
+        val strTopC = findViewById<TextView>(R.id.editText3).text.toString()
 
         var usedDedPoint = params.pt.clone()
 
@@ -880,7 +879,7 @@ class MainActivity : AppCompatActivity(),
                 my_view.myTriangleList.isDoubleTap_ = true
 
                 side.requestFocus()
-                side.setSelection(side.getText().length)
+                side.setSelection(side.text.length)
                 var inputMethodManager: InputMethodManager =
                     getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
                 inputMethodManager.showSoftInput(side, 0)
@@ -909,7 +908,7 @@ class MainActivity : AppCompatActivity(),
 
     fun setFabSetBC(i: Int){
         if(i == 1) {
-            fab_setB.setBackgroundTintList(getColorStateList(R.color.colorAccent))
+            fab_setB.backgroundTintList = getColorStateList(R.color.colorAccent)
 
         }
     }
@@ -958,7 +957,7 @@ class MainActivity : AppCompatActivity(),
                 if( my_view.myTriangleList.lastTapSide_ == 0 ) {
 
                     findViewById<EditText>(R.id.editText4).requestFocus()
-                    findViewById<EditText>(R.id.editText4).setSelection(findViewById<EditText>(R.id.editText4).getText().length)
+                    findViewById<EditText>(R.id.editText4).setSelection(findViewById<EditText>(R.id.editText4).text.length)
                     inputMethodManager.showSoftInput(findViewById(R.id.editText4), 0)
                     my_view.setParentSide(my_view.getTriangleList().lastTapNum_, 3)
                 }
@@ -981,33 +980,31 @@ class MainActivity : AppCompatActivity(),
     fun printDebugConsole(){
         val tvd: TextView = findViewById(R.id.debugconsole)
         //面積(控除なし): ${myTriangleList.getArea()}㎡　(控除あり):${myTriangleList.getArea()-myDeductionList.getArea()}㎡
-        tvd.setText(
-                """ myView.Center: ${my_view.myTriangleList.center.x} ${my_view.myTriangleList.center.y}
+        tvd.text = """ myView.Center: ${my_view.myTriangleList.center.x} ${my_view.myTriangleList.center.y}
                         |TriCurrent: ${my_view.getTriangleList().getCurrent()} T1.color ${
-                    my_view.getTriangleList().get(
-                            1
-                    ).color_
-                } ${myTriangleList.get(1).color_} 
+            my_view.getTriangleList().get(
+                    1
+            ).color_
+        } ${myTriangleList.get(1).color_} 
                         |TapTL: ${my_view.tapTL_} , lastTapNum: ${my_view.getTriangleList().lastTapNum_}, lastTapSide: ${my_view.getTriangleList().lastTapSide_}                                 
                         |viewX: ${my_view.getViewSize().x}, viewY ${my_view.getViewSize().y}, zoomsize: ${my_view.zoomSize}
                         |mtsX: ${
-                    myTriangleList.measureMostLongLine().getX()
-                } , mtsY: ${
-                    myTriangleList.measureMostLongLine().getY()
-                }  mtcX: ${myTriangleList.getCenter().getX()} , mtcY: ${
-                    myTriangleList.getCenter().getY()
-                }
-                        |mtscl: ${myTriangleList.getScale()} , mtc: ${myTriangleList.getCurrent()}  mdl: ${myDeductionList.size()} , mdc: ${myDeductionList.getCurrent()}
+            myTriangleList.measureMostLongLine().x
+        } , mtsY: ${
+            myTriangleList.measureMostLongLine().y
+        }  mtcX: ${myTriangleList.center.x} , mtcY: ${
+            myTriangleList.center.y
+        }
+                        |mtscl: ${myTriangleList.scale} , mtc: ${myTriangleList.getCurrent()}  mdl: ${myDeductionList.size()} , mdc: ${myDeductionList.getCurrent()}
                         |currentname: ${
-                    myTriangleList.get(myTriangleList.size()).getMyName_()
-                }  cur-1name: ${
-                    myTriangleList.get(
-                            myTriangleList.size() - 1
-                    ).getMyName_()
-                }
+            myTriangleList.get(myTriangleList.size()).getMyName_()
+        }  cur-1name: ${
+            myTriangleList.get(
+                    myTriangleList.size() - 1
+            ).getMyName_()
+        }
                         |myAngle: ${myTriangleList.myAngle}
             """.trimMargin()
-        )
     }
 
     fun colorMovementFabs() : Int{
@@ -1017,24 +1014,24 @@ class MainActivity : AppCompatActivity(),
         var movable: Int = 0
         //fab_zoomin.setBackgroundTintList(getColorStateList(R.color.colorSky))
         //fab_zoomout.setBackgroundTintList(getColorStateList(R.color.colorSky))
-        fab_resetView.setBackgroundTintList(getColorStateList(R.color.colorSky))
+        fab_resetView.backgroundTintList = getColorStateList(R.color.colorSky)
         //色
-        fab_fillcolor.setBackgroundTintList(getColorStateList(RColors.get(colorindex_)))
+        fab_fillcolor.backgroundTintList = getColorStateList(RColors.get(colorindex_))
 
-        fab_share.setBackgroundTintList(getColorStateList(R.color.colorLime))
+        fab_share.backgroundTintList = getColorStateList(R.color.colorLime)
 
 
         if(max > current) {
-            fab_down.setBackgroundTintList(getColorStateList(R.color.colorSky))
+            fab_down.backgroundTintList = getColorStateList(R.color.colorSky)
             movable++
         }
-        else fab_down.setBackgroundTintList(getColorStateList(R.color.colorAccent))
+        else fab_down.backgroundTintList = getColorStateList(R.color.colorAccent)
 
         if(min < current){
-            fab_up.setBackgroundTintList(getColorStateList(R.color.colorSky))
+            fab_up.backgroundTintList = getColorStateList(R.color.colorSky)
             movable += 2
         }
-        else fab_up.setBackgroundTintList(getColorStateList(R.color.colorAccent))
+        else fab_up.backgroundTintList = getColorStateList(R.color.colorAccent)
 
         return movable
     }
@@ -1052,9 +1049,9 @@ class MainActivity : AppCompatActivity(),
         textView.setAdapter(adapter)
         textView2.setAdapter(adapter)
         textView3.setAdapter(adapter)
-        textView.setThreshold(1)
-        textView2.setThreshold(1)
-        textView3.setThreshold(1)
+        textView.threshold = 1
+        textView2.threshold = 1
+        textView3.threshold = 1
         textView.addTextChangedListener(MyTextWatcher(myELFirst, myEditor, lastParams_))
 
     }
@@ -1068,7 +1065,7 @@ class MainActivity : AppCompatActivity(),
         //private val beforeTextChanged_: TextView = findViewById<TextView>(R.id.beforeTextChanged)
         //private val onTextChanged_: TextView = findViewById<TextView>(R.id.onTextChanged)
         override fun afterTextChanged(s: Editable) {
-            val input = mELine.name.getText().toString()
+            val input = mELine.name.text.toString()
 //            myEditor.LineRewrite(Params(input,"",myDeductionList.length()+1,dP.a, dP.b, dP.c, dP.pn, i, PointXY(0f,0f)), myELFirst)
 
             if(input == "仕切弁" || input == "ソフト弁" || input == "ドレーン") {
@@ -1158,6 +1155,7 @@ class MainActivity : AppCompatActivity(),
     }
 
     override fun onAttachedToWindow() {
+
         super.onAttachedToWindow()
 
         rStr_ = ResStr(
@@ -1228,7 +1226,7 @@ class MainActivity : AppCompatActivity(),
         loadEditTable()
         colorMovementFabs()
         //fab.setBackgroundTintList(getColorStateList(R.color.colorLime))
-        fab_replace.setBackgroundTintList(getColorStateList(R.color.colorLime))
+        fab_replace.backgroundTintList = getColorStateList(R.color.colorLime)
         setEditNameAdapter(sNumberList)
 
         checkPermission()
@@ -1260,7 +1258,7 @@ class MainActivity : AppCompatActivity(),
         my_view.myTriangleList.lastTapNum_ = my_view.myTriangleList.size()
         my_view.resetViewToLSTP()
 
-        fab_fillcolor.setBackgroundTintList(getColorStateList(RColors.get(colorindex_)))
+        fab_fillcolor.backgroundTintList = getColorStateList(RColors.get(colorindex_))
 
         printDebugConsole()
         EditorClear(getList(deductionMode_), getList(deductionMode_).size())
@@ -1281,18 +1279,6 @@ class MainActivity : AppCompatActivity(),
         if( BuildConfig.FLAVOR == "free" ) mAdView.visibility = INVISIBLE
     }
 
-    override fun onStop(){
-        super.onStop()
-    }
-
-    override fun onBackPressed() {
-        super.onBackPressed()
-    }
-
-    override fun onPause(){
-        super.onPause()
-    }
-
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         // 上部のOptionsMenuの表示　Inflate the menu; this adds items to the action bar if it is present.
         menuInflater.inflate(R.menu.menu_main, menu)
@@ -1304,7 +1290,7 @@ class MainActivity : AppCompatActivity(),
         mIsCreateNew = true
         fileType = "CSV"
         var i: Intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
-        i.setType("text/csv")
+        i.type = "text/csv"
         i.putExtra(Intent.EXTRA_TITLE, rosenname_ + " " + LocalDate.now() + ".csv")
         startActivityForResult(i, 1)
         setResult(RESULT_OK, i)
@@ -1327,14 +1313,14 @@ class MainActivity : AppCompatActivity(),
         return when (item.itemId) {
             R.id.action_new -> {
                 var dialog: MyDialogFragment = MyDialogFragment()
-                dialog.show(getSupportFragmentManager(), "dialog.basic")
+                dialog.show(supportFragmentManager, "dialog.basic")
                 return true
             }
             R.id.action_save_csv -> {
                 fileType = "CSV"
                 var i: Intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
                 i.addCategory(Intent.CATEGORY_OPENABLE)
-                i.setType("text/csv")
+                i.type = "text/csv"
                 i.putExtra(
                         Intent.EXTRA_TITLE,
                         rosenname_ + " " + LocalDate.now().toString() + ".csv"
@@ -1348,7 +1334,7 @@ class MainActivity : AppCompatActivity(),
             R.id.action_load_csv -> {
                 var i: Intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
                 i.addCategory(Intent.CATEGORY_OPENABLE)
-                i.setType("text/csv")
+                i.type = "text/csv"
                 i.putExtra(Intent.EXTRA_TITLE, ".csv")
                 startActivityForResult(i, 2)
 
@@ -1360,7 +1346,7 @@ class MainActivity : AppCompatActivity(),
                 val editText5 = EditText(this)
                 editText5.hint = hTstart
                 val filter2 = arrayOf(InputFilter.LengthFilter(3))
-                editText5.setFilters(filter2)
+                editText5.filters = filter2
                 editText5.setText(drawingStartNumber_.toString())
 
                 AlertDialog.Builder(this)
@@ -1369,11 +1355,11 @@ class MainActivity : AppCompatActivity(),
                         .setView(editText5)
                         .setPositiveButton("OK",
                                 DialogInterface.OnClickListener { dialog, which ->
-                                    drawingStartNumber_ = editText5.getText().toString().toInt()
+                                    drawingStartNumber_ = editText5.text.toString().toInt()
 
                                     fileType = "DXF"
                                     var i: Intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
-                                    i.setType("text/dxf")
+                                    i.type = "text/dxf"
                                     i.putExtra(
                                             Intent.EXTRA_TITLE,
                                             rosenname_ + " " + LocalDate.now() + ".dxf"
@@ -1389,7 +1375,7 @@ class MainActivity : AppCompatActivity(),
                 val editText5 = EditText(this)
                 editText5.hint = hTstart
                 val filter2 = arrayOf(InputFilter.LengthFilter(3))
-                editText5.setFilters(filter2)
+                editText5.filters = filter2
                 editText5.setText(drawingStartNumber_.toString())
 
                 filename_ = rosenname_ + " " + LocalDate.now() + ".sfc"
@@ -1399,11 +1385,11 @@ class MainActivity : AppCompatActivity(),
                         .setView(editText5)
                         .setPositiveButton("OK",
                                 DialogInterface.OnClickListener { dialog, which ->
-                                    drawingStartNumber_ = editText5.getText().toString().toInt()
+                                    drawingStartNumber_ = editText5.text.toString().toInt()
 
                                     fileType = "SFC"
                                     var i: Intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
-                                    i.setType("text/sfc")
+                                    i.type = "text/sfc"
                                     i.putExtra(
                                             Intent.EXTRA_TITLE,
                                             rosenname_ + " " + LocalDate.now() + ".sfc"
@@ -1425,21 +1411,21 @@ class MainActivity : AppCompatActivity(),
                 val editText = EditText(this)
                 editText.hint = hCname + " " + hSpace
                 val filter = arrayOf(InputFilter.LengthFilter(50))
-                editText.setFilters(filter)
+                editText.filters = filter
                 editText.setText(koujiname_)
                 val editText2 = EditText(this)
                 editText2.hint = hRname
-                rosenname_ = findViewById<EditText>(R.id.rosenname).getText().toString()
+                rosenname_ = findViewById<EditText>(R.id.rosenname).text.toString()
                 editText2.setText(rosenname_)
-                editText2.setFilters(filter)
+                editText2.filters = filter
                 val editText3 = EditText(this)
                 editText3.hint = hAname
                 editText3.setText(gyousyaname_)
-                editText3.setFilters(filter)
+                editText3.filters = filter
                 val editText4 = EditText(this)
                 editText4.hint = hRnum
                 editText4.setText(zumennum_)
-                editText4.setFilters(filter)
+                editText4.filters = filter
 
                 AlertDialog.Builder(this)
                         .setTitle("Save PDF")
@@ -1447,7 +1433,7 @@ class MainActivity : AppCompatActivity(),
                         .setView(editText)
                         .setPositiveButton("OK",
                                 DialogInterface.OnClickListener { dialog, which ->
-                                    koujiname_ = editText.getText().toString()
+                                    koujiname_ = editText.text.toString()
 
                                     AlertDialog.Builder(this)
                                             .setTitle("Save PDF")
@@ -1455,7 +1441,7 @@ class MainActivity : AppCompatActivity(),
                                             .setView(editText2)
                                             .setPositiveButton("OK",
                                                     DialogInterface.OnClickListener { dialog, which ->
-                                                        rosenname_ = editText2.getText().toString()
+                                                        rosenname_ = editText2.text.toString()
 
                                                         AlertDialog.Builder(this)
                                                                 .setTitle("Save PDF")
@@ -1463,7 +1449,7 @@ class MainActivity : AppCompatActivity(),
                                                                 .setView(editText3)
                                                                 .setPositiveButton("OK",
                                                                         DialogInterface.OnClickListener { dialog, which ->
-                                                                            gyousyaname_ = editText3.getText().toString()
+                                                                            gyousyaname_ = editText3.text.toString()
 
                                                                             AlertDialog.Builder(this)
                                                                                     .setTitle("Save PDF")
@@ -1472,7 +1458,7 @@ class MainActivity : AppCompatActivity(),
                                                                                     .setPositiveButton("OK",
                                                                                             DialogInterface.OnClickListener { dialog, which ->
                                                                                                 zumennum_ =
-                                                                                                        editText4.getText().toString()
+                                                                                                        editText4.text.toString()
 
                                                                                                 fileType = "PDF"
                                                                                                 var i: Intent =
@@ -1514,20 +1500,20 @@ class MainActivity : AppCompatActivity(),
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if(data?.getData() == NULL || resultCode == RESULT_CANCELED) return
-        var title: Uri = Objects.requireNonNull(data?.getData())!!
+        if(data?.data == NULL || resultCode == RESULT_CANCELED) return
+        var title: Uri = Objects.requireNonNull(data?.data)!!
         if(requestCode ==1 && resultCode == RESULT_OK) {
             try {
                 var charset: String = "Shift-JIS"
                 var writer: BufferedWriter = BufferedWriter(
-                        OutputStreamWriter(getContentResolver().openOutputStream(title), charset)
+                        OutputStreamWriter(contentResolver.openOutputStream(title), charset)
                 )
 
 
                 if (fileType == "DXF") saveDXF(writer)
                 if (fileType == "CSV") saveCSV(writer)
-                if (fileType == "PDF") savePDF(getContentResolver().openOutputStream(title)!!, true)
-                if (fileType == "SFC") saveSFC(BufferedOutputStream( getContentResolver().openOutputStream( title ) ), true)
+                if (fileType == "PDF") savePDF(contentResolver.openOutputStream(title)!!, true)
+                if (fileType == "SFC") saveSFC(BufferedOutputStream( contentResolver.openOutputStream( title ) ), true)
 
                 AutoSaveCSV() // オートセーブ
             } catch (e: IOException) {
@@ -1538,7 +1524,7 @@ class MainActivity : AppCompatActivity(),
             var str: StringBuilder = StringBuilder()
             try {
                 var reader: BufferedReader = BufferedReader(
-                        InputStreamReader(getContentResolver().openInputStream(title), "Shift-JIS")
+                        InputStreamReader(contentResolver.openInputStream(title), "Shift-JIS")
                 )
                 loadCSV(reader)
             } catch (e: IOException) {
@@ -1586,7 +1572,7 @@ class MainActivity : AppCompatActivity(),
 
         if ( contentUri != Uri.EMPTY ) {
             val intent = Intent(Intent.ACTION_VIEW)
-            intent.setFlags( Intent.FLAG_GRANT_READ_URI_PERMISSION )
+            intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
             intent.setDataAndType(contentUri, "application/pdf")
             try {
                 startActivity(intent)
@@ -1600,24 +1586,24 @@ class MainActivity : AppCompatActivity(),
 
         AutoSaveCSV()
         AutoSavePDF()
-        AutoSaveDXF()
-        AutoSaveSFC()
+        //AutoSaveDXF()
+        //AutoSaveSFC()
 
         var intent: Intent = Intent( Intent.ACTION_SEND_MULTIPLE )
         val contentUri = getAppLocalFile( this, "myLastTriList.pdf" )
         val contentUri2 = getAppLocalFile( this, "myLastTriList.csv" )
-        val contentUri3 = getAppLocalFile( this, "myLastTriList.dxf" )
-        val contentUri4 = getAppLocalFile( this, "myLastTriList.sfc" )
+        //val contentUri3 = getAppLocalFile( this, "myLastTriList.dxf" )
+        //val contentUri4 = getAppLocalFile( this, "myLastTriList.sfc" )
 
         val ar = ArrayList<Uri>()
         ar.add( contentUri )
         ar.add( contentUri2 )
-        ar.add( contentUri3 )
-        ar.add( contentUri4 )
+        //ar.add( contentUri3 )
+        //ar.add( contentUri4 )
 
         intent.putExtra(Intent.EXTRA_STREAM, ar )
 
-        intent.setType("message/rfc822")
+        intent.type = "message/rfc822"
         intent.setPackage("com.google.android.gm")
 
         startActivity(intent)
@@ -1641,7 +1627,7 @@ class MainActivity : AppCompatActivity(),
            val intent = Intent(Intent.ACTION_SEND)
             intent.setDataAndType(contentUri, "application/pdf")
             intent.putExtra(Intent.EXTRA_STREAM, contentUri )
-            intent.setFlags( Intent.FLAG_GRANT_READ_URI_PERMISSION )
+            intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
             try {
                 startActivity(intent)
             } catch (e: ActivityNotFoundException) {
@@ -1661,7 +1647,7 @@ class MainActivity : AppCompatActivity(),
 
         dxfWriter.writer_ = writer
         dxfWriter.drawingLength_ = myTriangleList.measureMostLongLine()
-        dxfWriter.deductionList_ = myDeductionList
+        dxfWriter.dedlist_ = myDeductionList
         dxfWriter.setNames(koujiname_, rosenname_, gyousyaname_, zumennum_)
         dxfWriter.isDebug_ = my_view.isDebug_
 
@@ -1796,7 +1782,7 @@ class MainActivity : AppCompatActivity(),
 
     fun saveCSV(writer: BufferedWriter){
         //myTriangleList.scale(PointXY(0f,0f),1/myTriangleList.getScale())
-        rosenname_ = findViewById<EditText>(R.id.rosenname).getText().toString()
+        rosenname_ = findViewById<EditText>(R.id.rosenname).text.toString()
 
         writer.write("koujiname, " + koujiname_)
         writer.newLine()
@@ -1817,8 +1803,8 @@ class MainActivity : AppCompatActivity(),
                             mt.getLengthA_().toString() + ", " +        //1
                             mt.getLengthB_().toString() + ", " +        //2
                             mt.getLengthC_().toString() + ", " +        //3
-                            mt.getParentNumber().toString() + ", " +   //4
-                            mt.getParentBC().toString() + ", " +       //5
+                            mt.parentNumber.toString() + ", " +   //4
+                            mt.parentBC.toString() + ", " +       //5
                             mt.getMyName_() + ", " +                    //6
                             pt.x + ", " +             //7
                             pt.y + ", " +             //8
@@ -1839,9 +1825,9 @@ class MainActivity : AppCompatActivity(),
             writer.newLine()
         }
 
-        writer.write("ListAngle, " + myTriangleList.getAngle())
+        writer.write("ListAngle, " + myTriangleList.angle)
         writer.newLine()
-        writer.write("ListScale, " + myTriangleList.getScale())
+        writer.write("ListScale, " + myTriangleList.scale)
         writer.newLine()
         writer.write("TextSize, " + my_view.ts_)
         writer.newLine()
@@ -1878,7 +1864,7 @@ class MainActivity : AppCompatActivity(),
         var str: StringBuilder = StringBuilder()
         var line: String? = reader.readLine()
         if(line == null) return false
-        var chunks: List<String?> = line?.split(",")!!.map { it.trim() }
+        var chunks: List<String?> = line.split(",").map { it.trim() }
         if(chunks[0]!! == "koujiname") {
             koujiname_= chunks[1]!!.toString()
             line = reader.readLine()
@@ -1952,21 +1938,21 @@ class MainActivity : AppCompatActivity(),
         while (line != null){
             line = reader.readLine()
             if(line == null) break
-            chunks = line?.split(",")!!.map { it.trim() }
-            if(chunks[0]!! == "ListAngle") {
-                trilist.setAngle(chunks[1]!!.toFloat())
+            chunks = line.split(",").map { it.trim() }
+            if(chunks[0] == "ListAngle") {
+                trilist.angle = chunks[1].toFloat()
                 continue
             }
-            if(chunks[0]!! == "ListScale") {
-                trilist.setScale(PointXY(0f, 0f), chunks[1]!!.toFloat())
-                revScale = mScale/chunks[1]!!.toFloat()
+            if(chunks[0] == "ListScale") {
+                trilist.setScale(PointXY(0f, 0f), chunks[1].toFloat())
+                revScale = mScale/ chunks[1].toFloat()
                 continue
             }
-            if(chunks[0]!! == "TextSize") {
-                my_view.setAllTextSize(chunks[1]!!.toFloat())
+            if(chunks[0] == "TextSize") {
+                my_view.setAllTextSize(chunks[1].toFloat())
                 continue
             }
-            if(chunks[0]!! == "Deduction"){
+            if(chunks[0] == "Deduction"){
 //                dedlist.add(Params(chunks[2]!!.toString(),chunks[6]!!.toString(), chunks[1]!!.toInt(),
                 //                  chunks[3]!!.toFloat(),chunks[4]!!.toFloat(),0f,
                 //                chunks[5]!!.toInt(),typeToInt(chunks[6]!!.toString()),
@@ -1975,44 +1961,44 @@ class MainActivity : AppCompatActivity(),
                 dedlist.add(
                         Deduction(
                                 Params(
-                                        chunks[2]!!.toString(), chunks[6]!!.toString(), chunks[1]!!.toInt(),
-                                        chunks[3]!!.toFloat(), chunks[4]!!.toFloat(), 0f,
-                                        chunks[5]!!.toInt(), typeToInt(chunks[6]!!.toString()),
+                                        chunks[2].toString(), chunks[6].toString(), chunks[1].toInt(),
+                                        chunks[3].toFloat(), chunks[4].toFloat(), 0f,
+                                        chunks[5].toInt(), typeToInt(chunks[6].toString()),
                                         PointXY(
-                                                chunks[8]!!.toFloat(),
-                                                -chunks[9]!!.toFloat()
+                                                chunks[8].toFloat(),
+                                                -chunks[9].toFloat()
                                         ).scale(mScale),
                                         PointXY(
-                                                chunks[10]!!.toFloat(),
-                                                -chunks[11]!!.toFloat()
+                                                chunks[10].toFloat(),
+                                                -chunks[11].toFloat()
                                         ).scale(mScale)
                                 )
                         )
                 )
-                if( chunks[12].isEmpty() == false ) dedlist.get(dedlist.size()).shapeAngle_ = chunks[12]!!.toFloat()
+                if( chunks[12].isEmpty() == false ) dedlist.get(dedlist.size()).shapeAngle_ = chunks[12].toFloat()
                 continue
             }
             //Connection Params
             if( chunks.size > 17 ) {
-                val ptri = trilist.getTriangle(chunks[4]!!.toInt())
+                val ptri = trilist.getTriangle(chunks[4].toInt())
                 val cp = ConneParam(
-                        chunks[17]!!.toInt(),
-                        chunks[18]!!.toInt(),
-                        chunks[19]!!.toInt(),
-                        chunks[1]!!.toFloat()
+                        chunks[17].toInt(),
+                        chunks[18].toInt(),
+                        chunks[19].toInt(),
+                        chunks[1].toFloat()
                 )
                 trilist.add(
                         Triangle(
                                 ptri, cp,
-                                chunks[2]!!.toFloat(),
-                                chunks[3]!!.toFloat()
+                                chunks[2].toFloat(),
+                                chunks[3].toFloat()
                         )
                 )
-                trilist.getTriangle(trilist.size()).myParentBC_ = chunks[5]!!.toInt()
+                trilist.getTriangle(trilist.size()).myParentBC_ = chunks[5].toInt()
             }
             else{
                 val cp = parentBCtoCParam(
-                        chunks[5]!!.toInt(), chunks[1]!!.toFloat(), ConneParam(
+                        chunks[5].toInt(), chunks[1].toFloat(), ConneParam(
                         0,
                         0,
                         0,
@@ -2022,44 +2008,44 @@ class MainActivity : AppCompatActivity(),
 
                 trilist.add(
                         Triangle(
-                                trilist.getTriangle(chunks[4]!!.toInt()), ConneParam(
+                                trilist.getTriangle(chunks[4].toInt()), ConneParam(
                                 cp.side,
                                 cp.type,
                                 cp.lcr,
                                 cp.lenA
                         ),
-                                chunks[2]!!.toFloat(),
-                                chunks[3]!!.toFloat()
+                                chunks[2].toFloat(),
+                                chunks[3].toFloat()
                         )
                 )
-                trilist.getTriangle(trilist.size()).myParentBC_ = chunks[5]!!.toInt()
+                trilist.getTriangle(trilist.size()).myParentBC_ = chunks[5].toInt()
                 // trilist.getTriangle(trilist.size()).setCParamFromParentBC( chunks[5]!!.toInt() )
             }
             val mT = trilist.getTriangle(trilist.size())
-            mT.setMyName_(chunks[6]!!.toString())
-            if( trilist.size() > 1 ) trilist.get(trilist.size() - 1).childSide_ = chunks[5]!!.toInt()
+            mT.setMyName_(chunks[6].toString())
+            if( trilist.size() > 1 ) trilist.get(trilist.size() - 1).childSide_ = chunks[5].toInt()
 
-            if(chunks[9]!! == "true") mT.setPointNumberMoved_(
+            if(chunks[9] == "true") mT.setPointNumberMoved_(
                     PointXY(
-                            chunks[7]!!.toFloat(),
-                            chunks[8]!!.toFloat()
+                            chunks[7].toFloat(),
+                            chunks[8].toFloat()
                     )
             )
 
             // 色
-            if( chunks.size > 10 ) mT.setColor(chunks[10]!!.toInt())
+            if( chunks.size > 10 ) mT.setColor(chunks[10].toInt())
 
             // dimaligns
             if( chunks.size > 11 ) {
                 mT.setDimAligns(
-                        chunks[11]!!.toInt(), chunks[12]!!.toInt(), chunks[13]!!.toInt(),
-                        chunks[14]!!.toInt(), chunks[15]!!.toInt(), chunks[16]!!.toInt()
+                        chunks[11].toInt(), chunks[12].toInt(), chunks[13].toInt(),
+                        chunks[14].toInt(), chunks[15].toInt(), chunks[16].toInt()
                 )
             }
 
             if( chunks.size > 20 ) {
-                mT.isChangeDimAlignB_ = chunks[20]!!.toBoolean()
-                mT.isChangeDimAlignC_ = chunks[21]!!.toBoolean()
+                mT.isChangeDimAlignB_ = chunks[20].toBoolean()
+                mT.isChangeDimAlignC_ = chunks[21].toBoolean()
             }
 
 
@@ -2115,7 +2101,7 @@ class MainActivity : AppCompatActivity(),
 
     fun setTitles(){
         findViewById<EditText>(R.id.rosenname).setText(rosenname_)
-        setTitle(rStr_.menseki_ + ": ${myTriangleList.getArea() - myDeductionList.getArea()} m^2");
+        title = rStr_.menseki_ + ": ${myTriangleList.getArea() - myDeductionList.getArea()} m^2"
     }
 
 

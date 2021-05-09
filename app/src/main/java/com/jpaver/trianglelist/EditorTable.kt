@@ -13,9 +13,7 @@ data class DeductionParams(var num: Int, var name: String, var lengthX: Float, v
 
 data class TitleParams(var type: Int, var n: Int, var name: Int, var a: Int, var b: Int, var c: Int, var pn: Int, var pl: Int)
 
-class TitleParamStr(var type: String, var n: String, var name: String, var a: String, var b: String, var c: String, var pn: String, var pl: String){
-
-}
+class TitleParamStr(var type: String, var n: String, var name: String, var a: String, var b: String, var c: String, var pn: String, var pl: String)
 
 
 data class EditTextViewLine(var n: EditText, var name: EditText, var a: EditText, var b: EditText, var c: EditText, var pn: EditText, var pl: Spinner)
@@ -59,8 +57,8 @@ class EditorTable {
         val max: Int = myList.size()
         val min: Int = 1
         var current: Int = myList.getCurrent()
-        val secondkeys: Keys = Keys(secondline.n.getKeyListener(), secondline.name.getKeyListener(), secondline.a.getKeyListener(), secondline.b.getKeyListener(), secondline.c.getKeyListener(), secondline.pn.getKeyListener())
-        val thirdkeys: Keys = Keys(thirdline.n.getKeyListener(), thirdline.name.getKeyListener(), thirdline.a.getKeyListener(), thirdline.b.getKeyListener(), thirdline.c.getKeyListener(), thirdline.pn.getKeyListener())
+        val secondkeys: Keys = Keys(secondline.n.keyListener, secondline.name.keyListener, secondline.a.keyListener, secondline.b.keyListener, secondline.c.keyListener, secondline.pn.keyListener)
+        val thirdkeys: Keys = Keys(thirdline.n.keyListener, thirdline.name.keyListener, thirdline.a.keyListener, thirdline.b.keyListener, thirdline.c.keyListener, thirdline.pn.keyListener)
         //keys = setKeyListener(keys, thirdline)
 
         if( (max > current && movement > 0) ||
@@ -79,12 +77,12 @@ class EditorTable {
 }
 
     fun setKeyListener(keys: Keys, line: EditTextViewLine) :Keys{
-        keys.n = line.n.getKeyListener()
-        keys.name = line.name.getKeyListener()
-        keys.a = line.a.getKeyListener()
-        keys.b = line.b.getKeyListener()
-        keys.c = line.c.getKeyListener()
-        keys.pn = line.pn.getKeyListener()
+        keys.n = line.n.keyListener
+        keys.name = line.name.keyListener
+        keys.a = line.a.keyListener
+        keys.b = line.b.keyListener
+        keys.c = line.c.keyListener
+        keys.pn = line.pn.keyListener
 
         return keys
     }
@@ -92,10 +90,10 @@ class EditorTable {
     fun setLineEditable(bool: Boolean, keys: Keys, line: EditTextViewLine){
 
         if(bool == false) {
-            line.n.setKeyListener(null)
+            line.n.keyListener = null
         }
         else {
-            line.n.setKeyListener(keys.n)
+            line.n.keyListener = keys.n
         }
     }
 
@@ -119,22 +117,22 @@ class EditorTable {
 
     fun ReadLineTo(prm: Params, line: EditTextViewLine) :Params {
 
-        var sa: String = line.a.getText().toString()
-        var sb: String = line.b.getText().toString()
-        var sc: String = line.c.getText().toString()
+        var sa: String = line.a.text.toString()
+        var sb: String = line.b.text.toString()
+        var sc: String = line.c.text.toString()
         if(sa == "") sa = "0.0"
         if(sb == "") sb = "0.0"
         if(sc == "") sc = "0.0"
 
-        var sn: String = line.n.getText().toString()
-        var spn: String = line.pn.getText().toString()
+        var sn: String = line.n.text.toString()
+        var spn: String = line.pn.text.toString()
         if (sn == "") sn = "0"
         if (spn == "") spn = "0"
 
         prm.n = sn.toInt()
         prm.pn = spn.toInt()
 
-        prm.name = line.name.getText().toString()
+        prm.name = line.name.text.toString()
         prm.a = sa.toFloat()
         prm.b = sb.toFloat()
         prm.c = sc.toFloat()

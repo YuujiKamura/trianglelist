@@ -199,7 +199,7 @@
             android:layout_marginStart="16dp"
             android:layout_alignTop="@id/fab_share"
             android:layout_marginTop="70dp"
-            android:visibility="invisible"
+            android:visibility="visible"
             app:fabSize="mini"
             app:layout_constraintTop_toBottomOf="@id/fab_share"
             app:srcCompat="@android:drawable/ic_dialog_email"
