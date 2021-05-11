@@ -4,7 +4,7 @@ import kotlin.math.roundToInt
 
 data class ConneParam(var side: Int, var type: Int, var lcr: Int, var lenA: Float ){
      fun clone(): ConneParam {
-        var b:ConneParam = ConneParam(side, type, lcr, lenA)
+        val b = ConneParam(side, type, lcr, lenA)
         return b
     }
 }
@@ -44,12 +44,12 @@ class Deduction(var num: Int = 0,
     )
 
     var scale_ = 1f
+    var shapeAngle_ = 0f
     lateinit var plt: PointXY
     lateinit var plb: PointXY
     lateinit var prt: PointXY
     lateinit var prb: PointXY
-    var shapeAngle_ = 0f
-
+    var info_: String
 
     init{
 
@@ -66,6 +66,8 @@ class Deduction(var num: Int = 0,
             prt = PointXY( 0f, 0f )
             prb = PointXY( 0f, 0f )
         }
+
+        info_ = getInfo()
     }
 
     fun setBox(scale: Float){
@@ -77,7 +79,7 @@ class Deduction(var num: Int = 0,
     }
 
     public override fun clone(): Deduction {
-        var b: Deduction = Deduction()
+        var b = Deduction()
         try {
             b = super.clone() as Deduction
             b.num = num
@@ -113,7 +115,7 @@ class Deduction(var num: Int = 0,
         angle = 0f
         point =  dp.pt
         pointFlag =  dp.pts
-
+        info_ = getInfo()
     }
 
     fun getTap( tapP: PointXY ): Boolean{
@@ -181,7 +183,7 @@ class Deduction(var num: Int = 0,
     }
 
     override fun getArea() :Float {
-        var area: Float = 0.0f
+        var area = 0.0f
         if( type == "Circle" ) {
             area = (lengthX/2) * (lengthX/2) * 3.141592f
         }
@@ -190,14 +192,14 @@ class Deduction(var num: Int = 0,
     }
 
     fun roundByUnderTwo(fp: Float) :Float {
-        var ip: Float = fp * 100f
+        val ip: Float = fp * 100f
         ip.roundToInt()
-        var rfp: Float = ip / 100
+        val rfp: Float = ip / 100
         return rfp
     }
 
     fun typeToInt(type: String) :Int{
-        var pl: Int = 0
+        var pl = 0
         if(type == "Box") pl = 1
         if(type == "Circle") pl = 2
         return pl
@@ -217,7 +219,7 @@ class Deduction(var num: Int = 0,
     }
 
     override fun getParams() :Params{
-        var pr: Params = Params(name,type,num,lengthX,lengthY,0f,parentNum,typeToInt(type),point,pointFlag)
+        val pr = Params(name,type,num,lengthX,lengthY,0f,parentNum,typeToInt(type),point,pointFlag)
 
         return pr
     }

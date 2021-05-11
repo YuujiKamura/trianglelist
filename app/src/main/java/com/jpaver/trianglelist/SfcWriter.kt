@@ -105,7 +105,7 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
 
         val ded = dedlist_.get( dednumber )
         //val textsize: Float = textscale_
-        val infoStrLength = ded.getInfo().length*textscale_+100f
+        val infoStrLength = ded.info_.length*textscale_+100f
         val point = ded.point
         val pointFlag = ded.pointFlag
         var textOffsetX = 200f
@@ -114,11 +114,11 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
         if(point.x <= pointFlag.x) {  //ptFlag is RIGHT from pt
             writeLine( 2, point, pointFlag )
             writeLine( 2, pointFlag.plus(infoStrLength,0f), pointFlag )
-            writeText( 2, ded.getInfo(), pointFlag.plus( textOffsetX,0f ), textscale_, 0f, 1)
+            writeText( 2, ded.info_, pointFlag.plus( textOffsetX,0f ), textscale_, 0f, 1)
         } else {                     //ptFlag is LEFT from pt
             writeLine( 2, point, pointFlag )
             writeLine( 2, pointFlag.plus(-infoStrLength,0f), pointFlag )
-            writeText( 2, ded.getInfo(), pointFlag.plus(-infoStrLength + textOffsetX,0f), textscale_, 0f, 1)
+            writeText( 2, ded.info_, pointFlag.plus(-infoStrLength + textOffsetX,0f), textscale_, 0f, 1)
         }
 
         if(ded.type == "Circle") writeCircle( 2, point, ded.lengthX/2*1000f )

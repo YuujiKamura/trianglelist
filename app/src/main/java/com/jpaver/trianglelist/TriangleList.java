@@ -30,8 +30,10 @@ public class TriangleList extends EditList implements Cloneable {
 
     Boolean isDoubleTap_ = false;
 
+    @NotNull
     @Override
     public TriangleList clone(){
+
         TriangleList b = new TriangleList();
         try {
             b.basepoint = basepoint.clone();
@@ -57,7 +59,7 @@ public class TriangleList extends EditList implements Cloneable {
 
     public ArrayList<Triangle> getSokutenList(int start, int pitch ){
         ArrayList<Triangle> allSokTriList = getAllSokutenList();
-        ArrayList<Triangle> sokTriList = new ArrayList<Triangle>();
+        ArrayList<Triangle> sokTriList = new ArrayList<>();
 
         for ( int i = 0; i < allSokTriList.size(); i++ ) {
             // No.Stringから数値を抜き出してIntに変換する
@@ -100,7 +102,7 @@ public class TriangleList extends EditList implements Cloneable {
 
     // 全ての測点リストを返す
     public ArrayList<Triangle> getAllSokutenList( ) {
-        ArrayList<Triangle> numTriList = new ArrayList<Triangle>();
+        ArrayList<Triangle> numTriList = new ArrayList<>();
         for (int i = 0; i < trilist_.size(); i++ ){
             if( trilist_.get(i).myName_.contains( "No." ) ) {
                 numTriList.add( trilist_.get(i).clone() );
@@ -323,6 +325,15 @@ public class TriangleList extends EditList implements Cloneable {
             trilist_.get(i).scale(basepoint, scale);
         }
     }
+
+    public void scaleAndSetPath(PointXY basepoint, float scale, float ts ){
+        myScale *= scale;
+        for (int i = 0; i < trilist_.size(); i++ ) {
+            trilist_.get(i).scale(basepoint, scale);
+            trilist_.get(i).setDimPath(ts);
+        }
+    }
+
 
     public void rotate(PointXY bp, float angle){
         myAngle += angle;

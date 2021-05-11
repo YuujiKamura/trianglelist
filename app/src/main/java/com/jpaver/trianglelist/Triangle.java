@@ -13,7 +13,9 @@ public class Triangle extends EditObject implements Cloneable {
     protected float lengthAforce_ = 0f;
     protected float lengthBforce_ = 0f;
     protected float lengthCforce_ = 0f;
-
+    protected String sla_ = "";
+    protected String slb_ = "";
+    protected String slc_ = "";
 
     protected PointXY pointCA_ = new PointXY(0f, 0f); // base point by calc
     protected PointXY pointAB_ = new PointXY(0f, 0f);
@@ -70,6 +72,7 @@ public class Triangle extends EditObject implements Cloneable {
     protected PathAndOffset pathA_;// = PathAndOffset();
     protected PathAndOffset pathB_;// = PathAndOffset();
     protected PathAndOffset pathC_;// = PathAndOffset();
+    protected PathAndOffset pathS_;// = PathAndOffset();
     protected float dimH_ = 0f;
 
     protected Triangle parent_ = null;
@@ -919,7 +922,7 @@ public class Triangle extends EditObject implements Cloneable {
             myDimAlignC = 1;
         }
 */
-        setDimPath();
+        setDimPath(dimH_);
 
         return myDimAlign_;
 
@@ -1258,10 +1261,23 @@ public class Triangle extends EditObject implements Cloneable {
     }
 
 
-    public void setDimPath(){
-        pathA_ = new PathAndOffset(scale_, pointCA_, pointAB_, pointBC_, lengthA_, myDimAlignA_, dimSideAlignA_, dimH_);
-        pathB_ = new PathAndOffset(scale_, pointAB_, pointBC_, pointCA_, lengthB_, myDimAlignB_, dimSideAlignB_, dimH_);
-        pathC_ = new PathAndOffset(scale_, pointBC_, pointCA_, pointAB_, lengthC_, myDimAlignC_, dimSideAlignC_, dimH_);
+    public void setDimPath( float ts ){
+        dimH_ = ts;
+        pathA_ = new PathAndOffset(scale_, pointAB_, pointCA_, pointBC_, lengthAforce_, myDimAlignA_, dimSideAlignA_, dimH_);
+        pathB_ = new PathAndOffset(scale_, pointBC_, pointAB_, pointCA_, lengthBforce_, myDimAlignB_, dimSideAlignB_, dimH_);
+        pathC_ = new PathAndOffset(scale_, pointCA_, pointBC_, pointAB_, lengthCforce_, myDimAlignC_, dimSideAlignC_, dimH_);
+        pathS_ = new PathAndOffset(scale_, pointAB_, pointCA_, pointBC_, lengthAforce_, 4, 0, dimH_);
+
+        //sla_ = formattedString( lengthAforce_, 3);
+        //slb_ = formattedString( lengthBforce_, 3);
+        //slc_ = formattedString( lengthCforce_, 3);
+    }
+
+    public String formattedString(float digit, int fractionDigits ){
+        // 0の場合は空文字
+        if(digit == 0) return "0.00";
+        String formatter = "%.${fractionDigits}f";
+        return formatter.format( Float.toString(digit) );
     }
 
     public PathAndOffset getPath(int side) {

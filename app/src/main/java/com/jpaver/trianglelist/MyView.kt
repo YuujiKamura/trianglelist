@@ -274,10 +274,22 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     fun setTriangleList(triList: TriangleList, setscale: Float){
         myScale = setscale    // 描画倍率は外から指定する
         myTriangleList = triList.clone()
-        myTriangleList.scale(PointXY(0f, 0f), setscale)
+        myTriangleList.scaleAndSetPath( PointXY(0f, 0f), setscale, paintTexS.textSize )
+        setTriListLengthStr()
         setLTP()
         //resetView()
         //invalidate()
+    }
+
+    fun setTriListLengthStr(){
+
+        for( i in 0 until myTriangleList.size() ){
+            val tri = myTriangleList.get(i+1)
+            tri.sla_ = tri.lengthAforce_.formattedString(2)
+            tri.slb_ = tri.lengthBforce_.formattedString(2)
+            tri.slc_ = tri.lengthCforce_.formattedString(2)
+        }
+
     }
 
     fun getTapPoint() :PointXY{
@@ -369,7 +381,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
     fun zoom(zoomstep: Float){
         zoomSize += zoomstep
-        if(zoomSize<=0.3f) zoomSize = 0.3f
+        if(zoomSize<=0.1f) zoomSize = 0.1f
         if(zoomSize>=5) zoomSize = 5f
         //myTriangleList.scale(PointXY(0f,0f), myScale)
 
@@ -636,7 +648,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         val scaleFactor = 1.19f * writer.kai_ *(2.0f/experience/printScale)// - (myScale/100)
         myScale *= scaleFactor
         // scale
-        myTriangleList.scale(PointXY(0f, 0f), scaleFactor)
+        myTriangleList.scaleAndSetPath( PointXY(0f, 0f), scaleFactor, paintTex.textSize )
         myDeductionList.scale(PointXY(0f, 0f), scaleFactor)
         myDeductionList.setScale( myScale )
 
@@ -754,7 +766,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
         //scale back
         myScale /= scaleFactor
-        myTriangleList.scale(PointXY(0f, 0f), 1 / scaleFactor)
+        myTriangleList.scaleAndSetPath( PointXY(0f, 0f), 1 / scaleFactor, paintTexS.textSize )
         myDeductionList.scale(PointXY(0f, 0f), 1 / scaleFactor)
         myDeductionList.setScale(myScale)
 
@@ -774,8 +786,8 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     }
 
     fun drawDeduction(canvas: Canvas, ded: Deduction, paint: Paint, myDeductionList: DeductionList ){
-        var infoStrLength: Float = ded.getInfo().length * paint.textSize * 0.85f
-        var str = ded.getInfo()
+        var infoStrLength: Float = ded.info_.length * paint.textSize * 0.85f
+        var str = ded.info_
 
         // boxの時は短くする
         if(ded.type=="Box") infoStrLength = infoStrLength*0.85f
@@ -894,11 +906,16 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         val pca = tri.pointCA_
         val pab = tri.pointAB_
         val pbc = tri.pointBC_
-        var la = tri.lengthAforce_.formattedString(2)
-        var lb = tri.lengthBforce_.formattedString(2)
-        var lc = tri.lengthCforce_.formattedString(2)
+        val abca = tri.pathA_
+        val abbc = tri.pathB_
+        val bcca = tri.pathC_
+        val sokt = tri.pathS_
 
+        var la = tri.sla_
+        var lb = tri.slb_
+        var lc = tri.slc_
 
+                /*
         // make Path and Offsets to Dims.
         val abca = PathAndOffset( //　反時計回り
             myScale,
@@ -939,8 +956,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
             4, 0,
             paintSok.textSize
         )
-
-
+*/
         if( isPrintPDF_ == false ) {
             if (isDebug_ == true) {
                 val name = tri.myName_ + " :" + sokt.pointA_.x + " :" + sokt.pointA_.y + " :" + sokt.pointB_.x + " :" + sokt.pointB_.y
@@ -965,6 +981,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         abbc.textSpacer_ = textSpacer_
         bcca.textSpacer_ = textSpacer_
         sokt.textSpacer_ = textSpacer_
+
 
         drawTriLines( canvas, tri, paintTri )
 
@@ -1018,7 +1035,6 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         path.lineTo(tri.pointCA_.x, -tri.pointCA_.y)
         return path
     }
-
 
     fun getPaintCenterY(Y: Float, paint: Paint): Float{
         val metrics: Paint.FontMetrics = paint.fontMetrics //FontMetricsを取得

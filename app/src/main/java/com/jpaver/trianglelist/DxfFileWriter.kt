@@ -392,7 +392,7 @@ class DxfFileWriter(trilist: TriangleList ): DrawingFileWriter() {
     fun writeDXFDeduction(wrtr: BufferedWriter, ded: Deduction){
         //val prm: Params = ded.getParams()
         val textsize: Float = 0.35f
-        val infoStrLength = ded.getInfo().length*textsize+0.3f
+        val infoStrLength = ded.info_.length*textsize+0.3f
         val point = ded.point
         val pointFlag = ded.pointFlag
         var lineOffset = 0f
@@ -400,10 +400,10 @@ class DxfFileWriter(trilist: TriangleList ): DrawingFileWriter() {
 
         if(point.x <= pointFlag.x) {  //ptFlag is RIGHT from pt
             writeLine(wrtr, point, pointFlag, 1)
-            writeTextAndLine(wrtr, ded.getInfo(), pointFlag, pointFlag.plus(infoStrLength + lineOffset,0f), textsize)
+            writeTextAndLine(wrtr, ded.info_, pointFlag, pointFlag.plus(infoStrLength + lineOffset,0f), textsize)
         } else {                     //ptFlag is LEFT from pt
             writeLine(wrtr, point, pointFlag, 1)
-            writeTextAndLine(wrtr, ded.getInfo(), pointFlag.plus(-ded.getInfo().length*textsize - lineOffset,0f), pointFlag, textsize)
+            writeTextAndLine(wrtr, ded.info_, pointFlag.plus(-ded.getInfo().length*textsize - lineOffset,0f), pointFlag, textsize)
         }
 
         if(ded.type == "Circle") writeDXFCircle(wrtr, point, ded.lengthX/2, 1)
