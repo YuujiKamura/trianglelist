@@ -82,7 +82,7 @@ public class Triangle extends EditObject implements Cloneable {
     protected boolean isChildC_ = false;
 
     @Override
-    public Triangle clone(){
+    protected Triangle clone(){
         Triangle b = null;
         try {
             b=(Triangle) super.clone();
@@ -943,6 +943,7 @@ public class Triangle extends EditObject implements Cloneable {
         if(side == 1) dimSideAlignB_ = rotateZeroToThree( dimSideAlignB_ );
         if(side == 2) dimSideAlignC_ = rotateZeroToThree( dimSideAlignC_ );
         if(side == 4) nameSideAlign_ = rotateZeroToThree( nameSideAlign_ );
+        setDimPath( dimH_ );
     }
 
     public int rotateZeroToThree( int num){
@@ -979,6 +980,7 @@ public class Triangle extends EditObject implements Cloneable {
             isChangeDimAlignC_ = true;
         }
         if(side == 4) nameAlign_ = flipOneToThree( nameAlign_ );
+        setDimPath( dimH_ );
     }
 
     public int zeroTwoRotate(int num){
