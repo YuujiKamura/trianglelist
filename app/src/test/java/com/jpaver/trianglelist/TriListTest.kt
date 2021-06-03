@@ -36,7 +36,7 @@ class TriListTest {
         // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
         trilist.add( Triangle(8f, 6f, 8f))//1
         trilist.add( 1, 2,9f,8f )//2
-        trilist.add( 2, 1,2f,9f )//3
+        trilist.add( 2, 4,7f, 4f,9f )//3
         trilist.add( 3, 2,2f,9f )//4
         trilist.add( 4, 2,9f,2f )//5
         trilist.add( 5, 1,5f,5f )//6
@@ -51,8 +51,8 @@ class TriListTest {
         val op = ArrayList<PointXY>()
         val tlop = trilist.traceOrJumpForward( 0, 0, op ) //getOutLinePoints( 0 )
         assertEquals( 11, trilist.size() )
-        assertEquals( 13, tlop.size )
-        assertEquals( "0ab,0bc,2bc,3bc,7bc,9bc,9ca,10bc,10ca,6bc,6ca,4ca,1ca,", trilist.outlineStr_ )
+        assertEquals( 14, tlop.size )
+        assertEquals( "0ab,0bc,2bc,3bc,7bc,9bc,9ca,10bc,10ca,6bc,6ca,4ca,1bc,1ca,", trilist.outlineStr_ )
 
  //       val tlop = trilist.traceOrJumpBackward( 10, 0, op ) //getOutLinePoints( 0 )
 
