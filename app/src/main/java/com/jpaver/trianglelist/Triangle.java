@@ -82,7 +82,7 @@ public class Triangle extends EditObject implements Cloneable {
     protected boolean isChildC_ = false;
 
     @Override
-    protected Triangle clone(){
+    public Triangle clone(){
         Triangle b = null;
         try {
             b=(Triangle) super.clone();
@@ -851,7 +851,6 @@ public class Triangle extends EditObject implements Cloneable {
         dimPointB_ = pointAB_.calcMidPoint(pointBC_);
         dimPointC_ = pointBC_.calcMidPoint(pointCA_);
         setDimPoint();
-
 
         dimAngleB_ = getAngleMpAB();
         dimAngleC_ = getAngleMmCA();

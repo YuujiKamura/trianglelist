@@ -14,6 +14,7 @@ class DxfFileWriter(trilist: TriangleList ): DrawingFileWriter() {
     val mScale = 11.9f*4f//12.5f
 
     var isDebug_ = false
+    var isReverse_ = false;
 
     val texScale = trilist_.getPrintTextScale( 1f , "dxf")
     var scale_ = trilist_.getPrintScale(1f)//setScale(drawingLength)
@@ -446,6 +447,10 @@ class DxfFileWriter(trilist: TriangleList ): DrawingFileWriter() {
 
 
         val trilistNumbered = myDXFTriList.numbered( startTriNumber_ )
+        if( isReverse_ == true ) {
+            trilistNumbered.reverse()
+            dedlist_ = dedlist_.reverse()
+        };
 
         for (index in 1 .. myDXFTriList.size()) {
             writeDXFTriangle(wrtr, trilistNumbered.get(index))

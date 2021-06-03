@@ -4,7 +4,7 @@ import java.util.ArrayList;
 
 public class DeductionList extends EditList implements Cloneable {
 
-    ArrayList<Deduction> myDeductionList = new ArrayList<Deduction>();
+    ArrayList<Deduction> dedlist_ = new ArrayList<Deduction>();
     ArrayList<Deduction> myDedListAtView = new ArrayList<Deduction>();
     int current = 0;
     int lastTapIndex_ = -1;
@@ -16,40 +16,40 @@ public class DeductionList extends EditList implements Cloneable {
 
     public void copy(){
         myDedListAtView.clear();
-        for ( int i = 0; i < myDeductionList.size(); i++ ) {
-            myDedListAtView.add(myDeductionList.get(i).clone());
+        for (int i = 0; i < dedlist_.size(); i++ ) {
+            myDedListAtView.add(dedlist_.get(i).clone());
         }
     }
 
     public void scale(PointXY basepoint, float sx, float sy){
-        for ( int i = 0; i < myDeductionList.size(); i++ ) {
-            myDeductionList.get(i).scale(basepoint, sx, sy);
+        for (int i = 0; i < dedlist_.size(); i++ ) {
+            dedlist_.get(i).scale(basepoint, sx, sy);
         }
     }
 
 
     public void setScale( float s ){
-        for ( int i = 0; i < myDeductionList.size(); i++ ) {
-            myDeductionList.get(i).setScale_( s );
+        for (int i = 0; i < dedlist_.size(); i++ ) {
+            dedlist_.get(i).setScale_( s );
         }
     }
 
     public void scale(PointXY basepoint, float s){
-        for ( int i = 0; i < myDeductionList.size(); i++ ) {
-            myDeductionList.get(i).scale(basepoint, s, s);
+        for (int i = 0; i < dedlist_.size(); i++ ) {
+            dedlist_.get(i).scale(basepoint, s, s);
         }
     }
 
     public void move(PointXY to){
-        for ( int i = 0; i < myDeductionList.size(); i++ ) {
-            myDeductionList.get(i).move(to);
+        for (int i = 0; i < dedlist_.size(); i++ ) {
+            dedlist_.get(i).move(to);
         }
     }
 
     public int getTapIndex(PointXY tapP ){
         int i;
-        for( i=0; i < myDeductionList.size(); i++) {
-            if( myDeductionList.get(i).getTap(tapP) == true ) return lastTapIndex_ = i;
+        for(i=0; i < dedlist_.size(); i++) {
+            if( dedlist_.get(i).getTap(tapP) == true ) return lastTapIndex_ = i;
         }
         return lastTapIndex_ = -11;
     }
@@ -57,8 +57,8 @@ public class DeductionList extends EditList implements Cloneable {
     @Override
     public DeductionList clone(){
         DeductionList b = new DeductionList();
-        for ( int i = 0; i < myDeductionList.size(); i++ ) {
-            b.add(myDeductionList.get(i).clone());
+        for (int i = 0; i < dedlist_.size(); i++ ) {
+            b.add(dedlist_.get(i).clone());
         }
         b.lastTapIndex_ = this.lastTapIndex_;
         return b;
@@ -66,8 +66,8 @@ public class DeductionList extends EditList implements Cloneable {
 
     public void rotate(PointXY bp, float angle){
         myAngle += angle;
-        for ( int i = 0; i < myDeductionList.size(); i++ ) {
-            myDeductionList.get(i).rotate(bp, angle);
+        for (int i = 0; i < dedlist_.size(); i++ ) {
+            dedlist_.get(i).rotate(bp, angle);
         }
     }
 
@@ -81,8 +81,8 @@ public class DeductionList extends EditList implements Cloneable {
     @Override
     public float getArea(){
         float area = 0f;
-        for ( int i = 0; i < myDeductionList.size(); i++ ) {
-            area += myDeductionList.get(i).getArea();
+        for (int i = 0; i < dedlist_.size(); i++ ) {
+            area += dedlist_.get(i).getArea();
         }
         return (float)(Math.round( area * 100.0) / 100.0); //roundByUnderTwo(area);
     }
@@ -103,30 +103,31 @@ public class DeductionList extends EditList implements Cloneable {
         current = i;
     }
 
-    public void clear(){myDeductionList.clear();}
+    public void clear(){
+        dedlist_.clear();}
 
     public void add(Deduction dd){
         dd.setSameDedcount( searchSameDed( dd.getParams() ) );
-        myDeductionList.add(dd);
-        current = myDeductionList.size();
+        dedlist_.add(dd);
+        current = dedlist_.size();
     }
 
     public void add(DeductionParams ddp){
-        myDeductionList.add(new Deduction(ddp));
-        current = myDeductionList.size();
+        dedlist_.add(new Deduction(ddp));
+        current = dedlist_.size();
     }
 
     public void add(Params dp){
         int sameCount = searchSameDed( dp );
-        myDeductionList.add(new Deduction(dp));
-        if( sameCount > 1 ) myDeductionList.get(myDeductionList.size()-1).setSameDedcount( sameCount );
-        current = myDeductionList.size();
+        dedlist_.add(new Deduction(dp));
+        if( sameCount > 1 ) dedlist_.get(dedlist_.size()-1).setSameDedcount( sameCount );
+        current = dedlist_.size();
     }
 
     public int searchSameDed(Params dp){
         int count = 1;
-        for ( int i = 0; i < myDeductionList.size(); i++ ) {
-            if( myDeductionList.get(i).verify(dp) ) {
+        for (int i = 0; i < dedlist_.size(); i++ ) {
+            if( dedlist_.get(i).verify(dp) ) {
                 count++;
             }
         }
@@ -135,39 +136,52 @@ public class DeductionList extends EditList implements Cloneable {
 
     @Override
     public Deduction get(int num){
-        if( num < 1 || num > myDeductionList.size() ) return new Deduction();
+        if( num < 1 || num > dedlist_.size() ) return new Deduction();
         return getDeduction(num);
     }
 
     @Override
     public Params getParams(int num){
-        return myDeductionList.get(num-1).getParams();
+        return dedlist_.get(num-1).getParams();
     }
 
     public Deduction getDeduction(int num){
 
-        if( num < 1 || num > myDeductionList.size() ) return null;
-        return myDeductionList.get(num-1);
+        if( num < 1 || num > dedlist_.size() ) return null;
+        return dedlist_.get(num-1);
     }
 
     @Override
     public int size(){
-        return myDeductionList.size();
+        return dedlist_.size();
     }
 
     @Override
     public void remove(int index){
         if(index < 1) return;
-        myDeductionList.remove(index-1);    // 0 1 (2) 3  to 0 1 3
-        while(index-1 < myDeductionList.size()){    // index 2 size 3
-            myDeductionList.get(index-1).setNum(index); // get [2] renum to 3
+        dedlist_.remove(index-1);    // 0 1 (2) 3  to 0 1 3
+        while(index-1 < dedlist_.size()){    // index 2 size 3
+            dedlist_.get(index-1).setNum(index); // get [2] renum to 3
             index++;
         }
-        current = myDeductionList.size();
+        current = dedlist_.size();
     }
 
     public void replace(int index, Params dp){
         if(index < 1) return;
-        myDeductionList.get(index-1).setParam(dp);
+        dedlist_.get(index-1).setParam(dp);
+    }
+
+    public DeductionList reverse(){
+        DeductionList rev = new DeductionList();
+
+        int iBackward = dedlist_.size();
+
+        for( int i = 0; i < dedlist_.size(); i++ ) {
+
+            dedlist_.get( i ).setNum( iBackward );
+            iBackward--;
+        }
+        return rev;
     }
 }

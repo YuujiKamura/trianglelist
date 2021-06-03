@@ -141,8 +141,11 @@ public class TriangleList extends EditList implements Cloneable {
         if( type.equals( "dxf" ) ) return dxfts;
 
         switch((int)(getPrintScale(drawingScale)*10)){
+            case 150:
+                ts = 2.5f;
+                break;
             case 100:
-                ts = 2f;
+                ts = 2.5f;
                 break;
             case 50:
                 ts = 2.5f;
@@ -185,19 +188,20 @@ public class TriangleList extends EditList implements Cloneable {
         float paperWidth = 38;
         float paperHeight = 25;
 
-        float printScale = 1f; //drawingScale;
+//        float printScale = 1f; //drawingScale;
         //if( longsideX <= paperWidth*0.2 && longsideY <= paperHeight*0.2 ) return printScale *= 0.2f;
-        if( longsideX <= paperWidth*0.5 && longsideY <= paperHeight*0.5 ) return printScale *= 0.5f;
-        if( longsideX <= paperWidth     && longsideY <= paperHeight     ) return printScale *= 1.0f;
-        if( longsideX <= paperWidth*1.5 && longsideY <= paperHeight*1.5 ) return printScale *= 1.5f;
-        if( longsideX <= paperWidth*2.0 && longsideY <= paperHeight*2.0 ) return printScale *= 2.0f;
-        if( longsideX <= paperWidth*2.5 && longsideY <= paperHeight*2.5 ) return printScale *= 2.5f;
-        if( longsideX <= paperWidth*3.0 && longsideY <= paperHeight*3.0 ) return printScale *= 3.0f;
-        if( longsideX <= paperWidth*4.0 && longsideY <= paperHeight*4.0 ) return printScale *= 4.0f;
-        if( longsideX <= paperWidth*4.5 && longsideY <= paperHeight*4.5 ) return printScale *= 4.5f;
-        if( longsideX <= paperWidth*5.0 && longsideY <= paperHeight*5.0 ) return printScale *= 5.0f;
+        if( longsideX <= paperWidth*0.5 && longsideY <= paperHeight*0.5 ) return 0.5f;
+        if( longsideX <= paperWidth     && longsideY <= paperHeight     ) return 1.0f;
+        if( longsideX <= paperWidth*1.5 && longsideY <= paperHeight*1.5 ) return 1.5f;
+        if( longsideX <= paperWidth*2.0 && longsideY <= paperHeight*2.0 ) return 2.0f;
+        if( longsideX <= paperWidth*2.5 && longsideY <= paperHeight*2.5 ) return 2.5f;
+        if( longsideX <= paperWidth*3.0 && longsideY <= paperHeight*3.0 ) return 3.0f;
+        if( longsideX <= paperWidth*4.0 && longsideY <= paperHeight*4.0 ) return 4.0f;
+        if( longsideX <= paperWidth*4.5 && longsideY <= paperHeight*4.5 ) return 4.5f;
+        if( longsideX <= paperWidth*5.0 && longsideY <= paperHeight*5.0 ) return 5.0f;
+        if( longsideX <= paperWidth*10.0 && longsideY <= paperHeight*10.0 ) return 10.0f;
 
-        return printScale *= 10f;
+        return 15f;
     }
 
     public float getAngle(){return myAngle;}
@@ -929,14 +933,13 @@ public class TriangleList extends EditList implements Cloneable {
     public TriangleList reverse(){
         TriangleList rev = new TriangleList();
 
-        int iforward = 1;
+        int iBackward = trilist_.size();
 
-        for( int iback = trilist_.size(); iback > 0; iback-- ){
-            rev.trilist_.add( trilist_.get( iback - 1 ).clone() ); // arraylist add. no sideEffect.
-            rev.get(iforward).myNumber_ = iforward;
-            iforward++;
+        for( int i = 0; i < trilist_.size(); i++ ) {
+
+            trilist_.get( i ).myNumber_ = iBackward;
+            iBackward--;
         }
-
         return rev;
     }
 

@@ -173,6 +173,7 @@ class MainActivity : AppCompatActivity(),
     var gyousyaname_ = ""
     var zumennum_ = "1/1"
     var drawingStartNumber_ = 1
+    var drawingNumberReversal_ = false
 
     var colorindex_ = 4
     val RColors = arrayOf(
@@ -1344,6 +1345,9 @@ class MainActivity : AppCompatActivity(),
             R.id.action_save_dxf -> {
                 val hTstart = getString(R.string.inputtnum)
                 val editText5 = EditText(this)
+                val strList = arrayOf("りんご","みかん","ぶどう")
+                val checkedItems = booleanArrayOf(true, false, false)
+
                 editText5.hint = hTstart
                 val filter2 = arrayOf(InputFilter.LengthFilter(3))
                 editText5.filters = filter2
@@ -1356,6 +1360,7 @@ class MainActivity : AppCompatActivity(),
                         .setPositiveButton("OK",
                                 DialogInterface.OnClickListener { dialog, which ->
                                     drawingStartNumber_ = editText5.text.toString().toInt()
+                                    drawingNumberReversal_ = false
 
                                     fileType = "DXF"
                                     var i: Intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
@@ -1366,7 +1371,23 @@ class MainActivity : AppCompatActivity(),
                                     )
                                     startActivityForResult(i, 1)
                                 }
-                        ).show()
+                        )
+                        .setNegativeButton("Reversal",
+                                DialogInterface.OnClickListener { dialog, which ->
+                                    drawingStartNumber_ = editText5.text.toString().toInt()
+                                    drawingNumberReversal_ = true
+
+                                    fileType = "DXF"
+                                    var i: Intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
+                                    i.type = "text/dxf"
+                                    i.putExtra(
+                                            Intent.EXTRA_TITLE,
+                                            rosenname_ + " " + LocalDate.now() + ".dxf"
+                                    )
+                                    startActivityForResult(i, 1)
+                                }
+                        )
+                        .show()
                 return true
             }
 
@@ -1652,6 +1673,8 @@ class MainActivity : AppCompatActivity(),
         dxfWriter.isDebug_ = my_view.isDebug_
 
         dxfWriter.setStartNumber(drawingStartNumber_)
+        dxfWriter.isReverse_ = drawingNumberReversal_;
+
 
         dxfWriter.saveDXF(writer)
         if( BuildConfig.FLAVOR == "free" ) showInterStAd()
