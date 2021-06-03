@@ -449,7 +449,7 @@ class DxfFileWriter(trilist: TriangleList ): DrawingFileWriter() {
         val trilistNumbered = myDXFTriList.numbered( startTriNumber_ )
         if( isReverse_ == true ) {
             trilistNumbered.reverse()
-            dedlist_ = dedlist_.reverse()
+            myDXFDedList.reverse()
         };
 
         for (index in 1 .. myDXFTriList.size()) {

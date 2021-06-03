@@ -4,6 +4,7 @@ import org.junit.Test
 
 class DeductionTest {
 
+
     @Test
     fun testDedRotate() {
         val ded = Deduction(1, "masu", 1f, 1f, 0, "Box", 0f, PointXY(0f, 0f), PointXY(0f, 0f))
@@ -45,7 +46,26 @@ class DeductionTest {
     }
 
     @Test
-    fun SameDedCountTest(){
+    fun testDedReverse(){
+        val dedlist = DeductionList()
+        dedlist.add( Deduction(1, "仕切弁", 0.23f, 0f, 0, "Circle" ) )
+        dedlist.add( Deduction(2, "仕切弁", 0.23f, 0f, 0, "Circle" ) )
+        dedlist.add( Deduction(3, "汚水",   0.23f, 0f, 0, "Circle" ) )
+
+        assertEquals("1.仕切弁 φ230", dedlist.get(1).getInfo() )
+        assertEquals("2.仕切弁(2) φ230", dedlist.get(2).getInfo() )
+        assertEquals("3.汚水 φ230", dedlist.get(3).getInfo() )
+
+        dedlist.reverse()
+
+        assertEquals("1.汚水 φ230", dedlist.get(1).getInfo() )
+        assertEquals("2.仕切弁 φ230", dedlist.get(2).getInfo() )
+        assertEquals("3.仕切弁(2) φ230", dedlist.get(3).getInfo() )
+
+    }
+
+    @Test
+    fun testSameDedCount(){
         val ded1: Deduction = Deduction(
             1, "仕切弁", 0.23f, 0f, 0, "Circle", 0f, PointXY(0f, 0f), PointXY(
                 0f,
@@ -67,6 +87,7 @@ class DeductionTest {
         dedlist.add(ded2)
         assertEquals(3, ded2.sameDedcount)
         assertEquals("2.仕切弁(3) φ230", ded2.getInfo())
+
     }
 
     @Test

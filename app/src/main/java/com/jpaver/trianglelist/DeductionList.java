@@ -175,13 +175,17 @@ public class DeductionList extends EditList implements Cloneable {
     public DeductionList reverse(){
         DeductionList rev = new DeductionList();
 
-        int iBackward = dedlist_.size();
+        int iBackward = dedlist_.size()-1;
 
         for( int i = 0; i < dedlist_.size(); i++ ) {
 
-            dedlist_.get( i ).setNum( iBackward );
+            dedlist_.get( iBackward ).setNum( i+1 );
+
+            rev.add( dedlist_.get( iBackward ) );
+
             iBackward--;
         }
+        dedlist_ = rev.dedlist_;
         return rev;
     }
 }

@@ -50,8 +50,9 @@ class TriListTest {
 
         val op = ArrayList<PointXY>()
         val tlop = trilist.traceOrJumpForward( 0, 0, op ) //getOutLinePoints( 0 )
-//        assertEquals( 12, tlop.size )
-//        assertEquals( "0ab,1bc,2ab,3bc,3ca,2ca,0ca,", trilist.outlineStr_ )
+        assertEquals( 11, trilist.size() )
+        assertEquals( 13, tlop.size )
+        assertEquals( "0ab,0bc,2bc,3bc,7bc,9bc,9ca,10bc,10ca,6bc,6ca,4ca,1ca,", trilist.outlineStr_ )
 
  //       val tlop = trilist.traceOrJumpBackward( 10, 0, op ) //getOutLinePoints( 0 )
 

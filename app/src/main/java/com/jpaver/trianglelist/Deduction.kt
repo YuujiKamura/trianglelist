@@ -70,6 +70,10 @@ class Deduction(var num: Int = 0,
         info_ = getInfo()
     }
 
+    fun setInfo() {
+        info_ = getInfo()
+    }
+
     fun setBox(scale: Float){
         scale_ = scale
         plt = PointXY(point.x -lengthX*scale_*0.5f, point.y -lengthY*scale_*0.5f ).rotate(point, shapeAngle_)
