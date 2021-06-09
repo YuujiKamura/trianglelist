@@ -773,8 +773,8 @@ val sokt = PathAndOffset(
         if( tri.isCollide(tri.pointNumber_) == false ){
             val pc = tri.pointCenter_
             val pn = tri.pointNumber_
-            val pcOffsetToN = pc.offset(pn, circleSize)
-            val pnOffsetToC = pn.offset(pc, circleSize)
+            val pcOffsetToN = pc.offset(pn, circleSize * 0.5f )
+            val pnOffsetToC = pn.offset(pc, circleSize * 1.1f )
             val arrowTail = pcOffsetToN.offset(pn, pcOffsetToN.lengthTo(pnOffsetToC) * 0.7f).rotate(pcOffsetToN, 5f)
             canvas.drawLine(
                 pcOffsetToN.x,

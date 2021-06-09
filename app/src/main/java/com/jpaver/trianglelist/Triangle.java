@@ -1058,9 +1058,9 @@ public class Triangle extends EditObject implements Cloneable {
         //if( myAngleAB > 90 ) return pointNumber.offset(pointAB, pointNumber.calcMidPoint(pointCA).vectorTo(pointAB).lengthXY()*0.2f);
         //if( myAngleCA > 90 ) return pointNumber.offset(pointCA, pointNumber.calcMidPoint(pointBC).vectorTo(pointCA).lengthXY()*0.2f);
 
-        if( lengthAforce_ < 2.5f ) return pointNumber_.offset(pointBC_, pointNumber_.vectorTo(pointBC_).lengthXY()*-0.35f);
-        if( lengthBforce_ < 2.5f ) return pointNumber_.offset(pointCA_, pointNumber_.vectorTo(pointCA_).lengthXY()*-0.35f);
-        if( lengthCforce_ < 2.5f ) return pointNumber_.offset(pointAB_, pointNumber_.vectorTo(pointAB_).lengthXY()*-0.35f);
+        if( lengthAforce_ < 2.5f ) return pointNumber_.offset(pointBC_, pointNumber_.vectorTo(pointBC_).lengthXY()*-0.3f);
+        if( lengthBforce_ < 2.5f ) return pointNumber_.offset(pointCA_, pointNumber_.vectorTo(pointCA_).lengthXY()*-0.3f);
+        if( lengthCforce_ < 2.5f ) return pointNumber_.offset(pointAB_, pointNumber_.vectorTo(pointAB_).lengthXY()*-0.3f);
 
         return pointNumber_;
     }

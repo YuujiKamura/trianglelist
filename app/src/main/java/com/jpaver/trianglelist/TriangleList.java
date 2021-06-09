@@ -138,29 +138,35 @@ public class TriangleList extends EditList implements Cloneable {
     public float getPrintTextScale (float drawingScale, String type){
         float ts = 10f;
         float dxfts = 0.45f;
-        if( type.equals( "dxf" ) ) return dxfts;
 
         switch((int)(getPrintScale(drawingScale)*10)){
             case 150:
                 ts = 2.5f;
+                //dxfts = 0.7f;
                 break;
             case 100:
                 ts = 2.5f;
+                //dxfts = 0.7f;
                 break;
             case 50:
                 ts = 2.5f;
+                //dxfts = 0.7f;
                 break;
             case 45:
                 ts = 3f;
+                //dxfts = 0.7f;
                 break;
             case 40:
-                ts = 3.5f;
+                ts = 5f;
+                //dxfts = 0.4f;
                 break;
             case 30:
-                ts = 4f;
+                ts = 6f;
+                //dxfts = 0.7f;
                 break;
             case 25:
-                ts = 5f;
+                ts = 6f;
+                //dxfts = 0.7f;
                 break;
             case 20:
                 ts = 8f;
@@ -176,6 +182,7 @@ public class TriangleList extends EditList implements Cloneable {
                 break;
         }
 
+        if( type.equals( "dxf" ) ) return dxfts;
         return ts;
     }
 

@@ -417,14 +417,6 @@ class MainActivity : AppCompatActivity(),
 
         }
 
-        //インタースティシャル広告の読み込み
-        if( BuildConfig.FLAVOR == "free"){
-            mInterstitialAd = InterstitialAd(this)
-            if( BuildConfig.BUILD_TYPE == "debug" ) mInterstitialAd.adUnitId = "ca-app-pub-3940256099942544/1033173712"
-            else if( BuildConfig.BUILD_TYPE == "release" ) mInterstitialAd.adUnitId = "ca-app-pub-6982449551349060/2369695624"
-            mInterstitialAd.loadAd(AdRequest.Builder().build())
-        }
-
         setSupportActionBar(toolbar)
         myDeductionList = DeductionList()
         //Toast.makeText(this, "Welcome back!", Toast.LENGTH_SHORT).show()
@@ -474,7 +466,6 @@ class MainActivity : AppCompatActivity(),
             AutoSaveCSV()
         }
 
-
         fab_dimsidew.setOnClickListener { view ->
             if(!deductionMode_){
                 var dimside = my_view.myTriangleList.lastTapSide_
@@ -482,7 +473,7 @@ class MainActivity : AppCompatActivity(),
                 var tri = myTriangleList.get(trinum)
 
                 if( dimside == 0 && ( tri.myParentBC_ == 1 ||  tri.myParentBC_ == 2 ) ) {
-                    trinum --
+                    trinum = tri.myParentNumber_
                     dimside = tri.myParentBC_
                 }
 
@@ -501,7 +492,7 @@ class MainActivity : AppCompatActivity(),
                 var tri = myTriangleList.get(trinum)
 
                 if( dimside == 0 && ( tri.myParentBC_ == 1 ||  tri.myParentBC_ == 2 ) ) {
-                    trinum --
+                    trinum = tri.myParentNumber_
                     dimside = tri.myParentBC_
                 }
 
@@ -512,7 +503,6 @@ class MainActivity : AppCompatActivity(),
 
             }
         }
-
 
         fab_nijyuualign.setOnClickListener { view ->
             if(!deductionMode_ && myTriangleList.lastTapNum_ > 1 ){
@@ -586,7 +576,6 @@ class MainActivity : AppCompatActivity(),
             my_view.invalidate()
         }
 
-
         fab_setB.setOnClickListener { view ->
             autoConnection(1)
             findViewById<EditText>(R.id.editText2).requestFocus()
@@ -636,7 +625,6 @@ class MainActivity : AppCompatActivity(),
             }
             AutoSaveCSV()
         }
-
 
         fab_deduction.setOnClickListener { view ->
             deleteWarning = 0
@@ -703,24 +691,23 @@ class MainActivity : AppCompatActivity(),
             Toast.makeText(this, "Basic Senario Test Done.", Toast.LENGTH_SHORT).show()
         }
 
+        fab_pdf.setOnClickListener { view ->
+            ViewPdf( this )
+        }
 
-            fab_pdf.setOnClickListener { view ->
-                ViewPdf( this )
-            }
+        fab_share.setOnClickListener { view ->
+            sendPdf(this)
+        }
 
-            fab_share.setOnClickListener { view ->
-                sendPdf(this)
-            }
+        fab_mail.setOnClickListener { view ->
+            //findViewById<ProgressBar>(R.id.indeterminateBar).visibility = View.VISIBLE
+            //progressBar.visibility = View.VISIBLE
 
-            fab_mail.setOnClickListener { view ->
-                //findViewById<ProgressBar>(R.id.indeterminateBar).visibility = View.VISIBLE
-                //progressBar.visibility = View.VISIBLE
+            sendMail()
 
-                sendMail()
+        //    progressBar.visibility = View.INVISIBLE
 
-            //    progressBar.visibility = View.INVISIBLE
-
-            }
+        }
     }
 
     fun fabReplace(params: Params, useit: Boolean){
@@ -1305,6 +1292,13 @@ class MainActivity : AppCompatActivity(),
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        //インタースティシャル広告の読み込み
+        if( BuildConfig.FLAVOR == "free"){
+            mInterstitialAd = InterstitialAd(this)
+            if( BuildConfig.BUILD_TYPE == "debug" ) mInterstitialAd.adUnitId = "ca-app-pub-3940256099942544/1033173712"
+            else if( BuildConfig.BUILD_TYPE == "release" ) mInterstitialAd.adUnitId = "ca-app-pub-6982449551349060/2369695624"
+            mInterstitialAd.loadAd(AdRequest.Builder().build())
+        }
 
 
 
@@ -1530,13 +1524,13 @@ class MainActivity : AppCompatActivity(),
                         OutputStreamWriter(contentResolver.openOutputStream(title), charset)
                 )
 
-
                 if (fileType == "DXF") saveDXF(writer)
                 if (fileType == "CSV") saveCSV(writer)
                 if (fileType == "PDF") savePDF(contentResolver.openOutputStream(title)!!, true)
                 if (fileType == "SFC") saveSFC(BufferedOutputStream( contentResolver.openOutputStream( title ) ), true)
 
                 AutoSaveCSV() // オートセーブ
+                if( BuildConfig.FLAVOR == "free" ) showInterStAd()
             } catch (e: IOException) {
                 e.printStackTrace()
             }
@@ -1677,7 +1671,7 @@ class MainActivity : AppCompatActivity(),
 
 
         dxfWriter.saveDXF(writer)
-        if( BuildConfig.FLAVOR == "free" ) showInterStAd()
+
         return writer
     }
 
@@ -1689,9 +1683,6 @@ class MainActivity : AppCompatActivity(),
         writer.writeFooter()
         out.close()
 
-        if( isShowAd == true && BuildConfig.FLAVOR == "free" ){
-            showInterStAd()
-        }
     }
 
     fun savePDF(out: OutputStream, isShowAd: Boolean){
@@ -1738,10 +1729,6 @@ class MainActivity : AppCompatActivity(),
         myWriter.writeTitleFrame(myWriter.currentCanvas_)
 
         myWriter.close()
-
-        if( isShowAd == true && BuildConfig.FLAVOR == "free" ){
-            showInterStAd()
-        }
 
     }
 
