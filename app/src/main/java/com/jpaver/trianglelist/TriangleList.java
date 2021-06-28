@@ -141,15 +141,27 @@ public class TriangleList extends EditList implements Cloneable {
 
         switch((int)(getPrintScale(drawingScale)*10)){
             case 150:
-                ts = 2.5f;
+                ts = 3f;
                 //dxfts = 0.7f;
                 break;
             case 100:
-                ts = 2.5f;
+                ts = 3f;
                 //dxfts = 0.7f;
                 break;
+            case 90:
+                ts = 3f;
+                break;
+            case 80:
+                ts = 3f;
+                break;
+            case 70:
+                ts = 3f;
+                break;
+            case 60:
+                ts = 3f;
+                break;
             case 50:
-                ts = 2.5f;
+                ts = 3f;
                 //dxfts = 0.7f;
                 break;
             case 45:
@@ -206,6 +218,10 @@ public class TriangleList extends EditList implements Cloneable {
         if( longsideX <= paperWidth*4.0 && longsideY <= paperHeight*4.0 ) return 4.0f;
         if( longsideX <= paperWidth*4.5 && longsideY <= paperHeight*4.5 ) return 4.5f;
         if( longsideX <= paperWidth*5.0 && longsideY <= paperHeight*5.0 ) return 5.0f;
+        if( longsideX <= paperWidth*6.0 && longsideY <= paperHeight*5.0 ) return 6.0f;
+        if( longsideX <= paperWidth*7.0 && longsideY <= paperHeight*5.0 ) return 7.0f;
+        if( longsideX <= paperWidth*8.0 && longsideY <= paperHeight*5.0 ) return 8.0f;
+        if( longsideX <= paperWidth*9.0 && longsideY <= paperHeight*5.0 ) return 9.0f;
         if( longsideX <= paperWidth*10.0 && longsideY <= paperHeight*10.0 ) return 10.0f;
 
         return 15f;

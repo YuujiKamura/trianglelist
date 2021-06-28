@@ -459,12 +459,12 @@ class DxfFileWriter(trilist: TriangleList ): DrawingFileWriter() {
 
         // アウトラインの描画
         myDXFTriList.setChildsToAllParents()
-        val arrayarray = myDXFTriList.outlineLists //ArrayList<PointXY>()
+        val outlineLists = myDXFTriList.outlineLists //ArrayList<PointXY>()
         val array = ArrayList<PointXY>()
         myDXFTriList.traceOrJumpForward(0, 0, array )
-        if( array.size > 0 ) writeDXFTriOutlines( wrtr, array )
+        //if( array.size > 0 ) writeDXFTriOutlines( wrtr, array )
 //
-//        if( arrayarray.size > 0 ) for( index in 0 .. arrayarray.size ) writeDXFTriOutlines( wrtr, arrayarray.get( index ) )
+        if( outlineLists.size > 0 ) for( index in 0 .. outlineLists.size -1 ) writeDXFTriOutlines( wrtr, outlineLists.get( index ) )
 
         // deduction
         for (index in 1 .. myDXFDedList.size()) {
