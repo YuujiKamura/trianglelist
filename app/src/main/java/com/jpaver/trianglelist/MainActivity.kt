@@ -195,6 +195,7 @@ class MainActivity : AppCompatActivity(),
 
         if(deductionMode_ == false) {
             deductionMode_ = true
+            Toast.makeText(this, "Edit Mode : Area Deductions", Toast.LENGTH_LONG).show()
 
             // 入力テーブルの見かけの変更、タイトル行の文字列とカラー
             myEditor.setHeaderTable(
@@ -212,6 +213,9 @@ class MainActivity : AppCompatActivity(),
             //　fab群の見かけの変更
             //fab.setBackgroundTintList(getColorStateList(R.color.colorTT2))
             fab_replace.backgroundTintList = getColorStateList(R.color.colorTT2)
+            fab_resetView.backgroundTintList = getColorStateList(R.color.colorTT2)
+            fab_up.backgroundTintList = getColorStateList(R.color.colorTT2)
+            fab_down.backgroundTintList = getColorStateList(R.color.colorTT2)
             fab_deduction.backgroundTintList = getColorStateList(R.color.colorWhite)
             fab_flag.backgroundTintList = getColorStateList(R.color.colorWhite)
             val iconB: Icon = Icon.createWithResource(this, R.drawable.box)
@@ -242,7 +246,7 @@ class MainActivity : AppCompatActivity(),
 
         } else {
             deductionMode_ = false
-
+            Toast.makeText(this, "Edit Mode : Triangles", Toast.LENGTH_LONG).show()
             // 入力テーブルの見かけの変更、タイトル行の文字列とカラー
             myEditor.setHeaderTable(
                     findViewById<TextView>(R.id.TV_NUM),
@@ -259,6 +263,10 @@ class MainActivity : AppCompatActivity(),
             //　fab群の見かけの変更
             //fab.setBackgroundTintList(getColorStateList(R.color.colorLime))
             fab_replace.backgroundTintList = getColorStateList(R.color.colorLime)
+            fab_resetView.backgroundTintList = getColorStateList(R.color.colorSky)
+            fab_up.backgroundTintList = getColorStateList(R.color.colorSky)
+            fab_down.backgroundTintList = getColorStateList(R.color.colorSky)
+
             fab_deduction.backgroundTintList = getColorStateList(R.color.colorAccent)
             fab_flag.backgroundTintList = getColorStateList(R.color.colorAccent)
             val iconB: Icon = Icon.createWithResource(this, R.drawable.set_b)
@@ -543,9 +551,6 @@ class MainActivity : AppCompatActivity(),
 
         }
 
-        fab_resetView.setOnClickListener { view ->
-            my_view.resetViewToLSTP()
-        }
 
         fab_fillcolor.setOnClickListener { view ->
             if(!deductionMode_){
@@ -633,10 +638,24 @@ class MainActivity : AppCompatActivity(),
             colorMovementFabs()
         }
 
+        fab_resetView.setOnClickListener { view ->
+
+            if(deductionMode_ == false ) my_view.resetViewToLSTP()
+            else if( myDeductionList.size() > 0 ){
+                val currentIndex = my_view.myDeductionList.getCurrent()
+                my_view.resetView( my_view.myDeductionList.get( currentIndex ).point.scale( PointXY(1f,-1f ) ) )
+            }
+        }
+
         fab_up.setOnClickListener { view ->
             myEditor.scroll(-1, getList(deductionMode_), myELSecond, myELThird)
 
             if(deductionMode_ == false ) moveTrilist()
+            else if( myDeductionList.size() > 0 ){
+                my_view.myDeductionList.setCurrent(myDeductionList.getCurrent())
+                val currentIndex = my_view.myDeductionList.getCurrent()
+                my_view.resetView( my_view.myDeductionList.get( currentIndex ).point.scale( PointXY(1f,-1f ) ) )
+            }
 
             colorMovementFabs()
             printDebugConsole()
@@ -646,6 +665,11 @@ class MainActivity : AppCompatActivity(),
             myEditor.scroll(1, getList(deductionMode_), myELSecond, myELThird)
 
             if(deductionMode_ == false ) moveTrilist()
+            else if( myDeductionList.size() > 0 ){
+                my_view.myDeductionList.setCurrent(myDeductionList.getCurrent())
+                val currentIndex = my_view.myDeductionList.getCurrent()
+                my_view.resetView( my_view.myDeductionList.get( currentIndex ).point.scale( PointXY(1f,-1f ) ) )
+            }
 
             colorMovementFabs()
             printDebugConsole()
@@ -918,7 +942,14 @@ class MainActivity : AppCompatActivity(),
                             tapIndex - myDeductionList.getCurrent(),
                             getList(deductionMode_), myELSecond, myELThird
                     )
+                    my_view.resetView( my_view.myDeductionList.get( tapIndex ).point.scale( PointXY(1f,-1f ) ) )
                 }
+            }
+
+            // 三角形番号が押されたときはセンタリング
+            my_view.myTriangleList.getTap(my_view.localPressPoint.scale(PointXY(0f, 0f), 1f, -1f))
+            if ( my_view.myTriangleList.lastTapNum_ != 0 ) {
+                if( my_view.myTriangleList.lastTapSide_ == 3 ) my_view.resetViewToLSTP()
             }
 
         }
