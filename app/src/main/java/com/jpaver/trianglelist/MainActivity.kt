@@ -860,11 +860,11 @@ class MainActivity : AppCompatActivity(),
 
         my_view.myTriangleList.lastTapSide_ = i
         dParams_ = myEditor.ReadLineTo(dParams_, myELFirst) //keep them
-        var side = findViewById<EditText>(R.id.editText5)
-        if(i == 2) side = findViewById<EditText>(R.id.editText6)
+        var side = findViewById<EditText>(R.id.editText2)
 
         if( my_view.myTriangleList.isDoubleTap_ == true ){
-            side = findViewById<EditText>(R.id.editText2)
+            if(i == 1) side = findViewById<EditText>(R.id.editText5)
+            if(i == 2) side = findViewById<EditText>(R.id.editText6)
         }
 
         if(deductionMode_ == false) {
