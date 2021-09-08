@@ -160,6 +160,9 @@ class MainActivity : AppCompatActivity(),
     lateinit var myTriangleList: TriangleList //= TriangleList(Triangle(0f,0f,0f,PointXY(0f,0f),180f))
     lateinit var myDeductionList: DeductionList
 
+    var trilistStored_: TriangleList = TriangleList()
+
+
     var fileType: String = "notyet"
     var filename_ = "notyet"
     var deductionMode_: Boolean = false
@@ -534,6 +537,8 @@ class MainActivity : AppCompatActivity(),
             }
             else {
                 if (len > 0) {
+                    trilistStored_ = myTriangleList.clone()
+
                     getList(deductionMode_).remove(len)
                     //my_view.removeTriangle()
                     my_view.setDeductionList(myDeductionList, mScale)
@@ -551,6 +556,14 @@ class MainActivity : AppCompatActivity(),
 
         }
 
+        fab_undo.setOnClickListener{ view ->
+            if( trilistStored_.size() > 0 ) myTriangleList = trilistStored_.clone()
+            my_view.undo()
+            my_view.resetViewToLSTP()
+
+            EditorClear(getList(deductionMode_), getList(deductionMode_).getCurrent())
+            setTitles()
+        }
 
         fab_fillcolor.setOnClickListener { view ->
             if(!deductionMode_){
@@ -756,6 +769,7 @@ class MainActivity : AppCompatActivity(),
         var isSucceed = false
 
         if( dedmode == false ) {
+
             if( strTopB == "" ) isSucceed = resetTrianglesBy(readedSecond)
             else
                 if( strTopC == "" && useit == false ) return
@@ -815,6 +829,8 @@ class MainActivity : AppCompatActivity(),
 
     fun addTriangleBy(params: Params) : Boolean {
         if (validTriangle(params)) {
+            trilistStored_ = myTriangleList.clone()
+
             var myTri: Triangle = Triangle(
                     myTriangleList.getTriangle(params.pn),
                     params
@@ -832,6 +848,8 @@ class MainActivity : AppCompatActivity(),
     fun resetTrianglesBy(params: Params) : Boolean {
 
         if (validTriangle(params) == true){
+            trilistStored_ = myTriangleList.clone()
+
             //if( dParams.n == 1 ) myTriangleList.resetTriangle( dParams.n, Triangle( dParams, myTriangleList.myAngle ) )
             //else
             return myTriangleList.resetConnectedTriangles(params)

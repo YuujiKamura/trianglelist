@@ -8,7 +8,7 @@ import static java.lang.Integer.parseInt;
 
 public class TriangleList extends EditList implements Cloneable {
     ArrayList<Triangle> trilist_;
-    ArrayList<Triangle> myTriListAtView;
+    ArrayList<Triangle> trilistStored_;
     ArrayList<Collision> myCollisionList;
 
     int current;// = 0;
@@ -55,6 +55,10 @@ public class TriangleList extends EditList implements Cloneable {
             e.printStackTrace();
         }
         return b;
+    }
+
+    public void undo(){
+        //if( trilistStored_ != null ) trilist_ = (ArrayList<Triangle>) trilistStored_.clone();
     }
 
     public ArrayList<Triangle> getSokutenList(int start, int pitch ){
@@ -315,14 +319,14 @@ public class TriangleList extends EditList implements Cloneable {
 
     TriangleList(){
         this.trilist_ = new ArrayList<Triangle>();
-        this.myTriListAtView = new ArrayList<Triangle>();
+        this.trilistStored_ = new ArrayList<Triangle>();
         this.myCollisionList = new ArrayList<Collision>();
         current = trilist_.size();
     }
 
     TriangleList(Triangle myFirstTriangle){
         this.trilist_ = new ArrayList<Triangle>();
-        this.myTriListAtView = new ArrayList<Triangle>();
+        this.trilistStored_ = new ArrayList<Triangle>();
         this.trilist_.add(myFirstTriangle);
         myFirstTriangle.setNumber(1);
         current = trilist_.size();
@@ -338,13 +342,13 @@ public class TriangleList extends EditList implements Cloneable {
 //        this.cloneByScale(basepoint, myScale);
     }
 
-    public void cloneByScale(PointXY basepoint, float scale){
+    /*public void cloneByScale(PointXY basepoint, float scale){
         myTriListAtView.clear();
         for (int i = 0; i < trilist_.size(); i++ ) {
             myTriListAtView.add(trilist_.get(i).clone());
             myTriListAtView.get(i).scale(basepoint, scale);
         }
-    }
+    }*/
 
     public void scale(PointXY basepoint, float scale){
         myScale *= scale;
@@ -416,6 +420,8 @@ public class TriangleList extends EditList implements Cloneable {
 
     public boolean add(Triangle nextTriangle){
         if( validTriangle(nextTriangle) == false ) return false;
+
+        //trilistStored_ = (ArrayList<Triangle>) trilist_.clone();
 
         // 番号を受け取る
         nextTriangle.myNumber_ = trilist_.size() + 1;
@@ -590,6 +596,9 @@ public class TriangleList extends EditList implements Cloneable {
     public boolean resetConnectedTriangles(int cNum, Triangle nextTriangle){
         if(nextTriangle == null)  return false;
         if(!nextTriangle.validTriangle()) return false;
+
+        //trilistStored_ = (ArrayList<Triangle>) trilist_.clone();
+
 
         nextTriangle.myNumber_ = cNum; //useless?
 

@@ -7,6 +7,17 @@ import org.junit.Test
 class TriListTest {
 
     @Test
+    fun testTriListUndo() {
+        val trilist = TriangleList()
+        trilist.add( Triangle(5f, 5f, 5f))
+        trilist.add( 1, 4, 6f, 5f, 5f )
+        trilist.undo()
+
+        assertEquals( 1, trilist.size() )
+
+    }
+
+        @Test
     fun testTriListReverse(){
         val trilist = TriangleList()
         // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC

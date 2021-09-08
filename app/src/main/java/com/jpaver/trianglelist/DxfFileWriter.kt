@@ -1,5 +1,6 @@
 package com.jpaver.trianglelist
 
+import android.graphics.Point
 import android.util.Log
 import java.io.BufferedWriter
 
@@ -477,7 +478,23 @@ class DxfFileWriter(trilist: TriangleList ): DrawingFileWriter() {
         """.trimIndent())
         wrtr.newLine()
 
+        // calcSheet
+        writeCalcSheet( myDXFTriList, myDXFDedList, PointXY(0.0f,0.0f ) )
+
     }
+
+    fun writeCalcSheet( trilist: TriangleList, dedlist: DeductionList, drawHere: PointXY ){
+        var area: Float = 0.0f
+
+        for( index in 1 .. trilist.size() ) area += writeCalcLine( trilist.get(index), drawHere )
+
+    }
+
+    fun writeCalcLine( editObject: EditObject, drawPoint: PointXY ) :Float {
+
+        return 0.0f
+    }
+
 
     fun writeDXFTriOutlines( wrtr: BufferedWriter, array: ArrayList<PointXY> ) {
 

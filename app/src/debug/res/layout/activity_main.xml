@@ -248,6 +248,20 @@
             app:srcCompat="@android:drawable/ic_menu_edit"
             android:contentDescription="rewrite shape"/>
 
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_undo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignRight="@id/toolbarLayout"
+            android:layout_gravity="top|end"
+            android:layout_alignTop="@id/fab_replace"
+            android:layout_marginTop="60dp"
+            android:layout_marginEnd="16dp"
+            app:backgroundTint="@color/colorAccent"
+            app:fabSize="mini"
+            app:layout_constraintTop_toBottomOf="@+id/fab_replace"
+            app:srcCompat="@android:drawable/ic_menu_revert"
+            android:contentDescription="undo"/>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_dimsidew"
@@ -255,7 +269,7 @@
         android:layout_height="wrap_content"
         android:layout_alignRight="@id/toolbarLayout"
         android:layout_gravity="top|end"
-        android:layout_alignTop="@id/fab_replace"
+        android:layout_alignTop="@id/fab_undo"
         android:layout_marginTop="50dp"
         android:layout_marginEnd="16dp"
         app:backgroundTint="@color/colorAccent"

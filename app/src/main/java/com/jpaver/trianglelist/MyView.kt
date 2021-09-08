@@ -62,6 +62,8 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
     var myScale = 1f
     var myTriangleList: TriangleList = TriangleList()
+    var trilistStored_: TriangleList = TriangleList()
+
     var myDeductionList: DeductionList = DeductionList()
     var mCollisionList: ArrayList<Collision> = ArrayList<Collision>()
 
@@ -272,6 +274,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     fun lsdp(): PointXY{ return myDeductionList.get( myDeductionList.lastTapIndex_ ).point.clone() }
 
     fun setTriangleList(triList: TriangleList, setscale: Float){
+        trilistStored_ = myTriangleList.clone()
         myScale = setscale    // 描画倍率は外から指定する
         myTriangleList = triList.clone()
         myTriangleList.scaleAndSetPath( PointXY(0f, 0f), setscale, paintTexS.textSize )
@@ -279,6 +282,10 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         setLTP()
         //resetView()
         //invalidate()
+    }
+
+    fun undo(){
+        if( trilistStored_.size() > 0 ) myTriangleList = trilistStored_.clone()
     }
 
     fun setTriListLengthStr(){

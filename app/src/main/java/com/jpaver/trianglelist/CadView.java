@@ -13,7 +13,7 @@ public class CadView {
     }
 
     public void scale(PointXY basepoint, float scale){
-        myTriangleList.cloneByScale(basepoint, scale);
+        //myTriangleList.cloneByScale(basepoint, scale);
     }
 
     public void setTriangleList(TriangleList trilist){
