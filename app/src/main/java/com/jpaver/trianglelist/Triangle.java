@@ -791,6 +791,7 @@ public class Triangle extends EditObject implements Cloneable {
     public float getArea(){
         float sumABC = lengthAforce_ + lengthBforce_ + lengthCforce_;
         float myArea = (sumABC*0.5f)*((sumABC*0.5f)- lengthAforce_)*((sumABC*0.5f)- lengthBforce_)*((sumABC*0.5f)- lengthCforce_);
+        //myArea = roundByUnderTwo( myArea );
         return roundByUnderTwo((float)Math.pow(myArea, 0.5));
     }
 

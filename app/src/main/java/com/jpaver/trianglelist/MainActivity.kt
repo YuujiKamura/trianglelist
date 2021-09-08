@@ -561,6 +561,7 @@ class MainActivity : AppCompatActivity(),
             my_view.undo()
             my_view.resetViewToLSTP()
 
+            fab_undo.backgroundTintList = getColorStateList(R.color.colorPrimary)
             EditorClear(getList(deductionMode_), getList(deductionMode_).getCurrent())
             setTitles()
         }
@@ -672,6 +673,7 @@ class MainActivity : AppCompatActivity(),
 
             colorMovementFabs()
             printDebugConsole()
+            setTitles()
         }
 
         fab_down.setOnClickListener { view ->
@@ -686,6 +688,7 @@ class MainActivity : AppCompatActivity(),
 
             colorMovementFabs()
             printDebugConsole()
+            setTitles()
 
         }
 
@@ -805,13 +808,14 @@ class MainActivity : AppCompatActivity(),
     fun moveTrilist(){
         my_view.getTriangleList().setCurrent(myTriangleList.getCurrent())
         my_view.myTriangleList.lastTapNum_ = myTriangleList.getCurrent()
+        myTriangleList.lastTapNum_ = myTriangleList.getCurrent()
         my_view.resetViewToLSTP()
     }
 
     fun addDeductionBy(params: Params) : Boolean {
         params.pt = my_view.getTapPoint()
         params.pts = PointXY(0f, 0f)
-        params.pn = my_view.myTriangleList.isCollide(dParams_.pt)
+        params.pn = my_view.myTriangleList.isCollide( dParams_.pt.scale( PointXY(1f,-1f) ) )
 
         //形状の自動判定
         if( params.b > 0f ) params.type = "Box"
@@ -830,6 +834,7 @@ class MainActivity : AppCompatActivity(),
     fun addTriangleBy(params: Params) : Boolean {
         if (validTriangle(params)) {
             trilistStored_ = myTriangleList.clone()
+            fab_undo.backgroundTintList = getColorStateList(R.color.colorLime)
 
             var myTri: Triangle = Triangle(
                     myTriangleList.getTriangle(params.pn),
@@ -849,6 +854,7 @@ class MainActivity : AppCompatActivity(),
 
         if (validTriangle(params) == true){
             trilistStored_ = myTriangleList.clone()
+            fab_undo.backgroundTintList = getColorStateList(R.color.colorLime)
 
             //if( dParams.n == 1 ) myTriangleList.resetTriangle( dParams.n, Triangle( dParams, myTriangleList.myAngle ) )
             //else
@@ -862,7 +868,7 @@ class MainActivity : AppCompatActivity(),
         //myEditor.ReadLineTo(prms, myELSecond)
         prms.pt = my_view.getTapPoint()
         prms.pts = myDeductionList.get(prms.n).pointFlag
-        prms.pn = my_view.myTriangleList.isCollide(prms.pt)
+        prms.pn = my_view.myTriangleList.isCollide( prms.pt.scale(PointXY(1f,-1f )) )
         myTriangleList.current = prms.pn
 
         if( validDeduction(prms) == true ) {
@@ -991,6 +997,7 @@ class MainActivity : AppCompatActivity(),
                 colorindex_ = myTriangleList.get(myTriangleList.lastTapNum_).color_
                 colorMovementFabs()
                 printDebugConsole()
+                setTitles()
                 if( my_view.myTriangleList.lastTapSide_ == 0 ) {
 
                     findViewById<EditText>(R.id.editText4).requestFocus()
@@ -2161,6 +2168,7 @@ class MainActivity : AppCompatActivity(),
     fun setTitles(){
         findViewById<EditText>(R.id.rosenname).setText(rosenname_)
         title = rStr_.menseki_ + ": ${myTriangleList.getArea() - myDeductionList.getArea()} m^2"
+        if( myTriangleList.lastTapNum_ > 0 ) title = rStr_.menseki_ + ": ${myTriangleList.getArea() - myDeductionList.getArea()} m^2" + " (${ myTriangleList.getAreaI( myTriangleList.lastTapNum_ ) - myDeductionList.getAreaN( myTriangleList.lastTapNum_ ) } m^2)"
     }
 
 

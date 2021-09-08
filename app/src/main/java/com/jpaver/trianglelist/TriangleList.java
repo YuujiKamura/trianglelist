@@ -788,7 +788,7 @@ public class TriangleList extends EditList implements Cloneable {
     }
 
     @Override
-    public float getArea(){
+    public float getArea( ){
         float area = 0f;
         for(int i = 0; i< trilist_.size(); i++){
             area += trilist_.get(i).getArea();
@@ -796,6 +796,13 @@ public class TriangleList extends EditList implements Cloneable {
         return (float)(Math.round( area * 100.0) / 100.0);
     }
 
+    public float getAreaI( int number ){
+        float area = 0f;
+        for(int i = 0; i < number; i++){
+            area += trilist_.get(i).getArea();
+        }
+        return (float)(Math.round( area * 100.0) / 100.0);
+    }
 
     public ArrayList<ArrayList<PointXY>> getOutlineLists( ){
         ArrayList<ArrayList<PointXY>> olplists = new ArrayList<ArrayList<PointXY>>();
