@@ -334,11 +334,20 @@ class MainActivity : AppCompatActivity(),
 
     fun validTriangle(dp: Params) : Boolean{
         if (dp.a <= 0.0f || dp.b <= 0.0f || dp.c <= 0.0f) return false
-        if (dp.a + dp.b <= dp.c ||
-            dp.b + dp.c <= dp.a ||
-            dp.c + dp.a <= dp.b ||
-            (dp.n > 1 && dp.pl == 0)
-        ) return false
+        if (dp.a + dp.b <= dp.c ){
+            Toast.makeText(this, "Invalid!! : C > A + B", Toast.LENGTH_LONG).show()
+            return false
+        }
+        if (dp.b + dp.c <= dp.a ){
+            Toast.makeText(this, "Invalid!! : A > B + C", Toast.LENGTH_LONG).show()
+            return false
+        }
+        if (dp.c + dp.a <= dp.b ){
+            Toast.makeText(this, "Invalid!! : B > C + A", Toast.LENGTH_LONG).show()
+            return false
+        }
+        if (dp.n > 1 && dp.pl == 0) return false
+
         return true
     }
 
@@ -798,11 +807,11 @@ class MainActivity : AppCompatActivity(),
         setTitles()
         if( dedmode == false ) my_view.resetView(my_view.lstp())
         if( dedmode == true  ) my_view.resetView(usedDedPoint.scale(PointXY(0f, 0f), 1f, -1f))//resetViewToTP()
-        if( BuildConfig.BUILD_TYPE == "debug" ) Toast.makeText(
+        /*if( BuildConfig.BUILD_TYPE == "debug" ) Toast.makeText(
                 this,
                 isSucceed.toString(),
                 Toast.LENGTH_SHORT
-        ).show()
+        ).show()*/
     }
 
     fun moveTrilist(){

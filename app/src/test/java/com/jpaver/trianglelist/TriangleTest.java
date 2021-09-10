@@ -12,6 +12,12 @@ import static org.junit.Assert.assertTrue;
 public class TriangleTest {
 
     @Test
+    public void testGetArea(){
+        Triangle t = new Triangle(5.71f,9.1f,6.59f);
+        assertEquals(18.74f, t.getArea(), 0.01f);
+    }
+
+    @Test
     public void testSideEffectInBasicTypes(){
         Triangle t = new Triangle(5f,5f,5f);
         int me = 0;

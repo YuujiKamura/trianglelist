@@ -6,6 +6,13 @@ class DeductionTest {
 
 
     @Test
+    fun testDedGetArea() {
+        val ded = Deduction(1, "circle", 0.23f, 0f, 0, "Circle", 0f, PointXY(0f, 0f), PointXY(0f, 0f))
+        assertEquals(0.04f, ded.getArea(), 0.001f)
+    }
+
+
+    @Test
     fun testDedRotate() {
         val ded = Deduction(1, "masu", 1f, 1f, 0, "Box", 0f, PointXY(0f, 0f), PointXY(0f, 0f))
         ded.rotateShape(ded.point, 45f)

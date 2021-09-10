@@ -117,7 +117,7 @@ class Deduction(var num: Int = 0,
         parentNum = dp.pn
         type = dp.type
         angle = 0f
-        point =  dp.pt
+        if( dp.pt.x != 0f && dp.pt.y != 0f ) point =  dp.pt
         pointFlag =  dp.pts
         info_ = getInfo()
     }
@@ -192,7 +192,7 @@ class Deduction(var num: Int = 0,
             area = (lengthX/2) * (lengthX/2) * 3.141592f
         }
         if( type == "Box" ) { area = lengthX * lengthY }
-        return (Math.round(area.toDouble() * 100.0) / 100.0).toFloat()//roundByUnderTwo(area)
+        return roundByUnderTwo((Math.round(area.toDouble() * 100.0) / 100.0).toFloat())//roundByUnderTwo(area)
     }
 
     fun roundByUnderTwo(fp: Float) :Float {
