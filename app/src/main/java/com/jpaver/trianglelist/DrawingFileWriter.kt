@@ -1,11 +1,11 @@
 package com.jpaver.trianglelist
 
-import android.graphics.Canvas
 import android.graphics.Paint
-import android.graphics.pdf.PdfDocument
-import java.io.OutputStream
 
 open class DrawingFileWriter {
+    open lateinit var trilist_: TriangleList
+    open lateinit var dedlist_: DeductionList
+
     var koujiname_: String = ""
     var rosenname_ = ""
     var gyousyaname_ = ""
@@ -67,22 +67,23 @@ open class DrawingFileWriter {
         return format.format(this)
     }
 
-    open fun writeLine(p1: PointXY, p2: PointXY, color: Int){
-    }
+    open fun save(){}
 
-    open fun writeLine( color: Int, point1: PointXY, point2: PointXY ){
+    open fun writeTriangle(tri: Triangle){}
+
+    open fun writeLine(p1: PointXY, p2: PointXY, color: Int){
     }
 
     open fun writeRect(point: PointXY, sizeX: Float, sizeY: Float, color: Int){
         val sizex: Float = sizeX/2
         val sizey: Float = sizeY/2
-        writeLine( color, point.plus(-sizex, -sizey), point.plus(sizex, -sizey) )
-        writeLine( color, point.plus(-sizex, sizey ), point.plus(sizex, sizey ) )
-        writeLine( color, point.plus(-sizex, -sizey), point.plus(-sizex, sizey) )
-        writeLine( color, point.plus( sizex, -sizey), point.plus(sizex, sizey ) )
+        writeLine( point.plus(-sizex, -sizey), point.plus(sizex, -sizey), color)
+        writeLine( point.plus(-sizex, sizey), point.plus(sizex, sizey), color)
+        writeLine( point.plus(-sizex, -sizey), point.plus(-sizex, sizey), color)
+        writeLine( point.plus(sizex, -sizey), point.plus(sizex, sizey), color)
     }
 
-    open fun writeCircle(){
+    open fun writeCircle(point: PointXY, size: Float, color: Int){
 
     }
 
@@ -90,7 +91,11 @@ open class DrawingFileWriter {
 
     }
 
-    open fun writeText( color: Int = 8, str: String, point: PointXY, tsy: Float, angle : Float = 0.0f, align: Int = 2 ){
+    open fun writeText( str: String, point: PointXY, color: Int = 8, tsy: Float, align: Int = 2, angle: Float = 0.0f ){
+    }
+
+    open fun writeText( text: String, point: PointXY, color: Int, textsize: Float, alignH: Int, alignV:Int = 0, angle: Float = 0.0f ){
+
     }
 
     open fun writeTextOnPath(){
@@ -100,6 +105,10 @@ open class DrawingFileWriter {
     open fun writeEntities(){
 
     }
+
+    open fun writeDeduction( ded: Deduction ){}
+
+    open fun writeTextAndLine( st: String, p1: PointXY, p2: PointXY, textsize: Float) {}
 
     open fun writeFrame( drawscale: Float, sheetscale: Float, centerx: Float, centery: Float, sizeX: Float, sizeY: Float ){
         val yohaku = 50f * drawscale
@@ -173,4 +182,21 @@ open class DrawingFileWriter {
         writeText( gyousyaname_, PointXY(strx, 1.7f), 1f, 7, tss, 0)
 */
     }
+
+    open fun writeHeader(){}
+
+    open fun writeFooter(){}
+
+    open fun getPolymorphString(): String{
+        return PolymorphFunction()+PolymorphFunctionB()
+    }
+
+    open fun PolymorphFunction(): String{
+        return "IAMBASE."
+    }
+
+    open fun PolymorphFunctionB(): String{
+        return "IAMBASE."
+    }
+
 }

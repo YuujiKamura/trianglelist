@@ -877,7 +877,7 @@ class MainActivity : AppCompatActivity(),
         //myEditor.ReadLineTo(prms, myELSecond)
         prms.pt = my_view.getTapPoint()
         prms.pts = myDeductionList.get(prms.n).pointFlag
-        prms.pn = my_view.myTriangleList.isCollide( prms.pt.scale(PointXY(1f,-1f )) )
+        if( prms.pt != PointXY(0f,0f ) )prms.pn = my_view.myTriangleList.isCollide( prms.pt.scale(PointXY(1f,-1f )) )
         myTriangleList.current = prms.pn
 
         if( validDeduction(prms) == true ) {
@@ -975,7 +975,7 @@ class MainActivity : AppCompatActivity(),
                             tapIndex - myDeductionList.getCurrent(),
                             getList(deductionMode_), myELSecond, myELThird
                     )
-                    my_view.resetView( my_view.myDeductionList.get( tapIndex ).point.scale( PointXY(1f,-1f ) ) )
+                    //my_view.resetView( my_view.myDeductionList.get( tapIndex ).point.scale( PointXY(1f,-1f ) ) )
                 }
             }
 
@@ -1734,8 +1734,8 @@ class MainActivity : AppCompatActivity(),
         dxfWriter.setStartNumber(drawingStartNumber_)
         dxfWriter.isReverse_ = drawingNumberReversal_;
 
-
-        dxfWriter.saveDXF(writer)
+        dxfWriter.save()
+        writer.close()
 
         return writer
     }
@@ -1743,9 +1743,7 @@ class MainActivity : AppCompatActivity(),
     fun saveSFC(out: BufferedOutputStream, isShowAd: Boolean) {
 
         val writer = SfcWriter(myTriangleList, myDeductionList, out, filename_, drawingStartNumber_)
-        writer.writeHeader()
-        writer.writeList()
-        writer.writeFooter()
+        writer.save()
         out.close()
 
     }

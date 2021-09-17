@@ -1,14 +1,14 @@
 package com.jpaver.trianglelist
 
-import android.graphics.Point
 import android.util.Log
 import java.io.BufferedWriter
 
-class DxfFileWriter(trilist: TriangleList ): DrawingFileWriter() {
-    val trilist_ = trilist
+class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
+    override var trilist_ = trilist
+    override lateinit var dedlist_: DeductionList// = deductionList
+
     val numvector_ = trilist_.sokutenListVector
-    lateinit var dedlist_: DeductionList// = deductionList
-    lateinit var writer_: BufferedWriter// = writer
+    lateinit var writer_: BufferedWriter
     lateinit var drawingLength_: PointXY // = drawingLength
     val pageNum_ = 0
     var myDXFscale = 1000f //* setScale(drawingLength)    //metric to mill
@@ -26,70 +26,18 @@ class DxfFileWriter(trilist: TriangleList ): DrawingFileWriter() {
 
     var entityHandle = 100
 
-    fun saveDXF(writer: BufferedWriter) :BufferedWriter{
+    override fun save(){
+        if(writer_ == null) return
 
-        writeDXFHeader(writer)
+        writeHeader()
         /* writeDXFTables(writer)
          writeDXFBlock(writer)
          */
-        writeDXFEntities(writer)
-        writeDXFEOF(writer)
-        writer.close()
+        writeEntities()
+        writeFooter()
 
         Log.d("DxfFileWriter", "Writer Process Done.")
 
-        return writer
-    }
-
-    fun writeLine(wrtr: BufferedWriter, p1: PointXY, p2: PointXY, color: Int){
-        val ax = p1.x *myDXFscale
-        val ay = p1.y *myDXFscale
-        val bx = p2.x *myDXFscale
-        val by = p2.y *myDXFscale
-
-        entityHandle += 1
-
-        wrtr.write(
-            """
-                0
-                LINE
-                5
-                $entityHandle
-                330
-                36
-                100
-                AcDbEntity
-                8
-                0
-                100
-                AcDbLine
-                10
-                $ax
-                20
-                $ay
-                30
-                0.0
-                11
-                $bx
-                21
-                $by
-                31
-                0.0
-                62
-                $color
-            """.trimIndent()
-        )
-        wrtr.newLine()
-    }
-
-    data class AngleAndAlign(val angle: Float, val align: Int)
-
-    fun flip(num: Int, angle: Float ): Int{
-        // 3はpointの下（baseAngle90度以下で外）。1はpointの上（baseAngle90度以下で外）。
-        if( num == 1 && ( angle >  90 || angle < 270 ) ) return num+2
-        if( num == 3 && ( angle <= 90 || angle > 270 ) ) return num-2
-        //if( num == 3 ) return num-2
-        return num
     }
 
     fun alignVByVector(num: Int, p1: PointXY, p2: PointXY ): Int{
@@ -115,7 +63,7 @@ class DxfFileWriter(trilist: TriangleList ): DrawingFileWriter() {
         return num
     }
 
-    fun writeDXFTriangle(wrtr: BufferedWriter, tri: Triangle){
+    override fun writeTriangle(tri: Triangle){
         // arrange
         val pca = tri.pointCA_
         val pab = tri.pointAB_
@@ -142,23 +90,23 @@ class DxfFileWriter(trilist: TriangleList ): DrawingFileWriter() {
         }
 
         // TriLines
-        writeLine(wrtr, pca, pab, 7)
-        writeLine(wrtr, pab, pbc, 7)
-        writeLine(wrtr, pbc, pca, 7)
+        writeLine( pca, pab, 7)
+        writeLine( pab, pbc, 7)
+        writeLine( pbc, pca, 7)
 
         // DimTexts
         if(tri.getMyNumber_()==1 || tri.parentBC > 2)
-            writeDXFTextDimension(wrtr, dimA, la, tri.dimPointA_, pab.calcDimAngle(pca))
-        writeDXFTextDimension(wrtr, dimB, lb, tri.dimPointB_, pbc.calcDimAngle(pab))
-        writeDXFTextDimension(wrtr, dimC, lc, tri.dimPointC_, pca.calcDimAngle(pbc))
+            writeTextDimension(dimA, la, tri.dimPointA_, pab.calcDimAngle(pca))
+        writeTextDimension(dimB, lb, tri.dimPointB_, pbc.calcDimAngle(pab))
+        writeTextDimension(dimC, lc, tri.dimPointC_, pca.calcDimAngle(pbc))
 
         // 番号
         val pn = tri.pointNumberAutoAligned_
         val pc = tri.pointCenter_
-        val circleSize = textsize *0.7f
+        val circleSize = textsize *0.8f
         // 本体
-        writeDXFCircle(wrtr, pn, textsize, 5)
-        writeDXFTextNumber(wrtr, tri)
+        writeCircle(pn, textsize, 5)
+        writeTextNumber(tri)
 
         //引き出し矢印線の描画
         if( tri.isCollide(tri.pointNumber_) == false ){
@@ -166,31 +114,27 @@ class DxfFileWriter(trilist: TriangleList ): DrawingFileWriter() {
             val pnOffsetToC = pn.offset(pc, circleSize * 1.2f )
             val arrowTail = pcOffsetToN.offset(pn, pcOffsetToN.lengthTo(pnOffsetToC) * 0.7f).rotate(pcOffsetToN, 5f)
 
-            writeLine(wrtr, pcOffsetToN, pnOffsetToC, 5)
-            writeLine(wrtr, pcOffsetToN, arrowTail, 5)
+            writeLine( pcOffsetToN, pnOffsetToC, 5)
+            writeLine( pcOffsetToN, arrowTail, 5)
         }
 
 
         // 測点
         if(tri.getMyName_() != "") {
-            writeDXFText(wrtr, tri.getMyName_(), pab.offset(pca, -1.25f), 5, textsize2, 1, 1, pab.calcSokAngle( pca, numvector_ ) )
-            writeLine(wrtr, pab.offset(pca, -tri.getMyName_().length*0.5f), pab.offset(pca, -0.25f), 5)
+            writeText( tri.getMyName_(), pab.offset(pca, -1.25f), 5, textsize2, 1, 1, pab.calcSokAngle( pca, numvector_ ) )
+            writeLine( pab.offset(pca, -tri.getMyName_().length*0.5f), pab.offset(pca, -0.25f), 5)
         }
     }
 
-    fun writeDXFTextDimension(wrtr: BufferedWriter, verticalalign: Int, len: String, p1: PointXY, angle: Float){
-        writeDXFText(wrtr, len, p1, 7, texScale, 1, verticalalign, angle)
+    fun writeTextDimension(verticalalign: Int, len: String, p1: PointXY, angle: Float){
+        writeText( len, p1, 7, texScale, 1, verticalalign, angle)
     }
 
-    fun writeDXFTextNumber(wrtr: BufferedWriter, tri: Triangle){
-        writeDXFText(wrtr, tri.getMyNumber_().toString(), tri.pointNumberAutoAligned_, 5, texScale, 1, 2,0f)
+    fun writeTextNumber(tri: Triangle){
+        writeText( tri.getMyNumber_().toString(), tri.pointNumberAutoAligned_, 5, texScale, 1, 2,0f)
     }
 
-    fun writeDXFText(wrtr: BufferedWriter, text: String, point: PointXY, color: Int, textsize: Float, alignH: Int){
-        writeDXFText(wrtr, text, point, color, textsize, alignH, 0,0f)
-    }
-
-    fun writeDXFText(wrtr: BufferedWriter, text: String, point: PointXY, color: Int, textsize: Float, alignH: Int, alignV:Int, angle: Float){
+    override fun writeText( text: String, point: PointXY, color: Int, textsize: Float, alignH: Int, alignV:Int, angle: Float ){
         var x = point.x *myDXFscale //- ( alignV * 30 - 60 )// a offset when V is 3 to 1. V is 1 to -1.
         var y = point.y *myDXFscale //- ( alignV * 30 - 60 )
         val ts = textsize * myDXFscale
@@ -205,7 +149,7 @@ class DxfFileWriter(trilist: TriangleList ): DrawingFileWriter() {
 
         entityHandle += 1
 
-        wrtr.write("""
+        writer_.write("""
             0
             TEXT
             5
@@ -251,32 +195,58 @@ class DxfFileWriter(trilist: TriangleList ): DrawingFileWriter() {
             73
             ${alignV}
         """.trimIndent())
-        wrtr.newLine()
-    }
-
-    override fun writeText(
-        str: String,
-        point: PointXY,
-        scale: Float,
-        color: Int,
-        size: Float,
-        align: Int
-    ) {
-        writeDXFText(writer_, str, point, color, size, 1, align, 0f)
+        writer_.newLine()
     }
 
     override fun writeLine(p1: PointXY, p2: PointXY, color: Int) {
-        writeLine(writer_, p1, p2, color)
+        val ax = p1.x *myDXFscale
+        val ay = p1.y *myDXFscale
+        val bx = p2.x *myDXFscale
+        val by = p2.y *myDXFscale
+
+        entityHandle += 1
+
+        writer_.write(
+                """
+                0
+                LINE
+                5
+                $entityHandle
+                330
+                36
+                100
+                AcDbEntity
+                8
+                0
+                100
+                AcDbLine
+                10
+                $ax
+                20
+                $ay
+                30
+                0.0
+                11
+                $bx
+                21
+                $by
+                31
+                0.0
+                62
+                $color
+            """.trimIndent()
+        )
+        writer_.newLine()
     }
 
-    fun writeDXFCircle(wrtr: BufferedWriter, point: PointXY, size: Float, color: Int){
+    override fun writeCircle(point: PointXY, size: Float, color: Int){
         val x = point.x *myDXFscale
         val y = point.y *myDXFscale
         val s = size * myDXFscale
 
         entityHandle += 1
 
-        wrtr.write("""
+        writer_.write("""
             0
             CIRCLE
             5
@@ -300,49 +270,45 @@ class DxfFileWriter(trilist: TriangleList ): DrawingFileWriter() {
             40
             ${s} 
         """.trimIndent())
-        wrtr.newLine()
+        writer_.newLine()
     }
 
-    fun writeRect(wrtr: BufferedWriter, point: PointXY, sizeX: Float, sizeY: Float, color: Int){
-        val sizex: Float = sizeX/2
-        val sizey: Float = sizeY/2
-        writeLine(wrtr, point.plus(-sizex, -sizey), point.plus(sizex, -sizey), color)
-        writeLine(wrtr, point.plus(-sizex, sizey), point.plus(sizex, sizey), color)
-        writeLine(wrtr, point.plus(-sizex, -sizey), point.plus(-sizex, sizey), color)
-        writeLine(wrtr, point.plus(sizex, -sizey), point.plus(sizex, sizey), color)
+    override fun writeTextAndLine( st: String, p1: PointXY, p2: PointXY, textsize: Float){
+        writeText( st, p1.plus(0.2f,0.1f), 1, textsize, 0)
+        writeLine( p1, p2, 1)
     }
 
-    fun writeTextAndLine(wrtr: BufferedWriter, st: String, p1: PointXY, p2: PointXY, textsize: Float){
-        writeDXFText(wrtr, st, p1.plus(0.2f,0.1f), 1, textsize, 0)
-        writeLine(wrtr, p1, p2, 1)
+    fun writeOuterFrameAndTitle(){
+        // 外枠描画
+        writeRect( PointXY(21f,14.85f),40f,27f, 7)
+
+        // 上のタイトル
+        writeText( rStr_.tTitle_, PointXY(21f, 27.1f), 7, 0.35f, 1)
+        writeText( rosenname_, PointXY(21f,26f), 7, 0.3f, 1 )
+
+        writeLine( PointXY(19f,27f), PointXY(23f,27f),7)
+        writeLine( PointXY(19f,26.9f), PointXY(23f,26.9f),7)
     }
 
     fun writeFrame(wrtr: BufferedWriter){
         myDXFscale = 1000f  * scale_//setScale(drawingLength_)  // 1:scale
 
-        writeRect(wrtr, PointXY(21f,14.85f),40f,27f, 7)
+        writeOuterFrameAndTitle()
 
-        writeDXFText(wrtr, rStr_.tTitle_, PointXY(21f, 27.1f), 7, 0.35f, 1)
-        writeText( rosenname_, PointXY(21f,26f), scale_, 7, 0.3f, 1 )
+        //右下のタイトル枠
+        writeLine( PointXY(31f,7.35f), PointXY(41f,7.35f),7) //yoko
+        writeLine( PointXY(31f,1.35f), PointXY(31f,7.35f),7) //tate
+        writeLine( PointXY(33f,1.35f), PointXY(33f,7.35f),7) //uchi-tate
 
-        writeLine(wrtr, PointXY(19f,27f), PointXY(23f,27f),7)
-        writeLine(wrtr, PointXY(19f,26.9f), PointXY(23f,26.9f),7)
-
-        writeLine(wrtr, PointXY(31f,7.35f), PointXY(41f,7.35f),7) //yoko
-        writeLine(wrtr, PointXY(31f,1.35f), PointXY(31f,7.35f),7) //tate
-        writeLine(wrtr, PointXY(33f,1.35f), PointXY(33f,7.35f),7) //uchi-tate
-
-        writeLine(wrtr, PointXY(31f,6.35f), PointXY(41f,6.35f),7)
-        writeLine(wrtr, PointXY(31f,5.35f), PointXY(41f,5.35f),7)
-        writeLine(wrtr, PointXY(31f,4.35f), PointXY(41f,4.35f),7)
-        writeLine(wrtr, PointXY(31f,3.35f), PointXY(41f,3.35f),7)
-        writeLine(wrtr, PointXY(31f,2.35f), PointXY(41f,2.35f),7)
-        writeLine(wrtr, PointXY(36f,2.35f), PointXY(36f,3.35f),7)
-        writeLine(wrtr, PointXY(38f,2.35f), PointXY(38f,3.35f),7)
-
+        writeLine( PointXY(31f,6.35f), PointXY(41f,6.35f),7)
+        writeLine( PointXY(31f,5.35f), PointXY(41f,5.35f),7)
+        writeLine( PointXY(31f,4.35f), PointXY(41f,4.35f),7)
+        writeLine( PointXY(31f,3.35f), PointXY(41f,3.35f),7)
+        writeLine( PointXY(31f,2.35f), PointXY(41f,2.35f),7)
+        writeLine( PointXY(36f,2.35f), PointXY(36f,3.35f),7)
+        writeLine( PointXY(38f,2.35f), PointXY(38f,3.35f),7)
 
         val tss = 0.2f
-
 
         val st = scale_*100f
         val strx = 33.5f
@@ -354,81 +320,82 @@ class DxfFileWriter(trilist: TriangleList ): DrawingFileWriter() {
         val tt = 0
         val ofs = 3f
 
-        writeDXFText(wrtr, rStr_.tCname_, PointXY(32f, 6.7f), 7, tss, 1)
-        writeDXFText(wrtr, rStr_.tDtype_, PointXY(32f, 5.7f), 7, tss, 1)
-        writeDXFText(wrtr, rStr_.tDname_, PointXY(32f, 4.7f), 7, tss, 1)
-        writeDXFText(wrtr, rStr_.tDateHeader_, PointXY(32f, 3.7f), 7, tss, 1)
-        writeDXFText(wrtr, rStr_.tScale_, PointXY(32f, 2.7f), 7, tss, 1)
-        writeDXFText(wrtr, rStr_.tNum_, PointXY(37f, 2.7f), 7, tss, 1)
-        writeDXFText(wrtr, rStr_.tAname_, PointXY(32f, 1.7f), 7, tss, 1)
-        writeDXFText(wrtr, rStr_.tCredit_, PointXY(7f, 1f), 7, tss, 1 )
+        // 題字
+        writeText( rStr_.tCname_, PointXY(32f, 6.7f), 7, tss, 1)
+        writeText( rStr_.tDtype_, PointXY(32f, 5.7f), 7, tss, 1)
+        writeText( rStr_.tDname_, PointXY(32f, 4.7f), 7, tss, 1)
+        writeText( rStr_.tDateHeader_, PointXY(32f, 3.7f), 7, tss, 1)
+        writeText( rStr_.tScale_, PointXY(32f, 2.7f), 7, tss, 1)
+        writeText( rStr_.tNum_, PointXY(37f, 2.7f), 7, tss, 1)
+        writeText( rStr_.tAname_, PointXY(32f, 1.7f), 7, tss, 1)
+        writeText( rStr_.tCredit_, PointXY(7f, 1f), 7, tss, 1 )
 
-
+        // 内容
+        // 工事名
         if( koujiname_.length > 20 ) {
             if( koujiname_.contains(" ") ){
                 val array = koujiname_.split(' ')
-                writeDXFText(wrtr, array[0], PointXY(xr - tt, yb + yo ), 7, tss, 0)
-                writeDXFText(wrtr, array[1], PointXY(xr - tt, yb - yo ), 7, tss, 0)
+                writeText( array[0], PointXY(xr - tt, yb + yo ), 7, tss, 0)
+                writeText( array[1], PointXY(xr - tt, yb - yo ), 7, tss, 0)
             }
             else{
                 val array1 = koujiname_.substring(0, 20)
                 val array2 = koujiname_.substring(20, koujiname_.length)
-                writeDXFText(wrtr, array1, PointXY(xr - tt, yb + yo ), 7, tss, 0)
-                writeDXFText(wrtr, array2, PointXY(xr - tt, yb - yo ), 7, tss, 0)
+                writeText( array1, PointXY(xr - tt, yb + yo ), 7, tss, 0)
+                writeText( array2, PointXY(xr - tt, yb - yo ), 7, tss, 0)
             }
         }
         else {
-            writeDXFText(wrtr, koujiname_, PointXY(xr-tt, yb ), 7, tss, 0)
+            writeText( koujiname_, PointXY(xr-tt, yb ), 7, tss, 0)
         }
-
-        writeDXFText(wrtr, rStr_.tTitle_, PointXY(strx, 5.7f), 7, tss, 0)
-        writeDXFText(wrtr, rosenname_, PointXY(strx, 4.7f), 7, tss, 0)
-        writeDXFText(wrtr, rStr_.tDate_, PointXY(strx, 3.7f), 7, tss, 0)
-        writeDXFText(wrtr, "1/${st.toInt()} (A3)", PointXY(34.5f, 2.7f), 7, tss, 1)
-        writeDXFText(wrtr, zumennum_, PointXY(39.5f, 2.7f), 7, tss, 1)
-        writeDXFText(wrtr, gyousyaname_, PointXY(strx, 1.7f), 7, tss, 0)
+        writeText( rStr_.tTitle_, PointXY(strx, 5.7f), 7, tss, 0)
+        writeText( rosenname_, PointXY(strx, 4.7f), 7, tss, 0)
+        writeText( rStr_.tDate_, PointXY(strx, 3.7f), 7, tss, 0)
+        writeText( "1/${st.toInt()} (A3)", PointXY(34.5f, 2.7f), 7, tss, 1)
+        writeText( zumennum_, PointXY(39.5f, 2.7f), 7, tss, 1)
+        writeText( gyousyaname_, PointXY(strx, 1.7f), 7, tss, 0)
 
         myDXFscale = 1000f  // 1:1
     }
 
-    fun writeDXFDeduction(wrtr: BufferedWriter, ded: Deduction){
-        //val prm: Params = ded.getParams()
+    override fun writeDeduction( ded: Deduction ){
+
+        //val ded = dedlist_.get( dednumber )
         val textsize: Float = 0.35f
         val infoStrLength = ded.info_.length*textsize+0.3f
         val point = ded.point
         val pointFlag = ded.pointFlag
-        var lineOffset = 0f
-        if( ded.type == "Box" ) lineOffset = -0.5f
+        var textOffsetX = 0f
+        if( ded.type == "Box" ) textOffsetX = -0.5f
 
         if(point.x <= pointFlag.x) {  //ptFlag is RIGHT from pt
-            writeLine(wrtr, point, pointFlag, 1)
-            writeTextAndLine(wrtr, ded.info_, pointFlag, pointFlag.plus(infoStrLength + lineOffset,0f), textsize)
+            writeLine( point, pointFlag, 1)
+            writeTextAndLine( ded.info_, pointFlag, pointFlag.plus(infoStrLength + textOffsetX,0f), textsize)
         } else {                     //ptFlag is LEFT from pt
-            writeLine(wrtr, point, pointFlag, 1)
-            writeTextAndLine(wrtr, ded.info_, pointFlag.plus(-ded.getInfo().length*textsize - lineOffset,0f), pointFlag, textsize)
+            writeLine( point, pointFlag, 1)
+            writeTextAndLine( ded.info_, pointFlag.plus(-ded.getInfo().length*textsize - textOffsetX,0f), pointFlag, textsize)
         }
 
-        if(ded.type == "Circle") writeDXFCircle(wrtr, point, ded.lengthX/2, 1)
-        if(ded.type == "Box")    writeDXFDedRect( wrtr, ded, 1 )//writeDXFRect(wrtr, point, ded.lengthX, ded.lengthY, 1)
+        if(ded.type == "Circle") writeCircle(point, ded.lengthX/2, 1)
+        if(ded.type == "Box")    writeDedRect(ded, 1)//writeDXFRect(wrtr, point, ded.lengthX, ded.lengthY, 1)
     }
 
-
-    fun writeDXFDedRect(wrtr: BufferedWriter, ded: Deduction, color: Int){
+    fun writeDedRect(ded: Deduction, color: Int){
         ded.shapeAngle_ = -ded.shapeAngle_ // 逆回転
         ded.setBox( 1f )
-        writeLine(wrtr, ded.plt, ded.plb, color)
-        writeLine(wrtr, ded.plt, ded.prt, color)
-        writeLine(wrtr, ded.prt, ded.prb, color)
-        writeLine(wrtr, ded.plb, ded.prb, color)
+        writeLine( ded.plt, ded.plb, color)
+        writeLine( ded.plt, ded.prt, color)
+        writeLine( ded.prt, ded.prb, color)
+        writeLine( ded.plb, ded.prb, color)
     }
 
-    fun writeDXFEntities(wrtr: BufferedWriter){
+    override fun writeEntities(){
 
         var myDXFTriList = trilist_.clone()
         var myDXFDedList = dedlist_.clone()
 
 //        myDXFDedList.rotate(PointXY(0f,0f), myDXFTriList.rotateByLength("laydown"))
-        // Ｙ軸方向反転
+        // Ｙ軸方向反転、かつビュースケールで割り戻して大きさをtrilistと揃える。
         myDXFDedList.scale(PointXY(0f,0f),1/mScale,-1/mScale)
 
         val center = PointXY(21f*scale_, 14.85f*scale_)
@@ -438,13 +405,13 @@ class DxfFileWriter(trilist: TriangleList ): DrawingFileWriter() {
         //myDXFTriList.move(PointXY(21f,14.85f))
 //        myDXFDedList.move(PointXY(21f,14.85f))
 
-        wrtr.write("""
+        writer_.write("""
             0
             SECTION
             2
             ENTITIES
         """.trimIndent())
-        wrtr.newLine()
+        writer_.newLine()
 
 
         val trilistNumbered = myDXFTriList.numbered( startTriNumber_ )
@@ -454,9 +421,8 @@ class DxfFileWriter(trilist: TriangleList ): DrawingFileWriter() {
         };
 
         for (index in 1 .. myDXFTriList.size()) {
-            writeDXFTriangle(wrtr, trilistNumbered.get(index))
+            writeTriangle(trilistNumbered.get(index))
         }
-
 
         // アウトラインの描画
         myDXFTriList.setChildsToAllParents()
@@ -465,36 +431,43 @@ class DxfFileWriter(trilist: TriangleList ): DrawingFileWriter() {
         myDXFTriList.traceOrJumpForward(0, 0, array )
         //if( array.size > 0 ) writeDXFTriOutlines( wrtr, array )
 //
-        if( outlineLists.size > 0 ) for( index in 0 .. outlineLists.size -1 ) writeDXFTriOutlines( wrtr, outlineLists.get( index ) )
+        if( outlineLists.size > 0 ) for( index in 0 .. outlineLists.size -1 ) writeDXFTriOutlines( writer_, outlineLists.get( index ) )
 
         // deduction
-        for (index in 1 .. myDXFDedList.size()) {
-            writeDXFDeduction(wrtr, myDXFDedList.get(index))
+        for (number in 1 .. myDXFDedList.size()) {
+            writeDeduction( myDXFDedList.get(number) )
         }
-        writeFrame(wrtr)
-        wrtr.write("""
+        writeFrame(writer_)
+        writer_.write("""
             0
             ENDSEC
         """.trimIndent())
-        wrtr.newLine()
+        writer_.newLine()
 
         // calcSheet
-        writeCalcSheet( myDXFTriList, myDXFDedList, PointXY(0.0f,0.0f ) )
+        writeCalcSheet( )
 
     }
 
-    fun writeCalcSheet( trilist: TriangleList, dedlist: DeductionList, drawHere: PointXY ){
-        var area: Float = 0.0f
+    fun writeCalcSheet( ){
+        var area = 0.0f
+        val baseX = sizeX_ + 10f
+        var baseY = sizeY_
 
-        for( index in 1 .. trilist.size() ) area += writeCalcLine( trilist.get(index), drawHere )
+        for( index in 1 .. trilist_.size() ){
+            area += writeCalcSheetLine( trilist_.get(index), baseX, baseY )
+            baseY += 50f
+        }
 
     }
 
-    fun writeCalcLine( editObject: EditObject, drawPoint: PointXY ) :Float {
+    fun writeCalcSheetLine( editObject: EditObject, baseX: Float, baseY: Float ) :Float {
+        val param = editObject.getParams()
 
-        return 0.0f
+        writeText( param.n.toString(), PointXY(baseX, baseY), 1, texScale, 1)
+
+        return editObject.getArea()
     }
-
 
     fun writeDXFTriOutlines( wrtr: BufferedWriter, array: ArrayList<PointXY> ) {
 
@@ -1094,11 +1067,11 @@ class DxfFileWriter(trilist: TriangleList ): DrawingFileWriter() {
 
     }
 
-    fun writeDXFHeader(wrtr: BufferedWriter){
+    override fun writeHeader(){
         val scaleX = 42000*scale_
         val scaleY = 29700*scale_
 
-        wrtr.write("""
+        writer_.write("""
              0
             SECTION
               2
@@ -2110,15 +2083,14 @@ class DxfFileWriter(trilist: TriangleList ): DrawingFileWriter() {
               0
             ENDSEC
         """.trimIndent())
-        wrtr.newLine()
+        writer_.newLine()
 
-        writeDXFTables(wrtr)
-
+        writeDXFTables(writer_)
 
     }
 
-    fun writeDXFEOF(wrtr: BufferedWriter){
-        wrtr.write("""
+    override fun writeFooter(){
+        writer_.write("""
               0
             SECTION
               2
@@ -4940,7 +4912,15 @@ class DxfFileWriter(trilist: TriangleList ): DrawingFileWriter() {
             0
             EOF
         """.trimIndent())
-        wrtr.newLine()
+        writer_.newLine()
+    }
+
+    override fun PolymorphFunction(): String {
+        return super.PolymorphFunction()
+    }
+
+    override fun PolymorphFunctionB(): String {
+        return "IAMOVERRIDED."
     }
 
 }

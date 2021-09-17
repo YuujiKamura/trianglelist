@@ -1,12 +1,22 @@
 package com.jpaver.trianglelist
 
+import junit.framework.Assert.assertEquals
 import org.junit.Test
 import java.io.BufferedOutputStream
-import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 
 class DrawingWriterTest {
+
+    @Test
+    fun testPolymorph(){
+        val trilist = TriangleList()
+        val writer = DxfFileWriter( trilist )
+
+        //assertEquals( "IAMOVERRIDE.", writer.writeTriangle() )
+        assertEquals( "IAMBASE.IAMOVERRIDED.", writer.getPolymorphString() )
+        // 基底クラスの関数で、書き出し手順を定義して、個別にオーバーライドされた関数と、されてないのとを混合することができる。
+    }
 
     @Test
     fun testSfcwriter() {
