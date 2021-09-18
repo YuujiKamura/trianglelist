@@ -91,9 +91,11 @@ open class DrawingFileWriter {
 
     }
 
+    // align tenkey ( ex 8 is top and center ) in sfc
     open fun writeText( str: String, point: PointXY, color: Int = 8, tsy: Float, align: Int = 2, angle: Float = 0.0f ){
     }
 
+    // Align H and V ( 0 is center, 1 is left/top, 3 is right/bottom ) in dxf
     open fun writeText( text: String, point: PointXY, color: Int, textsize: Float, alignH: Int, alignV:Int = 0, angle: Float = 0.0f ){
 
     }

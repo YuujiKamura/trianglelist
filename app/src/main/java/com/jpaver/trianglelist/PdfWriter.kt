@@ -201,7 +201,9 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
         val s1 = sTitle.n
         val s2 = sTitle.a
         val s3 = sTitle.b
-        val s4 = sTitle.c
+        var s4 = sTitle.c
+        if( list is DeductionList ) s4 = sTitle.pl
+
         val s5 = sTitle.type
         val s6 = syoukei
         val ts = 5f

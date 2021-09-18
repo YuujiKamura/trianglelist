@@ -1724,6 +1724,8 @@ class MainActivity : AppCompatActivity(),
                 myTriangleList
         )
         dxfWriter.rStr_ = rStr_
+        dxfWriter.titleTri_ = titleTriStr_
+        dxfWriter.titleDed_ = titleDedStr_
 
         dxfWriter.writer_ = writer
         dxfWriter.drawingLength_ = myTriangleList.measureMostLongLine()

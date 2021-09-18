@@ -188,13 +188,13 @@ public class TriangleList extends EditList implements Cloneable {
                 ts = 8f;
                 break;
             case 15:
-                ts = 10f;
+                ts = 5f;
                 break;
             case 10:
-                ts = 10f;
+                ts = 5f;
                 break;
             case 5:
-                ts = 15f;
+                ts = 5f;
                 break;
         }
 
@@ -213,7 +213,7 @@ public class TriangleList extends EditList implements Cloneable {
 
 //        float printScale = 1f; //drawingScale;
         //if( longsideX <= paperWidth*0.2 && longsideY <= paperHeight*0.2 ) return printScale *= 0.2f;
-        if( longsideX <= paperWidth*0.5 && longsideY <= paperHeight*0.5 ) return 0.5f;
+        if( longsideX <= paperWidth*0.5 && longsideY <= paperHeight*0.4 ) return 0.5f;
         if( longsideX <= paperWidth     && longsideY <= paperHeight     ) return 1.0f;
         if( longsideX <= paperWidth*1.5 && longsideY <= paperHeight*1.5 ) return 1.5f;
         if( longsideX <= paperWidth*2.0 && longsideY <= paperHeight*2.0 ) return 2.0f;
