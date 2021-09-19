@@ -472,7 +472,7 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
         currentCanvas_.drawLine(p1.x*scale, p1.y*scale, p2.x*scale, p2.y*scale, setPaint(color, 5f, 1))
     }
 
-    override fun writeLine(p1: PointXY, p2: PointXY, color: Int){
+    override fun writeLine(p1: PointXY, p2: PointXY, color: Int, scale: Float ){
         currentCanvas_.drawLine(p1.x, p1.y, p2.x, p2.y, setPaint(color, 5f, 1))
     }
 

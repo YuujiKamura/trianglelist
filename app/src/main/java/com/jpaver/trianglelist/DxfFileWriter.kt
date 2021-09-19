@@ -11,20 +11,24 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
     lateinit var writer_: BufferedWriter
     lateinit var drawingLength_: PointXY // = drawingLength
     val pageNum_ = 0
-    var myDXFscale = 1000f //* setScale(drawingLength)    //metric to mill
+    //var sheetscale_ = 1000f //* setScale(drawingLength)    //metric to mill
     val mScale = 11.9f*4f//12.5f
 
     var isDebug_ = false
     var isReverse_ = false;
 
-    val texScale = trilist_.getPrintTextScale( 1f , "dxf")
-    var scale_ = trilist_.getPrintScale(1f)//setScale(drawingLength)
+    override var textscale_ = trilist_.getPrintTextScale( 1f , "dxf")
+    override var scale_ = trilist_.getPrintScale(1f)//setScale(drawingLength)
     override var sizeX_ = 42000f * scale_
     override var sizeY_ = 29700f * scale_
     val vpCenterX_ = sizeX_ * 0.5f
     val vpCenterY_ = sizeY_ * 0.5f
 
     var entityHandle = 100
+
+    override var cWhite_ = 7
+    override var cBlue_ = 5
+    override var cRed_ = 1
 
     override fun save(){
         if(writer_ == null) return
@@ -69,8 +73,8 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         val pab = tri.pointAB_
         val pbc = tri.pointBC_
 
-        val textsize: Float = texScale
-        val textsize2: Float = texScale
+        val textsize: Float = textscale_
+        val textsize2: Float = textscale_
 
         //if( tri.myAngle_ > 90 ) dimA = 1
         //if( tri.myAngle_ > 270 ) dimA = 3
@@ -105,7 +109,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         val pc = tri.pointCenter_
         val circleSize = textsize *0.8f
         // 本体
-        writeCircle(pn, textsize, 5)
+        writeCircle(pn, textsize, 5, 1f)
         writeTextNumber(tri)
 
         //引き出し矢印線の描画
@@ -121,23 +125,50 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
 
         // 測点
         if(tri.getMyName_() != "") {
-            writeText( tri.getMyName_(), pab.offset(pca, -1.25f), 5, textsize2, 1, 1, pab.calcSokAngle( pca, numvector_ ) )
+            writeText(
+                tri.getMyName_(),
+                pab.offset(pca, -1.25f),
+                5,
+                textsize2,
+                1,
+                1,
+                pab.calcSokAngle( pca, numvector_ ),
+                1f
+            )
             writeLine( pab.offset(pca, -tri.getMyName_().length*0.5f), pab.offset(pca, -0.25f), 5)
         }
     }
 
     fun writeTextDimension(verticalalign: Int, len: String, p1: PointXY, angle: Float){
-        writeText( len, p1, 7, texScale, 1, verticalalign, angle)
+        writeText(len, p1, 7, textscale_, 1, verticalalign, angle, 1f)
     }
 
     fun writeTextNumber(tri: Triangle){
-        writeText( tri.getMyNumber_().toString(), tri.pointNumberAutoAligned_, 5, texScale, 1, 2,0f)
+        writeText(
+            tri.getMyNumber_().toString(),
+            tri.pointNumberAutoAligned_,
+            5,
+            textscale_,
+            1,
+            2,
+            0f,
+            1f
+        )
     }
 
-    override fun writeText( text: String, point: PointXY, color: Int, textsize: Float, alignH: Int, alignV:Int, angle: Float ){
-        var x = point.x *myDXFscale //- ( alignV * 30 - 60 )// a offset when V is 3 to 1. V is 1 to -1.
-        var y = point.y *myDXFscale //- ( alignV * 30 - 60 )
-        val ts = textsize * myDXFscale
+    override fun writeText(
+        text: String,
+        point: PointXY,
+        color: Int,
+        textsize: Float,
+        alignH: Int,
+        alignV: Int,
+        angle: Float,
+        scale: Float
+    ){
+        var x = point.x *sheetscale_ //- ( alignV * 30 - 60 )// a offset when V is 3 to 1. V is 1 to -1.
+        var y = point.y *sheetscale_ //- ( alignV * 30 - 60 )
+        val ts = textsize * sheetscale_
 
         // its not effective..?
         if( alignV == 3) {
@@ -198,11 +229,11 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         writer_.newLine()
     }
 
-    override fun writeLine(p1: PointXY, p2: PointXY, color: Int) {
-        val ax = p1.x *myDXFscale
-        val ay = p1.y *myDXFscale
-        val bx = p2.x *myDXFscale
-        val by = p2.y *myDXFscale
+    override fun writeLine(p1: PointXY, p2: PointXY, color: Int, scale: Float ) {
+        val ax = p1.x *sheetscale_
+        val ay = p1.y *sheetscale_
+        val bx = p2.x *sheetscale_
+        val by = p2.y *sheetscale_
 
         entityHandle += 1
 
@@ -239,10 +270,10 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         writer_.newLine()
     }
 
-    override fun writeCircle(point: PointXY, size: Float, color: Int){
-        val x = point.x *myDXFscale
-        val y = point.y *myDXFscale
-        val s = size * myDXFscale
+    override fun writeCircle(point: PointXY, size: Float, color: Int, scale: Float){
+        val x = point.x *sheetscale_
+        val y = point.y *sheetscale_
+        val s = size * sheetscale_
 
         entityHandle += 1
 
@@ -273,89 +304,15 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         writer_.newLine()
     }
 
-    override fun writeTextAndLine( st: String, p1: PointXY, p2: PointXY, textsize: Float){
-        writeText( st, p1.plus(0.2f,0.1f), 1, textsize, 0, 1, 0f )
+    override fun writeTextAndLine(
+        st: String,
+        p1: PointXY,
+        p2: PointXY,
+        textsize: Float,
+        scale: Float
+    ){
+        writeText(st, p1.plus(0.2f,0.1f), 1, textsize, 0, 1, 0f, 1f)
         writeLine( p1, p2, 1)
-    }
-
-    fun writeOuterFrameAndTitle(){
-        // 外枠描画
-        writeRect( PointXY(21f,14.85f),40f,27f, 7)
-
-        // 上のタイトル
-        writeText( rStr_.tTitle_, PointXY(21f, 27.1f), 7, 0.4f, 1, 1, 0f )
-        writeText( rosenname_, PointXY(21f,26f), 7, 0.4f, 1, 1, 0f )
-
-        writeLine( PointXY(19f,27f), PointXY(23f,27f),7)
-        writeLine( PointXY(19f,26.9f), PointXY(23f,26.9f),7)
-    }
-
-    fun writeFrame(wrtr: BufferedWriter){
-        myDXFscale = 1000f  * scale_//setScale(drawingLength_)  // 1:scale
-
-        writeOuterFrameAndTitle()
-
-        //右下のタイトル枠
-        writeLine( PointXY(31f,7.35f), PointXY(41f,7.35f),7) //yoko
-        writeLine( PointXY(31f,1.35f), PointXY(31f,7.35f),7) //tate
-        writeLine( PointXY(33f,1.35f), PointXY(33f,7.35f),7) //uchi-tate
-
-        writeLine( PointXY(31f,6.35f), PointXY(41f,6.35f),7)
-        writeLine( PointXY(31f,5.35f), PointXY(41f,5.35f),7)
-        writeLine( PointXY(31f,4.35f), PointXY(41f,4.35f),7)
-        writeLine( PointXY(31f,3.35f), PointXY(41f,3.35f),7)
-        writeLine( PointXY(31f,2.35f), PointXY(41f,2.35f),7)
-        writeLine( PointXY(36f,2.35f), PointXY(36f,3.35f),7)
-        writeLine( PointXY(38f,2.35f), PointXY(38f,3.35f),7)
-
-        val tss = 0.25f
-
-        val st = scale_*100f
-        val strx = 33.5f
-
-        val xr = strx
-        val yb = 6.7f
-        val yo = 0.2f
-        val uw = 160f
-        val tt = 0
-        val ofs = 3f
-
-        // 題字
-        writeText( rStr_.tCname_, PointXY(32f, 6.7f), 7, tss, 1, 0, 0f )
-        writeText( rStr_.tDtype_, PointXY(32f, 5.7f), 7, tss, 1, 0, 0f )
-        writeText( rStr_.tDname_, PointXY(32f, 4.7f), 7, tss, 1, 0, 0f )
-        writeText( rStr_.tDateHeader_, PointXY(32f, 3.7f), 7, tss, 1, 0, 0f )
-        writeText( rStr_.tScale_, PointXY(32f, 2.7f), 7, tss, 1, 0, 0f )
-        writeText( rStr_.tNum_, PointXY(37f, 2.7f), 7, tss, 1, 0, 0f )
-        writeText( rStr_.tAname_, PointXY(32f, 1.7f), 7, tss, 1, 0, 0f )
-        writeText( rStr_.tCredit_, PointXY(8f, 1f), 7, tss, 1, 0, 0f )
-
-        // 内容
-        // 工事名
-        if( koujiname_.length > 20 ) {
-            if( koujiname_.contains(" ") ){
-                val array = koujiname_.split(' ')
-                writeText( array[0], PointXY(xr - tt, yb + yo ), 7, tss, 0)
-                writeText( array[1], PointXY(xr - tt, yb - yo ), 7, tss, 0)
-            }
-            else{
-                val array1 = koujiname_.substring(0, 20)
-                val array2 = koujiname_.substring(20, koujiname_.length)
-                writeText( array1, PointXY(xr - tt, yb + yo ), 7, tss, 0)
-                writeText( array2, PointXY(xr - tt, yb - yo ), 7, tss, 0)
-            }
-        }
-        else {
-            writeText( koujiname_, PointXY(xr-tt, yb ), 7, tss, 0)
-        }
-        writeText( rStr_.tTitle_, PointXY(strx, 5.7f), 7, tss, 0, 0, 0f )
-        writeText( rosenname_, PointXY(strx, 4.7f), 7, tss, 0, 0, 0f )
-        writeText( "     "+rStr_.tDate_, PointXY(strx, 3.7f), 7, tss, 0, 0, 0f )
-        writeText( "1/${st.toInt()} (A3)", PointXY(34.5f, 2.7f), 7, tss, 1, 0, 0f )
-        writeText( zumennum_, PointXY(39.5f, 2.7f), 7, tss, 1, 0, 0f )
-        writeText( gyousyaname_, PointXY(strx, 1.7f), 7, tss, 0, 0, 0f )
-
-        myDXFscale = 1000f  // 1:1
     }
 
     override fun writeDeduction( ded: Deduction ){
@@ -370,13 +327,25 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
 
         if(point.x <= pointFlag.x) {  //ptFlag is RIGHT from pt
             writeLine( point, pointFlag, 1)
-            writeTextAndLine( ded.info_, pointFlag, pointFlag.plus(infoStrLength + textOffsetX,0f), textsize)
+            writeTextAndLine(
+                ded.info_,
+                pointFlag,
+                pointFlag.plus(infoStrLength + textOffsetX,0f),
+                textsize,
+                1f
+            )
         } else {                     //ptFlag is LEFT from pt
             writeLine( point, pointFlag, 1)
-            writeTextAndLine( ded.info_, pointFlag.plus(-ded.getInfo().length*textsize - textOffsetX,0f), pointFlag, textsize)
+            writeTextAndLine(
+                ded.info_,
+                pointFlag.plus(-ded.getInfo().length*textsize - textOffsetX,0f),
+                pointFlag,
+                textsize,
+                1f
+            )
         }
 
-        if(ded.type == "Circle") writeCircle(point, ded.lengthX/2, 1)
+        if(ded.type == "Circle") writeCircle(point, ded.lengthX/2, 1, 1f)
         if(ded.type == "Box")    writeDedRect(ded, 1)//writeDXFRect(wrtr, point, ded.lengthX, ded.lengthY, 1)
     }
 
@@ -438,10 +407,12 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
             writeDeduction( myDXFDedList.get(number) )
         }
 
-        writeFrame(writer_)
+        sheetscale_ *= scale_
+        writeFrame()
+        sheetscale_ = 1000f
 
         // calcSheet
-        writeCalcSheet( )
+        writeCalcSheet(1f, textscale_ )
 
         //一番最後に書く
         writer_.write("""
@@ -452,93 +423,6 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
 
     }
 
-    fun writeCalcSheet( ){
-        var area = 0.0f
-        val baseX = 40f * scale_ + 3f
-        var baseY = 27f * scale_
-        val ts = 0.25f
-        val xoffset = 1.8f
-        val yoffset = -0.02f
-
-        writeLine( PointXY( baseX - xoffset *0.5f, baseY + 0.5f + yoffset ), PointXY(baseX + xoffset * 4.5f, baseY + 0.5f + yoffset ),7)
-
-        baseY = writeCalcSheetEditList( trilist_, titleTri_, baseX, baseY, ts, xoffset )
-        baseY = writeCalcSheetEditList( dedlist_, titleDed_, baseX, baseY, ts, xoffset )
-
-        baseY -= 0.5f
-        writeText( "(1)-(2)", PointXY(baseX, baseY), 7, ts, 1, 1, 0f )
-        writeText( ( trilist_.getArea() - dedlist_.getArea() ).formattedString(2), PointXY(baseX + xoffset * 4, baseY), 7, ts, 1, 1, 0f )
-        writeLine( PointXY( baseX - xoffset *0.5f, baseY + yoffset ), PointXY(baseX + xoffset * 4.5f, baseY + yoffset ),7)
-        writeLine( PointXY( baseX - xoffset * 0.5f, baseY + 1f + yoffset ), PointXY(baseX - xoffset * 0.5f, baseY + yoffset ),7)
-        writeLine( PointXY( baseX + xoffset * 4.5f, baseY + 1f + yoffset ), PointXY(baseX + xoffset * 4.5f, baseY + yoffset ),7)
-
-    }
-
-    fun writeCalcSheetEditList( editList: EditList , titleParamStr: TitleParamStr, baseX: Float, baseY: Float, ts: Float, xoffset: Float ): Float {
-        var basey = baseY
-        var sn = 1
-        val yoffset = -0.02f
-        var color = 7
-        if( editList is DeductionList ) color = 1
-
-        if( editList is TriangleList ) {
-            writeText( titleParamStr.n, PointXY(baseX, basey), color, ts, 1, 1, 0f )
-            writeText( titleParamStr.c+"(m)", PointXY(baseX + xoffset * 3, basey), color, ts, 1, 1, 0f )
-        }
-        if( editList is DeductionList ) {
-            sn = 2
-            writeText( titleParamStr.name, PointXY(baseX, basey), color, ts, 1, 1, 0f )
-            writeText( titleParamStr.pl, PointXY(baseX + xoffset * 3, basey), color, ts, 1, 1, 0f )
-        }
-        writeText( titleParamStr.a+"(m)", PointXY(baseX + xoffset, basey), color, ts, 1, 1, 0f )
-        writeText( titleParamStr.b+"(m)", PointXY(baseX + xoffset * 2, basey), color, ts, 1, 1, 0f )
-        writeText( titleParamStr.type+"(m2)", PointXY(baseX + xoffset * 4, basey), color, ts, 1, 1, 0f )
-        writeLine( PointXY( baseX - xoffset *0.5f, basey + yoffset ), PointXY(baseX + xoffset * 4.5f, basey + yoffset ),7)
-        writeLine( PointXY( baseX - xoffset * 0.5f, basey + 0.5f + yoffset ), PointXY(baseX - xoffset * 0.5f, basey + yoffset ),7)
-        writeLine( PointXY( baseX + xoffset * 4.5f, basey + 0.5f + yoffset ), PointXY(baseX + xoffset * 4.5f, basey + yoffset ),7)
-
-        basey -= 0.5f
-
-        for( index in 1 .. editList.size() ){
-            writeCalcSheetLine( editList.get(index), baseX, basey, ts, color )
-            basey -= 0.5f
-        }
-
-        writeText( rStr_.mSyoukei_+"("+sn+")", PointXY(baseX, basey), color, ts, 1, 1, 0f )
-        writeText( editList.getArea().formattedString(2), PointXY(baseX + xoffset * 4, basey), color, ts, 1, 1, 0f )
-        writeLine( PointXY( baseX - xoffset *0.5f, basey + yoffset ), PointXY(baseX + xoffset * 4.5f, basey + yoffset ),7)
-        writeLine( PointXY( baseX - xoffset * 0.5f, basey + 0.5f + yoffset ), PointXY(baseX - xoffset * 0.5f, basey + yoffset ),7)
-        writeLine( PointXY( baseX + xoffset * 4.5f, basey + 0.5f + yoffset ), PointXY(baseX + xoffset * 4.5f, basey + yoffset ),7)
-
-        basey -= 0.5f
-        return basey
-    }
-
-    fun writeCalcSheetLine( editObject: EditObject, baseX: Float, baseY: Float, ts: Float, color: Int ) :Float {
-        val param = editObject.getParams()
-        val xoffset = 1.8f
-        val yoffset = -0.02f
-
-        if( editObject is Triangle ) {
-            writeText( param.n.toString(), PointXY(baseX, baseY), color, ts, 1, 1, 0f )
-            writeText( param.b.formattedString(2), PointXY(baseX + xoffset * 2, baseY), color, ts, 1, 1, 0f )
-            writeText( param.c.formattedString(2), PointXY(baseX + xoffset * 3, baseY), color, ts, 1, 1, 0f )
-        }
-        if( editObject is Deduction ){
-            writeText( param.name.toString(), PointXY(baseX, baseY), color, ts, 1, 1, 0f )
-            writeText( param.type.toString(), PointXY(baseX + xoffset * 3, baseY), color, ts, 1, 1, 0f )
-        }
-        if( param.type =="Box" )      writeText( param.b.formattedString(2), PointXY(baseX + xoffset * 2, baseY), color, ts, 1, 1, 0f )
-
-        writeText( param.a.formattedString(2), PointXY(baseX + xoffset, baseY), color, ts, 1, 1, 0f )
-        writeText( editObject.getArea().formattedString(2), PointXY(baseX + xoffset * 4, baseY), color, ts, 1, 1, 0f )
-        writeLine( PointXY( baseX - xoffset * 0.5f, baseY + yoffset ), PointXY(baseX + xoffset * 4.5f, baseY + yoffset ),7)
-
-        writeLine( PointXY( baseX - xoffset * 0.5f, baseY + 0.5f + yoffset ), PointXY(baseX - xoffset * 0.5f, baseY + yoffset ),7)
-        writeLine( PointXY( baseX + xoffset * 4.5f, baseY + 0.5f + yoffset ), PointXY(baseX + xoffset * 4.5f, baseY + yoffset ),7)
-
-        return editObject.getArea()
-    }
 
     fun writeDXFTriOutlines( wrtr: BufferedWriter, array: ArrayList<PointXY> ) {
 
@@ -567,9 +451,9 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         for( index in 0 .. array.size - 1 ){
             wrtr.write("""
                 10
-                ${( array.get( index ).x*myDXFscale )}
+                ${( array.get( index ).x*sheetscale_ )}
                 20
-                ${( array.get( index ).y*myDXFscale )}                
+                ${( array.get( index ).y*sheetscale_ )}                
             """.trimIndent())
             wrtr.newLine()
         }

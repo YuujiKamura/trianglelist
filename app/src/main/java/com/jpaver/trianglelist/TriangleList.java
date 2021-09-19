@@ -140,66 +140,69 @@ public class TriangleList extends EditList implements Cloneable {
     }
 
     public float getPrintTextScale (float drawingScale, String type){
-        float ts = 10f;
+        float pdfts = 10f;
         float dxfts = 0.45f;
 
         switch((int)(getPrintScale(drawingScale)*10)){
             case 150:
-                ts = 3f;
+                pdfts = 3f;
                 //dxfts = 0.7f;
                 break;
             case 100:
-                ts = 3f;
+                pdfts = 3f;
                 //dxfts = 0.7f;
                 break;
             case 90:
-                ts = 3f;
+                pdfts = 3f;
                 break;
             case 80:
-                ts = 3f;
+                pdfts = 3f;
                 break;
             case 70:
-                ts = 3f;
+                pdfts = 3f;
                 break;
             case 60:
-                ts = 3f;
+                pdfts = 3f;
                 break;
             case 50:
-                ts = 3f;
+                pdfts = 3f;
                 //dxfts = 0.7f;
                 break;
             case 45:
-                ts = 3f;
+                pdfts = 3f;
                 //dxfts = 0.7f;
                 break;
             case 40:
-                ts = 5f;
+                pdfts = 5f;
                 //dxfts = 0.4f;
                 break;
             case 30:
-                ts = 6f;
+                pdfts = 6f;
                 //dxfts = 0.7f;
                 break;
             case 25:
-                ts = 6f;
+                pdfts = 6f;
                 //dxfts = 0.7f;
                 break;
             case 20:
-                ts = 8f;
+                pdfts = 8f;
                 break;
             case 15:
-                ts = 5f;
+                pdfts = 8f;
+                dxfts = 0.35f;
                 break;
             case 10:
-                ts = 5f;
+                pdfts = 10f;
+                dxfts = 0.35f;
                 break;
             case 5:
-                ts = 5f;
+                pdfts = 10f;
+                dxfts = 0.25f;
                 break;
         }
 
-        if( type.equals( "dxf" ) ) return dxfts;
-        return ts;
+        if( type.equals( "dxf" ) || type.equals( "sfc" )) return dxfts;
+        return pdfts;
     }
 
     public float getPrintScale(float drawingScale){ // ex. 1/100 is w40m h27m drawing in range.

@@ -13,9 +13,9 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
     var strPool_ = "" // ここにどんどん書き込む
     var assembryNumber_ = 10
 
-    override var textscale_ = trilist_.getPrintTextScale( 1f , "dxf") * drawscale_
-    override var sizeX_ = 420 * sheetscale_
-    override var sizeY_ = 297 * sheetscale_
+    override var textscale_ = trilist_.getPrintTextScale( 1f , "dxf") * 1.2f * sheetscale_
+    override var sizeX_ = 420 * scale_
+    override var sizeY_ = 297 * scale_
     override var centerX_ = sizeX_ * 0.5f
     override var centerY_ = sizeY_ * 0.5f
     val charset = Charset.forName("SJIS")
@@ -79,13 +79,13 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
 
     override fun writeEntities(){
 
-        sheetscale_ = trilist_.getPrintScale(1f)
+        scale_ = trilist_.getPrintScale(1f)
 
-        trilist_.scale( PointXY(0f,0f), drawscale_ )
-        dedlist_.scale( PointXY(0f,0f), drawscale_/viewscale_, -drawscale_/viewscale_ ) // アプリの画面に合わせて拡大されているのを戻し、Y軸も反転
+        trilist_.scale( PointXY(0f,0f), sheetscale_ )
+        dedlist_.scale( PointXY(0f,0f), sheetscale_/viewscale_, -sheetscale_/viewscale_ ) // アプリの画面に合わせて拡大されているのを戻し、Y軸も反転
 
         //シートの中心へ動かす
-        val center = PointXY(21000f*sheetscale_, 14850f*sheetscale_ )
+        val center = PointXY(21000f*scale_, 14850f*scale_ )
         val tricenter = trilist_.center
         dedlist_.move(PointXY(center.x-tricenter.x,center.y-tricenter.y))
         trilist_.move(PointXY(center.x-tricenter.x,center.y-tricenter.y))
@@ -102,7 +102,12 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
            writeDeduction( dedlist_.get(dednumber) )
         }
 
-        writeFrame( drawscale_ * 0.1f * sheetscale_, sheetscale_, centerX_, centerY_, sizeX_, sizeY_ )
+        //writeFrame( sheetscale_ * 0.1f * scale_, scale_, centerX_, centerY_, sizeX_, sizeY_ )
+        writeFrame( sheetscale_ * scale_ )
+
+        // calcSheet
+        trilist_.scale( PointXY(0f,0f), 1/sheetscale_ )
+        writeCalcSheet(1000f, 0.35f )
     }
 
     override fun writeDeduction( ded: Deduction ){
@@ -117,25 +122,43 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
 
         if(point.x <= pointFlag.x) {  //ptFlag is RIGHT from pt
             writeLine(point, pointFlag, 2)
-            writeTextAndLine( ded.info_, pointFlag, pointFlag.plus( infoStrLength + textOffsetX,0f ), textscale_ )
+            writeTextAndLine(
+                ded.info_,
+                pointFlag,
+                pointFlag.plus( infoStrLength + textOffsetX,0f ),
+                textscale_,
+                1f
+            )
 //            writeLine( 2, pointFlag.plus(infoStrLength,0f), pointFlag )
 //            writeText( 2, ded.info_, pointFlag.plus( textOffsetX,0f ), textscale_, 0f, 1)
         } else {                     //ptFlag is LEFT from pt
             writeLine(point, pointFlag, 2)
-            writeTextAndLine( ded.info_, pointFlag.plus( -infoStrLength - textOffsetX,0f ), pointFlag, textscale_ )
+            writeTextAndLine(
+                ded.info_,
+                pointFlag.plus( -infoStrLength - textOffsetX,0f ),
+                pointFlag,
+                textscale_,
+                1f
+            )
 
             //writeLine( 2, pointFlag.plus(-infoStrLength,0f), pointFlag )
             //writeText( 2, ded.info_, pointFlag.plus(-infoStrLength + textOffsetX,0f), textscale_, 0f, 1)
         }
 
-        if(ded.type == "Circle") writeCircle(point, ded.lengthX/2*1000f, 2)
+        if(ded.type == "Circle") writeCircle(point, ded.lengthX/2*1000f, 2, 1f)
         if(ded.type == "Box")    writeDedRect( 2, ded )
 
     }
 
-    override fun writeTextAndLine( st: String, p1: PointXY, p2: PointXY, textsize: Float){
-        writeLine(p1, p2, 2)
-        writeText(st, p1.plus( 200f, 100f ), 2, textscale_, 1, 0f)
+    override fun writeTextAndLine(
+        st: String,
+        p1: PointXY,
+        p2: PointXY,
+        textsize: Float,
+        scale: Float
+    ){
+        writeLine( p1, p2, 2, scale )
+        writeText(st, p1.plus( 200f, 100f ), 2, textscale_, 1, 0f, scale )
 
         //writeDXFText(writer_, st, p1.plus(0.2f,0.1f), 1, textsize, 0)
         //writeLine(writer_, p1, p2, 1)
@@ -192,16 +215,16 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
 
         // DimTexts
         if(tri.getMyNumber_()==1 || tri.parentBC > 2)
-            writeText(la, tri.dimPointA_, 8, ts, dimA, pab.calcDimAngle(pca))
-        writeText(lb, tri.dimPointB_, 8, ts, dimB, pbc.calcDimAngle(pab))
-        writeText(lc, tri.dimPointC_, 8, ts, dimC, pca.calcDimAngle(pbc))
+            writeText(la, tri.dimPointA_, 8, ts, dimA, pab.calcDimAngle(pca), 1f)
+        writeText(lb, tri.dimPointB_, 8, ts, dimB, pbc.calcDimAngle(pab), 1f)
+        writeText(lc, tri.dimPointC_, 8, ts, dimC, pca.calcDimAngle(pbc), 1f)
 
         // 番号
         val pn = tri.pointNumberAutoAligned_
         val pc = tri.pointCenter_
         // 本体
-        writeCircle(pn, circleSize, 4)
-        writeText(tri.getMyNumber_().toString(), tri.pointNumberAutoAligned_, 4, ts, 5, 0f)
+        writeCircle(pn, circleSize, 4, 1f)
+        writeText(tri.getMyNumber_().toString(), tri.pointNumberAutoAligned_, 4, ts, 5, 0f, 1f)
 
         //引き出し矢印線の描画
         if( tri.isCollide(tri.pointNumber_) == false ){
@@ -228,28 +251,64 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
                 4,
                 ts,
                 align,
-                pab.calcSokAngle( pca, slv )
+                pab.calcSokAngle( pca, slv ),
+                1f
             )
             writeLine(pab.offset( pca, nlength ), pab.offset (pca, noffset ), 4)
         }
 
     }
 
-    override fun writeCircle( point: PointXY, radius: Float, color: Int ){
+    override fun writeCircle(point: PointXY, radius: Float, color: Int, scale: Float){
         adas( "circle_feature('1','${color}','1','1','${point.x}','${point.y}','${radius}')" )
         //レイヤ、２番目がプリセット色指定(８が白、４が青、２が赤)、続いて、線種、線幅、座標XYと、半径
     }
 
-    override fun writeLine( point1: PointXY, point2: PointXY, color: Int ){
+    override fun writeLine( point1: PointXY, point2: PointXY, color: Int, scale: Float ){
         adas("line_feature('1','${color}','1','1','${point1.x}','${point1.y}','${point2.x}','${point2.y}')" )
         //レイヤ、色、線種、線幅、始点ＸＹ、終点ＸＹ SXF*/
     }
 
-    override fun writeText( str: String, point: PointXY, color: Int, tsy: Float, align: Int, angle: Float ){
-        val tsxb = str.length*tsxhalf_//toByteArray(charset).size*tsxhalf_
+    //水平方向の位置合わせタイプ(省略可能、既定 = 0)整数コード(ビットコードではありません):
+    //0 = 左寄せ、1= 中揃え、2 = 右寄せ
+    //3 = 両端揃え(垂直位置合わせ = 0 の場合)
+    //4 = 中心揃え(垂直位置合わせ = 0 の場合)
+    //5 = フィット(垂直位置合わせ = 0 の場合)
+    //垂直方向の文字位置合わせタイプ(省略可能、既定 = 0): 整数コード(ビットコードではありません):
+    //0 = 基準線、1 = 下、2 = 中央、3 = 上
+    override fun writeText(
+        text: String,
+        point: PointXY,
+        color: Int,
+        textsize: Float,
+        alignH: Int,
+        alignV: Int,
+        angle: Float,
+        scale: Float
+    ) {
+        var aH = alignH - 1
+        var aV = alignV
+        if( alignV == 1 ) aV = - 3
+        if( alignV == 2 ) aV = 0
+        var aligntenkey = 5 + aH + aV
+
+        writeText(text, point, color, textsize, aligntenkey, angle, 1f)
+
+    }
+
+    override fun writeText(
+        text: String,
+        point: PointXY,
+        color: Int,
+        tsy: Float,
+        align: Int,
+        angle: Float,
+        scale: Float
+    ){
+        val tsxb = text.toByteArray(charset).size * tsy * 0.5f
         var positiveangle = angle
         if( angle < 0 ) positiveangle = 360 + angle
-        adas("text_string_feature('1','${color}','1',\'${str}\','${point.x}','${point.y}','${tsy}','${tsxb}','0.00','${positiveangle}','0.00','${align}','1')" )
+        adas("text_string_feature('1','${color}','1',\'${text}\','${point.x}','${point.y}','${tsy}','${tsxb}','0.00','${positiveangle}','0.00','${align}','1')" )
         //レイヤ、色、フォントコード、文字内容、座標ＸＹ、大きさ縦横、文字間隔、文字回転角、スラント角、配置９方向で指定２が上センター８が下センター、１が左、書き出し方向　SXF*/
     }
 

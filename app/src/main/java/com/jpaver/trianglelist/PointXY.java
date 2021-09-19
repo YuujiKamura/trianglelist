@@ -10,6 +10,11 @@ public class PointXY implements Cloneable {
         this.Y = y;
     }
 
+    PointXY(float x, float y, float s){
+        this.X = x * s;
+        this.Y = y * s;
+    }
+
     PointXY(PointXY p){
         this.X = p.getX();
         this.Y = p.getY();

@@ -1718,82 +1718,86 @@ class MainActivity : AppCompatActivity(),
         //showInterStAd()
     }
 
-    fun saveDXF(writer: BufferedWriter) :BufferedWriter{
+    fun saveDXF(bWriter: BufferedWriter) :BufferedWriter{
 
-        val dxfWriter = DxfFileWriter(
+        val writer = DxfFileWriter(
                 myTriangleList
         )
-        dxfWriter.rStr_ = rStr_
-        dxfWriter.titleTri_ = titleTriStr_
-        dxfWriter.titleDed_ = titleDedStr_
+        writer.rStr_ = rStr_
+        writer.titleTri_ = titleTriStr_
+        writer.titleDed_ = titleDedStr_
 
-        dxfWriter.writer_ = writer
-        dxfWriter.drawingLength_ = myTriangleList.measureMostLongLine()
-        dxfWriter.dedlist_ = myDeductionList
-        dxfWriter.setNames(koujiname_, rosenname_, gyousyaname_, zumennum_)
-        dxfWriter.isDebug_ = my_view.isDebug_
+        writer.writer_ = bWriter
+        writer.drawingLength_ = myTriangleList.measureMostLongLine()
+        writer.dedlist_ = myDeductionList
+        writer.setNames(koujiname_, rosenname_, gyousyaname_, zumennum_)
+        writer.isDebug_ = my_view.isDebug_
 
-        dxfWriter.setStartNumber(drawingStartNumber_)
-        dxfWriter.isReverse_ = drawingNumberReversal_;
+        writer.setStartNumber(drawingStartNumber_)
+        writer.isReverse_ = drawingNumberReversal_;
 
-        dxfWriter.save()
-        writer.close()
+        writer.save()
+        bWriter.close()
 
-        return writer
+        return bWriter
     }
 
     fun saveSFC(out: BufferedOutputStream, isShowAd: Boolean) {
 
         val writer = SfcWriter(myTriangleList, myDeductionList, out, filename_, drawingStartNumber_)
+        writer.setNames(koujiname_, rosenname_, gyousyaname_, zumennum_)
+        writer.rStr_ = rStr_
+        writer.titleTri_ = titleTriStr_
+        writer.titleDed_ = titleDedStr_
         writer.save()
         out.close()
 
     }
 
     fun savePDF(out: OutputStream, isShowAd: Boolean){
-        var myWriter: PdfWriter = PdfWriter(
+        var writer: PdfWriter = PdfWriter(
                 myTriangleList.getPrintScale(1f),
                 myTriangleList
         )
 
-        myWriter.startNewPage(
-                myWriter.sizeX_.toInt(),
-                myWriter.sizeY_.toInt(),
-                myWriter.currentPageIndex_
+        writer.startNewPage(
+                writer.sizeX_.toInt(),
+                writer.sizeY_.toInt(),
+                writer.currentPageIndex_
         )
-        myWriter.initPaints()
-        myWriter.titleTri_ = titleTriStr_
-        myWriter.titleDed_ = titleDedStr_
-        myWriter.rStr_ = rStr_
+        writer.initPaints()
+        writer.titleTri_ = titleTriStr_
+        writer.titleDed_ = titleDedStr_
+        writer.rStr_ = rStr_
 
-        myWriter.out_ = out
-        myWriter.deductionList_ = myDeductionList
+        writer.out_ = out
+        writer.deductionList_ = myDeductionList
 
-        myWriter.setNames(koujiname_, rosenname_, gyousyaname_, zumennum_)
+        writer.setNames(koujiname_, rosenname_, gyousyaname_, zumennum_)
 //        myWriter.setScale(myTriangleList.measureMostLongLine())
-        myWriter.translateCenter()
+        writer.translateCenter()
 //        myWriter.writeTitleFrame(myWriter.currentCanvas_)
         //myWriter.writeRuler(myWriter.currentCanvas_)
 
         my_view.isAreaOff_ = false
-        myWriter.isRulerOff_ = true
+        writer.isRulerOff_ = true
 
         val viewPointer =
         my_view.drawPDF(
-                myWriter,
-                myWriter.currentCanvas_,
-                myWriter.paintTri_,
-                myWriter.paintTexS_,
-                myWriter.paintRed_,
+                writer,
+                writer.currentCanvas_,
+                writer.paintTri_,
+                writer.paintTexS_,
+                writer.paintRed_,
                 my_view.myTriangleList.getPrintTextScale(my_view.myScale, "pdf"),
                 experience_
         )
 
         // translate back by view pointer
-        myWriter.translate(myWriter.currentCanvas_, -viewPointer.x, -viewPointer.y)
-        myWriter.writeTitleFrame(myWriter.currentCanvas_)
+        writer.translate(writer.currentCanvas_, -viewPointer.x, -viewPointer.y)
+        writer.writeTitleFrame(writer.currentCanvas_)
 
-        myWriter.close()
+        writer.close()
 
     }
 
