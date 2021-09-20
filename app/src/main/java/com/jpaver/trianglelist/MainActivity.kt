@@ -1726,6 +1726,7 @@ class MainActivity : AppCompatActivity(),
         writer.rStr_ = rStr_
         writer.titleTri_ = titleTriStr_
         writer.titleDed_ = titleDedStr_
+        writer.textscale_ = my_view.ts_ * 0.016f //25*0.014f=0.35f, 25/0.02f=0.5f
 
         writer.writer_ = bWriter
         writer.drawingLength_ = myTriangleList.measureMostLongLine()
@@ -1747,6 +1748,7 @@ class MainActivity : AppCompatActivity(),
         val writer = SfcWriter(myTriangleList, myDeductionList, out, filename_, drawingStartNumber_)
         writer.setNames(koujiname_, rosenname_, gyousyaname_, zumennum_)
         writer.rStr_ = rStr_
+        writer.textscale_ = my_view.ts_ * 20f //25*14f=350f, 25/20f=500f
         writer.titleTri_ = titleTriStr_
         writer.titleDed_ = titleDedStr_
         writer.save()
@@ -1765,6 +1767,7 @@ class MainActivity : AppCompatActivity(),
                 writer.sizeY_.toInt(),
                 writer.currentPageIndex_
         )
+        writer.textscale_ = my_view.ts_ * 0.5f / writer.printScale_ //25*0.4f=10f, 25/0.3f=7.5f
         writer.initPaints()
         writer.titleTri_ = titleTriStr_
         writer.titleDed_ = titleDedStr_
@@ -1789,7 +1792,7 @@ class MainActivity : AppCompatActivity(),
                 writer.paintTri_,
                 writer.paintTexS_,
                 writer.paintRed_,
-                my_view.myTriangleList.getPrintTextScale(my_view.myScale, "pdf"),
+                writer.textscale_,//my_view.myTriangleList.getPrintTextScale(my_view.myScale, "pdf"),
                 experience_
         )
 

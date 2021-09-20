@@ -10,8 +10,8 @@ android {
         applicationId "com.jpaver.myapplication"
         minSdkVersion 23
         targetSdkVersion 29
-        versionCode 1243
-        versionName "5.6"
+        versionCode 1246
+        versionName "5.7"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -35,6 +35,7 @@ android {
             dimension "mode"
             applicationId "com.jpaver.myapplication"
         }
+
 
         full {
             dimension "mode"

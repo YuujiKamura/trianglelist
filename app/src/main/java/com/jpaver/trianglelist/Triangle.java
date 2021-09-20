@@ -1201,6 +1201,36 @@ public class Triangle extends EditObject implements Cloneable {
 
     }
 
+    // 自分の次の番号がくっついている辺を調べてA辺にする。
+    // 他の番号にあって自身の辺上に無い場合は、A辺を変更しない。
+    public Triangle lengthRotation(){
+        Triangle n = this.clone();
+
+        n.lengthA_ = this.lengthB_;
+        n.lengthB_ = this.lengthC_;
+        n.lengthC_ = this.lengthA_;
+        n.lengthAforce_ = this.lengthBforce_;
+        n.lengthBforce_ = this.lengthCforce_;
+        n.lengthCforce_ = this.lengthAforce_;
+
+        n.pointCA_ = this.pointAB_;
+        n.pointAB_ = this.pointBC_;
+        n.pointBC_ = this.pointCA_;
+
+        n.dimPointA_ = this.dimPointB_;
+        n.dimPointB_ = this.dimPointC_;
+        n.dimPointC_ = this.dimPointA_;
+
+        n.myDimAlignA_ = this.myDimAlignB_;
+        n.myDimAlignB_ = this.myDimAlignC_;
+        n.myDimAlignC_ = this.myDimAlignA_;
+        n.dimSideAlignA_ = this.dimSideAlignB_;
+        n.dimSideAlignB_ = this.dimSideAlignC_;
+        n.dimSideAlignC_ = this.dimSideAlignA_;
+
+        return n;
+    }
+
     @NotNull
     @Override
     public Params getParams(){

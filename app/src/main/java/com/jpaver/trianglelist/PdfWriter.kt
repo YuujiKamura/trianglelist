@@ -13,7 +13,7 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
 
     val drawingScale_ = triangleList.myScale
     var printScale_ = printScale// 2.0f
-    val textSize_ = triangleList_.getPrintTextScale( 1f, "pdf")
+    override var textscale_ = triangleList_.getPrintTextScale( 1f, "pdf")
 
     // 展開図の用紙寸法。1190pt = 2.833.. * 420mm,   842pt = 2.835.. * 297mm
     // A4の縦　595pt = 2.833.. * 210mm
@@ -118,14 +118,14 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
 
         paintTexS_.setARGB(255, 0, 0, 0)
         paintTexS_.style = Paint.Style.FILL
-        paintTexS_.textSize = textSize_
+        paintTexS_.textSize = textscale_
         paintTexS_.textAlign = Paint.Align.CENTER
         paintTexS_.letterSpacing = 0.05f
         paintTexS_.strokeWidth = 0.05f
 
         paintRed_.setARGB(255, 255, 0, 0)
         paintRed_.style = Paint.Style.FILL
-        paintRed_.textSize = textSize_
+        paintRed_.textSize = textscale_
         paintRed_.textAlign = Paint.Align.LEFT
         paintRed_.letterSpacing = 0.05f
         paintRed_.strokeWidth = 0.05f

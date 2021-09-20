@@ -202,7 +202,12 @@ open class DrawingFileWriter {
         //myDXFscale = 1000f  // 1:1
     }
 
-    fun writeCalcSheet(scale: Float = 1f, textsize: Float = textscale_ ) {
+    fun writeCalcSheet(
+        scale: Float = 1f,
+        textsize: Float = textscale_,
+        trilist: TriangleList,
+        dedlist: DeductionList
+    ) {
         if( checkInstance() == false ) return
 
         var area = 0.0f
@@ -210,13 +215,13 @@ open class DrawingFileWriter {
         var baseY = 27f * scale_ * scale
         val ts = textsize * scale
         val xoffset = ts * 6f
-        val yoffset = ts * 2.5f
+        val yoffset = ts * 2f
         val yspacer = -ts * 0.01f
 
         writeLine( PointXY( baseX - xoffset *0.5f, baseY + yoffset + yspacer ), PointXY(baseX + xoffset * 4.5f, baseY + yoffset + yspacer ), cWhite_, scale)
 
-        baseY = writeCalcSheetEditList(trilist_, titleTri_, baseX, baseY, ts, xoffset, scale)
-        if( dedlist_.size() > 0 ) baseY = writeCalcSheetEditList(dedlist_, titleDed_, baseX, baseY, ts, xoffset, scale)
+        baseY = writeCalcSheetEditList(trilist, titleTri_, baseX, baseY, ts, xoffset, scale)
+        if( dedlist.size() > 0 ) baseY = writeCalcSheetEditList(dedlist, titleDed_, baseX, baseY, ts, xoffset, scale)
 
         baseY -= yoffset
         writeText(rStr_.mGoukei_, PointXY(baseX, baseY), cWhite_, ts, 1, 1, 0f, scale)
@@ -248,7 +253,7 @@ open class DrawingFileWriter {
         var basey = baseY
         var sn = 1
 
-        val yoffset = ts * 2.5f
+        val yoffset = ts * 2f
         val yspacer = -ts * 0.01f
 
         var color = cWhite_
@@ -342,7 +347,7 @@ open class DrawingFileWriter {
     ) :Float {
         val param = editObject.getParams()
         val xoffset = ts * 6f
-        val yoffset = ts * 2.5f
+        val yoffset = ts * 2f
         val yspacer = -ts * 0.01f
 
 

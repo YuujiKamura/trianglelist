@@ -218,8 +218,8 @@ public class TriangleList extends EditList implements Cloneable {
         //if( longsideX <= paperWidth*0.2 && longsideY <= paperHeight*0.2 ) return printScale *= 0.2f;
         if( longsideX <= paperWidth*0.5 && longsideY <= paperHeight*0.4 ) return 0.5f;
         if( longsideX <= paperWidth     && longsideY <= paperHeight     ) return 1.0f;
-        if( longsideX <= paperWidth*1.5 && longsideY <= paperHeight*1.5 ) return 1.5f;
-        if( longsideX <= paperWidth*2.0 && longsideY <= paperHeight*2.0 ) return 2.0f;
+        if( longsideX <= paperWidth*1.5 && longsideY <= paperHeight*1.4 ) return 1.5f;
+        if( longsideX <= paperWidth*2.0 && longsideY <= paperHeight*1.9 ) return 2.0f;
         if( longsideX <= paperWidth*2.5 && longsideY <= paperHeight*2.5 ) return 2.5f;
         if( longsideX <= paperWidth*3.0 && longsideY <= paperHeight*3.0 ) return 3.0f;
         if( longsideX <= paperWidth*4.0 && longsideY <= paperHeight*4.0 ) return 4.0f;
@@ -364,6 +364,12 @@ public class TriangleList extends EditList implements Cloneable {
         myScale *= scale;
         for (int i = 0; i < trilist_.size(); i++ ) {
             trilist_.get(i).scale(basepoint, scale);
+            trilist_.get(i).setDimPath(ts);
+        }
+    }
+
+    public void setPath( float ts ){
+        for (int i = 0; i < trilist_.size(); i++ ) {
             trilist_.get(i).setDimPath(ts);
         }
     }
@@ -979,7 +985,8 @@ public class TriangleList extends EditList implements Cloneable {
     }
 
     public TriangleList reverse(){
-        TriangleList rev = new TriangleList();
+        TriangleList rev = this.clone();
+        rev.trilist_.clear();
 
         int iBackward = trilist_.size();
 
@@ -988,6 +995,13 @@ public class TriangleList extends EditList implements Cloneable {
             trilist_.get( i ).myNumber_ = iBackward;
             iBackward--;
         }
+
+        for( int i = trilist_.size() - 1; i > -1; i-- ) {
+            rev.trilist_.add( trilist_.get( i ) );
+        }
+
+        //sort関数で降順に並び替え
+        //Collections.sort(rev.trilist_, Collections.reverseOrder());
         return rev;
     }
 

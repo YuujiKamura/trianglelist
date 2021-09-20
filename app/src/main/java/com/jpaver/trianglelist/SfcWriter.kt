@@ -20,7 +20,7 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
     override var centerY_ = sizeY_ * 0.5f
     val charset = Charset.forName("SJIS")
     val tsxhalf_ = 0.5f*textscale_
-    val circleSize = textscale_ * 0.8f
+    var circleSize = textscale_ * 0.8f
 
     fun compare(byteArray: ByteArray ): Boolean{
         return Arrays.equals( byteArray, strPool_.toByteArray() )
@@ -78,6 +78,7 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
     }
 
     override fun writeEntities(){
+        circleSize = textscale_ * 0.8f
 
         scale_ = trilist_.getPrintScale(1f)
 
@@ -107,7 +108,7 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
 
         // calcSheet
         trilist_.scale( PointXY(0f,0f), 1/sheetscale_ )
-        writeCalcSheet(1000f, 0.35f )
+        writeCalcSheet(1000f, textscale_/sheetscale_, trilist_, dedlist_ )
     }
 
     override fun writeDeduction( ded: Deduction ){

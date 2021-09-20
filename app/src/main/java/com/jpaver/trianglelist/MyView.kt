@@ -6,6 +6,7 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.*
 import android.view.ScaleGestureDetector.OnScaleGestureListener
+import kotlinx.android.synthetic.main.fragment_first.*
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.math.roundToInt
@@ -29,7 +30,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     //画面の対角線の長さ
     private var screen_diagonal = 0
 
-    private var textSpacer_ = 5f
+    var textSpacer_ = 5f
 
     var paintTri: Paint = Paint()
     var paintTexL: Paint = Paint()
@@ -861,7 +862,8 @@ val sokt = PathAndOffset(
         paintBlue.textSize = ts
         paintRed.textSize = ts
         paintTexM.textSize = ts
-
+        textSpacer_ = ts_ * 0.2f
+        myTriangleList.setPath( ts_ )
     }
 
     fun drawDebugData(canvas: Canvas, dp: PointXY){

@@ -107,7 +107,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         // 番号
         val pn = tri.pointNumberAutoAligned_
         val pc = tri.pointCenter_
-        val circleSize = textsize *0.8f
+        val circleSize = textsize *0.85f
         // 本体
         writeCircle(pn, textsize, 5, 1f)
         writeTextNumber(tri)
@@ -383,9 +383,9 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         writer_.newLine()
 
 
-        val trilistNumbered = myDXFTriList.numbered( startTriNumber_ )
+        var trilistNumbered = myDXFTriList.numbered( startTriNumber_ )
         if( isReverse_ == true ) {
-            trilistNumbered.reverse()
+            trilistNumbered = trilistNumbered.reverse()
             myDXFDedList.reverse()
         };
 
@@ -412,7 +412,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         sheetscale_ = 1000f
 
         // calcSheet
-        writeCalcSheet(1f, textscale_ )
+        writeCalcSheet(1f, textscale_, trilistNumbered, myDXFDedList )
 
         //一番最後に書く
         writer_.write("""
