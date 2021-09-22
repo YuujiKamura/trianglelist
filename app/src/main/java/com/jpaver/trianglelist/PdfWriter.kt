@@ -18,13 +18,13 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
     // 展開図の用紙寸法。1190pt = 2.833.. * 420mm,   842pt = 2.835.. * 297mm
     // A4の縦　595pt = 2.833.. * 210mm
     // PostScript 1 point in CSS = 0.3527mm = 1 / 2.835270768
-    val kai_ = 1f
-    override var sizeX_ = 1190f * kai_// * scale_ //420f * scale_
-    override var sizeY_ = 842f * kai_// * scale_ //297f * scale_
+    val kaizoudo_ = 1f
+    override var sizeX_ = 1190f * kaizoudo_// * scale_ //420f * scale_
+    override var sizeY_ = 842f * kaizoudo_// * scale_ //297f * scale_
 
     val scale2_ = 2.5f//printScale_
-    var p2sizeX_ = 595f * kai_// * scale2_ //210f * scale2_
-    var p2sizeY_ = 842f * kai_// * scale2_ //297f * scale2_
+    var p2sizeX_ = 595f * kaizoudo_// * scale2_ //210f * scale2_
+    var p2sizeY_ = 842f * kaizoudo_// * scale2_ //297f * scale2_
 
     var isRulerOff_ = true
 

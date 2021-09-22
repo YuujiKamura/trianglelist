@@ -346,7 +346,10 @@ class MainActivity : AppCompatActivity(),
             Toast.makeText(this, "Invalid!! : B > C + A", Toast.LENGTH_LONG).show()
             return false
         }
-        if (dp.n > 1 && dp.pl == 0) return false
+        if ( dp.pn > myTriangleList.size() || dp.pn < 1 ) {
+            Toast.makeText(this, "Invalid!! : number of parent", Toast.LENGTH_LONG).show()
+            return false
+        }
 
         return true
     }

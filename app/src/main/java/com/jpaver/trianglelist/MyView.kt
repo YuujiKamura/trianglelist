@@ -6,7 +6,6 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.*
 import android.view.ScaleGestureDetector.OnScaleGestureListener
-import kotlinx.android.synthetic.main.fragment_first.*
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.math.roundToInt
@@ -970,7 +969,7 @@ val sokt = PathAndOffset(
         // 用紙の単位にリストの大きさを合わせる
         //
 
-        val scaleFactor = 1.19f * writer.kai_ *(2.0f/experience/printScale)// - (myScale/100)
+        val scaleFactor = 1.19f * writer.kaizoudo_ *(2.0f/experience/printScale)// - (myScale/100)
         myScale *= scaleFactor
         // scale
         myTriangleList.scaleAndSetPath( PointXY(0f, 0f), scaleFactor, paintTex.textSize )

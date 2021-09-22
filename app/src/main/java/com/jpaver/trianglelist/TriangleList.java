@@ -988,20 +988,54 @@ public class TriangleList extends EditList implements Cloneable {
         TriangleList rev = this.clone();
         rev.trilist_.clear();
 
+
         int iBackward = trilist_.size();
-
+        //マイナンバーの書き換え
         for( int i = 0; i < trilist_.size(); i++ ) {
-
             trilist_.get( i ).myNumber_ = iBackward;
             iBackward--;
         }
 
+        for( int i = 0; i < trilist_.size(); i++ ) {
+            Triangle me = trilist_.get(i);
+
+            //接続情報の書き換え
+            //終端でなければ
+            if (i + 1 < trilist_.size()) {
+                Triangle next = trilist_.get(i+1);
+
+                // 連番の時は
+                // 自身の番号-1を親とする
+                if( me.myNumber_ + 1 == next.myNumber_ ){
+                    me.myParentNumber_ = me.myNumber_ - 1;
+                    me.rotateLengthBy( next.getParentSide() );
+                    //たとえば次がB辺接続だった場合、B辺がA辺となるように全体の辺長を時計回りに回す。
+                    //それから、次の接続辺指定を自身に移植する。
+                    //このとき、二重断面指定はたぶん逆になる。
+                    me.setReversePBC( next.myParentBC_ );
+                }
+                else{
+                    // 違うときは、派生の突出点になる。逆順にすると、親はいない。
+                    me.myParentNumber_ = 0;
+                    me.rotateLengthBy( - me.getParentSide() + 3 );
+                }
+
+            } else if (i + 1 == trilist_.size()) {
+                // 終端の時、つまり一番最初のやつ。
+                me.myParentNumber_ = 0;
+                // 終端は、自身の接続辺をもとにいっこまえの接続が決まっているので、それに合わせて辺長を回す。
+                // 最初の三角形になるので、接続情報は要らない。
+                me.rotateLengthBy( - me.getParentSide() + 3 );
+            }
+        }
+
+
+        // 逆順にソートし、新規に足していく。リビルドした方が考え方が楽。
+        // 親子情報のインスタンスポインタは更新されない。
         for( int i = trilist_.size() - 1; i > -1; i-- ) {
             rev.trilist_.add( trilist_.get( i ) );
         }
 
-        //sort関数で降順に並び替え
-        //Collections.sort(rev.trilist_, Collections.reverseOrder());
         return rev;
     }
 

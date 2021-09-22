@@ -19,25 +19,32 @@ class TriListTest {
 
         @Test
     fun testTriListReverse(){
-        val trilist = TriangleList()
+        val triList = TriangleList()
         // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
-        trilist.add( Triangle(5f, 5f, 5f))
-        trilist.add( 1, 4,6f, 5f, 5f )
-        //trilist.add( 2, 5,6f, 5f, 5f )
-        //trilist.add( 3, 1,5f, 5f )
+        triList.add( Triangle(5f, 5f, 5f))
+        triList.add( 1, 4,6f, 9f, 8f )
+        triList.add( 2, 5,6f, 7f, 4f )
+        triList.add( 3, 1,3f, 9f )
+        triList.add( 2, 4,6f, 9f, 8f )
 
         // test trilist get(n) is returned number, not index
         // wrapped arraylist get(i). ex, trilist.trilist_.get(i) is required index, not number.
-        assertEquals( 1, trilist.get(0).myNumber_ )
-        assertEquals( 1, trilist.get(1).myNumber_ )
-        assertEquals( 2, trilist.get(2).myNumber_ )
+        assertEquals( 1, triList.get(0).myNumber_ ) // ほんとはおかしいけどスルー
+        assertEquals( 1, triList.get(1).myNumber_ )
+        assertEquals( 2, triList.get(2).myNumber_ )
 
-        val trilist2 = trilist.reverse()
-        assertEquals( 1, trilist2.get(1).myNumber_ )
+        // reverseの動作
+        // ・1番から順に、次の三角形の親番号と接続辺を元に、自身の接続を書き換える。
+        // ・3辺の順序を右回りか左回りにひとつスライドさせる。
+        // ・逆順にソートする
+        val triList2 = triList.reverse()
+        assertEquals( 1, triList2.get(1).myNumber_ )
+        assertEquals( 0, triList2.get(1).myParentNumber_ )
+        assertEquals( 1, triList2.get(2).myParentNumber_ )
 
-        val trilist3 = trilist.numbered(5)
-        assertEquals( 5, trilist3.get(1).myNumber_ )
 
+        val triList3 = triList.numbered(5)
+        assertEquals( 5, triList3.get(1).myNumber_ )
 
     }
 

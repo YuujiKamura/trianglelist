@@ -1203,32 +1203,99 @@ public class Triangle extends EditObject implements Cloneable {
 
     // 自分の次の番号がくっついている辺を調べてA辺にする。
     // 他の番号にあって自身の辺上に無い場合は、A辺を変更しない。
-    public Triangle lengthRotation(){
-        Triangle n = this.clone();
+    public Triangle rotateLengthBy( int side ){
+        //Triangle this = this.clone();
+        float pf = 0f;
+        int pi = 0;
+        PointXY pp = new PointXY(0f,0f);
 
-        n.lengthA_ = this.lengthB_;
-        n.lengthB_ = this.lengthC_;
-        n.lengthC_ = this.lengthA_;
-        n.lengthAforce_ = this.lengthBforce_;
-        n.lengthBforce_ = this.lengthCforce_;
-        n.lengthCforce_ = this.lengthAforce_;
+        if( side == 1 ){ // B to A
+            pf = this.lengthA_;
+            this.lengthA_ = this.lengthB_;
+            this.lengthB_ = this.lengthC_;
+            this.lengthC_ = pf;
 
-        n.pointCA_ = this.pointAB_;
-        n.pointAB_ = this.pointBC_;
-        n.pointBC_ = this.pointCA_;
+            pf = this.lengthAforce_;
+            this.lengthAforce_ = this.lengthBforce_;
+            this.lengthBforce_ = this.lengthCforce_;
+            this.lengthCforce_ = pf;
 
-        n.dimPointA_ = this.dimPointB_;
-        n.dimPointB_ = this.dimPointC_;
-        n.dimPointC_ = this.dimPointA_;
+            pp = pointCA_.clone();
+            this.pointCA_ = this.pointAB_;
+            this.pointAB_ = this.pointBC_;
+            this.pointBC_ = pp.clone();
 
-        n.myDimAlignA_ = this.myDimAlignB_;
-        n.myDimAlignB_ = this.myDimAlignC_;
-        n.myDimAlignC_ = this.myDimAlignA_;
-        n.dimSideAlignA_ = this.dimSideAlignB_;
-        n.dimSideAlignB_ = this.dimSideAlignC_;
-        n.dimSideAlignC_ = this.dimSideAlignA_;
+            pf = this.myAngleCA_;
+            this.myAngleCA_ = this.myAngleAB_;
+            this.myAngle_   = this.myAngleAB_;
+            this.myAngleAB_ = this.myAngleBC_;
+            this.myAngleBC_ = pf;
 
-        return n;
+            pp = this.dimPointA_.clone();
+            this.dimPointA_ = this.dimPointB_;
+            this.dimPointB_ = this.dimPointC_;
+            this.dimPointC_ = pp.clone();
+
+            pi = this.myDimAlignA_;
+            this.myDimAlignA_ = this.myDimAlignB_;
+            this.myDimAlignB_ = this.myDimAlignC_;
+            this.myDimAlignC_ = pi;
+
+            pi = this.dimSideAlignA_;
+            this.dimSideAlignA_ = this.dimSideAlignB_;
+            this.dimSideAlignB_ = this.dimSideAlignC_;
+            this.dimSideAlignC_ = pi;
+        }
+        if( side == 2 ){ // C to A
+            pf = this.lengthA_;
+            this.lengthA_ = this.lengthC_;
+            this.lengthC_ = this.lengthB_;
+            this.lengthB_ = pf;
+
+            pf = this.lengthAforce_;
+            this.lengthAforce_ = this.lengthCforce_;
+            this.lengthCforce_ = this.lengthBforce_;
+            this.lengthBforce_ = pf;
+
+            pp = pointCA_.clone();
+            this.pointCA_ = this.pointBC_;
+            this.pointBC_ = this.pointAB_;
+            this.pointAB_ = pp.clone();
+
+            pf = this.myAngleCA_;
+            this.myAngleCA_ = this.myAngleBC_;
+            this.myAngle_   = this.myAngleBC_;
+            this.myAngleBC_ = this.myAngleAB_;
+            this.myAngleAB_ = pf;
+
+            pp = this.dimPointA_.clone();
+            this.dimPointA_ = this.dimPointC_;
+            this.dimPointC_ = this.dimPointB_;
+            this.dimPointB_ = pp.clone();
+
+            pi = this.myDimAlignA_;
+            this.myDimAlignA_ = this.myDimAlignC_;
+            this.myDimAlignC_ = this.myDimAlignB_;
+            this.myDimAlignB_ = pi;
+            pi = this.dimSideAlignA_;
+            this.dimSideAlignA_ = this.dimSideAlignC_;
+            this.dimSideAlignC_ = this.dimSideAlignB_;
+            this.dimSideAlignB_ = pi;
+
+        }
+
+        return this;
+    }
+
+    public void setReversePBC( int pbc) {
+        // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
+        if( pbc == 3 ) myParentBC_ = 4;
+        else if( pbc == 4 ) myParentBC_ = 3;
+        else if( pbc == 5 ) myParentBC_ = 6;
+        else if( pbc == 6 ) myParentBC_ = 5;
+        else if( pbc == 9 ) myParentBC_ = 10;
+        else if( pbc == 10 ) myParentBC_ = 9;
+        else myParentBC_ = pbc;
     }
 
     @NotNull

@@ -99,7 +99,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         writeLine( pbc, pca, 7)
 
         // DimTexts
-        if(tri.getMyNumber_()==1 || tri.parentBC > 2)
+        if( tri.getMyNumber_() == 1 || tri.parentBC > 2)
             writeTextDimension(dimA, la, tri.dimPointA_, pab.calcDimAngle(pca))
         writeTextDimension(dimB, lb, tri.dimPointB_, pbc.calcDimAngle(pab))
         writeTextDimension(dimC, lc, tri.dimPointC_, pca.calcDimAngle(pbc))
@@ -385,7 +385,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
 
         var trilistNumbered = myDXFTriList.numbered( startTriNumber_ )
         if( isReverse_ == true ) {
-            trilistNumbered = trilistNumbered.reverse()
+            //trilistNumbered = trilistNumbered.reverse()
             myDXFDedList.reverse()
         };
 
@@ -412,7 +412,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         sheetscale_ = 1000f
 
         // calcSheet
-        writeCalcSheet(1f, textscale_, trilistNumbered, myDXFDedList )
+        writeCalcSheet(1f, textscale_, trilistNumbered.reverse(), myDXFDedList )
 
         //一番最後に書く
         writer_.write("""
