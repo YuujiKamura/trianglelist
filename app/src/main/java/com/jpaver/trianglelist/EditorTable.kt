@@ -110,7 +110,7 @@ class EditorTable {
         else            line.b.setText(prm.b.toString())
         if(prm.c == 0f) line.c.setText("")
         else            line.c.setText(prm.c.toString())
-        if(prm.pn == 0) line.pn.setText("")
+        if( prm.pn == 0 || prm.pn == -1 ) line.pn.setText("")
         else            line.pn.setText(prm.pn.toString())
         line.pl.setSelection(prm.pl)
     }

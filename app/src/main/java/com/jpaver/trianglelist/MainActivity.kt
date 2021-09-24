@@ -1368,8 +1368,6 @@ class MainActivity : AppCompatActivity(),
             mInterstitialAd.loadAd(AdRequest.Builder().build())
         }
 
-
-
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
@@ -1405,7 +1403,8 @@ class MainActivity : AppCompatActivity(),
             }
 
             R.id.action_save_dxf -> {
-                val hTstart = getString(R.string.inputtnum)
+                showExportDialog( ".dxf", "Export DXF", "DXF", "text/dxf" )
+/*                val hTstart = getString(R.string.inputtnum)
                 val editText5 = EditText(this)
                 val strList = arrayOf("りんご","みかん","ぶどう")
                 val checkedItems = booleanArrayOf(true, false, false)
@@ -1434,7 +1433,7 @@ class MainActivity : AppCompatActivity(),
                                     startActivityForResult(i, 1)
                                 }
                         )
-                        .setNegativeButton("Reversal",
+                        .setNegativeButton("NumReverse",
                                 DialogInterface.OnClickListener { dialog, which ->
                                     drawingStartNumber_ = editText5.text.toString().toInt()
                                     drawingNumberReversal_ = true
@@ -1449,37 +1448,12 @@ class MainActivity : AppCompatActivity(),
                                     startActivityForResult(i, 1)
                                 }
                         )
-                        .show()
+                        .show()*/
                 return true
             }
 
             R.id.action_save_sfc -> {
-                val hTstart = getString(R.string.inputtnum)
-                val editText5 = EditText(this)
-                editText5.hint = hTstart
-                val filter2 = arrayOf(InputFilter.LengthFilter(3))
-                editText5.filters = filter2
-                editText5.setText(drawingStartNumber_.toString())
-
-                filename_ = rosenname_ + " " + LocalDate.now() + ".sfc"
-                AlertDialog.Builder(this)
-                        .setTitle("Save SFC")
-                        .setMessage(R.string.inputtnum)
-                        .setView(editText5)
-                        .setPositiveButton("OK",
-                                DialogInterface.OnClickListener { dialog, which ->
-                                    drawingStartNumber_ = editText5.text.toString().toInt()
-
-                                    fileType = "SFC"
-                                    var i: Intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
-                                    i.type = "text/sfc"
-                                    i.putExtra(
-                                            Intent.EXTRA_TITLE,
-                                            rosenname_ + " " + LocalDate.now() + ".sfc"
-                                    )
-                                    startActivityForResult(i, 1)
-                                }
-                        ).show()
+                showExportDialog( ".sfc", "Export SFC", "SFC", "text/sfc" )
                 return true
             }
 
@@ -1578,6 +1552,53 @@ class MainActivity : AppCompatActivity(),
             }
         }
 
+        return true
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun showExportDialog(fileprefix: String, title: String, filetype: String, intentType: String): Boolean{
+        val hTstart = getString(R.string.inputtnum)
+        val editText5 = EditText(this)
+        editText5.hint = hTstart
+        val filter2 = arrayOf(InputFilter.LengthFilter(3))
+        editText5.filters = filter2
+        editText5.setText(drawingStartNumber_.toString())
+
+        filename_ = rosenname_ + " " + LocalDate.now() + fileprefix
+        AlertDialog.Builder(this)
+            .setTitle( title )
+            .setMessage(R.string.inputtnum)
+            .setView(editText5)
+            .setPositiveButton("OK",
+                DialogInterface.OnClickListener { dialog, which ->
+                    drawingStartNumber_ = editText5.text.toString().toInt()
+                    drawingNumberReversal_ = false
+
+                    fileType = filetype
+                    var i: Intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
+                    i.type = intentType
+                    i.putExtra(
+                        Intent.EXTRA_TITLE,
+                        rosenname_ + " " + LocalDate.now() + fileprefix
+                    )
+                    startActivityForResult(i, 1)
+                }
+            )
+            .setNegativeButton("NumReverse",
+                DialogInterface.OnClickListener { dialog, which ->
+                    drawingStartNumber_ = editText5.text.toString().toInt()
+                    drawingNumberReversal_ = true
+
+                    fileType = filetype
+                    var i: Intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
+                    i.type = intentType
+                    i.putExtra(
+                        Intent.EXTRA_TITLE,
+                        rosenname_ + " " + LocalDate.now() + fileprefix
+                    )
+                    startActivityForResult(i, 1)
+                }
+            ).show()
         return true
     }
 
@@ -1754,6 +1775,10 @@ class MainActivity : AppCompatActivity(),
         writer.textscale_ = my_view.ts_ * 20f //25*14f=350f, 25/20f=500f
         writer.titleTri_ = titleTriStr_
         writer.titleDed_ = titleDedStr_
+
+        writer.setStartNumber(drawingStartNumber_)
+        writer.isReverse_ = drawingNumberReversal_;
+
         writer.save()
         out.close()
 

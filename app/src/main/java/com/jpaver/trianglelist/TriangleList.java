@@ -984,10 +984,7 @@ public class TriangleList extends EditList implements Cloneable {
         return trilist_.size();
     }
 
-    public TriangleList reverse(){
-        TriangleList rev = this.clone();
-        rev.trilist_.clear();
-
+    public TriangleList resetNumReverse( ){
 
         int iBackward = trilist_.size();
         //マイナンバーの書き換え
@@ -995,6 +992,16 @@ public class TriangleList extends EditList implements Cloneable {
             trilist_.get( i ).myNumber_ = iBackward;
             iBackward--;
         }
+
+        return this;
+    }
+
+
+    public TriangleList reverse(){
+        TriangleList rev = this.clone();
+        rev.trilist_.clear();
+
+        resetNumReverse();
 
         for( int i = 0; i < trilist_.size(); i++ ) {
             Triangle me = trilist_.get(i);

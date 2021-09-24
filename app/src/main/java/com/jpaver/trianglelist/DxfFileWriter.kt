@@ -5,22 +5,22 @@ import java.io.BufferedWriter
 
 class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
     override var trilist_ = trilist
-    override lateinit var dedlist_: DeductionList// = deductionList
+    //override lateinit var dedlist_: DeductionList// = deductionList
 
     val numvector_ = trilist_.sokutenListVector
     lateinit var writer_: BufferedWriter
     lateinit var drawingLength_: PointXY // = drawingLength
     val pageNum_ = 0
     //var sheetscale_ = 1000f //* setScale(drawingLength)    //metric to mill
-    val mScale = 11.9f*4f//12.5f
+    //val viewscale_ = 11.9f*4f//12.5f
 
     var isDebug_ = false
-    var isReverse_ = false;
+    //var isReverse_ = false;
 
     override var textscale_ = trilist_.getPrintTextScale( 1f , "dxf")
-    override var scale_ = trilist_.getPrintScale(1f)//setScale(drawingLength)
-    override var sizeX_ = 42000f * scale_
-    override var sizeY_ = 29700f * scale_
+    override var printscale_ = trilist_.getPrintScale(1f)//setScale(drawingLength)
+    override var sizeX_ = 42000f * printscale_
+    override var sizeY_ = 29700f * printscale_
     val vpCenterX_ = sizeX_ * 0.5f
     val vpCenterY_ = sizeY_ * 0.5f
 
@@ -78,7 +78,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
 
         //if( tri.myAngle_ > 90 ) dimA = 1
         //if( tri.myAngle_ > 270 ) dimA = 3
-        var dimA = alignVByVector(tri.myDimAlignA_, pca, pab)
+        val dimA = alignVByVector(tri.myDimAlignA_, pca, pab)
         val dimB = alignVByVector(tri.myDimAlignB_, pab, pbc)//flip(tri.myDimAlignB_, tri.dimAngleB_ )
         val dimC = alignVByVector(tri.myDimAlignC_, pbc, pca)//flip(tri.myDimAlignC_, tri.dimAngleC_ )
 
@@ -166,9 +166,9 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         angle: Float,
         scale: Float
     ){
-        var x = point.x *sheetscale_ //- ( alignV * 30 - 60 )// a offset when V is 3 to 1. V is 1 to -1.
-        var y = point.y *sheetscale_ //- ( alignV * 30 - 60 )
-        val ts = textsize * sheetscale_
+        var x = point.x *unitscale_ //- ( alignV * 30 - 60 )// a offset when V is 3 to 1. V is 1 to -1.
+        var y = point.y *unitscale_ //- ( alignV * 30 - 60 )
+        val ts = textsize * unitscale_
 
         // its not effective..?
         if( alignV == 3) {
@@ -230,10 +230,10 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
     }
 
     override fun writeLine(p1: PointXY, p2: PointXY, color: Int, scale: Float ) {
-        val ax = p1.x *sheetscale_
-        val ay = p1.y *sheetscale_
-        val bx = p2.x *sheetscale_
-        val by = p2.y *sheetscale_
+        val ax = p1.x *unitscale_
+        val ay = p1.y *unitscale_
+        val bx = p2.x *unitscale_
+        val by = p2.y *unitscale_
 
         entityHandle += 1
 
@@ -271,9 +271,9 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
     }
 
     override fun writeCircle(point: PointXY, size: Float, color: Int, scale: Float){
-        val x = point.x *sheetscale_
-        val y = point.y *sheetscale_
-        val s = size * sheetscale_
+        val x = point.x *unitscale_
+        val y = point.y *unitscale_
+        val s = size * unitscale_
 
         entityHandle += 1
 
@@ -318,7 +318,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
     override fun writeDeduction( ded: Deduction ){
 
         //val ded = dedlist_.get( dednumber )
-        val textsize: Float = 0.35f
+        val textsize = 0.35f
         val infoStrLength = ded.info_.length*textsize+0.3f
         val point = ded.point
         val pointFlag = ded.pointFlag
@@ -360,20 +360,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
 
     override fun writeEntities(){
 
-        var myDXFTriList = trilist_.clone()
-        var myDXFDedList = dedlist_.clone()
-
-//        myDXFDedList.rotate(PointXY(0f,0f), myDXFTriList.rotateByLength("laydown"))
-        // Ｙ軸方向反転、かつビュースケールで割り戻して大きさをtrilistと揃える。
-        myDXFDedList.scale(PointXY(0f,0f),1/mScale,-1/mScale)
-
-        val center = PointXY(21f*scale_, 14.85f*scale_)
-        val tricenter = myDXFTriList.center
-        myDXFDedList.move(PointXY(center.x-tricenter.x,center.y-tricenter.y))
-        myDXFTriList.move(PointXY(center.x-tricenter.x,center.y-tricenter.y))
-        //myDXFTriList.move(PointXY(21f,14.85f))
-//        myDXFDedList.move(PointXY(21f,14.85f))
-
+        // 最初に書く
         writer_.write("""
             0
             SECTION
@@ -382,12 +369,22 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         """.trimIndent())
         writer_.newLine()
 
+        val myDXFTriList = trilist_.clone()
+        val myDXFDedList = dedlist_.clone()
+
+        // Ｙ軸方向反転、かつビュースケールで割り戻して大きさをtrilistと揃える。
+        myDXFDedList.scale(PointXY(0f,0f),1/ viewscale_,-1/ viewscale_)
+
+        val center = PointXY(21f*printscale_, 14.85f*printscale_)
+        val tricenter = myDXFTriList.center
+        myDXFDedList.move(PointXY(center.x-tricenter.x,center.y-tricenter.y))
+        myDXFTriList.move(PointXY(center.x-tricenter.x,center.y-tricenter.y))
 
         var trilistNumbered = myDXFTriList.numbered( startTriNumber_ )
         if( isReverse_ == true ) {
-            //trilistNumbered = trilistNumbered.reverse()
+            trilistNumbered = trilistNumbered.resetNumReverse()
             myDXFDedList.reverse()
-        };
+        }
 
         for (index in 1 .. myDXFTriList.size()) {
             writeTriangle(trilistNumbered.get(index))
@@ -398,8 +395,6 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         val outlineLists = myDXFTriList.outlineLists //ArrayList<PointXY>()
         val array = ArrayList<PointXY>()
         myDXFTriList.traceOrJumpForward(0, 0, array )
-        //if( array.size > 0 ) writeDXFTriOutlines( wrtr, array )
-//
         if( outlineLists.size > 0 ) for( index in 0 .. outlineLists.size -1 ) writeDXFTriOutlines( writer_, outlineLists.get( index ) )
 
         // deduction
@@ -407,12 +402,15 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
             writeDeduction( myDXFDedList.get(number) )
         }
 
-        sheetscale_ *= scale_
-        writeFrame()
-        sheetscale_ = 1000f
+        unitscale_ *= printscale_
+        writeFrame(textsize = 0.25f)
+        unitscale_ = 1000f
 
+        if( isReverse_ == true ) {
+            trilistNumbered = trilistNumbered.reverse()
+        }
         // calcSheet
-        writeCalcSheet(1f, textscale_, trilistNumbered.reverse(), myDXFDedList )
+        writeCalcSheet(1f, textscale_, trilistNumbered, myDXFDedList )
 
         //一番最後に書く
         writer_.write("""
@@ -451,9 +449,9 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         for( index in 0 .. array.size - 1 ){
             wrtr.write("""
                 10
-                ${( array.get( index ).x*sheetscale_ )}
+                ${( array.get( index ).x*unitscale_ )}
                 20
-                ${( array.get( index ).y*sheetscale_ )}                
+                ${( array.get( index ).y*unitscale_ )}                
             """.trimIndent())
             wrtr.newLine()
         }
@@ -1023,8 +1021,8 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
     }
 
     override fun writeHeader(){
-        val scaleX = 42000*scale_
-        val scaleY = 29700*scale_
+        val scaleX = 42000*printscale_
+        val scaleY = 29700*printscale_
 
         writer_.write("""
              0

@@ -17,12 +17,12 @@ class PathAndOffset(myscale: Float, p1_: PointXY, p2_: PointXY, p3_: PointXY, le
     init {
         var p1 = p1_.clone()
         var p2 = p2_.clone()
-        var p3: PointXY = PointXY(0f,0f)
-        var p4: PointXY = PointXY(0f,0f)
-        setOffset(0, align, length)
+        var p3 = PointXY(0f,0f)
+        //var p4: PointXY = PointXY(0f,0f)
+        setOffset(0, align)
 
-        val vlP2P3 = p2_.vectorTo(p3_).lengthXY()
-        val vlP1P3 = p1_.vectorTo(p3_).lengthXY()
+        //val vlP2P3 = p2_.vectorTo(p3_).lengthXY()
+        //val vlP1P3 = p1_.vectorTo(p3_).lengthXY()
 
 
 /*        if( vlP2P3 < 2.0f*myScale_ ) offsetH_ = p1_.vectorTo(p2_).lengthXY()*haba
@@ -74,10 +74,10 @@ class PathAndOffset(myscale: Float, p1_: PointXY, p2_: PointXY, p3_: PointXY, le
         pointB_ = p2
     }
 
-    fun setOffset(flipside: Int, align: Int, length: Float){
-        var offsetUpper = -textSpacer_*0.2f
-        var offsetLower = dimH_-textSpacer_*0.2f
-        var offsetMiddle= dimH_/2
+    fun setOffset(flipside: Int, align: Int){
+        val offsetUpper = - textSpacer_ * 0.7f
+        val offsetLower = - textSpacer_ * 0.7f// dimH_
+        //var offsetMiddle= dimH_/2
         if( flipside == 0 ) { // 夾角の、 1:内、3:外
             if (align == 3) offsetV_ = offsetUpper
             if (align == 1) offsetV_ = offsetLower
@@ -96,7 +96,7 @@ class PathAndOffset(myscale: Float, p1_: PointXY, p2_: PointXY, p3_: PointXY, le
         val p1_ = p2
         val p2_ = p3
 
-        setOffset(1, align, length)
+        setOffset(1, align)
         offsetH_ = -offsetH_
 
         pointA_ = p1_

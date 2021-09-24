@@ -13,9 +13,9 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
     var strPool_ = "" // ここにどんどん書き込む
     var assembryNumber_ = 10
 
-    override var textscale_ = trilist_.getPrintTextScale( 1f , "dxf") * 1.2f * sheetscale_
-    override var sizeX_ = 420 * scale_
-    override var sizeY_ = 297 * scale_
+    override var textscale_ = trilist_.getPrintTextScale( 1f , "dxf") * 1.2f * unitscale_
+    override var sizeX_ = 420 * printscale_
+    override var sizeY_ = 297 * printscale_
     override var centerX_ = sizeX_ * 0.5f
     override var centerY_ = sizeY_ * 0.5f
     val charset = Charset.forName("SJIS")
@@ -78,24 +78,31 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
     }
 
     override fun writeEntities(){
+        // サークルサイズの更新
         circleSize = textscale_ * 0.8f
 
-        scale_ = trilist_.getPrintScale(1f)
+        // printscale
+        printscale_ = trilist_.getPrintScale(1f)
 
-        trilist_.scale( PointXY(0f,0f), sheetscale_ )
-        dedlist_.scale( PointXY(0f,0f), sheetscale_/viewscale_, -sheetscale_/viewscale_ ) // アプリの画面に合わせて拡大されているのを戻し、Y軸も反転
+        trilist_.scale( PointXY(0f,0f), unitscale_ )
+        dedlist_.scale( PointXY(0f,0f), unitscale_/viewscale_, -unitscale_/viewscale_ )
+        // アプリの画面に合わせて拡大されているのを戻し、Y軸も反転
 
         //シートの中心へ動かす
-        val center = PointXY(21000f*scale_, 14850f*scale_ )
+        val center = PointXY(21000f*printscale_, 14850f*printscale_ )
         val tricenter = trilist_.center
         dedlist_.move(PointXY(center.x-tricenter.x,center.y-tricenter.y))
         trilist_.move(PointXY(center.x-tricenter.x,center.y-tricenter.y))
 
         // 開始番号指定
-        //trilist_ = trilist_.numbered( startTriNumber_ )
+        var trilistNumbered = trilist_.numbered( startTriNumber_ )
+        if( isReverse_ == true ) {
+            trilistNumbered = trilistNumbered.resetNumReverse()
+            dedlist_ = dedlist_.reverse()
+        };
 
-        for ( trinumber in 1 .. trilist_.size() ){
-            writeTriangle( trilist_.get(trinumber) )
+        for ( trinumber in 1 .. trilistNumbered.size() ){
+            writeTriangle( trilistNumbered.get(trinumber) )
         }
 
         // deduction
@@ -104,11 +111,15 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
         }
 
         //writeFrame( sheetscale_ * 0.1f * scale_, scale_, centerX_, centerY_, sizeX_, sizeY_ )
-        writeFrame( sheetscale_ * scale_ )
+        writeFrame(unitscale_ * printscale_, 0.35f)
 
         // calcSheet
-        trilist_.scale( PointXY(0f,0f), 1/sheetscale_ )
-        writeCalcSheet(1000f, textscale_/sheetscale_, trilist_, dedlist_ )
+        if( isReverse_ == true ) {
+            trilistNumbered = trilistNumbered.reverse()
+        }
+        trilistNumbered.scale( PointXY(0f,0f), 1/unitscale_ )
+        writeCalcSheet(1000f, textscale_/unitscale_, trilistNumbered, dedlist_ )
+
     }
 
     override fun writeDeduction( ded: Deduction ){

@@ -14,13 +14,15 @@ open class DrawingFileWriter {
     var gyousyaname_ = ""
     var zumennum_ = "1/1"
     var startTriNumber_ = 1
-    open var sheetscale_ = 1000f
+    open var unitscale_ = 1000f
     val viewscale_ = 47.6f
-    open var scale_ = 1f
+    open var printscale_ = 1f
+    var isReverse_ = false
+
 
     open var textscale_ = 5f//trilist_.getPrintTextScale( 1f , "dxf") * drawscale_
-    open var sizeX_ = 420 * scale_
-    open var sizeY_ = 297 * scale_
+    open var sizeX_ = 420 * printscale_
+    open var sizeY_ = 297 * printscale_
     open var centerX_ = sizeX_ * 0.5f
     open var centerY_ = sizeY_ * 0.5f
 
@@ -123,21 +125,22 @@ open class DrawingFileWriter {
 
     open fun writeTextAndLine(st: String, p1: PointXY, p2: PointXY, textsize: Float, scale: Float) {}
 
-    fun writeOuterFrameAndTitle( scale: Float = 1f ){
+    fun writeOuterFrameAndTitle( scale: Float = 1f, textsize: Float ){
         // 外枠描画
         writeRect(PointXY(21f,14.85f, scale ), 40f * scale, 27f * scale,  cWhite_, scale)
 
         // 上のタイトル
-        writeText(rStr_.tTitle_, PointXY(21f, 27.1f, scale ),  cWhite_, 0.4f * scale, 1, 1, 0f, scale)
-        writeText(rosenname_, PointXY(21f,26f, scale ), cWhite_, 0.4f * scale, 1, 1, 0f, scale)
+        writeText(rStr_.tTitle_, PointXY(21f, 27.1f, scale ),  cWhite_, textsize, 1, 1, 0f, scale)
+        writeText(rosenname_, PointXY(21f,26f, scale ), cWhite_, textsize, 1, 1, 0f, scale)
 
         writeLine( PointXY(19f,27f, scale ), PointXY(23f,27f, scale ), cWhite_, scale)
         writeLine( PointXY(19f,26.9f, scale ), PointXY(23f,26.9f, scale ), cWhite_, scale)
     }
 
-    open fun writeFrame( scale: Float = 1f ){
+    open fun writeFrame(scale: Float = 1f, textsize: Float){
 
-        writeOuterFrameAndTitle( scale )
+        val tss = textsize * scale
+        writeOuterFrameAndTitle( scale , tss * 1.6f )
 
         //右下のタイトル枠
         writeLine( PointXY(31f,7.35f, scale ), PointXY(41f,7.35f, scale ), cWhite_ ) //yoko
@@ -152,9 +155,7 @@ open class DrawingFileWriter {
         writeLine( PointXY(36f,2.35f, scale ), PointXY(36f,3.35f, scale ), cWhite_ )
         writeLine( PointXY(38f,2.35f, scale ), PointXY(38f,3.35f, scale ), cWhite_ )
 
-        val tss = 0.25f * scale
-
-        val st = scale_*100f
+        val st = printscale_*100f
         val strx = 33.5f * scale
 
         val xr = strx
@@ -211,8 +212,8 @@ open class DrawingFileWriter {
         if( checkInstance() == false ) return
 
         var area = 0.0f
-        val baseX = ( 42f + 3f ) * scale_ * scale
-        var baseY = 27f * scale_ * scale
+        val baseX = ( 42f + 3f ) * printscale_ * scale
+        var baseY = 27f * printscale_ * scale
         val ts = textsize * scale
         val xoffset = ts * 6f
         val yoffset = ts * 2f
