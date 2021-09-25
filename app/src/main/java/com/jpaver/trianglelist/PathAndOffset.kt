@@ -17,9 +17,9 @@ class PathAndOffset(myscale: Float, p1_: PointXY, p2_: PointXY, p3_: PointXY, le
     init {
         var p1 = p1_.clone()
         var p2 = p2_.clone()
-        var p3 = PointXY(0f,0f)
-        //var p4: PointXY = PointXY(0f,0f)
-        setOffset(0, align)
+        var p3: PointXY = PointXY(0f,0f)
+        var p4: PointXY = PointXY(0f,0f)
+        setOffset(0, align, length)
 
         //val vlP2P3 = p2_.vectorTo(p3_).lengthXY()
         //val vlP1P3 = p1_.vectorTo(p3_).lengthXY()
@@ -74,9 +74,9 @@ class PathAndOffset(myscale: Float, p1_: PointXY, p2_: PointXY, p3_: PointXY, le
         pointB_ = p2
     }
 
-    fun setOffset(flipside: Int, align: Int){
-        val offsetUpper = - textSpacer_ * 0.7f
-        val offsetLower = - textSpacer_ * 0.7f// dimH_
+    fun setOffset(flipside: Int, align: Int, length: Float){
+        val offsetUpper = -dimH_ * 0.1f //- textSpacer_ //* 0.7f
+        val offsetLower =  dimH_ * 0.8f //textSpacer_ ///* 0.7f )
         //var offsetMiddle= dimH_/2
         if( flipside == 0 ) { // 夾角の、 1:内、3:外
             if (align == 3) offsetV_ = offsetUpper
@@ -96,7 +96,7 @@ class PathAndOffset(myscale: Float, p1_: PointXY, p2_: PointXY, p3_: PointXY, le
         val p1_ = p2
         val p2_ = p3
 
-        setOffset(1, align)
+        setOffset(1, align, length)
         offsetH_ = -offsetH_
 
         pointA_ = p1_

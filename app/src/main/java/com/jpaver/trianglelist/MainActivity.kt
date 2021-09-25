@@ -62,7 +62,9 @@ class MainActivity : AppCompatActivity(),
         MyDialogFragment.NoticeDialogListener {
 
     private val PERMISSIONS = arrayOf(
-            Manifest.permission.WRITE_EXTERNAL_STORAGE
+            Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.INTERNET
     )
     private val REQUEST_PERMISSION = 1000
 
@@ -346,7 +348,7 @@ class MainActivity : AppCompatActivity(),
             Toast.makeText(this, "Invalid!! : B > C + A", Toast.LENGTH_LONG).show()
             return false
         }
-        if ( dp.pn > myTriangleList.size() || dp.pn < 1 ) {
+        if ( dp.pn > myTriangleList.size() || ( dp.pn < 1 && dp.n != 1 )) {
             Toast.makeText(this, "Invalid!! : number of parent", Toast.LENGTH_LONG).show()
             return false
         }
@@ -1393,7 +1395,9 @@ class MainActivity : AppCompatActivity(),
                 return true
             }
             R.id.action_load_csv -> {
+                checkPermission()
                 var i: Intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
+                i.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
                 i.addCategory(Intent.CATEGORY_OPENABLE)
                 i.type = "text/csv"
                 i.putExtra(Intent.EXTRA_TITLE, ".csv")
@@ -1404,51 +1408,6 @@ class MainActivity : AppCompatActivity(),
 
             R.id.action_save_dxf -> {
                 showExportDialog( ".dxf", "Export DXF", "DXF", "text/dxf" )
-/*                val hTstart = getString(R.string.inputtnum)
-                val editText5 = EditText(this)
-                val strList = arrayOf("りんご","みかん","ぶどう")
-                val checkedItems = booleanArrayOf(true, false, false)
-
-                editText5.hint = hTstart
-                val filter2 = arrayOf(InputFilter.LengthFilter(3))
-                editText5.filters = filter2
-                editText5.setText(drawingStartNumber_.toString())
-
-                AlertDialog.Builder(this)
-                        .setTitle("Save DXF")
-                        .setMessage(R.string.inputtnum)
-                        .setView(editText5)
-                        .setPositiveButton("OK",
-                                DialogInterface.OnClickListener { dialog, which ->
-                                    drawingStartNumber_ = editText5.text.toString().toInt()
-                                    drawingNumberReversal_ = false
-
-                                    fileType = "DXF"
-                                    var i: Intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
-                                    i.type = "text/dxf"
-                                    i.putExtra(
-                                            Intent.EXTRA_TITLE,
-                                            rosenname_ + " " + LocalDate.now() + ".dxf"
-                                    )
-                                    startActivityForResult(i, 1)
-                                }
-                        )
-                        .setNegativeButton("NumReverse",
-                                DialogInterface.OnClickListener { dialog, which ->
-                                    drawingStartNumber_ = editText5.text.toString().toInt()
-                                    drawingNumberReversal_ = true
-
-                                    fileType = "DXF"
-                                    var i: Intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
-                                    i.type = "text/dxf"
-                                    i.putExtra(
-                                            Intent.EXTRA_TITLE,
-                                            rosenname_ + " " + LocalDate.now() + ".dxf"
-                                    )
-                                    startActivityForResult(i, 1)
-                                }
-                        )
-                        .show()*/
                 return true
             }
 
@@ -1456,7 +1415,6 @@ class MainActivity : AppCompatActivity(),
                 showExportDialog( ".sfc", "Export SFC", "SFC", "text/sfc" )
                 return true
             }
-
 
             R.id.action_save_pdf -> {
                 // 入力ヒントの表示
@@ -1802,8 +1760,6 @@ class MainActivity : AppCompatActivity(),
         my_view.isAreaOff_ = false
         writer.isRulerOff_ = true
 
-        writer.writeAllCalcSheets()
-
         writer.startNewPage(
             writer.sizeX_.toInt(),
             writer.sizeY_.toInt(),
@@ -1825,8 +1781,9 @@ class MainActivity : AppCompatActivity(),
         // translate back by view pointer
         writer.translate(writer.currentCanvas_, -viewPointer.x, -viewPointer.y)
         writer.writeTitleFrame(writer.currentCanvas_)
-
         writer.closeCurrentPage()
+
+        //writer.writeAllCalcSheets()
 
         writer.closeDocAndStream()
     }

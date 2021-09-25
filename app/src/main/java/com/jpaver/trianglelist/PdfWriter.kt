@@ -92,7 +92,7 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
         pdfPageInfList.add( pdfBuilderList[pageIndex].create() )
         pdfPageList.add( pdfDoc_.startPage( pdfPageInfList[pageIndex] ) )
         currentCanvas_ = pdfPageList[pageIndex].canvas
-        pdfPageList[pageIndex].canvas.density = 72
+        pdfPageList[pageIndex].canvas.density = 600
     }
 
     fun closeCurrentPage(){
@@ -414,7 +414,7 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
         writeLine( PointXY(centerX-50f,52f), PointXY(centerX+50f,52f),1f,7)
         writeLine( PointXY(centerX-50f,50f), PointXY(centerX+50f,50f),1f,7)
         writeText( rStr_.tTitle_, PointXY(centerX,45f), 1f, 7, 16f, 1 )
-        writeText( rosenname_, PointXY(centerX,65f), 1f, 7, 14f, 1 )
+        writeText( rosenname_ + " A=" + ( triangleList_.getArea() - deductionList_.getArea() ).toString() + "m^2", PointXY(centerX,70f), 1f, 7, 16f, 1 )
 
         writeText( rStr_.tCname_, PointXY(xr-kt, yb-95f+ofs ), 1f, 7, 8f, 1 )
         writeText( rStr_.tDtype_, PointXY(xr-kt, yb-70f+ofs ), 1f, 7, 8f, 1 )

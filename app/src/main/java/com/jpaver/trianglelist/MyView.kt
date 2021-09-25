@@ -93,7 +93,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     val isSkipDraw_ = true
     var isDebug_ = false
     var isPrintPDF_ = false
-    var isAreaOff_ = true
+    var isAreaOff_ = false
 
     lateinit var myCanvas: Canvas
 
@@ -404,6 +404,12 @@ class MyView(context: Context?, attrs: AttributeSet?) :
             canvas.drawPath(makeTriangleFillPath(myTriangleList.get(i + 1)), paintFill)
         }
 
+        for( i in 0 until myDeductionList.size() ) drawDeduction(
+            canvas,
+            myDeductionList.get(i + 1),
+            paintRed, myDeductionList
+        )
+
         for( i in 0 until myTriangleList.size() )  drawTriangle(
             canvas,
             myTriangleList.get(i + 1),
@@ -412,12 +418,6 @@ class MyView(context: Context?, attrs: AttributeSet?) :
             paintTex,
             paintTex,
             paintBlue, myTriangleList
-        )
-
-        for( i in 0 until myDeductionList.size() ) drawDeduction(
-            canvas,
-            myDeductionList.get(i + 1),
-            paintRed, myDeductionList
         )
 
         drawBlinkLine( canvas, myTriangleList )
@@ -561,14 +561,15 @@ val sokt = PathAndOffset(
     }
 
     fun drawDeduction(canvas: Canvas, ded: Deduction, paint: Paint, myDeductionList: DeductionList ){
-        var infoStrLength: Float = ded.info_.length * paint.textSize * 0.85f
         var str = ded.info_
+        val point = ded.point
+        var pointFlag = ded.pointFlag
+
+        if(isAreaOff_ == false ) str += " : -" + ded.getArea().formattedString(1)+"㎡"
+        var infoStrLength: Float = str.length * paint.textSize * 0.85f
 
         // boxの時は短くする
         if(ded.type=="Box") infoStrLength = infoStrLength*0.85f
-
-        val point = ded.point
-        var pointFlag = ded.pointFlag
 
         if( isDebug_ == true ){
             val strD = ded.point.x.toString() + " " + ded.point.y.toString()
@@ -622,6 +623,8 @@ val sokt = PathAndOffset(
             paint.style = Paint.Style.FILL
         }
         if(ded.type == "Box")    drawDedRect(canvas, point, ded, paint)
+
+
     }
 
     fun drawLocalPressPoint(canvas: Canvas, point: PointXY){
@@ -767,7 +770,7 @@ val sokt = PathAndOffset(
 
 
         var area =""
-        if(isAreaOff_ == false ) area = tri.getArea().formattedString(2)+"㎡"
+        if(isAreaOff_ == false ) area = tri.getArea().formattedString(1)+"㎡"
         if(isDebug_ == true) area = "cp:"+tri.cParam_.type.toString() + "-"+ tri.cParam_.lcr.toString() +" pbc:"+ tri.myParentBC_.toString() +" Num:"+ tri.myNumber_ +"-"+ tri.myParentNumber_ +" lTS"+ tri.lastTapSide_
 
 
@@ -956,7 +959,7 @@ val sokt = PathAndOffset(
         this.paintBlue.textSize = textscale
         this.paintBlue.strokeWidth = 0.05f
 
-        isAreaOff_ = true
+
         isPrintPDF_ = true
 
         val printScale = myTriangleList.getPrintScale(myScale)
@@ -1093,7 +1096,7 @@ val sokt = PathAndOffset(
         myTriangleList.scaleAndSetPath( PointXY(0f, 0f), 1 / scaleFactor, paintTexS.textSize )
         myDeductionList.scale(PointXY(0f, 0f), 1 / scaleFactor)
         myDeductionList.setScale(myScale)
-
+        //isAreaOff_ = true
         isPrintPDF_ = false
         this.paintBlue.textSize = ts_
         this.paintBlue.strokeWidth = 2f
