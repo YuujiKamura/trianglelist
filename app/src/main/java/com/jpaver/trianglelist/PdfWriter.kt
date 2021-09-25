@@ -48,65 +48,9 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
     // トランスレート位置の保存
     var viewPointer_ = PointXY(0f,0f)
 
-    fun translate( canvas: Canvas, x: Float, y: Float ){
-        canvas.translate(x,y)
-        viewPointer_.add(x,y) // rewrite viewPointer but..
-    }
-
-    fun startNewPage(sizeX: Int, sizeY: Int, pageIndex: Int){
-        pdfBuilderList.add( PdfDocument.PageInfo.Builder( sizeX, sizeY, pageIndex ) )
-        // wrong pageNum will bad.
-        pdfPageInfList.add( pdfBuilderList[pageIndex].create() )
-        pdfPageList.add( pdfDoc_.startPage( pdfPageInfList[pageIndex] ) )
-        currentCanvas_ = pdfPageList[pageIndex].canvas
-    }
-
-    fun close(){
-        //現在のPageの編集を終了する。
-        pdfDoc_.finishPage( pdfPageList[currentPageIndex_] )
-
-        writeAllCalcSheets()
-        //writeAllCalcSheets()
-
-        pdfDoc_.writeTo(out_)
-        pdfDoc_.close()
-        out_.close() //MUST.. without write done.
-    }
-
-    fun writeAllCalcSheets() {
-        var triNumCounter = 0
-        triangleList_. counter = 0
-        deductionList_.counter = 0
-
-        val maxinpage = 40
-        var pageCount = ( triangleList_.size().toDouble() / maxinpage )
-//        if( pageCount < 0.1 ) pageCount *= 10
-  //      if( pageCount < 0.4 ) pageCount *= 2
-        //if( pageCount > 1 ) pageCount = 2f
-
-        val pci = Math.ceil(pageCount).toInt()
-
-        for( i in 0 until pci ){
-            //次のページを作る
-            currentPageIndex_ += 1 // curindex = + 1 // is dead.
-            startNewPage( p2sizeX_.toInt(), p2sizeY_.toInt(), currentPageIndex_ )
-
-            triNumCounter = writeAreaCalcSheet( triNumCounter ) // 面積計算書の描画
-
-            //現在のPageの編集を終了する。
-            pdfDoc_.finishPage( pdfPageList[currentPageIndex_] )
-        }
-    }
-
-
-    // menseki calc sheet
-//    val builder2_: PdfDocument.PageInfo.Builder = PdfDocument.PageInfo.Builder(p2sizeX_.toInt(), p2sizeY_.toInt(), 1);
- //   val pageInfo2_: PdfDocument.PageInfo = builder2_.create();
-
     init{
         // 最初のページを作る。環境依存がありユニットテストできないので外す
         //startNewPage(sizeX_.toInt(), sizeY_.toInt(), currentPageIndex_)
-
 
     }
 
@@ -130,6 +74,63 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
         paintRed_.letterSpacing = 0.05f
         paintRed_.strokeWidth = 0.05f
 
+    }
+
+    fun translate( canvas: Canvas, x: Float, y: Float ){
+        canvas.translate(x,y)
+        viewPointer_.add(x,y) // rewrite viewPointer but..
+    }
+
+    fun translateCenter(canvas: Canvas) {
+        currentCanvas_.translate(sizeX_/2f,sizeY_/2f )
+        viewPointer_.add( sizeX_/2f,sizeY_/2f )
+    }
+
+    fun startNewPage(sizeX: Int, sizeY: Int, pageIndex: Int){
+        pdfBuilderList.add( PdfDocument.PageInfo.Builder( sizeX, sizeY, pageIndex ) )
+        // wrong pageNum will bad.
+        pdfPageInfList.add( pdfBuilderList[pageIndex].create() )
+        pdfPageList.add( pdfDoc_.startPage( pdfPageInfList[pageIndex] ) )
+        currentCanvas_ = pdfPageList[pageIndex].canvas
+        pdfPageList[pageIndex].canvas.density = 72
+    }
+
+    fun closeCurrentPage(){
+        //現在のPageの編集を終了する。
+        pdfDoc_.finishPage( pdfPageList[currentPageIndex_] )
+
+    }
+
+    fun closeDocAndStream(){
+        pdfDoc_.writeTo(out_)
+        pdfDoc_.close()
+        out_.close() //MUST.. without write done.
+    }
+
+    fun writeAllCalcSheets() {
+        var triNumCounter = 0
+        triangleList_. counter = 0
+        deductionList_.counter = 0
+
+        val maxinpage = 40
+        var pageCount = ( triangleList_.size().toDouble() / maxinpage )
+//        if( pageCount < 0.1 ) pageCount *= 10
+  //      if( pageCount < 0.4 ) pageCount *= 2
+        //if( pageCount > 1 ) pageCount = 2f
+
+        val pci = Math.ceil(pageCount).toInt()
+
+        for( i in 0 until pci ){
+            startNewPage( p2sizeX_.toInt(), p2sizeY_.toInt(), currentPageIndex_ )
+
+            triNumCounter = writeAreaCalcSheet( triNumCounter ) // 面積計算書の描画
+
+            //現在のPageの編集を終了する。
+            pdfDoc_.finishPage( pdfPageList[currentPageIndex_] )
+
+            //次のページを作る
+            currentPageIndex_ += 1 // curindex = + 1 // is dead.
+        }
     }
 
     fun setScale(drawingLength: PointXY) :Float{
@@ -284,10 +285,6 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
 
     }
 
-    fun translateCenter(){
-        currentCanvas_.translate(sizeX_/2f,sizeY_/2f )
-        viewPointer_.add( sizeX_/2f,sizeY_/2f )
-    }
 
 
     fun drawOverlayWhite(canvas: Canvas, frameX: Float, frameY: Float, lt: PointXY, rb: PointXY, yohaku: Float){

@@ -1789,29 +1789,27 @@ class MainActivity : AppCompatActivity(),
                 myTriangleList.getPrintScale(1f),
                 myTriangleList
         )
+        writer.out_ = out
+        writer.deductionList_ = myDeductionList
 
-        writer.startNewPage(
-                writer.sizeX_.toInt(),
-                writer.sizeY_.toInt(),
-                writer.currentPageIndex_
-        )
         writer.textscale_ = my_view.ts_ * 0.5f / writer.printScale_ //25*0.4f=10f, 25/0.3f=7.5f
         writer.initPaints()
         writer.titleTri_ = titleTriStr_
         writer.titleDed_ = titleDedStr_
         writer.rStr_ = rStr_
-
-        writer.out_ = out
-        writer.deductionList_ = myDeductionList
-
         writer.setNames(koujiname_, rosenname_, gyousyaname_, zumennum_)
-//        myWriter.setScale(myTriangleList.measureMostLongLine())
-        writer.translateCenter()
-//        myWriter.writeTitleFrame(myWriter.currentCanvas_)
-        //myWriter.writeRuler(myWriter.currentCanvas_)
 
         my_view.isAreaOff_ = false
         writer.isRulerOff_ = true
+
+        writer.writeAllCalcSheets()
+
+        writer.startNewPage(
+            writer.sizeX_.toInt(),
+            writer.sizeY_.toInt(),
+            writer.currentPageIndex_
+        )
+        writer.translateCenter( writer.currentCanvas_ )
 
         val viewPointer =
         my_view.drawPDF(
@@ -1828,8 +1826,9 @@ class MainActivity : AppCompatActivity(),
         writer.translate(writer.currentCanvas_, -viewPointer.x, -viewPointer.y)
         writer.writeTitleFrame(writer.currentCanvas_)
 
-        writer.close()
+        writer.closeCurrentPage()
 
+        writer.closeDocAndStream()
     }
 
     fun AutoSavePDF(){
