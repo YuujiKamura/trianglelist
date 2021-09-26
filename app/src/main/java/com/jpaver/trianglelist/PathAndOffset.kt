@@ -75,8 +75,8 @@ class PathAndOffset(myscale: Float, p1_: PointXY, p2_: PointXY, p3_: PointXY, le
     }
 
     fun setOffset(flipside: Int, align: Int, length: Float){
-        val offsetUpper = -dimH_ * 0.1f //- textSpacer_ //* 0.7f
-        val offsetLower =  dimH_ * 0.8f //textSpacer_ ///* 0.7f )
+        val offsetUpper = -dimH_ * 0.2f //- textSpacer_ //* 0.7f
+        val offsetLower =  dimH_ * 0.9f //textSpacer_ ///* 0.7f )
         //var offsetMiddle= dimH_/2
         if( flipside == 0 ) { // 夾角の、 1:内、3:外
             if (align == 3) offsetV_ = offsetUpper

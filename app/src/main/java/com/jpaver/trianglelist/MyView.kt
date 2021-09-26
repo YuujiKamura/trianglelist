@@ -101,6 +101,9 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
     var tapTL_: String = "n"
 
+    var watchedB_ = ""
+    var watchedC_ = ""
+
     fun getViewSize() :PointXY{
         return myViewSize
     }
@@ -282,7 +285,9 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         setLTP()
         //resetView()
         //invalidate()
-    }
+        watchedB_ = ""
+        watchedC_ = ""
+     }
 
     fun undo(){
         if( trilistStored_.size() > 0 ) myTriangleList = trilistStored_.clone()
@@ -555,8 +560,8 @@ val sokt = PathAndOffset(
             shadowTri.setScale( myTriangleList.myScale )
             canvas.drawPath( makeTriangleFillPath( shadowTri ), paintGray )
             //        drawTriLines( canvas, shadowTri, paintGray )
-            canvas.drawTextOnPath( "B", makePath( spbc,  spab ), 0f, 0f, paintYellow )
-            canvas.drawTextOnPath( "C", makePath( spca,  spbc ), 0f, 0f, paintYellow )
+            canvas.drawTextOnPath( "B " + watchedB_, makePath( spbc,  spab ), 0f, 0f, paintYellow )
+            canvas.drawTextOnPath( "C " + watchedC_, makePath( spca,  spbc ), 0f, 0f, paintYellow )
         }
     }
 
@@ -765,19 +770,19 @@ val sokt = PathAndOffset(
         val pnY = -tri.pointNumberAutoAligned_.y
         val pnpY = getPaintCenterY(pnY, paint1)
         val circleSize = paint2.textSize *0.8f
-        val areaoffsetY = paint2.textSize *1.5f
+        val areaoffsetY = paint2.textSize *1.3f
         paint2.style = Paint.Style.STROKE
 
 
         var area =""
-        if(isAreaOff_ == false ) area = tri.getArea().formattedString(1)+"㎡"
+        if(isAreaOff_ == false ) area = tri.getArea().formattedString(1 )+"m^2"
         if(isDebug_ == true) area = "cp:"+tri.cParam_.type.toString() + "-"+ tri.cParam_.lcr.toString() +" pbc:"+ tri.myParentBC_.toString() +" Num:"+ tri.myNumber_ +"-"+ tri.myParentNumber_ +" lTS"+ tri.lastTapSide_
 
 
         canvas.drawCircle(pnX, pnY, circleSize, paint2)
         canvas.drawText(mn, pnX, pnpY, paint1)
         paint2.style = Paint.Style.FILL
-        canvas.drawText(area, pnX, pnpY + areaoffsetY, paint2)
+        canvas.drawText(area, pnX, pnpY - areaoffsetY, paint2)
 
         //引き出し矢印線の描画
         if( tri.isCollide(tri.pointNumber_) == false ){
