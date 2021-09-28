@@ -84,7 +84,7 @@ public class DeductionList extends EditList implements Cloneable {
         for (int i = 0; i < dedlist_.size(); i++ ) {
             if( dedlist_.get(i).getParentNum() != 0 ) area += dedlist_.get(i).getArea();
         }
-        return (float)(Math.round( area * 100.0) / 100.0); //roundByUnderTwo(area);
+        return area;//(float)(Math.round( area * 100.0) / 100.0); //roundByUnderTwo(area);
     }
 
     public float getAreaN( int number ){

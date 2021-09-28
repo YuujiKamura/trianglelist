@@ -189,17 +189,10 @@ class Deduction(var num: Int = 0,
     override fun getArea() :Float {
         var area = 0.0f
         if( type == "Circle" ) {
-            area = (lengthX/2) * (lengthX/2) * 3.141592f
+            area = (lengthX/2) * (lengthX/2) * 3.14f
         }
         if( type == "Box" ) { area = lengthX * lengthY }
-        return roundByUnderTwo((Math.round(area.toDouble() * 100.0) / 100.0).toFloat())//roundByUnderTwo(area)
-    }
-
-    fun roundByUnderTwo(fp: Float) :Float {
-        val ip: Float = fp * 100f
-        ip.roundToInt()
-        val rfp: Float = ip / 100
-        return rfp
+        return area.formattedString(2).toFloat() //roundByUnderTwo( ( Math.round(area.toDouble() * 100.0) / 100.0).toFloat() )//roundByUnderTwo(area)
     }
 
     fun typeToInt(type: String) :Int{

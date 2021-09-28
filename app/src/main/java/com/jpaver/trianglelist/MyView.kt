@@ -10,6 +10,13 @@ import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.math.roundToInt
 
+fun Float?.formattedString(fractionDigits: Int): String{
+    // nullの場合は空文字
+    if(this == null) return ""
+    var format : String = "%.${fractionDigits}f"
+    return format.format(this)
+}
+
 class MyView(context: Context?, attrs: AttributeSet?) :
     View(context, attrs) {
 
@@ -103,6 +110,8 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
     var watchedB_ = ""
     var watchedC_ = ""
+
+    var shadowTri_ = Triangle( 0f, 0f, 0f )
 
     fun getViewSize() :PointXY{
         return myViewSize
@@ -541,7 +550,10 @@ val sokt = PathAndOffset(
     }
 
     fun drawShadowTriangle( canvas: Canvas, myTriangleList: TriangleList ){
-        if( isPrintPDF_ == true || myTriangleList.lastTapSide_ < 1 || myTriangleList.isDoubleTap_ == false ) return
+        if( isPrintPDF_ == true || myTriangleList.lastTapSide_ < 1 || myTriangleList.isDoubleTap_ == false ) {
+            shadowTri_ = Triangle( 0f, 0f, 0f )
+            return
+        }
 
         if( myTriangleList.lastTapNum_ < 1 ) myTriangleList.lastTapNum_ = myTriangleList.size()
         val shadowParent = myTriangleList.get(number = myTriangleList.lastTapNum_ )
@@ -551,14 +563,14 @@ val sokt = PathAndOffset(
         if( shadowTapSide != 3) {
             val shadowTapNum = myTriangleList.lastTapNum_
             val shadowTapLength = shadowParent.getLengthByIndexForce( shadowTapSide ) * 0.75f
-            val shadowTri = Triangle( shadowParent, myTriangleList.lastTapSide_, shadowTapLength, shadowTapLength )
+            shadowTri_ = Triangle( shadowParent, myTriangleList.lastTapSide_, shadowTapLength, shadowTapLength )
             //shadowTri.setDimPoint()
-            val spca = shadowTri.pointCA_
-            val spab = shadowTri.pointAB_
-            val spbc = shadowTri.pointBC_
+            val spca = shadowTri_.pointCA_
+            val spab = shadowTri_.pointAB_
+            val spbc = shadowTri_.pointBC_
 
-            shadowTri.setScale( myTriangleList.myScale )
-            canvas.drawPath( makeTriangleFillPath( shadowTri ), paintGray )
+            shadowTri_.setScale( myTriangleList.myScale )
+            canvas.drawPath( makeTriangleFillPath( shadowTri_ ), paintGray )
             //        drawTriLines( canvas, shadowTri, paintGray )
             canvas.drawTextOnPath( "B " + watchedB_, makePath( spbc,  spab ), 0f, 0f, paintYellow )
             canvas.drawTextOnPath( "C " + watchedC_, makePath( spca,  spbc ), 0f, 0f, paintYellow )
@@ -570,11 +582,11 @@ val sokt = PathAndOffset(
         val point = ded.point
         var pointFlag = ded.pointFlag
 
-        if(isAreaOff_ == false ) str += " : -" + ded.getArea().formattedString(1)+"㎡"
+        if(isAreaOff_ == false ) str += " : -" + ded.getArea().formattedString(2)+"㎡"
         var infoStrLength: Float = str.length * paint.textSize * 0.85f
 
         // boxの時は短くする
-        if(ded.type=="Box") infoStrLength = infoStrLength*0.85f
+        if(ded.type=="Box") infoStrLength = infoStrLength*0.75f
 
         if( isDebug_ == true ){
             val strD = ded.point.x.toString() + " " + ded.point.y.toString()
@@ -729,12 +741,7 @@ val sokt = PathAndOffset(
 
     }
 
-    fun Float?.formattedString(fractionDigits: Int): String{
-        // nullの場合は空文字
-        if(this == null) return ""
-        var format : String = "%.${fractionDigits}f"
-        return format.format(this)
-    }
+
 
     fun drawLine(canvas: Canvas, p1: PointXY, p2: PointXY, sx: Float, sy: Float, paint: Paint){
         canvas.drawLine(p1.x * sx, p1.y * sy, p2.x * sx, p2.y * sy, paint)

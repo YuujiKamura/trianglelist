@@ -36,6 +36,7 @@ import org.json.JSONObject.NULL
 import java.io.*
 import java.time.LocalDate
 import java.util.*
+import kotlin.math.roundToInt
 
 
 data class ResStr(
@@ -64,7 +65,7 @@ interface CustomTextWatcher: TextWatcher{
 }
 
 class MainActivity : AppCompatActivity(),
-        MyDialogFragment.NoticeDialogListener, TextWatcher {
+        MyDialogFragment.NoticeDialogListener {
 
     private val PERMISSIONS = arrayOf(
         Manifest.permission.WRITE_EXTERNAL_STORAGE,
@@ -822,6 +823,9 @@ class MainActivity : AppCompatActivity(),
                 else isSucceed = addTriangleBy(readedFirst)
 
         } else { // if in deduction mode
+            //if (validDeduction(params) == false) return
+
+
             if( strTopA == "" ) {
                 isSucceed = resetDeductionsBy(readedSecond)
                 usedDedPoint = my_view.myDeductionList.get(readedSecond.n).point
@@ -865,6 +869,10 @@ class MainActivity : AppCompatActivity(),
         else params.type = "Circle"
 
         if (validDeduction(params) == true) {
+            // 所属する三角形の判定処理
+            if( params.pt != PointXY(0f, 0f) ) {
+                params.pn = my_view.myTriangleList.isCollide( params.pt.scale( PointXY(1f, -1f ) ) )
+            }
 
             myDeductionList.add(params)
             my_view.setDeductionList(myDeductionList, mScale)
@@ -911,17 +919,15 @@ class MainActivity : AppCompatActivity(),
         //myEditor.ReadLineTo(prms, myELSecond)
         prms.pt = my_view.getTapPoint()
         prms.pts = myDeductionList.get(prms.n).pointFlag
-        if( prms.pt != PointXY(0f, 0f) )prms.pn = my_view.myTriangleList.isCollide(
-            prms.pt.scale(
-                PointXY(
-                    1f,
-                    -1f
-                )
-            )
-        )
+
         myTriangleList.current = prms.pn
 
         if( validDeduction(prms) == true ) {
+            // 所属する三角形の判定処理
+            if( prms.pt != PointXY(0f, 0f) ) {
+                prms.pn = my_view.myTriangleList.isCollide( prms.pt.scale( PointXY(1f, -1f ) ) )
+            }
+
             myDeductionList.replace(prms.n, prms)
             return true
         }
@@ -1031,7 +1037,21 @@ class MainActivity : AppCompatActivity(),
 
         }
         else {
-            my_view.myTriangleList.getTap(my_view.localPressPoint.scale(PointXY(0f, 0f), 1f, -1f))
+            val lpp = my_view.localPressPoint.scale(PointXY(0f, 0f), 1f, -1f)
+
+            val slpp = my_view.shadowTri_.getTapLength( lpp )
+            if( slpp == 1) {
+                findViewById<EditText>(R.id.editLengthB1).requestFocus()
+//                my_view.myTriangleList.lastTapSide_ = 1
+                return
+            }
+            if( slpp == 2){
+                findViewById<EditText>(R.id.editLengthC1).requestFocus()
+//                my_view.myTriangleList.lastTapSide_ = 2
+                return
+            }
+
+            my_view.myTriangleList.getTap( lpp )
 
             if ( my_view.myTriangleList.lastTapNum_ != 0 ) {
                 //Toast.makeText(this, "Triangle tap", Toast.LENGTH_SHORT).show()
@@ -1058,12 +1078,12 @@ class MainActivity : AppCompatActivity(),
                     inputMethodManager.showSoftInput(findViewById(R.id.editLengthA2), 0)
                     my_view.setParentSide(my_view.getTriangleList().lastTapNum_, 3)
                 }
-                if(my_view.myTriangleList.lastTapSide_ == 1) {
+                if( my_view.myTriangleList.lastTapSide_ == 1 || slpp == 1 ) {
                     autoConnection(1)
                     //findViewById<EditText>(R.id.editText5).requestFocus()
                     //inputMethodManager.showSoftInput(findViewById(R.id.editText5), 0)
                 }
-                if(my_view.myTriangleList.lastTapSide_ == 2) {
+                if( my_view.myTriangleList.lastTapSide_ == 2 || slpp == 2 ) {
                     autoConnection(2)
                     //findViewById<EditText>(R.id.editText6).requestFocus()
                     //inputMethodManager.showSoftInput(findViewById(R.id.editText6), 0)
@@ -2247,34 +2267,22 @@ class MainActivity : AppCompatActivity(),
 
     fun setTitles(){
         findViewById<EditText>(R.id.rosenname).setText(rosenname_)
-        title = rStr_.menseki_ + ": ${myTriangleList.getArea() - myDeductionList.getArea()} m^2"
+
+        val dedArea = myDeductionList.getArea()
+        val triArea = myTriangleList.getArea()
+        val totalArea = roundByUnderTwo( triArea - dedArea )
+        title = rStr_.menseki_ + ": ${ totalArea.formattedString(2) } m^2"
+
         if( myTriangleList.lastTapNum_ > 0 ) title = rStr_.menseki_ + ": ${myTriangleList.getArea() - myDeductionList.getArea()} m^2" + " (${ myTriangleList.getAreaI(
             myTriangleList.lastTapNum_
         ) - myDeductionList.getAreaN(myTriangleList.lastTapNum_) } m^2)"
     }
 
-    override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
-        //TODO("Not yet implemented")
+    fun roundByUnderTwo(fp: Float) :Float {
+        val ip: Float = fp * 100f
+        ip.roundToInt()
+        val rfp: Float = ip / 100
+        return rfp
     }
-
-    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-        // テキスト変更後に変更されたテキストを取り出す
-        //val inputStr = s.toString()
-        //val isFocusedB1 = findViewById<EditText>(R.id.editLengthB1).isFocused
-        //val isFocusedC1 = findViewById<EditText>(R.id.editLengthC1).isFocused
-
-
-        //if( isFocusedB1 == true && ( watcherCount_ == 2 || ( watcherCount_ == 0 && inputStr != "0.0" ) ) ) my_view.watchedB_ = inputStr
-        //else if( isFocusedC1 == true && ( watcherCount_ == 3 || ( watcherCount_ == 0 && inputStr != "0.0" ) ) ) my_view.watchedC_ = inputStr
-
-        //my_view.invalidate()
-        //watcherCount_++
-        //if( watcherCount_ > 3 ) watcherCount_ = 0
-    }
-
-    override fun afterTextChanged(s: Editable?) {
-
-    }
-
 
 } // end of class
