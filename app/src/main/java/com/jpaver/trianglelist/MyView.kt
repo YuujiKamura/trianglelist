@@ -100,7 +100,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     val isSkipDraw_ = true
     var isDebug_ = false
     var isPrintPDF_ = false
-    var isAreaOff_ = false
+    var isAreaOff_ = true
 
     lateinit var myCanvas: Canvas
 

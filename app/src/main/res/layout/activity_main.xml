@@ -157,7 +157,7 @@
             android:layout_marginStart="16dp"
             android:layout_alignTop="@id/fab_texminus"
             android:layout_marginTop="50dp"
-            android:visibility="invisible"
+            android:visibility="visible"
             app:fabSize="mini"
             app:layout_constraintTop_toBottomOf="@id/fab_texminus"
             app:srcCompat="@android:drawable/ic_menu_info_details"

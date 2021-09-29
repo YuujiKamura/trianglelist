@@ -726,6 +726,7 @@ public class Triangle extends EditObject implements Cloneable {
         return triIsValid != null;
     }
 
+    // 子のA辺が書き換わったら、それを写し取ってくる。同一辺長接続のとき（１か２）以外はリターン。
     public void resetByChild(Triangle myChild){
         int cbc = myChild.myParentBC_;
         childSide_ = myChild.myParentBC_;

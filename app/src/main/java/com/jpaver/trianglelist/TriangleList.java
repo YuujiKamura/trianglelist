@@ -485,15 +485,15 @@ public class TriangleList extends EditList implements Cloneable {
 
     //次以降の三角形の親番号を全部書き換える、ただし連続しない親で、かつ自分より若い親の場合はそのままにする。
     // この関数自体は、どの三角形も書き換えない。
-    public void rewriteAllNumbersFrom( Triangle nextTriangle, int count){
-        for(int i = nextTriangle.myNumber_; i < trilist_.size(); i++){
-            Triangle tri2 = trilist_.get(i);
-            if( tri2.hasConstantParent() == false && tri2.myParentNumber_ < nextTriangle.myNumber_ ) {
-                tri2.myNumber_ += count;
+    public void rewriteAllNumbersFrom( Triangle startTriangle, int numberChange){
+        for(int i = startTriangle.myNumber_; i < trilist_.size(); i++){
+            Triangle triIt = trilist_.get(i);
+            if( triIt.hasConstantParent() == false && triIt.myParentNumber_ <= startTriangle.myNumber_ ) {
+                triIt.myNumber_ += numberChange;
             }
             else{
-                tri2.myParentNumber_ += count;
-                tri2.myNumber_ += count;
+                triIt.myParentNumber_ += numberChange;
+                triIt.myNumber_ += numberChange;
             }
         }
     }
@@ -527,11 +527,11 @@ public class TriangleList extends EditList implements Cloneable {
         trilist_.remove(number-1);
 
         //ひとつ前の三角形を基準にして
-        Triangle nextTriangle = trilist_.get(number-2);
+        Triangle parentTriangle = trilist_.get(number-2);
         //次以降の三角形の親番号を全部書き換える
-        rewriteAllNumbersFrom( nextTriangle, -1 );
+        rewriteAllNumbersFrom( parentTriangle, -1 );
 
-        resetConnectedTriangles(nextTriangle.myNumber_, nextTriangle);
+        resetConnectedTriangles(parentTriangle.myNumber_, parentTriangle);
 
         current = number -1;
         lastTapNum_ = number -1;

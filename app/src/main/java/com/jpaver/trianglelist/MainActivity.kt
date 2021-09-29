@@ -738,16 +738,23 @@ class MainActivity : AppCompatActivity(),
 
         fab_debug.setOnClickListener { view ->
             //my_view.isDebug_ = !my_view.isDebug_
-            //my_view.invalidate()
 
-            if(my_view.isDebug_==true) fab_debug.backgroundTintList = getColorStateList(R.color.colorLime)
-            else fab_debug.backgroundTintList = getColorStateList(R.color.colorAccent)
+            if( my_view.isAreaOff_ == false ){
+                my_view.isAreaOff_ = true
+                fab_debug.backgroundTintList = getColorStateList(R.color.colorAccent)
+            }
+            else{
+                my_view.isAreaOff_ = false
+                fab_debug.backgroundTintList = getColorStateList(R.color.colorLime)
+            }
+
+            my_view.invalidate()
 
             // オートセーブpdf, dxf
-            if( BuildConfig.BUILD_TYPE == "debug" ) {
-                AutoSavePDF()
+            //if( BuildConfig.BUILD_TYPE == "debug" ) {
+            //    AutoSavePDF()
                 //AutoSaveDXF()
-            }
+            //}
 
         }
 
@@ -861,7 +868,7 @@ class MainActivity : AppCompatActivity(),
 
     fun addDeductionBy(params: Params) : Boolean {
         params.pt = my_view.getTapPoint()
-        params.pts = PointXY(0f, 0f)
+        params.pts = params.pt //PointXY(0f, 0f)
         params.pn = my_view.myTriangleList.isCollide(dParams_.pt.scale(PointXY(1f, -1f)))
 
         //形状の自動判定
@@ -1851,7 +1858,7 @@ class MainActivity : AppCompatActivity(),
         writer.rStr_ = rStr_
         writer.setNames(koujiname_, rosenname_, gyousyaname_, zumennum_)
 
-        my_view.isAreaOff_ = false
+        //my_view.isAreaOff_ = false
         writer.isRulerOff_ = true
 
         writer.startNewPage(
@@ -2273,9 +2280,7 @@ class MainActivity : AppCompatActivity(),
         val totalArea = roundByUnderTwo( triArea - dedArea )
         title = rStr_.menseki_ + ": ${ totalArea.formattedString(2) } m^2"
 
-        if( myTriangleList.lastTapNum_ > 0 ) title = rStr_.menseki_ + ": ${myTriangleList.getArea() - myDeductionList.getArea()} m^2" + " (${ myTriangleList.getAreaI(
-            myTriangleList.lastTapNum_
-        ) - myDeductionList.getAreaN(myTriangleList.lastTapNum_) } m^2)"
+        if( myTriangleList.lastTapNum_ > 0 ) title = rStr_.menseki_ + ": ${myTriangleList.getArea() - myDeductionList.getArea()} m^2" + " (${ myTriangleList.getAreaI( myTriangleList.lastTapNum_ ) - myDeductionList.getAreaN(myTriangleList.lastTapNum_) } m^2)"
     }
 
     fun roundByUnderTwo(fp: Float) :Float {
