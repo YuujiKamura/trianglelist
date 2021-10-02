@@ -33,15 +33,15 @@ public class Triangle extends EditObject implements Cloneable {
     protected int nameSideAlign_ = 0;
 
     protected double myTheta_, myAlpha_, myPowA_, myPowB_, myPowC_;
-    protected float myAngle_ = 180f;
-    protected float myAngleCA_ = 0f;
-    protected float myAngleAB_ = 0f;
-    protected float myAngleBC_ = 0f;
+    protected float angleInGlobal_ = 180f;
+    protected float angleInnerCA_ = 0f;
+    protected float angleInnerAB_ = 0f;
+    protected float angleInnerBC_ = 0f;
     protected float dimAngleB_ = 0f;
     protected float dimAngleC_ = 0f;
 
-    protected int myParentNumber_ = -1; // 0:root
-    protected int myParentBC_ = 0;   // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
+    protected int parentNumber_ = -1; // 0:root
+    protected int parentBC_ = 0;   // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
     protected int connectionType_ = 0; // 0:sameByParent, 1:differentLength, 2:floatAndDifferent
     protected int connectionLCR_ = 2; // 0:L 1:C 2:R
     protected ConneParam cParam_ = new ConneParam(0, 0, 2, 0f);
@@ -92,11 +92,11 @@ public class Triangle extends EditObject implements Cloneable {
             b.lengthAforce_ = this.lengthAforce_;
             b.lengthBforce_ = this.lengthBforce_;
             b.lengthCforce_ = this.lengthCforce_;
-            b.myAngle_ = this.myAngle_;
+            b.angleInGlobal_ = this.angleInGlobal_;
             b.myName_ = this.myName_;
             b.myNumber_ = this.myNumber_;
-            b.myParentBC_ = this.myParentBC_;
-            b.myParentNumber_ = myParentNumber_;
+            b.parentBC_ = this.parentBC_;
+            b.parentNumber_ = parentNumber_;
             b.dimPointA_ = this.dimPointA_;
             b.myDimAlignA_ = this.myDimAlignA_;
             b.myDimAlignB_ = this.myDimAlignB_;
@@ -142,9 +142,9 @@ public class Triangle extends EditObject implements Cloneable {
     Triangle(float A, float B, float C){
         setNumber(1);
         pointCA_ = new PointXY(0f,0f);
-        myAngle_ = 180f;
-        initBasicArguments(A, B, C, pointCA_, myAngle_);
-        calcPoints(pointCA_, myAngle_);
+        angleInGlobal_ = 180f;
+        initBasicArguments(A, B, C, pointCA_, angleInGlobal_);
+        calcPoints(pointCA_, angleInGlobal_);
         //myDimAlign_ = autoSetDimAlign();
     }
 
@@ -176,10 +176,16 @@ public class Triangle extends EditObject implements Cloneable {
         set(myParent, cParam, B, C);
     }
 
+    Triangle( Triangle child, float A, float B, float C ){
+        if( child.validTriangle() == false ) return;
+        PointXY basePoint = child.getPointBySide( child.parentBC_ );
+        float baseAngle = child.getAngleBySide( child.parentBC_ );
+        initBasicArguments( A, B, C, basePoint, baseAngle );
+    }
 
-    Triangle(Triangle myParent, int A, float B, float C){
-        initBasicArguments(myParent.getLengthByIndex(A), B, C, myParent.getPointBySide(A), myParent.getAngleBySide(A));
-        set(myParent, A, B, C);
+    Triangle(Triangle myParent, int pbc, float B, float C){
+        initBasicArguments(myParent.getLengthByIndex(pbc), B, C, myParent.getPointBySide(pbc), myParent.getAngleBySide(pbc));
+        set(myParent, pbc, B, C);
     }
 
     Triangle(Triangle myParent, Params dP){
@@ -211,16 +217,16 @@ public class Triangle extends EditObject implements Cloneable {
         this.lengthCforce_ = C;
         valid_ = validTriangle();
 
-        //this.pointCA_ = new PointXY( pCA.getX(), pCA.getY() );
+        this.pointCA_ = new PointXY( pCA.getX(), pCA.getY() );
         this.pointAB_ = new PointXY(0.0f, 0.0f);
         this.pointBC_ = new PointXY(0.0f, 0.0f);
         this.pointCenter_ = new PointXY(0.0f, 0.0f);
         //this.pointNumber_ = new PointXY(0.0f, 0.0f);
 
-        this.myAngle_ = angle;
-        this.myAngleCA_ = 0;
-        this.myAngleAB_ = 0;
-        this.myAngleBC_ = 0;
+        this.angleInGlobal_ = angle;
+        this.angleInnerCA_ = 0;
+        this.angleInnerAB_ = 0;
+        this.angleInnerBC_ = 0;
         //childSide_ = 0;
         //myDimAlignA = 0;
         //myDimAlignB = 0;
@@ -235,17 +241,17 @@ public class Triangle extends EditObject implements Cloneable {
 
     public void setConnectionType(ConneParam cParam ){
         //myParentBC_= cParam.getSide();
-        myParentNumber_ = parent_.getMyNumber_();
+        parentNumber_ = parent_.getMyNumber_();
         connectionType_ = cParam.getType();
         connectionLCR_ = cParam.getLcr();
         cParam_ = cParam.clone();
 
         switch( cParam.getSide() ){
             case 1:
-                myAngle_ = parent_.getAngleMpAB();
+                angleInGlobal_ = parent_.getAngleMpAB();
                 break;
             case 2:
-                myAngle_ = parent_.getAngleMmCA();
+                angleInGlobal_ = parent_.getAngleMmCA();
                 break;
         }
 
@@ -316,30 +322,30 @@ public class Triangle extends EditObject implements Cloneable {
             case 0:
                 switch ( cParam_.getSide() ) {
                 case 1:
-                    myParentBC_ = 4;
+                    parentBC_ = 4;
                     break;
                 case 2:
-                    myParentBC_ = 6;
+                    parentBC_ = 6;
                     break;
                 }
                 break;
             case 1:
                 switch ( cParam_.getSide() ) {
                     case 1:
-                        myParentBC_ = 7;
+                        parentBC_ = 7;
                         break;
                     case 2:
-                        myParentBC_ = 8;
+                        parentBC_ = 8;
                         break;
                 }
                 break;
             case 2:
                 switch ( cParam_.getSide() ) {
                     case 1:
-                        myParentBC_ = 3;
+                        parentBC_ = 3;
                         break;
                     case 2:
-                        myParentBC_ = 5;
+                        parentBC_ = 5;
                         break;
                 }
                 break;
@@ -351,7 +357,7 @@ public class Triangle extends EditObject implements Cloneable {
         pointCA_ = getParentPointByType( cParam.getSide(), cParam.getType(), cParam.getLcr() );
         connectionType_ = cParam.getType();
         connectionLCR_ = cParam.getLcr();
-        calcPoints( pointCA_, myAngle_);
+        calcPoints( pointCA_, angleInGlobal_);
         return pointCA_;
     }
 
@@ -360,7 +366,7 @@ public class Triangle extends EditObject implements Cloneable {
         pointCA_ = getParentPointByType( pbc, pct, lcr );
         connectionType_ = pct;
         connectionLCR_ = lcr;
-        calcPoints( pointCA_, myAngle_);
+        calcPoints( pointCA_, angleInGlobal_);
         return pointCA_;
     }
 
@@ -383,7 +389,7 @@ public class Triangle extends EditObject implements Cloneable {
     }
 
     public Boolean hasConstantParent(){
-        int iscons = myNumber_ - myParentNumber_;
+        int iscons = myNumber_ - parentNumber_;
         return iscons <= 1;
     }
 
@@ -445,15 +451,15 @@ public class Triangle extends EditObject implements Cloneable {
 
     Triangle set(Triangle parent, ConneParam cParam, float B, float C) {
         setParent( parent, cParam.getSide() );
-        myAngle_ = parent_.getAngleBySide( cParam.getSide() );
+        angleInGlobal_ = parent_.getAngleBySide( cParam.getSide() );
 
         setConnectionType( cParam );
 
 
-        initBasicArguments(lengthA_, B, C, pointCA_, myAngle_);
+        initBasicArguments(lengthA_, B, C, pointCA_, angleInGlobal_);
         if(!validTriangle()) return null;
 
-        calcPoints(pointCA_, myAngle_);
+        calcPoints(pointCA_, angleInGlobal_);
 
         setDimAlignByChild();
 
@@ -522,55 +528,55 @@ public class Triangle extends EditObject implements Cloneable {
 
 
         if(pbc == 1) { // B
-            myParentBC_ = 1;
+            parentBC_ = 1;
 
-            myAngle_ = parent.getAngleMpAB();
+            angleInGlobal_ = parent.getAngleMpAB();
         } else if(pbc == 2) { // C
-            myParentBC_ = 2;
-            myAngle_ = parent.getAngleMmCA();
+            parentBC_ = 2;
+            angleInGlobal_ = parent.getAngleMmCA();
         } else if(pbc == 3){ // B-R
-            myParentBC_ = 3;
-            myAngle_ = parent.getAngleMpAB();
+            parentBC_ = 3;
+            angleInGlobal_ = parent.getAngleMpAB();
         } else if(pbc == 4) { //B-L
-            myParentBC_ = 4;
-            myAngle_ = parent.getAngleMpAB();
+            parentBC_ = 4;
+            angleInGlobal_ = parent.getAngleMpAB();
         } else if(pbc == 5) { //C-R
-            myParentBC_ = 5;
-            myAngle_ = parent.getAngleMmCA();
+            parentBC_ = 5;
+            angleInGlobal_ = parent.getAngleMmCA();
         } else if(pbc == 6) { //C-L
-            myParentBC_ = 6;
-            myAngle_ = parent.getAngleMmCA();
+            parentBC_ = 6;
+            angleInGlobal_ = parent.getAngleMmCA();
         } else if(pbc == 7) { //B-Center
-            myParentBC_ = 7;
-            myAngle_ = parent.getAngleMpAB();
+            parentBC_ = 7;
+            angleInGlobal_ = parent.getAngleMpAB();
         } else if(pbc == 8) { //C-Center
-            myParentBC_ = 8;
-            myAngle_ = parent.getAngleMmCA();
+            parentBC_ = 8;
+            angleInGlobal_ = parent.getAngleMmCA();
         } else if(pbc == 9) { //B-Float-R
-            myParentBC_ = 9;
-            myAngle_ = parent.getAngleMpAB();
+            parentBC_ = 9;
+            angleInGlobal_ = parent.getAngleMpAB();
         } else if(pbc == 10) { //C-Float-R
-            myParentBC_ = 10;
-            myAngle_ = parent.getAngleMmCA();
+            parentBC_ = 10;
+            angleInGlobal_ = parent.getAngleMmCA();
         } else {
-            myParentBC_ = 0;
+            parentBC_ = 0;
             lengthA_ = 0f;
             lengthAforce_ = 0f;
             pointCA_ = new PointXY(0f, 0f);
-            myAngle_ = 180f;
+            angleInGlobal_ = 180f;
         }
 
-        myParentNumber_ = parent.getMyNumber_();
+        parentNumber_ = parent.getMyNumber_();
 
-        initBasicArguments(lengthA_, B, C, pointCA_, myAngle_);
+        initBasicArguments(lengthA_, B, C, pointCA_, angleInGlobal_);
         if(!validTriangle()) return null;
-        calcPoints(pointCA_, myAngle_);
-        if(myParentBC_ == 4){
+        calcPoints(pointCA_, angleInGlobal_);
+        if(parentBC_ == 4){
             PointXY vector = new PointXY( parent.getPointAB_().getX()- pointAB_.getX(),
                                             parent.getPointAB_().getY()- pointAB_.getY());
             move(vector);
         }
-        if(myParentBC_ == 6){
+        if(parentBC_ == 6){
             PointXY vector = new PointXY( parent.getPointBC_().getX()- pointAB_.getX(),
                                         parent.getPointBC_().getY()- pointAB_.getY());
             move(vector);
@@ -601,30 +607,30 @@ public class Triangle extends EditObject implements Cloneable {
         setParent(parent, A);
 
         if(A == 1) {
-            myParentBC_ = 1;
+            parentBC_ = 1;
             lengthA_ = parent_.getLengthB_();
             lengthA_ = parent_.lengthBforce_;
             pointCA_ = parent_.getPointBC_();
-            myAngle_ = parent_.getAngleMpAB();
+            angleInGlobal_ = parent_.getAngleMpAB();
         } else if(A == 2){
-            myParentBC_ = 2;
+            parentBC_ = 2;
             lengthA_ = parent_.getLengthC_();
             lengthA_ = parent_.lengthCforce_;
             pointCA_ = parent_.getPointCA_();
-            myAngle_ = parent_.getAngleMmCA();
+            angleInGlobal_ = parent_.getAngleMmCA();
         } else {
-            myParentBC_ = 0;
+            parentBC_ = 0;
             lengthA_ = 0f;
             lengthAforce_ = 0f;
             pointCA_ = new PointXY(0f, 0f);
-            myAngle_ = 180f;
+            angleInGlobal_ = 180f;
         }
 
-        myParentNumber_ = parent_.getMyNumber_();
-        parent_.setChild(this, myParentBC_ );
+        parentNumber_ = parent_.getMyNumber_();
+        parent_.setChild(this, parentBC_);
 
-        initBasicArguments(lengthA_, B, C, pointCA_, myAngle_);
-        calcPoints(pointCA_, myAngle_);
+        initBasicArguments(lengthA_, B, C, pointCA_, angleInGlobal_);
+        calcPoints(pointCA_, angleInGlobal_);
 
         //myDimAlign = setDimAlign();
 
@@ -647,31 +653,32 @@ public class Triangle extends EditObject implements Cloneable {
     public void reload() {
         if(parent_ != null){
             parent_.reload();
-            calcPoints(pointCA_ =parent_.getPointBySide(myParentBC_), myAngle_ =parent_.getAngleBySide(myParentBC_));
+            calcPoints(pointCA_ =parent_.getPointBySide(parentBC_), angleInGlobal_ =parent_.getAngleBySide(parentBC_));
         }
     }
 
-    Triangle reset( Params tParams ){
+    Triangle reset( Params prm ){
         //ConneParam thisCP = cParam_.clone();
-        lengthA_ = tParams.getA();
-        lengthAforce_ = tParams.getA();
-        setCParamFromParentBC( tParams.getPl() );
-        myParentBC_ = tParams.getPl();
+        lengthA_ = prm.getA();
+        lengthAforce_ = prm.getA();
+        setCParamFromParentBC( prm.getPl() );
+        parentBC_ = prm.getPl();
+        parentNumber_ = prm.getPn();
 
-        if(parent_ == null) resetLength( tParams.getA(), tParams.getB(), tParams.getC() );
+        if( parent_ == null || parentNumber_ < 1 ) resetLength( prm.getA(), prm.getB(), prm.getC() );
         else{
-            set(parent_, cParam_, tParams.getB(), tParams.getC() );
+            set(parent_, cParam_, prm.getB(), prm.getC() );
         }
              //set(parent_, tParams.getPl(), tParams.getA(), tParams.getB(), tParams.getC() );
         //cParam_ = thisCP.clone();
-        this.myName_ = tParams.getName();
+        this.myName_ = prm.getName();
         return this.clone();
     }
 
     Triangle reset(Triangle newTri){
         ConneParam thisCP = cParam_.clone();
-        if(parent_ == null) resetLength( newTri.lengthA_, newTri.lengthB_, newTri.lengthC_);
-        else set(parent_, newTri.myParentBC_, newTri.lengthA_, newTri.lengthB_, newTri.lengthC_);
+        if( parent_ == null || parentNumber_ < 1 ) resetLength( newTri.lengthA_, newTri.lengthB_, newTri.lengthC_);
+        else set(parent_, newTri.parentBC_, newTri.lengthA_, newTri.lengthB_, newTri.lengthC_);
         cParam_ = thisCP.clone();
         this.myName_ = newTri.myName_;
         return this.clone();
@@ -687,8 +694,8 @@ public class Triangle extends EditObject implements Cloneable {
 
     Triangle resetLength(float A, float B, float C){
         //lengthA = A; lengthB = B; lengthC = C;
-        initBasicArguments(A, B, C, pointCA_, myAngle_);
-        calcPoints(pointCA_, myAngle_);
+        initBasicArguments(A, B, C, pointCA_, angleInGlobal_);
+        calcPoints(pointCA_, angleInGlobal_);
         return this.clone();
     }
 
@@ -699,7 +706,7 @@ public class Triangle extends EditObject implements Cloneable {
 
     public void resetByChild(Triangle myChild, ConneParam cParam){
         int cbc = myChild.cParam_.getSide();
-        childSide_ = myChild.myParentBC_;
+        childSide_ = myChild.parentBC_;
         if(parent_ == null) {
             if( cbc == 1 ) resetLength(lengthA_, myChild.lengthA_, lengthC_);
             if( cbc == 2 ) resetLength(lengthA_, lengthB_, myChild.lengthA_);
@@ -728,19 +735,19 @@ public class Triangle extends EditObject implements Cloneable {
 
     // 子のA辺が書き換わったら、それを写し取ってくる。同一辺長接続のとき（１か２）以外はリターン。
     public void resetByChild(Triangle myChild){
-        int cbc = myChild.myParentBC_;
-        childSide_ = myChild.myParentBC_;
+        int cbc = myChild.parentBC_;
+        childSide_ = myChild.parentBC_;
         if(parent_ == null) {
             if( cbc == 1 ) resetLength(lengthA_, myChild.lengthA_, lengthC_);
             if( cbc == 2 ) resetLength(lengthA_, lengthB_, myChild.lengthA_);
             return;
         }
         if( cbc == 1 ) {
-            set(parent_, myParentBC_, lengthA_, myChild.lengthA_, lengthC_);
+            set(parent_, parentBC_, lengthA_, myChild.lengthA_, lengthC_);
             childB_ = myChild.clone();
         }
         if( cbc == 2 ){
-            set(parent_, myParentBC_, lengthA_, lengthB_, myChild.lengthA_);
+            set(parent_, parentBC_, lengthA_, lengthB_, myChild.lengthA_);
             childC_ = myChild.clone();
         }
         setDimAlignByChild();
@@ -805,8 +812,8 @@ public class Triangle extends EditObject implements Cloneable {
 
     //maybe not use.
     private void setParentInfo(int myParNum, int myParBC, int myConne){
-        this.myParentNumber_ = myParNum;
-        this.myParentBC_ = myParBC;
+        this.parentNumber_ = myParNum;
+        this.parentBC_ = myParBC;
     }
 
     public boolean validTriangle(){
@@ -839,9 +846,9 @@ public class Triangle extends EditObject implements Cloneable {
         this.pointBC_.set((float)(this.pointAB_.getX()+(this.lengthB_ *Math.cos(this.myTheta_ +this.myAlpha_))),
                          (float)(this.pointAB_.getY()+(this.lengthB_ *Math.sin(this.myTheta_ +this.myAlpha_))));
 
-        this.myAngleAB_ = (float)calculateInternalAngle(this.pointCA_, this.pointAB_, this.pointBC_);
-        this.myAngleBC_ = (float)calculateInternalAngle(this.pointAB_, this.pointBC_, this.pointCA_);
-        this.myAngleCA_ = (float)calculateInternalAngle(this.pointBC_, this.pointCA_, this.pointAB_);
+        this.angleInnerAB_ = (float)calculateInternalAngle(this.pointCA_, this.pointAB_, this.pointBC_);
+        this.angleInnerBC_ = (float)calculateInternalAngle(this.pointAB_, this.pointBC_, this.pointCA_);
+        this.angleInnerCA_ = (float)calculateInternalAngle(this.pointBC_, this.pointCA_, this.pointAB_);
 
         this.pointCenter_.set((pointAB_.getX()+ pointBC_.getX()+ pointCA_.getX())/3,
                                 (pointAB_.getY()+ pointBC_.getY()+ pointCA_.getY())/3 );
@@ -895,7 +902,7 @@ public class Triangle extends EditObject implements Cloneable {
 
     public int autoSetDimAlign(){ // 1:下 3:上
 
-        myDimAlignA_ = calcDimAlignByInnerAngleOf(0, myAngle_);
+        myDimAlignA_ = calcDimAlignByInnerAngleOf(0, angleInGlobal_);
         myDimAlignB_ = calcDimAlignByInnerAngleOf(1, getAngleMpAB());
         myDimAlignC_ = calcDimAlignByInnerAngleOf(2, getAngleMmCA());
 
@@ -931,8 +938,8 @@ public class Triangle extends EditObject implements Cloneable {
 
     public int calcDimAlignByInnerAngleOf(int ABC, float angle){    // 夾角の、1:外 　3:内
             if (ABC == 0 ){
-                if( myParentBC_ == 9 || myParentBC_ == 10 ) return 1;
-                if( myParentBC_ > 2 || childB_ != null || childC_ != null ) return 3;
+                if( parentBC_ == 9 || parentBC_ == 10 ) return 1;
+                if( parentBC_ > 2 || childB_ != null || childC_ != null ) return 3;
             }
             if (ABC == 1 && ( childB_ != null ) ) return 1;
             if (ABC == 2 && ( childC_ != null ) ) return 1;
@@ -991,7 +998,7 @@ public class Triangle extends EditObject implements Cloneable {
     }
 
     public int getDimAlignA(){
-        return calcDimAlignByInnerAngleOf(0, myAngle_);
+        return calcDimAlignByInnerAngleOf(0, angleInGlobal_);
        /*
         if( myAngle <= 90 || getAngle() >= 270 ) {
             if( lengthA*scale_ > 1.5f ) return myDimAlignA = 3;
@@ -1108,7 +1115,7 @@ public class Triangle extends EditObject implements Cloneable {
     }
 
     public int getParentSide() {
-        int i = myParentBC_;
+        int i = parentBC_;
         if(i==1 || i==3 || i==4 || i==7 || i==9) return 1;
         if(i==2 || i==5 || i==6 || i==8 || i==10) return 2;
         else return 0;
@@ -1121,15 +1128,16 @@ public class Triangle extends EditObject implements Cloneable {
         else return 0;
     }
 
-    public float getAngle() { return this.myAngle_; }
-    public float getAngleAB() { return this.myAngleAB_; }
-    public float getAngleBC() { return this.myAngleBC_; }
-    public float getAngleCA() { return this.myAngleCA_; }
-    public float getAngleMmCA() { return this.myAngle_ - this.myAngleCA_; }
-    public float getAngleMpAB() { return this.myAngle_ + this.myAngleAB_; }
+    public float getAngle() { return this.angleInGlobal_; }
+    public float getAngleAB() { return this.angleInnerAB_; }
+    public float getAngleBC() { return this.angleInnerBC_; }
+    public float getAngleCA() { return this.angleInnerCA_; }
+    public float getAngleMmCA() { return this.angleInGlobal_ - this.angleInnerCA_; }
+    public float getAngleMpAB() { return this.angleInGlobal_ + this.angleInnerAB_; }
+    public float getAngleMpBC() { return this.angleInGlobal_ + this.angleInnerBC_; }
 
-    public int getParentBC() { return myParentBC_; }
-    public int getParentNumber() { return myParentNumber_; }
+    public int getParentBC() { return parentBC_; }
+    public int getParentNumber() { return parentNumber_; }
     public int getMyNumber_() { return myNumber_; }
     public void setNumber(int num) { myNumber_ = num; }
     public void setColor(int num) { color_ = num; }
@@ -1185,7 +1193,7 @@ public class Triangle extends EditObject implements Cloneable {
         lengthA_ *= scale;
         lengthB_ *= scale;
         lengthC_ *= scale;
-        calcPoints(pointCA_, myAngle_);
+        calcPoints(pointCA_, angleInGlobal_);
     }
 
     public void scale(PointXY basepoint, float scale){
@@ -1198,7 +1206,7 @@ public class Triangle extends EditObject implements Cloneable {
         lengthA_ *= scale;
         lengthB_ *= scale;
         lengthC_ *= scale;
-        calcPoints(pointCA_, myAngle_);
+        calcPoints(pointCA_, angleInGlobal_);
 
     }
 
@@ -1226,11 +1234,11 @@ public class Triangle extends EditObject implements Cloneable {
             this.pointAB_ = this.pointBC_;
             this.pointBC_ = pp.clone();
 
-            pf = this.myAngleCA_;
-            this.myAngleCA_ = this.myAngleAB_;
-            this.myAngle_   = this.myAngleAB_;
-            this.myAngleAB_ = this.myAngleBC_;
-            this.myAngleBC_ = pf;
+            pf = this.angleInnerCA_;
+            this.angleInnerCA_ = this.angleInnerAB_;
+            this.angleInnerAB_ = this.angleInnerBC_;
+            this.angleInnerBC_ = pf;
+            this.angleInGlobal_ = getAngleMmCA()-this.angleInnerAB_;
 
             pp = this.dimPointA_.clone();
             this.dimPointA_ = this.dimPointB_;
@@ -1263,11 +1271,12 @@ public class Triangle extends EditObject implements Cloneable {
             this.pointBC_ = this.pointAB_;
             this.pointAB_ = pp.clone();
 
-            pf = this.myAngleCA_;
-            this.myAngleCA_ = this.myAngleBC_;
-            this.myAngle_   = this.myAngleBC_;
-            this.myAngleBC_ = this.myAngleAB_;
-            this.myAngleAB_ = pf;
+            float ga = angleInGlobal_;
+            pf = this.angleInnerCA_;
+            this.angleInnerCA_ = this.angleInnerBC_;
+            this.angleInnerBC_ = this.angleInnerAB_;
+            this.angleInnerAB_ = pf;
+            this.angleInGlobal_ = this.angleInGlobal_ + this.angleInnerCA_ + this.angleInnerBC_;
 
             pp = this.dimPointA_.clone();
             this.dimPointA_ = this.dimPointC_;
@@ -1288,21 +1297,32 @@ public class Triangle extends EditObject implements Cloneable {
         return this;
     }
 
-    public void setReversePBC( int pbc) {
+    public void setReverseDefSide(int pbc, Boolean BtoC) {
         // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
-        if( pbc == 3 ) myParentBC_ = 4;
-        else if( pbc == 4 ) myParentBC_ = 3;
-        else if( pbc == 5 ) myParentBC_ = 6;
-        else if( pbc == 6 ) myParentBC_ = 5;
-        else if( pbc == 9 ) myParentBC_ = 10;
-        else if( pbc == 10 ) myParentBC_ = 9;
-        else myParentBC_ = pbc;
+        if( BtoC == false ){
+            if( pbc == 3 ) parentBC_ = 4;
+            else if( pbc == 4 ) parentBC_ = 3;
+            else if( pbc == 5 ) parentBC_ = 6;
+            else if( pbc == 6 ) parentBC_ = 5;
+            else if( pbc == 9 ) parentBC_ = 9;
+            else if( pbc == 10 ) parentBC_ = 10;
+            else parentBC_ = pbc;
+        }
+        if( BtoC == true ){
+            if( pbc == 3 ) parentBC_ = 6;
+            else if( pbc == 4 ) parentBC_ = 5;
+            else if( pbc == 5 ) parentBC_ = 4;
+            else if( pbc == 6 ) parentBC_ = 3;
+            else if( pbc == 9 ) parentBC_ = 10;
+            else if( pbc == 10 ) parentBC_ = 9;
+            else parentBC_ = - pbc + 3;
+        }
     }
 
     @NotNull
     @Override
     public Params getParams(){
-        return new Params(myName_,"", myNumber_, lengthA_, lengthB_, lengthC_, myParentNumber_, myParentBC_, pointCA_, pointCenter_);
+        return new Params(myName_,"", myNumber_, lengthA_, lengthB_, lengthC_, parentNumber_, parentBC_, pointCA_, pointCenter_);
     }
 
     public void setMyName_(String name){ myName_ = name;}
@@ -1348,9 +1368,9 @@ public class Triangle extends EditObject implements Cloneable {
 
     public void rotate(PointXY basepoint, float degree){
         pointCA_ = pointCA_.rotate(basepoint, degree);
-        myAngle_ += degree;
+        angleInGlobal_ += degree;
 
-        calcPoints(pointCA_, myAngle_);
+        calcPoints(pointCA_, angleInGlobal_);
         //setDimAlign();
 
     }
@@ -1389,6 +1409,6 @@ public class Triangle extends EditObject implements Cloneable {
     }
 
     public boolean isFloating(){
-        return myParentBC_ == 9 || myParentBC_ == 10;
+        return parentBC_ == 9 || parentBC_ == 10;
     }
 }

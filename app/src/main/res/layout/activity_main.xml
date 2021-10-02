@@ -231,8 +231,6 @@
             app:layout_constraintTop_toBottomOf="@+id/fab_setB"
             app:srcCompat="@drawable/set_c" />
 
-
-
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_replace"
             android:layout_width="wrap_content"
@@ -246,7 +244,6 @@
             app:layout_constraintTop_toBottomOf="parent"
             app:srcCompat="@android:drawable/ic_menu_edit"
             android:contentDescription="rewrite shape"/>
-
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_undo"
@@ -308,7 +305,6 @@
             app:srcCompat="@drawable/nijyuu"
             android:contentDescription="flip connect point in horizonal"/>
 
-
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_flag"
             android:layout_width="wrap_content"
@@ -352,6 +348,20 @@
             app:srcCompat="@android:drawable/ic_menu_close_clear_cancel"
             android:contentDescription="delete a shape, tap twice"/>
 
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_numreverse"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignRight="@id/toolbarLayout"
+            android:layout_gravity="top|end"
+            android:layout_marginTop="50dp"
+            android:layout_marginEnd="16dp"
+            android:layout_alignTop="@id/fab_minus"
+            app:layout_constraintTop_toBottomOf="@+id/fab_minus"
+            app:backgroundTint="@color/colorAccent"
+            app:fabSize="mini"
+            app:srcCompat="@android:drawable/ic_popup_sync"
+            android:contentDescription="trilist number reverse"/>
 
         <ProgressBar
             android:id="@+id/indeterminateBar"

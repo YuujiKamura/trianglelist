@@ -17,6 +17,22 @@ class TriListTest {
 
     }
 
+    @Test
+    fun testTriTreeReverse() {
+        val tritree = TriangleList()
+        // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
+        tritree.add( Triangle(5f, 5f, 5f, PointXY(0f,0f), 0f) )
+        tritree.add(1, 1, 5f, 5f, 5f )
+        tritree.add(2, 1, 5f, 5f, 5f )
+        tritree.add(2, 2, 5f, 5f, 5f )
+
+        assertEquals( 5f, tritree.get(4).pointBC_.x, 0.001f )
+
+        tritree.reverse()
+
+        assertEquals( 5f, tritree.get(1).pointBC_.x, 0.001f )
+
+    }
         @Test
     fun testTriListReverse(){
         val triList = TriangleList()
@@ -39,8 +55,8 @@ class TriListTest {
         // ・逆順にソートする
         val triList2 = triList.reverse()
         assertEquals( 1, triList2.get(1).myNumber_ )
-        assertEquals( 0, triList2.get(1).myParentNumber_ )
-        assertEquals( 1, triList2.get(2).myParentNumber_ )
+        assertEquals( -1, triList2.get(1).parentNumber_ )
+        assertEquals( -1, triList2.get(2).parentNumber_ )
 
 
         val triList3 = triList.numbered(5)

@@ -783,7 +783,7 @@ val sokt = PathAndOffset(
 
         var area =""
         if(isAreaOff_ == false ) area = tri.getArea().formattedString(1 )+"m^2"
-        if(isDebug_ == true) area = "cp:"+tri.cParam_.type.toString() + "-"+ tri.cParam_.lcr.toString() +" pbc:"+ tri.myParentBC_.toString() +" Num:"+ tri.myNumber_ +"-"+ tri.myParentNumber_ +" lTS"+ tri.lastTapSide_
+        if(isDebug_ == true) area = "cp:"+tri.cParam_.type.toString() + "-"+ tri.cParam_.lcr.toString() +" pbc:"+ tri.parentBC_.toString() +" Num:"+ tri.myNumber_ +"-"+ tri.parentNumber_ +" lTS"+ tri.lastTapSide_
 
 
         canvas.drawCircle(pnX, pnY, circleSize, paint2)
@@ -1017,7 +1017,7 @@ val sokt = PathAndOffset(
         var printPoint = PointXY(0f,0f)
         val numberList = myTriangleList.getSokutenList( 2, 4 )
 
-        if( separateCount > 1 && numberList.size > 1 && myTriangleList.get(0).myAngle_ > 45f && myTriangleList.get(0).myAngle_ < 135f  ){
+        if( separateCount > 1 && numberList.size > 1 && myTriangleList.get(0).angleInGlobal_ > 45f && myTriangleList.get(0).angleInGlobal_ < 135f  ){
 
             //測点を持つ三角形のリスト
             val numleftList = myTriangleList.getSokutenList( 0, 4 )

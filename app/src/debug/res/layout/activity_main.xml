@@ -284,12 +284,12 @@
         android:layout_height="wrap_content"
         android:layout_alignRight="@id/toolbarLayout"
         android:layout_gravity="top|end"
-        android:layout_alignTop="@id/fab_dimsidew"
         android:layout_marginTop="50dp"
         android:layout_marginEnd="16dp"
+        android:layout_alignTop="@id/fab_dimsidew"
+        app:layout_constraintTop_toBottomOf="@+id/fab_dimsidew"
         app:backgroundTint="@color/colorAccent"
         app:fabSize="mini"
-        app:layout_constraintTop_toBottomOf="@+id/fab_dimsidew"
         app:srcCompat="@drawable/textoutside"
         android:contentDescription="flip dimension text in vertical"/>
 
@@ -299,12 +299,12 @@
         android:layout_height="wrap_content"
         android:layout_alignRight="@id/toolbarLayout"
         android:layout_gravity="top|end"
-        android:layout_alignTop="@id/fab_dimsideh"
         android:layout_marginTop="50dp"
         android:layout_marginEnd="16dp"
+        android:layout_alignTop="@id/fab_dimsideh"
+        app:layout_constraintTop_toBottomOf="@+id/fab_dimsideh"
         app:backgroundTint="@color/colorAccent"
         app:fabSize="mini"
-        app:layout_constraintTop_toBottomOf="@+id/fab_dimsideh"
         app:srcCompat="@drawable/nijyuu"
         android:contentDescription="flip connect point in horizonal"/>
 
@@ -315,12 +315,12 @@
         android:layout_height="wrap_content"
         android:layout_alignRight="@id/toolbarLayout"
         android:layout_gravity="top|end"
-        android:layout_alignTop="@id/fab_nijyuualign"
         android:layout_marginTop="50dp"
         android:layout_marginEnd="16dp"
-        app:fabSize="mini"
+        android:layout_alignTop="@id/fab_nijyuualign"
         app:layout_constraintTop_toBottomOf="@+id/fab_nijyuualign"
         app:srcCompat="@drawable/flag_b"
+        app:fabSize="mini"
         android:contentDescription="flag up a information text"/>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -329,13 +329,13 @@
         android:layout_height="wrap_content"
         android:layout_alignRight="@id/toolbarLayout"
         android:layout_gravity="top|end"
-        android:layout_alignTop="@id/fab_flag"
         android:layout_marginTop="50dp"
         android:layout_marginEnd="16dp"
+        android:layout_alignTop="@id/fab_flag"
+        app:layout_constraintTop_toBottomOf="@+id/fab_flag"
         app:fabSize="mini"
-        app:layout_constraintTop_toBottomOf="@+id/fab_insert"
         app:srcCompat="@drawable/deduction"
-        android:contentDescription="into deduction mode" />
+        android:contentDescription="change deduction mode" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_minus"
@@ -343,14 +343,29 @@
         android:layout_height="wrap_content"
         android:layout_alignRight="@id/toolbarLayout"
         android:layout_gravity="top|end"
-        android:layout_alignTop="@id/fab_deduction"
         android:layout_marginTop="50dp"
         android:layout_marginEnd="16dp"
+        android:layout_alignTop="@id/fab_deduction"
+        app:layout_constraintTop_toBottomOf="@+id/fab_deduction"
         app:backgroundTint="@color/colorAccent"
         app:fabSize="mini"
-        app:layout_constraintTop_toBottomOf="@+id/fab_replace"
         app:srcCompat="@android:drawable/ic_menu_close_clear_cancel"
         android:contentDescription="delete a shape, tap twice"/>
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_numreverse"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignRight="@id/toolbarLayout"
+            android:layout_gravity="top|end"
+            android:layout_marginTop="50dp"
+            android:layout_marginEnd="16dp"
+            android:layout_alignTop="@id/fab_minus"
+            app:layout_constraintTop_toBottomOf="@+id/fab_minus"
+            app:backgroundTint="@color/colorAccent"
+            app:fabSize="mini"
+            app:srcCompat="@android:drawable/ic_popup_sync"
+            android:contentDescription="trilist number reverse"/>
 
         <ProgressBar
             android:id="@+id/indeterminateBar"

@@ -506,9 +506,9 @@ class MainActivity : AppCompatActivity(),
                 var trinum  = my_view.myTriangleList.lastTapNum_
                 var tri = myTriangleList.get(trinum)
 
-                if( dimside == 0 && ( tri.myParentBC_ == 1 ||  tri.myParentBC_ == 2 ) ) {
-                    trinum = tri.myParentNumber_
-                    dimside = tri.myParentBC_
+                if( dimside == 0 && ( tri.parentBC_ == 1 ||  tri.parentBC_ == 2 ) ) {
+                    trinum = tri.parentNumber_
+                    dimside = tri.parentBC_
                 }
 
                 myTriangleList.get(trinum).rotateDimSideAlign(dimside)
@@ -525,9 +525,9 @@ class MainActivity : AppCompatActivity(),
                 var trinum  = my_view.myTriangleList.lastTapNum_
                 var tri = myTriangleList.get(trinum)
 
-                if( dimside == 0 && ( tri.myParentBC_ == 1 ||  tri.myParentBC_ == 2 ) ) {
-                    trinum = tri.myParentNumber_
-                    dimside = tri.myParentBC_
+                if( dimside == 0 && ( tri.parentBC_ == 1 ||  tri.parentBC_ == 2 ) ) {
+                    trinum = tri.parentNumber_
+                    dimside = tri.parentBC_
                 }
 
                 myTriangleList.get(trinum).flipDimAlignH(dimside)
@@ -798,6 +798,13 @@ class MainActivity : AppCompatActivity(),
 
         //    progressBar.visibility = View.INVISIBLE
 
+        }
+
+        fab_numreverse.setOnClickListener{ view ->
+            myTriangleList = myTriangleList.reverse()
+            my_view.setTriangleList(myTriangleList, mScale)
+            my_view.resetView(my_view.lstp())
+            EditorClear(myTriangleList, myTriangleList.current)
         }
     }
 
@@ -2167,7 +2174,7 @@ class MainActivity : AppCompatActivity(),
                         chunks[3].toFloat()
                     )
                 )
-                trilist.getTriangle(trilist.size()).myParentBC_ = chunks[5].toInt()
+                trilist.getTriangle(trilist.size()).parentBC_ = chunks[5].toInt()
             }
             else{
                 val cp = parentBCtoCParam(
@@ -2191,7 +2198,7 @@ class MainActivity : AppCompatActivity(),
                         chunks[3].toFloat()
                     )
                 )
-                trilist.getTriangle(trilist.size()).myParentBC_ = chunks[5].toInt()
+                trilist.getTriangle(trilist.size()).parentBC_ = chunks[5].toInt()
                 // trilist.getTriangle(trilist.size()).setCParamFromParentBC( chunks[5]!!.toInt() )
             }
             val mT = trilist.getTriangle(trilist.size())
