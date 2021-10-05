@@ -737,7 +737,7 @@ public class Triangle extends EditObject implements Cloneable {
     public void resetByChild(Triangle myChild){
         int cbc = myChild.parentBC_;
         childSide_ = myChild.parentBC_;
-        if(parent_ == null) {
+        if( parent_ == null || parentNumber_ < 1 ) {
             if( cbc == 1 ) resetLength(lengthA_, myChild.lengthA_, lengthC_);
             if( cbc == 2 ) resetLength(lengthA_, lengthB_, myChild.lengthA_);
             return;
@@ -1238,7 +1238,11 @@ public class Triangle extends EditObject implements Cloneable {
             this.angleInnerCA_ = this.angleInnerAB_;
             this.angleInnerAB_ = this.angleInnerBC_;
             this.angleInnerBC_ = pf;
-            this.angleInGlobal_ = getAngleMmCA()-this.angleInnerAB_;
+
+            this.angleInGlobal_ = getAngleMmCA() - this.angleInnerAB_;
+
+            if( angleInGlobal_ < 0 ) angleInGlobal_   += 360f;
+            if( angleInGlobal_ > 360 ) angleInGlobal_ -= 360f;
 
             pp = this.dimPointA_.clone();
             this.dimPointA_ = this.dimPointB_;
@@ -1276,7 +1280,10 @@ public class Triangle extends EditObject implements Cloneable {
             this.angleInnerCA_ = this.angleInnerBC_;
             this.angleInnerBC_ = this.angleInnerAB_;
             this.angleInnerAB_ = pf;
-            this.angleInGlobal_ = this.angleInGlobal_ + this.angleInnerCA_ + this.angleInnerBC_;
+            this.angleInGlobal_ += this.angleInnerCA_ + this.angleInnerBC_;
+
+            if( angleInGlobal_ < 0 ) angleInGlobal_   += 360f;
+            if( angleInGlobal_ > 360 ) angleInGlobal_ -= 360f;
 
             pp = this.dimPointA_.clone();
             this.dimPointA_ = this.dimPointC_;

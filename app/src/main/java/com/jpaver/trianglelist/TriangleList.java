@@ -620,14 +620,15 @@ public class TriangleList extends EditList implements Cloneable {
         curtri.myNumber_ = cNum; //useless?
 
         // 親がいるときは、子接続を書き換える
-        if( curtri.parentNumber_ > 0 ){
-            trilist_.get(cNum-2).childSide_ = curtri.parentBC_;
+        if( curtri.parentNumber_ > 0 && cNum - 2 >= 0 ){
+            Triangle parent = trilist_.get(cNum-2);
+            parent.childSide_ = curtri.parentBC_;
 
-            int parentNumber = trilist_.get(cNum-1).parentNumber_;
+            int curPareNum = trilist_.get(cNum-1).parentNumber_;
             // 自分の親番号と、親の三角形の番号が一致したとき？
-            if(cNum > 1 && parentNumber == trilist_.get(parentNumber-1).myNumber_ ){
+            if(cNum > 1 && curPareNum == parent.myNumber_ ){ //trilist_.get(curPareNum-1)
 
-                trilist_.get(parentNumber-1).resetByChild(curtri);
+                parent.resetByChild(curtri);
             }
         }
 
@@ -635,7 +636,7 @@ public class TriangleList extends EditList implements Cloneable {
         trilist_.get(cNum-1).reset(curtri);
 
         // 子をすべて書き換える
-        if( trilist_.size() > 1 ) resetMyChild(trilist_.get(cNum-1));
+        if( trilist_.size() > 1 && cNum < trilist_.size() ) resetMyChild(trilist_.get(cNum-1));
 
         //lastTapNum_ = 0;
         //lastTapSide_ = -1;
@@ -647,8 +648,8 @@ public class TriangleList extends EditList implements Cloneable {
         //myTriList.get(2).reset(newParent, 1);
         if(newParent == null) return;
 
-        // 2番から全て
-        for(int i = 1; i < trilist_.size(); i++) {
+        // 新しい親の次から
+        for(int i = newParent.myNumber_; i < trilist_.size(); i++) {
             // 連番と派生接続で分岐。
             if( trilist_.get(i).parentNumber_ == newParent.myNumber_) {
                 // ひとつ前の三角形の子接続を書き換える？
@@ -705,10 +706,10 @@ public class TriangleList extends EditList implements Cloneable {
                 !((prm.getC() + prm.getA()) <= prm.getB());
     }
 
-    public Triangle getTriangle(int index){
-        if( index < 1 || index > trilist_.size() )
+    public Triangle getTriangle(int number){
+        if( number < 1 || number > trilist_.size() )
             return new Triangle();  //under 0 is empty. cant hook null. can hook lenA is not 0.
-        else return this.trilist_.get(index-1);
+        else return this.trilist_.get(number-1);
     }
 
 
@@ -996,14 +997,16 @@ public class TriangleList extends EditList implements Cloneable {
 
     public TriangleList resetNumReverse( ){
 
+        TriangleList rev = this.clone();
+
         int iBackward = trilist_.size();
         //マイナンバーの書き換え
         for( int i = 0; i < trilist_.size(); i++ ) {
-            trilist_.get( i ).myNumber_ = iBackward;
+            rev.trilist_.get( i ).myNumber_ = iBackward;
             iBackward--;
         }
 
-        return this;
+        return rev;
     }
 
 
@@ -1020,19 +1023,16 @@ public class TriangleList extends EditList implements Cloneable {
             }
         }
 
-        TriangleList rev = this.clone();
-        rev.trilist_.clear();
-
         // 番号だけを全部逆順に書き換え
-        resetNumReverse();
+        TriangleList numrev = resetNumReverse();
 
         for( int i = 0; i < trilist_.size(); i++ ) {
-            Triangle me = trilist_.get(i);
+            Triangle me = numrev.trilist_.get(i);
 
             //接続情報の書き換え
             //終端でなければ
             if (i + 1 < trilist_.size()) {
-                Triangle next = trilist_.get(i+1);
+                Triangle next = numrev.trilist_.get(i+1);
 
                 // 連番の時は
                 if( i + 1 == next.parentNumber_){
@@ -1046,8 +1046,9 @@ public class TriangleList extends EditList implements Cloneable {
                     //次のやつのB辺はC辺にあった。
                     //同じ接続方向が続いている時は、PBCをCtoB、BtoCに反転させる。
                     if( i + 2 < trilist_.size() ){
-                        Triangle nextnext = trilist_.get(i+2);
+                        Triangle nextnext = numrev.trilist_.get(i+2);
                         if( next.getParentSide() == nextnext.getParentSide() ) me.setReverseDefSide( next.parentBC_, true );
+                        else if( i + 2 != nextnext.parentNumber_ && next.parentBC_ != 1 ) me.setReverseDefSide( - next.parentBC_ + 3, false );
                         else me.setReverseDefSide( next.parentBC_, false);
                     }
                     else me.setReverseDefSide( next.parentBC_, false);
@@ -1055,7 +1056,9 @@ public class TriangleList extends EditList implements Cloneable {
                 else{
                     //連番でないときは
                     me.parentNumber_ = 0; //next.parentNumber_;
-                    me.rotateLengthBy( - me.getParentSide() + 3 );
+
+                    Triangle prev = numrev.trilist_.get(i);
+                    me.rotateLengthBy( 2 );
 
                     //next.parentNumber_ = trilist_.get( next.parentNumber_ - 1 ).myNumber_;
                     //next.parentBC_ =  trilist_.get( next.parentNumber_ - 1 ).parentBC_;
@@ -1071,8 +1074,11 @@ public class TriangleList extends EditList implements Cloneable {
         }
 
         // 逆順にソートし、新規に足していく。リビルドした方が考え方が楽。
+        TriangleList rev = this.clone();
+        rev.trilist_.clear();
+
         for( int i = trilist_.size() - 1; i > -1; i-- ) {
-            Triangle it = trilist_.get( i );
+            Triangle it = numrev.trilist_.get( i );
 
             // 自身の番号よりも親番号が大きい場合を許容する
             if( it.parentNumber_ > it.myNumber_ ){
@@ -1086,7 +1092,7 @@ public class TriangleList extends EditList implements Cloneable {
 
         // 名前の書き換え、反転後のひとつ先の三角形に移設し、1番の名前は消去
         for( int i = 0; i < trilist_.size(); i++ ) {
-            Triangle it = trilist_.get( trilist_.size() - i - 1 );
+            Triangle it = numrev.trilist_.get( trilist_.size() - i - 1 );
             if( i + 2 <= trilist_.size() ) rev.get( i + 2 ).myName_ = it.myName_;
         }
         rev.get( 1 ).myName_ = "";

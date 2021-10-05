@@ -580,13 +580,17 @@ class MainActivity : AppCompatActivity(),
         }
 
         fab_undo.setOnClickListener{ view ->
-            if( trilistStored_.size() > 0 ) myTriangleList = trilistStored_.clone()
-            my_view.undo()
-            my_view.resetViewToLSTP()
+            if( trilistStored_.size() > 0 ){
+                myTriangleList = trilistStored_.clone()
+                my_view.undo()
+                my_view.resetViewToLSTP()
 
-            fab_undo.backgroundTintList = getColorStateList(R.color.colorPrimary)
-            EditorClear(getList(deductionMode_), getList(deductionMode_).getCurrent())
-            setTitles()
+                trilistStored_.trilist_.clear()
+
+                fab_undo.backgroundTintList = getColorStateList(R.color.colorPrimary)
+                EditorClear(getList(deductionMode_), getList(deductionMode_).getCurrent())
+                setTitles()
+            }
         }
 
         fab_fillcolor.setOnClickListener { view ->
@@ -801,6 +805,8 @@ class MainActivity : AppCompatActivity(),
         }
 
         fab_numreverse.setOnClickListener{ view ->
+            trilistStored_ = myTriangleList.clone()
+
             myTriangleList = myTriangleList.reverse()
             my_view.setTriangleList(myTriangleList, mScale)
             my_view.resetView(my_view.lstp())
@@ -859,6 +865,9 @@ class MainActivity : AppCompatActivity(),
         setTitles()
         if( dedmode == false ) my_view.resetView(my_view.lstp())
         if( dedmode == true  ) my_view.resetView(usedDedPoint.scale(PointXY(0f, 0f), 1f, -1f))//resetViewToTP()
+
+        my_view.myTriangleList.isDoubleTap_ = false
+        my_view.myTriangleList.lastTapSide_ = 0
         /*if( BuildConfig.BUILD_TYPE == "debug" ) Toast.makeText(
                 this,
                 isSucceed.toString(),
@@ -1387,12 +1396,10 @@ class MainActivity : AppCompatActivity(),
     }
 
     fun CreateNew(){
-        val tri: Triangle = Triangle(5f, 5f, 5f, PointXY(0f, 0f), 0f)
-        var trilist: TriangleList = TriangleList(tri)
+        val tri = Triangle(5f, 5f, 5f, PointXY(0f, 0f), 0f)
+        val trilist = TriangleList(tri)
         myTriangleList = trilist
         myDeductionList.clear()
-
-        //trilist.recoverState(PointXY(0f,0f))
 
         // メニューバーのタイトル
         koujiname_ = ""
@@ -1436,7 +1443,7 @@ class MainActivity : AppCompatActivity(),
     override fun onDialogPositiveClick(dialog: androidx.fragment.app.DialogFragment?) {
         mIsCreateNew = true
         fileType = "CSV"
-        var i: Intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
+        val i = Intent(Intent.ACTION_CREATE_DOCUMENT)
         i.type = "text/csv"
         i.putExtra(Intent.EXTRA_TITLE, rosenname_ + " " + LocalDate.now() + ".csv")
         startActivityForResult(i, 1)
@@ -2000,7 +2007,10 @@ class MainActivity : AppCompatActivity(),
                         cp.type + ", " +                       //18
                         cp.lcr + ", " +                               //19
                         mt.isChangeDimAlignB_ + ", " +                //20
-                        mt.isChangeDimAlignC_                          //21
+                        mt.isChangeDimAlignC_ + ", " +                //21
+                        mt.angleInGlobal_ + ", " +              //22
+                        mt.pointCA_.x + ", " +                  //23
+                        mt.pointCA_.y                           //24
             )
             writer.newLine()
         }
@@ -2069,12 +2079,18 @@ class MainActivity : AppCompatActivity(),
 
         var trilist: TriangleList = TriangleList()
 
+        var pointfirst = PointXY( 0f, 0f )
+        var anglefirst = 180f
+        if( chunks.size > 22 ) {
+            if( chunks[22]!!.toFloat() != 180f ){
+                //pointfirst = PointXY( -chunks[23]!!.toFloat(), -chunks[24]!!.toFloat() )
+                //anglefirst = chunks[22]!!.toFloat() - 180f
+            }
+        }
+
         trilist.add(
             Triangle(
-                chunks[1]!!.toFloat(), chunks[2]!!.toFloat(), chunks[3]!!.toFloat(), PointXY(
-                    0f,
-                    0f
-                ), 180f
+                chunks[1]!!.toFloat(), chunks[2]!!.toFloat(), chunks[3]!!.toFloat(), pointfirst, anglefirst
             )
         )
         val mt = trilist.getTriangle(trilist.size())
@@ -2132,6 +2148,7 @@ class MainActivity : AppCompatActivity(),
                 my_view.setAllTextSize(chunks[1].toFloat())
                 continue
             }
+
             if(chunks[0] == "Deduction"){
 //                dedlist.add(Params(chunks[2]!!.toString(),chunks[6]!!.toString(), chunks[1]!!.toInt(),
                 //                  chunks[3]!!.toFloat(),chunks[4]!!.toFloat(),0f,
@@ -2160,44 +2177,61 @@ class MainActivity : AppCompatActivity(),
             }
             //Connection Params
             if( chunks.size > 17 ) {
-                val ptri = trilist.getTriangle(chunks[4].toInt())
-                val cp = ConneParam(
-                    chunks[17].toInt(),
-                    chunks[18].toInt(),
-                    chunks[19].toInt(),
-                    chunks[1].toFloat()
-                )
-                trilist.add(
-                    Triangle(
-                        ptri, cp,
-                        chunks[2].toFloat(),
-                        chunks[3].toFloat()
+
+                if( chunks[5].toInt() == 0 ){
+                    trilist.add(
+                        Triangle(
+                            chunks[1]!!.toFloat(), chunks[2]!!.toFloat(), chunks[3]!!.toFloat(), PointXY(
+                                -chunks[23]!!.toFloat(),
+                                -chunks[24]!!.toFloat()
+                            ), chunks[22]!!.toFloat() - 180f
+                        )
                     )
-                )
+                }
+                else {
+
+                    val ptri = trilist.getTriangle(chunks[4].toInt())
+                    val cp = ConneParam(
+                        chunks[17].toInt(),
+                        chunks[18].toInt(),
+                        chunks[19].toInt(),
+                        chunks[1].toFloat()
+                    )
+                    trilist.add(
+                        Triangle(
+                            ptri, cp,
+                            chunks[2].toFloat(),
+                            chunks[3].toFloat()
+                        )
+                    )
+
+                }
                 trilist.getTriangle(trilist.size()).parentBC_ = chunks[5].toInt()
             }
             else{
-                val cp = parentBCtoCParam(
-                    chunks[5].toInt(), chunks[1].toFloat(), ConneParam(
-                        0,
-                        0,
-                        0,
-                        0f
-                    )
-                )
 
-                trilist.add(
-                    Triangle(
-                        trilist.getTriangle(chunks[4].toInt()), ConneParam(
-                            cp.side,
-                            cp.type,
-                            cp.lcr,
-                            cp.lenA
-                        ),
-                        chunks[2].toFloat(),
-                        chunks[3].toFloat()
+                    val cp = parentBCtoCParam(
+                        chunks[5].toInt(), chunks[1].toFloat(), ConneParam(
+                            0,
+                            0,
+                            0,
+                            0f
+                        )
                     )
-                )
+
+                    trilist.add(
+                        Triangle(
+                            trilist.getTriangle(chunks[4].toInt()), ConneParam(
+                                cp.side,
+                                cp.type,
+                                cp.lcr,
+                                cp.lenA
+                            ),
+                            chunks[2].toFloat(),
+                            chunks[3].toFloat()
+                        )
+                    )
+
                 trilist.getTriangle(trilist.size()).parentBC_ = chunks[5].toInt()
                 // trilist.getTriangle(trilist.size()).setCParamFromParentBC( chunks[5]!!.toInt() )
             }
@@ -2235,9 +2269,11 @@ class MainActivity : AppCompatActivity(),
         }
         //dedlist.scale(PointXY(0f,0f),3f,3f)
         myTriangleList = trilist
+        trilistStored_ = myTriangleList.clone()
         myDeductionList = dedlist
         //trilist.scale(PointXY(0f,0f), 5f)
-        trilist.recoverState(PointXY(0f, 0f))
+        //if( anglefirst != 180f )
+            trilist.recoverState(PointXY(0f, 0f))
         trilist.setChildsToAllParents()
 //        myDeductionList.scale(PointXY(0f,0f), 1f, 1f)
         my_view.setDeductionList(dedlist, mScale)
