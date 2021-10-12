@@ -33,6 +33,11 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
     val paintRed_: Paint = Paint()
     val paintBlue_: Paint = Paint()
 
+    val paintTri_: Paint = Paint()
+    var paintTexS_: Paint = Paint()
+    var paintFill: Paint = Paint()
+
+
     val pdfDoc_: PdfDocument = PdfDocument()
 
     //val builder_: PdfDocument.PageInfo.Builder = PdfDocument.PageInfo.Builder(sizeX_.toInt(), sizeY_.toInt(), currentPageIndex_)

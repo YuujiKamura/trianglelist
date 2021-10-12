@@ -30,9 +30,6 @@ open class DrawingFileWriter {
     open var cBlue_  = 4
     open var cRed_   = 2
 
-    val paintTri_: Paint = Paint()
-    var paintTexS_: Paint = Paint()
-    var paintFill: Paint = Paint()
 
 
     fun setNames(kn: String, rn: String, gn: String, zn: String){

@@ -7,6 +7,43 @@ import org.junit.Assert
 import org.junit.Test
 
 class TriListTest {
+    @Test
+    fun testResetAllNodesAtClone() {
+        val trilist = TriangleList()
+        trilist.add( Triangle(5f, 5f, 5f))
+        trilist.add( 1, 1, 5f, 5f )
+        trilist.add( 1, 2, 5f, 5f )
+
+        assertEquals( trilist.get(1), trilist.get(3).nodeTriangleA_ )
+        assertEquals( trilist.get(1), trilist.get(2).nodeTriangleA_ )
+        assertEquals( trilist.get(2), trilist.get(1).nodeTriangleB_ )
+        assertEquals( trilist.get(3), trilist.get(1).nodeTriangleC_ )
+
+        val trilist2 = trilist.clone()
+
+        assertEquals( trilist2.get(1), trilist2.get(3).nodeTriangleA_ )
+        assertEquals( trilist2.get(1), trilist2.get(2).nodeTriangleA_ )
+        assertEquals( trilist2.get(2), trilist2.get(1).nodeTriangleB_ )
+        assertEquals( trilist2.get(3), trilist2.get(1).nodeTriangleC_ )
+
+
+    }
+
+    @Test
+    fun testReset() {
+        val trilist = TriangleList()
+        trilist.add( Triangle(5f, 5f, 5f))
+        trilist.add( 1, 1, 5f, 5f )
+        trilist.add( 1, 2, 5f, 5f )
+
+        assertEquals( 1, trilist.get(3).parentNumber_ )
+
+        trilist.get(3).resetLength( 5f, 6f, 6f )
+
+        assertEquals( 1, trilist.get(3).parentNumber_ )
+
+
+    }
 
     @Test
     fun testTriListUndo() {
@@ -258,8 +295,8 @@ class TriListTest {
 
         Assert.assertEquals(true, trilist.get(1).alreadyHaveChild(2))
         Assert.assertEquals(false, trilist.get(1).alreadyHaveChild(1))
-        Assert.assertEquals(3.473, trilist.get(2).pointBC_.x.toDouble(), 0.001)
-        Assert.assertEquals(4.978, trilist.get(3).pointBC_.x.toDouble(), 0.001)
+        Assert.assertEquals(2.5, trilist.get(2).pointBC_.x.toDouble(), 0.001)
+        Assert.assertEquals(3.473, trilist.get(3).pointBC_.x.toDouble(), 0.001)
     }
 
     @Test
@@ -348,7 +385,7 @@ class TriListTest {
         val tri2 = Triangle(tri1, 3, 4f, 5f, 5f)
 
         //tri2.setConnectionType( 1, 1, 1, 4f);
-        Assert.assertEquals(-5f, tri2.parent_.pointAB_.x, 0.0001f)
+        Assert.assertEquals(-5f, tri2.nodeTriangleA_.pointAB_.x, 0.0001f)
         Assert.assertEquals(-2.75f, tri2.getParentPointByLCR(1, 1).x, 0.0001f)
         Assert.assertEquals(-2.5f, tri2.getParentPointByType(1, 0, 1).x, 0.0001f)
         Assert.assertEquals(-2.75f, tri2.getParentPointByType(1, 1, 1).x, 0.0001f)
@@ -536,12 +573,14 @@ class TriListTest {
         trilist.add( Triangle(5.0f, 5.0f, 5.0f, PointXY(0f, 0f), 180.0f) )
         trilist.add( Triangle( trilist.get(1), 2, 5f, 5f) )
 
-        trilist.resetConnectedTriangles(1, Triangle( trilist.get(1), 2, 5f, 5f) )
-        assertEquals(2.5f, trilist.get(2).pointBC_.x, 0.001f )
+        // 新しい三角形を作って渡すと連動しないので、ポインタを取得してリセットする。
+        trilist.resetConnectedTriangles(1, trilist.get(2).set( trilist.get(1), 2, 5f, 5f ) )
+        assertEquals(trilist.get(2).pointAB_.x, trilist.get(1).pointBC_.x, 0.001f )
+        assertEquals(trilist.get(2).pointAB_.y, trilist.get(1).pointBC_.y, 0.001f )
 
         trilist.resetConnectedTriangles( Params("", "", 2, 2.5f, 5f, 5f, 1, 2 ) )
-        assertEquals(3.567f, trilist.get(2).pointBC_.x, 0.001f )
-
+        assertEquals(trilist.get(2).pointAB_.x, trilist.get(1).pointBC_.x, 0.001f )
+        assertEquals(trilist.get(2).pointAB_.y, trilist.get(1).pointBC_.y, 0.001f )
 
     }
     @Test
@@ -578,7 +617,7 @@ class TriListTest {
 
         // 1下 3上 -> // 夾角の、1:外 　3:内
         Assert.assertEquals(3, myTrilist.getTriangle(1).dimAlignA.toLong())
-        Assert.assertEquals(1, myTrilist.getTriangle(1).dimAlignB.toLong())
+        Assert.assertEquals(3, myTrilist.getTriangle(1).dimAlignB.toLong())
         Assert.assertEquals(3, myTrilist.getTriangle(1).dimAlignC.toLong())
         Assert.assertEquals(3, myTrilist.getTriangle(2).dimAlignA.toLong())
         Assert.assertEquals(3, myTrilist.getTriangle(2).dimAlignB.toLong())

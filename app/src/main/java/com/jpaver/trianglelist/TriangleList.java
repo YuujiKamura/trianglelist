@@ -54,6 +54,9 @@ public class TriangleList extends EditList implements Cloneable {
         }catch (Exception e){
             e.printStackTrace();
         }
+
+        b.resetAllNodes();
+
         return b;
     }
 
@@ -315,10 +318,6 @@ public class TriangleList extends EditList implements Cloneable {
         return rot;
     }
 
-    @Override // by number start 1, not index start 0.
-    public Triangle get(int number){
-        return getTriangle(number);
-    }
 
     TriangleList(){
         this.trilist_ = new ArrayList<Triangle>();
@@ -453,7 +452,7 @@ public class TriangleList extends EditList implements Cloneable {
             }
 
             // 親に告知する
-            if( nextTriangle.myNumber_ > 1 ) trilist_.get( nextTriangle.parentNumber_ -1 ).setChild(nextTriangle, nextTriangle.getParentBC());
+            //if( nextTriangle.myNumber_ > 1 ) trilist_.get( nextTriangle.parentNumber_ -1 ).setChild(nextTriangle, nextTriangle.getParentBC());
         }
         else{
             trilist_.add( nextTriangle);   // add by arraylist
@@ -465,6 +464,22 @@ public class TriangleList extends EditList implements Cloneable {
         //lastTapSide_ = -1;
 
         return true;
+    }
+
+    public void resetAllNodes(){
+        for(int i = 0; i < trilist_.size(); i++) {
+            Triangle tri = trilist_.get(i);
+
+            if( tri.nodeTriangleA_ != null ){
+                tri.setNode( trilist_.get( tri.nodeTriangleA_.myNumber_ - 1 ), 0 );
+            }
+            if( tri.nodeTriangleB_ != null ){
+                tri.setNode( trilist_.get( tri.nodeTriangleB_.myNumber_ - 1 ), 1 );
+            }
+            if( tri.nodeTriangleC_ != null ){
+                tri.setNode( trilist_.get( tri.nodeTriangleC_.myNumber_ - 1 ), 2 );
+            }
+        }
     }
 
     public void setChildsToAllParents(){
@@ -516,7 +531,7 @@ public class TriangleList extends EditList implements Cloneable {
         for(int iNext = index+1; iNext <= trilist_.size(); iNext++){
 
             if(this.getTriangle(iNext).getParentNumber() == this.getTriangle(index).getMyNumber_()) {
-                this.getTriangle(iNext).resetByParent( this.getTriangle(iNext).parent_, this.getTriangle(iNext).getParentBC() );
+                this.getTriangle(iNext).resetByParent( this.getTriangle(iNext).nodeTriangleA_, this.getTriangle(iNext).getParentBC() );
                 getTriangle(iNext-1).setChildSide_(getTriangle(iNext).getParentBC());
             }
             index++;
@@ -558,7 +573,7 @@ public class TriangleList extends EditList implements Cloneable {
         for(int i = 0; i < trilist_.size(); i++) {
             Triangle nextTri = trilist_.get(i);
             if( i > 0) {
-                int npmi = nextTri.parent_.myNumber_-1;
+                int npmi = nextTri.nodeTriangleA_.myNumber_-1;
                 if( npmi == curTri.myNumber_ -1 ) nextTri.setParent(curTri.clone(), nextTri.parentBC_);
                 nextTri.resetByParent(trilist_.get(npmi), nextTri.cParam_);
             }
@@ -600,7 +615,7 @@ public class TriangleList extends EditList implements Cloneable {
         int pIndex = pNum -1;
 
         if( pNum != curTri.parentNumber_ && pNum < trilist_.size() && pNum > 0 )
-            curTri.parent_ = trilist_.get( pNum - 1 );
+            curTri.nodeTriangleA_ = trilist_.get( pNum - 1 );
 
         curTri.reset( tParams );
 
@@ -623,6 +638,7 @@ public class TriangleList extends EditList implements Cloneable {
         if( curtri.parentNumber_ > 0 && cNum - 2 >= 0 ){
             Triangle parent = trilist_.get(cNum-2);
             parent.childSide_ = curtri.parentBC_;
+            curtri.nodeTriangleA_ = parent; //再リンクしないと位置と角度が連動しない。
 
             int curPareNum = trilist_.get(cNum-1).parentNumber_;
             // 自分の親番号と、親の三角形の番号が一致したとき？
@@ -630,10 +646,17 @@ public class TriangleList extends EditList implements Cloneable {
 
                 parent.resetByChild(curtri);
             }
+
         }
 
         // 自身の書き換え
         trilist_.get(cNum-1).reset(curtri);
+
+
+        // 浮いてる場合、さらに自己番が最後でない場合、一個前の三角形の位置と角度を自分の変化にあわせて動かしたい。
+        if( curtri.parentNumber_ == 0 && trilist_.size() != cNum ) {
+            curtri.resetByChild( trilist_.get(cNum) );
+        }
 
         // 子をすべて書き換える
         if( trilist_.size() > 1 && cNum < trilist_.size() ) resetMyChild(trilist_.get(cNum-1));
@@ -673,7 +696,7 @@ public class TriangleList extends EditList implements Cloneable {
 
         for(int i = lastTapNum_; i < trilist_.size(); i++) {
             Triangle nextTri = trilist_.get(i);
-            nextTri.resetByParent(nextTri.parent_, nextTri.cParam_);
+            nextTri.resetByParent(nextTri.nodeTriangleA_, nextTri.cParam_);
         }
     }
 
@@ -706,12 +729,16 @@ public class TriangleList extends EditList implements Cloneable {
                 !((prm.getC() + prm.getA()) <= prm.getB());
     }
 
+    // オブジェクトポインタを返す。
     public Triangle getTriangle(int number){
-        if( number < 1 || number > trilist_.size() )
-            return new Triangle();  //under 0 is empty. cant hook null. can hook lenA is not 0.
+        if( number < 1 || number > trilist_.size() ) return new Triangle();  //under 0 is empty. cant hook null. can hook lenA is not 0.
         else return this.trilist_.get(number-1);
     }
 
+    @Override // by number start 1, not index start 0.
+    public Triangle get(int number){
+        return getTriangle(number);
+    }
 
     public ArrayList<TriangleList> spritByColors(){
         ArrayList<TriangleList> listByColors = new ArrayList<TriangleList>();
@@ -851,7 +878,7 @@ public class TriangleList extends EditList implements Cloneable {
         }
 
         // 再起呼び出しで派生方向に右手伝いにのびていく
-        if( t.isChildB_ == true && !t.childB_.isFloating() ) traceOrJumpForward( t.childB_.myNumber_ - 1, origin, olp );
+        if( t.isChildB_ == true && !t.nodeTriangleB_.isFloating() ) traceOrJumpForward( t.nodeTriangleB_.myNumber_ - 1, origin, olp );
 
         //BC点を取る。すでにあったらキャンセル
         if( exist( t.pointBC_, olp )  == false ){
@@ -859,7 +886,7 @@ public class TriangleList extends EditList implements Cloneable {
             outlineStr_ += startindex + "bc,";
         }
 
-        if( t.isChildC_ == true && !t.childC_.isFloating() ) traceOrJumpForward( t.childC_.myNumber_ - 1, origin, olp );
+        if( t.isChildC_ == true && !t.nodeTriangleC_.isFloating() ) traceOrJumpForward( t.nodeTriangleC_.myNumber_ - 1, origin, olp );
 
         traceOrJumpBackward( startindex, origin, olp );
 
@@ -870,7 +897,7 @@ public class TriangleList extends EditList implements Cloneable {
         Triangle t = trilist_.get( startindex );
 
         // C派生（ふたつとも接続）していたらそっちに伸びる、フロート接続だったり、すでに持っている点を見つけたらスルー
-        if( t.isChildB_ == true &&  t.isChildC_ == true ) if( exist( t.childC_.pointCA_, olp ) == false && !t.childC_.isFloating() ) traceOrJumpForward( t.childC_.myNumber_ - 1, origin, olp );
+        if( t.isChildB_ == true &&  t.isChildC_ == true ) if( exist( t.nodeTriangleC_.pointCA_, olp ) == false && !t.nodeTriangleC_.isFloating() ) traceOrJumpForward( t.nodeTriangleC_.myNumber_ - 1, origin, olp );
 
         //BC点を取る。すでにあったらキャンセル
         if( exist( t.pointBC_, olp )  == false ){
@@ -936,7 +963,7 @@ public class TriangleList extends EditList implements Cloneable {
             if( before.equals( t.pointCA_ ) == false ) olp.add( t.pointCA_ );
 
             // C接続があるときは。しかしこれだと次の番号がいっこ減る。たいていの場合接続先は進んだ番号なので、違う処理が必要。
-            if( t.isChildC_ == true ) if( t.childC_.isFloating() == false ) continue;
+            if( t.isChildC_ == true ) if( t.nodeTriangleC_.isFloating() == false ) continue;
             olp.add( t.pointCA_ );
         }
 
@@ -965,7 +992,7 @@ public class TriangleList extends EditList implements Cloneable {
 
             //派生接続のとき。B接続に沿って進む。
             if( t.isChildB_ == true &&  t.isChildC_ == true ){
-                i = t.childB_.myNumber_ - 2;
+                i = t.nodeTriangleB_.myNumber_ - 2;
                 continue;
             }
 
