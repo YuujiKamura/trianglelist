@@ -11,7 +11,26 @@ import static org.junit.Assert.assertTrue;
 
 public class TriangleTest {
 
+    @Test
+    public void testSetPointersGetParams() {
+        Triangle one = new Triangle( new Params( "", "", 1, 5f, 5f, 5f, -1, -1, new PointXY( 0f, 0f), new PointXY( 0f, 0f) ), 0f );
+        Triangle two = new Triangle( one, new Params( "", "", 2, 5f, 5f, 5f, 1, 1, new PointXY( 0f, 0f), new PointXY( 0f, 0f) ) );
 
+        // 内容の一致
+        assertEquals( one.myNumber_, two.nodeTriangleA_.myNumber_ );
+        assertEquals( one.nodeTriangleB_.myNumber_, two.myNumber_ );
+
+        // オブジェクトポインタの一致。
+        assertEquals( one, two.nodeTriangleA_ );
+        assertEquals( one.nodeTriangleB_, two );
+
+        two.set( one, 2, 5f, 5f);
+
+        // オブジェクトポインタの一致。
+        assertEquals( one, two.nodeTriangleA_ );
+        assertEquals( one.nodeTriangleC_, two );
+
+    }
 
     @Test
     public void testSetObjectPointers(){
