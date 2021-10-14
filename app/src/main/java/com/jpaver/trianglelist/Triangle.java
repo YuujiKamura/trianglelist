@@ -2,6 +2,8 @@ package com.jpaver.trianglelist;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
+
 import static java.lang.Math.toRadians;
 
 public class Triangle extends EditObject implements Cloneable {
@@ -44,7 +46,7 @@ public class Triangle extends EditObject implements Cloneable {
     protected int parentBC_ = -1;   // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
     protected int connectionType_ = 0; // 0:sameByParent, 1:differentLength, 2:floatAndDifferent
     protected int connectionLCR_ = 2; // 0:L 1:C 2:R
-    protected ConneParam cParam_ = new ConneParam(0, 0, 2, 0f);
+    protected ConnParam cParam_ = new ConnParam(0, 0, 2, 0f);
 
 
     protected int myNumber_ = 1;
@@ -173,7 +175,7 @@ public class Triangle extends EditObject implements Cloneable {
         //autoSetDimAlign();
     }
 
-    Triangle(Triangle myParent, ConneParam cParam, float B, float C){
+    Triangle(Triangle myParent, ConnParam cParam, float B, float C){
         set(myParent, cParam, B, C);
     }
 
@@ -262,12 +264,367 @@ public class Triangle extends EditObject implements Cloneable {
 
     }
 
+    Triangle set(Triangle parent, int pbc, float B, float C){
+        //myNumber_ = parent.myNumber_ + 1;
+        parentBC_ = pbc;
+
+        if(parent == null) {
+            resetLength(pbc,B,C);
+            return this.clone();
+        }
+        else {
+            setNode( parent, 0 );
+            parent.setNode( this, getParentSide() );
+        }
+
+        //setParent(parent, A);
+
+        if(pbc == 1) {
+            parentBC_ = 1;
+            lengthA_ = nodeTriangleA_.getLengthB_();
+            lengthA_ = nodeTriangleA_.lengthBforce_;
+            pointCA_ = nodeTriangleA_.getPointBC_();
+            angleInGlobal_ = nodeTriangleA_.getAngleMpAB();
+        } else if(pbc == 2){
+            parentBC_ = 2;
+            lengthA_ = nodeTriangleA_.getLengthC_();
+            lengthA_ = nodeTriangleA_.lengthCforce_;
+            pointCA_ = nodeTriangleA_.getPointCA_();
+            angleInGlobal_ = nodeTriangleA_.getAngleMmCA();
+        } else {
+            parentBC_ = 0;
+            lengthA_ = 0f;
+            lengthAforce_ = 0f;
+            pointCA_ = new PointXY(0f, 0f);
+            angleInGlobal_ = 180f;
+        }
+
+        parentNumber_ = nodeTriangleA_.getMyNumber_();
+        //nodeTriangleA_.setChild(this, parentBC_);
+
+        initBasicArguments(lengthA_, B, C, pointCA_, angleInGlobal_);
+        calcPoints(pointCA_, angleInGlobal_);
+
+        //myDimAlign = setDimAlign();
+
+        return this;
+    }
+
+    Triangle set(Triangle parent, int pbc, float A, float B, float C, boolean byNode ) {
+        set( parent, pbc, A, B, C );
+
+        if( byNode == true ){
+            parent.resetByNode( pbc );
+        }
+
+        if( nodeTriangleB_ != null ) nodeTriangleB_.set( this, nodeTriangleB_.parentBC_, this.getLengthByIndex( nodeTriangleB_.getParentSide() ), nodeTriangleB_.lengthB_, nodeTriangleB_.lengthC_ );
+        if( nodeTriangleC_ != null ) nodeTriangleC_.set( this, nodeTriangleC_.parentBC_, this.getLengthByIndex( nodeTriangleC_.getParentSide() ), nodeTriangleC_.lengthB_, nodeTriangleC_.lengthC_ );
+
+        return this;
+    }
+
+    Triangle set(Triangle parent, int pbc, float A, float B, float C){
+        //myNumber_ = parent.myNumber_ + 1;
+        parentBC_ = pbc;
+
+        if(parent == null) {
+            resetLength(pbc,B,C);
+            return this.clone();
+        }
+        else {
+            setNode( parent, 0 );
+            parent.setNode( this, getParentSide() );
+        }
+
+        //setParent(parent, pbc);
+        //nodeTriangleA_.setChild(this, pbc );
+
+        // if user rewrite A
+        if(A != parent.getLengthByIndex(pbc)) {
+            lengthA_ = A;
+            lengthAforce_ = A;
+        } else{
+            lengthA_ = parent.getLengthByIndex(pbc);
+            lengthAforce_ = parent.getLengthByIndex(pbc);
+        }
+
+        setCParamFromParentBC( pbc );
+        pointCA_ = getParentPointByType( cParam_ );
+
+
+        if(pbc == 1) { // B
+            parentBC_ = 1;
+
+            angleInGlobal_ = parent.getAngleMpAB();
+        } else if(pbc == 2) { // C
+            parentBC_ = 2;
+            angleInGlobal_ = parent.getAngleMmCA();
+        } else if(pbc == 3){ // B-R
+            parentBC_ = 3;
+            angleInGlobal_ = parent.getAngleMpAB();
+        } else if(pbc == 4) { //B-L
+            parentBC_ = 4;
+            angleInGlobal_ = parent.getAngleMpAB();
+        } else if(pbc == 5) { //C-R
+            parentBC_ = 5;
+            angleInGlobal_ = parent.getAngleMmCA();
+        } else if(pbc == 6) { //C-L
+            parentBC_ = 6;
+            angleInGlobal_ = parent.getAngleMmCA();
+        } else if(pbc == 7) { //B-Center
+            parentBC_ = 7;
+            angleInGlobal_ = parent.getAngleMpAB();
+        } else if(pbc == 8) { //C-Center
+            parentBC_ = 8;
+            angleInGlobal_ = parent.getAngleMmCA();
+        } else if(pbc == 9) { //B-Float-R
+            parentBC_ = 9;
+            angleInGlobal_ = parent.getAngleMpAB();
+        } else if(pbc == 10) { //C-Float-R
+            parentBC_ = 10;
+            angleInGlobal_ = parent.getAngleMmCA();
+        } else {
+            parentBC_ = 0;
+            lengthA_ = 0f;
+            lengthAforce_ = 0f;
+            pointCA_ = new PointXY(0f, 0f);
+            angleInGlobal_ = 180f;
+        }
+
+        parentNumber_ = parent.getMyNumber_();
+
+        initBasicArguments(lengthA_, B, C, pointCA_, angleInGlobal_);
+        if(!validTriangle()) return null;
+        calcPoints(pointCA_, angleInGlobal_);
+        if(parentBC_ == 4){
+            PointXY vector = new PointXY( parent.getPointAB_().getX()- pointAB_.getX(),
+                    parent.getPointAB_().getY()- pointAB_.getY());
+            move(vector);
+        }
+        if(parentBC_ == 6){
+            PointXY vector = new PointXY( parent.getPointBC_().getX()- pointAB_.getX(),
+                    parent.getPointBC_().getY()- pointAB_.getY());
+            move(vector);
+        }
+
+        //myDimAlign = setDimAlign();
+
+        return this.clone();
+    }
+
+    public void set(Triangle myParent, int pbc){
+
+        this.set(myParent, pbc, this.lengthB_, this.lengthC_);
+
+    }
+
+    public void set(Triangle myParent, Params dP){
+        set(myParent,dP.getPl(),dP.getA(),dP.getB(),dP.getC());
+        myName_ = dP.getName();
+
+    }
+
+    Triangle set(Triangle parent, ConnParam cParam, float B, float C) {
+        //myNumber_ = parent.myNumber_ + 1;
+        //parentBC_ = cParam.getSide();
+
+        if(parent == null) {
+            resetLength(cParam.getLenA(),B,C);
+            return this.clone();
+        }
+        else {
+            setNode( parent, 0 );
+            parent.setNode( this, cParam.getSide() );
+        }
+
+        //setParent( parent, cParam.getSide() );
+        angleInGlobal_ = nodeTriangleA_.getAngleBySide( cParam.getSide() );
+
+        setConnectionType( cParam );
+
+
+        initBasicArguments(lengthA_, B, C, pointCA_, angleInGlobal_);
+        if(!validTriangle()) return null;
+
+        calcPoints(pointCA_, angleInGlobal_);
+
+        setDimAlignByChild();
+
+        //nodeTriangleA_.setChild(this, cParam.getSide() );
+
+        return this.clone();
+    }
+
+    public void reload() {
+        if(nodeTriangleA_ != null){
+            nodeTriangleA_.reload();
+            calcPoints(pointCA_ = nodeTriangleA_.getPointBySide(parentBC_), angleInGlobal_ = nodeTriangleA_.getAngleBySide(parentBC_));
+        }
+    }
+
+    Triangle reset( Params prm ){
+        //ConneParam thisCP = cParam_.clone();
+        lengthA_ = prm.getA();
+        lengthAforce_ = prm.getA();
+        setCParamFromParentBC( prm.getPl() );
+        parentBC_ = prm.getPl();
+        parentNumber_ = prm.getPn();
+
+        if( nodeTriangleA_ == null || parentNumber_ < 1 ) resetLength( prm.getA(), prm.getB(), prm.getC() );
+        else{
+            set(nodeTriangleA_, cParam_, prm.getB(), prm.getC() );
+        }
+        //set(parent_, tParams.getPl(), tParams.getA(), tParams.getB(), tParams.getC() );
+        //cParam_ = thisCP.clone();
+        this.myName_ = prm.getName();
+        return this;
+    }
+
+    public void resetByNode( int pbc ){
+
+        Triangle node = getNode( pbc );
+
+        if( node != null ) {
+            float length = getLengthByIndex( pbc );
+            if( node.parentBC_ < 3 ) length = node.lengthA_;
+
+            switch ( pbc ) {
+                case 0:
+                    //initBasicArguments( length, lengthB_, lengthC_, node.pointAB_, -node.angleInGlobal_ );
+                    break;
+                case 1:
+                    initBasicArguments( lengthA_, length, lengthC_, node.pointAB_, -node.angleInGlobal_ );
+                    break;
+                case 2:
+                    initBasicArguments( lengthA_, lengthB_, length, node.pointBC_, node.angleInGlobal_+angleInnerBC_ );
+                    break;
+            }
+
+            calcPoints( pointCA_, angleInGlobal_ );
+        }
+
+    }
+
+    public Triangle getNode( int pbc ){
+        switch ( pbc ){
+            case 0:
+                return nodeTriangleA_;
+            case 1:
+                return nodeTriangleB_;
+            case 2:
+                return nodeTriangleC_;
+            case -1:
+                return this;
+        }
+        return null;
+    }
+
+    public void resetNode(Params prms, ArrayList<Triangle> doneObjectList ){
+
+        reset( prms );
+        doneObjectList.add( this );
+        //nodeTriangleA_.resetNode( )
+
+    }
+
+
+    Triangle reset(Triangle newTri){
+        ConnParam thisCP = cParam_.clone();
+        if( nodeTriangleA_ == null || parentNumber_ < 1 ) resetLength( newTri.lengthA_, newTri.lengthB_, newTri.lengthC_);
+        else set(nodeTriangleA_, newTri.parentBC_, newTri.lengthA_, newTri.lengthB_, newTri.lengthC_);
+        cParam_ = thisCP.clone();
+        this.myName_ = newTri.myName_;
+        return this.clone();
+    }
+
+    Triangle reset(Triangle newTri, ConnParam cParam){
+        if(nodeTriangleA_ == null) resetLength( newTri.lengthA_, newTri.lengthB_, newTri.lengthC_);
+        else set(nodeTriangleA_, cParam, newTri.lengthB_, newTri.lengthC_);
+        this.myName_ = newTri.myName_;
+        return this.clone();
+    }
+
+    Triangle resetLength(float A, float B, float C){
+        //lengthA = A; lengthB = B; lengthC = C;
+        initBasicArguments(A, B, C, pointCA_, angleInGlobal_);
+        calcPoints(pointCA_, angleInGlobal_);
+        return this.clone();
+    }
+
+
+    public boolean resetByParent(Triangle prnt, ConnParam cParam){
+        if( !isValidLengthes( prnt.getLengthByIndex( getParentSide() ), lengthB_, lengthC_ ) ) return false;
+
+        Triangle triIsValid = set(prnt, cParam, lengthB_, lengthC_);
+        return triIsValid != null;
+    }
+
+    public void resetByChild(Triangle myChild, ConnParam cParam){
+        int cbc = myChild.cParam_.getSide();
+        childSide_ = myChild.parentBC_;
+        if(nodeTriangleA_ == null) {
+            if( cbc == 1 ) resetLength(lengthA_, myChild.lengthA_, lengthC_);
+            if( cbc == 2 ) resetLength(lengthA_, lengthB_, myChild.lengthA_);
+            return;
+        }
+        if( cbc == 1 ) {
+            set(nodeTriangleA_, cParam, myChild.lengthA_, lengthC_);
+            nodeTriangleB_ = myChild.clone();
+        }
+        if( cbc == 2 ) {
+            set(nodeTriangleA_, cParam, lengthB_, myChild.lengthA_);
+            nodeTriangleC_ = myChild.clone();
+        }
+        setDimAlignByChild();
+    }
+
+    // reset by parent.
+    public boolean resetByParent(Triangle prnt, int pbc){
+        Triangle triIsValid = null;
+        float parentLength = prnt.getLengthByIndex(pbc);
+
+        //if(pbc == 1 ) triIsValid = set(prnt, pbc, lengthA_, parentLength, );
+        if(pbc <= 2 ){
+            if( !isValidLengthes( parentLength, lengthB_, lengthC_ ) ){
+                triIsValid = set(prnt, pbc, lengthA_, lengthB_, lengthC_ );
+                return false;
+            }
+            else triIsValid = set(prnt, pbc, parentLength, lengthB_, lengthC_ );
+        }
+        if(pbc >  2 ) triIsValid = set(prnt, pbc, lengthA_, lengthB_, lengthC_);
+        return triIsValid != null;
+    }
+
+    // 子のA辺が書き換わったら、それを写し取ってくる。同一辺長接続のとき（１か２）以外はリターン。
+    public void resetByChild(Triangle myChild){
+        if( myChild.cParam_.getType() != 0 ) return;
+
+        int cbc = myChild.parentBC_;
+        if( cbc == 1 && !isValidLengthes( lengthA_, myChild.lengthA_, lengthC_ ) ) return;
+        if( cbc == 2 && !isValidLengthes( lengthA_, lengthB_, myChild.lengthA_ ) ) return;
+
+        childSide_ = myChild.parentBC_;
+        if( nodeTriangleA_ == null || parentNumber_ < 1 ) {
+            if( cbc == 1 ) resetLength(lengthA_, myChild.lengthA_, lengthC_);
+            if( cbc == 2 ) resetLength(lengthA_, lengthB_, myChild.lengthA_);
+            return;
+        }
+        if( cbc == 1 ) {
+            set(nodeTriangleA_, parentBC_, lengthA_, myChild.lengthA_, lengthC_);
+            //nodeTriangleB_ = myChild;
+        }
+        if( cbc == 2 ) {
+            set(nodeTriangleA_, parentBC_, lengthA_, lengthB_, myChild.lengthA_);
+            //nodeTriangleC_ = myChild;
+        }
+        setDimAlignByChild();
+    }
 
     public float getLengthByType(){
         return 0f;
     }
 
-    public void setConnectionType(ConneParam cParam ){
+    public void setConnectionType(ConnParam cParam ){
         //myParentBC_= cParam.getSide();
         parentNumber_ = nodeTriangleA_.getMyNumber_();
         connectionType_ = cParam.getType();
@@ -307,7 +664,7 @@ public class Triangle extends EditObject implements Cloneable {
         }
     }
 
-    public PointXY getPointByCParam( ConneParam cparam, Triangle prnt ) {
+    public PointXY getPointByCParam(ConnParam cparam, Triangle prnt ) {
         if( prnt == null ) return new PointXY( 0f, 0f );
         int cside = cparam.getSide();
         int ctype = cparam.getType();
@@ -381,7 +738,7 @@ public class Triangle extends EditObject implements Cloneable {
 
     }
 
-    public PointXY setBasePoint(  ConneParam cParam ){
+    public PointXY setBasePoint(ConnParam cParam ){
         pointCA_ = getParentPointByType( cParam.getSide(), cParam.getType(), cParam.getLcr() );
         connectionType_ = cParam.getType();
         connectionLCR_ = cParam.getLcr();
@@ -398,7 +755,7 @@ public class Triangle extends EditObject implements Cloneable {
         return pointCA_;
     }
 
-    public PointXY getParentPointByType( ConneParam cParam) {
+    public PointXY getParentPointByType(ConnParam cParam) {
         return getParentPointByType( cParam.getSide(), cParam.getType(), cParam.getLcr() );
     }
 
@@ -486,34 +843,34 @@ public class Triangle extends EditObject implements Cloneable {
 
         switch (pbc){
             case 1:
-                cParam_ = new ConneParam( 1 ,0, 2, lengthAforce_);
+                cParam_ = new ConnParam( 1 ,0, 2, lengthAforce_);
                 break;
             case 2:
-                cParam_ = new ConneParam( 2 ,0, 2, lengthAforce_);
+                cParam_ = new ConnParam( 2 ,0, 2, lengthAforce_);
                 break;
             case 3:
-                cParam_ = new ConneParam( 1 ,1, curLCR, lengthAforce_);
+                cParam_ = new ConnParam( 1 ,1, curLCR, lengthAforce_);
                 break;
             case 4:
-                cParam_ = new ConneParam( 1 ,1, curLCR, lengthAforce_);
+                cParam_ = new ConnParam( 1 ,1, curLCR, lengthAforce_);
                 break;
             case 5:
-                cParam_ = new ConneParam( 2 ,1, curLCR, lengthAforce_);
+                cParam_ = new ConnParam( 2 ,1, curLCR, lengthAforce_);
                 break;
             case 6:
-                cParam_ = new ConneParam( 2 ,1, curLCR, lengthAforce_);
+                cParam_ = new ConnParam( 2 ,1, curLCR, lengthAforce_);
                 break;
             case 7:
-                cParam_ = new ConneParam( 1 ,1, curLCR, lengthAforce_);
+                cParam_ = new ConnParam( 1 ,1, curLCR, lengthAforce_);
                 break;
             case 8:
-                cParam_ = new ConneParam( 2 ,1, curLCR, lengthAforce_);
+                cParam_ = new ConnParam( 2 ,1, curLCR, lengthAforce_);
                 break;
             case 9:
-                cParam_ = new ConneParam( 1 ,2, curLCR, lengthAforce_);
+                cParam_ = new ConnParam( 1 ,2, curLCR, lengthAforce_);
                 break;
             case 10:
-                cParam_ = new ConneParam( 2 ,2, curLCR, lengthAforce_);
+                cParam_ = new ConnParam( 2 ,2, curLCR, lengthAforce_);
                 break;
         }
     }
@@ -529,274 +886,6 @@ public class Triangle extends EditObject implements Cloneable {
         }
     }
 
-    Triangle set(Triangle parent, int pbc, float B, float C){
-        myNumber_ = parent.myNumber_ + 1;
-        parentBC_ = pbc;
-
-        if(parent == null) {
-            resetLength(pbc,B,C);
-            return this.clone();
-        }
-        else {
-            setNode( parent, 0 );
-            parent.setNode( this, getParentSide() );
-        }
-
-        //setParent(parent, A);
-
-        if(pbc == 1) {
-            parentBC_ = 1;
-            lengthA_ = nodeTriangleA_.getLengthB_();
-            lengthA_ = nodeTriangleA_.lengthBforce_;
-            pointCA_ = nodeTriangleA_.getPointBC_();
-            angleInGlobal_ = nodeTriangleA_.getAngleMpAB();
-        } else if(pbc == 2){
-            parentBC_ = 2;
-            lengthA_ = nodeTriangleA_.getLengthC_();
-            lengthA_ = nodeTriangleA_.lengthCforce_;
-            pointCA_ = nodeTriangleA_.getPointCA_();
-            angleInGlobal_ = nodeTriangleA_.getAngleMmCA();
-        } else {
-            parentBC_ = 0;
-            lengthA_ = 0f;
-            lengthAforce_ = 0f;
-            pointCA_ = new PointXY(0f, 0f);
-            angleInGlobal_ = 180f;
-        }
-
-        parentNumber_ = nodeTriangleA_.getMyNumber_();
-        //nodeTriangleA_.setChild(this, parentBC_);
-
-        initBasicArguments(lengthA_, B, C, pointCA_, angleInGlobal_);
-        calcPoints(pointCA_, angleInGlobal_);
-
-        //myDimAlign = setDimAlign();
-
-        return this;
-    }
-
-    Triangle set(Triangle parent, int pbc, float A, float B, float C){
-        myNumber_ = parent.myNumber_ + 1;
-        parentBC_ = pbc;
-
-        if(parent == null) {
-            resetLength(pbc,B,C);
-            return this.clone();
-        }
-        else {
-            setNode( parent, 0 );
-            parent.setNode( this, getParentSide() );
-        }
-
-        //setParent(parent, pbc);
-        //nodeTriangleA_.setChild(this, pbc );
-
-        // if user rewrite A
-        if(A != parent.getLengthByIndex(pbc)) {
-            lengthA_ = A;
-            lengthAforce_ = A;
-        } else{
-            lengthA_ = parent.getLengthByIndex(pbc);
-            lengthAforce_ = parent.getLengthByIndex(pbc);
-        }
-
-        setCParamFromParentBC( pbc );
-        pointCA_ = getParentPointByType( cParam_ );
-
-
-        if(pbc == 1) { // B
-            parentBC_ = 1;
-
-            angleInGlobal_ = parent.getAngleMpAB();
-        } else if(pbc == 2) { // C
-            parentBC_ = 2;
-            angleInGlobal_ = parent.getAngleMmCA();
-        } else if(pbc == 3){ // B-R
-            parentBC_ = 3;
-            angleInGlobal_ = parent.getAngleMpAB();
-        } else if(pbc == 4) { //B-L
-            parentBC_ = 4;
-            angleInGlobal_ = parent.getAngleMpAB();
-        } else if(pbc == 5) { //C-R
-            parentBC_ = 5;
-            angleInGlobal_ = parent.getAngleMmCA();
-        } else if(pbc == 6) { //C-L
-            parentBC_ = 6;
-            angleInGlobal_ = parent.getAngleMmCA();
-        } else if(pbc == 7) { //B-Center
-            parentBC_ = 7;
-            angleInGlobal_ = parent.getAngleMpAB();
-        } else if(pbc == 8) { //C-Center
-            parentBC_ = 8;
-            angleInGlobal_ = parent.getAngleMmCA();
-        } else if(pbc == 9) { //B-Float-R
-            parentBC_ = 9;
-            angleInGlobal_ = parent.getAngleMpAB();
-        } else if(pbc == 10) { //C-Float-R
-            parentBC_ = 10;
-            angleInGlobal_ = parent.getAngleMmCA();
-        } else {
-            parentBC_ = 0;
-            lengthA_ = 0f;
-            lengthAforce_ = 0f;
-            pointCA_ = new PointXY(0f, 0f);
-            angleInGlobal_ = 180f;
-        }
-
-        parentNumber_ = parent.getMyNumber_();
-
-        initBasicArguments(lengthA_, B, C, pointCA_, angleInGlobal_);
-        if(!validTriangle()) return null;
-        calcPoints(pointCA_, angleInGlobal_);
-        if(parentBC_ == 4){
-            PointXY vector = new PointXY( parent.getPointAB_().getX()- pointAB_.getX(),
-                                            parent.getPointAB_().getY()- pointAB_.getY());
-            move(vector);
-        }
-        if(parentBC_ == 6){
-            PointXY vector = new PointXY( parent.getPointBC_().getX()- pointAB_.getX(),
-                                        parent.getPointBC_().getY()- pointAB_.getY());
-            move(vector);
-        }
-
-        //myDimAlign = setDimAlign();
-
-        return this.clone();
-    }
-
-    public void set(Triangle myParent, int pbc){
-
-        this.set(myParent, pbc, this.lengthB_, this.lengthC_);
-
-    }
-
-    public void set(Triangle myParent, Params dP){
-        set(myParent,dP.getPl(),dP.getA(),dP.getB(),dP.getC());
-        myName_ = dP.getName();
-
-    }
-
-    Triangle set(Triangle parent, ConneParam cParam, float B, float C) {
-        setParent( parent, cParam.getSide() );
-        angleInGlobal_ = nodeTriangleA_.getAngleBySide( cParam.getSide() );
-
-        setConnectionType( cParam );
-
-
-        initBasicArguments(lengthA_, B, C, pointCA_, angleInGlobal_);
-        if(!validTriangle()) return null;
-
-        calcPoints(pointCA_, angleInGlobal_);
-
-        setDimAlignByChild();
-
-        nodeTriangleA_.setChild(this, cParam.getSide() );
-
-        return this.clone();
-    }
-
-    public void reload() {
-        if(nodeTriangleA_ != null){
-            nodeTriangleA_.reload();
-            calcPoints(pointCA_ = nodeTriangleA_.getPointBySide(parentBC_), angleInGlobal_ = nodeTriangleA_.getAngleBySide(parentBC_));
-        }
-    }
-
-    Triangle reset( Params prm ){
-        //ConneParam thisCP = cParam_.clone();
-        lengthA_ = prm.getA();
-        lengthAforce_ = prm.getA();
-        setCParamFromParentBC( prm.getPl() );
-        parentBC_ = prm.getPl();
-        parentNumber_ = prm.getPn();
-
-        if( nodeTriangleA_ == null || parentNumber_ < 1 ) resetLength( prm.getA(), prm.getB(), prm.getC() );
-        else{
-            set(nodeTriangleA_, cParam_, prm.getB(), prm.getC() );
-        }
-             //set(parent_, tParams.getPl(), tParams.getA(), tParams.getB(), tParams.getC() );
-        //cParam_ = thisCP.clone();
-        this.myName_ = prm.getName();
-        return this.clone();
-    }
-
-    Triangle reset(Triangle newTri){
-        ConneParam thisCP = cParam_.clone();
-        if( nodeTriangleA_ == null || parentNumber_ < 1 ) resetLength( newTri.lengthA_, newTri.lengthB_, newTri.lengthC_);
-        else set(nodeTriangleA_, newTri.parentBC_, newTri.lengthA_, newTri.lengthB_, newTri.lengthC_);
-        cParam_ = thisCP.clone();
-        this.myName_ = newTri.myName_;
-        return this.clone();
-    }
-
-    Triangle reset(Triangle newTri, ConneParam cParam){
-        if(nodeTriangleA_ == null) resetLength( newTri.lengthA_, newTri.lengthB_, newTri.lengthC_);
-        else set(nodeTriangleA_, cParam, newTri.lengthB_, newTri.lengthC_);
-        this.myName_ = newTri.myName_;
-        return this.clone();
-    }
-
-
-    Triangle resetLength(float A, float B, float C){
-        //lengthA = A; lengthB = B; lengthC = C;
-        initBasicArguments(A, B, C, pointCA_, angleInGlobal_);
-        calcPoints(pointCA_, angleInGlobal_);
-        return this.clone();
-    }
-
-    public boolean resetByParent(Triangle prnt, ConneParam cParam){
-        Triangle triIsValid = set(prnt, cParam, lengthB_, lengthC_);
-        return triIsValid != null;
-    }
-
-    public void resetByChild(Triangle myChild, ConneParam cParam){
-        int cbc = myChild.cParam_.getSide();
-        childSide_ = myChild.parentBC_;
-        if(nodeTriangleA_ == null) {
-            if( cbc == 1 ) resetLength(lengthA_, myChild.lengthA_, lengthC_);
-            if( cbc == 2 ) resetLength(lengthA_, lengthB_, myChild.lengthA_);
-            return;
-        }
-        if( cbc == 1 ) {
-            set(nodeTriangleA_, cParam, myChild.lengthA_, lengthC_);
-            nodeTriangleB_ = myChild.clone();
-        }
-        if( cbc == 2 ) {
-            set(nodeTriangleA_, cParam, lengthB_, myChild.lengthA_);
-            nodeTriangleC_ = myChild.clone();
-        }
-        setDimAlignByChild();
-    }
-
-    // reset by parent.
-    public boolean resetByParent(Triangle prnt, int pbc){
-        Triangle triIsValid = null;
-        float parentLength = getLengthByIndex(pbc);
-        if(pbc == 1 ) triIsValid = set(prnt, pbc, lengthA_, parentLength, lengthC_);
-        if(pbc == 2 ) triIsValid = set(prnt, pbc, lengthA_, lengthB_, parentLength);
-        if(pbc >  2 ) triIsValid = set(prnt, pbc, lengthA_, lengthB_, lengthC_);
-        return triIsValid != null;
-    }
-
-    // 子のA辺が書き換わったら、それを写し取ってくる。同一辺長接続のとき（１か２）以外はリターン。
-    public void resetByChild(Triangle myChild){
-        int cbc = myChild.parentBC_;
-        childSide_ = myChild.parentBC_;
-        if( nodeTriangleA_ == null || parentNumber_ < 1 ) {
-            if( cbc == 1 ) resetLength(lengthA_, myChild.lengthA_, lengthC_);
-            if( cbc == 2 ) resetLength(lengthA_, lengthB_, myChild.lengthA_);
-            return;
-        }
-        if( cbc == 1 ) {
-            set(nodeTriangleA_, parentBC_, lengthA_, myChild.lengthA_, lengthC_);
-            nodeTriangleB_ = myChild.clone();
-        }
-        if( cbc == 2 ){
-            set(nodeTriangleA_, parentBC_, lengthA_, lengthB_, myChild.lengthA_);
-            nodeTriangleC_ = myChild.clone();
-        }
-        setDimAlignByChild();
-    }
 
     public void setDimAligns(int sa, int sb, int sc, int ha, int hb, int hc){
         dimSideAlignA_ = sa;
@@ -863,9 +952,14 @@ public class Triangle extends EditObject implements Cloneable {
 
     public boolean validTriangle(){
         if (lengthA_ <=0.0f || lengthB_ <=0.0f || lengthC_ <=0.0f) return false;
-        return !((this.lengthA_ + this.lengthB_) <= this.lengthC_) &&
-                !((this.lengthB_ + this.lengthC_) <= this.lengthA_) &&
-                !((this.lengthC_ + this.lengthA_) <= this.lengthB_);
+        return isValidLengthes( lengthA_, lengthB_, lengthC_ );
+        //!((this.lengthA_ + this.lengthB_) <= this.lengthC_) &&
+          //      !((this.lengthB_ + this.lengthC_) <= this.lengthA_) &&
+            //    !((this.lengthC_ + this.lengthA_) <= this.lengthB_);
+    }
+
+    public boolean isValidLengthes( float A, float B, float C ){
+        return !( ( A + B ) <= C ) && !( ( B + C ) <= A ) && !( ( C + A ) <= B );
     }
 
     public double calculateInternalAngle(PointXY p1, PointXY p2, PointXY p3) {

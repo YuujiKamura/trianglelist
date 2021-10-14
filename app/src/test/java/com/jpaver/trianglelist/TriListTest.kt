@@ -7,6 +7,91 @@ import org.junit.Assert
 import org.junit.Test
 
 class TriListTest {
+
+
+    @Test
+    fun testResetByObjectID() {
+        val trilist = TriangleList()
+        trilist.add( Triangle(5f, 8f, 5f))
+        trilist.add( 1, 1, 8f, 8f )
+        trilist.add( 2, 2, 5f, 5f )
+
+        trilist.resetByNodeID( Params("", "",3, 6f,6f,6f, 1, 1))
+        assertEquals( 6f, trilist.get(2).lengthB_ )
+
+    }
+
+
+    @Test
+    fun testResetFromParamCase4() {
+        val trilist = TriangleList()
+        trilist.add( Triangle(5f, 8f, 5f))
+        trilist.add( 1, 1, 8f, 8f )
+        trilist.add( 2, 2, 5f, 5f )
+
+        //　ケース４：接続三角形にとって辺長がおかしい場合は伝播を止める
+        trilist.resetFromParam( Params("", "",2, 12f,12f,12f, 1, 1))
+        assertEquals( 8f, trilist.get(1).lengthB_ )
+        assertEquals( 8f, trilist.get(3).lengthA_ )
+
+    }
+
+    @Test
+    fun testResetFromParamCase3() {
+        val trilist = TriangleList()
+        trilist.add( Triangle(5f, 5f, 5f))
+        trilist.add( 1, 1, 5f, 5f )
+        trilist.add( 2, 2, 5f, 5f )
+
+        //　ケース３：二重断面
+        trilist.resetFromParam( Params("", "",2, 6f,6f,6f, 1, 3))
+        assertEquals( 5f, trilist.get(1).lengthB_ )
+
+    }
+
+    @Test
+    fun testResetFromParamCase2() {
+        val trilist = TriangleList()
+        trilist.add( Triangle(5f, 5f, 5f))
+        trilist.add( 1, 1, 5f, 5f )
+        trilist.add( 2, 2, 5f, 5f )
+
+        //　ケース２：接続辺の書き換えが子に伝播する
+        trilist.resetFromParam( Params("", "",2, 5f,6f,6f, 1, 1))
+        assertEquals( 6f, trilist.get(3).lengthA_ )
+
+        //　ケース３：接続辺の書き換えが親に伝播する
+        trilist.resetFromParam( Params("", "",2, 6f,6f,6f, 1, 1))
+        assertEquals( 6f, trilist.get(1).lengthB_ )
+
+    }
+
+    @Test
+    fun testResetFromParamCase1() {
+        val trilist = TriangleList()
+        trilist.add( Triangle(5f, 5f, 5f))
+        trilist.add( 1, 1, 5f, 5f )
+        trilist.add( 2, 2, 5f, 5f )
+
+        // ケース１：親番号の書き換え
+        trilist.resetFromParam( Params("", "",3, 5f,6f,6f, 1, 2))
+        assertEquals( 1, trilist.get(3).parentNumber_ )
+        assertEquals( 3, trilist.get(3).myNumber_ )
+
+    }
+
+    @Test
+    fun testReplaceByConnectNodeNumber() {
+        val trilist = TriangleList()
+        trilist.add( Triangle(5f, 5f, 5f))
+        trilist.add( 1, 1, 5f, 5f )
+        trilist.add( 2, 2, 5f, 5f )
+
+        trilist.replace(3, 1)
+
+        assertEquals( 1, trilist.get(3).parentNumber_ )
+    }
+
     @Test
     fun testResetAllNodesAtClone() {
         val trilist = TriangleList()
@@ -158,11 +243,11 @@ class TriListTest {
     fun testConnectionTypeLoad(){
         val tri1 = Triangle(3f, 4f, 5f)
         val tri2 = Triangle(tri1, 3, 3f, 4f, 5f)
-        val tri3 = Triangle(tri2, ConneParam(1, 0, 2, 0f), 3f, 5f)
+        val tri3 = Triangle(tri2, ConnParam(1, 0, 2, 0f), 3f, 5f)
         val tri4 = Triangle(tri3, 4, 3f, 4f, 5f)
         val tri5 = Triangle(tri4, 6, 3f, 4f, 5f)
-        val tri6 = Triangle(tri5, ConneParam(1, 1, 0, 4f), 3f, 5f)
-        val tri7 = Triangle(tri6, ConneParam(2, 1, 0, 4f), 3f, 5f)
+        val tri6 = Triangle(tri5, ConnParam(1, 1, 0, 4f), 3f, 5f)
+        val tri7 = Triangle(tri6, ConnParam(2, 1, 0, 4f), 3f, 5f)
         val tri8 = Triangle(tri7, 5, 3f, 4f, 5f)
         val tri9 = Triangle(tri7, 7, 3f, 4f, 5f)
         val tri10 = Triangle(tri7, 8, 3f, 4f, 5f)
@@ -189,8 +274,8 @@ class TriListTest {
         val trilist = TriangleList()
         trilist.add(Triangle(5f, 5f, 5f))
 
-        val params = Params("", "", 1 , 7f,7f, 7f, 0, 1 )
-        trilist.resetConnectedTriangles( params )
+        val params = Params("", "", 1 , 7f,7f, 7f, -1, 1 )
+        trilist.resetFromParam( params )
 
     }
 
@@ -302,8 +387,8 @@ class TriListTest {
     @Test
     fun testTriListGetTap() {
         val tri1 = Triangle(3f, 4f, 5f)
-        val tri2 = Triangle(tri1, ConneParam(1, 0, 2, 0f), 3f, 4f)
-        val tri3 = Triangle(tri1, ConneParam(2, 0, 2, 0f), 3f, 5f)
+        val tri2 = Triangle(tri1, ConnParam(1, 0, 2, 0f), 3f, 4f)
+        val tri3 = Triangle(tri1, ConnParam(2, 0, 2, 0f), 3f, 5f)
         val trilist = TriangleList(tri1)
         trilist.add(tri2)
         trilist.add(tri3)
@@ -315,24 +400,24 @@ class TriListTest {
     fun testConnectionType3() {
         val tri1 = Triangle(3f, 4f, 5f)
         val tri2 = Triangle(tri1, 3, 3f, 4f, 5f)
-        val tri3 = Triangle(tri2, ConneParam(1, 0, 2, 0f), 3f, 5f)
+        val tri3 = Triangle(tri2, ConnParam(1, 0, 2, 0f), 3f, 5f)
         val trilist = TriangleList(tri1)
         trilist.add(tri2)
         trilist.add(tri3)
-        tri2.reset(tri2, ConneParam(1, 1, 1, 3f))
+        tri2.reset(tri2, ConnParam(1, 1, 1, 3f))
         trilist.lastTapNum_ = 2
         trilist.rotateCurrentTriLCR()
-        Assert.assertEquals(4f, tri3.pointCA_.y, 0.0001f)
-        trilist.resetTriConnection(2, ConneParam(1, 1, 0, 3f))
-        Assert.assertEquals(4f, tri3.pointCA_.y, 0.0001f)
-        val tri4 = Triangle(tri1, ConneParam(1, 1, 2, 3f), 3f, 5f)
+        Assert.assertEquals(0f, tri3.pointCA_.y, 0.0001f)
+        trilist.resetTriConnection(2, ConnParam(1, 1, 0, 3f))
+        Assert.assertEquals(0f, tri3.pointCA_.y, 0.0001f)
+        val tri4 = Triangle(tri1, ConnParam(1, 1, 2, 3f), 3f, 5f)
         Assert.assertEquals(true, tri4.pointCA_.equals(-3f, 4f))
-        val tri5 = Triangle(tri1, ConneParam(2, 1, 2, 3f), 3f, 5f)
+        val tri5 = Triangle(tri1, ConnParam(2, 1, 2, 3f), 3f, 5f)
         Assert.assertEquals(true, tri5.pointCA_.equals(0f, 0f))
         val tri8 =
             Triangle(tri1, Params("", "", 2, 3f, 3f, 5f, 2, 5, tri1.pointCA_, PointXY(0f, 0f)))
         Assert.assertEquals(true, tri8.pointCA_.equals(0f, 0f))
-        val tri6 = Triangle(tri1, ConneParam(2, 1, 0, 3f), 3f, 5f)
+        val tri6 = Triangle(tri1, ConnParam(2, 1, 0, 3f), 3f, 5f)
         Assert.assertEquals(true, tri6.pointCA_.equals(-1.1999f, 1.5999f))
         val tri7 =
             Triangle(tri1, Params("", "", 2, 3f, 3f, 5f, 2, 6, tri1.pointCA_, PointXY(0f, 0f)))
@@ -354,7 +439,7 @@ class TriListTest {
         Assert.assertEquals(3.0f, tri2.rotateLCR().y, 0.0001f)
         Assert.assertEquals(4.0f, tri2.rotateLCR().y, 0.0001f)
 
-        val tri3 = Triangle(tri2, ConneParam(1, 0, 2, 3f), 3f, 5f)
+        val tri3 = Triangle(tri2, ConnParam(1, 0, 2, 3f), 3f, 5f)
         Assert.assertEquals(1f, tri3.pointCA_.y, 0.0001f)
 
         tri3.resetByParent(tri2.rotateLCRandGet(), tri3.cParam_)
@@ -375,7 +460,7 @@ class TriListTest {
         Assert.assertEquals(4.0f, tri2.rotateLCR().y, 0.0001f)
         Assert.assertEquals(3.5f, tri2.rotateLCR().y, 0.0001f)
         trilist.rotateCurrentTriLCR() //3.0
-        Assert.assertEquals(4f, tri3.pointCA_.y, 0.0001f)
+        Assert.assertEquals(0f, tri3.pointCA_.y, 0.0001f)
     }
 
 
@@ -578,7 +663,7 @@ class TriListTest {
         assertEquals(trilist.get(2).pointAB_.x, trilist.get(1).pointBC_.x, 0.001f )
         assertEquals(trilist.get(2).pointAB_.y, trilist.get(1).pointBC_.y, 0.001f )
 
-        trilist.resetConnectedTriangles( Params("", "", 2, 2.5f, 5f, 5f, 1, 2 ) )
+        trilist.resetFromParam( Params("", "", 2, 2.5f, 5f, 5f, 1, 2 ) )
         assertEquals(trilist.get(2).pointAB_.x, trilist.get(1).pointBC_.x, 0.001f )
         assertEquals(trilist.get(2).pointAB_.y, trilist.get(1).pointBC_.y, 0.001f )
 
@@ -617,7 +702,7 @@ class TriListTest {
 
         // 1下 3上 -> // 夾角の、1:外 　3:内
         Assert.assertEquals(3, myTrilist.getTriangle(1).dimAlignA.toLong())
-        Assert.assertEquals(3, myTrilist.getTriangle(1).dimAlignB.toLong())
+        Assert.assertEquals(1, myTrilist.getTriangle(1).dimAlignB.toLong())
         Assert.assertEquals(3, myTrilist.getTriangle(1).dimAlignC.toLong())
         Assert.assertEquals(3, myTrilist.getTriangle(2).dimAlignA.toLong())
         Assert.assertEquals(3, myTrilist.getTriangle(2).dimAlignB.toLong())

@@ -1,10 +1,8 @@
 package com.jpaver.trianglelist
 
-import kotlin.math.roundToInt
-
-data class ConneParam(var side: Int, var type: Int, var lcr: Int, var lenA: Float ){
-     fun clone(): ConneParam {
-        val b = ConneParam(side, type, lcr, lenA)
+data class ConnParam(var side: Int, var type: Int, var lcr: Int, var lenA: Float ){
+     fun clone(): ConnParam {
+        val b = ConnParam(side, type, lcr, lenA)
         return b
     }
 }

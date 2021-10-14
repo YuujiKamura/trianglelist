@@ -11,8 +11,54 @@ import static org.junit.Assert.assertTrue;
 
 public class TriangleTest {
 
+
     @Test
-    public void testSetPointersGetParams() {
+    public void testResetNodeChain(){
+        Triangle t = new Triangle(5f, 5f, 5f );
+        Triangle t2 = new Triangle( t, 1, 5f, 5f );
+        Triangle t3 = new Triangle( t2, 1, 5f, 5f );
+
+        t2.set( t, 1, 6f, 6f,6f, true );
+
+        assertEquals(6f, t.lengthB_, 0.001f );
+        assertEquals(6f, t3.lengthA_, 0.001f );
+
+    }
+
+    @Test
+    public void testValid(){
+        Triangle t = new Triangle(5f, 5f, 5f );
+        assertEquals(true, t.validTriangle() );
+
+        Triangle t2 = new Triangle(5f, 5f, 15f );
+        assertEquals(false, t2.validTriangle() );
+
+    }
+
+    @Test
+    public void testSetPointersFromCParams() {
+        Triangle one = new Triangle( new Params( "", "", 1, 5f, 5f, 5f, -1, -1, new PointXY( 0f, 0f), new PointXY( 0f, 0f) ), 0f );
+        ConnParam connection = new ConnParam( 1, 0, 0, 5f );
+        Triangle two = new Triangle( one, connection, 6f, 6f );
+
+        // 内容の一致
+        assertEquals( one.myNumber_, two.nodeTriangleA_.myNumber_ );
+        assertEquals( one.nodeTriangleB_.myNumber_, two.myNumber_ );
+
+        // オブジェクトポインタの一致。
+        assertEquals( one, two.nodeTriangleA_ );
+        assertEquals( one.nodeTriangleB_, two );
+
+        two.set( one, 2, 5f, 5f);
+
+        // オブジェクトポインタの一致。
+        assertEquals( one, two.nodeTriangleA_ );
+        assertEquals( one.nodeTriangleC_, two );
+
+    }
+
+    @Test
+    public void testSetPointersFromParams() {
         Triangle one = new Triangle( new Params( "", "", 1, 5f, 5f, 5f, -1, -1, new PointXY( 0f, 0f), new PointXY( 0f, 0f) ), 0f );
         Triangle two = new Triangle( one, new Params( "", "", 2, 5f, 5f, 5f, 1, 1, new PointXY( 0f, 0f), new PointXY( 0f, 0f) ) );
 

@@ -1,4 +1,13 @@
 
+2021
+1013
+一日に3つ以上のテストケースのクリアを目標にする。
+・testNodePointersFromConnParam
+・myViewのtrilistStoredがなぜか更新時に落ちるので廃止。重複の排除。これもTDD
+あとひとつ。
+・testReplaceByConnectNodeNumber
+
+
 Roadmap
 2020/
 6/

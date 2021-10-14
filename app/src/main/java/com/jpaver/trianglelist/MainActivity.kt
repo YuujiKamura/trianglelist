@@ -582,7 +582,8 @@ class MainActivity : AppCompatActivity(),
         fab_undo.setOnClickListener{ view ->
             if( trilistStored_.size() > 0 ){
                 myTriangleList = trilistStored_.clone()
-                my_view.undo()
+                //my_view.undo()
+                my_view.setTriangleList(trilistStored_, mScale)
                 my_view.resetViewToLSTP()
 
                 trilistStored_.trilist_.clear()
@@ -932,7 +933,7 @@ class MainActivity : AppCompatActivity(),
 
             //if( dParams.n == 1 ) myTriangleList.resetTriangle( dParams.n, Triangle( dParams, myTriangleList.myAngle ) )
             //else
-            return myTriangleList.resetConnectedTriangles(params)
+            return myTriangleList.resetFromParam(params)
         } // if valid triangle
         else return false
     }
@@ -2119,7 +2120,7 @@ class MainActivity : AppCompatActivity(),
         }
 
         if( chunks.size > 17 ) {
-            mt.cParam_ = ConneParam(
+            mt.cParam_ = ConnParam(
                 chunks[17]!!.toInt(),
                 chunks[18]!!.toInt(),
                 chunks[19]!!.toInt(),
@@ -2191,7 +2192,7 @@ class MainActivity : AppCompatActivity(),
                 else {
 
                     val ptri = trilist.getTriangle(chunks[4].toInt())
-                    val cp = ConneParam(
+                    val cp = ConnParam(
                         chunks[17].toInt(),
                         chunks[18].toInt(),
                         chunks[19].toInt(),
@@ -2211,7 +2212,7 @@ class MainActivity : AppCompatActivity(),
             else{
 
                     val cp = parentBCtoCParam(
-                        chunks[5].toInt(), chunks[1].toFloat(), ConneParam(
+                        chunks[5].toInt(), chunks[1].toFloat(), ConnParam(
                             0,
                             0,
                             0,
@@ -2221,7 +2222,7 @@ class MainActivity : AppCompatActivity(),
 
                     trilist.add(
                         Triangle(
-                            trilist.getTriangle(chunks[4].toInt()), ConneParam(
+                            trilist.getTriangle(chunks[4].toInt()), ConnParam(
                                 cp.side,
                                 cp.type,
                                 cp.lcr,
@@ -2298,21 +2299,21 @@ class MainActivity : AppCompatActivity(),
         return pl
     }
 
-    fun parentBCtoCParam(pbc: Int, lenA: Float, cp: ConneParam) : ConneParam{
+    fun parentBCtoCParam(pbc: Int, lenA: Float, cp: ConnParam) : ConnParam{
         when(pbc){
-            1 -> return ConneParam(1, 0, 2, 0f)//B
-            2 -> return ConneParam(2, 0, 2, 0f)//C
-            3 -> return ConneParam(1, 1, 2, lenA)//BR
-            4 -> return ConneParam(1, 1, 0, lenA)//BL
-            5 -> return ConneParam(2, 1, 2, lenA)//CR
-            6 -> return ConneParam(2, 1, 0, lenA)//CL
-            7 -> return ConneParam(1, 1, 1, lenA)//BC
-            8 -> return ConneParam(2, 1, 1, lenA)//CC
-            9 -> return ConneParam(1, 2, cp.lcr, lenA)//BF
-            10 -> return ConneParam(2, 2, cp.lcr, lenA)//CF
+            1 -> return ConnParam(1, 0, 2, 0f)//B
+            2 -> return ConnParam(2, 0, 2, 0f)//C
+            3 -> return ConnParam(1, 1, 2, lenA)//BR
+            4 -> return ConnParam(1, 1, 0, lenA)//BL
+            5 -> return ConnParam(2, 1, 2, lenA)//CR
+            6 -> return ConnParam(2, 1, 0, lenA)//CL
+            7 -> return ConnParam(1, 1, 1, lenA)//BC
+            8 -> return ConnParam(2, 1, 1, lenA)//CC
+            9 -> return ConnParam(1, 2, cp.lcr, lenA)//BF
+            10 -> return ConnParam(2, 2, cp.lcr, lenA)//CF
         }
 
-        return ConneParam(0, 0, 0, 0f)
+        return ConnParam(0, 0, 0, 0f)
     }
 
     fun setTitles(){

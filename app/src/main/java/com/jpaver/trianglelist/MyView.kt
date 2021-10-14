@@ -286,7 +286,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     fun lsdp(): PointXY{ return myDeductionList.get( myDeductionList.lastTapIndex_ ).point.clone() }
 
     fun setTriangleList(triList: TriangleList, setscale: Float){
-        trilistStored_ = myTriangleList.clone()
+        //if( myTriangleList.size() > 0 ) trilistStored_ = myTriangleList.clone()
         myScale = setscale    // 描画倍率は外から指定する
         myTriangleList = triList.clone()
         myTriangleList.scaleAndSetPath( PointXY(0f, 0f), setscale, paintTexS.textSize )
