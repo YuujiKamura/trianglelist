@@ -822,9 +822,9 @@ public class Triangle extends EditObject implements Cloneable {
         if( nodeTriangleA_ == null ) return new PointXY(0f,0f);
         switch(pbc){
             case 1:
-                return nodeTriangleA_.pointAB_.offset(nodeTriangleA_.pointBC_, nodeTriangleA_.getLengthB_()/2 + lengthA_ /2);
+                return nodeTriangleA_.pointAB_.offset(nodeTriangleA_.pointBC_, nodeTriangleA_.getLengthB_() * 0.5f + lengthA_ * 0.5f );
             case 2:
-                return nodeTriangleA_.pointBC_.offset(nodeTriangleA_.pointCA_, nodeTriangleA_.getLengthC_()/2 + lengthA_ /2);
+                return nodeTriangleA_.pointBC_.offset(nodeTriangleA_.pointCA_, nodeTriangleA_.getLengthC_() * 0.5f + lengthA_ * 0.5f );
         }
         return nodeTriangleA_.getPointBySide(pbc);
     }
@@ -842,34 +842,34 @@ public class Triangle extends EditObject implements Cloneable {
         if( cParam_.getSide() == 0 && (pbc == 7 || pbc == 8 ) ) curLCR = 1;
 
         switch (pbc){
-            case 1:
+            case 1://B
                 cParam_ = new ConnParam( 1 ,0, 2, lengthAforce_);
                 break;
-            case 2:
+            case 2://C
                 cParam_ = new ConnParam( 2 ,0, 2, lengthAforce_);
                 break;
-            case 3:
-                cParam_ = new ConnParam( 1 ,1, curLCR, lengthAforce_);
+            case 3://BR
+                cParam_ = new ConnParam( 1 ,1, 2, lengthAforce_);
                 break;
-            case 4:
-                cParam_ = new ConnParam( 1 ,1, curLCR, lengthAforce_);
+            case 4://BL
+                cParam_ = new ConnParam( 1 ,1, 0, lengthAforce_);
                 break;
-            case 5:
-                cParam_ = new ConnParam( 2 ,1, curLCR, lengthAforce_);
+            case 5://CR
+                cParam_ = new ConnParam( 2 ,1, 2, lengthAforce_);
                 break;
-            case 6:
-                cParam_ = new ConnParam( 2 ,1, curLCR, lengthAforce_);
+            case 6://CL
+                cParam_ = new ConnParam( 2 ,1, 0, lengthAforce_);
                 break;
-            case 7:
-                cParam_ = new ConnParam( 1 ,1, curLCR, lengthAforce_);
+            case 7://BC
+                cParam_ = new ConnParam( 1 ,1, 1, lengthAforce_);
                 break;
-            case 8:
-                cParam_ = new ConnParam( 2 ,1, curLCR, lengthAforce_);
+            case 8://CC
+                cParam_ = new ConnParam( 2 ,1, 1, lengthAforce_);
                 break;
-            case 9:
+            case 9://BF
                 cParam_ = new ConnParam( 1 ,2, curLCR, lengthAforce_);
                 break;
-            case 10:
+            case 10://CF
                 cParam_ = new ConnParam( 2 ,2, curLCR, lengthAforce_);
                 break;
         }
@@ -942,7 +942,6 @@ public class Triangle extends EditObject implements Cloneable {
         float rfp = Math.round(ip) / 100f;
         return rfp;
     }
-
 
     //maybe not use.
     private void setParentInfo(int myParNum, int myParBC, int myConne){

@@ -594,16 +594,12 @@ public class TriangleList extends EditList implements Cloneable {
         return true;
     }
 
-    public boolean resetConnectedTriangles(int index, Triangle rTri, ConnParam cParam){
-        if(rTri == null || !rTri.validTriangle())  return false;
+    public void resetByNodeID( Params prms ){
 
-        rTri.myNumber_ = index;
-        if(index > 1) trilist_.get(index-2).childSide_ = rTri.cParam_.getSide();
-        if(index > 1) trilist_.get(index-2).resetByChild(rTri, cParam);
-        trilist_.get(index-1).reset(rTri, cParam);
-        if( trilist_.size() > 1 ) resetChildsFrom(rTri);
+        ArrayList<Triangle> doneObjectList = new ArrayList<Triangle>();
 
-        return true;
+        trilist_.get( prms.getN() - 1 ).resetNode( prms, doneObjectList );
+
     }
 
     public boolean resetFromParam(Params prms ){
@@ -622,15 +618,6 @@ public class TriangleList extends EditList implements Cloneable {
         resetConnectedTriangles( prms.getN(), tri);
 
         return true;
-    }
-
-
-    public void resetByNodeID( Params prms ){
-
-        ArrayList<Triangle> doneObjectList = new ArrayList<Triangle>();
-
-        trilist_.get( prms.getN() - 1 ).resetNode( prms, doneObjectList );
-
     }
 
     public boolean resetConnectedTriangles(int cNum, Triangle curtri){
@@ -659,7 +646,7 @@ public class TriangleList extends EditList implements Cloneable {
         // 自身の書き換え
         Triangle me = trilist_.get(cNum-1);
         //me.setNode( trilist_.get( ));
-        me.reset(curtri);// ここがへん！
+        me.reset(curtri);// ここがへん！ 親は自身の基準角度に基づいて形状変更をするので、それにあわせてもう一回呼んでいる。
 
 
         // 浮いてる場合、さらに自己番が最後でない場合、一個前の三角形の位置と角度を自分の変化にあわせて動かしたい。
