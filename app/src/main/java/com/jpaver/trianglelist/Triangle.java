@@ -527,6 +527,17 @@ public class Triangle extends EditObject implements Cloneable {
 
     }
 
+    public void removeNode( Triangle target ){
+        if( nodeTriangleA_ == target ) nodeTriangleA_ = null;
+        if( nodeTriangleB_ == target ) nodeTriangleB_ = null;
+        if( nodeTriangleC_ == target ) nodeTriangleC_ = null;
+    }
+
+    public void removeTheirNode(){
+        if( nodeTriangleA_ != null ) nodeTriangleA_.removeNode( this );
+        if( nodeTriangleB_ != null ) nodeTriangleB_.removeNode( this );
+        if( nodeTriangleC_ != null ) nodeTriangleC_.removeNode( this );
+    }
 
     Triangle reset(Triangle newTri){
         ConnParam thisCP = cParam_.clone();
@@ -597,6 +608,7 @@ public class Triangle extends EditObject implements Cloneable {
 
     // 子のA辺が書き換わったら、それを写し取ってくる。同一辺長接続のとき（１か２）以外はリターン。
     public void resetByChild(Triangle myChild){
+        setDimAlignByChild();
         if( myChild.cParam_.getType() != 0 ) return;
 
         int cbc = myChild.parentBC_;
@@ -617,7 +629,6 @@ public class Triangle extends EditObject implements Cloneable {
             set(nodeTriangleA_, parentBC_, lengthA_, lengthB_, myChild.lengthA_);
             //nodeTriangleC_ = myChild;
         }
-        setDimAlignByChild();
     }
 
     public float getLengthByType(){
@@ -877,11 +888,11 @@ public class Triangle extends EditObject implements Cloneable {
 
     public void setDimAlignByChild(){
         if( isChangeDimAlignB_ == false ){
-            if( isChildB_ == false ) myDimAlignB_ = 1;
+            if( nodeTriangleB_ == null ) myDimAlignB_ = 1;
             else myDimAlignB_ = 3;
         }
         if( isChangeDimAlignC_ == false ){
-            if( isChildC_ == false ) myDimAlignC_ = 1;
+            if( nodeTriangleC_ == null ) myDimAlignC_ = 1;
             else myDimAlignC_ = 3;
         }
     }

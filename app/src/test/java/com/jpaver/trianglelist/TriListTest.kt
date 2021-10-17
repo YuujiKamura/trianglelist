@@ -8,6 +8,22 @@ import org.junit.Test
 
 class TriListTest {
 
+    @Test
+    fun testRemoveNode() {
+        val trilist = TriangleList()
+        trilist.add( Triangle(5f, 8f, 5f ) )
+        trilist.add( 1, 1, 8f, 8f )
+        trilist.add( 2, 2, 5f, 5f )
+
+        //trilist.remove( 2 )
+        //assertEquals( 5f, trilist.get(1).nodeTriangleB_.lengthB_ )
+        //assertEquals( trilist.get(2), trilist.get(1).nodeTriangleB_ )
+
+        val trilist2 = trilist.clone()
+
+        trilist.remove( 3 )
+        assertEquals( null, trilist.get(2).nodeTriangleC_ )
+    }
 
     @Test
     fun testResetByObjectID() {
@@ -427,7 +443,7 @@ class TriListTest {
         trilist.lastTapNum_ = 2
         trilist.rotateCurrentTriLCR()
         Assert.assertEquals(1.0f, tri3.pointCA_.y, 0.0001f)
-        trilist.resetTriConnection(2, ConnParam(1, 1, 0, 3f))
+        //trilist.resetTriConnection(2, ConnParam(1, 1, 0, 3f))
         Assert.assertEquals(1.0f, tri3.pointCA_.y, 0.0001f)
         val tri4 = Triangle(tri1, ConnParam(1, 1, 2, 3f), 3f, 5f)
         Assert.assertEquals(true, tri4.pointCA_.equals(-3f, 4f))

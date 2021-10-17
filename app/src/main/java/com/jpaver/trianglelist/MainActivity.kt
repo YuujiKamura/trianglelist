@@ -12,6 +12,7 @@ import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.DocumentsContract
 import android.text.Editable
 import android.text.InputFilter
 import android.text.TextWatcher
@@ -70,6 +71,7 @@ class MainActivity : AppCompatActivity(),
     private val PERMISSIONS = arrayOf(
         Manifest.permission.WRITE_EXTERNAL_STORAGE,
         Manifest.permission.READ_EXTERNAL_STORAGE,
+        //Manifest.permission.MANAGE_DOCUMENTS,
         Manifest.permission.INTERNET
     )
     private val REQUEST_PERMISSION = 1000
@@ -544,6 +546,7 @@ class MainActivity : AppCompatActivity(),
                 //myTriangleList.resetTriConnection(myTriangleList.lastTapNum_, );
                 my_view.setTriangleList(myTriangleList, mScale)
                 my_view.resetView(my_view.lstp())
+                EditorClear(getList(deductionMode_), getList(deductionMode_).getCurrent())
 
                 AutoSaveCSV()
             }
@@ -551,18 +554,22 @@ class MainActivity : AppCompatActivity(),
 
         var deleteWarning: Int = 0
         fab_minus.setOnClickListener { view ->
-            val len = getList(deductionMode_).size()
+            val listLength = getList(deductionMode_).size()
 
-            if(len > 0 && deleteWarning == 0) {
+            if(listLength > 0 && deleteWarning == 0) {
                 deleteWarning = 1
                 fab_minus.backgroundTintList = getColorStateList(R.color.colorTT2)
 
             }
             else {
-                if (len > 0) {
+                if (listLength > 0) {
                     trilistStored_ = myTriangleList.clone()
 
-                    getList(deductionMode_).remove(len)
+                    var eraseNum = listLength
+                    if( deductionMode_ == false ) eraseNum = myTriangleList.lastTapNum_
+
+                    getList(deductionMode_).remove( eraseNum )
+
                     //my_view.removeTriangle()
                     my_view.setDeductionList(myDeductionList, mScale)
                     my_view.setTriangleList(myTriangleList, mScale)
@@ -895,7 +902,7 @@ class MainActivity : AppCompatActivity(),
         if (validDeduction(params) == true) {
             // 所属する三角形の判定処理
             if( params.pt != PointXY(0f, 0f) ) {
-                params.pn = my_view.myTriangleList.isCollide( params.pt.scale( PointXY(1f, -1f ) ) )
+                params.pn = my_view.myTriangleList.isCollide(params.pt.scale(PointXY(1f, -1f)))
             }
 
             myDeductionList.add(params)
@@ -949,7 +956,7 @@ class MainActivity : AppCompatActivity(),
         if( validDeduction(prms) == true ) {
             // 所属する三角形の判定処理
             if( prms.pt != PointXY(0f, 0f) ) {
-                prms.pn = my_view.myTriangleList.isCollide( prms.pt.scale( PointXY(1f, -1f ) ) )
+                prms.pn = my_view.myTriangleList.isCollide(prms.pt.scale(PointXY(1f, -1f)))
             }
 
             myDeductionList.replace(prms.n, prms)
@@ -1063,7 +1070,7 @@ class MainActivity : AppCompatActivity(),
         else {
             val lpp = my_view.localPressPoint.scale(PointXY(0f, 0f), 1f, -1f)
 
-            val slpp = my_view.shadowTri_.getTapLength( lpp )
+            val slpp = my_view.shadowTri_.getTapLength(lpp)
             if( slpp == 1) {
                 findViewById<EditText>(R.id.editLengthB1).requestFocus()
 //                my_view.myTriangleList.lastTapSide_ = 1
@@ -1075,7 +1082,7 @@ class MainActivity : AppCompatActivity(),
                 return
             }
 
-            my_view.myTriangleList.getTap( lpp )
+            my_view.myTriangleList.getTap(lpp)
 
             if ( my_view.myTriangleList.lastTapNum_ != 0 ) {
                 //Toast.makeText(this, "Triangle tap", Toast.LENGTH_SHORT).show()
@@ -1374,16 +1381,16 @@ class MainActivity : AppCompatActivity(),
 
         // リスナーを登録
         var etB1 = findViewById<EditText>(R.id.editLengthB1)
-        etB1.addTextChangedListener(object: CustomTextWatcher{
+        etB1.addTextChangedListener(object : CustomTextWatcher {
             override fun afterTextChanged(p0: Editable?) {
-                if( etB1.isFocused == true ) my_view.watchedB_ = p0.toString()
+                if (etB1.isFocused == true) my_view.watchedB_ = p0.toString()
                 my_view.invalidate()
             }
         })
         val etC1 = findViewById<EditText>(R.id.editLengthC1)
-        etC1.addTextChangedListener(object: CustomTextWatcher{
+        etC1.addTextChangedListener(object : CustomTextWatcher {
             override fun afterTextChanged(p0: Editable?) {
-                if( etC1.isFocused == true ) my_view.watchedC_ = p0.toString()
+                if (etC1.isFocused == true) my_view.watchedC_ = p0.toString()
                 my_view.invalidate()
             }
         })
@@ -1493,12 +1500,17 @@ class MainActivity : AppCompatActivity(),
             }
             R.id.action_load_csv -> {
                 checkPermission()
+                //val i = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)   // 1
                 var i: Intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
                 i.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
                 i.addCategory(Intent.CATEGORY_OPENABLE)
                 i.type = "text/csv"
                 i.putExtra(Intent.EXTRA_TITLE, ".csv")
-                startActivityForResult(i, 2)
+
+                val docUri = Uri.parse("content://com.android.externalstorage.documents/tree/")
+                intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, docUri);
+
+                startActivityForResult(i, 2)//44)
 
                 return true
             }
@@ -2080,7 +2092,7 @@ class MainActivity : AppCompatActivity(),
 
         var trilist: TriangleList = TriangleList()
 
-        var pointfirst = PointXY( 0f, 0f )
+        var pointfirst = PointXY(0f, 0f)
         var anglefirst = 180f
         if( chunks.size > 22 ) {
             if( chunks[22]!!.toFloat() != 180f ){
@@ -2091,7 +2103,11 @@ class MainActivity : AppCompatActivity(),
 
         trilist.add(
             Triangle(
-                chunks[1]!!.toFloat(), chunks[2]!!.toFloat(), chunks[3]!!.toFloat(), pointfirst, anglefirst
+                chunks[1]!!.toFloat(),
+                chunks[2]!!.toFloat(),
+                chunks[3]!!.toFloat(),
+                pointfirst,
+                anglefirst
             )
         )
         val mt = trilist.getTriangle(trilist.size())
@@ -2182,10 +2198,14 @@ class MainActivity : AppCompatActivity(),
                 if( chunks[5].toInt() == 0 ){
                     trilist.add(
                         Triangle(
-                            chunks[1]!!.toFloat(), chunks[2]!!.toFloat(), chunks[3]!!.toFloat(), PointXY(
+                            chunks[1]!!.toFloat(),
+                            chunks[2]!!.toFloat(),
+                            chunks[3]!!.toFloat(),
+                            PointXY(
                                 -chunks[23]!!.toFloat(),
                                 -chunks[24]!!.toFloat()
-                            ), chunks[22]!!.toFloat() - 180f
+                            ),
+                            chunks[22]!!.toFloat() - 180f
                         )
                     )
                 }
@@ -2321,10 +2341,12 @@ class MainActivity : AppCompatActivity(),
 
         val dedArea = myDeductionList.getArea()
         val triArea = myTriangleList.getArea()
-        val totalArea = roundByUnderTwo( triArea - dedArea )
+        val totalArea = roundByUnderTwo(triArea - dedArea)
         title = rStr_.menseki_ + ": ${ totalArea.formattedString(2) } m^2"
 
-        if( myTriangleList.lastTapNum_ > 0 ) title = rStr_.menseki_ + ": ${myTriangleList.getArea() - myDeductionList.getArea()} m^2" + " (${ myTriangleList.getAreaI( myTriangleList.lastTapNum_ ) - myDeductionList.getAreaN(myTriangleList.lastTapNum_) } m^2)"
+        if( myTriangleList.lastTapNum_ > 0 ) title = rStr_.menseki_ + ": ${myTriangleList.getArea() - myDeductionList.getArea()} m^2" + " (${ myTriangleList.getAreaI(
+            myTriangleList.lastTapNum_
+        ) - myDeductionList.getAreaN(myTriangleList.lastTapNum_) } m^2)"
     }
 
     fun roundByUnderTwo(fp: Float) :Float {
