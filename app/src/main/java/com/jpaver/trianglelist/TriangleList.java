@@ -438,7 +438,6 @@ public class TriangleList extends EditList implements Cloneable {
 
         int pbc = nextTriangle.parentBC_;
 
-        // 親がいない場合もある
         if( nextTriangle.parentNumber_ > 0 ){
             Triangle parent = getTriangle(nextTriangle.parentNumber_);
             if( parent.alreadyHaveChild( pbc ) == true ){
@@ -456,10 +455,10 @@ public class TriangleList extends EditList implements Cloneable {
             // 親に告知する
             //if( nextTriangle.myNumber_ > 1 ) trilist_.get( nextTriangle.parentNumber_ -1 ).setChild(nextTriangle, nextTriangle.getParentBC());
         }
+        // 親がいない場合もある
         else{
             trilist_.add( nextTriangle);   // add by arraylist
         }
-
 
         current = nextTriangle.myNumber_;
         //lastTapNum_ = 0;
@@ -568,19 +567,6 @@ public class TriangleList extends EditList implements Cloneable {
         //this.cloneByScale(basepoint, myScale);
     }
 
-    public void removeAllNode(Triangle target ){
-
-        for( int i = 0; i < trilist_.size(); i++ ){
-            Triangle na = trilist_.get( i ).nodeTriangleA_;
-            Triangle nb = trilist_.get( i ).nodeTriangleB_;
-            Triangle nc = trilist_.get( i ).nodeTriangleC_;
-            if( na == target ) na = null;
-            if( nb == target ) nb = null;
-            if( nc == target ) nc = null;
-        }
-
-    }
-
     public ConnParam rotateCurrentTriLCR(){
         if( lastTapNum_ < 2 ) return null;
 
@@ -600,16 +586,6 @@ public class TriangleList extends EditList implements Cloneable {
         //resetMyChild( myTriList.get(lastTapNum_-1), myTriList.get(lastTapNum_-1).cParam_ );
 
         return cParam;
-    }
-
-    public boolean resetTriConnection(int index, ConnParam cParam){
-
-        //myTriList.get(index-1).reset(myTriList.get(index-1), cParam);
-        //if( myTriList.size() > 1 ) resetChildsFrom(myTriList.get(index-1));
-        //lastTapNum_ = 0;
-        //lastTapSide_ = -1;
-
-        return true;
     }
 
     public void resetByNodeID( Params prms ){
@@ -664,21 +640,32 @@ public class TriangleList extends EditList implements Cloneable {
         // 自身の書き換え
         Triangle me = trilist_.get(cNum-1);
         //me.setNode( trilist_.get( ));
-        me.reset(curtri);// ここがへん！ 親は自身の基準角度に基づいて形状変更をするので、それにあわせてもう一回呼んでいる。
 
 
         // 浮いてる場合、さらに自己番が最後でない場合、一個前の三角形の位置と角度を自分の変化にあわせて動かしたい。
-        if( curtri.parentNumber_ == 0 && trilist_.size() != cNum ) {
+        if( curtri.parentNumber_ <= 0 && trilist_.size() != cNum && exist( curtri.nodeTriangleA_ ) == true ) {
             curtri.resetByChild( trilist_.get(cNum) );
         }
 
+        me.reset(curtri);// ここがへん！ 親は自身の基準角度に基づいて形状変更をするので、それにあわせてもう一回呼んでいる。
+
+
         // 子をすべて書き換える
-        if( trilist_.size() > 1 && cNum < trilist_.size() ) resetMyChild(trilist_.get(cNum-1));
+        if( trilist_.size() > 1 && cNum < trilist_.size() && curtri.hasChild() == true ) resetMyChild(trilist_.get(cNum-1));
 
         //lastTapNum_ = 0;
         //lastTapSide_ = -1;
 
         return true;
+    }
+
+    //　ターゲットポインターがリストの中にいたらtrue
+    public boolean exist( Triangle target ){
+        for ( int i = 0; i < trilist_.size(); i++ ){
+            if( trilist_.get( i ) == target ) return true;
+        }
+        return false;
+        //return trilist_.contains( target );
     }
 
     public void resetMyChild(Triangle newParent){
@@ -1075,6 +1062,9 @@ public class TriangleList extends EditList implements Cloneable {
                     // 自身の番号-1を親とする
                     me.parentNumber_ = me.myNumber_ - 1;
                     me.rotateLengthBy( next.getParentSide() );
+
+                    me.setNode( next, 0 );
+
                     //たとえば次がB辺接続だった場合、自分のB辺がA辺となるように全体の辺長配置を時計回りに回す。
                     //それから、次の接続辺指定を自身に移植する。
                     //このとき、二重断面指定はたぶん逆になる。
@@ -1088,13 +1078,18 @@ public class TriangleList extends EditList implements Cloneable {
                         else me.setReverseDefSide( next.parentBC_, false);
                     }
                     else me.setReverseDefSide( next.parentBC_, false);
+
+                    next.setNode( me, me.getParentSide() );
                 }
                 else{
                     //連番でないときは
-                    me.parentNumber_ = 0; //next.parentNumber_;
+                    me.parentNumber_ = -1; //next.parentNumber_;
+                    me.parentBC_ = -1;
 
                     Triangle prev = numrev.trilist_.get(i);
                     me.rotateLengthBy( 2 );
+
+                    me.setNode( me.nodeTriangleA_, me.getParentSide() );
 
                     //next.parentNumber_ = trilist_.get( next.parentNumber_ - 1 ).myNumber_;
                     //next.parentBC_ =  trilist_.get( next.parentNumber_ - 1 ).parentBC_;

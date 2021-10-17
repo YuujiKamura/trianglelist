@@ -505,6 +505,11 @@ public class Triangle extends EditObject implements Cloneable {
 
     }
 
+    public boolean hasChild(){
+        if( nodeTriangleB_ != null || nodeTriangleC_ != null ) return true;
+        else return false;
+    }
+
     public Triangle getNode( int pbc ){
         switch ( pbc ){
             case 0:

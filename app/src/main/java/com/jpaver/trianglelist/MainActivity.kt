@@ -1,17 +1,16 @@
 package com.jpaver.trianglelist
 
 import android.Manifest
+import android.app.Activity
 import android.app.AlertDialog
-import android.content.ActivityNotFoundException
-import android.content.Context
-import android.content.DialogInterface
-import android.content.Intent
+import android.content.*
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.preference.PreferenceManager
 import android.provider.DocumentsContract
 import android.text.Editable
 import android.text.InputFilter
@@ -27,6 +26,9 @@ import android.widget.*
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider.getUriForFile
+import androidx.core.content.edit
+import androidx.core.net.toUri
+import androidx.documentfile.provider.DocumentFile
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.InterstitialAd
@@ -67,6 +69,9 @@ interface CustomTextWatcher: TextWatcher{
 
 class MainActivity : AppCompatActivity(),
         MyDialogFragment.NoticeDialogListener {
+
+    lateinit var prefSetting: SharedPreferences
+    val REQUEST_CODE = 816 // 2
 
     private val PERMISSIONS = arrayOf(
         Manifest.permission.WRITE_EXTERNAL_STORAGE,
@@ -432,6 +437,9 @@ class MainActivity : AppCompatActivity(),
         super.onCreate(savedInstanceState)
         setTheme(R.style.AppTheme_NoActionBar)
         setContentView(R.layout.activity_main)
+
+
+        prefSetting = PreferenceManager.getDefaultSharedPreferences(this)
 
 
         if( BuildConfig.FLAVOR == "free" ){
@@ -1499,19 +1507,7 @@ class MainActivity : AppCompatActivity(),
                 return true
             }
             R.id.action_load_csv -> {
-                checkPermission()
-                //val i = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)   // 1
-                var i: Intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
-                i.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-                i.addCategory(Intent.CATEGORY_OPENABLE)
-                i.type = "text/csv"
-                i.putExtra(Intent.EXTRA_TITLE, ".csv")
-
-                val docUri = Uri.parse("content://com.android.externalstorage.documents/tree/")
-                intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, docUri);
-
-                startActivityForResult(i, 2)//44)
-
+                actionLoadCSV()
                 return true
             }
 
@@ -1635,6 +1631,22 @@ class MainActivity : AppCompatActivity(),
         return true
     }
 
+    fun actionLoadCSV(){
+        checkPermission()
+        var i: Intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
+        i.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+        i.addCategory(Intent.CATEGORY_OPENABLE)
+        i.type = "text/csv"
+        //i.putExtra(Intent.EXTRA_TITLE, ".csv")
+        startActivityForResult(i, 2)
+    }
+
+    fun actionSelectDir(){
+        checkPermission()
+        val i = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)   // 1
+        startActivityForResult(i, REQUEST_CODE )
+    }
+
     @RequiresApi(Build.VERSION_CODES.O)
     fun showExportDialog(fileprefix: String, title: String, filetype: String, intentType: String): Boolean{
         val hTstart = getString(R.string.inputtnum)
@@ -1682,11 +1694,29 @@ class MainActivity : AppCompatActivity(),
         return true
     }
 
+    // ファイル読み込み
+    private fun readFile() {
+        val uri = prefSetting.getString("uri", "")?.toUri() ?: return
+        // ファイル操作
+        DocumentFile.fromTreeUri(this, uri)?.apply {
+            // テキストファイル取り出し
+            if (findFile("test.txt")?.exists() == false) {
+                // なければ終了
+                return@apply
+            }
+            val textFile = findFile("test.txt") ?: return@apply
+            // テキスト取り出す
+            val text = contentResolver.openInputStream(textFile.uri)?.bufferedReader()?.readLine()
+            //editText.setText(text)
+        }
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if(data?.data == NULL || resultCode == RESULT_CANCELED) return
         var title: Uri = Objects.requireNonNull(data?.data)!!
-        if(requestCode ==1 && resultCode == RESULT_OK) {
+
+        if(requestCode == 1 && resultCode == RESULT_OK) {
             try {
                 var charset: String = "Shift-JIS"
                 var writer: BufferedWriter = BufferedWriter(
@@ -1710,6 +1740,7 @@ class MainActivity : AppCompatActivity(),
                 e.printStackTrace()
             }
         }
+
         if(requestCode ==2 && resultCode == RESULT_OK) {
             var str: StringBuilder = StringBuilder()
             try {
@@ -1721,6 +1752,22 @@ class MainActivity : AppCompatActivity(),
                 e.printStackTrace()
             }
         }
+
+        //フォルダ選択
+        if (requestCode == REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+            // リクエストコードが一致&成功のとき
+            val uri = data?.data ?: return
+            // Uriは再起すると使えなくなるので対策
+            contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+            // Uri保存。これでアプリ再起動後も使えます。
+            prefSetting.edit {
+                putString("uri", uri.toString())
+            }
+        }
+
         if(mIsCreateNew == true){
             CreateNew()
             mIsCreateNew = false
@@ -2256,6 +2303,7 @@ class MainActivity : AppCompatActivity(),
                 trilist.getTriangle(trilist.size()).parentBC_ = chunks[5].toInt()
                 // trilist.getTriangle(trilist.size()).setCParamFromParentBC( chunks[5]!!.toInt() )
             }
+
             val mT = trilist.getTriangle(trilist.size())
             mT.setMyName_(chunks[6].toString())
             if( trilist.size() > 1 ) trilist.get(trilist.size() - 1).childSide_ = chunks[5].toInt()
@@ -2295,7 +2343,7 @@ class MainActivity : AppCompatActivity(),
         //trilist.scale(PointXY(0f,0f), 5f)
         //if( anglefirst != 180f )
             trilist.recoverState(PointXY(0f, 0f))
-        trilist.setChildsToAllParents()
+        //trilist.setChildsToAllParents()
 //        myDeductionList.scale(PointXY(0f,0f), 1f, 1f)
         my_view.setDeductionList(dedlist, mScale)
         my_view.setTriangleList(trilist, mScale)
