@@ -1413,6 +1413,7 @@ class MainActivity : AppCompatActivity(),
 
     fun CreateNew(){
         val tri = Triangle(5f, 5f, 5f, PointXY(0f, 0f), 0f)
+        tri.autoSetDimAlign()
         val trilist = TriangleList(tri)
         myTriangleList = trilist
         myDeductionList.clear()
@@ -1507,7 +1508,9 @@ class MainActivity : AppCompatActivity(),
                 return true
             }
             R.id.action_load_csv -> {
-                actionLoadCSV()
+                //actionSelectDir()
+                openDocumentPicker()
+//                actionLoadCSV()
                 return true
             }
 
@@ -1629,6 +1632,28 @@ class MainActivity : AppCompatActivity(),
         }
 
         return true
+    }
+
+
+    private fun openDocumentPicker() {
+        val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+            /**
+             * It's possible to limit the types of files by mime-type. Since this
+             * app displays pages from a PDF file, we'll specify `application/pdf`
+             * in `type`.
+             * See [Intent.setType] for more details.
+             */
+            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+            type = "text/csv/*"
+
+            /**
+             * Because we'll want to use [ContentResolver.openFileDescriptor] to read
+             * the data of whatever file is picked, we set [Intent.CATEGORY_OPENABLE]
+             * to ensure this will succeed.
+             */
+            addCategory(Intent.CATEGORY_OPENABLE)
+        }
+        startActivityForResult(intent, 2)
     }
 
     fun actionLoadCSV(){
@@ -1766,6 +1791,8 @@ class MainActivity : AppCompatActivity(),
             prefSetting.edit {
                 putString("uri", uri.toString())
             }
+
+            openDocumentPicker()
         }
 
         if(mIsCreateNew == true){
@@ -2115,6 +2142,12 @@ class MainActivity : AppCompatActivity(),
         var line: String? = reader.readLine()
         if(line == null) return false
         var chunks: List<String?> = line.split(",").map { it.trim() }
+
+        if(chunks[0]!! != "koujiname"){
+            Toast.makeText( this, "It's not supported file.", Toast.LENGTH_LONG ).show()
+            return false
+        }
+
         if(chunks[0]!! == "koujiname") {
             koujiname_= chunks[1]!!.toString()
             line = reader.readLine()
