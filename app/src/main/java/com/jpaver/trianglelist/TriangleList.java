@@ -588,11 +588,11 @@ public class TriangleList extends EditList implements Cloneable {
         return cParam;
     }
 
-    public void resetByNodeID( Params prms ){
+    public void resetNodeByID(Params prms ){
 
         ArrayList<Triangle> doneObjectList = new ArrayList<Triangle>();
 
-        trilist_.get( prms.getN() - 1 ).resetNode( prms, doneObjectList );
+        trilist_.get( prms.getN() - 1 ).resetNode( prms, trilist_.get( prms.getPn() - 1 ), doneObjectList );
 
     }
 

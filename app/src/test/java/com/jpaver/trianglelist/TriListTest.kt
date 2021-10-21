@@ -38,17 +38,32 @@ class TriListTest {
     }
 
     @Test
-    fun testResetByObjectID() {
+    fun testResetNodeByObjectID() {
         val trilist = TriangleList()
         trilist.add(Triangle(5f, 8f, 5f))
         trilist.add(1, 1, 8f, 8f)
         trilist.add(2, 2, 5f, 5f)
 
-        trilist.resetByNodeID(Params("", "", 3, 6f, 6f, 6f, 1, 1))
-        assertEquals(8f, trilist.get(2).lengthB_)
+        trilist.resetNodeByID(Params("", "", 3, 6f, 6f, 6f, 1, 2))
+        assertEquals(trilist.get(1), trilist.get(3).nodeTriangleA_ )
+        assertEquals(trilist.get(3), trilist.get(1).nodeTriangleC_ )
 
     }
 
+    @Test
+    fun testResetPointAndAngleByNodeChain() {
+        val trilist = TriangleList()
+        trilist.add(Triangle(5f, 8f, 5f))
+        trilist.add(1, 1, 8f, 8f)
+        trilist.add(2, 2, 5f, 5f)
+
+        //trilist.resetPointAndAngleByNodeChain( Params("", "", 2, 6f, 6f, 6f, 1, 1) )
+        trilist.get(2).resetElegant( Params("", "", 2, 6f, 6f, 6f, 1, 1) )
+
+        assertEquals( 6f, trilist.get(1).lengthB_ )
+        assertEquals( trilist.get(2).pointCA_.x, trilist.get(1).pointBC_.x )
+
+    }
 
     @Test
     fun testResetFromParamCase4() {

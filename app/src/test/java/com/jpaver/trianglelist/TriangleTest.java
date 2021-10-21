@@ -306,6 +306,38 @@ public class TriangleTest {
     }
 
     @Test
+    public void testNewCalcPointC(){
+        Triangle tri1 = new Triangle(3f, 4f, 5f, new PointXY(0f,0f), 0.0f);
+        Triangle tri2 = new Triangle( tri1, 2, 3f, 4f );
+
+        assertEquals( true, tri1.pointCA_.equals( 0f, 0f ) );
+        assertEquals( true, tri1.pointAB_.equals( 3f, 0f ) );
+        assertEquals( true, tri1.pointBC_.equals( 3f, -4f ) );
+
+        tri1.calcPoints( tri2, 2 );
+        assertEquals( true, tri1.pointCA_.equals( 0f, 0f ) );
+        assertEquals( true, tri1.pointAB_.equals( 3f, 0f ) );
+        assertEquals( true, tri1.pointBC_.equals( 3f, -4f ) );
+
+    }
+
+    @Test
+    public void testNewCalcPointB(){
+        Triangle tri1 = new Triangle(3f, 5f, 4f, new PointXY(0f,0f), 0.0f);
+        Triangle tri2 = new Triangle( tri1, 1, 4f, 3f );
+
+        assertEquals( true, tri1.pointCA_.equals( 0f, 0f ) );
+        assertEquals( true, tri1.pointAB_.equals( 3f, 0f ) );
+        assertEquals( true, tri1.pointBC_.equals( 0f, -4f ) );
+
+        tri1.calcPoints( tri2, 1 );
+        assertEquals( true, tri1.pointCA_.equals( 0f, 0f ) );
+        assertEquals( true, tri1.pointAB_.equals( 3f, 0f ) );
+        assertEquals( true, tri1.pointBC_.equals( 0f, -4f ) );
+
+    }
+
+    @Test
     public void testCalcPoint(){
         PointXY myXY0 = new PointXY(0.0f, 0.0f);
         Triangle myTriangle = new Triangle(3.0f, 4.0f, 5.0f, myXY0, 90.0f);

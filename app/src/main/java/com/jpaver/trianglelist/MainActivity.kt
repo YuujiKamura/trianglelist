@@ -11,7 +11,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.preference.PreferenceManager
-import android.provider.DocumentsContract
 import android.text.Editable
 import android.text.InputFilter
 import android.text.TextWatcher
