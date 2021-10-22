@@ -306,6 +306,22 @@ public class TriangleTest {
     }
 
     @Test
+    public void testNewCalcPointB_CParam(){
+        Triangle tri1 = new Triangle(3f, 5f, 4f, new PointXY(0f,0f), 0.0f);
+        Triangle tri2 = new Triangle( tri1, 3, 6f, 5f, 4f );
+        // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
+        assertEquals( true, tri1.pointCA_.equals( 0f, 0f ) );
+        assertEquals( true, tri1.pointAB_.equals( 3f, 0f ) );
+        assertEquals( true, tri1.pointBC_.equals( 0f, -4f ) );
+
+        tri1.calcPoints( tri2, 1 );
+        assertEquals( true, tri1.pointCA_.equals( 0f, 0f ) );
+        assertEquals( true, tri1.pointAB_.equals( 3f, 0f ) );
+        assertEquals( true, tri1.pointBC_.equals( 0f, -4f ) );
+
+    }
+
+    @Test
     public void testNewCalcPointC(){
         Triangle tri1 = new Triangle(3f, 4f, 5f, new PointXY(0f,0f), 0.0f);
         Triangle tri2 = new Triangle( tri1, 2, 3f, 4f );

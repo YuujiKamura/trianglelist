@@ -7,81 +7,81 @@ import java.util.ArrayList;
 import static java.lang.Math.toRadians;
 
 public class Triangle extends EditObject implements Cloneable {
-    protected boolean valid_ = false;
-    protected float lengthA_ = 0f;
-    protected float lengthB_ = 0f;
-    protected float lengthC_ = 0f;
-    protected float scale_ = 1f;
-    protected float lengthAforce_ = 0f;
-    protected float lengthBforce_ = 0f;
-    protected float lengthCforce_ = 0f;
-    protected String sla_ = "";
-    protected String slb_ = "";
-    protected String slc_ = "";
+     boolean valid_ = false;
+     float lengthA_ = 0f;
+     float lengthB_ = 0f;
+     float lengthC_ = 0f;
+     float scale_ = 1f;
+     float lengthAforce_ = 0f;
+     float lengthBforce_ = 0f;
+     float lengthCforce_ = 0f;
+     String sla_ = "";
+     String slb_ = "";
+     String slc_ = "";
 
-    protected PointXY pointCA_ = new PointXY(0f, 0f); // base point by calc
-    protected PointXY pointAB_ = new PointXY(0f, 0f);
-    protected PointXY pointBC_ = new PointXY(0f, 0f);
-    protected PointXY pointCenter_ = new PointXY(0f, 0f);
-    protected PointXY pointNumber_ = new PointXY(0f, 0f);
-    protected boolean isPointNumberMoved_ = false;
+     PointXY pointCA_ = new PointXY(0f, 0f); // base point by calc
+     PointXY pointAB_ = new PointXY(0f, 0f);
+     PointXY pointBC_ = new PointXY(0f, 0f);
+     PointXY pointCenter_ = new PointXY(0f, 0f);
+     PointXY pointNumber_ = new PointXY(0f, 0f);
+     boolean isPointNumberMoved_ = false;
 
-    protected PointXY dimPointA_ = new PointXY(0f, 0f);
-    protected PointXY dimPointB_ = new PointXY(0f, 0f);
-    protected PointXY dimPointC_ = new PointXY(0f, 0f);
+     PointXY dimPointA_ = new PointXY(0f, 0f);
+     PointXY dimPointB_ = new PointXY(0f, 0f);
+     PointXY dimPointC_ = new PointXY(0f, 0f);
 
-    protected PointXY pointName_ = new PointXY(0f, 0f);
-    protected int nameAlign_ = 0;
-    protected int nameSideAlign_ = 0;
+     PointXY pointName_ = new PointXY(0f, 0f);
+     int nameAlign_ = 0;
+     int nameSideAlign_ = 0;
 
     protected double myTheta_, myAlpha_, myPowA_, myPowB_, myPowC_;
-    protected float angleInGlobal_ = 180f;
-    protected float angleInnerCA_ = 0f;
-    protected float angleInnerAB_ = 0f;
-    protected float angleInnerBC_ = 0f;
-    protected float dimAngleB_ = 0f;
-    protected float dimAngleC_ = 0f;
+     float angleInGlobal_ = 180f;
+     float angleInnerCA_ = 0f;
+     float angleInnerAB_ = 0f;
+     float angleInnerBC_ = 0f;
+     float dimAngleB_ = 0f;
+     float dimAngleC_ = 0f;
 
-    protected int parentNumber_ = -1; // 0:root
-    protected int parentBC_ = -1;   // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
-    protected int connectionType_ = 0; // 0:sameByParent, 1:differentLength, 2:floatAndDifferent
-    protected int connectionLCR_ = 2; // 0:L 1:C 2:R
-    protected ConnParam cParam_ = new ConnParam(0, 0, 2, 0f);
+     int parentNumber_ = -1; // 0:root
+     int parentBC_ = -1;   // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
+     int connectionType_ = 0; // 0:sameByParent, 1:differentLength, 2:floatAndDifferent
+     int connectionLCR_ = 2; // 0:L 1:C 2:R
+     ConnParam cParam_ = new ConnParam(0, 0, 2, 0f);
 
 
-    protected int myNumber_ = 1;
-    protected int myDimAlign_ = 0;
-    protected int myDimAlignA_ = 3;
-    protected int myDimAlignB_ = 3;
-    protected int myDimAlignC_ = 3;
-    protected boolean isChangeDimAlignA_ = false;
-    protected boolean isChangeDimAlignB_ = false;
-    protected boolean isChangeDimAlignC_ = false;
+     int myNumber_ = 1;
+     int myDimAlign_ = 0;
+     int myDimAlignA_ = 3;
+     int myDimAlignB_ = 3;
+     int myDimAlignC_ = 3;
+     boolean isChangeDimAlignA_ = false;
+     boolean isChangeDimAlignB_ = false;
+     boolean isChangeDimAlignC_ = false;
 
-    protected int dimSideAlignA_ = 0;
-    protected int dimSideAlignB_ = 0;
-    protected int dimSideAlignC_ = 0;
+     int dimSideAlignA_ = 0;
+     int dimSideAlignB_ = 0;
+     int dimSideAlignC_ = 0;
 
-    protected int lastTapSide_ = -1;
+     int lastTapSide_ = -1;
 
-    protected int color_ = 4;
+     int color_ = 4;
 
-    protected int childSide_ = 0;
-    protected String myName_ = "";
+     int childSide_ = 0;
+     String myName_ = "";
 
-    protected Bounds myBP_ = new Bounds(0f,0f,0f,0f);
+     Bounds myBP_ = new Bounds(0f,0f,0f,0f);
 
-    protected PathAndOffset pathA_;// = PathAndOffset();
-    protected PathAndOffset pathB_;// = PathAndOffset();
-    protected PathAndOffset pathC_;// = PathAndOffset();
-    protected PathAndOffset pathS_;// = PathAndOffset();
-    protected float dimH_ = 0f;
+     PathAndOffset pathA_;// = PathAndOffset();
+     PathAndOffset pathB_;// = PathAndOffset();
+     PathAndOffset pathC_;// = PathAndOffset();
+     PathAndOffset pathS_;// = PathAndOffset();
+     float dimH_ = 0f;
 
-    protected Triangle nodeTriangleA_ = null;
-    protected Triangle nodeTriangleB_ = null;
-    protected Triangle nodeTriangleC_ = null;
-    protected boolean isChildB_ = false;
-    protected boolean isChildC_ = false;
+     Triangle nodeTriangleA_ = null;
+     Triangle nodeTriangleB_ = null;
+     Triangle nodeTriangleC_ = null;
+     boolean isChildB_ = false;
+     boolean isChildC_ = false;
 
     @Override
     public Triangle clone(){
