@@ -2,19 +2,122 @@ package com.jpaver.trianglelist
 
 import java.util.*
 
-class TriangleK : EditObject, Cloneable {
-    protected var valid_ = false
-    var lengthA_ = 0f
-    var lengthB_ = 0f
-    var lengthC_ = 0f
-    protected var scale_ = 1f
+class TriangleK(    var lengthA_ :Float = 0f,
+                    var lengthB_ :Float = 0f,
+                    var lengthC_ :Float = 0f,
+                    var nodeTriangleA_: TriangleK? = null,
+                    var parentBC :Int = -1,
+                    var pointCA_ :PointXY? = PointXY(0f, 0f),
+                    var angle :Float = 0f
+) : EditObject(), Cloneable {
+
+    //for first triangle.
+    constructor(A: Float, B: Float, C: Float, pCA: PointXY?, angle_: Float) :this(
+            lengthA_ = A,
+            lengthB_ = B,
+            lengthC_ = C,
+            nodeTriangleA_ = null,
+            parentBC = -1,
+            pointCA_ = pCA,
+            angle = angle_
+    ){
+        calcPoints(pCA, angle)
+    }
+
+    //for first. most simple.
+    constructor(A: Float, B: Float, C: Float) :this(
+        lengthA_ = A,
+        lengthB_ = B,
+        lengthC_ = C,
+        nodeTriangleA_ = null,
+        parentBC = -1,
+        pointCA_ = PointXY( 0f, 0f ),
+        angle = 0f
+    ){
+        calcPoints(pointCA_, angle)
+    }
+
+    // use node A to my parent.
+    constructor(parent: TriangleK, pbc: Int, B: Float, C: Float) :this(
+        lengthA_ = parent.getLengthByIndex(pbc),
+        lengthB_ = B,
+        lengthC_ = C,
+        nodeTriangleA_ = parent,
+        parentBC = pbc,
+        pointCA_ = parent.getPointBySide(pbc),
+        angle = parent.getAngleBySide(pbc)
+            ){
+        set(parent, pbc, B, C)
+    }
+
+    // use node A to my parent. A defferent length uses.
+    constructor(myParent: TriangleK, pbc: Int, A: Float, B: Float, C: Float) :this(
+        lengthA_ = A,
+        lengthB_ = B,
+        lengthC_ = C,
+        nodeTriangleA_ = myParent,
+        parentBC = pbc,
+        pointCA_ = myParent.getPointBySide( pbc ),
+        angle = myParent.getAngleBySide( pbc )
+    ){
+        set(myParent, pbc, A, B, C)
+
+    }
+
+    // connection parameter
+    constructor(myParent: TriangleK, cParam: ConnParam, B: Float, C: Float) :this(
+        lengthA_ = myParent.getLengthByIndex( cParam.side ),
+        lengthB_ = B,
+        lengthC_ = C,
+        nodeTriangleA_ = myParent,
+        parentBC = Companion.getPbcByCParam( cParam ),
+        pointCA_ = myParent.getParentPointByType( cParam ),
+        angle = myParent.getAngleBySide( cParam.side )
+    ){
+        set(myParent, cParam, B, C)
+    }
+
+/*
+    internal constructor(child: TriangleK, A: Float, B: Float, C: Float) {
+        if (child.validTriangle() == false) return
+        val basePoint = child.getPointBySide(child.parentBC)
+        val baseAngle = child.getAngleBySide(child.parentBC)
+        initBasicArguments(A, B, C, basePoint, baseAngle)
+    }
+
+
+
+
+    internal constructor(myParent: TriangleK, dP: Params) {
+        set(myParent, dP.pl, dP.a, dP.b, dP.c)
+        myName_ = dP.name
+        autoSetDimSideAlign()
+    }
+
+    internal constructor(dP: Params, angle: Float) {
+        setNumber(dP.n)
+        myName_ = dP.name
+        initBasicArguments(dP.a, dP.b, dP.c, dP.pt, angle)
+        calcPoints(dP.pt, angle)
+    }
+
+    internal constructor(ta: TriangleK) {
+        setNumber(ta.myNumber_)
+        initBasicArguments(ta.lengthA_, ta.lengthB_, ta.lengthC_, ta.pointCA_, ta.angle)
+        calcPoints(ta.pointCA_, ta.angle)
+    }
+
+*/
+
+    var valid_ = false
+    var scale_ = 1f
     var lengthAforce_ = 0f
     var lengthBforce_ = 0f
     var lengthCforce_ = 0f
     protected var sla_ = ""
     protected var slb_ = ""
     protected var slc_ = ""
-    var pointCA_ = PointXY(0f, 0f)  // base point by calc
+      // base point by calc
     var pointAB_ = PointXY(0f, 0f)
     var pointBC_ = PointXY(0f, 0f)
     var pointCenter_ = PointXY(0f, 0f)
@@ -31,18 +134,20 @@ class TriangleK : EditObject, Cloneable {
     protected var myPowA_ = 0.0
     protected var myPowB_ = 0.0
     protected var myPowC_ = 0.0
-    var angle = 180f
+
     var angleCA = 0f
     var angleAB = 0f
     var angleBC = 0f
     protected var dimAngleB_ = 0f
     protected var dimAngleC_ = 0f
     var parentNumber = -1 // 0:root
-    var parentBC = -1 // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
+     // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
     protected var connectionType_ = 0 // 0:sameByParent, 1:differentLength, 2:floatAndDifferent
     protected var connectionLCR_ = 2 // 0:L 1:C 2:R
     protected var cParam_ = ConnParam(0, 0, 2, 0f)
+
     var myNumber_ = 1
+
     protected var myDimAlign_ = 0
     protected var myDimAlignA_ = 3
     protected var myDimAlignB_ = 3
@@ -67,11 +172,11 @@ class TriangleK : EditObject, Cloneable {
     protected var pathS_ // = PathAndOffset();
             : PathAndOffset? = null
     protected var dimH_ = 0f
-    protected var nodeTriangleA_: TriangleK? = null
     protected var nodeTriangleB_: TriangleK? = null
     protected var nodeTriangleC_: TriangleK? = null
     protected var isChildB_ = false
     protected var isChildC_ = false
+
     public override fun clone(): TriangleK {
         var b: TriangleK = TriangleK()
         try {
@@ -118,72 +223,6 @@ class TriangleK : EditObject, Cloneable {
         return b!!
     }
 
-    internal constructor() {}
-
-    /*
-    Triangle(int A, int B, int C){
-        setNumber(1);
-        pointCA = new PointXY(0f,0f);
-        myAngle = 180f;
-        initBasicArguments(A, B, C, pointCA, myAngle);
-        calcPoints(pointCA, myAngle);
-        myDimAlign = setDimAlign();
-    }
-*/
-    internal constructor(A: Float, B: Float, C: Float) {
-        setNumber(1)
-        pointCA_ = PointXY(0f, 0f)
-        angle = 180f
-        initBasicArguments(A, B, C, pointCA_, angle)
-        calcPoints(pointCA_, angle)
-        //myDimAlign_ = autoSetDimAlign();
-    }
-
-    //for first triangle.
-    internal constructor(A: Float, B: Float, C: Float, pCA: PointXY?, angle: Float) {
-        setNumber(1)
-        initBasicArguments(A, B, C, pCA, angle)
-        calcPoints(pCA, angle)
-    }
-
-    //it use first Triangle.
-    internal constructor(
-        A: Float, B: Float, C: Float, pCA: PointXY?, angle: Float,
-        myParNum: Int, myParBC: Int, myConne: Int
-    ) {
-        initBasicArguments(A, B, C, pCA, angle)
-        setParentInfo(myParNum, myParBC, myConne)
-        myDimAlign_ = 1
-        calcPoints(pCA, angle)
-    }
-
-    internal constructor(myParent: TriangleK, pbc: Int, A: Float, B: Float, C: Float) {
-        set(myParent, pbc, A, B, C)
-        //autoSetDimAlign();
-    }
-
-    internal constructor(myParent: TriangleK, cParam: ConnParam, B: Float, C: Float) {
-        set(myParent, cParam, B, C)
-    }
-
-    internal constructor(child: TriangleK, A: Float, B: Float, C: Float) {
-        if (child.validTriangle() == false) return
-        val basePoint = child.getPointBySide(child.parentBC)
-        val baseAngle = child.getAngleBySide(child.parentBC)
-        initBasicArguments(A, B, C, basePoint, baseAngle)
-    }
-
-    internal constructor(parent: TriangleK, pbc: Int, B: Float, C: Float) {
-        initBasicArguments(
-            parent.getLengthByIndex(pbc),
-            B,
-            C,
-            parent.getPointBySide(pbc),
-            parent.getAngleBySide(pbc)
-        )
-        set(parent, pbc, B, C)
-    }
-
     fun setNode(node: TriangleK?, side: Int) {
         var side = side
         if (node == null) return
@@ -207,25 +246,6 @@ class TriangleK : EditObject, Cloneable {
                 if (node === nodeTriangleA_) nodeTriangleA_ = null
             }
         }
-    }
-
-    internal constructor(myParent: TriangleK, dP: Params) {
-        set(myParent, dP.pl, dP.a, dP.b, dP.c)
-        myName_ = dP.name
-        autoSetDimSideAlign()
-    }
-
-    internal constructor(dP: Params, angle: Float) {
-        setNumber(dP.n)
-        myName_ = dP.name
-        initBasicArguments(dP.a, dP.b, dP.c, dP.pt, angle)
-        calcPoints(dP.pt, angle)
-    }
-
-    internal constructor(ta: TriangleK) {
-        setNumber(ta.myNumber_)
-        initBasicArguments(ta.lengthA_, ta.lengthB_, ta.lengthC_, ta.pointCA_, ta.angle)
-        calcPoints(ta.pointCA_, ta.angle)
     }
 
     // set argument methods
@@ -744,7 +764,7 @@ class TriangleK : EditObject, Cloneable {
     }
 
     fun crossOffset(pbc: Int): PointXY? {
-        if (pbc == 1) return pointCA_.crossOffset(pointBC_, 1.0f)
+        if (pbc == 1) return pointCA_?.crossOffset(pointBC_, 1.0f)
         return if (pbc == 2) pointBC_!!.crossOffset(pointAB_, 1.0f) else pointCA_
     }
 
@@ -779,6 +799,9 @@ class TriangleK : EditObject, Cloneable {
         }
         return nodeTriangleA_!!.getPointBySide(pbc)
     }
+
+
+
 
     fun setParent(parent: TriangleK, pbc: Int) {
         nodeTriangleA_ = parent.clone()
@@ -823,7 +846,7 @@ class TriangleK : EditObject, Cloneable {
     }
 
     val parent: TriangleK?
-        get() = if (nodeTriangleA_ != null) TriangleK(nodeTriangleA_!!) else null
+        get() = if (nodeTriangleA_ != null) nodeTriangleA_ else null
 
     fun collision(x: Float, y: Float): Boolean {
         return true
@@ -1455,4 +1478,11 @@ class TriangleK : EditObject, Cloneable {
 
     val isFloating: Boolean
         get() = parentBC == 9 || parentBC == 10
+
+    companion object {
+        fun getPbcByCParam(cp :ConnParam ) :Int {
+
+            return 0
+        }
+    }
 }
