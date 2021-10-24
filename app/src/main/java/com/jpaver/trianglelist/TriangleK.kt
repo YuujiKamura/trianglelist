@@ -77,47 +77,58 @@ class TriangleK(    var lengthA_ :Float = 0f,
         set(myParent, cParam, B, C)
     }
 
-/*
-    internal constructor(child: TriangleK, A: Float, B: Float, C: Float) {
-        if (child.validTriangle() == false) return
-        val basePoint = child.getPointBySide(child.parentBC)
-        val baseAngle = child.getAngleBySide(child.parentBC)
-        initBasicArguments(A, B, C, basePoint, baseAngle)
+
+    constructor(child: TriangleK, A: Float, B: Float, C: Float) :this(
+        lengthA_ = A,
+        lengthB_ = B,
+        lengthC_ = C,
+        nodeTriangleA_ = null,
+        parentBC = -1,
+        pointCA_ = PointXY( 0f, 0f ),
+        angle = 0f
+    ) {
+        calcPoints( child, child.parentSide)
     }
 
-
-
-
-    internal constructor(myParent: TriangleK, dP: Params) {
+    constructor(myParent: TriangleK, dP: Params) :this(
+        lengthA_ = dP.a,
+        lengthB_ = dP.b,
+        lengthC_ = dP.c,
+        nodeTriangleA_ = myParent,
+        parentBC = dP.pl,
+        pointCA_ = myParent.getPointBySide( dP.pl ),
+        angle = myParent.getAngleBySide( dP.pl )
+    ) {
         set(myParent, dP.pl, dP.a, dP.b, dP.c)
         myName_ = dP.name
         autoSetDimSideAlign()
     }
 
-    internal constructor(dP: Params, angle: Float) {
+    constructor(dP: Params, angle: Float) :this(
+        lengthA_ = dP.a,
+        lengthB_ = dP.b,
+        lengthC_ = dP.c,
+        nodeTriangleA_ = null,
+        parentBC = -1,
+        pointCA_ = dP.pt,
+        angle = angle
+    ) {
         setNumber(dP.n)
         myName_ = dP.name
         initBasicArguments(dP.a, dP.b, dP.c, dP.pt, angle)
         calcPoints(dP.pt, angle)
     }
 
-    internal constructor(ta: TriangleK) {
-        setNumber(ta.myNumber_)
-        initBasicArguments(ta.lengthA_, ta.lengthB_, ta.lengthC_, ta.pointCA_, ta.angle)
-        calcPoints(ta.pointCA_, ta.angle)
-    }
-
-*/
 
     var valid_ = false
     var scale_ = 1f
     var lengthAforce_ = 0f
     var lengthBforce_ = 0f
     var lengthCforce_ = 0f
-    protected var sla_ = ""
-    protected var slb_ = ""
-    protected var slc_ = ""
-      // base point by calc
+    var sla_ = ""
+    var slb_ = ""
+    var slc_ = ""
+    // base point by calc
     var pointAB_ = PointXY(0f, 0f)
     var pointBC_ = PointXY(0f, 0f)
     var pointCenter_ = PointXY(0f, 0f)
@@ -126,56 +137,58 @@ class TriangleK(    var lengthA_ :Float = 0f,
     var dimPointA_ = PointXY(0f, 0f)
     var dimPointB_ = PointXY(0f, 0f)
     var dimPointC_ = PointXY(0f, 0f)
-    protected var pointName_ = PointXY(0f, 0f)
-    protected var nameAlign_ = 0
-    protected var nameSideAlign_ = 0
-    protected var myTheta_ = 0.0
-    protected var myAlpha_ = 0.0
-    protected var myPowA_ = 0.0
-    protected var myPowB_ = 0.0
-    protected var myPowC_ = 0.0
+    var pointName_ = PointXY(0f, 0f)
+    var nameAlign_ = 0
+    var nameSideAlign_ = 0
+    var myTheta_ = 0.0
+    var myAlpha_ = 0.0
+    var myPowA_ = 0.0
+    var myPowB_ = 0.0
+    var myPowC_ = 0.0
 
     var angleCA = 0f
     var angleAB = 0f
     var angleBC = 0f
-    protected var dimAngleB_ = 0f
-    protected var dimAngleC_ = 0f
+    var dimAngleB_ = 0f
+    var dimAngleC_ = 0f
     var parentNumber = -1 // 0:root
-     // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
-    protected var connectionType_ = 0 // 0:sameByParent, 1:differentLength, 2:floatAndDifferent
-    protected var connectionLCR_ = 2 // 0:L 1:C 2:R
-    protected var cParam_ = ConnParam(0, 0, 2, 0f)
+
+    // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
+    var connectionType_ = 0 // 0:sameByParent, 1:differentLength, 2:floatAndDifferent
+    var connectionLCR_ = 2 // 0:L 1:C 2:R
+    var cParam_ = ConnParam(0, 0, 2, 0f)
 
     var myNumber_ = 1
 
-    protected var myDimAlign_ = 0
-    protected var myDimAlignA_ = 3
-    protected var myDimAlignB_ = 3
-    protected var myDimAlignC_ = 3
-    protected var isChangeDimAlignA_ = false
-    protected var isChangeDimAlignB_ = false
-    protected var isChangeDimAlignC_ = false
-    protected var dimSideAlignA_ = 0
-    protected var dimSideAlignB_ = 0
-    protected var dimSideAlignC_ = 0
-    protected var lastTapSide_ = -1
-    protected var color_ = 4
-    protected var childSide_ = 0
-    protected var myName_ = ""
+    var myDimAlign_ = 0
+    var myDimAlignA_ = 3
+    var myDimAlignB_ = 3
+    var myDimAlignC_ = 3
+    var isChangeDimAlignA_ = false
+    var isChangeDimAlignB_ = false
+    var isChangeDimAlignC_ = false
+    var dimSideAlignA_ = 0
+    var dimSideAlignB_ = 0
+    var dimSideAlignC_ = 0
+    var lastTapSide_ = -1
+    var color_ = 4
+    var childSide_ = 0
+    var myName_ = ""
     var myBP_ = Bounds(0f, 0f, 0f, 0f)
-    protected var pathA_ // = PathAndOffset();
+    var pathA_ // = PathAndOffset();
             : PathAndOffset? = null
-    protected var pathB_ // = PathAndOffset();
+    var pathB_ // = PathAndOffset();
             : PathAndOffset? = null
-    protected var pathC_ // = PathAndOffset();
+    var pathC_ // = PathAndOffset();
             : PathAndOffset? = null
-    protected var pathS_ // = PathAndOffset();
+    var pathS_ // = PathAndOffset();
             : PathAndOffset? = null
-    protected var dimH_ = 0f
-    protected var nodeTriangleB_: TriangleK? = null
-    protected var nodeTriangleC_: TriangleK? = null
-    protected var isChildB_ = false
-    protected var isChildC_ = false
+    var dimH_ = 0f
+    var nodeTriangleB_: TriangleK? = null
+    var nodeTriangleC_: TriangleK? = null
+    var isChildB_ = false
+    var isChildC_ = false
+
 
     public override fun clone(): TriangleK {
         var b: TriangleK = TriangleK()
@@ -284,25 +297,30 @@ class TriangleK(    var lengthA_ :Float = 0f,
         }
 
         //setParent(parent, A);
-        if (pbc == 1) {
-            parentBC = 1
-            lengthA_ = nodeTriangleA_!!.lengthB_
-            lengthA_ = nodeTriangleA_!!.lengthBforce_
-            pointCA_ = nodeTriangleA_!!.pointBC_!!
-            angle = nodeTriangleA_!!.angleMpAB
-        } else if (pbc == 2) {
-            parentBC = 2
-            lengthA_ = nodeTriangleA_!!.lengthC_
-            lengthA_ = nodeTriangleA_!!.lengthCforce_
-            pointCA_ = nodeTriangleA_!!.pointCA_
-            angle = nodeTriangleA_!!.angleMmCA
-        } else {
-            parentBC = 0
-            lengthA_ = 0f
-            lengthAforce_ = 0f
-            pointCA_ = PointXY(0f, 0f)
-            angle = 180f
+        when( pbc ) {
+            1 -> {
+                parentBC = 1
+                lengthA_ = nodeTriangleA_!!.lengthB_
+                lengthAforce_ = nodeTriangleA_!!.lengthBforce_
+                pointCA_ = nodeTriangleA_!!.pointBC_!!
+                angle = nodeTriangleA_!!.angleMpAB
+            }
+            2 -> {
+                parentBC = 2
+                lengthA_ = nodeTriangleA_!!.lengthC_
+                lengthAforce_ = nodeTriangleA_!!.lengthCforce_
+                pointCA_ = nodeTriangleA_!!.pointCA_
+                angle = nodeTriangleA_!!.angleMmCA
+            }
+            else -> {
+                parentBC = 0
+                lengthA_ = 0f
+                lengthAforce_ = 0f
+                pointCA_ = PointXY(0f, 0f)
+                angle = 180f
+            }
         }
+
         parentNumber = nodeTriangleA_!!.myNumber_
         //nodeTriangleA_.setChild(this, parentBC_);
         initBasicArguments(lengthA_, B, C, pointCA_, angle)
@@ -875,11 +893,19 @@ class TriangleK(    var lengthA_ :Float = 0f,
     }
 
     override fun getArea(): Float {
+        setForcelengthes()
         val sumABC = lengthAforce_ + lengthBforce_ + lengthCforce_
         val myArea =
             sumABC * 0.5f * (sumABC * 0.5f - lengthAforce_) * (sumABC * 0.5f - lengthBforce_) * (sumABC * 0.5f - lengthCforce_)
         //myArea = roundByUnderTwo( myArea );
         return roundByUnderTwo(Math.pow(myArea.toDouble(), 0.5).toFloat())
+    }
+
+    fun setForcelengthes(){
+        val scaleback = 1 / scale_
+        lengthAforce_ = lengthA_ * scaleback
+        lengthBforce_ = lengthB_ * scaleback
+        lengthCforce_ = lengthC_ * scaleback
     }
 
     fun roundByUnderTwo(fp: Float): Float {
@@ -927,6 +953,7 @@ class TriangleK(    var lengthA_ :Float = 0f,
         val llist: FloatArray
         val powlist: DoubleArray
         var angle = 0f
+
         when (refside) {
             0 -> {
                 angle = this.angle
@@ -962,8 +989,10 @@ class TriangleK(    var lengthA_ :Float = 0f,
             }
             else -> throw IllegalStateException("Unexpected value: $refside")
         }
+
         plist[1]!![(plist[0]!!.x + llist[0] * Math.cos(Math.toRadians(angle.toDouble()))).toFloat()] =
             (plist[0]!!.y + llist[0] * Math.sin(Math.toRadians(angle.toDouble()))).toFloat()
+
         myTheta_ = Math.atan2(
             (plist[0]!!.y - plist[1]!!.y).toDouble(), (plist[0]!!
                 .x - plist[1]!!.x).toDouble()
@@ -1481,8 +1510,37 @@ class TriangleK(    var lengthA_ :Float = 0f,
 
     companion object {
         fun getPbcByCParam(cp :ConnParam ) :Int {
+            // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
 
-            return 0
+            when( cp.type ) {
+                0 -> return cp.side // 1 or 2
+                1 -> { // nijyuudanmen
+                    when( cp.side ){
+                        1 -> { //B..
+                            when( cp.lcr ){
+                                0 -> return 4 //BL
+                                1 -> return 7 //BC
+                                2 -> return 3 //BR
+                            }
+                        }
+                        2 -> { // C..
+                            when( cp.lcr ){
+                                0 -> return 6 //CL
+                                1 -> return 8 //CC
+                                2 -> return 5 //CR
+                            }
+                        }
+                    }
+                }
+                2 -> { // float connection
+                    when( cp.side ){
+                        1 -> return 9  //FB
+                        2 -> return 10 //FC
+                    }
+                }
+            }
+
+            return -1
         }
     }
 }
