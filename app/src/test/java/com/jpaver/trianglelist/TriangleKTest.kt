@@ -105,7 +105,7 @@ class TriangleKTest {
     @Test
     fun testCalcDimAngle() {
         val tri = TriangleK(5f, 5f, 5f)
-        val angle = tri.pointCA_!!.calcAngle(tri.pointAB_, tri.pointBC_)
+        val angle = tri.pointCA_.calcAngle(tri.pointAB_, tri.pointBC_)
         Assert.assertEquals(-120f, angle, 0.0001f)
         Assert.assertEquals(-120f, tri.pointBC_.calcAngle(tri.pointCA_, tri.pointAB_), 0.0001f)
         Assert.assertEquals(-120f, tri.pointAB_.calcAngle(tri.pointBC_, tri.pointCA_), 0.0001f)
@@ -158,7 +158,7 @@ class TriangleKTest {
     fun testConnection() {
         val t1 = TriangleK(3f, 4f, 5f, PointXY( 0f, 0f), 180f )
         val t2 = TriangleK(t1, 7, 3f, 5f, 4f) // connection 7 is set to B-Center
-        Assert.assertEquals(3.5, t2.pointCA_!!.y.toDouble(), 0.001)
+        Assert.assertEquals(3.5, t2.pointCA_.y.toDouble(), 0.001)
         val t3 = TriangleK(t2, 8, 3f, 4f, 5f) // connection 8 is set to C-Center
         Assert.assertEquals(-6.5, t3.pointAB_.x.toDouble(), 0.001)
     }
@@ -195,12 +195,12 @@ class TriangleKTest {
         val mytri = TriangleK(3.0f, 4.0f, 5.0f, PointXY(0f, 0f), 180.0f)
         Assert.assertEquals(
             0.0,
-            mytri.pointCA_!!.calcDimAngle( mytri.pointAB_ ).toDouble(),
+            mytri.pointCA_.calcDimAngle( mytri.pointAB_ ).toDouble(),
             0.001
         )
         Assert.assertEquals(
             -1.5,
-            mytri.pointCA_!!.calcMidPoint( mytri.pointAB_ ).x.toDouble(),
+            mytri.pointCA_.calcMidPoint( mytri.pointAB_ ).x.toDouble(),
             0.01
         )
     }
@@ -216,8 +216,8 @@ class TriangleKTest {
         val myXY0 = PointXY(0.0f, 0.0f)
         val myXY1 = PointXY(-3.0f, 0.0f)
         val myTriangle = TriangleK(3.0f, 4.0f, 5.0f, myXY0, 180.0f)
-        Assert.assertEquals(myTriangle.pointCA_!!.x.toDouble(), myXY0.x.toDouble(), 0.001)
-        Assert.assertEquals(myTriangle.pointCA_!!.y.toDouble(), myXY0.y.toDouble(), 0.001)
+        Assert.assertEquals(myTriangle.pointCA_.x.toDouble(), myXY0.x.toDouble(), 0.001)
+        Assert.assertEquals(myTriangle.pointCA_.y.toDouble(), myXY0.y.toDouble(), 0.001)
         Assert.assertEquals(myTriangle.pointAB_.x.toDouble(), -3.0, 0.001)
         Assert.assertEquals(myTriangle.pointAB_.y.toDouble(), -0.0, 0.001)
     }
@@ -273,28 +273,130 @@ class TriangleKTest {
     }
 
     @Test
+    fun testNewCalcPointC_CParam4() {
+        val tri1 = TriangleK(3f, 4f, 5f, PointXY(0f, 0f), 0.0f)
+        val tri2 = TriangleK(tri1, 10, 6f, 3f, 4f)
+        // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
+        Assert.assertEquals(true, tri1.pointCA_.equals(0f, 0f))
+        Assert.assertEquals(true, tri1.pointAB_.equals(3f, 0f))
+        Assert.assertEquals(true, tri1.pointBC_.equals(3f, -4f))
+        tri1.calcPoints(tri2, 2)
+        Assert.assertEquals(true, tri1.pointCA_.equals(0f, 0f))
+        Assert.assertEquals(true, tri1.pointAB_.equals(3f, 0f))
+        Assert.assertEquals(true, tri1.pointBC_.equals(3f, -4f))
+    }
+
+    @Test
+    fun testNewCalcPointC_CParam3() {
+        val tri1 = TriangleK(3f, 4f, 5f, PointXY(0f, 0f), 0.0f)
+        val tri2 = TriangleK(tri1, 8, 6f, 3f, 4f)
+        // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
+        Assert.assertEquals(true, tri1.pointCA_.equals(0f, 0f))
+        Assert.assertEquals(true, tri1.pointAB_.equals(3f, 0f))
+        Assert.assertEquals(true, tri1.pointBC_.equals(3f, -4f))
+        tri1.calcPoints(tri2, 2)
+        Assert.assertEquals(true, tri1.pointCA_.equals(0f, 0f))
+        Assert.assertEquals(true, tri1.pointAB_.equals(3f, 0f))
+        Assert.assertEquals(true, tri1.pointBC_.equals(3f, -4f))
+    }
+
+    @Test
+    fun testNewCalcPointC_CParam2() {
+        val tri1 = TriangleK(3f, 4f, 5f, PointXY(0f, 0f), 0.0f)
+        val tri2 = TriangleK(tri1, 6, 6f, 3f, 4f)
+        // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
+        Assert.assertEquals(true, tri1.pointCA_.equals(0f, 0f))
+        Assert.assertEquals(true, tri1.pointAB_.equals(3f, 0f))
+        Assert.assertEquals(true, tri1.pointBC_.equals(3f, -4f))
+        tri1.calcPoints(tri2, 2)
+        Assert.assertEquals(true, tri1.pointCA_.equals(0f, 0f))
+        Assert.assertEquals(true, tri1.pointAB_.equals(3f, 0f))
+        Assert.assertEquals(true, tri1.pointBC_.equals(3f, -4f))
+    }
+
+    @Test
+    fun testNewCalcPointC_CParam() {
+        val tri1 = TriangleK(3f, 4f, 5f, PointXY(0f, 0f), 0.0f)
+        val tri2 = TriangleK(tri1, 5, 6f, 3f, 4f)
+        // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
+        Assert.assertEquals(true, tri1.pointCA_.equals(0f, 0f))
+        Assert.assertEquals(true, tri1.pointAB_.equals(3f, 0f))
+        Assert.assertEquals(true, tri1.pointBC_.equals(3f, -4f))
+        tri1.calcPoints(tri2, 2)
+        Assert.assertEquals(true, tri1.pointCA_.equals(0f, 0f))
+        Assert.assertEquals(true, tri1.pointAB_.equals(3f, 0f))
+        Assert.assertEquals(true, tri1.pointBC_.equals(3f, -4f))
+    }
+
+    @Test
+    fun testNewCalcPointB_CParam4() {
+        val tri1 = TriangleK(3f, 5f, 4f, PointXY(0f, 0f), 0.0f)
+        val tri2 = TriangleK(tri1, 9, 6f, 5f, 4f)
+        // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
+        Assert.assertEquals(true, tri1.pointCA_.equals(0f, 0f))
+        Assert.assertEquals(true, tri1.pointAB_.equals(3f, 0f))
+        Assert.assertEquals(true, tri1.pointBC_.equals(0f, -4f))
+
+        tri1.calcPoints(tri2, 1)
+        Assert.assertEquals(true, tri1.pointCA_.equals(0f, 0f))
+        Assert.assertEquals(true, tri1.pointAB_.equals(3f, 0f))
+        Assert.assertEquals(true, tri1.pointBC_.equals(0f, -4f))
+    }
+
+    @Test
+    fun testNewCalcPointB_CParam3() {
+        val tri1 = TriangleK(3f, 5f, 4f, PointXY(0f, 0f), 0.0f)
+        val tri2 = TriangleK(tri1, 7, 6f, 5f, 4f)
+        // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
+        Assert.assertEquals(true, tri1.pointCA_.equals(0f, 0f))
+        Assert.assertEquals(true, tri1.pointAB_.equals(3f, 0f))
+        Assert.assertEquals(true, tri1.pointBC_.equals(0f, -4f))
+
+        tri1.calcPoints(tri2, 1)
+        Assert.assertEquals(true, tri1.pointCA_.equals(0f, 0f))
+        Assert.assertEquals(true, tri1.pointAB_.equals(3f, 0f))
+        Assert.assertEquals(true, tri1.pointBC_.equals(0f, -4f))
+    }
+
+    @Test
+    fun testNewCalcPointB_CParam2() {
+        val tri1 = TriangleK(3f, 5f, 4f, PointXY(0f, 0f), 0.0f)
+        val tri2 = TriangleK(tri1, 4, 6f, 5f, 4f)
+        // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
+        Assert.assertEquals(true, tri1.pointCA_.equals(0f, 0f))
+        Assert.assertEquals(true, tri1.pointAB_.equals(3f, 0f))
+        Assert.assertEquals(true, tri1.pointBC_.equals(0f, -4f))
+
+        tri1.calcPoints(tri2, 1)
+        Assert.assertEquals(true, tri1.pointCA_.equals(0f, 0f))
+        Assert.assertEquals(true, tri1.pointAB_.equals(3f, 0f))
+        Assert.assertEquals(true, tri1.pointBC_.equals(0f, -4f))
+    }
+
+    @Test
     fun testNewCalcPointB_CParam() {
         val tri1 = TriangleK(3f, 5f, 4f, PointXY(0f, 0f), 0.0f)
         val tri2 = TriangleK(tri1, 3, 6f, 5f, 4f)
         // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
-        Assert.assertEquals(true, tri1.pointCA_!!.equals(0f, 0f))
+        Assert.assertEquals(true, tri1.pointCA_.equals(0f, 0f))
         Assert.assertEquals(true, tri1.pointAB_.equals(3f, 0f))
         Assert.assertEquals(true, tri1.pointBC_.equals(0f, -4f))
+
         tri1.calcPoints(tri2, 1)
-        Assert.assertEquals(true, tri1.pointCA_!!.equals(0.5999f, 0.8000f))
-        Assert.assertEquals(true, tri1.pointAB_.equals(3.6f, 0.8000f))
-        Assert.assertEquals(true, tri1.pointBC_.equals(0.5999f, -3.1999f))
+        Assert.assertEquals(true, tri1.pointCA_.equals(0f, 0f))
+        Assert.assertEquals(true, tri1.pointAB_.equals(3f, 0f))
+        Assert.assertEquals(true, tri1.pointBC_.equals(0f, -4f))
     }
 
     @Test
     fun testNewCalcPointC() {
         val tri1 = TriangleK(3f, 4f, 5f, PointXY(0f, 0f), 0.0f)
         val tri2 = TriangleK(tri1, 2, 3f, 4f)
-        Assert.assertEquals(true, tri1.pointCA_!!.equals(0f, 0f))
+        Assert.assertEquals(true, tri1.pointCA_.equals(0f, 0f))
         Assert.assertEquals(true, tri1.pointAB_.equals(3f, 0f))
         Assert.assertEquals(true, tri1.pointBC_.equals(3f, -4f))
         tri1.calcPoints(tri2, 2)
-        Assert.assertEquals(true, tri1.pointCA_!!.equals(0f, 0f))
+        Assert.assertEquals(true, tri1.pointCA_.equals(0f, 0f))
         Assert.assertEquals(true, tri1.pointAB_.equals(3f, 0f))
         Assert.assertEquals(true, tri1.pointBC_.equals(3f, -4f))
     }
@@ -303,11 +405,11 @@ class TriangleKTest {
     fun testNewCalcPointB() {
         val tri1 = TriangleK(3f, 5f, 4f, PointXY(0f, 0f), 0.0f)
         val tri2 = TriangleK(tri1, 1, 4f, 3f)
-        Assert.assertEquals(true, tri1.pointCA_!!.equals(0f, 0f))
+        Assert.assertEquals(true, tri1.pointCA_.equals(0f, 0f))
         Assert.assertEquals(true, tri1.pointAB_.equals(3f, 0f))
         Assert.assertEquals(true, tri1.pointBC_.equals(0f, -4f))
         tri1.calcPoints(tri2, 1)
-        Assert.assertEquals(true, tri1.pointCA_!!.equals(0f, 0f))
+        Assert.assertEquals(true, tri1.pointCA_.equals(0f, 0f))
         Assert.assertEquals(true, tri1.pointAB_.equals(3f, 0f))
         Assert.assertEquals(true, tri1.pointBC_.equals(0f, -4f))
     }
