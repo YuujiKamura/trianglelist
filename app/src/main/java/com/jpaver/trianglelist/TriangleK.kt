@@ -21,7 +21,7 @@ class TriangleK(var lengthA_ :Float = 0f,
             pointCA_ = pCA,
             angle = angle_
     ){
-        calcPoints(pCA, angle)
+        calcPoints( null, -1, pointCA_, angle )
     }
 
     //for first. most simple.
@@ -34,7 +34,7 @@ class TriangleK(var lengthA_ :Float = 0f,
         pointCA_ = PointXY( 0f, 0f ),
         angle = 0f
     ){
-        calcPoints(pointCA_, angle)
+        calcPoints( null, -1, pointCA_, angle )
     }
 
     // use node A to my parent.
@@ -47,7 +47,8 @@ class TriangleK(var lengthA_ :Float = 0f,
         pointCA_ = parent.getPointBySide(pbc),
         angle = parent.getAngleBySide(pbc)
             ){
-        set(parent, pbc, B, C)
+        calcPoints( parent, 0 )
+        //set(parent, pbc, B, C)
     }
 
     // use node A to my parent. A uses different length.
@@ -60,6 +61,7 @@ class TriangleK(var lengthA_ :Float = 0f,
         pointCA_ = myParent.getPointBySide( pbc ),
         angle = myParent.getAngleBySide( pbc )
     ){
+        //calcPoints( myParent, 0 )
         set(myParent, pbc, A, B, C)
     }
 
@@ -662,10 +664,9 @@ class TriangleK(var lengthA_ :Float = 0f,
     fun getParentPointByType(pbc: Int, conntype: Int, lcr: Int): PointXY {
         return if (nodeTriangleA_ == null) PointXY(0f, 0f)
         else when (conntype) {
-            1 -> getParentPointByLCR(pbc, lcr)
+            1 -> getParentPointByLCR(pbc)
             2 -> getParentPointByLCR(
-                pbc,
-                lcr
+                    pbc
             )!!.crossOffset(nodeTriangleA_!!.getPointByBackSide(pbc), -1.0f)
             else -> nodeTriangleA_!!.getPointBySide(pbc)
         }!!
@@ -676,15 +677,15 @@ class TriangleK(var lengthA_ :Float = 0f,
         return if (getSideByIndex(i) === "C") pointBC_ else null
     }
 
-    fun getParentPointByLCR(pbc: Int, lcr: Int): PointXY? {
+    fun getParentPointByLCR(pbc: Int): PointXY? {
         if (nodeTriangleA_ == null) return PointXY(0f, 0f)
         when (pbc) {
-            1 -> when (lcr) {
+            1 -> when (cParam_.lcr) {
                 0 -> return nodeTriangleA_!!.pointAB_.offset(nodeTriangleA_!!.pointBC_, lengthA_)
                 1 -> return getParentOffsetPointBySide(pbc)
                 2 -> return nodeTriangleA_!!.pointBC_.clone()
             }
-            2 -> when (lcr) {
+            2 -> when (cParam_.lcr) {
                 0 -> return nodeTriangleA_!!.pointBC_.offset(nodeTriangleA_!!.pointCA_, lengthA_)
                 1 -> return getParentOffsetPointBySide(pbc)
                 2 -> return nodeTriangleA_!!.pointCA_.clone()
@@ -1120,41 +1121,45 @@ class TriangleK(var lengthA_ :Float = 0f,
         angleCA = calculateInternalAngle(pointBC_, pointCA_, pointAB_).toFloat()
     }
 
-    fun getBasePointAB(t :TriangleK ) :PointXY {
+    fun getBasePoint(t :TriangleK, point1 :PointXY, point2 :PointXY ) :PointXY {
 
         val length = t.getLengthBySide( cParam_.side )
 
         when( cParam_.type ){
-            0 -> return pointAB_
+            0 -> return point1
             1 -> { //nijyuudanmen
                 when( cParam_.lcr ){
-                    0 -> return pointAB_
-                    1 -> return pointAB_.offset( pointCA_, (lengthA_ - length ) * 0.5f )
-                    2 -> return pointAB_.offset( pointCA_,  lengthA_ - length  )
+                    0 -> return point1
+                    1 -> return point1.offset( point2, (lengthA_ - length ) * 0.5f )
+                    2 -> return point1.offset( point2,  lengthA_ - length  )
                 }
             }
             2 -> { // float connections
                 when( cParam_.lcr ){
-                    0 -> return pointAB_.crossOffset( pointCA_, -1.0f )
-                    1 -> return pointAB_.offset( pointCA_, (lengthA_ - length ) * 0.5f ).crossOffset( pointCA_, -1.0f )
-                    2 -> return pointAB_.offset( pointCA_,  lengthA_ - length  ).crossOffset( pointCA_, -1.0f )
+                    0 -> return point1.crossOffset( point2, -1.0f )
+                    1 -> return point1.offset( point2, (lengthA_ - length ) * 0.5f ).crossOffset( point2, -1.0f )
+                    2 -> return point1.offset( point2,  lengthA_ - length  ).crossOffset( point2, -1.0f )
                 }
             }
         }
 
-        return pointAB_
+        return point1
     }
 
-    fun calcPoints(ref: TriangleK, refside: Int) {
-        setNode(ref, refside)
+    fun calcPoints( ref :TriangleK?, refside :Int, pos :PointXY = PointXY( 0f, 0f ), angle_ :Float = 0f ) {
+        if( ref != null || refside != -1 ) setNode( ref, refside )
+
+        setCParamFromParentBC( this.parentBC )
+
         val plist: Array<PointXY?>
         val llist: FloatArray
         val powlist: DoubleArray
         var angle = 0f
 
         when (refside) {
-            0 -> {
-                angle = this.angle
+            -1 -> {
+                pointCA_ = pos
+                angle = angle_
                 plist = arrayOf(pointCA_, pointAB_, pointBC_)
                 llist = floatArrayOf(lengthA_, lengthB_, lengthC_)
                 powlist = doubleArrayOf(
@@ -1163,9 +1168,21 @@ class TriangleK(var lengthA_ :Float = 0f,
                     Math.pow(lengthC_.toDouble(), 2.0)
                 )
             }
+            0 -> {
+                ref!!.setNode( this, this.parentSide )
+                angle = ref!!.getAngleBySide( this.parentSide )
+                plist = arrayOf( getParentPointByType(), pointAB_, pointBC_)
+                llist = floatArrayOf(lengthA_, lengthB_, lengthC_)
+                powlist = doubleArrayOf(
+                    Math.pow(lengthA_.toDouble(), 2.0),
+                    Math.pow(lengthB_.toDouble(), 2.0),
+                    Math.pow(lengthC_.toDouble(), 2.0)
+                )
+            }
             1 -> {
-                angle = nodeTriangleB_!!.angle + 180f //- nodeTriangleB_.angleInnerCA_;
-                plist = arrayOf( nodeTriangleB_!!.getBasePointAB( this ), pointBC_, pointCA_)
+                ref!!.setNode( this, 0 )
+                angle = ref!!.angle + 180f //- nodeTriangleB_.angleInnerCA_;
+                plist = arrayOf( ref!!.getBasePoint( this, ref!!.pointAB_, ref!!.pointCA_ ), pointBC_, pointCA_)
                 llist = floatArrayOf(lengthB_, lengthC_, lengthA_)
                 powlist = doubleArrayOf(
                     Math.pow(lengthB_.toDouble(), 2.0),
@@ -1175,8 +1192,9 @@ class TriangleK(var lengthA_ :Float = 0f,
                 pointAB_ = plist[0]!!
             }
             2 -> {
-                angle = nodeTriangleC_!!.angle + 180f //- nodeTriangleB_.angleInnerCA_;
-                plist = arrayOf(nodeTriangleC_!!.getBasePointAB( this ), pointCA_, pointAB_)
+                ref!!.setNode( this, 0 )
+                angle =ref!!.angle + 180f //- nodeTriangleB_.angleInnerCA_;
+                plist = arrayOf(ref!!.getBasePoint( this, ref!!.pointAB_, ref!!.pointCA_ ), pointCA_, pointAB_)
                 llist = floatArrayOf(lengthC_, lengthA_, lengthB_)
                 powlist = doubleArrayOf(
                     Math.pow(lengthC_.toDouble(), 2.0),
@@ -1201,6 +1219,8 @@ class TriangleK(var lengthA_ :Float = 0f,
         calcMyAngles()
         if (refside == 1) this.angle = nodeTriangleB_!!.angle - angleCA
         if (refside == 2) this.angle = nodeTriangleC_!!.angle + angleCA
+
+        setCenterAndBoundsAndDimPoints()
     }
 
     private fun calcPoints(pCA: PointXY?, angle: Float) {
@@ -1216,6 +1236,11 @@ class TriangleK(var lengthA_ :Float = 0f,
         angleAB = calculateInternalAngle(pointCA_, pointAB_, pointBC_).toFloat()
         angleBC = calculateInternalAngle(pointAB_, pointBC_, pointCA_).toFloat()
         angleCA = calculateInternalAngle(pointBC_, pointCA_, pointAB_).toFloat()
+
+        setCenterAndBoundsAndDimPoints()
+    }
+
+    fun setCenterAndBoundsAndDimPoints(){
         pointCenter_[(pointAB_.x + pointBC_.x + pointCA_.x) / 3] =
             (pointAB_.y + pointBC_.y + pointCA_.y) / 3
         setMyBound()

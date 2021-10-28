@@ -1,3 +1,4 @@
+
 package com.jpaver.trianglelist
 
 import org.hamcrest.CoreMatchers
@@ -273,6 +274,20 @@ class TriangleKTest {
     }
 
     @Test
+    fun testNewCalcPointA_CParam() {
+        val tri1 = TriangleK(3f, 4f, 5f, PointXY(0f, 0f), 0.0f)
+        val tri2 = TriangleK(tri1, 10, 6f, 3f, 4f)
+        // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
+        Assert.assertEquals(true, tri1.pointCA_.equals(0f, 0f))
+        Assert.assertEquals(true, tri1.pointAB_.equals(3f, 0f))
+        Assert.assertEquals(true, tri1.pointBC_.equals(3f, -4f))
+        tri2.calcPoints( tri1, 0 )
+        Assert.assertEquals(true, tri1.pointCA_.equals(0f, 0f))
+        Assert.assertEquals(true, tri1.pointAB_.equals(3f, 0f))
+        Assert.assertEquals(true, tri1.pointBC_.equals(3f, -4f))
+    }
+
+    @Test
     fun testNewCalcPointC_CParam4() {
         val tri1 = TriangleK(3f, 4f, 5f, PointXY(0f, 0f), 0.0f)
         val tri2 = TriangleK(tri1, 10, 6f, 3f, 4f)
@@ -408,6 +423,9 @@ class TriangleKTest {
         Assert.assertEquals(true, tri1.pointCA_.equals(0f, 0f))
         Assert.assertEquals(true, tri1.pointAB_.equals(3f, 0f))
         Assert.assertEquals(true, tri1.pointBC_.equals(0f, -4f))
+        Assert.assertEquals(true, tri2.pointCA_.equals(0f, -4f))
+        Assert.assertEquals(true, tri2.pointAB_.equals(3f, 0f))
+        Assert.assertEquals(true, tri2.pointBC_.equals(3f, -4f))
         tri1.calcPoints(tri2, 1)
         Assert.assertEquals(true, tri1.pointCA_.equals(0f, 0f))
         Assert.assertEquals(true, tri1.pointAB_.equals(3f, 0f))
