@@ -1,5 +1,7 @@
 package com.jpaver.trianglelist;
 
+import org.jetbrains.annotations.NotNull;
+
 import static java.lang.Math.atan2;
 
 public class PointXY implements Cloneable {
@@ -20,17 +22,17 @@ public class PointXY implements Cloneable {
         this.Y = p.getY();
     }
 
+    @NotNull
     @Override
-    public PointXY clone(){
-        //super.clone();
-        PointXY b = new PointXY(0f,0f);
+    public PointXY clone() {
+        PointXY clone = new PointXY(0f,0f);//(PointXY) super.clone();
         try {
-            b.X = X;
-            b.Y = Y;
+            clone.X = X;
+            clone.Y = Y;
         }catch (Exception e){
             e.printStackTrace();
         }
-        return b;
+        return clone;
     }
 
     public PointXY flip(PointXY p2){
@@ -40,20 +42,6 @@ public class PointXY implements Cloneable {
         this.set( p3.X, p3.Y );
 
         return p3;
-    }
-
-    public PointXY maxBound(PointXY p){
-        PointXY sp = new PointXY(X,Y);
-        if(X < p.getX())sp.setX(p.getX());
-        if(Y < p.getY())sp.setY(p.getY());
-
-        return sp;
-    }
-
-    public PointXY minBound(PointXY pb, PointXY pc){
-        PointXY sp = min(pb);
-        min(pc);
-        return sp;
     }
 
     public PointXY min(PointXY p){
@@ -159,10 +147,6 @@ public class PointXY implements Cloneable {
         return this;
     }
 
-    public PointXY minus(float x, float y){
-        return new PointXY(X-x, Y-y);
-    }
-
     public PointXY calcMidPoint(PointXY a){
         return new PointXY((X+a.X)/2, (Y+a.Y)/2);
     }
@@ -227,10 +211,6 @@ public class PointXY implements Cloneable {
     }
 
 
-    public float calcScale( PointXY p2, float sense){
-        return this.lengthTo(p2) * sense;
-    }
-
     public void scale(PointXY a, float scale){
         X = X*scale + a.X;
         Y = Y*scale + a.Y;
@@ -246,10 +226,6 @@ public class PointXY implements Cloneable {
 
     public PointXY scale(PointXY a, float sx, float sy){
         return new PointXY(X*sx + a.X, Y*sy + a.Y);
-    }
-
-    public boolean Equals(PointXY target){
-        return this.X == target.X && this.Y == target.Y;
     }
 
     public boolean nearBy( PointXY target, float range){
@@ -275,6 +251,10 @@ public class PointXY implements Cloneable {
 
     public boolean isCollide(Triangle tri){
             return isCollide(tri.pointAB_,tri.pointBC_,tri.pointCA_); //Inside Triangle
+    }
+
+    public boolean isCollide(TriangleK tri){
+        return isCollide(tri.pointAB_,tri.pointBC_,tri.pointCA_); //Inside Triangle
     }
 
 

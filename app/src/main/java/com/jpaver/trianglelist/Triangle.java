@@ -514,8 +514,7 @@ public class Triangle extends EditObject implements Cloneable {
     }
 
     public boolean hasChild(){
-        if( nodeTriangleB_ != null || nodeTriangleC_ != null ) return true;
-        else return false;
+        return nodeTriangleB_ != null || nodeTriangleC_ != null;
     }
 
     public Triangle getNode( int pbc ){
@@ -1532,7 +1531,6 @@ public class Triangle extends EditObject implements Cloneable {
             else if( pbc == 5 ) parentBC_ = 6;
             else if( pbc == 6 ) parentBC_ = 5;
             else if( pbc == 9 ) parentBC_ = 9;
-            else if( pbc == 10 ) parentBC_ = 10;
             else parentBC_ = pbc;
         }
         if( BtoC == true ){
@@ -1624,7 +1622,7 @@ public class Triangle extends EditObject implements Cloneable {
         // 0の場合は空文字
         if(digit == 0) return "0.00";
         String formatter = "%.${fractionDigits}f";
-        return formatter.format( Float.toString(digit) );
+        return String.format( Float.toString(digit) );
     }
 
     public PathAndOffset getPath(int side) {

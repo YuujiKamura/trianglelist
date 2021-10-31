@@ -292,7 +292,7 @@ public class TriangleList extends EditList implements Cloneable {
     }
 
 
-    public float rotateByLength(String align){
+    public float rotateByLength(String align) throws CloneNotSupportedException {
         float rot = 0f;
         if(align == "laydown"){
             for(;;) {
@@ -340,7 +340,7 @@ public class TriangleList extends EditList implements Cloneable {
         return  myScale;
     }
 
-    public void setScale(PointXY bp, float sc){
+    public void setScale(PointXY bp, float sc) throws CloneNotSupportedException {
         myScale = sc;
         basepoint = bp.clone();
 //        this.cloneByScale(basepoint, myScale);
@@ -376,7 +376,7 @@ public class TriangleList extends EditList implements Cloneable {
     }
 
 
-    public void rotate(PointXY bp, float angle){
+    public void rotate(PointXY bp, float angle) throws CloneNotSupportedException {
         myAngle += angle;
         basepoint = bp.clone();
         for (int i = 0; i < trilist_.size(); i++ ) {
@@ -385,7 +385,7 @@ public class TriangleList extends EditList implements Cloneable {
         }
     }
 
-    public void recoverState(PointXY bp){
+    public void recoverState(PointXY bp) throws CloneNotSupportedException {
         basepoint = bp.clone();
         for (int i = 0; i < trilist_.size(); i++ ) {
             trilist_.get(i).rotate(basepoint, myAngle-180);
@@ -429,7 +429,7 @@ public class TriangleList extends EditList implements Cloneable {
     }
 
     public boolean add(Triangle nextTriangle){
-        if( validTriangle(nextTriangle) == false ) return false;
+        if(!validTriangle(nextTriangle)) return false;
 
         //trilistStored_ = (ArrayList<Triangle>) trilist_.clone();
 
@@ -440,7 +440,7 @@ public class TriangleList extends EditList implements Cloneable {
 
         if( nextTriangle.parentNumber_ > 0 ){
             Triangle parent = getTriangle(nextTriangle.parentNumber_);
-            if( parent.alreadyHaveChild( pbc ) == true ){
+            if(parent.alreadyHaveChild(pbc)){
                 // すでに親の接続辺上に子供がいたら、挿入処理
                 //nextTriangle.myNumber_ = nextTriangle.parentNumber_ +1;
                 insertAndSlide(nextTriangle);

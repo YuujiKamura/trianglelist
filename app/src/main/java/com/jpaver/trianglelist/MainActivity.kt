@@ -10,7 +10,7 @@ import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.preference.PreferenceManager
+import android.preference.*//PreferenceManager
 import android.text.Editable
 import android.text.InputFilter
 import android.text.TextWatcher
@@ -202,13 +202,13 @@ class MainActivity : AppCompatActivity(),
         R.color.colorSky     //4
     )
 
-    fun flipDeductionMode(dmode: Boolean){
+    fun flipDeductionMode() {
         myDeductionList.setCurrent(myDeductionList.size())
         myTriangleList.setCurrent(myTriangleList.size())
         //printDebugConsole()
         colorMovementFabs()
 
-        var inputMethodManager: InputMethodManager =
+        val inputMethodManager: InputMethodManager =
             getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
 
         if(deductionMode_ == false) {
@@ -427,7 +427,6 @@ class MainActivity : AppCompatActivity(),
     lateinit var mAdView : AdView
     lateinit var mInterstitialAd : InterstitialAd
     private val isAdTEST_ = true
-    private val isAdVisible_ = true
     private val TestAdID_ = "ca-app-pub-3940256099942544/6300978111"
     private val UnitAdID_ = "ca-app-pub-6982449551349060/2369695624"
 
@@ -447,14 +446,6 @@ class MainActivity : AppCompatActivity(),
             mAdView = findViewById(R.id.adView)
             //mAdView.adSize = AdSize.BANNER
 
-            if (isAdTEST_ == false) {
-                // 本番
-                //mAdView.adUnitId = UnitAdID_
-            } else {
-                // Test Mode
-                //mAdView.adUnitId = TestAdID_
-            }
-
             val adRequest = AdRequest.Builder().build()
             mAdView.loadAd(adRequest)
 
@@ -472,12 +463,12 @@ class MainActivity : AppCompatActivity(),
         fab_flag.setOnClickListener { view ->
             dParams_ = myEditor.ReadLineTo(dParams_, myELSecond)// 200703 // if式の中に入っていると当然ながら更新されない時があるので注意
 
-            var resetPoint: PointXY = PointXY(0f, 0f)
+            lateinit var resetPoint :PointXY //= PointXY(0f, 0f)
 
             if(deductionMode_ == true){
                 dParams_.pts = my_view.getTapPoint()
                 dParams_.pt = myDeductionList.get(dParams_.n).point
-                var ded = myDeductionList.get(dParams_.n)
+                //var ded = myDeductionList.get(dParams_.n)
                 val tp = my_view.getTapPoint().scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
                 resetPoint = tp
                 if( validDeduction(dParams_) == true ) {// あまり遠い時はスルー
@@ -487,8 +478,8 @@ class MainActivity : AppCompatActivity(),
                 }
             }
             else{
-                var tri = myTriangleList.get(dParams_.n)
-                var tp = my_view.getTapPoint().scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
+                val tri = myTriangleList.get(dParams_.n)
+                val tp = my_view.getTapPoint().scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
                 if( tp.lengthTo(tri.pointCenter_) < 10f ){ // あまり遠い時はスルー
                     tri.pointNumber_ = tp
                     tri.isPointNumberMoved_ = true
@@ -513,7 +504,7 @@ class MainActivity : AppCompatActivity(),
             if(!deductionMode_){
                 var dimside = my_view.myTriangleList.lastTapSide_
                 var trinum  = my_view.myTriangleList.lastTapNum_
-                var tri = myTriangleList.get(trinum)
+                val tri = myTriangleList.get(trinum)
 
                 if( dimside == 0 && ( tri.parentBC_ == 1 ||  tri.parentBC_ == 2 ) ) {
                     trinum = tri.parentNumber_
@@ -532,7 +523,7 @@ class MainActivity : AppCompatActivity(),
             if(!deductionMode_){
                 var dimside = my_view.myTriangleList.lastTapSide_
                 var trinum  = my_view.myTriangleList.lastTapNum_
-                var tri = myTriangleList.get(trinum)
+                val tri = myTriangleList.get(trinum)
 
                 if( dimside == 0 && ( tri.parentBC_ == 1 ||  tri.parentBC_ == 2 ) ) {
                     trinum = tri.parentNumber_
@@ -559,7 +550,7 @@ class MainActivity : AppCompatActivity(),
             }
         }
 
-        var deleteWarning: Int = 0
+        var deleteWarning = 0
         fab_minus.setOnClickListener { view ->
             val listLength = getList(deductionMode_).size()
 
@@ -647,7 +638,6 @@ class MainActivity : AppCompatActivity(),
             findViewById<EditText>(R.id.editLengthB1).requestFocus()
         }
 
-        var angle: Float = 0f
         fab_rot_l.setOnClickListener { view ->
             if( deductionMode_ == false ) {
                 myTriangleList.rotate(PointXY(0f, 0f), 5f)
@@ -690,7 +680,7 @@ class MainActivity : AppCompatActivity(),
         fab_deduction.setOnClickListener { view ->
             deleteWarning = 0
             fab_minus.backgroundTintList = getColorStateList(R.color.colorAccent)
-            flipDeductionMode(deductionMode_)
+            flipDeductionMode()
             colorMovementFabs()
         }
 
@@ -830,7 +820,7 @@ class MainActivity : AppCompatActivity(),
     }
 
     fun fabReplace(params: Params, useit: Boolean){
-        val editor = myEditor
+        //val editor = myEditor
         val dedmode = deductionMode_
         val editlist = getList(deductionMode_)
 
@@ -848,25 +838,25 @@ class MainActivity : AppCompatActivity(),
 
         var usedDedPoint = params.pt.clone()
 
-        var isSucceed = false
+        //var isSucceed = false
 
         if( dedmode == false ) {
 
-            if( strTopB == "" ) isSucceed = resetTrianglesBy(readedSecond)
+            if( strTopB == "" ) resetTrianglesBy(readedSecond)
             else
                 if( strTopC == "" && useit == false ) return
-                else isSucceed = addTriangleBy(readedFirst)
+                else  addTriangleBy(readedFirst)
 
         } else { // if in deduction mode
             //if (validDeduction(params) == false) return
 
 
             if( strTopA == "" ) {
-                isSucceed = resetDeductionsBy(readedSecond)
+                resetDeductionsBy(readedSecond)
                 usedDedPoint = my_view.myDeductionList.get(readedSecond.n).point
             }
             else{
-                isSucceed = addDeductionBy(readedFirst)
+                addDeductionBy(readedFirst)
                 usedDedPoint = my_view.myDeductionList.get(readedFirst.n).point
             }
             findViewById<EditText>(R.id.editName1).requestFocus()
@@ -925,7 +915,7 @@ class MainActivity : AppCompatActivity(),
             trilistStored_ = myTriangleList.clone()
             fab_undo.backgroundTintList = getColorStateList(R.color.colorLime)
 
-            var myTri: Triangle = Triangle(
+            val myTri = Triangle(
                 myTriangleList.getTriangle(params.pn),
                 params
             )
@@ -990,7 +980,7 @@ class MainActivity : AppCompatActivity(),
             my_view.watchedB_ = findViewById<EditText>(R.id.editLengthB1).text.toString()
             my_view.watchedC_ = findViewById<EditText>(R.id.editLengthC1).text.toString()
 
-            var t:Triangle = myTriangleList.get(dParams_.pn)
+            val t:Triangle = myTriangleList.get(dParams_.pn)
             myEditor.LineRewrite(
                 Params(
                     dParams_.name,
@@ -1013,7 +1003,7 @@ class MainActivity : AppCompatActivity(),
 
                 focusTo.requestFocus()
                 focusTo.setSelection(focusTo.text.length)
-                var inputMethodManager: InputMethodManager =
+                val inputMethodManager: InputMethodManager =
                     getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
                 inputMethodManager.showSoftInput(focusTo, 0)
             }
@@ -1046,8 +1036,8 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    fun setTargetEditText(str: String){
-        var inputMethodManager: InputMethodManager =
+    fun setTargetEditText() {
+        val inputMethodManager: InputMethodManager =
             getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
 
 
@@ -1165,8 +1155,8 @@ class MainActivity : AppCompatActivity(),
     fun colorMovementFabs() : Int{
         val max: Int = getList(deductionMode_).size()
         val current: Int = getList(deductionMode_).getCurrent()
-        val min: Int = 1
-        var movable: Int = 0
+        val min = 1
+        var movable = 0
         //fab_zoomin.setBackgroundTintList(getColorStateList(R.color.colorSky))
         //fab_zoomout.setBackgroundTintList(getColorStateList(R.color.colorSky))
         fab_resetView.backgroundTintList = getColorStateList(R.color.colorSky)
@@ -1207,14 +1197,13 @@ class MainActivity : AppCompatActivity(),
         textView.threshold = 1
         textView2.threshold = 1
         textView3.threshold = 1
-        textView.addTextChangedListener(MyTextWatcher(myELFirst, myEditor, lastParams_))
+        textView.addTextChangedListener(MyTextWatcher(myELFirst, lastParams_))
 
     }
 
     private class MyTextWatcher(
-        val mELine: EditTextViewLine,
-        val myEditor: EditorTable,
-        var lastParams: Params
+            val mELine: EditTextViewLine,
+            var lastParams: Params
     ) : TextWatcher {
         //private val afterTextChanged_: TextView = findViewById<TextView>(R.id.afterTextChanged)
         //private val beforeTextChanged_: TextView = findViewById<TextView>(R.id.beforeTextChanged)
@@ -1375,7 +1364,7 @@ class MainActivity : AppCompatActivity(),
         )
 
         val filepath = this.filesDir.absolutePath + "/" + "myLastTriList.csv"
-        val file: File = File(filepath)
+        val file = File(filepath)
         if(file.exists() == true) ResumeCSV()
         else                      CreateNew()
         loadEditTable()
@@ -1387,7 +1376,7 @@ class MainActivity : AppCompatActivity(),
         checkPermission()
 
         // リスナーを登録
-        var etB1 = findViewById<EditText>(R.id.editLengthB1)
+        val etB1 = findViewById<EditText>(R.id.editLengthB1)
         etB1.addTextChangedListener(object : CustomTextWatcher {
             override fun afterTextChanged(p0: Editable?) {
                 if (etB1.isFocused == true) my_view.watchedB_ = p0.toString()
@@ -1918,7 +1907,7 @@ class MainActivity : AppCompatActivity(),
         writer.isDebug_ = my_view.isDebug_
 
         writer.setStartNumber(drawingStartNumber_)
-        writer.isReverse_ = drawingNumberReversal_;
+        writer.isReverse_ = drawingNumberReversal_
 
         writer.save()
         bWriter.close()
@@ -1936,7 +1925,7 @@ class MainActivity : AppCompatActivity(),
         writer.titleDed_ = titleDedStr_
 
         writer.setStartNumber(drawingStartNumber_)
-        writer.isReverse_ = drawingNumberReversal_;
+        writer.isReverse_ = drawingNumberReversal_
 
         writer.save()
         out.close()
@@ -2277,14 +2266,14 @@ class MainActivity : AppCompatActivity(),
                 if( chunks[5].toInt() == 0 ){
                     trilist.add(
                         Triangle(
-                            chunks[1]!!.toFloat(),
-                            chunks[2]!!.toFloat(),
-                            chunks[3]!!.toFloat(),
+                            chunks[1].toFloat(),
+                            chunks[2].toFloat(),
+                            chunks[3].toFloat(),
                             PointXY(
-                                -chunks[23]!!.toFloat(),
-                                -chunks[24]!!.toFloat()
+                                -chunks[23].toFloat(),
+                                -chunks[24].toFloat()
                             ),
-                            chunks[22]!!.toFloat() - 180f
+                            chunks[22].toFloat() - 180f
                         )
                     )
                 }
@@ -2387,7 +2376,7 @@ class MainActivity : AppCompatActivity(),
         deductionMode_ = true
         EditorClear(myTriangleList, myTriangleList.size())
         //colorMovementFabs()
-        flipDeductionMode(deductionMode_)
+        flipDeductionMode()
         //printDebugConsole()
         return true
     }

@@ -99,7 +99,7 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
         if( isReverse_ == true ) {
             trilistNumbered = trilistNumbered.resetNumReverse()
             dedlist_ = dedlist_.reverse()
-        };
+        }
 
         for ( trinumber in 1 .. trilistNumbered.size() ){
             writeTriangle( trilistNumbered.get(trinumber) )

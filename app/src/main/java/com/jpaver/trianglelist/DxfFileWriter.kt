@@ -4868,10 +4868,6 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         writer_.newLine()
     }
 
-    override fun PolymorphFunction(): String {
-        return super.PolymorphFunction()
-    }
-
     override fun PolymorphFunctionB(): String {
         return "IAMOVERRIDED."
     }

@@ -1159,7 +1159,7 @@ val sokt = PathAndOffset(
                         mPointerCount = event.pointerCount
                         mActivePointerId = -1
 
-                        (context as MainActivity).setTargetEditText(tapTL_)
+                        (context as MainActivity).setTargetEditText()
 
                     }
 

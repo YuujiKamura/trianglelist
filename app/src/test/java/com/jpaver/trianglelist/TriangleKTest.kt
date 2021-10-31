@@ -7,6 +7,20 @@ import org.junit.Assert
 import org.junit.Test
 
 class TriangleKTest {
+
+    @Test
+    fun testRotateNode() {
+        val t = TriangleK(5f, 5f, 5f)
+        val t2 = TriangleK(t, 1, 5f, 5f)
+
+        t2.rotateNode(true)
+        Assert.assertEquals(t, t2.nodeTriangle[1])
+
+        t.rotateNode(false)
+        Assert.assertEquals(t2, t.nodeTriangle[0])
+
+    }
+
     @Test
     fun testResetNodeChain() {
         val t = TriangleK(5f, 5f, 5f)
@@ -33,17 +47,17 @@ class TriangleKTest {
         val two = TriangleK(one, connection, 6f, 6f)
 
         // 内容の一致
-        Assert.assertEquals(one.myNumber_.toLong(), two.nodeTriangleA_!!.myNumber_.toLong())
-        Assert.assertEquals(one.nodeTriangleB_!!.myNumber_.toLong(), two.myNumber_.toLong())
+        Assert.assertEquals(one.myNumber_.toLong(), two.nodeTriangle[0]!!.myNumber_.toLong())
+        Assert.assertEquals(one.nodeTriangle[1]!!.myNumber_.toLong(), two.myNumber_.toLong())
 
         // オブジェクトポインタの一致。
-        Assert.assertEquals(one, two.nodeTriangleA_)
-        Assert.assertEquals(one.nodeTriangleB_, two)
+        Assert.assertEquals(one, two.nodeTriangle[0])
+        Assert.assertEquals(one.nodeTriangle[1], two)
         two[one, 2, 5f] = 5f
 
         // オブジェクトポインタの一致。
-        Assert.assertEquals(one, two.nodeTriangleA_)
-        Assert.assertEquals(one.nodeTriangleC_, two)
+        Assert.assertEquals(one, two.nodeTriangle[0])
+        Assert.assertEquals(one.nodeTriangle[2], two)
     }
 
     @Test
@@ -54,17 +68,17 @@ class TriangleKTest {
             TriangleK(one, Params("", "", 2, 5f, 5f, 5f, 1, 1, PointXY(0f, 0f), PointXY(0f, 0f)))
 
         // 内容の一致
-        Assert.assertEquals(one.myNumber_.toLong(), two.nodeTriangleA_!!.myNumber_.toLong())
-        Assert.assertEquals(one.nodeTriangleB_!!.myNumber_.toLong(), two.myNumber_.toLong())
+        Assert.assertEquals(one.myNumber_.toLong(), two.nodeTriangle[0]!!.myNumber_.toLong())
+        Assert.assertEquals(one.nodeTriangle[1]!!.myNumber_.toLong(), two.myNumber_.toLong())
 
         // オブジェクトポインタの一致。
-        Assert.assertEquals(one, two.nodeTriangleA_)
-        Assert.assertEquals(one.nodeTriangleB_, two)
+        Assert.assertEquals(one, two.nodeTriangle[0])
+        Assert.assertEquals(one.nodeTriangle[1], two)
         two[one, 2, 5f] = 5f
 
         // オブジェクトポインタの一致。
-        Assert.assertEquals(one, two.nodeTriangleA_)
-        Assert.assertEquals(one.nodeTriangleC_, two)
+        Assert.assertEquals(one, two.nodeTriangle[0])
+        Assert.assertEquals(one.nodeTriangle[2], two)
     }
 
     @Test
@@ -73,17 +87,17 @@ class TriangleKTest {
         val two = TriangleK(one, 1, 5f, 5f)
 
         // 内容の一致
-        Assert.assertEquals(one.myNumber_.toLong(), two.nodeTriangleA_!!.myNumber_.toLong())
-        Assert.assertEquals(one.nodeTriangleB_!!.myNumber_.toLong(), two.myNumber_.toLong())
+        Assert.assertEquals(one.myNumber_.toLong(), two.nodeTriangle[0]!!.myNumber_.toLong())
+        Assert.assertEquals(one.nodeTriangle[1]!!.myNumber_.toLong(), two.myNumber_.toLong())
 
         // オブジェクトポインタの一致。
-        Assert.assertEquals(one, two.nodeTriangleA_)
-        Assert.assertEquals(one.nodeTriangleB_, two)
+        Assert.assertEquals(one, two.nodeTriangle[0])
+        Assert.assertEquals(one.nodeTriangle[1], two)
         two[one, 2, 5f] = 5f
 
         // オブジェクトポインタの一致。
-        Assert.assertEquals(one, two.nodeTriangleA_)
-        Assert.assertEquals(one.nodeTriangleC_, two)
+        Assert.assertEquals(one, two.nodeTriangle[0])
+        Assert.assertEquals(one.nodeTriangle[2], two)
     }
 
     @Test
