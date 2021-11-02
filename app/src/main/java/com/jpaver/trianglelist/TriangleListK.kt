@@ -175,8 +175,8 @@ class TriangleListK() :Cloneable {
         }
     }
 
-    fun insert(index: Int, nextTriangle: TriangleK?): Boolean {
-        var index = index
+    fun insert(index_: Int, nextTriangle: TriangleK?): Boolean {
+        var index = index_
         if (nextTriangle == null || !nextTriangle.validTriangle()) return false
         trilist_.add(index - 1, nextTriangle) // add(insert) by arraylist
         getTriangle(index).setNumber(index)
@@ -275,9 +275,9 @@ class TriangleListK() :Cloneable {
 
 
         // 浮いてる場合、さらに自己番が最後でない場合、一個前の三角形の位置と角度を自分の変化にあわせて動かしたい。
-        if (curtri.parentNumber_ <= 0 && trilist_.size != cNum && exist( curtri.nodeTriangle[0] ) ) {
+        //if (curtri.parentNumber_ <= 0 && trilist_.size != cNum && exist( curtri.nodeTriangle[0] ) ) {
             //curtri.resetByChild(trilist_[cNum]!!)
-        }
+        //}
         me!!.reset(curtri) // ここがへん！ 親は自身の基準角度に基づいて形状変更をするので、それにあわせてもう一回呼んでいる。
 
 
@@ -300,9 +300,9 @@ class TriangleListK() :Cloneable {
         //return trilist_.contains( target );
     }
 
-    fun resetMyChild(newParent: TriangleK?) {
+    fun resetMyChild(newParent_: TriangleK?) {
         //myTriList.get(2).reset(newParent, 1);
-        var newParent: TriangleK? = newParent ?: return
+        var newParent: TriangleK? = newParent_ ?: return
 
         // 新しい親の次から
         for (i in newParent!!.myNumber_ until trilist_.size) {
@@ -322,7 +322,7 @@ class TriangleListK() :Cloneable {
         }
     }
 
-    fun resetChildsFrom(rTri: TriangleK?) {
+    fun resetChildsFrom(){//rTri: TriangleK?) {
         if (lastTapNum_ <= 0) return
         for (i in lastTapNum_ until trilist_.size) {
             val nextTri = trilist_[i]
@@ -335,7 +335,7 @@ class TriangleListK() :Cloneable {
         if (trilist_[number - 1] == null) return false
         val me = trilist_[number - 1]
         val pr = trilist_[pnum - 1]!!
-        me!![pr, me.parentBC_, me.lengthA_, me.lengthB_] = me.lengthC_
+        me!![pr, me.parentBC_, me.length[0], me.length[1]] = me.length[2]
         return true
     }
 
@@ -344,7 +344,7 @@ class TriangleListK() :Cloneable {
         //if( trilistStored_ != null ) trilist_ = (ArrayList<TriangleK>) trilistStored_.clone();
     }
 
-    fun getSokutenList(start: Int, pitch: Int): ArrayList<TriangleK>? {
+    fun getSokutenList(start: Int, pitch: Int): ArrayList<TriangleK> {
         val allSokTriList = getAllSokutenList()
         val sokTriList = ArrayList<TriangleK>()
         for (i in allSokTriList.indices) {
@@ -362,24 +362,24 @@ class TriangleListK() :Cloneable {
         if (getSokutenListVector() > 0 && sokTriList.size > 1) {
             val lasttri = sokTriList[sokTriList.size - 1]
             val pasttri = sokTriList[sokTriList.size - 2]
-            val lastx = lasttri.pointCA_.x
-            val pastx = pasttri.pointCA_.x
+            val lastx = lasttri.point[0].x
+            val pastx = pasttri.point[0].x
             sokTriList.add(TriangleK(5f, 5f, 5f))
-            sokTriList[sokTriList.size - 1].pointCA_.x = lastx + (lastx - pastx)
+            sokTriList[sokTriList.size - 1].point[0].x = lastx + (lastx - pastx)
             sokTriList[sokTriList.size - 1].lengthAforce_ = lasttri.lengthAforce_
-            sokTriList[sokTriList.size - 1].lengthA_ = lasttri.lengthA_
+            sokTriList[sokTriList.size - 1].length[0] = lasttri.length[0]
         }
 
         // 最初にいっこ足す
         if (getSokutenListVector() < 0 && sokTriList.size > 1) {
             val firsttri = sokTriList[0]
             val secondtri = sokTriList[1]
-            val first = firsttri.pointCA_
-            val second = secondtri.pointCA_
+            val first = firsttri.point[0]
+            val second = secondtri.point[0]
             sokTriList.add(0, TriangleK(5f, 5f, 5f))
-            sokTriList[0].pointCA_ = first.minus(second).plus(first)
+            sokTriList[0].point[0] = first.minus(second).plus(first)
             sokTriList[0].lengthAforce_ = firsttri.lengthAforce_
-            sokTriList[0].lengthA_ = firsttri.lengthA_
+            sokTriList[0].length[0] = firsttri.length[0]
         }
         return sokTriList
     }
@@ -411,7 +411,7 @@ class TriangleListK() :Cloneable {
 
     fun getUnScaledPointOfName(name: String): PointXY? {
         for (i in 1 until trilist_.size + 1) {
-            if (trilist_[i]!!.myName_ == name) return trilist_[i]!!.pointCA_.scale(1 / myScale)
+            if (trilist_[i]!!.myName_ == name) return trilist_[i]!!.point[0].scale(1 / myScale)
         }
         return PointXY(0f, 0f)
     }
@@ -632,18 +632,18 @@ class TriangleListK() :Cloneable {
     //}
 
     fun validTriangle(tri: TriangleK): Boolean {
-        return if (tri.lengthA_ <= 0.0f || tri.lengthB_ <= 0.0f || tri.lengthC_ <= 0.0f) false else tri.lengthA_ + tri.lengthB_ > tri.lengthC_ &&
-                tri.lengthB_ + tri.lengthC_ > tri.lengthA_ &&
-                tri.lengthC_ + tri.lengthA_ > tri.lengthB_
+        return if (tri.length[0] <= 0.0f || tri.length[1] <= 0.0f || tri.length[2] <= 0.0f) false else tri.length[0] + tri.length[1] > tri.length[2] &&
+                tri.length[1] + tri.length[2] > tri.length[0] &&
+                tri.length[2] + tri.length[0] > tri.length[1]
     }
 
     fun vectorToNextFrom(i: Int): PointXY? {
-        return if (i < 0 || i >= trilist_.size) PointXY(0f, 0f) else trilist_[i]!!.pointCA_.vectorTo(trilist_[i + 1]!!.pointCA_)
+        return if (i < 0 || i >= trilist_.size) PointXY(0f, 0f) else trilist_[i]!!.point[0].vectorTo(trilist_[i + 1]!!.point[0])
     }
 
     fun getLengthFromSide(sideNum: Int, tri: TriangleK): Float {
-        if (sideNum == 1 || sideNum == 3 || sideNum == 4 || sideNum == 7 || sideNum == 9) return tri.lengthB_
-        return if (sideNum == 2 || sideNum == 5 || sideNum == 6 || sideNum == 8 || sideNum == 10) tri.lengthC_ else 0f
+        if (sideNum == 1 || sideNum == 3 || sideNum == 4 || sideNum == 7 || sideNum == 9) return tri.length[1]
+        return if (sideNum == 2 || sideNum == 5 || sideNum == 6 || sideNum == 8 || sideNum == 10) tri.length[2] else 0f
     }
 
     fun validTriangle(prm: Params): Boolean {
@@ -734,7 +734,7 @@ class TriangleListK() :Cloneable {
     fun getParams(i: Int): Params {
         if (i > trilist_.size) return Params("", "", 0, 0f, 0f, 0f, 0, 0, PointXY(0f, 0f), PointXY(0f, 0f))
         val t = trilist_[i - 1]
-        return Params(t!!.myName_, "", t.myNumber_, t.lengthA_, t.lengthB_, t.lengthC_, t.parentNumber_, t.parentBC_, t.pointCenter_, t.pointNumberAutoAligned_)
+        return Params(t!!.myName_, "", t.myNumber_, t.length[0], t.length[1], t.length[2], t.parentNumber_, t.parentBC_, t.pointCenter_, t.pointNumberAutoAligned_)
     }
 
     fun getArea(): Float {
@@ -770,8 +770,8 @@ class TriangleListK() :Cloneable {
         val t = trilist_[startindex]
 
         //AB点を取る。すでにあったらキャンセル
-        if (exist(t!!.pointAB_, olp) == false) {
-            olp.add(t.pointAB_)
+        if (exist(t!!.point[1], olp) == false) {
+            olp.add(t.point[1])
             outlineStr_ += startindex.toString() + "ab,"
         }
 
@@ -779,8 +779,8 @@ class TriangleListK() :Cloneable {
         if (t.isChildB_ == true && !t.nodeTriangle[1]!!.isFloating) traceOrJumpForward(t.nodeTriangle[1]!!.myNumber_ - 1, origin, olp)
 
         //BC点を取る。すでにあったらキャンセル
-        if (exist(t.pointBC_, olp) == false) {
-            olp.add(t.pointBC_)
+        if (exist(t.point[2], olp) == false) {
+            olp.add(t.point[2])
             outlineStr_ += startindex.toString() + "bc,"
         }
         if (t.isChildC_ == true && !t.nodeTriangle[2]!!.isFloating) traceOrJumpForward(t.nodeTriangle[2]!!.myNumber_ - 1, origin, olp)
@@ -792,17 +792,17 @@ class TriangleListK() :Cloneable {
         val t = trilist_[startindex]!!
 
         // C派生（ふたつとも接続）していたらそっちに伸びる、フロート接続だったり、すでに持っている点を見つけたらスルー
-        if (t.isChildB_ == true && t.isChildC_ == true) if (exist(t.nodeTriangle[2]!!.pointCA_, olp) == false && !t.nodeTriangle[2]!!.isFloating) traceOrJumpForward(t.nodeTriangle[2]!!.myNumber_ - 1, origin, olp)
+        if (t.isChildB_ == true && t.isChildC_ == true) if (exist(t.nodeTriangle[2]!!.point[0], olp) == false && !t.nodeTriangle[2]!!.isFloating) traceOrJumpForward(t.nodeTriangle[2]!!.myNumber_ - 1, origin, olp)
 
         //BC点を取る。すでにあったらキャンセル
-        if (exist(t.pointBC_, olp) == false) {
-            olp.add(t.pointBC_)
+        if (exist(t.point[2], olp) == false) {
+            olp.add(t.point[2])
             outlineStr_ += startindex.toString() + "bc,"
         }
 
         //CA点を取る。すでにあったらキャンセル
-        if (exist(t.pointCA_, olp) == false) {
-            olp.add(t.pointCA_)
+        if (exist(t.point[0], olp) == false) {
+            olp.add(t.point[0])
             outlineStr_ += startindex.toString() + "ca,"
         }
 
@@ -838,24 +838,24 @@ class TriangleListK() :Cloneable {
 
             // 先端に行き当たったら全点足す ただし図形の終点ではないとき。
             if (t!!.isChildB_ == false && t.isChildC_ == false && t.myNumber_ != endnum) {
-                if (before == t.pointAB_ == false) olp.add(t.pointAB_)
-                if (before == t.pointBC_ == false) olp.add(t.pointBC_)
-                if (before == t.pointCA_ == false) olp.add(t.pointCA_)
+                if (before == t.point[1] == false) olp.add(t.point[1])
+                if (before == t.point[2] == false) olp.add(t.point[2])
+                if (before == t.point[0] == false) olp.add(t.point[0])
                 continue
             }
 
             // いっこ先のが二重断面ならBC点を足す
-            if (i + 1 < trilist_.size) if (trilist_[i + 1]!!.parentBC_ == 4 || trilist_[i + 1]!!.parentBC_ == 7) olp.add(t.pointBC_)
+            if (i + 1 < trilist_.size) if (trilist_[i + 1]!!.parentBC_ == 4 || trilist_[i + 1]!!.parentBC_ == 7) olp.add(t.point[2])
 
             // いっこ先のが非連続のときは回す
             if (i + 1 < trilist_.size) if (trilist_[i + 1]!!.parentNumber_ != t.myNumber_) continue
 
             // 基本CA点がダブらないときは足していく方式。
-            if (before == t.pointCA_ == false) olp.add(t.pointCA_)
+            if (before == t.point[0] == false) olp.add(t.point[0])
 
             // C接続があるときは。しかしこれだと次の番号がいっこ減る。たいていの場合接続先は進んだ番号なので、違う処理が必要。
             if (t.isChildC_ == true) if (t.nodeTriangle[2]!!.isFloating == false) continue
-            olp.add(t.pointCA_)
+            olp.add(t.point[0])
         }
         return olp
     }
@@ -863,7 +863,7 @@ class TriangleListK() :Cloneable {
     fun goAroundCaveBySetRightHand(start: Int, endnum: Int): ArrayList<PointXY> {
         val olp = ArrayList<PointXY>()
         val t1 = trilist_[start]
-        olp.add(t1!!.pointAB_)
+        olp.add(t1!!.point[1])
 
         // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
         var i = start
@@ -871,12 +871,12 @@ class TriangleListK() :Cloneable {
             val t = trilist_[i]
             val before = olp[olp.size - 1]
             //AB点を取る。すでにあったらキャンセル
-            if (before == t!!.pointAB_ == false) olp.add(t.pointAB_)
+            if (before == t!!.point[1] == false) olp.add(t.point[1])
 
             //単独の突点の場合。
             if (t.isChildB_ == false && t.isChildC_ == false && t.myNumber_ != endnum) {
-                if (before == t.pointBC_ == false) olp.add(t.pointBC_)
-                if (before == t.pointCA_ == false) olp.add(t.pointCA_)
+                if (before == t.point[2] == false) olp.add(t.point[2])
+                if (before == t.point[0] == false) olp.add(t.point[0])
                 i++
                 continue
             }
@@ -1007,7 +1007,7 @@ class TriangleListK() :Cloneable {
                     // 子の三角形を指定して生成する。
                     //rev.add( new TriangleK( trilist_.get( it.parentNumber_), it.parentBC_, it.lengthAforce_, it.lengthBforce_, it.lengthCforce_ ) );
                 }
-            if (it.parentNumber_ < 1) rev.add(it.clone()) //new TriangleK( it.lengthAforce_, it.lengthBforce_, it.lengthCforce_, it.pointCA_, it.angleInGlobal_)
+            if (it.parentNumber_ < 1) rev.add(it.clone()) //new TriangleK( it.lengthAforce_, it.lengthBforce_, it.lengthCforce_, it.point[0], it.angleInGlobal_)
             else {
                 rev.add(TriangleK(rev[it.parentNumber_], it.parentBC_, it.lengthAforce_, it.lengthBforce_, it.lengthCforce_))
             }

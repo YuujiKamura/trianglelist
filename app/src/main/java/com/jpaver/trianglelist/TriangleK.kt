@@ -2,109 +2,103 @@ package com.jpaver.trianglelist
 
 import java.util.*
 
-class TriangleK(var lengthA_: Float = 0f,
-                var lengthB_: Float = 0f,
-                var lengthC_: Float = 0f,
-                var parentBC_: Int = -1,
+class TriangleK(@kotlin.jvm.JvmField
+                    var nodeTriangle: Array<TriangleK?> = arrayOfNulls(3),
                 @kotlin.jvm.JvmField
-                var pointCA_: PointXY = PointXY(0f, 0f),
-                var angle: Float = 0f
+                    var length: Array<Float> = Array(3) { 0f },
+                @kotlin.jvm.JvmField
+                    var point: Array<PointXY> = Array(3) { PointXY(0f, 0f) },
+                    var parentBC_: Int = -1,
+                @kotlin.jvm.JvmField
+                    var baseangle: Float = 0f
 ) : EditObject(), Cloneable {
 
     //for first triangle.
     constructor(A: Float, B: Float, C: Float, pCA: PointXY, angle_: Float) :this(
-            lengthA_ = A,
-            lengthB_ = B,
-            lengthC_ = C,
-            parentBC_ = -1,
-            pointCA_ = pCA,
-            angle = angle_
+            nodeTriangle = arrayOf( null, null, null ),
+            length       = arrayOf( A, B, C ),
+            point        = arrayOf( pCA, PointXY(0f,0f), PointXY(0f,0f) ),
+            parentBC_    = -1,
+            baseangle    = angle_
     ){
-        calcPoints(null, -1, pointCA_, angle)
+        calcPoints(null, -1, point[0], baseangle)
     }
 
     //for first. most simple.
     constructor(A: Float, B: Float, C: Float) :this(
-            lengthA_ = A,
-            lengthB_ = B,
-            lengthC_ = C,
-            parentBC_ = -1,
-            pointCA_ = PointXY(0f, 0f),
-            angle = 0f
+            nodeTriangle = arrayOf( null, null, null ),
+            length       = arrayOf( A, B, C ),
+            point        = arrayOf( PointXY(0f,0f), PointXY(0f,0f), PointXY(0f,0f) ),
+            parentBC_    = -1,
+            baseangle    = 0f
     ){
-        calcPoints(null, -1, pointCA_, angle)
+        calcPoints(null, -1, point[0], baseangle)
     }
 
     // use node A to my parent.
     constructor(parent: TriangleK, pbc: Int, B: Float, C: Float) :this(
-            lengthA_ = parent.getLengthBySide(pbc),
-            lengthB_ = B,
-            lengthC_ = C,
-            parentBC_ = pbc,
-            pointCA_ = parent.getPointBySide(pbc),
-            angle = parent.getAngleBySide(pbc)
+            nodeTriangle = arrayOf( parent, null, null ),
+            length       = arrayOf( parent.getLengthBySide(pbc), B, C ),
+            point        = arrayOf( parent.getPointBySide(pbc), PointXY(0f,0f), PointXY(0f,0f) ),
+            parentBC_    = pbc,
+            baseangle    = parent.getAngleBySide(pbc)
     ){
         calcPoints(parent, 0)
         //set(parent, pbc, B, C)
     }
 
     // use node A to my parent. A uses different length.
-    constructor(myParent: TriangleK, pbc: Int, A: Float, B: Float, C: Float) :this(
-            lengthA_ = A,
-            lengthB_ = B,
-            lengthC_ = C,
-            parentBC_ = pbc,
-            pointCA_ = myParent.getPointBySide(pbc),
-            angle = myParent.getAngleBySide(pbc)
+    constructor(parent: TriangleK, pbc: Int, A: Float, B: Float, C: Float) :this(
+            nodeTriangle = arrayOf( parent, null, null ),
+            length       = arrayOf( parent.getLengthBySide(pbc), B, C ),
+            point        = arrayOf( parent.getPointBySide(pbc), PointXY(0f,0f), PointXY(0f,0f) ),
+            parentBC_    = pbc,
+            baseangle    = parent.getAngleBySide(pbc)
     ){
         //calcPoints( myParent, 0 )
-        set(myParent, pbc, A, B, C)
+        set(parent, pbc, A, B, C)
     }
 
     // reference node B or C to set base point.
     constructor(child: TriangleK, A: Float, B: Float, C: Float) :this(
-            lengthA_ = A,
-            lengthB_ = B,
-            lengthC_ = C,
-            parentBC_ = -1,
-            pointCA_ = PointXY(0f, 0f),
-            angle = 0f
+            nodeTriangle = arrayOf( null, null, null ),
+            length       = arrayOf( A, B, C ),
+            point        = arrayOf( PointXY(0f,0f), PointXY(0f,0f), PointXY(0f,0f) ),
+            parentBC_    = -1,
+            baseangle    = 0f
     ) {
         calcPoints(child, child.parentSide)
     }
 
     // connection parameter
-    constructor(myParent: TriangleK, cParam: ConnParam, B: Float, C: Float) :this(
-            lengthA_ = myParent.getLengthBySide(cParam.side),
-            lengthB_ = B,
-            lengthC_ = C,
-            parentBC_ = getPbcByCParam(cParam),
-            pointCA_ = myParent.getParentPointByType(cParam),
-            angle = myParent.getAngleBySide(cParam.side)
+    constructor(parent: TriangleK, cParam: ConnParam, B: Float, C: Float) :this(
+            nodeTriangle = arrayOf( parent, null, null ),
+            length       = arrayOf( parent.getLengthBySide(cParam.side), B, C ),
+            point        = arrayOf( parent.getPointBySide(cParam.side), PointXY(0f,0f), PointXY(0f,0f) ),
+            parentBC_    = getPbcByCParam(cParam),
+            baseangle    = parent.getAngleBySide(cParam.side)
     ){
-        set(myParent, cParam, B, C)
+        set(parent, cParam, B, C)
     }
 
-    constructor(myParent: TriangleK, dP: Params) :this(
-            lengthA_ = dP.a,
-            lengthB_ = dP.b,
-            lengthC_ = dP.c,
-            parentBC_ = dP.pl,
-            pointCA_ = myParent.getPointBySide(dP.pl),
-            angle = myParent.getAngleBySide(dP.pl)
+    constructor(parent: TriangleK, dP: Params) :this(
+            nodeTriangle = arrayOf( parent, null, null ),
+            length       = arrayOf( parent.getLengthBySide(dP.pl), dP.b, dP.c ),
+            point        = arrayOf( parent.getPointBySide(dP.pl), PointXY(0f,0f), PointXY(0f,0f) ),
+            parentBC_    = dP.pl,
+            baseangle    = parent.getAngleBySide(dP.pl)
     ) {
-        set(myParent, dP.pl, dP.a, dP.b, dP.c)
+        set(parent, dP.pl, dP.a, dP.b, dP.c)
         myName_ = dP.name
         autoSetDimSideAlign()
     }
 
     constructor(dP: Params, angle: Float) :this(
-            lengthA_ = dP.a,
-            lengthB_ = dP.b,
-            lengthC_ = dP.c,
-            parentBC_ = -1,
-            pointCA_ = dP.pt,
-            angle = angle
+            nodeTriangle = arrayOf( null, null, null ),
+            length       = arrayOf( dP.a, dP.b, dP.c ),
+            point        = arrayOf( dP.pt, PointXY(0f,0f), PointXY(0f,0f) ),
+            parentBC_    = -1,
+            baseangle    = angle
     ) {
         setNumber(dP.n)
         myName_ = dP.name
@@ -113,7 +107,19 @@ class TriangleK(var lengthA_: Float = 0f,
     }
 
 
-
+    @kotlin.jvm.JvmField
+        var innerangle = arrayOf( 0f, 0f, 0f )
+    @kotlin.jvm.JvmField
+        var lengthforce = arrayOf( 0f, 0f, 0f )
+    @kotlin.jvm.JvmField
+        var dimpoint = arrayOf( PointXY(0f, 0f), PointXY(0f, 0f), PointXY(0f, 0f) )
+    @kotlin.jvm.JvmField
+        var dimalignV = arrayOf( 3, 3, 3 )
+    @kotlin.jvm.JvmField
+        var dimalignH = arrayOf( 0, 0, 0 )
+    @kotlin.jvm.JvmField
+        var dimpath :Array<PathAndOffset?> = arrayOfNulls(3)
+    
     var valid_ = false
     var scale_ = 1f
     var lengthAforce_ = 0f
@@ -123,10 +129,10 @@ class TriangleK(var lengthA_: Float = 0f,
     var slb_ = ""
     var slc_ = ""
     // base point by calc
-    @kotlin.jvm.JvmField
-    var pointAB_ = PointXY(0f, 0f)
-    @kotlin.jvm.JvmField
-    var pointBC_ = PointXY(0f, 0f)
+    //@kotlin.jvm.JvmField
+    //var point[1] = PointXY(0f, 0f)
+    //@kotlin.jvm.JvmField
+    //var point[2] = PointXY(0f, 0f)
     var pointCenter_ = PointXY(0f, 0f)
     var pointNumber_ = PointXY(0f, 0f)
     var isPointNumberMoved_ = false
@@ -142,9 +148,9 @@ class TriangleK(var lengthA_: Float = 0f,
     var myPowB_ = 0.0
     var myPowC_ = 0.0
 
-    var angleCA = 0f
-    var angleAB = 0f
-    var angleBC = 0f
+    //var innerangle[0] = 0f
+    //var innerangle[1] = 0f
+    //var innerangle[2] = 0f
     var dimAngleB_ = 0f
     var dimAngleC_ = 0f
     var parentNumber_ = -1 // 0:root
@@ -181,8 +187,8 @@ class TriangleK(var lengthA_: Float = 0f,
             : PathAndOffset? = null
     var dimH_ = 0f
 
-    var nodeTriangle : Array<TriangleK?> = arrayOfNulls(3)
 
+    
     var isChildB_ = false
     var isChildC_ = false
 
@@ -191,13 +197,13 @@ class TriangleK(var lengthA_: Float = 0f,
         val b = TriangleK()
         try {
             //b = super.clone()
-            b.lengthA_ = lengthA_
-            b.lengthB_ = lengthB_
-            b.lengthC_ = lengthC_
+            b.nodeTriangle = nodeTriangle.clone()
+            b.length = length.clone()
             b.lengthAforce_ = lengthAforce_
             b.lengthBforce_ = lengthBforce_
             b.lengthCforce_ = lengthCforce_
-            b.angle = angle
+            b.point = point.clone()
+            b.baseangle = baseangle
             b.myName_ = myName_
             b.myNumber_ = myNumber_
             b.parentBC_ = parentBC_
@@ -209,9 +215,8 @@ class TriangleK(var lengthA_: Float = 0f,
             b.dimSideAlignA_ = dimSideAlignA_
             b.dimSideAlignB_ = dimSideAlignB_
             b.dimSideAlignC_ = dimSideAlignC_
-            b.pointCA_ = pointCA_.clone()
-            b.pointAB_ = pointAB_.clone()
-            b.pointBC_ = pointBC_.clone()
+            //b.point[1] = point[1].clone()
+            //b.point[2] = point[2].clone()
             b.pointCenter_ = pointCenter_.clone()
             b.pointNumber_ = pointNumber_.clone()
             b.isPointNumberMoved_ = isPointNumberMoved_
@@ -219,10 +224,6 @@ class TriangleK(var lengthA_: Float = 0f,
             b.myBP_.top = myBP_.top
             b.myBP_.right = myBP_.right
             b.myBP_.bottom = myBP_.bottom
-            b.nodeTriangle[0] = nodeTriangle[0]
-            b.nodeTriangle[1] = nodeTriangle[1]
-            b.nodeTriangle[2] = nodeTriangle[2]
-            b.nodeTriangle = nodeTriangle
             b.childSide_ = childSide_
             b.color_ = color_
             b.connectionLCR_ = connectionLCR_
@@ -236,22 +237,22 @@ class TriangleK(var lengthA_: Float = 0f,
 
     // set argument methods
     private fun initBasicArguments(A: Float, B: Float, C: Float, pCA: PointXY?, angle: Float) {
-        lengthA_ = A
-        lengthB_ = B
-        lengthC_ = C
+        length[0] = A
+        length[1] = B
+        length[2] = C
         lengthAforce_ = A
         lengthBforce_ = B
         lengthCforce_ = C
         valid_ = validTriangle()
-        pointCA_ = PointXY(pCA!!.x, pCA.y)
-        pointAB_ = PointXY(0.0f, 0.0f)
-        pointBC_ = PointXY(0.0f, 0.0f)
+        point[0] = PointXY(pCA!!.x, pCA.y)
+        point[1] = PointXY(0.0f, 0.0f)
+        point[2] = PointXY(0.0f, 0.0f)
         pointCenter_ = PointXY(0.0f, 0.0f)
         //this.pointNumber_ = new PointXY(0.0f, 0.0f);
-        this.angle = angle
-        angleCA = 0f
-        angleAB = 0f
-        angleBC = 0f
+        this.baseangle = angle
+        innerangle[0] = 0f
+        innerangle[1] = 0f
+        innerangle[2] = 0f
         //childSide_ = 0;
         //myDimAlignA = 0;
         //myDimAlignB = 0;
@@ -268,31 +269,31 @@ class TriangleK(var lengthA_: Float = 0f,
         when( pbc ) {
             1 -> {
                 parentBC_ = 1
-                lengthA_ = nodeTriangle[0]!!.lengthB_
+                length[0] = nodeTriangle[0]!!.length[1]
                 lengthAforce_ = nodeTriangle[0]!!.lengthBforce_
-                pointCA_ = nodeTriangle[0]!!.pointBC_
-                angle = nodeTriangle[0]!!.angleMpAB
+                point[0] = nodeTriangle[0]!!.point[2]
+                baseangle = nodeTriangle[0]!!.angleMpAB
             }
             2 -> {
                 parentBC_ = 2
-                lengthA_ = nodeTriangle[0]!!.lengthC_
+                length[0] = nodeTriangle[0]!!.length[2]
                 lengthAforce_ = nodeTriangle[0]!!.lengthCforce_
-                pointCA_ = nodeTriangle[0]!!.pointCA_
-                angle = nodeTriangle[0]!!.angleMmCA
+                point[0] = nodeTriangle[0]!!.point[0]
+                baseangle = nodeTriangle[0]!!.angleMmCA
             }
             else -> {
                 parentBC_ = 0
-                lengthA_ = 0f
+                length[0] = 0f
                 lengthAforce_ = 0f
-                pointCA_ = PointXY(0f, 0f)
-                angle = 180f
+                point[0] = PointXY(0f, 0f)
+                baseangle = 180f
             }
         }
 
         parentNumber_ = nodeTriangle[0]!!.myNumber_
         //nodeTriangle[0].setChild(this, parentBC_);
-        initBasicArguments(lengthA_, B, C, pointCA_, angle)
-        calcPoints(pointCA_, angle)
+        initBasicArguments(length[0], B, C, point[0], baseangle)
+        calcPoints(point[0], baseangle)
 
         //myDimAlign = setDimAlign();
         return this
@@ -312,10 +313,10 @@ class TriangleK(var lengthA_: Float = 0f,
         }
         if ( nodeTriangle[1] != null )
             nodeTriangle[1]!![ this, nodeTriangle[1]!!.parentBC_, getLengthBySide( nodeTriangle[1]!!.parentSide),
-                                    nodeTriangle[1]!!.lengthB_] = nodeTriangle[1]!!.lengthC_
+                                    nodeTriangle[1]!!.length[1]] = nodeTriangle[1]!!.length[2]
         if ( nodeTriangle[2] != null )
             nodeTriangle[2]!![ this, nodeTriangle[2]!!.parentBC_, getLengthBySide( nodeTriangle[2]!!.parentSide),
-                                    nodeTriangle[2]!!.lengthB_ ] = nodeTriangle[2]!!.lengthC_
+                                    nodeTriangle[2]!!.length[1] ] = nodeTriangle[2]!!.length[2]
 
 
         return this
@@ -332,78 +333,78 @@ class TriangleK(var lengthA_: Float = 0f,
 
         // if user rewrite A
         if (A != parent.getLengthBySide(pbc)) {
-            lengthA_ = A
+            length[0] = A
             lengthAforce_ = A
         } else {
-            lengthA_ = parent.getLengthBySide(pbc)
+            length[0] = parent.getLengthBySide(pbc)
             lengthAforce_ = parent.getLengthBySide(pbc)
         }
         setCParamFromParentBC(pbc)
-        pointCA_ = getParentPointByType(cParam_)
+        point[0] = getParentPointByType(cParam_)
         when (pbc) {
             1 -> { // B
                 parentBC_ = 1
-                angle = parent.angleMpAB
+                baseangle = parent.angleMpAB
             }
             2 -> { // C
                 parentBC_ = 2
-                angle = parent.angleMmCA
+                baseangle = parent.angleMmCA
             }
             3 -> { // B-R
                 parentBC_ = 3
-                angle = parent.angleMpAB
+                baseangle = parent.angleMpAB
             }
             4 -> { //B-L
                 parentBC_ = 4
-                angle = parent.angleMpAB
+                baseangle = parent.angleMpAB
             }
             5 -> { //C-R
                 parentBC_ = 5
-                angle = parent.angleMmCA
+                baseangle = parent.angleMmCA
             }
             6 -> { //C-L
                 parentBC_ = 6
-                angle = parent.angleMmCA
+                baseangle = parent.angleMmCA
             }
             7 -> { //B-Center
                 parentBC_ = 7
-                angle = parent.angleMpAB
+                baseangle = parent.angleMpAB
             }
             8 -> { //C-Center
                 parentBC_ = 8
-                angle = parent.angleMmCA
+                baseangle = parent.angleMmCA
             }
             9 -> { //B-Float-R
                 parentBC_ = 9
-                angle = parent.angleMpAB
+                baseangle = parent.angleMpAB
             }
             10 -> { //C-Float-R
                 parentBC_ = 10
-                angle = parent.angleMmCA
+                baseangle = parent.angleMmCA
             }
             else -> {
                 parentBC_ = 0
-                lengthA_ = 0f
+                length[0] = 0f
                 lengthAforce_ = 0f
-                pointCA_ = PointXY(0f, 0f)
-                angle = 180f
+                point[0] = PointXY(0f, 0f)
+                baseangle = 180f
             }
         }
         parentNumber_ = parent.myNumber_
-        initBasicArguments(lengthA_, B, C, pointCA_, angle)
+        initBasicArguments(length[0], B, C, point[0], baseangle)
         if (!validTriangle()) return null
-        calcPoints(pointCA_, angle)
+        calcPoints(point[0], baseangle)
         if (parentBC_ == 4) {
             val vector = PointXY(
-                    parent.pointAB_.x - pointAB_.x,
-                    parent.pointAB_.y - pointAB_.y
+                    parent.point[1].x - point[1].x,
+                    parent.point[1].y - point[1].y
             )
             move(vector)
         }
         if (parentBC_ == 6) {
             val vector = PointXY(
-                    parent.pointBC_.x - pointAB_.x,
-                    parent.pointBC_.y - pointAB_.y
+                    parent.point[2].x - point[1].x,
+                    parent.point[2].y - point[1].y
             )
             move(vector)
         }
@@ -413,7 +414,7 @@ class TriangleK(var lengthA_: Float = 0f,
     }
 
     operator fun set(myParent: TriangleK, pbc: Int) {
-        this[myParent, pbc, lengthB_] = lengthC_
+        this[myParent, pbc, length[1]] = length[2]
     }
 
     operator fun set(myParent: TriangleK, dP: Params) {
@@ -428,11 +429,11 @@ class TriangleK(var lengthA_: Float = 0f,
         parent.setNode(this, cParam.side, false)
 
         //setParent( parent, cParam.getSide() );
-        angle = nodeTriangle[0]!!.getAngleBySide(cParam.side)
+        baseangle = nodeTriangle[0]!!.getAngleBySide(cParam.side)
         setConnectionType(cParam)
-        initBasicArguments(lengthA_, B, C, pointCA_, angle)
+        initBasicArguments(length[0], B, C, point[0], baseangle)
         if (!validTriangle()) return null
-        calcPoints(pointCA_, angle)
+        calcPoints(point[0], baseangle)
         setDimAlignByChild()
 
         //nodeTriangle[0].setChild(this, cParam.getSide() );
@@ -442,7 +443,7 @@ class TriangleK(var lengthA_: Float = 0f,
 
     fun reset(prm: Params): TriangleK {
         //ConneParam thisCP = cParam_.clone();
-        lengthA_ = prm.a
+        length[0] = prm.a
         lengthAforce_ = prm.a
         setCParamFromParentBC(prm.pl)
         parentBC_ = prm.pl
@@ -475,15 +476,15 @@ class TriangleK(var lengthA_: Float = 0f,
     fun reset(newTri: TriangleK): TriangleK {
         val thisCP = cParam_.clone()
         if (nodeTriangle[0] == null || parentNumber_ < 1) resetLength(
-                newTri.lengthA_,
-                newTri.lengthB_,
-                newTri.lengthC_
+                newTri.length[0],
+                newTri.length[1],
+                newTri.length[2]
         ) else set(
                 nodeTriangle[0]!!,
                 newTri.parentBC_,
-                newTri.lengthA_,
-                newTri.lengthB_,
-                newTri.lengthC_
+                newTri.length[0],
+                newTri.length[1],
+                newTri.length[2]
         )
         cParam_ = thisCP.clone()
         myName_ = newTri.myName_
@@ -492,24 +493,24 @@ class TriangleK(var lengthA_: Float = 0f,
 
     fun reset(newTri: TriangleK, cParam: ConnParam): TriangleK {
         if (nodeTriangle[0] == null) resetLength(
-                newTri.lengthA_,
-                newTri.lengthB_,
-                newTri.lengthC_
-        ) else set(nodeTriangle[0]!!, cParam, newTri.lengthB_, newTri.lengthC_)
+                newTri.length[0],
+                newTri.length[1],
+                newTri.length[2]
+        ) else set(nodeTriangle[0]!!, cParam, newTri.length[1], newTri.length[2])
         myName_ = newTri.myName_
         return clone()
     }
 
     fun resetLength(A: Float, B: Float, C: Float): TriangleK {
         //lengthA = A; lengthB = B; lengthC = C;
-        initBasicArguments(A, B, C, pointCA_, angle)
-        calcPoints(pointCA_, angle)
+        initBasicArguments(A, B, C, point[0], baseangle)
+        calcPoints(point[0], baseangle)
         return clone()
     }
 
     fun resetByParent(prnt: TriangleK, cParam: ConnParam): Boolean {
-        if (!isValidLengthes(prnt.getLengthBySide(parentSide), lengthB_, lengthC_)) return false
-        val triIsValid = set(prnt, cParam, lengthB_, lengthC_)
+        if (!isValidLengthes(prnt.getLengthBySide(parentSide), length[1], length[2])) return false
+        val triIsValid = set(prnt, cParam, length[1], length[2])
         return triIsValid != null
     }
 
@@ -517,16 +518,16 @@ class TriangleK(var lengthA_: Float = 0f,
         val cbc = myChild.cParam_.side
         childSide_ = myChild.parentBC_
         if (nodeTriangle[0] == null) {
-            if (cbc == 1) resetLength(lengthA_, myChild.lengthA_, lengthC_)
-            if (cbc == 2) resetLength(lengthA_, lengthB_, myChild.lengthA_)
+            if (cbc == 1) resetLength(length[0], myChild.length[0], length[2])
+            if (cbc == 2) resetLength(length[0], length[1], myChild.length[0])
             return
         }
         if (cbc == 1) {
-            set(nodeTriangle[0]!!, cParam, myChild.lengthA_, lengthC_)
+            set(nodeTriangle[0]!!, cParam, myChild.length[0], length[2])
             nodeTriangle[1] = myChild.clone()
         }
         if (cbc == 2) {
-            set(nodeTriangle[0]!!, cParam, lengthB_, myChild.lengthA_)
+            set(nodeTriangle[0]!!, cParam, length[1], myChild.length[0])
             nodeTriangle[2] = myChild.clone()
         }
         setDimAlignByChild()
@@ -537,14 +538,14 @@ class TriangleK(var lengthA_: Float = 0f,
         var triIsValid: TriangleK? = null
         val parentLength = prnt.getLengthBySide(pbc)
 
-        //if(pbc == 1 ) triIsValid = set(prnt, pbc, lengthA_, parentLength, );
+        //if(pbc == 1 ) triIsValid = set(prnt, pbc, length[0], parentLength, );
         if (pbc <= 2) {
-            if (!isValidLengthes(parentLength, lengthB_, lengthC_)) {
-                triIsValid = set(prnt, pbc, lengthA_, lengthB_, lengthC_)
+            if (!isValidLengthes(parentLength, length[1], length[2])) {
+                triIsValid = set(prnt, pbc, length[0], length[1], length[2])
                 return false
-            } else triIsValid = set(prnt, pbc, parentLength, lengthB_, lengthC_)
+            } else triIsValid = set(prnt, pbc, parentLength, length[1], length[2])
         }
-        if (pbc > 2) triIsValid = set(prnt, pbc, lengthA_, lengthB_, lengthC_)
+        if (pbc > 2) triIsValid = set(prnt, pbc, length[0], length[1], length[2])
         return triIsValid != null
     }
 
@@ -554,20 +555,20 @@ class TriangleK(var lengthA_: Float = 0f,
         setDimAlignByChild()
         if (myChild.cParam_.type != 0) return
         val cbc = myChild.parentBC_
-        if (cbc == 1 && !isValidLengthes(lengthA_, myChild.lengthA_, lengthC_)) return
-        if (cbc == 2 && !isValidLengthes(lengthA_, lengthB_, myChild.lengthA_)) return
+        if (cbc == 1 && !isValidLengthes(length[0], myChild.length[0], length[2])) return
+        if (cbc == 2 && !isValidLengthes(length[0], length[1], myChild.length[0])) return
         childSide_ = myChild.parentBC_
         if (nodeTriangle[0] == null || parentNumber_ < 1) {
-            if (cbc == 1) resetLength(lengthA_, myChild.lengthA_, lengthC_)
-            if (cbc == 2) resetLength(lengthA_, lengthB_, myChild.lengthA_)
+            if (cbc == 1) resetLength(length[0], myChild.length[0], length[2])
+            if (cbc == 2) resetLength(length[0], length[1], myChild.length[0])
             return
         }
         if (cbc == 1) {
-            set(nodeTriangle[0]!!, parentBC_, lengthA_, myChild.lengthA_, lengthC_)
+            set(nodeTriangle[0]!!, parentBC_, length[0], myChild.length[0], length[2])
             //nodeTriangle[1] = myChild;
         }
         if (cbc == 2) {
-            set(nodeTriangle[0]!!, parentBC_, lengthA_, lengthB_, myChild.lengthA_)
+            set(nodeTriangle[0]!!, parentBC_, length[0], length[1], myChild.length[0])
             //nodeTriangle[2] = myChild;
         }
     }
@@ -606,20 +607,20 @@ class TriangleK(var lengthA_: Float = 0f,
         val node = getNode(pbc)
         if (node != null) {
             var length = getLengthBySide(pbc)
-            if (node.parentBC_ < 3) length = node.lengthA_
+            if (node.parentBC_ < 3) length = node.length[0]
             when (pbc) {
                 0 -> {
                 }
-                1 -> initBasicArguments(lengthA_, length, lengthC_, node.pointBC_, -node.angle)
+                1 -> initBasicArguments( this.length[0], length, this.length[2], node.point[2], -node.baseangle)
                 2 -> initBasicArguments(
-                        lengthA_,
-                        lengthB_,
+                        this.length[0],
+                        this.length[1],
                         length,
-                        node.pointCA_,
-                        node.angle + angleBC
+                        node.point[0],
+                        node.baseangle + innerangle[2]
                 )
             }
-            calcPoints(pointCA_, angle)
+            calcPoints(point[0], baseangle)
         }
     }
 
@@ -677,22 +678,41 @@ class TriangleK(var lengthA_: Float = 0f,
 
     }
 
-    fun autoRotateNode( clockwise : Boolean = true ){
-        if( nodeTriangle[0] != null ) {
-            rotateNode( clockwise )
+    fun <T>rotateArray( array :Array<T>, clockwise : Boolean = true ){
 
-            when( clockwise ){
-                true -> {
-                    if( nodeTriangle[1] != null ) nodeTriangle[1]!!.autoRotateNode( false )
-                    if( nodeTriangle[2] != null ) nodeTriangle[2]!!.autoRotateNode( )
-                }
-                false ->{
-                    if( nodeTriangle[1] != null ) nodeTriangle[1]!!.autoRotateNode( )
-                    if( nodeTriangle[2] != null ) nodeTriangle[2]!!.autoRotateNode( false )
-                }
+        when( clockwise ){
+            true -> {
+                val node = array[2]
+                array[2] = array[1]
+                array[1] = array[0]
+                array[0] = node
             }
-
+            false -> {
+                val node = array[0]
+                array[0] = array[1]
+                array[1] = array[2]
+                array[2] = node
+            }
         }
+
+    }
+
+    fun <A>rotArray( array: Array<A>, someFunction: (A) -> Unit ) {
+            someFunction(array[0])
+    }
+
+    fun autoRotateNode( clockwise : Boolean = true ){
+        rotateArray( nodeTriangle, clockwise )
+        rotateArray( length, clockwise )
+        rotateArray( point, clockwise )
+
+        if( nodeTriangle[1] != null ) setNodeToZero( nodeTriangle[1]!! )
+        if( nodeTriangle[2] != null ) setNodeToZero( nodeTriangle[2]!! )
+    }
+
+    fun setNodeToZero( target :TriangleK, me :TriangleK = this ){
+        if( target.nodeTriangle[1] == me ) target.autoRotateNode( false )
+        if( target.nodeTriangle[2] == me ) target.autoRotateNode(  )
     }
 
     fun isConstant(): Boolean{
@@ -716,50 +736,50 @@ class TriangleK(var lengthA_: Float = 0f,
 
         when (refside) {
             -1 -> {
-                pointCA_ = pos
+                point[0] = pos
                 angle = angle_
-                plist = arrayOf(pointCA_, pointAB_, pointBC_)
-                llist = floatArrayOf(lengthA_, lengthB_, lengthC_)
+                plist = arrayOf(point[0], point[1], point[2])
+                llist = floatArrayOf(length[0], length[1], length[2])
                 powlist = doubleArrayOf(
-                        Math.pow(lengthA_.toDouble(), 2.0),
-                        Math.pow(lengthB_.toDouble(), 2.0),
-                        Math.pow(lengthC_.toDouble(), 2.0)
+                        Math.pow(length[0].toDouble(), 2.0),
+                        Math.pow(length[1].toDouble(), 2.0),
+                        Math.pow(length[2].toDouble(), 2.0)
                 )
             }
             0 -> {
                 if( ref == null ) return
                 angle = ref.getAngleBySide(this.parentSide)
-                plist = arrayOf(getParentPointByType(), pointAB_, pointBC_)
-                llist = floatArrayOf(lengthA_, lengthB_, lengthC_)
+                plist = arrayOf(getParentPointByType(), point[1], point[2])
+                llist = floatArrayOf(length[0], length[1], length[2])
                 powlist = doubleArrayOf(
-                        Math.pow(lengthA_.toDouble(), 2.0),
-                        Math.pow(lengthB_.toDouble(), 2.0),
-                        Math.pow(lengthC_.toDouble(), 2.0)
+                        Math.pow(length[0].toDouble(), 2.0),
+                        Math.pow(length[1].toDouble(), 2.0),
+                        Math.pow(length[2].toDouble(), 2.0)
                 )
             }
             1 -> {
                 if( ref == null ) return
-                angle = ref.angle + 180f //- nodeTriangle[1].angleInnerCA_;
-                plist = arrayOf(ref.getBasePoint(this, ref.pointAB_, ref.pointCA_), pointBC_, pointCA_)
-                llist = floatArrayOf(lengthB_, lengthC_, lengthA_)
+                angle = ref.baseangle + 180f //- nodeTriangle[1].angleInnerCA_;
+                plist = arrayOf(ref.getBasePoint(this, ref.point[1], ref.point[0]), point[2], point[0])
+                llist = floatArrayOf(length[1], length[2], length[0])
                 powlist = doubleArrayOf(
-                        Math.pow(lengthB_.toDouble(), 2.0),
-                        Math.pow(lengthC_.toDouble(), 2.0),
-                        Math.pow(lengthA_.toDouble(), 2.0)
+                        Math.pow(length[1].toDouble(), 2.0),
+                        Math.pow(length[2].toDouble(), 2.0),
+                        Math.pow(length[0].toDouble(), 2.0)
                 )
-                pointAB_ = plist[0]!!
+                point[1] = plist[0]!!
             }
             2 -> {
                 if( ref == null ) return
-                angle = ref.angle + 180f //- nodeTriangle[1].angleInnerCA_;
-                plist = arrayOf(ref.getBasePoint(this, ref.pointAB_, ref.pointCA_), pointCA_, pointAB_)
-                llist = floatArrayOf(lengthC_, lengthA_, lengthB_)
+                angle = ref.baseangle + 180f //- nodeTriangle[1].angleInnerCA_;
+                plist = arrayOf(ref.getBasePoint(this, ref.point[1], ref.point[0]), point[0], point[1])
+                llist = floatArrayOf(length[2], length[0], length[1])
                 powlist = doubleArrayOf(
-                        Math.pow(lengthC_.toDouble(), 2.0),
-                        Math.pow(lengthA_.toDouble(), 2.0),
-                        Math.pow(lengthB_.toDouble(), 2.0)
+                        Math.pow(length[2].toDouble(), 2.0),
+                        Math.pow(length[0].toDouble(), 2.0),
+                        Math.pow(length[1].toDouble(), 2.0)
                 )
-                pointBC_ = plist[0]!!
+                point[2] = plist[0]!!
             }
             else -> throw IllegalStateException("Unexpected value: $refside")
         }
@@ -775,25 +795,25 @@ class TriangleK(var lengthA_: Float = 0f,
         plist[2]!![(plist[1]!!.x + llist[1] * Math.cos(myTheta_ + myAlpha_)).toFloat()] =
                 (plist[1]!!.y + llist[1] * Math.sin(myTheta_ + myAlpha_)).toFloat()
         calcMyAngles()
-        if (refside == 1) this.angle = nodeTriangle[1]!!.angle - angleCA
-        if (refside == 2) this.angle = nodeTriangle[2]!!.angle + angleCA
+        if (refside == 1) this.baseangle = nodeTriangle[1]!!.baseangle - innerangle[0]
+        if (refside == 2) this.baseangle = nodeTriangle[2]!!.baseangle + innerangle[0]
 
         setCenterAndBoundsAndDimPoints()
     }
 
     private fun calcPoints(pCA: PointXY?, angle: Float) {
-        pointAB_[(pCA!!.x + lengthA_ * Math.cos(Math.toRadians(angle.toDouble()))).toFloat()] =
-                (pCA.y + lengthA_ * Math.sin(Math.toRadians(angle.toDouble()))).toFloat()
-        myTheta_ = Math.atan2((pCA.y - pointAB_.y).toDouble(), (pCA.x - pointAB_.x).toDouble())
-        myPowA_ = Math.pow(lengthA_.toDouble(), 2.0)
-        myPowB_ = Math.pow(lengthB_.toDouble(), 2.0)
-        myPowC_ = Math.pow(lengthC_.toDouble(), 2.0)
-        myAlpha_ = Math.acos((myPowA_ + myPowB_ - myPowC_) / (2 * lengthA_ * lengthB_))
-        pointBC_[(pointAB_.x + lengthB_ * Math.cos(myTheta_ + myAlpha_)).toFloat()] =
-                (pointAB_.y + lengthB_ * Math.sin(myTheta_ + myAlpha_)).toFloat()
-        angleAB = calculateInternalAngle(pointCA_, pointAB_, pointBC_).toFloat()
-        angleBC = calculateInternalAngle(pointAB_, pointBC_, pointCA_).toFloat()
-        angleCA = calculateInternalAngle(pointBC_, pointCA_, pointAB_).toFloat()
+        point[1][(pCA!!.x + length[0] * Math.cos(Math.toRadians(angle.toDouble()))).toFloat()] =
+                (pCA.y + length[0] * Math.sin(Math.toRadians(angle.toDouble()))).toFloat()
+        myTheta_ = Math.atan2((pCA.y - point[1].y).toDouble(), (pCA.x - point[1].x).toDouble())
+        myPowA_ = Math.pow(length[0].toDouble(), 2.0)
+        myPowB_ = Math.pow(length[1].toDouble(), 2.0)
+        myPowC_ = Math.pow(length[2].toDouble(), 2.0)
+        myAlpha_ = Math.acos((myPowA_ + myPowB_ - myPowC_) / (2 * length[0] * length[1]))
+        point[2][(point[1].x + length[1] * Math.cos(myTheta_ + myAlpha_)).toFloat()] =
+                (point[1].y + length[1] * Math.sin(myTheta_ + myAlpha_)).toFloat()
+        innerangle[1] = calculateInternalAngle(point[0], point[1], point[2]).toFloat()
+        innerangle[2] = calculateInternalAngle(point[1], point[2], point[0]).toFloat()
+        innerangle[0] = calculateInternalAngle(point[2], point[0], point[1]).toFloat()
 
         setCenterAndBoundsAndDimPoints()
     }
@@ -806,19 +826,19 @@ class TriangleK(var lengthA_: Float = 0f,
     }
 
     fun calcMyAngles() {
-        angleAB = calculateInternalAngle(pointCA_, pointAB_, pointBC_).toFloat()
-        angleBC = calculateInternalAngle(pointAB_, pointBC_, pointCA_).toFloat()
-        angleCA = calculateInternalAngle(pointBC_, pointCA_, pointAB_).toFloat()
+        innerangle[1] = calculateInternalAngle(point[0], point[1], point[2]).toFloat()
+        innerangle[2] = calculateInternalAngle(point[1], point[2], point[0]).toFloat()
+        innerangle[0] = calculateInternalAngle(point[2], point[0], point[1]).toFloat()
     }
 
     fun setCenterAndBoundsAndDimPoints(){
-        pointCenter_[(pointAB_.x + pointBC_.x + pointCA_.x) / 3] =
-                (pointAB_.y + pointBC_.y + pointCA_.y) / 3
+        pointCenter_[(point[1].x + point[2].x + point[0].x) / 3] =
+                (point[1].y + point[2].y + point[0].y) / 3
         setMyBound()
         if (isPointNumberMoved_ == false) autoAlignPointNumber()
-        dimPointA_ = pointCA_.calcMidPoint(pointAB_) //.crossOffset(pointBC_, 0.2f*scale_);
-        dimPointB_ = pointAB_.calcMidPoint(pointBC_)
-        dimPointC_ = pointBC_.calcMidPoint(pointCA_)
+        dimPointA_ = point[0].calcMidPoint(point[1]) //.crossOffset(point[2], 0.2f*scale_);
+        dimPointB_ = point[1].calcMidPoint(point[2])
+        dimPointC_ = point[2].calcMidPoint(point[0])
         setDimPoint()
         dimAngleB_ = angleMpAB
         dimAngleC_ = angleMmCA
@@ -833,15 +853,15 @@ class TriangleK(var lengthA_: Float = 0f,
             1 -> { //nijyuudanmen
                 when (cParam_.lcr) {
                     0 -> return point1
-                    1 -> return point1.offset(point2, (lengthA_ - length) * 0.5f)
-                    2 -> return point1.offset(point2, lengthA_ - length)
+                    1 -> return point1.offset(point2, (this.length[0] - length) * 0.5f)
+                    2 -> return point1.offset(point2, this.length[0] - length)
                 }
             }
             2 -> { // float connections
                 when (cParam_.lcr) {
                     0 -> return point1.crossOffset(point2, -1.0f)
-                    1 -> return point1.offset(point2, (lengthA_ - length) * 0.5f).crossOffset(point2, -1.0f)
-                    2 -> return point1.offset(point2, lengthA_ - length).crossOffset(point2, -1.0f)
+                    1 -> return point1.offset(point2, (this.length[0] - length) * 0.5f).crossOffset(point2, -1.0f)
+                    2 -> return point1.offset(point2, this.length[0] - length).crossOffset(point2, -1.0f)
                 }
             }
         }
@@ -853,7 +873,7 @@ class TriangleK(var lengthA_: Float = 0f,
         val cside = cparam.side
         val ctype = cparam.type
         val clcr = cparam.lcr
-        //pp.add( getPointBy( pp, lengthA_, clcr ) );
+        //pp.add( getPointBy( pp, length[0], clcr ) );
         return getPointBySide(cside)
     }
 
@@ -863,18 +883,18 @@ class TriangleK(var lengthA_: Float = 0f,
     }
 
     fun getPointByBackSide(i: Int): PointXY? {
-        if (getSideByIndex(i) === "B") return pointAB_
-        return if (getSideByIndex(i) === "C") pointBC_ else null
+        if (getSideByIndex(i) === "B") return point[1]
+        return if (getSideByIndex(i) === "C") point[2] else null
     }
 
     fun getLengthBySide(i: Int): Float {
-        if (i == 1) return lengthB_
-        return if (i == 2) lengthC_ else 0f
+        if (i == 1) return length[1]
+        return if (i == 2) length[2] else 0f
     }
 
     fun getPointBySide(i: Int): PointXY {
-        if (getSideByIndex(i) === "B") return pointBC_
-        return if (getSideByIndex(i) === "C") pointCA_ else PointXY(0f, 0f)
+        if (getSideByIndex(i) === "B") return point[2]
+        return if (getSideByIndex(i) === "C") point[0] else PointXY(0f, 0f)
     }
 
     fun getAngleBySide(i: Int): Float {
@@ -907,14 +927,14 @@ class TriangleK(var lengthA_: Float = 0f,
         if (nodeTriangle[0] == null) return PointXY(0f, 0f)
         when (pbc) {
             1 -> when (cParam_.lcr) {
-                0 -> return nodeTriangle[0]!!.pointAB_.offset(nodeTriangle[0]!!.pointBC_, lengthA_)
+                0 -> return nodeTriangle[0]!!.point[1].offset(nodeTriangle[0]!!.point[2], length[0])
                 1 -> return getParentOffsetPointBySide(pbc)
-                2 -> return nodeTriangle[0]!!.pointBC_.clone()
+                2 -> return nodeTriangle[0]!!.point[2].clone()
             }
             2 -> when (cParam_.lcr) {
-                0 -> return nodeTriangle[0]!!.pointBC_.offset(nodeTriangle[0]!!.pointCA_, lengthA_)
+                0 -> return nodeTriangle[0]!!.point[2].offset(nodeTriangle[0]!!.point[0], length[0])
                 1 -> return getParentOffsetPointBySide(pbc)
-                2 -> return nodeTriangle[0]!!.pointCA_.clone()
+                2 -> return nodeTriangle[0]!!.point[0].clone()
             }
         }
         return PointXY(0f, 0f)
@@ -923,13 +943,13 @@ class TriangleK(var lengthA_: Float = 0f,
     fun getParentOffsetPointBySide(pbc: Int): PointXY {
         if (nodeTriangle[0] == null) return PointXY(0f, 0f)
         when (pbc) {
-            1 -> return nodeTriangle[0]!!.pointAB_.offset(
-                    nodeTriangle[0]!!.pointBC_,
-                    nodeTriangle[0]!!.lengthB_ * 0.5f + lengthA_ * 0.5f
+            1 -> return nodeTriangle[0]!!.point[1].offset(
+                    nodeTriangle[0]!!.point[2],
+                    nodeTriangle[0]!!.length[1] * 0.5f + length[0] * 0.5f
             )
-            2 -> return nodeTriangle[0]!!.pointBC_.offset(
-                    nodeTriangle[0]!!.pointCA_,
-                    nodeTriangle[0]!!.lengthC_ * 0.5f + lengthA_ * 0.5f
+            2 -> return nodeTriangle[0]!!.point[2].offset(
+                    nodeTriangle[0]!!.point[0],
+                    nodeTriangle[0]!!.length[2] * 0.5f + length[0] * 0.5f
             )
         }
         return nodeTriangle[0]!!.getPointBySide(pbc)
@@ -946,9 +966,9 @@ class TriangleK(var lengthA_: Float = 0f,
 
     override fun getParams(): Params {
         return Params(
-                myName_, "", myNumber_, lengthA_, lengthB_, lengthC_,
+                myName_, "", myNumber_, length[0], length[1], length[2],
                 parentNumber_,
-                parentBC_, pointCA_, pointCenter_
+                parentBC_, point[0], pointCenter_
         )
     }
 
@@ -971,25 +991,25 @@ class TriangleK(var lengthA_: Float = 0f,
         connectionLCR_ = cParam.lcr
         cParam_ = cParam.clone()
         when (cParam.side) {
-            1 -> angle = nodeTriangle[0]!!.angleMpAB
-            2 -> angle = nodeTriangle[0]!!.angleMmCA
+            1 -> baseangle = nodeTriangle[0]!!.angleMpAB
+            2 -> baseangle = nodeTriangle[0]!!.angleMmCA
         }
         when (cParam.type) {
             0 -> if (cParam.lenA != 0.0f) {
-                lengthA_ = cParam.lenA
+                length[0] = cParam.lenA
                 lengthAforce_ = cParam.lenA
-                pointCA_ = getParentPointByType(cParam.side, cParam.type, cParam.lcr)
+                point[0] = getParentPointByType(cParam.side, cParam.type, cParam.lcr)
             } else {
-                lengthA_ = nodeTriangle[0]!!.getLengthBySide(cParam.side)
+                length[0] = nodeTriangle[0]!!.getLengthBySide(cParam.side)
                 lengthAforce_ = nodeTriangle[0]!!.getLengthBySide(cParam.side)
-                pointCA_ = nodeTriangle[0]!!.getPointByCParam(cParam, nodeTriangle[0]!!)
+                point[0] = nodeTriangle[0]!!.getPointByCParam(cParam, nodeTriangle[0]!!)
             }
             else -> {
                 if (cParam.lenA != 0.0f) {
-                    lengthA_ = cParam.lenA
+                    length[0] = cParam.lenA
                     lengthAforce_ = cParam.lenA
                 }
-                pointCA_ = getParentPointByType(cParam.side, cParam.type, cParam.lcr)
+                point[0] = getParentPointByType(cParam.side, cParam.type, cParam.lcr)
             }
         }
     }
@@ -1014,19 +1034,19 @@ class TriangleK(var lengthA_: Float = 0f,
     }
 
     fun setBasePoint(cParam: ConnParam): PointXY {
-        pointCA_ = getParentPointByType(cParam.side, cParam.type, cParam.lcr)
+        point[0] = getParentPointByType(cParam.side, cParam.type, cParam.lcr)
         connectionType_ = cParam.type
         connectionLCR_ = cParam.lcr
-        calcPoints(pointCA_, angle)
-        return pointCA_
+        calcPoints(point[0], baseangle)
+        return point[0]
     }
 
     fun setBasePoint(pbc: Int, pct: Int, lcr: Int): PointXY {
-        pointCA_ = getParentPointByType(pbc, pct, lcr)
+        point[0] = getParentPointByType(pbc, pct, lcr)
         connectionType_ = pct
         connectionLCR_ = lcr
-        calcPoints(pointCA_, angle)
-        return pointCA_
+        calcPoints(point[0], baseangle)
+        return point[0]
     }
 
     fun setParent(parent: TriangleK, pbc: Int) {
@@ -1072,21 +1092,21 @@ class TriangleK(var lengthA_: Float = 0f,
     }
 
     private fun setMyBound() {
-        var lb = pointCA_.min(pointAB_)
-        lb = pointAB_.min(pointBC_)
+        var lb = point[0].min(point[1])
+        lb = point[1].min(point[2])
         myBP_.left = lb.x
         myBP_.bottom = lb.y
-        var rt = pointCA_.max(pointAB_)
-        rt = pointAB_.max(pointBC_)
+        var rt = point[0].max(point[1])
+        rt = point[1].max(point[2])
         myBP_.right = rt.x
         myBP_.top = rt.y
     }
 
     fun setForcelengthes(){
         val scaleback = 1 / scale_
-        lengthAforce_ = lengthA_ * scaleback
-        lengthBforce_ = lengthB_ * scaleback
-        lengthCforce_ = lengthC_ * scaleback
+        lengthAforce_ = length[0] * scaleback
+        lengthBforce_ = length[1] * scaleback
+        lengthCforce_ = length[2] * scaleback
     }
 
     fun setNumber(num: Int) {
@@ -1095,10 +1115,10 @@ class TriangleK(var lengthA_: Float = 0f,
 
     fun setScale(scale: Float) {
         scale_ = scale
-        lengthA_ *= scale
-        lengthB_ *= scale
-        lengthC_ *= scale
-        calcPoints(pointCA_, angle)
+        length[0] *= scale
+        length[1] *= scale
+        length[2] *= scale
+        calcPoints(point[0], baseangle)
     }
 
     //maybe not use.
@@ -1109,11 +1129,11 @@ class TriangleK(var lengthA_: Float = 0f,
 
     fun setDimPoint() {
         dimPointA_ =
-                dimSideRotation(dimSideAlignA_, pointCA_.calcMidPoint(pointAB_), pointAB_, pointCA_)
+                dimSideRotation(dimSideAlignA_, point[0].calcMidPoint(point[1]), point[1], point[0])
         dimPointB_ =
-                dimSideRotation(dimSideAlignB_, pointAB_.calcMidPoint(pointBC_), pointBC_, pointAB_)
+                dimSideRotation(dimSideAlignB_, point[1].calcMidPoint(point[2]), point[2], point[1])
         dimPointC_ =
-                dimSideRotation(dimSideAlignC_, pointBC_.calcMidPoint(pointCA_), pointCA_, pointBC_)
+                dimSideRotation(dimSideAlignC_, point[2].calcMidPoint(point[0]), point[0], point[2])
     }
 
     fun setPointNumberMoved_(p: PointXY) {
@@ -1125,22 +1145,22 @@ class TriangleK(var lengthA_: Float = 0f,
         dimH_ = ts
         pathA_ = PathAndOffset(
                 scale_,
-                pointAB_, pointCA_,
-                pointBC_, lengthAforce_, myDimAlignA_, dimSideAlignA_, dimH_
+                point[1], point[0],
+                point[2], lengthAforce_, myDimAlignA_, dimSideAlignA_, dimH_
         )
         pathB_ = PathAndOffset(
                 scale_,
-                pointBC_, pointAB_,
-                pointCA_, lengthBforce_, myDimAlignB_, dimSideAlignB_, dimH_
+                point[2], point[1],
+                point[0], lengthBforce_, myDimAlignB_, dimSideAlignB_, dimH_
         )
         pathC_ = PathAndOffset(
                 scale_,
-                pointCA_, pointBC_,
-                pointAB_, lengthCforce_, myDimAlignC_, dimSideAlignC_, dimH_
+                point[0], point[2],
+                point[1], lengthCforce_, myDimAlignC_, dimSideAlignC_, dimH_
         )
         pathS_ = PathAndOffset(
-                scale_, pointAB_,
-                pointCA_, pointBC_, lengthAforce_, 4, 0, dimH_
+                scale_, point[1],
+                point[0], point[2], lengthAforce_, 4, 0, dimH_
         )
 
         //sla_ = formattedString( lengthAforce_, 3);
@@ -1161,17 +1181,17 @@ class TriangleK(var lengthA_: Float = 0f,
     }
 
     val angleMmCA: Float
-        get() = angle - angleCA
+        get() = baseangle - innerangle[0]
     val angleMpAB: Float
-        get() = angle + angleAB
+        get() = baseangle + innerangle[1]
     val angleMpBC: Float
-        get() = angle + angleBC
+        get() = baseangle + innerangle[2]
 
     val parent: TriangleK?
         get() = if (nodeTriangle[0] != null) nodeTriangle[0] else null
 
     val dimAlignA: Int
-        get() = calcDimAlignByInnerAngleOf(0, angle)
+        get() = calcDimAlignByInnerAngleOf(0, baseangle)
 
     val dimAlignB: Int
         get() = calcDimAlignByInnerAngleOf(1, angleMpAB)
@@ -1183,16 +1203,16 @@ class TriangleK(var lengthA_: Float = 0f,
         get() {
             if (isPointNumberMoved_ == true) return pointNumber_
             if (lengthAforce_ < 2.5f) return pointNumber_.offset(
-                    pointBC_,
-                    pointNumber_.vectorTo(pointBC_).lengthXY() * -0.3f
+                    point[2],
+                    pointNumber_.vectorTo(point[2]).lengthXY() * -0.3f
             )
             if (lengthBforce_ < 2.5f) return pointNumber_.offset(
-                    pointCA_,
-                    pointNumber_.vectorTo(pointCA_).lengthXY() * -0.3f
+                    point[0],
+                    pointNumber_.vectorTo(point[0]).lengthXY() * -0.3f
             )
             return if (lengthCforce_ < 2.5f) pointNumber_.offset(
-                    pointAB_,
-                    pointNumber_.vectorTo(pointAB_).lengthXY() * -0.3f
+                    point[1],
+                    pointNumber_.vectorTo(point[1]).lengthXY() * -0.3f
             ) else pointNumber_
         }
 
@@ -1243,8 +1263,8 @@ class TriangleK(var lengthA_: Float = 0f,
     }
 
     fun crossOffset(pbc: Int): PointXY? {
-        if (pbc == 1) return pointCA_.crossOffset(pointBC_, 1.0f)
-        return if (pbc == 2) pointBC_.crossOffset(pointAB_, 1.0f) else pointCA_
+        if (pbc == 1) return point[0].crossOffset(point[2], 1.0f)
+        return if (pbc == 2) point[2].crossOffset(point[1], 1.0f) else point[0]
     }
 
     fun rotateLCRandGet(): TriangleK {
@@ -1267,12 +1287,12 @@ class TriangleK(var lengthA_: Float = 0f,
             calcPoints(
                     nodeTriangle[0]!!.getPointBySide(parentBC_).also {
                         if (it != null) {
-                            pointCA_ = it
+                            point[0] = it
                         }
                     },
                     nodeTriangle[0]!!.getAngleBySide(
                             parentBC_
-                    ).also { angle = it })
+                    ).also { baseangle = it })
         }
     }
 
@@ -1301,14 +1321,14 @@ class TriangleK(var lengthA_: Float = 0f,
     }
 
     fun validTriangle(): Boolean {
-        return if (lengthA_ <= 0.0f || lengthB_ <= 0.0f || lengthC_ <= 0.0f) false else isValidLengthes(
-                lengthA_,
-                lengthB_,
-                lengthC_
+        return if (length[0] <= 0.0f || length[1] <= 0.0f || length[2] <= 0.0f) false else isValidLengthes(
+                length[0],
+                length[1],
+                length[2]
         )
-        //!((this.lengthA_ + this.lengthB_) <= this.lengthC_) &&
-        //      !((this.lengthB_ + this.lengthC_) <= this.lengthA_) &&
-        //    !((this.lengthC_ + this.lengthA_) <= this.lengthB_);
+        //!((this.length[0] + this.length[1]) <= this.length[2]) &&
+        //      !((this.length[1] + this.length[2]) <= this.length[0]) &&
+        //    !((this.length[2] + this.length[0]) <= this.length[1]);
     }
 
     fun isValidLengthes(A: Float, B: Float, C: Float): Boolean {
@@ -1317,9 +1337,9 @@ class TriangleK(var lengthA_: Float = 0f,
 
 
     fun move(to: PointXY) {
-        pointAB_.add(to)
-        pointBC_.add(to)
-        pointCA_.add(to)
+        point[1].add(to)
+        point[2].add(to)
+        point[0].add(to)
         pointCenter_ = pointCenter_.plus(to)
         pointNumber_ = pointNumber_.plus(to)
         dimPointA_.add(to)
@@ -1333,21 +1353,21 @@ class TriangleK(var lengthA_: Float = 0f,
 
     fun scale(basepoint: PointXY?, scale: Float) {
         scale_ *= scale
-        //pointAB_.scale(basepoint, scale);
-        //pointBC_.scale(basepoint, scale);
-        pointCA_.scale(basepoint, scale)
+        //point[1].scale(basepoint, scale);
+        //point[2].scale(basepoint, scale);
+        point[0].scale(basepoint, scale)
         pointCenter_.scale(basepoint, scale)
         pointNumber_.scale(basepoint, scale)
-        lengthA_ *= scale
-        lengthB_ *= scale
-        lengthC_ *= scale
-        calcPoints(pointCA_, angle)
+        length[0] *= scale
+        length[1] *= scale
+        length[2] *= scale
+        calcPoints(point[0], baseangle)
     }
 
     fun rotate(basepoint: PointXY?, degree: Float) {
-        pointCA_ = pointCA_.rotate(basepoint, degree)
-        angle += degree
-        calcPoints(pointCA_, angle)
+        point[0] = point[0].rotate(basepoint, degree)
+        baseangle += degree
+        calcPoints(point[0], baseangle)
         //setDimAlign();
     }
 
@@ -1356,7 +1376,7 @@ class TriangleK(var lengthA_: Float = 0f,
     }
 
     fun autoSetDimAlign(): Int { // 1:下 3:上
-        myDimAlignA_ = calcDimAlignByInnerAngleOf(0, angle)
+        myDimAlignA_ = calcDimAlignByInnerAngleOf(0, baseangle)
         myDimAlignB_ = calcDimAlignByInnerAngleOf(1, angleMpAB)
         myDimAlignC_ = calcDimAlignByInnerAngleOf(2, angleMmCA)
 
@@ -1438,25 +1458,25 @@ class TriangleK(var lengthA_: Float = 0f,
         var pi = 0
         var pp = PointXY(0f, 0f)
         if (side == 1) { // B to A
-            pf = lengthA_
-            lengthA_ = lengthB_
-            lengthB_ = lengthC_
-            lengthC_ = pf
+            pf = length[0]
+            length[0] = length[1]
+            length[1] = length[2]
+            length[2] = pf
             pf = lengthAforce_
             lengthAforce_ = lengthBforce_
             lengthBforce_ = lengthCforce_
             lengthCforce_ = pf
-            pp = pointCA_.clone()
-            pointCA_ = pointAB_
-            pointAB_ = pointBC_
-            pointBC_ = pp.clone()
-            pf = angleCA
-            angleCA = angleAB
-            angleAB = angleBC
-            angleBC = pf
-            angle = angleMmCA - angleAB
-            if (angle < 0) angle += 360f
-            if (angle > 360) angle -= 360f
+            pp = point[0].clone()
+            point[0] = point[1]
+            point[1] = point[2]
+            point[2] = pp.clone()
+            pf = innerangle[0]
+            innerangle[0] = innerangle[1]
+            innerangle[1] = innerangle[2]
+            innerangle[2] = pf
+            baseangle = angleMmCA - innerangle[1]
+            if (baseangle < 0) baseangle += 360f
+            if (baseangle > 360) baseangle -= 360f
             pp = dimPointA_.clone()
             dimPointA_ = dimPointB_
             dimPointB_ = dimPointC_
@@ -1471,26 +1491,26 @@ class TriangleK(var lengthA_: Float = 0f,
             dimSideAlignC_ = pi
         }
         if (side == 2) { // C to A
-            pf = lengthA_
-            lengthA_ = lengthC_
-            lengthC_ = lengthB_
-            lengthB_ = pf
+            pf = length[0]
+            length[0] = length[2]
+            length[2] = length[1]
+            length[1] = pf
             pf = lengthAforce_
             lengthAforce_ = lengthCforce_
             lengthCforce_ = lengthBforce_
             lengthBforce_ = pf
-            pp = pointCA_.clone()
-            pointCA_ = pointBC_
-            pointBC_ = pointAB_
-            pointAB_ = pp.clone()
-            val ga = angle
-            pf = angleCA
-            angleCA = angleBC
-            angleBC = angleAB
-            angleAB = pf
-            angle += angleCA + angleBC
-            if (angle < 0) angle += 360f
-            if (angle > 360) angle -= 360f
+            pp = point[0].clone()
+            point[0] = point[2]
+            point[2] = point[1]
+            point[1] = pp.clone()
+            val ga = baseangle
+            pf = innerangle[0]
+            innerangle[0] = innerangle[2]
+            innerangle[2] = innerangle[1]
+            innerangle[1] = pf
+            baseangle += innerangle[0] + innerangle[2]
+            if (baseangle < 0) baseangle += 360f
+            if (baseangle > 360) baseangle -= 360f
             pp = dimPointA_.clone()
             dimPointA_ = dimPointC_
             dimPointC_ = dimPointB_
@@ -1508,7 +1528,7 @@ class TriangleK(var lengthA_: Float = 0f,
     }
 
     fun isCollide(p: PointXY): Boolean {
-        return p.isCollide(pointAB_, pointBC_, pointCA_)
+        return p.isCollide(point[1], point[2], point[0])
     }
 
     fun dimSideRotation(

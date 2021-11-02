@@ -25,14 +25,12 @@ public class PointXY implements Cloneable {
     @NotNull
     @Override
     public PointXY clone() {
-        PointXY clone = new PointXY(0f,0f);//(PointXY) super.clone();
         try {
-            clone.X = X;
-            clone.Y = Y;
-        }catch (Exception e){
+            return (PointXY)super.clone();
+        } catch (CloneNotSupportedException e) {
             e.printStackTrace();
         }
-        return clone;
+        return null;
     }
 
     public PointXY flip(PointXY p2){
@@ -254,7 +252,7 @@ public class PointXY implements Cloneable {
     }
 
     public boolean isCollide(TriangleK tri){
-        return isCollide(tri.pointAB_,tri.pointBC_,tri.pointCA_); //Inside Triangle
+        return isCollide(tri.point[1],tri.point[2],tri.point[0]); //Inside Triangle
     }
 
 
