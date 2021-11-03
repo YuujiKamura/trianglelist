@@ -118,27 +118,16 @@ class TriangleK(@kotlin.jvm.JvmField
     @kotlin.jvm.JvmField
         var dimalignH = arrayOf( 0, 0, 0 )
     @kotlin.jvm.JvmField
-        var dimpath :Array<PathAndOffset?> = arrayOfNulls(3)
+        var dimpath :Array<PathAndOffset?> = arrayOfNulls(4)
     
     var valid_ = false
     var scale_ = 1f
-    var lengthAforce_ = 0f
-    var lengthBforce_ = 0f
-    var lengthCforce_ = 0f
     var sla_ = ""
     var slb_ = ""
     var slc_ = ""
-    // base point by calc
-    //@kotlin.jvm.JvmField
-    //var point[1] = PointXY(0f, 0f)
-    //@kotlin.jvm.JvmField
-    //var point[2] = PointXY(0f, 0f)
     var pointCenter_ = PointXY(0f, 0f)
     var pointNumber_ = PointXY(0f, 0f)
     var isPointNumberMoved_ = false
-    var dimPointA_ = PointXY(0f, 0f)
-    var dimPointB_ = PointXY(0f, 0f)
-    var dimPointC_ = PointXY(0f, 0f)
     var pointName_ = PointXY(0f, 0f)
     var nameAlign_ = 0
     var nameSideAlign_ = 0
@@ -148,9 +137,6 @@ class TriangleK(@kotlin.jvm.JvmField
     var myPowB_ = 0.0
     var myPowC_ = 0.0
 
-    //var innerangle[0] = 0f
-    //var innerangle[1] = 0f
-    //var innerangle[2] = 0f
     var dimAngleB_ = 0f
     var dimAngleC_ = 0f
     var parentNumber_ = -1 // 0:root
@@ -163,35 +149,18 @@ class TriangleK(@kotlin.jvm.JvmField
     var myNumber_ = 1
 
     var myDimAlign_ = 0
-    var myDimAlignA_ = 3
-    var myDimAlignB_ = 3
-    var myDimAlignC_ = 3
     var isChangeDimAlignA_ = false
     var isChangeDimAlignB_ = false
     var isChangeDimAlignC_ = false
-    var dimSideAlignA_ = 0
-    var dimSideAlignB_ = 0
-    var dimSideAlignC_ = 0
     var lastTapSide_ = -1
     var color_ = 4
     var childSide_ = 0
     var myName_ = ""
     var myBP_ = Bounds(0f, 0f, 0f, 0f)
-    var pathA_ // = PathAndOffset();
-            : PathAndOffset? = null
-    var pathB_ // = PathAndOffset();
-            : PathAndOffset? = null
-    var pathC_ // = PathAndOffset();
-            : PathAndOffset? = null
-    var pathS_ // = PathAndOffset();
-            : PathAndOffset? = null
     var dimH_ = 0f
 
-
-    
     var isChildB_ = false
     var isChildC_ = false
-
 
     public override fun clone(): TriangleK {
         val b = TriangleK()
@@ -199,22 +168,22 @@ class TriangleK(@kotlin.jvm.JvmField
             //b = super.clone()
             b.nodeTriangle = nodeTriangle.clone()
             b.length = length.clone()
-            b.lengthAforce_ = lengthAforce_
-            b.lengthBforce_ = lengthBforce_
-            b.lengthCforce_ = lengthCforce_
+            b.lengthforce[0] = lengthforce[0]
+            b.lengthforce[1] = lengthforce[1]
+            b.lengthforce[2] = lengthforce[2]
             b.point = point.clone()
             b.baseangle = baseangle
             b.myName_ = myName_
             b.myNumber_ = myNumber_
             b.parentBC_ = parentBC_
             b.parentNumber_ = parentNumber_
-            b.dimPointA_ = dimPointA_
-            b.myDimAlignA_ = myDimAlignA_
-            b.myDimAlignB_ = myDimAlignB_
-            b.myDimAlignC_ = myDimAlignC_
-            b.dimSideAlignA_ = dimSideAlignA_
-            b.dimSideAlignB_ = dimSideAlignB_
-            b.dimSideAlignC_ = dimSideAlignC_
+            b.dimpoint[0] = dimpoint[0]
+            b.dimalignV[0] = dimalignV[0]
+            b.dimalignV[1] = dimalignV[1]
+            b.dimalignV[2] = dimalignV[2]
+            b.dimalignH[0] = dimalignH[0]
+            b.dimalignH[1] = dimalignH[1]
+            b.dimalignH[2] = dimalignH[2]
             //b.point[1] = point[1].clone()
             //b.point[2] = point[2].clone()
             b.pointCenter_ = pointCenter_.clone()
@@ -240,9 +209,9 @@ class TriangleK(@kotlin.jvm.JvmField
         length[0] = A
         length[1] = B
         length[2] = C
-        lengthAforce_ = A
-        lengthBforce_ = B
-        lengthCforce_ = C
+        lengthforce[0] = A
+        lengthforce[1] = B
+        lengthforce[2] = C
         valid_ = validTriangle()
         point[0] = PointXY(pCA!!.x, pCA.y)
         point[1] = PointXY(0.0f, 0.0f)
@@ -270,21 +239,21 @@ class TriangleK(@kotlin.jvm.JvmField
             1 -> {
                 parentBC_ = 1
                 length[0] = nodeTriangle[0]!!.length[1]
-                lengthAforce_ = nodeTriangle[0]!!.lengthBforce_
+                lengthforce[0] = nodeTriangle[0]!!.lengthforce[1]
                 point[0] = nodeTriangle[0]!!.point[2]
                 baseangle = nodeTriangle[0]!!.angleMpAB
             }
             2 -> {
                 parentBC_ = 2
                 length[0] = nodeTriangle[0]!!.length[2]
-                lengthAforce_ = nodeTriangle[0]!!.lengthCforce_
+                lengthforce[0] = nodeTriangle[0]!!.lengthforce[2]
                 point[0] = nodeTriangle[0]!!.point[0]
                 baseangle = nodeTriangle[0]!!.angleMmCA
             }
             else -> {
                 parentBC_ = 0
                 length[0] = 0f
-                lengthAforce_ = 0f
+                lengthforce[0] = 0f
                 point[0] = PointXY(0f, 0f)
                 baseangle = 180f
             }
@@ -334,10 +303,10 @@ class TriangleK(@kotlin.jvm.JvmField
         // if user rewrite A
         if (A != parent.getLengthBySide(pbc)) {
             length[0] = A
-            lengthAforce_ = A
+            lengthforce[0] = A
         } else {
             length[0] = parent.getLengthBySide(pbc)
-            lengthAforce_ = parent.getLengthBySide(pbc)
+            lengthforce[0] = parent.getLengthBySide(pbc)
         }
         setCParamFromParentBC(pbc)
         point[0] = getParentPointByType(cParam_)
@@ -385,7 +354,7 @@ class TriangleK(@kotlin.jvm.JvmField
             else -> {
                 parentBC_ = 0
                 length[0] = 0f
-                lengthAforce_ = 0f
+                lengthforce[0] = 0f
                 point[0] = PointXY(0f, 0f)
                 baseangle = 180f
             }
@@ -444,7 +413,7 @@ class TriangleK(@kotlin.jvm.JvmField
     fun reset(prm: Params): TriangleK {
         //ConneParam thisCP = cParam_.clone();
         length[0] = prm.a
-        lengthAforce_ = prm.a
+        lengthforce[0] = prm.a
         setCParamFromParentBC(prm.pl)
         parentBC_ = prm.pl
         parentNumber_ = prm.pn
@@ -836,9 +805,9 @@ class TriangleK(@kotlin.jvm.JvmField
                 (point[1].y + point[2].y + point[0].y) / 3
         setMyBound()
         if (isPointNumberMoved_ == false) autoAlignPointNumber()
-        dimPointA_ = point[0].calcMidPoint(point[1]) //.crossOffset(point[2], 0.2f*scale_);
-        dimPointB_ = point[1].calcMidPoint(point[2])
-        dimPointC_ = point[2].calcMidPoint(point[0])
+        dimpoint[0] = point[0].calcMidPoint(point[1]) //.crossOffset(point[2], 0.2f*scale_);
+        dimpoint[1] = point[1].calcMidPoint(point[2])
+        dimpoint[2] = point[2].calcMidPoint(point[0])
         setDimPoint()
         dimAngleB_ = angleMpAB
         dimAngleC_ = angleMmCA
@@ -957,9 +926,9 @@ class TriangleK(@kotlin.jvm.JvmField
 
     override fun getArea(): Float {
         setForcelengthes()
-        val sumABC = lengthAforce_ + lengthBforce_ + lengthCforce_
+        val sumABC = lengthforce[0] + lengthforce[1] + lengthforce[2]
         val myArea =
-            sumABC * 0.5f * (sumABC * 0.5f - lengthAforce_) * (sumABC * 0.5f - lengthBforce_) * (sumABC * 0.5f - lengthCforce_)
+            sumABC * 0.5f * (sumABC * 0.5f - lengthforce[0]) * (sumABC * 0.5f - lengthforce[1]) * (sumABC * 0.5f - lengthforce[2])
         //myArea = roundByUnderTwo( myArea );
         return roundByUnderTwo(Math.pow(myArea.toDouble(), 0.5).toFloat())
     }
@@ -976,9 +945,9 @@ class TriangleK(@kotlin.jvm.JvmField
         setDimPoint()
         val range = 0.6f * scale_
         if (true == tapP.nearBy(pointName_, range)) return 4.also { lastTapSide_ = it }
-        if (true == tapP.nearBy(dimPointA_, range)) return 0.also { lastTapSide_ = it }
-        if (true == tapP.nearBy(dimPointB_, range)) return 1.also { lastTapSide_ = it }
-        if (true == tapP.nearBy(dimPointC_, range)) return 2.also { lastTapSide_ = it }
+        if (true == tapP.nearBy(dimpoint[0], range)) return 0.also { lastTapSide_ = it }
+        if (true == tapP.nearBy(dimpoint[1], range)) return 1.also { lastTapSide_ = it }
+        if (true == tapP.nearBy(dimpoint[2], range)) return 2.also { lastTapSide_ = it }
         return if (true == tapP.nearBy(pointNumberAutoAligned_, range)) 3.also {
             lastTapSide_ = it
         } else -1.also { lastTapSide_ = it }
@@ -997,17 +966,17 @@ class TriangleK(@kotlin.jvm.JvmField
         when (cParam.type) {
             0 -> if (cParam.lenA != 0.0f) {
                 length[0] = cParam.lenA
-                lengthAforce_ = cParam.lenA
+                lengthforce[0] = cParam.lenA
                 point[0] = getParentPointByType(cParam.side, cParam.type, cParam.lcr)
             } else {
                 length[0] = nodeTriangle[0]!!.getLengthBySide(cParam.side)
-                lengthAforce_ = nodeTriangle[0]!!.getLengthBySide(cParam.side)
+                lengthforce[0] = nodeTriangle[0]!!.getLengthBySide(cParam.side)
                 point[0] = nodeTriangle[0]!!.getPointByCParam(cParam, nodeTriangle[0]!!)
             }
             else -> {
                 if (cParam.lenA != 0.0f) {
                     length[0] = cParam.lenA
-                    lengthAforce_ = cParam.lenA
+                    lengthforce[0] = cParam.lenA
                 }
                 point[0] = getParentPointByType(cParam.side, cParam.type, cParam.lcr)
             }
@@ -1060,35 +1029,35 @@ class TriangleK(@kotlin.jvm.JvmField
         //if (cParam_.side == 0 && (pbc == 4 || pbc == 6)) curLCR = 0
         //if (cParam_.side == 0 && (pbc == 7 || pbc == 8)) curLCR = 1
         when (pbc) {
-            1 -> cParam_ = ConnParam(1, 0, 2, lengthAforce_)
-            2 -> cParam_ = ConnParam(2, 0, 2, lengthAforce_)
-            3 -> cParam_ = ConnParam(1, 1, 2, lengthAforce_)
-            4 -> cParam_ = ConnParam(1, 1, 0, lengthAforce_)
-            5 -> cParam_ = ConnParam(2, 1, 2, lengthAforce_)
-            6 -> cParam_ = ConnParam(2, 1, 0, lengthAforce_)
-            7 -> cParam_ = ConnParam(1, 1, 1, lengthAforce_)
-            8 -> cParam_ = ConnParam(2, 1, 1, lengthAforce_)
-            9 -> cParam_ = ConnParam(1, 2, curLCR, lengthAforce_)
-            10 -> cParam_ = ConnParam(2, 2, curLCR, lengthAforce_)
+            1 -> cParam_ = ConnParam(1, 0, 2, lengthforce[0])
+            2 -> cParam_ = ConnParam(2, 0, 2, lengthforce[0])
+            3 -> cParam_ = ConnParam(1, 1, 2, lengthforce[0])
+            4 -> cParam_ = ConnParam(1, 1, 0, lengthforce[0])
+            5 -> cParam_ = ConnParam(2, 1, 2, lengthforce[0])
+            6 -> cParam_ = ConnParam(2, 1, 0, lengthforce[0])
+            7 -> cParam_ = ConnParam(1, 1, 1, lengthforce[0])
+            8 -> cParam_ = ConnParam(2, 1, 1, lengthforce[0])
+            9 -> cParam_ = ConnParam(1, 2, curLCR, lengthforce[0])
+            10 -> cParam_ = ConnParam(2, 2, curLCR, lengthforce[0])
         }
     }
 
     fun setDimAlignByChild() {
         if (isChangeDimAlignB_ == false) {
-            myDimAlignB_ = if (nodeTriangle[1] == null) 1 else 3
+            dimalignV[1] = if (nodeTriangle[1] == null) 1 else 3
         }
         if (isChangeDimAlignC_ == false) {
-            myDimAlignC_ = if (nodeTriangle[2] == null) 1 else 3
+            dimalignV[2] = if (nodeTriangle[2] == null) 1 else 3
         }
     }
 
     fun setDimAligns(sa: Int, sb: Int, sc: Int, ha: Int, hb: Int, hc: Int) {
-        dimSideAlignA_ = sa
-        dimSideAlignB_ = sb
-        dimSideAlignC_ = sc
-        myDimAlignA_ = ha
-        myDimAlignB_ = hb
-        myDimAlignC_ = hc
+        dimalignH[0] = sa
+        dimalignH[1] = sb
+        dimalignH[2] = sc
+        dimalignV[0] = ha
+        dimalignV[1] = hb
+        dimalignV[2] = hc
     }
 
     private fun setMyBound() {
@@ -1104,9 +1073,9 @@ class TriangleK(@kotlin.jvm.JvmField
 
     fun setForcelengthes(){
         val scaleback = 1 / scale_
-        lengthAforce_ = length[0] * scaleback
-        lengthBforce_ = length[1] * scaleback
-        lengthCforce_ = length[2] * scaleback
+        lengthforce[0] = length[0] * scaleback
+        lengthforce[1] = length[1] * scaleback
+        lengthforce[2] = length[2] * scaleback
     }
 
     fun setNumber(num: Int) {
@@ -1128,12 +1097,12 @@ class TriangleK(@kotlin.jvm.JvmField
     }
 
     fun setDimPoint() {
-        dimPointA_ =
-                dimSideRotation(dimSideAlignA_, point[0].calcMidPoint(point[1]), point[1], point[0])
-        dimPointB_ =
-                dimSideRotation(dimSideAlignB_, point[1].calcMidPoint(point[2]), point[2], point[1])
-        dimPointC_ =
-                dimSideRotation(dimSideAlignC_, point[2].calcMidPoint(point[0]), point[0], point[2])
+        dimpoint[0] =
+                dimSideRotation(dimalignH[0], point[0].calcMidPoint(point[1]), point[1], point[0])
+        dimpoint[1] =
+                dimSideRotation(dimalignH[1], point[1].calcMidPoint(point[2]), point[2], point[1])
+        dimpoint[2] =
+                dimSideRotation(dimalignH[2], point[2].calcMidPoint(point[0]), point[0], point[2])
     }
 
     fun setPointNumberMoved_(p: PointXY) {
@@ -1143,29 +1112,29 @@ class TriangleK(@kotlin.jvm.JvmField
 
     fun setDimPath(ts: Float) {
         dimH_ = ts
-        pathA_ = PathAndOffset(
+        dimpath[0] = PathAndOffset(
                 scale_,
                 point[1], point[0],
-                point[2], lengthAforce_, myDimAlignA_, dimSideAlignA_, dimH_
+                point[2], lengthforce[0], dimalignV[0], dimalignH[0], dimH_
         )
-        pathB_ = PathAndOffset(
+        dimpath[1] = PathAndOffset(
                 scale_,
                 point[2], point[1],
-                point[0], lengthBforce_, myDimAlignB_, dimSideAlignB_, dimH_
+                point[0], lengthforce[1], dimalignV[1], dimalignH[1], dimH_
         )
-        pathC_ = PathAndOffset(
+        dimpath[2] = PathAndOffset(
                 scale_,
                 point[0], point[2],
-                point[1], lengthCforce_, myDimAlignC_, dimSideAlignC_, dimH_
+                point[1], lengthforce[2], dimalignV[2], dimalignH[2], dimH_
         )
-        pathS_ = PathAndOffset(
+        dimpath[3] = PathAndOffset(
                 scale_, point[1],
-                point[0], point[2], lengthAforce_, 4, 0, dimH_
+                point[0], point[2], lengthforce[0], 4, 0, dimH_
         )
 
-        //sla_ = formattedString( lengthAforce_, 3);
-        //slb_ = formattedString( lengthBforce_, 3);
-        //slc_ = formattedString( lengthCforce_, 3);
+        //sla_ = formattedString( lengthforce[0], 3);
+        //slb_ = formattedString( lengthforce[1], 3);
+        //slc_ = formattedString( lengthforce[2], 3);
     }
 
     val parentSide: Int
@@ -1202,15 +1171,15 @@ class TriangleK(@kotlin.jvm.JvmField
     val pointNumberAutoAligned_: PointXY
         get() {
             if (isPointNumberMoved_ == true) return pointNumber_
-            if (lengthAforce_ < 2.5f) return pointNumber_.offset(
+            if (lengthforce[0] < 2.5f) return pointNumber_.offset(
                     point[2],
                     pointNumber_.vectorTo(point[2]).lengthXY() * -0.3f
             )
-            if (lengthBforce_ < 2.5f) return pointNumber_.offset(
+            if (lengthforce[1] < 2.5f) return pointNumber_.offset(
                     point[0],
                     pointNumber_.vectorTo(point[0]).lengthXY() * -0.3f
             )
-            return if (lengthCforce_ < 2.5f) pointNumber_.offset(
+            return if (lengthforce[2] < 2.5f) pointNumber_.offset(
                     point[1],
                     pointNumber_.vectorTo(point[1]).lengthXY() * -0.3f
             ) else pointNumber_
@@ -1342,9 +1311,9 @@ class TriangleK(@kotlin.jvm.JvmField
         point[0].add(to)
         pointCenter_ = pointCenter_.plus(to)
         pointNumber_ = pointNumber_.plus(to)
-        dimPointA_.add(to)
-        dimPointB_.add(to)
-        dimPointC_.add(to)
+        dimpoint[0].add(to)
+        dimpoint[1].add(to)
+        dimpoint[2].add(to)
         myBP_.left = myBP_.left + to.x
         myBP_.right = myBP_.right + to.x
         myBP_.top = myBP_.top + to.y
@@ -1376,9 +1345,9 @@ class TriangleK(@kotlin.jvm.JvmField
     }
 
     fun autoSetDimAlign(): Int { // 1:下 3:上
-        myDimAlignA_ = calcDimAlignByInnerAngleOf(0, baseangle)
-        myDimAlignB_ = calcDimAlignByInnerAngleOf(1, angleMpAB)
-        myDimAlignC_ = calcDimAlignByInnerAngleOf(2, angleMmCA)
+        dimalignV[0] = calcDimAlignByInnerAngleOf(0, baseangle)
+        dimalignV[1] = calcDimAlignByInnerAngleOf(1, angleMpAB)
+        dimalignV[2] = calcDimAlignByInnerAngleOf(2, angleMmCA)
 
         setDimPath(dimH_)
         return myDimAlign_
@@ -1395,9 +1364,9 @@ class TriangleK(@kotlin.jvm.JvmField
     }
 
     fun rotateDimSideAlign(side: Int) {
-        if (side == 0) dimSideAlignA_ = rotateZeroToThree(dimSideAlignA_)
-        if (side == 1) dimSideAlignB_ = rotateZeroToThree(dimSideAlignB_)
-        if (side == 2) dimSideAlignC_ = rotateZeroToThree(dimSideAlignC_)
+        if (side == 0) dimalignH[0] = rotateZeroToThree(dimalignH[0])
+        if (side == 1) dimalignH[1] = rotateZeroToThree(dimalignH[1])
+        if (side == 2) dimalignH[2] = rotateZeroToThree(dimalignH[2])
         if (side == 4) nameSideAlign_ = rotateZeroToThree(nameSideAlign_)
         setDimPath(dimH_)
     }
@@ -1418,22 +1387,22 @@ class TriangleK(@kotlin.jvm.JvmField
 
     // 呼び出す場所によって、強制になってしまう。
     fun autoSetDimSideAlign() {
-        if (lengthCforce_ < 1.5f || lengthBforce_ < 1.5f) {
-            myDimAlignB_ = 1
-            myDimAlignC_ = 1
+        if (lengthforce[2] < 1.5f || lengthforce[1] < 1.5f) {
+            dimalignV[1] = 1
+            dimalignV[2] = 1
         }
-        if (lengthCforce_ < 1.5f) dimSideAlignB_ = 1
-        if (lengthBforce_ < 1.5f) dimSideAlignC_ = 2
+        if (lengthforce[2] < 1.5f) dimalignH[1] = 1
+        if (lengthforce[1] < 1.5f) dimalignH[2] = 2
     }
 
     fun flipDimAlignH(side: Int) {
-        if (side == 0) myDimAlignA_ = flipOneToThree(myDimAlignA_)
+        if (side == 0) dimalignV[0] = flipOneToThree(dimalignV[0])
         if (side == 1) {
-            myDimAlignB_ = flipOneToThree(myDimAlignB_)
+            dimalignV[1] = flipOneToThree(dimalignV[1])
             isChangeDimAlignB_ = true
         }
         if (side == 2) {
-            myDimAlignC_ = flipOneToThree(myDimAlignC_)
+            dimalignV[2] = flipOneToThree(dimalignV[2])
             isChangeDimAlignC_ = true
         }
         if (side == 4) nameAlign_ = flipOneToThree(nameAlign_)
@@ -1462,10 +1431,10 @@ class TriangleK(@kotlin.jvm.JvmField
             length[0] = length[1]
             length[1] = length[2]
             length[2] = pf
-            pf = lengthAforce_
-            lengthAforce_ = lengthBforce_
-            lengthBforce_ = lengthCforce_
-            lengthCforce_ = pf
+            pf = lengthforce[0]
+            lengthforce[0] = lengthforce[1]
+            lengthforce[1] = lengthforce[2]
+            lengthforce[2] = pf
             pp = point[0].clone()
             point[0] = point[1]
             point[1] = point[2]
@@ -1477,28 +1446,28 @@ class TriangleK(@kotlin.jvm.JvmField
             baseangle = angleMmCA - innerangle[1]
             if (baseangle < 0) baseangle += 360f
             if (baseangle > 360) baseangle -= 360f
-            pp = dimPointA_.clone()
-            dimPointA_ = dimPointB_
-            dimPointB_ = dimPointC_
-            dimPointC_ = pp.clone()
-            pi = myDimAlignA_
-            myDimAlignA_ = myDimAlignB_
-            myDimAlignB_ = myDimAlignC_
-            myDimAlignC_ = pi
-            pi = dimSideAlignA_
-            dimSideAlignA_ = dimSideAlignB_
-            dimSideAlignB_ = dimSideAlignC_
-            dimSideAlignC_ = pi
+            pp = dimpoint[0].clone()
+            dimpoint[0] = dimpoint[1]
+            dimpoint[1] = dimpoint[2]
+            dimpoint[2] = pp.clone()
+            pi = dimalignV[0]
+            dimalignV[0] = dimalignV[1]
+            dimalignV[1] = dimalignV[2]
+            dimalignV[2] = pi
+            pi = dimalignH[0]
+            dimalignH[0] = dimalignH[1]
+            dimalignH[1] = dimalignH[2]
+            dimalignH[2] = pi
         }
         if (side == 2) { // C to A
             pf = length[0]
             length[0] = length[2]
             length[2] = length[1]
             length[1] = pf
-            pf = lengthAforce_
-            lengthAforce_ = lengthCforce_
-            lengthCforce_ = lengthBforce_
-            lengthBforce_ = pf
+            pf = lengthforce[0]
+            lengthforce[0] = lengthforce[2]
+            lengthforce[2] = lengthforce[1]
+            lengthforce[1] = pf
             pp = point[0].clone()
             point[0] = point[2]
             point[2] = point[1]
@@ -1511,18 +1480,18 @@ class TriangleK(@kotlin.jvm.JvmField
             baseangle += innerangle[0] + innerangle[2]
             if (baseangle < 0) baseangle += 360f
             if (baseangle > 360) baseangle -= 360f
-            pp = dimPointA_.clone()
-            dimPointA_ = dimPointC_
-            dimPointC_ = dimPointB_
-            dimPointB_ = pp.clone()
-            pi = myDimAlignA_
-            myDimAlignA_ = myDimAlignC_
-            myDimAlignC_ = myDimAlignB_
-            myDimAlignB_ = pi
-            pi = dimSideAlignA_
-            dimSideAlignA_ = dimSideAlignC_
-            dimSideAlignC_ = dimSideAlignB_
-            dimSideAlignB_ = pi
+            pp = dimpoint[0].clone()
+            dimpoint[0] = dimpoint[2]
+            dimpoint[2] = dimpoint[1]
+            dimpoint[1] = pp.clone()
+            pi = dimalignV[0]
+            dimalignV[0] = dimalignV[2]
+            dimalignV[2] = dimalignV[1]
+            dimalignV[1] = pi
+            pi = dimalignH[0]
+            dimalignH[0] = dimalignH[2]
+            dimalignH[2] = dimalignH[1]
+            dimalignH[1] = pi
         }
         return this
     }

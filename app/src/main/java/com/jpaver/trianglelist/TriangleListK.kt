@@ -366,7 +366,7 @@ class TriangleListK() :Cloneable {
             val pastx = pasttri.point[0].x
             sokTriList.add(TriangleK(5f, 5f, 5f))
             sokTriList[sokTriList.size - 1].point[0].x = lastx + (lastx - pastx)
-            sokTriList[sokTriList.size - 1].lengthAforce_ = lasttri.lengthAforce_
+            sokTriList[sokTriList.size - 1].lengthforce[0] = lasttri.lengthforce[0]
             sokTriList[sokTriList.size - 1].length[0] = lasttri.length[0]
         }
 
@@ -378,7 +378,7 @@ class TriangleListK() :Cloneable {
             val second = secondtri.point[0]
             sokTriList.add(0, TriangleK(5f, 5f, 5f))
             sokTriList[0].point[0] = first.minus(second).plus(first)
-            sokTriList[0].lengthAforce_ = firsttri.lengthAforce_
+            sokTriList[0].lengthforce[0] = firsttri.lengthforce[0]
             sokTriList[0].length[0] = firsttri.length[0]
         }
         return sokTriList
@@ -1005,11 +1005,11 @@ class TriangleListK() :Cloneable {
             // 自身の番号よりも親番号が大きい場合を許容する
             if (it.parentNumber_ > it.myNumber_) {
                     // 子の三角形を指定して生成する。
-                    //rev.add( new TriangleK( trilist_.get( it.parentNumber_), it.parentBC_, it.lengthAforce_, it.lengthBforce_, it.lengthCforce_ ) );
+                    //rev.add( new TriangleK( trilist_.get( it.parentNumber_), it.parentBC_, it.lengthforce[0], it.lengthforce[1], it.lengthforce[2] ) );
                 }
-            if (it.parentNumber_ < 1) rev.add(it.clone()) //new TriangleK( it.lengthAforce_, it.lengthBforce_, it.lengthCforce_, it.point[0], it.angleInGlobal_)
+            if (it.parentNumber_ < 1) rev.add(it.clone()) //new TriangleK( it.lengthforce[0], it.lengthforce[1], it.lengthforce[2], it.point[0], it.angleInGlobal_)
             else {
-                rev.add(TriangleK(rev[it.parentNumber_], it.parentBC_, it.lengthAforce_, it.lengthBforce_, it.lengthCforce_))
+                rev.add(TriangleK(rev[it.parentNumber_], it.parentBC_, it.lengthforce[0], it.lengthforce[1], it.lengthforce[2]))
             }
         }
 

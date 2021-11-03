@@ -651,11 +651,11 @@ class TriListKTest {
         Assert.assertEquals(0, trilist[1].getTapLength(PointXY(2.5f, 0f)).toLong())
         Assert.assertEquals(1, trilist[1].getTapLength(PointXY(3.75f, -2.5f)).toLong())
         Assert.assertEquals(2, trilist[1].getTapLength(PointXY(1.25f, -2.5f)).toLong())
-        Assert.assertEquals(2.5f, trilist[1].dimPointA_.x, 0.001f)
+        Assert.assertEquals(2.5f, trilist[1].dimpoint[0].x, 0.001f)
         trilist.add(TriangleK(trilist[1], 2, 5f, 5f))
         trilist.add(TriangleK(trilist[2], 1, 5f, 5f))
-        Assert.assertEquals(-6.495f, trilist[3].dimPointB_.y, 0.001f)
-        Assert.assertEquals(1.25f, trilist[3].dimPointB_.x, 0.001f)
+        Assert.assertEquals(-6.495f, trilist[3].dimpoint[1].y, 0.001f)
+        Assert.assertEquals(1.25f, trilist[3].dimpoint[1].x, 0.001f)
     }
 
     @Test

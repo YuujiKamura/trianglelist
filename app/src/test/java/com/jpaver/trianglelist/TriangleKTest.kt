@@ -160,9 +160,9 @@ class TriangleKTest {
     fun testDimSideAlign() {
         val tri1 = TriangleK(3f, 4f, 5f, PointXY( 0f, 0f), 180f )
         tri1.rotateDimSideAlign(0)
-        Assert.assertEquals(1, tri1.dimSideAlignA_.toLong())
+        Assert.assertEquals(1, tri1.dimalignH[0].toLong())
         tri1.setDimPoint()
-        Assert.assertEquals(-2.25f, tri1.dimPointA_.x, 0.001f)
+        Assert.assertEquals(-2.25f, tri1.dimpoint[0].x, 0.001f)
         var dim = PointXY(-1.5f, 0f)
         val offsetLeft = PointXY(-3f, 0f)
         val offsetRight = PointXY(0f, 0f)
@@ -174,11 +174,11 @@ class TriangleKTest {
         Assert.assertEquals(-2.25f, dim.x, 0.001f)
         tri1.rotateDimSideAlign(0)
         tri1.setDimPoint()
-        Assert.assertEquals(-0.75f, tri1.dimPointA_.x, 0.001f)
+        Assert.assertEquals(-0.75f, tri1.dimpoint[0].x, 0.001f)
         tri1.flipDimAlignH(0)
-        Assert.assertEquals(1, tri1.myDimAlignA_.toLong())
+        Assert.assertEquals(1, tri1.dimalignV[0].toLong())
         tri1.flipDimAlignH(0)
-        Assert.assertEquals(3, tri1.myDimAlignA_.toLong())
+        Assert.assertEquals(3, tri1.dimalignV[0].toLong())
     }
 
     @Test
@@ -227,12 +227,12 @@ class TriangleKTest {
         //val t2 = TriangleK( t1, 8, 4f, 4f, 4f ) //8:CC
 
         // 1下 3上 -> // 夾角の、1:外 　3:内
-        Assert.assertEquals(3, t1.myDimAlignA_.toLong()) //getPath(0).getAlign_());
-        Assert.assertEquals(3, t1.myDimAlignB_.toLong()) // t1.getPath(1).getAlign_());
-        Assert.assertEquals(3, t1.myDimAlignC_.toLong()) // t1.getPath(2).getAlign_());
-        Assert.assertEquals(3, t1.myDimAlignA_.toLong()) //getPath(0).getAlign_());
-        Assert.assertEquals(3, t1.myDimAlignB_.toLong()) // t1.getPath(1).getAlign_());
-        Assert.assertEquals(3, t1.myDimAlignC_.toLong()) // t1.getPath(2).getAlign_());
+        Assert.assertEquals(3, t1.dimalignV[0]) //getPath(0).getAlign_());
+        Assert.assertEquals(3, t1.dimalignV[1]) // t1.getPath(1).getAlign_());
+        Assert.assertEquals(3, t1.dimalignV[2]) // t1.getPath(2).getAlign_());
+        Assert.assertEquals(3, t1.dimalignV[0]) //getPath(0).getAlign_());
+        Assert.assertEquals(3, t1.dimalignV[1]) // t1.getPath(1).getAlign_());
+        Assert.assertEquals(3, t1.dimalignV[2]) // t1.getPath(2).getAlign_());
     }
 
     @Test
