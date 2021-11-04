@@ -25,12 +25,12 @@ class TriangleKTest {
         val t2c = t2.clone()
 
         Assert.assertEquals( t2.nodeTriangle[0], t2c.nodeTriangle[0] )
-        Assert.assertEquals( t1, t2c.nodeTriangle[0] ) //参照先は同一
+        Assert.assertEquals( t1, t2c.nodeTriangle[0] ) //クローンポインタからでも参照先は同一
 
         t2c.nodeTriangle[0] = null
 
         Assert.assertEquals( null, t2c.nodeTriangle[0] )
-        Assert.assertEquals( t1, t2.nodeTriangle[0] ) //ポインタ自体は別
+        Assert.assertEquals( t1, t2.nodeTriangle[0] ) //ポインタは別
 
         t2.nodeTriangle[0] = null //実はポインタなので
 

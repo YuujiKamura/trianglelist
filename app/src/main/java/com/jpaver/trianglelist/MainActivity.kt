@@ -315,6 +315,9 @@ class MainActivity : AppCompatActivity(),
     }
 
     fun EditorClear(elist: EditList, currentNum: Int){
+        val eo = elist.get(currentNum)
+        val eob = elist.get(currentNum-1)
+
         loadEditTable()
         my_view.setParentSide(elist.size(), 0)
         myEditor.LineRewrite(
@@ -330,8 +333,8 @@ class MainActivity : AppCompatActivity(),
                 PointXY(0f, 0f)
             ), myELFirst
         )
-        myEditor.LineRewrite(elist.get(currentNum).getParams(), myELSecond)
-        if(currentNum > 1) myEditor.LineRewrite(elist.get(currentNum - 1).getParams(), myELThird)
+        myEditor.LineRewrite(eo.getParams(), myELSecond)
+        if(currentNum > 1) myEditor.LineRewrite(eob.getParams(), myELThird)
         if(currentNum == 1) myEditor.LineRewrite(
             Params(
                 "",
@@ -426,9 +429,9 @@ class MainActivity : AppCompatActivity(),
 
     lateinit var mAdView : AdView
     lateinit var mInterstitialAd : InterstitialAd
-    private val isAdTEST_ = true
-    private val TestAdID_ = "ca-app-pub-3940256099942544/6300978111"
-    private val UnitAdID_ = "ca-app-pub-6982449551349060/2369695624"
+    //private val isAdTEST_ = true
+    //private val TestAdID_ = "ca-app-pub-3940256099942544/6300978111"
+    //private val UnitAdID_ = "ca-app-pub-6982449551349060/2369695624"
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
@@ -466,8 +469,9 @@ class MainActivity : AppCompatActivity(),
             lateinit var resetPoint :PointXY //= PointXY(0f, 0f)
 
             if(deductionMode_ == true){
+                val d = myDeductionList.get(dParams_.n)
                 dParams_.pts = my_view.getTapPoint()
-                dParams_.pt = myDeductionList.get(dParams_.n).point
+                dParams_.pt = d.point
                 //var ded = myDeductionList.get(dParams_.n)
                 val tp = my_view.getTapPoint().scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
                 resetPoint = tp
@@ -479,11 +483,13 @@ class MainActivity : AppCompatActivity(),
             }
             else{
                 val tri = myTriangleList.get(dParams_.n)
+                if( tri != null ){
                 val tp = my_view.getTapPoint().scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
                 if( tp.lengthTo(tri.pointCenter_) < 10f ){ // あまり遠い時はスルー
                     tri.pointNumber_ = tp
                     tri.isPointNumberMoved_ = true
                     my_view.setTriangleList(myTriangleList, mScale)
+                }
                 }
             }
             resetPoint = my_view.getTapPoint().scale(PointXY(0f, 0f), 1f, -1f)
@@ -505,17 +511,18 @@ class MainActivity : AppCompatActivity(),
                 var dimside = my_view.myTriangleList.lastTapSide_
                 var trinum  = my_view.myTriangleList.lastTapNum_
                 val tri = myTriangleList.get(trinum)
+                val triv = my_view.myTriangleList.get(trinum)
+                if( tri != null && triv != null ) {
+                    if( dimside == 0 && ( tri.parentBC_ == 1 ||  tri.parentBC_ == 2 ) ) {
+                        trinum = tri.parentNumber_
+                        dimside = tri.parentBC_
+                    }
 
-                if( dimside == 0 && ( tri.parentBC_ == 1 ||  tri.parentBC_ == 2 ) ) {
-                    trinum = tri.parentNumber_
-                    dimside = tri.parentBC_
+                    tri.rotateDimSideAlign(dimside)
+                    triv.rotateDimSideAlign(dimside)//setTriangleList(myTriangleList, mScale)
+                    my_view.invalidate()
+                    AutoSaveCSV()
                 }
-
-                myTriangleList.get(trinum).rotateDimSideAlign(dimside)
-                my_view.myTriangleList.get(trinum).rotateDimSideAlign(dimside)//setTriangleList(myTriangleList, mScale)
-                my_view.invalidate()
-                AutoSaveCSV()
-
             }
         }
 
@@ -524,17 +531,18 @@ class MainActivity : AppCompatActivity(),
                 var dimside = my_view.myTriangleList.lastTapSide_
                 var trinum  = my_view.myTriangleList.lastTapNum_
                 val tri = myTriangleList.get(trinum)
+                val triv = my_view.myTriangleList.get(trinum)
+                if( tri != null && triv != null ) {
+                    if( dimside == 0 && ( tri.parentBC_ == 1 ||  tri.parentBC_ == 2 ) ) {
+                        trinum = tri.parentNumber_
+                        dimside = tri.parentBC_
+                    }
 
-                if( dimside == 0 && ( tri.parentBC_ == 1 ||  tri.parentBC_ == 2 ) ) {
-                    trinum = tri.parentNumber_
-                    dimside = tri.parentBC_
+                    tri.flipDimAlignH(dimside)
+                    triv.flipDimAlignH(dimside)//setTriangleList(myTriangleList, mScale)
+                    my_view.invalidate()
+                    AutoSaveCSV()
                 }
-
-                myTriangleList.get(trinum).flipDimAlignH(dimside)
-                my_view.myTriangleList.get(trinum).flipDimAlignH(dimside)//setTriangleList(myTriangleList, mScale)
-                my_view.invalidate()
-                AutoSaveCSV()
-
             }
         }
 
@@ -601,6 +609,10 @@ class MainActivity : AppCompatActivity(),
 
         fab_fillcolor.setOnClickListener { view ->
             if(!deductionMode_){
+                val tri = myTriangleList.get(my_view.myTriangleList.current)
+                if( tri != null ){
+
+                }
                 colorindex_ ++
                 if(colorindex_ == RColors.size) colorindex_ = 0
                 fab_fillcolor.backgroundTintList = getColorStateList(RColors.get(colorindex_))
