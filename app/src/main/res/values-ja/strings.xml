@@ -2,11 +2,11 @@
     <string name="app_name">Triangle List</string>
     <string name="action_settings">設定</string>
     <string name="action_new">新規作成</string>
-    <string name="action_save_csv">CSV保存 (広告有)</string>
+    <string name="action_save_csv">CSV保存</string>
     <string name="action_load_csv">CSV読込</string>
-    <string name="action_save_dxf">DXF出力 (広告有)</string>
-    <string name="action_save_sfc">SFC出力 (広告有)</string>
-    <string name="action_save_pdf">PDF出力 (広告有)</string>
+    <string name="action_save_dxf">DXF出力</string>
+    <string name="action_save_sfc">SFC出力</string>
+    <string name="action_save_pdf">PDF出力</string>
     <string name="action_send_mail">メールを送信</string>
 
     <string name="tenkai_title">面 積 展 開 図</string>

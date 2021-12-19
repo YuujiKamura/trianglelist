@@ -1804,6 +1804,8 @@ class MainActivity : AppCompatActivity(),
     }
 
     fun showInterStAd(){
+        return
+
         if ( mInterstitialAd.isLoaded && BuildConfig.FLAVOR == "free" ) {
             // 広告の再表示
             //mInterstitialAd.loadAd(AdRequest.Builder().build())

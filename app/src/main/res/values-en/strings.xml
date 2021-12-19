@@ -4,8 +4,8 @@
     <string name="action_new">Create New</string>
     <string name="action_save_csv">Save CSV</string>
     <string name="action_load_csv">Load CSV</string>
-    <string name="action_save_dxf">Export DXF (popAD)</string>
-    <string name="action_save_pdf">Export PDF (popAD)</string>
+    <string name="action_save_dxf">Export DXF</string>
+    <string name="action_save_pdf">Export PDF</string>
     <string name="action_send_mail">Send Mail</string>
 
     <string name="tenkai_title">Area Triangles</string>
