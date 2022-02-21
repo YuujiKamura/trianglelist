@@ -16,6 +16,8 @@
             android:configChanges="orientation|screenSize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.EDIT" />
                 <category android:name="android.intent.category.OPENABLE" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
@@ -39,6 +41,21 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/path"/>
         </provider>
+
+        <provider
+            android:name="com.jpaver.trianglelist.util.AssetsFileProvider"
+            android:authorities="${applicationId}.assets"
+            android:exported="true"
+            android:readPermission = "true"
+            android:grantUriPermissions="true">
+            <intent-filter>
+                <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
+            </intent-filter>
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/path"/>
+        </provider>
+
     </application>
 
 </manifest>

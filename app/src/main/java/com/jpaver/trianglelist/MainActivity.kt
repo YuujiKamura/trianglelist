@@ -10,7 +10,7 @@ import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.preference.*//PreferenceManager
+import android.preference.*
 import android.text.Editable
 import android.text.InputFilter
 import android.text.TextWatcher
@@ -294,7 +294,7 @@ class MainActivity : AppCompatActivity(),
 
     fun EditorClear(elist: EditList, currentNum: Int){
         val eo = elist.get(currentNum)
-        val eob = elist.get(currentNum-1)
+        val eob = elist.get(currentNum - 1)
 
         loadEditTable()
         my_view.setParentSide(elist.size(), 0)
@@ -543,7 +543,7 @@ class MainActivity : AppCompatActivity(),
                     var eraseNum = listLength
                     if( deductionMode_ == false ) eraseNum = myTriangleList.lastTapNumber_
 
-                    getList(deductionMode_).remove( eraseNum )
+                    getList(deductionMode_).remove(eraseNum)
 
                     //my_view.removeTriangle()
                     my_view.setDeductionList(myDeductionList, mScale)
@@ -772,7 +772,7 @@ class MainActivity : AppCompatActivity(),
         }
 
         fab_pdf.setOnClickListener { view ->
-            ViewPdf( getAppLocalFile( this, "myLastTriList.pdf" ) )
+            ViewPdf(getAppLocalFile(this, "myLastTriList.pdf"))
         }
 
         fab_share.setOnClickListener { view ->
@@ -1064,7 +1064,8 @@ class MainActivity : AppCompatActivity(),
             if ( my_view.myTriangleList.lastTapNumber_ != 0 ) {
                 //Toast.makeText(this, "Triangle tap", Toast.LENGTH_SHORT).show()
                 myEditor.scroll(
-                    my_view.getTriangleList().lastTapNumber_ - my_view.getTriangleList().getCurrent(),
+                    my_view.getTriangleList().lastTapNumber_ - my_view.getTriangleList()
+                        .getCurrent(),
                     getList(deductionMode_), myELSecond, myELThird
                 )
 
@@ -1182,8 +1183,8 @@ class MainActivity : AppCompatActivity(),
     }
 
     private class MyTextWatcher(
-            val mELine: EditTextViewLine,
-            var lastParams: Params
+        val mELine: EditTextViewLine,
+        var lastParams: Params
     ) : TextWatcher {
         //private val afterTextChanged_: TextView = findViewById<TextView>(R.id.afterTextChanged)
         //private val beforeTextChanged_: TextView = findViewById<TextView>(R.id.beforeTextChanged)
@@ -1444,11 +1445,24 @@ class MainActivity : AppCompatActivity(),
         // as you specify a parent activity in AndroidManifest.xml.
         return when (item.itemId) {
             R.id.action_usage -> {
-                ViewPdf(
-                    AssetsFileProvider.CONTENT_URI.buildUpon()
-                    .appendPath("pdf")
-                    .appendPath("trilistusage.pdf")
-                    .build()   )
+
+                if (BuildConfig.FLAVOR == "free") {
+                    ViewPdf(
+                        AssetsFileProvider.CONTENT_URI_FREE.buildUpon()
+                            .appendPath("pdf")
+                            .appendPath("trilistusage.pdf")
+                            .build()
+                    )
+                }
+                if (BuildConfig.FLAVOR == "full") {
+                    ViewPdf(
+                        AssetsFileProvider.CONTENT_URI_FULL.buildUpon()
+                            .appendPath("pdf")
+                            .appendPath("trilistusage.pdf")
+                            .build()
+                    )
+                }
+
                 return true
             }
             R.id.action_new -> {
@@ -1519,67 +1533,67 @@ class MainActivity : AppCompatActivity(),
                     .setMessage(R.string.inputcname)
                     .setView(editText)
                     .setPositiveButton("OK",
-                            { dialog, which ->
-                                koujiname_ = editText.text.toString()
+                        { dialog, which ->
+                            koujiname_ = editText.text.toString()
 
-                                AlertDialog.Builder(this)
-                                    .setTitle("Save PDF")
-                                    .setMessage(R.string.inputdname)
-                                    .setView(editText2)
-                                    .setPositiveButton("OK",
-                                        DialogInterface.OnClickListener { dialog, which ->
-                                            rosenname_ = editText2.text.toString()
+                            AlertDialog.Builder(this)
+                                .setTitle("Save PDF")
+                                .setMessage(R.string.inputdname)
+                                .setView(editText2)
+                                .setPositiveButton("OK",
+                                    DialogInterface.OnClickListener { dialog, which ->
+                                        rosenname_ = editText2.text.toString()
 
-                                            AlertDialog.Builder(this)
-                                                .setTitle("Save PDF")
-                                                .setMessage(R.string.inputaname)
-                                                .setView(editText3)
-                                                .setPositiveButton("OK",
-                                                    DialogInterface.OnClickListener { dialog, which ->
-                                                        gyousyaname_ =
-                                                            editText3.text.toString()
+                                        AlertDialog.Builder(this)
+                                            .setTitle("Save PDF")
+                                            .setMessage(R.string.inputaname)
+                                            .setView(editText3)
+                                            .setPositiveButton("OK",
+                                                DialogInterface.OnClickListener { dialog, which ->
+                                                    gyousyaname_ =
+                                                        editText3.text.toString()
 
-                                                        AlertDialog.Builder(this)
-                                                            .setTitle("Save PDF")
-                                                            .setMessage(R.string.inputdnum)
-                                                            .setView(
-                                                                editText4
-                                                            )
-                                                            .setPositiveButton(
-                                                                "OK",
-                                                                DialogInterface.OnClickListener { dialog, which ->
-                                                                    zumennum_ =
-                                                                        editText4.text.toString()
+                                                    AlertDialog.Builder(this)
+                                                        .setTitle("Save PDF")
+                                                        .setMessage(R.string.inputdnum)
+                                                        .setView(
+                                                            editText4
+                                                        )
+                                                        .setPositiveButton(
+                                                            "OK",
+                                                            DialogInterface.OnClickListener { dialog, which ->
+                                                                zumennum_ =
+                                                                    editText4.text.toString()
 
-                                                                    fileType =
-                                                                        "PDF"
-                                                                    val i: Intent =
-                                                                        Intent(
-                                                                            Intent.ACTION_CREATE_DOCUMENT
-                                                                        ).apply {
-                                                                            addCategory(
-                                                                                Intent.CATEGORY_OPENABLE
-                                                                            )
-                                                                            type =
-                                                                                "application/pdf"
-                                                                            putExtra(
-                                                                                Intent.EXTRA_TITLE,
-                                                                                rosenname_ + "_" + LocalDate.now() + ".pdf"
-                                                                            )
+                                                                fileType =
+                                                                    "PDF"
+                                                                val i: Intent =
+                                                                    Intent(
+                                                                        Intent.ACTION_CREATE_DOCUMENT
+                                                                    ).apply {
+                                                                        addCategory(
+                                                                            Intent.CATEGORY_OPENABLE
+                                                                        )
+                                                                        type =
+                                                                            "application/pdf"
+                                                                        putExtra(
+                                                                            Intent.EXTRA_TITLE,
+                                                                            rosenname_ + "_" + LocalDate.now() + ".pdf"
+                                                                        )
 
-                                                                        }
-                                                                    startActivityForResult(
-                                                                        i,
-                                                                        1
-                                                                    )
+                                                                    }
+                                                                startActivityForResult(
+                                                                    i,
+                                                                    1
+                                                                )
 
-                                                                })
-                                                            .show()
-                                                    })
-                                                .show()
-                                        })
-                                    .show()
-                            })
+                                                            })
+                                                        .show()
+                                                })
+                                            .show()
+                                    })
+                                .show()
+                        })
                     .show()
 
                 return true
@@ -1650,19 +1664,19 @@ class MainActivity : AppCompatActivity(),
                 }
             )
             .setNegativeButton("NumReverse",
-                    { dialog, which ->
-                        drawingStartNumber_ = editText5.text.toString().toInt()
-                        drawingNumberReversal_ = true
+                { dialog, which ->
+                    drawingStartNumber_ = editText5.text.toString().toInt()
+                    drawingNumberReversal_ = true
 
-                        fileType = filetype
-                        val i = Intent(Intent.ACTION_CREATE_DOCUMENT)
-                        i.type = intentType
-                        i.putExtra(
-                            Intent.EXTRA_TITLE,
-                            rosenname_ + " " + LocalDate.now() + fileprefix
-                        )
-                        startActivityForResult(i, 1)
-                    }
+                    fileType = filetype
+                    val i = Intent(Intent.ACTION_CREATE_DOCUMENT)
+                    i.type = intentType
+                    i.putExtra(
+                        Intent.EXTRA_TITLE,
+                        rosenname_ + " " + LocalDate.now() + fileprefix
+                    )
+                    startActivityForResult(i, 1)
+                }
             ).show()
         return true
     }
@@ -1683,11 +1697,11 @@ class MainActivity : AppCompatActivity(),
                 if (fileType == "CSV") saveCSV(writer)
                 if (fileType == "PDF") savePDF(contentResolver.openOutputStream(title)!!)
                 if (fileType == "SFC") saveSFC(
-                        BufferedOutputStream(
-                            contentResolver.openOutputStream(
-                                title
-                            )
+                    BufferedOutputStream(
+                        contentResolver.openOutputStream(
+                            title
                         )
+                    )
                 )
 
                 AutoSaveCSV() // オートセーブ
@@ -1736,23 +1750,24 @@ class MainActivity : AppCompatActivity(),
 
     fun showInterStAd(){
         return
-
+/*
         if ( mInterstitialAd.isLoaded && BuildConfig.FLAVOR == "free" ) {
             // 広告の再表示
             //mInterstitialAd.loadAd(AdRequest.Builder().build())
             mInterstitialAd.show()
         } else {
             Log.d("TAG", "The interstitial wasn't loaded yet.")
-        }
+        }*/
     }
 
-    fun ViewPdf( contentUri: Uri ){
+    fun ViewPdf(contentUri: Uri){
         AutoSavePDF()
 
         if ( contentUri != Uri.EMPTY ) {
             val intent = Intent(Intent.ACTION_VIEW)
-            intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-            intent.setDataAndType( contentUri, "application/pdf" )
+            intent.setFlags( Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED )//flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+            //intent.flags = Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            intent.setDataAndType( contentUri, "application/pdf")
             //intent.setPackage("com.adobe.reader")
             try {
                 startActivity(intent)
@@ -2032,7 +2047,7 @@ class MainActivity : AppCompatActivity(),
         var chunks: List<String?> = line.split(",").map { it.trim() }
 
         if(chunks[0]!! != "koujiname"){
-            Toast.makeText( this, "It's not supported file.", Toast.LENGTH_LONG ).show()
+            Toast.makeText(this, "It's not supported file.", Toast.LENGTH_LONG).show()
             return false
         }
 
@@ -2141,7 +2156,7 @@ class MainActivity : AppCompatActivity(),
                 dedlist.add(
                     Deduction(
                         Params(
-                                chunks[2], chunks[6], chunks[1].toInt(),
+                            chunks[2], chunks[6], chunks[1].toInt(),
                             chunks[3].toFloat(), chunks[4].toFloat(), 0f,
                             chunks[5].toInt(), typeToInt(chunks[6]),
                             PointXY(

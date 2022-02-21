@@ -83,7 +83,8 @@ class AssetsFileProvider : ContentProvider() {
     }
 
     companion object {
-        private const val AUTHORITY = "com.jpaver.myapplication.assets"
-        val CONTENT_URI = Uri.parse("content://$AUTHORITY")!!
+
+        val CONTENT_URI_FREE = Uri.parse("content://com.jpaver.myapplication.assets")!!
+        val CONTENT_URI_FULL = Uri.parse("content://com.paver.myapplication.assets")!!
     }
 }

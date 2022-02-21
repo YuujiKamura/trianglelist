@@ -19,6 +19,7 @@
             android:theme="@style/AppTheme.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+                <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.OPENABLE" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
@@ -43,7 +44,7 @@
         <provider
             android:name="com.jpaver.trianglelist.util.AssetsFileProvider"
             android:authorities="${applicationId}.assets"
-            android:exported="false"
+            android:exported="true"
             android:readPermission = "true"
             android:grantUriPermissions="true">
             <intent-filter>
