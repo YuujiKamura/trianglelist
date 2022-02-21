@@ -313,11 +313,14 @@ public class TriangleTest {
         assertEquals( true, tri1.pointCA_.equals( 0f, 0f ) );
         assertEquals( true, tri1.pointAB_.equals( 3f, 0f ) );
         assertEquals( true, tri1.pointBC_.equals( 0f, -4f ) );
+        assertEquals( true, tri2.pointCA_.equals( 0f, -4f ) );
+        assertEquals( false, tri2.pointAB_.equals( 3f, 0f ) );
+        assertEquals( false, tri2.pointBC_.equals( 0f, -4f ) );
 
         tri1.calcPoints( tri2, 1 );
-        assertEquals( true, tri1.pointCA_.equals( 0f, 0f ) );
-        assertEquals( true, tri1.pointAB_.equals( 3f, 0f ) );
-        assertEquals( true, tri1.pointBC_.equals( 0f, -4f ) );
+        assertEquals( false, tri1.pointCA_.equals( 0f, 0f ) );
+        assertEquals( false, tri1.pointAB_.equals( 3f, 0f ) );
+        assertEquals( false, tri1.pointBC_.equals( 0f, -4f ) );
 
     }
 

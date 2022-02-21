@@ -32,6 +32,7 @@ import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.InterstitialAd
 import com.google.android.gms.ads.MobileAds
+import com.jpaver.trianglelist.util.AssetsFileProvider
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.fragment_first.*
 import org.json.JSONObject.NULL
@@ -804,7 +805,7 @@ class MainActivity : AppCompatActivity(),
         }
 
         fab_pdf.setOnClickListener { view ->
-            ViewPdf(this)
+            ViewPdf( getAppLocalFile( this, "myLastTriList.pdf" ) )
         }
 
         fab_share.setOnClickListener { view ->
@@ -1435,14 +1436,6 @@ class MainActivity : AppCompatActivity(),
         EditorClear(getList(deductionMode_), getList(deductionMode_).size())
     }
 
-    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
-        super.onRestoreInstanceState(savedInstanceState)
-  //      CreateNew()
-  //      loadEditTable()
-   //     EditorReset(getList(myDeductionMode),getList(myDeductionMode).length())
-
-    }
-
     override fun onRestart() {
         super.onRestart()
 
@@ -1487,14 +1480,22 @@ class MainActivity : AppCompatActivity(),
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         return when (item.itemId) {
+            R.id.action_usage -> {
+                ViewPdf(
+                    AssetsFileProvider.CONTENT_URI.buildUpon()
+                    .appendPath("pdf")
+                    .appendPath("sample.pdf")
+                    .build()   )
+                return true
+            }
             R.id.action_new -> {
-                var dialog: MyDialogFragment = MyDialogFragment()
+                val dialog: MyDialogFragment = MyDialogFragment()
                 dialog.show(supportFragmentManager, "dialog.basic")
                 return true
             }
             R.id.action_save_csv -> {
                 fileType = "CSV"
-                var i: Intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
+                val i: Intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
                 i.addCategory(Intent.CATEGORY_OPENABLE)
                 i.type = "text/csv"
                 i.putExtra(
@@ -1831,15 +1832,14 @@ class MainActivity : AppCompatActivity(),
         )
     }
 
-    fun ViewPdf(context: Context){
+    fun ViewPdf( contentUri: Uri ){
         AutoSavePDF()
-
-        val contentUri = getAppLocalFile(context, "myLastTriList.pdf")
 
         if ( contentUri != Uri.EMPTY ) {
             val intent = Intent(Intent.ACTION_VIEW)
             intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-            intent.setDataAndType(contentUri, "application/pdf")
+            intent.setDataAndType( contentUri, "application/pdf" )
+            //intent.setPackage("com.adobe.reader")
             try {
                 startActivity(intent)
             } catch (e: ActivityNotFoundException) {

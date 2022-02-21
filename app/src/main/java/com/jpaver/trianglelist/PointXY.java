@@ -63,6 +63,14 @@ public class PointXY implements Cloneable {
         return X < x + range && X > x - range && Y < y + range && Y > y - range;
     }
 
+    public float[] equal( float x, float y){
+        float data[] = new float[2];
+        data[0] = X - x;
+        data[1] = Y - y;
+        return data;
+    }
+
+
     public float getX(){ return this.X; }
     public float getY(){ return this.Y; }
 

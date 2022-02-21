@@ -6,9 +6,18 @@ class DeductionTest {
 
 
     @Test
+    fun testDedLocalPoint() {
+        val ded = Deduction(1, "circle", 0.23f, 0f, 0, "Circle", 0f, PointXY(0f, 0f), PointXY(0f, 0f))
+        val tri = Triangle(5f,5f,5f )
+        ded.isCollide( tri )
+    }
+
+        @Test
     fun testDedGetArea() {
         val ded = Deduction(1, "circle", 0.23f, 0f, 0, "Circle", 0f, PointXY(0f, 0f), PointXY(0f, 0f))
-        assertEquals(0.04f, ded.getArea(), 0.001f)
+        assertEquals(0.04f, ded.getArea(), 0.000001f)
+        val dedded = Deduction(1, "circle", 0.67f, 0f, 0, "Circle", 0f, PointXY(0f, 0f), PointXY(0f, 0f))
+        assertEquals(0.35f, dedded.getArea(), 0.001f)
     }
 
 
@@ -73,13 +82,13 @@ class DeductionTest {
 
     @Test
     fun testSameDedCount(){
-        val ded1: Deduction = Deduction(
+        val ded1 = Deduction(
             1, "仕切弁", 0.23f, 0f, 0, "Circle", 0f, PointXY(0f, 0f), PointXY(
                 0f,
                 0f
             )
         )
-        val ded2: Deduction = Deduction(
+        val ded2 = Deduction(
             Params(
                 "仕切弁", "Circle", 2, 0.23f, 0f, 0f, 0, 0, PointXY(0f, 0f), PointXY(
                     0f,

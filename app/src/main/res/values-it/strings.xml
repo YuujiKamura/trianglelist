@@ -84,4 +84,5 @@
         <item> CF </item>
     </string-array>
     <string name="action_save_sfc" translatable="false">" Output SFC"</string>
+    <string name="action_usage" translatable="false">Aiuto</string>
 </resources>

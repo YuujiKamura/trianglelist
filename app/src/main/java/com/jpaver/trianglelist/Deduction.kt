@@ -49,6 +49,10 @@ class Deduction(var num: Int = 0,
     lateinit var prb: PointXY
     var info_: String
 
+    var distanceInPCA = 0f
+    var angleInParent = 0f
+
+
     init{
 
         if(type == "Box"){
@@ -190,7 +194,8 @@ class Deduction(var num: Int = 0,
             area = (lengthX/2) * (lengthX/2) * 3.14f
         }
         if( type == "Box" ) { area = lengthX * lengthY }
-        return area.formattedString(2).toFloat() //roundByUnderTwo( ( Math.round(area.toDouble() * 100.0) / 100.0).toFloat() )//roundByUnderTwo(area)
+        //area = area.formattedString(2).toFloat() //roundByUnderTwo( ( Math.round(area.toDouble() * 100.0) / 100.0).toFloat() )//roundByUnderTwo(area)        return area
+        return Math.round( area * 100 ).toFloat() * 0.01f
     }
 
     fun typeToInt(type: String) :Int{
@@ -201,7 +206,7 @@ class Deduction(var num: Int = 0,
     }
 
     fun typeFromInt(type: Int) :String{
-        var pl: String = ""
+        var pl = ""
         if(type == 1) pl = "Box"
         if(type == 2) pl = "Circle"
         return pl
@@ -217,5 +222,13 @@ class Deduction(var num: Int = 0,
         val pr = Params(name,type,num,lengthX,lengthY,0f,parentNum,typeToInt(type),point,pointFlag)
 
         return pr
+    }
+
+    fun isCollide( tri: Triangle ): Boolean{
+        if( tri.isCollide( point ) == false ) return false
+
+        distanceInPCA = tri.pointCA_.lengthTo( point )
+
+        return true
     }
 }

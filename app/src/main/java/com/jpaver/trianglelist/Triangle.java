@@ -1530,7 +1530,6 @@ public class Triangle extends EditObject implements Cloneable {
             else if( pbc == 4 ) parentBC_ = 3;
             else if( pbc == 5 ) parentBC_ = 6;
             else if( pbc == 6 ) parentBC_ = 5;
-            else if( pbc == 9 ) parentBC_ = 9;
             else parentBC_ = pbc;
         }
         if( BtoC == true ){

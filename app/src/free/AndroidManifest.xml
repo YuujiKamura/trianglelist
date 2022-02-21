@@ -32,12 +32,28 @@
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
+
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/path"/>
         </provider>
+
+        <provider
+            android:name="com.jpaver.trianglelist.util.AssetsFileProvider"
+            android:authorities="${applicationId}.assets"
+            android:exported="false"
+            android:readPermission = "true"
+            android:grantUriPermissions="true">
+            <intent-filter>
+                <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
+            </intent-filter>
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/path"/>
+        </provider>
+
     </application>
 
 </manifest>

@@ -31,7 +31,7 @@ class TriListTest {
         //assertEquals( 5f, trilist.get(1).nodeTriangleB_.lengthB_ )
         //assertEquals( trilist.get(2), trilist.get(1).nodeTriangleB_ )
 
-        val trilist2 = trilist.clone()
+        //val trilist2 = trilist.clone()
 
         trilist.remove(3)
         assertEquals(null, trilist.get(2).nodeTriangleC_)
@@ -447,6 +447,22 @@ class TriListTest {
         Assert.assertEquals(false, trilist.get(1).alreadyHaveChild(1))
         Assert.assertEquals(2.5, trilist.get(2).pointBC_.x.toDouble(), 0.001)
         Assert.assertEquals(3.473, trilist.get(3).pointBC_.x.toDouble(), 0.001)
+    }
+
+    @Test
+    fun testTriListSetChild() {
+        val trilist = TriangleList()
+        trilist.add(Triangle(5f, 5f, 5f))
+        trilist.add(Triangle(trilist.get(1), 2, 5f, 5f))
+        trilist.add(Triangle(trilist.get(2), 2, 6f, 6f))
+        trilist.add(Triangle(trilist.get(3), 1, 6f, 6f))
+        trilist.add(Triangle(trilist.get(1), 1, 6f, 6f))
+        trilist.add(Triangle(trilist.get(4), 1, 6f, 6f))
+        trilist.add(Triangle(trilist.get(2), 1, 6f, 6f))
+        trilist.setChildsToAllParents() // これやらないと認知されない。
+
+        Assert.assertEquals(true, trilist.get(1).alreadyHaveChild(2))
+        Assert.assertEquals(true, trilist.get(1).alreadyHaveChild(1))
     }
 
     @Test

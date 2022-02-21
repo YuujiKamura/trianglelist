@@ -10,8 +10,8 @@ android {
         applicationId "com.jpaver.myapplication"
         minSdkVersion 23
         targetSdkVersion 30
-        versionCode 1261
-        versionName "5.95"
+        versionCode 1264
+        versionName "5.99"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -25,6 +25,10 @@ android {
         debug{
   //          AdID "ca-app-pub-3940256099942544/6300978111"
         }
+    }
+
+    aaptOptions {
+        noCompress "pdf"
     }
 
     flavorDimensions "mode"

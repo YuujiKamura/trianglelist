@@ -1,4 +1,16 @@
 
+            android:name="com.jpaver.trianglelist.util.AssetsFileProvider"
+            android:authorities="${applicationId}.assets"
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/path"/>
+        </provider>
+
 // triNumber2, editName2, editText4, editText5, editText6, parentNumber2, editParent2
 // triNumber,  editName1, editText,  editText2, editText3, ParentNumber,  editParent
 
