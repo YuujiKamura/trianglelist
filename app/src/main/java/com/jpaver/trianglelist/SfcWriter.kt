@@ -126,7 +126,7 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
 
         //val ded = dedlist_.get( dednumber )
         //val textsize: Float = textscale_
-        val infoStrLength = ded.info_.length*textscale_*0.7f
+        val infoStrLength = ded.infoStr.length*textscale_*0.7f
         val point = ded.point
         val pointFlag = ded.pointFlag
         var textOffsetX = 0f
@@ -135,7 +135,7 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
         if(point.x <= pointFlag.x) {  //ptFlag is RIGHT from pt
             writeLine(point, pointFlag, 2)
             writeTextAndLine(
-                ded.info_,
+                ded.infoStr,
                 pointFlag,
                 pointFlag.plus( infoStrLength + textOffsetX,0f ),
                 textscale_,
@@ -146,7 +146,7 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
         } else {                     //ptFlag is LEFT from pt
             writeLine(point, pointFlag, 2)
             writeTextAndLine(
-                ded.info_,
+                ded.infoStr,
                 pointFlag.plus( -infoStrLength - textOffsetX,0f ),
                 pointFlag,
                 textscale_,
@@ -177,7 +177,7 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
     }
 
     fun writeDedRect( color: Int, ded: Deduction ){
-        ded.shapeAngle_ = -ded.shapeAngle_ // 逆回転
+        ded.shapeAngle = -ded.shapeAngle // 逆回転
         ded.setBox( 1000f )
         writeLine(ded.plt, ded.plb, color)
         writeLine(ded.plt, ded.prt, color)

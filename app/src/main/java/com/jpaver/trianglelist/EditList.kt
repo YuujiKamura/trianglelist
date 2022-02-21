@@ -2,15 +2,8 @@ package com.jpaver.trianglelist
 
 open class EditList :Cloneable {
 
-    var list_ :MutableList<EditObject?>
+    private var list :MutableList<EditObject?> = ArrayList()
 
-    init{
-        list_ = ArrayList()
-    }
-
-    open var lastTapNum_ = 0
-
-    open val mode: Int = 0
     open var counter: Int = 0
 
     public override fun clone() :Any { return super.clone() }
@@ -23,7 +16,7 @@ open class EditList :Cloneable {
     open fun size() :Int { return 0 }
     open fun get(number: Int) :EditObject {
         //if( list_.size > number ) return null
-        return list_[number - 1]!!
+        return list[number - 1]!!
     }
     open fun getArea(): Float { return 0f }
 }

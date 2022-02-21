@@ -12,13 +12,12 @@ public class TriangleList extends EditList implements Cloneable {
     ArrayList<Collision> myCollisionList;
 
 
-    int lastTapNum_ = 0;
+    int lastTapNumber_ = 0;
     int lastTapSide_ = -1;
     int lastTapCollideNum_ = 0;
 
     int current;// = 0;
     float myScale = 1f;
-    boolean imScaled = false;
 
     float myAngle = 0f;
     PointXY basepoint = new PointXY(0f,0f);
@@ -43,7 +42,7 @@ public class TriangleList extends EditList implements Cloneable {
             b.myLength = myLength.clone();
             //b = new TriangleList();
             b.current = this.current;
-            b.lastTapNum_ = this.lastTapNum_;
+            b.lastTapNumber_ = this.lastTapNumber_;
             b.lastTapSide_ = this.lastTapSide_;
             b.myScale = this.myScale;
             b.myAngle = this.myAngle;
@@ -135,60 +134,33 @@ public class TriangleList extends EditList implements Cloneable {
         return 0;
     }
 
-    public PointXY getUnScaledPointOfName(String name ){
-
-        for (int i = 1; i < trilist_.size()+1; i++ ){
-            if( trilist_.get(i).myName_.equals( name ) ) return trilist_.get(i).pointCA_.scale( 1/myScale );
-        }
-
-        return new PointXY( 0f, 0f );
-    }
-
     public float getPrintTextScale (float drawingScale, String type){
         float pdfts = 10f;
         float dxfts = 0.45f;
 
         switch((int)(getPrintScale(drawingScale)*10)){
             case 150:
-                pdfts = 3f;
-                //dxfts = 0.7f;
-                break;
             case 100:
-                pdfts = 3f;
-                //dxfts = 0.7f;
-                break;
             case 90:
-                pdfts = 3f;
-                break;
             case 80:
-                pdfts = 3f;
-                break;
             case 70:
-                pdfts = 3f;
-                break;
             case 60:
-                pdfts = 3f;
-                break;
             case 50:
-                pdfts = 3f;
-                //dxfts = 0.7f;
-                break;
             case 45:
                 pdfts = 3f;
                 //dxfts = 0.7f;
                 break;
+            //dxftextsize = 0.7f;
             case 40:
                 pdfts = 5f;
-                //dxfts = 0.4f;
+                //dxftextsize = 0.4f;
                 break;
             case 30:
-                pdfts = 6f;
-                //dxfts = 0.7f;
-                break;
             case 25:
                 pdfts = 6f;
-                //dxfts = 0.7f;
+                //dxftextsize = 0.7f;
                 break;
+            //dxftextsize = 0.7f;
             case 20:
                 pdfts = 8f;
                 break;
@@ -212,8 +184,8 @@ public class TriangleList extends EditList implements Cloneable {
 
     public float getPrintScale(float drawingScale){ // ex. 1/100 is w40m h27m drawing in range.
         scale( new PointXY(0f,0f), 1/drawingScale );
-        float longsideX = measureMostLongLine().getX();
-        float longsideY = measureMostLongLine().getY();
+        float longsidex = measureMostLongLine().getX();
+        float longsidey = measureMostLongLine().getY();
         scale( new PointXY(0f,0f), drawingScale );
 
         float paperWidth = 38;
@@ -221,20 +193,20 @@ public class TriangleList extends EditList implements Cloneable {
 
 //        float printScale = 1f; //drawingScale;
         //if( longsideX <= paperWidth*0.2 && longsideY <= paperHeight*0.2 ) return printScale *= 0.2f;
-        if( longsideX <= paperWidth*0.5 && longsideY <= paperHeight*0.4 ) return 0.5f;
-        if( longsideX <= paperWidth     && longsideY <= paperHeight     ) return 1.0f;
-        if( longsideX <= paperWidth*1.5 && longsideY <= paperHeight*1.4 ) return 1.5f;
-        if( longsideX <= paperWidth*2.0 && longsideY <= paperHeight*1.9 ) return 2.0f;
-        if( longsideX <= paperWidth*2.5 && longsideY <= paperHeight*2.5 ) return 2.5f;
-        if( longsideX <= paperWidth*3.0 && longsideY <= paperHeight*3.0 ) return 3.0f;
-        if( longsideX <= paperWidth*4.0 && longsideY <= paperHeight*4.0 ) return 4.0f;
-        if( longsideX <= paperWidth*4.5 && longsideY <= paperHeight*4.5 ) return 4.5f;
-        if( longsideX <= paperWidth*5.0 && longsideY <= paperHeight*5.0 ) return 5.0f;
-        if( longsideX <= paperWidth*6.0 && longsideY <= paperHeight*5.0 ) return 6.0f;
-        if( longsideX <= paperWidth*7.0 && longsideY <= paperHeight*5.0 ) return 7.0f;
-        if( longsideX <= paperWidth*8.0 && longsideY <= paperHeight*5.0 ) return 8.0f;
-        if( longsideX <= paperWidth*9.0 && longsideY <= paperHeight*5.0 ) return 9.0f;
-        if( longsideX <= paperWidth*10.0 && longsideY <= paperHeight*10.0 ) return 10.0f;
+        if( longsidex <= paperWidth*0.5 && longsidey <= paperHeight*0.4 ) return 0.5f;
+        if( longsidex <= paperWidth     && longsidey <= paperHeight     ) return 1.0f;
+        if( longsidex <= paperWidth*1.5 && longsidey <= paperHeight*1.4 ) return 1.5f;
+        if( longsidex <= paperWidth*2.0 && longsidey <= paperHeight*1.9 ) return 2.0f;
+        if( longsidex <= paperWidth*2.5 && longsidey <= paperHeight*2.5 ) return 2.5f;
+        if( longsidex <= paperWidth*3.0 && longsidey <= paperHeight*3.0 ) return 3.0f;
+        if( longsidex <= paperWidth*4.0 && longsidey <= paperHeight*4.0 ) return 4.0f;
+        if( longsidex <= paperWidth*4.5 && longsidey <= paperHeight*4.5 ) return 4.5f;
+        if( longsidex <= paperWidth*5.0 && longsidey <= paperHeight*5.0 ) return 5.0f;
+        if( longsidex <= paperWidth*6.0 && longsidey <= paperHeight*5.0 ) return 6.0f;
+        if( longsidex <= paperWidth*7.0 && longsidey <= paperHeight*5.0 ) return 7.0f;
+        if( longsidex <= paperWidth*8.0 && longsidey <= paperHeight*5.0 ) return 8.0f;
+        if( longsidex <= paperWidth*9.0 && longsidey <= paperHeight*5.0 ) return 9.0f;
+        if( longsidex <= paperWidth*10.0 && longsidey <= paperHeight*10.0 ) return 10.0f;
 
         return 15f;
     }
@@ -242,28 +214,6 @@ public class TriangleList extends EditList implements Cloneable {
     public float getAngle(){return myAngle;}
 
     public void setAngle(float angle) { myAngle = angle;}
-
-    public float roundByUnderTwo(float fp) {
-        float ip = fp * 100f;
-        return Math.round(ip) * 0.01f;
-    }
-
-    public ArrayList<Collision> getNotSelectedDims(){
-        myCollisionList = new ArrayList<>();
-
-        for(int i = 0; i< trilist_.size(); i++){
-            myCollisionList.add(this.getChildAdress(i));
-        }
-
-        return myCollisionList;
-    }
-
-    public Collision getChildAdress(int i){
-        Collision col = new Collision();
-
-
-        return new Collision();
-    }
 
     public Bounds calcBounds(){
         myBounds = new Bounds(0,0,0,0);
@@ -291,7 +241,7 @@ public class TriangleList extends EditList implements Cloneable {
     }
 
 
-    public float rotateByLength(String align) throws CloneNotSupportedException {
+    public float rotateByLength(String align) {
         float rot = 0f;
         if(align.equals("laydown")){
             for(;;) {
@@ -414,11 +364,6 @@ public class TriangleList extends EditList implements Cloneable {
                 !((tri.lengthC_ + tri.lengthA_) <= tri.lengthB_);
     }
 
-    public PointXY vectorToNextFrom( int i ){
-        if( i < 0 || i >= trilist_.size() ) return new PointXY(0f, 0f);
-        return trilist_.get( i ).pointCA_.vectorTo( trilist_.get( i + 1 ).pointCA_ );
-    }
-
     public boolean add( int pnum, int pbc, float A, float B, float C ) {
         return add( new Triangle(  get( pnum ), pbc, A, B, C ) );
     }
@@ -513,33 +458,11 @@ public class TriangleList extends EditList implements Cloneable {
 
             Triangle parent = trilist_.get(i);
 
-            if( parent.hasConstantParent() == false && parent.parentNumber_ <= target.myNumber_ ) {
-                parent.myNumber_ += numberChange;
-            }
-            else{
+            if (parent.hasConstantParent() || parent.parentNumber_ > target.myNumber_) {
                 parent.parentNumber_ += numberChange;
-                parent.myNumber_ += numberChange;
             }
+            parent.myNumber_ += numberChange;
         }
-    }
-
-    public boolean insert(int index, Triangle nextTriangle){
-        if(nextTriangle == null || !nextTriangle.validTriangle())  return false;
-
-        this.trilist_.add(index-1, nextTriangle);   // add(insert) by arraylist
-        this.getTriangle(index).setNumber(index);
-
-        // all child node change
-        for(int iNext = index+1; iNext <= trilist_.size(); iNext++){
-
-            if(this.getTriangle(iNext).getParentNumber() == this.getTriangle(index).getMyNumber_()) {
-                this.getTriangle(iNext).resetByParent( this.getTriangle(iNext).nodeTriangleA_, this.getTriangle(iNext).getParentBC() );
-                getTriangle(iNext-1).setChildSide_(getTriangle(iNext).getParentBC());
-            }
-            index++;
-        }
-
-        return true;
     }
 
     @Override
@@ -560,16 +483,16 @@ public class TriangleList extends EditList implements Cloneable {
         resetConnectedTriangles(parentTriangle.myNumber_, parentTriangle);
 
         current = number - 1;
-        lastTapNum_ = number - 1;
+        lastTapNumber_ = number - 1;
         lastTapSide_ = -1;
 
         //this.cloneByScale(basepoint, myScale);
     }
 
     public ConnParam rotateCurrentTriLCR(){
-        if( lastTapNum_ < 2 ) return null;
+        if( lastTapNumber_ < 2 ) return null;
 
-        Triangle curTri = trilist_.get(lastTapNum_-1);
+        Triangle curTri = trilist_.get(lastTapNumber_ -1);
         ConnParam cParam = curTri.rotateLCRandGet().cParam_.clone();
         //if( lastTapNum_ < myTriList.size() ) myTriList.get(lastTapNum_).resetByParent( curTri, myTriList.get(lastTapNum_).cParam_ );
 
@@ -589,7 +512,7 @@ public class TriangleList extends EditList implements Cloneable {
 
     public void resetNodeByID(Params prms ){
 
-        ArrayList<Triangle> doneObjectList = new ArrayList<Triangle>();
+        ArrayList<Triangle> doneObjectList = new ArrayList<>();
 
         trilist_.get( prms.getN() - 1 ).resetNode( prms, trilist_.get( prms.getPn() - 1 ), doneObjectList );
 
@@ -642,7 +565,7 @@ public class TriangleList extends EditList implements Cloneable {
 
 
         // 浮いてる場合、さらに自己番が最後でない場合、一個前の三角形の位置と角度を自分の変化にあわせて動かしたい。
-        if( curtri.parentNumber_ <= 0 && trilist_.size() != cNum && exist( curtri.nodeTriangleA_ ) == true ) {
+        if( curtri.parentNumber_ <= 0 && trilist_.size() != cNum && exist(curtri.nodeTriangleA_)) {
             curtri.resetByChild( trilist_.get(cNum) );
         }
 
@@ -650,7 +573,7 @@ public class TriangleList extends EditList implements Cloneable {
 
 
         // 子をすべて書き換える
-        if( trilist_.size() > 1 && cNum < trilist_.size() && curtri.hasChild() == true ) resetMyChild(trilist_.get(cNum-1));
+        if( trilist_.size() > 1 && cNum < trilist_.size() && curtri.hasChild()) resetMyChild(trilist_.get(cNum-1));
 
         //lastTapNum_ = 0;
         //lastTapSide_ = -1;
@@ -691,15 +614,6 @@ public class TriangleList extends EditList implements Cloneable {
         }
     }
 
-    public void resetChildsFrom(Triangle rTri){
-        if( lastTapNum_ <= 0 ) return;
-
-        for(int i = lastTapNum_; i < trilist_.size(); i++) {
-            Triangle nextTri = trilist_.get(i);
-            nextTri.resetByParent(nextTri.nodeTriangleA_, nextTri.cParam_);
-        }
-    }
-
 
     public boolean replace(int number, int pnum){
         if( trilist_.get(number-1) == null ) return false;
@@ -709,12 +623,6 @@ public class TriangleList extends EditList implements Cloneable {
         me.set( pr, me.parentBC_, me.lengthA_, me.lengthB_, me.lengthC_ );
 
         return true;
-    }
-
-    public float getLengthFromSide(int sideNum, Triangle tri){
-        if(sideNum == 1 || sideNum == 3 || sideNum == 4 || sideNum == 7 || sideNum == 9) return tri.getLengthB_();
-        if(sideNum == 2 || sideNum == 5 || sideNum == 6 || sideNum == 8 || sideNum == 10) return tri.getLengthC_();
-        return 0f;
     }
 
     public boolean validTriangle(Params prm){
@@ -730,13 +638,14 @@ public class TriangleList extends EditList implements Cloneable {
         else return this.trilist_.get(number-1);
     }
 
+    @NotNull
     @Override // by number start 1, not index start 0.
     public Triangle get(int number){
         return getTriangle(number);
     }
 
     public ArrayList<TriangleList> spritByColors(){
-        ArrayList<TriangleList> listByColors = new ArrayList<TriangleList>();
+        ArrayList<TriangleList> listByColors = new ArrayList<>();
 
         listByColors.add(new TriangleList()); //0
         listByColors.add(new TriangleList());
@@ -779,7 +688,7 @@ public class TriangleList extends EditList implements Cloneable {
     }
 
     public void getTap(PointXY tapP){
-        int ltn = lastTapNum_+lastTapSide_;
+        int ltn = lastTapNumber_ +lastTapSide_;
 
         isCollide(tapP);
 
@@ -787,15 +696,15 @@ public class TriangleList extends EditList implements Cloneable {
 
             if( trilist_.get(i).getTapLength(tapP) != -1 ) {
 
-                lastTapNum_ = i + 1;
+                lastTapNumber_ = i + 1;
                 lastTapSide_ = trilist_.get(i).getTapLength(tapP);
 
-                if(ltn == lastTapSide_+lastTapNum_) {
+                if(ltn == lastTapSide_+ lastTapNumber_) {
 
                     isDoubleTap_ = true;
 
                     if( i > 0 && lastTapSide_ == 0 ){
-                        lastTapNum_ = i;
+                        lastTapNumber_ = i;
                         lastTapSide_ = trilist_.get(i-1).getTapLength(tapP);
                     }
 
@@ -806,7 +715,7 @@ public class TriangleList extends EditList implements Cloneable {
         }
 
         if( getTapHitCount( tapP ) == 0 ) {
-            lastTapNum_ = 0;
+            lastTapNumber_ = 0;
             isDoubleTap_ = false;
         }
 
@@ -825,8 +734,7 @@ public class TriangleList extends EditList implements Cloneable {
     public Params getParams(int i) {
         if(i> trilist_.size())return new Params("","",0,0f,0f,0f,0,0, new PointXY(0f,0f),new PointXY(0f,0f));
         Triangle t = trilist_.get(i-1);
-        Params pm = new Params(t.getMyName_(),"",t.getMyNumber_(), t.getLengthA_(), t.getLengthB_(), t.getLengthC_(), t.getParentNumber(), t.getParentBC(), t.getPointCenter_(), t.getPointNumberAutoAligned_());
-        return pm;
+        return new Params(t.getMyName_(),"",t.getMyNumber_(), t.getLengthA_(), t.getLengthB_(), t.getLengthC_(), t.getParentNumber(), t.getParentBC(), t.getPointCenter_(), t.getPointNumberAutoAligned_());
     }
 
     @Override
@@ -847,7 +755,7 @@ public class TriangleList extends EditList implements Cloneable {
     }
 
     public ArrayList<ArrayList<PointXY>> getOutlineLists( ){
-        ArrayList<ArrayList<PointXY>> olplists = new ArrayList<ArrayList<PointXY>>();
+        ArrayList<ArrayList<PointXY>> olplists = new ArrayList<>();
         olplists.add( new ArrayList<>() );
 
 
@@ -867,7 +775,7 @@ public class TriangleList extends EditList implements Cloneable {
         Triangle t = trilist_.get( startindex );
 
         //AB点を取る。すでにあったらキャンセル
-        if( exist( t.pointAB_, olp )  == false ) {
+        if(exist(t.pointAB_, olp)) {
             olp.add( t.pointAB_ );
             outlineStr_ += startindex + "ab,";
         }
@@ -876,32 +784,32 @@ public class TriangleList extends EditList implements Cloneable {
         if( t.nodeTriangleB_ != null && !t.nodeTriangleB_.isFloating() ) traceOrJumpForward( t.nodeTriangleB_.myNumber_ - 1, origin, olp );
 
         //BC点を取る。すでにあったらキャンセル
-        if( exist( t.pointBC_, olp )  == false ){
+        if(exist(t.pointBC_, olp)){
             olp.add( t.pointBC_ );
             outlineStr_ += startindex + "bc,";
         }
 
-        if( t.nodeTriangleC_ != null == true && !t.nodeTriangleC_.isFloating() ) traceOrJumpForward( t.nodeTriangleC_.myNumber_ - 1, origin, olp );
+        if( t.nodeTriangleC_ != null && !t.nodeTriangleC_.isFloating() ) traceOrJumpForward( t.nodeTriangleC_.myNumber_ - 1, origin, olp );
 
         traceOrJumpBackward( startindex, origin, olp );
 
         return olp;
     }
 
-    public ArrayList<PointXY> traceOrJumpBackward( int startindex, int origin,  ArrayList<PointXY> olp ){
+    public void traceOrJumpBackward(int startindex, int origin, ArrayList<PointXY> olp ){
         Triangle t = trilist_.get( startindex );
 
         // C派生（ふたつとも接続）していたらそっちに伸びる、フロート接続だったり、すでに持っている点を見つけたらスルー
-        if( t.nodeTriangleB_ != null &&  t.nodeTriangleC_ != null ) if( exist( t.nodeTriangleC_.pointCA_, olp ) == false && !t.nodeTriangleC_.isFloating() ) traceOrJumpForward( t.nodeTriangleC_.myNumber_ - 1, origin, olp );
+        if( t.nodeTriangleB_ != null &&  t.nodeTriangleC_ != null ) if( exist(t.nodeTriangleC_.pointCA_, olp) && !t.nodeTriangleC_.isFloating() ) traceOrJumpForward( t.nodeTriangleC_.myNumber_ - 1, origin, olp );
 
         //BC点を取る。すでにあったらキャンセル
-        if( exist( t.pointBC_, olp )  == false ){
+        if(exist(t.pointBC_, olp)){
             olp.add( t.pointBC_ );
             outlineStr_ += startindex + "bc,";
         }
 
         //CA点を取る。すでにあったらキャンセル
-        if( exist( t.pointCA_, olp ) == false ) {
+        if(exist(t.pointCA_, olp)) {
             olp.add( t.pointCA_ );
             outlineStr_ += startindex + "ca,";
         }
@@ -909,113 +817,16 @@ public class TriangleList extends EditList implements Cloneable {
         // 0まで戻る。
         if( t.parentNumber_ > origin ) traceOrJumpBackward( t.parentNumber_ - 1, origin, olp );
 
-        return olp;
     }
 
     // 同じポイントは二ついらない
     public boolean exist( PointXY it, ArrayList<PointXY> inthis ){
         for( int i=0; i<inthis.size(); i++ )
-         if( true == it.nearBy( inthis.get(i), 0.001f ) ) return true;
+         if(it.nearBy(inthis.get(i), 0.001f)) return false;
 
-        return false;
+        return true;
     }
 
-
-    //壁に右手をあてて洞窟を回る方式。
-    public ArrayList<PointXY> getOutLinePoints( int start ){
-        ArrayList<PointXY> olp = new ArrayList<PointXY>();
-
-        int endnum = searchFloatintTriangleFrom( start );
-
-        //olp = outlineForward( trilist_, start)
-        //olp = outlineBackward( trilist_, endnum)
-        // 右回りに前進。順繰り戻るのではなく子の番号に移る。接続がなくなるまで。フロート接続を含む。
-        // 右回りに後退。順繰り戻るのではなく親の番号に移る。子接続があったら、上に戻って前進する。接続がなくなるまで。フロート接続を含む。
-
-        //往路
-        olp = goAroundCaveBySetRightHand( start, endnum );
-
-        // 戻る場合。派生接続に行き当たった時は
-        for( int i = endnum - 1; i > start - 2; i-- ){
-            Triangle t = trilist_.get( i );
-            PointXY before = olp.get( olp.size() - 1);
-
-            // 先端に行き当たったら全点足す ただし図形の終点ではないとき。
-            if( t.isChildB_ == false &&  t.isChildC_ == false && t.myNumber_ != endnum ){
-                if( before.equals( t.pointAB_ ) == false ) olp.add( t.pointAB_ );
-                if( before.equals( t.pointBC_ ) == false ) olp.add( t.pointBC_ );
-                if( before.equals( t.pointCA_ ) == false ) olp.add( t.pointCA_ );
-                continue;
-            }
-
-            // いっこ先のが二重断面ならBC点を足す
-            if( i + 1 < trilist_.size() ) if( trilist_.get( i + 1 ).parentBC_ == 4 || trilist_.get( i + 1 ).parentBC_ == 7 ) olp.add( t.pointBC_ );
-
-            // いっこ先のが非連続のときは回す
-            if( i + 1 < trilist_.size() ) if( trilist_.get( i + 1 ).parentNumber_ != t.myNumber_ ) continue;
-
-            // 基本CA点がダブらないときは足していく方式。
-            if( before.equals( t.pointCA_ ) == false ) olp.add( t.pointCA_ );
-
-            // C接続があるときは。しかしこれだと次の番号がいっこ減る。たいていの場合接続先は進んだ番号なので、違う処理が必要。
-            if( t.isChildC_ == true ) if( t.nodeTriangleC_.isFloating() == false ) continue;
-            olp.add( t.pointCA_ );
-        }
-
-        return olp;
-    }
-
-    public ArrayList<PointXY> goAroundCaveBySetRightHand( int start, int endnum ){
-        ArrayList<PointXY> olp = new ArrayList<PointXY>();
-
-        Triangle t1 = trilist_.get( start );
-        olp.add( t1.pointAB_ );
-
-        // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
-        for( int i = start; i < endnum; i++ ){
-            Triangle t = trilist_.get( i );
-            PointXY before = olp.get( olp.size() - 1);
-            //AB点を取る。すでにあったらキャンセル
-            if( before.equals( t.pointAB_ ) == false ) olp.add( t.pointAB_ );
-
-            //単独の突点の場合。
-            if( t.isChildB_ == false &&  t.isChildC_ == false && t.myNumber_ != endnum  ){
-                if( before.equals( t.pointBC_ ) == false ) olp.add( t.pointBC_ );
-                if( before.equals( t.pointCA_ ) == false ) olp.add( t.pointCA_ );
-                continue;
-            }
-
-            //派生接続のとき。B接続に沿って進む。
-            if( t.isChildB_ == true &&  t.isChildC_ == true ){
-                i = t.nodeTriangleB_.myNumber_ - 2;
-                continue;
-            }
-
-            //B接続がなかったらBC点を取る。
-            //if( t.isChildB_ == true ) if( t.childB_.isFloating() == false ) continue;
-            //olp.add( t.pointBC_ );
-
-            //次の三角形が終点を越えなくて、次の親番が自分でなかったら、CA点を取る。単独の突点の場合の別表現。
-            //int nextnum = i + 1;
-            //if( nextnum < trilist_.size() ) if( trilist_.get( nextnum ).myParentNumber_ != t.myNumber_ ) olp.add( t.pointCA_ );
-
-        }
-
-        return olp;
-    }
-
-    public int searchFloatintTriangleFrom( int start ){
-
-        start += 1;
-
-        for( int i=start; i < trilist_.size(); i++ ) {
-            Triangle t = trilist_.get( i );
-
-            if( t.isFloating() ) return t.parentNumber_;
-        }
-
-        return trilist_.size();
-    }
 
     public TriangleList resetNumReverse( ){
 
@@ -1036,13 +847,8 @@ public class TriangleList extends EditList implements Cloneable {
 
         for( int i = 0; i < trilist_.size(); i++ ) {
             //終端でなければ
-            if (i + 1 < trilist_.size()) {
-                Triangle next = trilist_.get(i + 1);
-                // 連番でない時は
-                if ( i + 1 > next.parentNumber_ ) {
-                    //return this;//akirameru
-                }
-            }
+            trilist_.size();// 連番でない時は
+//return this;//akirameru
         }
 
         // 番号だけを全部逆順に書き換え
@@ -1085,7 +891,6 @@ public class TriangleList extends EditList implements Cloneable {
                     me.parentNumber_ = -1; //next.parentNumber_;
                     me.parentBC_ = -1;
 
-                    Triangle prev = numrev.trilist_.get(i);
                     me.rotateLengthBy( 2 );
 
                     me.setNode( me.nodeTriangleA_, me.getParentSide() );
@@ -1111,10 +916,8 @@ public class TriangleList extends EditList implements Cloneable {
             Triangle it = numrev.trilist_.get( i );
 
             // 自身の番号よりも親番号が大きい場合を許容する
-            if( it.parentNumber_ > it.myNumber_ ){
-                // 子の三角形を指定して生成する。
-                //rev.add( new Triangle( trilist_.get( it.parentNumber_), it.parentBC_, it.lengthAforce_, it.lengthBforce_, it.lengthCforce_ ) );
-            }
+            // 子の三角形を指定して生成する。
+            //rev.add( new Triangle( trilist_.get( it.parentNumber_), it.parentBC_, it.lengthAforce_, it.lengthBforce_, it.lengthCforce_ ) );
 
             if( it.parentNumber_ < 1 ) rev.add( it.clone() ); //new Triangle( it.lengthAforce_, it.lengthBforce_, it.lengthCforce_, it.pointCA_, it.angleInGlobal_)
             else rev.add( new Triangle( rev.get( it.parentNumber_), it.parentBC_, it.lengthAforce_, it.lengthBforce_, it.lengthCforce_ ) );

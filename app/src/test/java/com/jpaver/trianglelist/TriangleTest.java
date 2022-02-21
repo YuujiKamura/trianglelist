@@ -16,7 +16,6 @@ public class TriangleTest {
     public void testResetNodeChain(){
         Triangle t = new Triangle(5f, 5f, 5f );
         Triangle t2 = new Triangle( t, 1, 5f, 5f );
-        Triangle t3 = new Triangle( t2, 1, 5f, 5f );
 
         t2.set( t, 1, 6f, 6f,6f, true );
 
@@ -28,10 +27,10 @@ public class TriangleTest {
     @Test
     public void testValid(){
         Triangle t = new Triangle(5f, 5f, 5f );
-        assertEquals(true, t.validTriangle() );
+        assertTrue(t.validTriangle());
 
         Triangle t2 = new Triangle(5f, 5f, 15f );
-        assertEquals(false, t2.validTriangle() );
+        assertFalse(t2.validTriangle());
 
     }
 
@@ -211,7 +210,6 @@ public class TriangleTest {
     @Test
     public void testDimPathAndOffset(){
         Triangle t1 = new Triangle(3,4,5);
-        Triangle t2 = new Triangle(t1,8, 4,4,4); //8:CC
 
         // 1下 3上 -> // 夾角の、1:外 　3:内
         assertEquals(3, t1.myDimAlignA_ );//getPath(0).getAlign_());
@@ -245,7 +243,6 @@ public class TriangleTest {
     @Test
     public void testTrianglePoint(){
         PointXY myXY0 = new PointXY(0.0f, 0.0f);
-        PointXY myXY1 = new PointXY(-3.0f, 0.0f);
         Triangle myTriangle = new Triangle(3.0f, 4.0f, 5.0f, myXY0, 180.0f);
         assertEquals(myTriangle.getPointCA_().getX(), myXY0.getX(), 0.001);
         assertEquals(myTriangle.getPointCA_().getY(), myXY0.getY(), 0.001);

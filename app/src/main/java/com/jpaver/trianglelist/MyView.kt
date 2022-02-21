@@ -331,7 +331,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     }
 
     fun lstn(): Int{
-        var lstn = myTriangleList.lastTapNum_
+        var lstn = myTriangleList.lastTapNumber_
         if( lstn < 1 ) lstn = myTriangleList.size()
         return lstn
     }
@@ -505,8 +505,8 @@ val sokt = PathAndOffset(
             return
         }
 
-        if( myTriangleList.lastTapNum_ < 1 ) myTriangleList.lastTapNum_ = myTriangleList.size()
-        val shadowParent = myTriangleList.get(number = myTriangleList.lastTapNum_ )
+        if( myTriangleList.lastTapNumber_ < 1 ) myTriangleList.lastTapNumber_ = myTriangleList.size()
+        val shadowParent = myTriangleList.get(number = myTriangleList.lastTapNumber_ )
         val shadowTapSide = myTriangleList.lastTapSide_
 
         //番号選択されてるときは以下略。
@@ -528,7 +528,7 @@ val sokt = PathAndOffset(
     }
 
     fun drawDeduction(canvas: Canvas, ded: Deduction, paint: Paint){
-        var str = ded.info_
+        var str = ded.infoStr
         val point = ded.point
         val pointFlag = ded.pointFlag
 
@@ -543,7 +543,7 @@ val sokt = PathAndOffset(
             val strDF = ded.pointFlag.x.toString() + " " + ded.pointFlag.y.toString()
             canvas.drawText(strD, pointFlag.x, pointFlag.y-50f, paint)
             canvas.drawText(strDF, pointFlag.x, pointFlag.y-100f, paint)
-            canvas.drawCircle(point.x, point.y, ded.lengthX / 2 * ded.scale_, paintYellow)
+            canvas.drawCircle(point.x, point.y, ded.lengthX / 2 * ded.myscale, paintYellow)
         }
 
         if(point.x <= pointFlag.x) {  //pointFlag is RIGHT from DedCenter
@@ -586,7 +586,7 @@ val sokt = PathAndOffset(
         // サークル内を色抜きするために一時書き換えて戻す
         if(ded.type == "Circle"){
             paint.style = Paint.Style.STROKE
-            canvas.drawCircle(point.x, point.y, ded.lengthX / 2 * ded.scale_, paint)
+            canvas.drawCircle(point.x, point.y, ded.lengthX / 2 * ded.myscale, paint)
             paint.style = Paint.Style.FILL
         }
         if(ded.type == "Box")    drawDedRect(canvas, ded, paint)
@@ -650,11 +650,11 @@ val sokt = PathAndOffset(
     }
 
     fun drawBlinkLine( canvas: Canvas, myTriangleList: TriangleList ){
-        if( myTriangleList.lastTapNum_ < 1 || myTriangleList.lastTapSide_ < 0 || isPrintPDF_ == true ) return
+        if( myTriangleList.lastTapNumber_ < 1 || myTriangleList.lastTapSide_ < 0 || isPrintPDF_ == true ) return
 
         paintYellow.color = Color.argb(alpha, 255, 255, 0)
 
-        val tri = myTriangleList.get( myTriangleList.lastTapNum_ )
+        val tri = myTriangleList.get( myTriangleList.lastTapNumber_ )
 
         if(myTriangleList.lastTapSide_ == 0){
             canvas.drawLine(
@@ -681,7 +681,7 @@ val sokt = PathAndOffset(
         val circleSize = paintTexS.textSize *0.8f
         paintYellow.style = Paint.Style.STROKE
 
-        if( tri.myNumber_ == myTriangleList.lastTapNum_ && isPrintPDF_ == false ) canvas.drawCircle(
+        if( tri.myNumber_ == myTriangleList.lastTapNumber_ && isPrintPDF_ == false ) canvas.drawCircle(
             tri.pointNumberAutoAligned_.x,
             -tri.pointNumberAutoAligned_.y,
             circleSize,
@@ -772,7 +772,7 @@ val sokt = PathAndOffset(
     }
 
     fun drawDedRect(canvas: Canvas, dd: Deduction, paint: Paint){
-        dd.setBox( dd.scale_ )
+        dd.setBox( dd.myscale )
         drawLine(canvas, dd.plt, dd.plb, 1f, 1f, paint)
         drawLine(canvas, dd.plt, dd.prt, 1f, 1f, paint)
         drawLine(canvas, dd.plb, dd.prb, 1f, 1f, paint)

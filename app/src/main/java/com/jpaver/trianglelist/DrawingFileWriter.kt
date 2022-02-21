@@ -1,7 +1,5 @@
 package com.jpaver.trianglelist
 
-import android.graphics.Paint
-
 open class DrawingFileWriter {
     open lateinit var trilist_: TriangleList
     open lateinit var dedlist_: DeductionList
@@ -21,9 +19,9 @@ open class DrawingFileWriter {
 
 
     open var textscale_ = 5f//trilist_.getPrintTextScale( 1f , "dxf") * drawscale_
-    open var sizeX_ = 420 * printscale_
-    open var sizeY_ = 297 * printscale_
-    open var centerX_ = sizeX_ * 0.5f
+    open val sizeX_ = 420 * printscale_
+    open val sizeY_ = 297 * printscale_
+    open val centerX_ = sizeX_ * 0.5f
     open var centerY_ = sizeY_ * 0.5f
 
     open var cWhite_ = 8
@@ -40,11 +38,6 @@ open class DrawingFileWriter {
     }
 
     fun checkInstance(): Boolean{
-        if( trilist_ == null ) return false
-        if( dedlist_ == null ) return false
-        if( titleTri_ == null ) return false
-        if( titleDed_ == null ) return false
-        if( rStr_ == null ) return false
         return true
     }
 
@@ -56,7 +49,7 @@ open class DrawingFileWriter {
     fun Float?.formattedString(fractionDigits:Int): String{
         // nullの場合は空文字
         if(this == null) return ""
-        var format : String = "%.${fractionDigits}f"
+        val format = "%.${fractionDigits}f"
         return format.format(this)
     }
 
@@ -110,10 +103,6 @@ open class DrawingFileWriter {
 
     }
 
-    open fun writeTextOnPath(){
-
-    }
-
     open fun writeEntities(){
 
     }
@@ -158,9 +147,9 @@ open class DrawingFileWriter {
         val xr = strx
         val yb = 6.7f * scale
         val yo = 0.2f * scale
-        val uw = 160f * scale
+        160f * scale
         val tt = 0
-        val ofs = 3f * scale
+        3f * scale
 
         // 題字
         writeText(rStr_.tCname_, PointXY(32f, 6.7f, scale ), cWhite_, tss, 1, 0, 0f, 1f)
@@ -208,7 +197,6 @@ open class DrawingFileWriter {
     ) {
         if( checkInstance() == false ) return
 
-        var area = 0.0f
         val baseX = ( 42f + 3f ) * printscale_ * scale
         var baseY = 27f * printscale_ * scale
         val ts = textsize * scale
@@ -373,9 +361,9 @@ open class DrawingFileWriter {
             )
         }
         if( editObject is Deduction ){
-            writeText(param.name.toString(), PointXY(baseX, baseY), color, ts, 1, 1, 0f, scale)
+            writeText(param.name, PointXY(baseX, baseY), color, ts, 1, 1, 0f, scale)
             writeText(
-                param.type.toString(),
+                    param.type,
                 PointXY(baseX + xoffset * 3, baseY),
                 color,
                 ts,

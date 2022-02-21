@@ -1,24 +1,17 @@
 package com.jpaver.trianglelist;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.ArrayList;
 
 public class DeductionList extends EditList implements Cloneable {
 
-    ArrayList<Deduction> dedlist_ = new ArrayList<Deduction>();
-    ArrayList<Deduction> myDedListAtView = new ArrayList<Deduction>();
+    ArrayList<Deduction> dedlist_ = new ArrayList<>();
     int current = 0;
     int lastTapIndex_ = -1;
     float myAngle = 0f;
-    PointXY myCenter = new PointXY(0f,0f);
 
     DeductionList(){
-    }
-
-    public void copy(){
-        myDedListAtView.clear();
-        for (int i = 0; i < dedlist_.size(); i++ ) {
-            myDedListAtView.add(dedlist_.get(i).clone());
-        }
     }
 
     public void scale(PointXY basepoint, float sx, float sy){
@@ -30,7 +23,7 @@ public class DeductionList extends EditList implements Cloneable {
 
     public void setScale( float s ){
         for (int i = 0; i < dedlist_.size(); i++ ) {
-            dedlist_.get(i).setScale_( s );
+            dedlist_.get(i).setMyscale( s );
         }
     }
 
@@ -49,11 +42,12 @@ public class DeductionList extends EditList implements Cloneable {
     public int getTapIndex(PointXY tapP ){
         int i;
         for(i=0; i < dedlist_.size(); i++) {
-            if( dedlist_.get(i).getTap(tapP) == true ) return lastTapIndex_ = i;
+            if(dedlist_.get(i).getTap(tapP)) return lastTapIndex_ = i;
         }
         return lastTapIndex_ = -11;
     }
 
+    @NotNull
     @Override
     public DeductionList clone(){
         DeductionList b = new DeductionList();
@@ -69,13 +63,6 @@ public class DeductionList extends EditList implements Cloneable {
         for (int i = 0; i < dedlist_.size(); i++ ) {
             dedlist_.get(i).rotate(bp, angle);
         }
-    }
-
-    public float roundByUnderTwo(float fp) {
-        float ip = fp * 100f;
-        ip = Math.round(ip);
-        float rfp = (float)ip / 100;
-        return rfp;
     }
 
     @Override
@@ -142,12 +129,14 @@ public class DeductionList extends EditList implements Cloneable {
         return count;
     }
 
+    @NotNull
     @Override
     public Deduction get(int num){
         if( num < 1 || num > dedlist_.size() ) return new Deduction();
         return getDeduction(num);
     }
 
+    @NotNull
     @Override
     public Params getParams(int num){
         return dedlist_.get(num-1).getParams();

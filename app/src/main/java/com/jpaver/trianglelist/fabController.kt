@@ -1,14 +1,11 @@
 package com.jpaver.trianglelist
 
 import android.content.Context
-import android.view.View
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.content.res.AppCompatResources.getColorStateList
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.android.synthetic.main.fragment_first.*
 
 class fabController(
     val myEditor :EditorTable,
@@ -29,7 +26,7 @@ class fabController(
     fun EditorClear(elist: EditList, currentNum: Int){
         //loadEditTable()
         my_view.setParentSide(elist.size(), 0)
-        myEditor.LineRewrite(
+        myEditor.lineRewrite(
             Params(
                 "",
                 "",
@@ -42,7 +39,7 @@ class fabController(
                 PointXY(0f, 0f)
             ), myELFirst
         )
-        myEditor.LineRewrite(elist.get(currentNum).getParams(), myELSecond)
+        myEditor.lineRewrite(elist.get(currentNum).getParams(), myELSecond)
     }
 
     fun validTriangle(dp: Params) : Boolean{
@@ -83,8 +80,8 @@ class fabController(
         val editlist = getList(dedmode)
         var readedFirst  = Params()
         var readedSecond = Params()
-        myEditor.ReadLineTo(readedFirst, myELFirst)
-        myEditor.ReadLineTo(readedSecond, myELSecond)
+        myEditor.readLineTo(readedFirst, myELFirst)
+        myEditor.readLineTo(readedSecond, myELSecond)
         if( useit == true ){
             readedFirst = params
             readedSecond = params
@@ -172,7 +169,7 @@ class fabController(
             myTri.myNumber_ = params.n
             trilist.add(myTri)
             appActivity.findViewById<EditText>(R.id.editLengthA1).requestFocus()
-            trilist.lastTapNum_ = trilist.size()
+            trilist.lastTapNumber_ = trilist.size()
             //my_view.resetView()
             return true
         }

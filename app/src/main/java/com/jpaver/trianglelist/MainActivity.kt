@@ -26,8 +26,6 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider.getUriForFile
 import androidx.core.content.edit
-import androidx.core.net.toUri
-import androidx.documentfile.provider.DocumentFile
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.InterstitialAd
@@ -115,8 +113,6 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    var TriLists_ = ArrayList<TriangleList>()
-
     lateinit var myELFirst: EditTextViewLine
     lateinit var myELSecond: EditTextViewLine
     lateinit var myELThird: EditTextViewLine
@@ -140,31 +136,14 @@ class MainActivity : AppCompatActivity(),
         "NTT",
         "電気"
     )
-    val dedSizeListC = listOf(
-        "0.23",
-        "0.23",
-        "0.23",
-        "0.66",
-        "0.70",
-        "0.40",
-        "0.40",
-        "0.30",
-        "0.55",
-        "0.55",
-        "1.0",
-        "1.0"
-    )
-    val dedNameListB = listOf("消火栓B", "基礎", "側溝", "集水桝")
 
-   // val dedmap = MapOf(dedNameList to )
+    // val dedmap = MapOf(dedNameList to )
 
     var myEditor: EditorTable = EditorTable()
     var dParams_: Params = Params("", "", 0, 0f, 0f, 0f, 0, 0, PointXY(0f, 0f))
     var lastParams_: Params = dParams_
 
     // タイトルパラメータ、stringリソースから構成する
-
-    lateinit var str : String// = getString( R.string.tenkai_koujimei )//this.getString( R.string.tenkai_title )
 
     lateinit var rStr_ : ResStr
     lateinit var titleTri_: TitleParams//
@@ -176,8 +155,6 @@ class MainActivity : AppCompatActivity(),
     lateinit var myDeductionList: DeductionList
 
     var trilistStored_: TriangleList = TriangleList()
-
-    var watcherCount_ = 0
 
     var fileType: String = "notyet"
     var filename_ = "notyet"
@@ -321,7 +298,7 @@ class MainActivity : AppCompatActivity(),
 
         loadEditTable()
         my_view.setParentSide(elist.size(), 0)
-        myEditor.LineRewrite(
+        myEditor.lineRewrite(
             Params(
                 "",
                 "",
@@ -334,9 +311,9 @@ class MainActivity : AppCompatActivity(),
                 PointXY(0f, 0f)
             ), myELFirst
         )
-        myEditor.LineRewrite(eo.getParams(), myELSecond)
-        if(currentNum > 1) myEditor.LineRewrite(eob.getParams(), myELThird)
-        if(currentNum == 1) myEditor.LineRewrite(
+        myEditor.lineRewrite(eo.getParams(), myELSecond)
+        if(currentNum > 1) myEditor.lineRewrite(eob.getParams(), myELThird)
+        if(currentNum == 1) myEditor.lineRewrite(
             Params(
                 "",
                 "",
@@ -465,7 +442,7 @@ class MainActivity : AppCompatActivity(),
         }
 
         fab_flag.setOnClickListener { view ->
-            dParams_ = myEditor.ReadLineTo(dParams_, myELSecond)// 200703 // if式の中に入っていると当然ながら更新されない時があるので注意
+            dParams_ = myEditor.readLineTo(dParams_, myELSecond)// 200703 // if式の中に入っていると当然ながら更新されない時があるので注意
 
             lateinit var resetPoint :PointXY //= PointXY(0f, 0f)
 
@@ -474,8 +451,7 @@ class MainActivity : AppCompatActivity(),
                 dParams_.pts = my_view.getTapPoint()
                 dParams_.pt = d.point
                 //var ded = myDeductionList.get(dParams_.n)
-                val tp = my_view.getTapPoint().scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
-                resetPoint = tp
+                my_view.getTapPoint().scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
                 if( validDeduction(dParams_) == true ) {// あまり遠い時はスルー
                     myDeductionList.replace(dParams_.n, dParams_)
 //                    EditorReset(getList(myDeductionMode),getList(myDeductionMode).length())
@@ -484,13 +460,11 @@ class MainActivity : AppCompatActivity(),
             }
             else{
                 val tri = myTriangleList.get(dParams_.n)
-                if( tri != null ){
                 val tp = my_view.getTapPoint().scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
                 if( tp.lengthTo(tri.pointCenter_) < 10f ){ // あまり遠い時はスルー
                     tri.pointNumber_ = tp
                     tri.isPointNumberMoved_ = true
                     my_view.setTriangleList(myTriangleList, mScale)
-                }
                 }
             }
             resetPoint = my_view.getTapPoint().scale(PointXY(0f, 0f), 1f, -1f)
@@ -510,45 +484,39 @@ class MainActivity : AppCompatActivity(),
         fab_dimsidew.setOnClickListener { view ->
             if(!deductionMode_){
                 var dimside = my_view.myTriangleList.lastTapSide_
-                var trinum  = my_view.myTriangleList.lastTapNum_
+                val trinum  = my_view.myTriangleList.lastTapNumber_
                 val tri = myTriangleList.get(trinum)
                 val triv = my_view.myTriangleList.get(trinum)
-                if( tri != null && triv != null ) {
-                    if( dimside == 0 && ( tri.parentBC_ == 1 ||  tri.parentBC_ == 2 ) ) {
-                        trinum = tri.parentNumber_
-                        dimside = tri.parentBC_
-                    }
-
-                    tri.rotateDimSideAlign(dimside)
-                    triv.rotateDimSideAlign(dimside)//setTriangleList(myTriangleList, mScale)
-                    my_view.invalidate()
-                    AutoSaveCSV()
+                if( dimside == 0 && ( tri.parentBC_ == 1 ||  tri.parentBC_ == 2 ) ) {
+                    dimside = tri.parentBC_
                 }
+
+                tri.rotateDimSideAlign(dimside)
+                triv.rotateDimSideAlign(dimside)//setTriangleList(myTriangleList, mScale)
+                my_view.invalidate()
+                AutoSaveCSV()
             }
         }
 
         fab_dimsideh.setOnClickListener { view ->
             if(!deductionMode_){
                 var dimside = my_view.myTriangleList.lastTapSide_
-                var trinum  = my_view.myTriangleList.lastTapNum_
+                val trinum  = my_view.myTriangleList.lastTapNumber_
                 val tri = myTriangleList.get(trinum)
                 val triv = my_view.myTriangleList.get(trinum)
-                if( tri != null && triv != null ) {
-                    if( dimside == 0 && ( tri.parentBC_ == 1 ||  tri.parentBC_ == 2 ) ) {
-                        trinum = tri.parentNumber_
-                        dimside = tri.parentBC_
-                    }
-
-                    tri.flipDimAlignH(dimside)
-                    triv.flipDimAlignH(dimside)//setTriangleList(myTriangleList, mScale)
-                    my_view.invalidate()
-                    AutoSaveCSV()
+                if( dimside == 0 && ( tri.parentBC_ == 1 ||  tri.parentBC_ == 2 ) ) {
+                    dimside = tri.parentBC_
                 }
+
+                tri.flipDimAlignH(dimside)
+                triv.flipDimAlignH(dimside)//setTriangleList(myTriangleList, mScale)
+                my_view.invalidate()
+                AutoSaveCSV()
             }
         }
 
         fab_nijyuualign.setOnClickListener { view ->
-            if(!deductionMode_ && myTriangleList.lastTapNum_ > 1 ){
+            if(!deductionMode_ && myTriangleList.lastTapNumber_ > 1 ){
                 myTriangleList.rotateCurrentTriLCR()
                 //myTriangleList.resetTriConnection(myTriangleList.lastTapNum_, );
                 my_view.setTriangleList(myTriangleList, mScale)
@@ -573,7 +541,7 @@ class MainActivity : AppCompatActivity(),
                     trilistStored_ = myTriangleList.clone()
 
                     var eraseNum = listLength
-                    if( deductionMode_ == false ) eraseNum = myTriangleList.lastTapNum_
+                    if( deductionMode_ == false ) eraseNum = myTriangleList.lastTapNumber_
 
                     getList(deductionMode_).remove( eraseNum )
 
@@ -610,10 +578,9 @@ class MainActivity : AppCompatActivity(),
 
         fab_fillcolor.setOnClickListener { view ->
             if(!deductionMode_){
-                val tri = myTriangleList.get(my_view.myTriangleList.current)
-                if( tri != null ){
+                myTriangleList.get(my_view.myTriangleList.current)
 
-                }
+
                 colorindex_ ++
                 if(colorindex_ == RColors.size) colorindex_ = 0
                 fab_fillcolor.backgroundTintList = getColorStateList(RColors.get(colorindex_))
@@ -839,8 +806,8 @@ class MainActivity : AppCompatActivity(),
 
         var readedFirst  = Params()
         var readedSecond = Params()
-        myEditor.ReadLineTo(readedFirst, myELFirst)
-        myEditor.ReadLineTo(readedSecond, myELSecond)
+        myEditor.readLineTo(readedFirst, myELFirst)
+        myEditor.readLineTo(readedSecond, myELSecond)
         if( useit == true ){
             readedFirst = params
             readedSecond = params
@@ -895,8 +862,8 @@ class MainActivity : AppCompatActivity(),
 
     fun moveTrilist(){
         my_view.getTriangleList().setCurrent(myTriangleList.getCurrent())
-        my_view.myTriangleList.lastTapNum_ = myTriangleList.getCurrent()
-        myTriangleList.lastTapNum_ = myTriangleList.getCurrent()
+        my_view.myTriangleList.lastTapNumber_ = myTriangleList.getCurrent()
+        myTriangleList.lastTapNumber_ = myTriangleList.getCurrent()
         my_view.resetViewToLSTP()
     }
 
@@ -935,7 +902,7 @@ class MainActivity : AppCompatActivity(),
             myTri.myNumber_ = params.n
             myTriangleList.add(myTri)
             findViewById<EditText>(R.id.editLengthA1).requestFocus()
-            myTriangleList.lastTapNum_ = myTriangleList.size()
+            myTriangleList.lastTapNumber_ = myTriangleList.size()
             //my_view.resetView()
             return true
         }
@@ -980,7 +947,7 @@ class MainActivity : AppCompatActivity(),
         //if( BuildConfig.FLAVOR == "free" ) mAdView.visibility = INVISIBLE
 
         my_view.myTriangleList.lastTapSide_ = i
-        dParams_ = myEditor.ReadLineTo(dParams_, myELFirst) //keep them
+        dParams_ = myEditor.readLineTo(dParams_, myELFirst) //keep them
         var focusTo = findViewById<EditText>(R.id.editLengthB1)
 
 
@@ -994,7 +961,7 @@ class MainActivity : AppCompatActivity(),
             my_view.watchedC_ = findViewById<EditText>(R.id.editLengthC1).text.toString()
 
             val t:Triangle = myTriangleList.get(dParams_.pn)
-            myEditor.LineRewrite(
+            myEditor.lineRewrite(
                 Params(
                     dParams_.name,
                     "",
@@ -1023,7 +990,7 @@ class MainActivity : AppCompatActivity(),
         }
         else{
             setFabSetBC(i)
-            myEditor.LineRewrite(
+            myEditor.lineRewrite(
                 Params(
                     dParams_.name,
                     "",
@@ -1072,7 +1039,7 @@ class MainActivity : AppCompatActivity(),
 
             // 三角形番号が押されたときはセンタリング
             my_view.myTriangleList.getTap(my_view.localPressPoint.scale(PointXY(0f, 0f), 1f, -1f))
-            if ( my_view.myTriangleList.lastTapNum_ != 0 ) {
+            if ( my_view.myTriangleList.lastTapNumber_ != 0 ) {
                 if( my_view.myTriangleList.lastTapSide_ == 3 ) my_view.resetViewToLSTP()
             }
 
@@ -1094,21 +1061,21 @@ class MainActivity : AppCompatActivity(),
 
             my_view.myTriangleList.getTap(lpp)
 
-            if ( my_view.myTriangleList.lastTapNum_ != 0 ) {
+            if ( my_view.myTriangleList.lastTapNumber_ != 0 ) {
                 //Toast.makeText(this, "Triangle tap", Toast.LENGTH_SHORT).show()
                 myEditor.scroll(
-                    my_view.getTriangleList().lastTapNum_ - my_view.getTriangleList().getCurrent(),
+                    my_view.getTriangleList().lastTapNumber_ - my_view.getTriangleList().getCurrent(),
                     getList(deductionMode_), myELSecond, myELThird
                 )
 
-                my_view.getTriangleList().setCurrent(my_view.getTriangleList().lastTapNum_)
-                myTriangleList.setCurrent(my_view.getTriangleList().lastTapNum_)
-                myTriangleList.lastTapNum_ = my_view.getTriangleList().lastTapNum_
+                my_view.getTriangleList().setCurrent(my_view.getTriangleList().lastTapNumber_)
+                myTriangleList.setCurrent(my_view.getTriangleList().lastTapNumber_)
+                myTriangleList.lastTapNumber_ = my_view.getTriangleList().lastTapNumber_
                 myTriangleList.lastTapSide_ = my_view.getTriangleList().lastTapSide_
-                findViewById<EditText>(R.id.editParentNumber1).setText(myTriangleList.lastTapNum_.toString())
+                findViewById<EditText>(R.id.editParentNumber1).setText(myTriangleList.lastTapNumber_.toString())
                 findViewById<EditText>(R.id.editNumber1).setText(myTriangleList.size().toString())
 
-                colorindex_ = myTriangleList.get(myTriangleList.lastTapNum_).color_
+                colorindex_ = myTriangleList.get(myTriangleList.lastTapNumber_).color_
                 colorMovementFabs()
                 printDebugConsole()
                 setTitles()
@@ -1117,7 +1084,7 @@ class MainActivity : AppCompatActivity(),
                     findViewById<EditText>(R.id.editLengthA2).requestFocus()
                     findViewById<EditText>(R.id.editLengthA2).setSelection(findViewById<EditText>(R.id.editLengthA2).text.length)
                     inputMethodManager.showSoftInput(findViewById(R.id.editLengthA2), 0)
-                    my_view.setParentSide(my_view.getTriangleList().lastTapNum_, 3)
+                    my_view.setParentSide(my_view.getTriangleList().lastTapNumber_, 3)
                 }
                 if( my_view.myTriangleList.lastTapSide_ == 1 || slpp == 1 ) {
                     autoConnection(1)
@@ -1144,7 +1111,7 @@ class MainActivity : AppCompatActivity(),
                 1
             ).color_
         } ${myTriangleList.get(1).color_} 
-                        |TapTL: ${my_view.tapTL_} , lastTapNum: ${my_view.getTriangleList().lastTapNum_}, lastTapSide: ${my_view.getTriangleList().lastTapSide_}                                 
+                        |TapTL: ${my_view.tapTL_} , lastTapNum: ${my_view.getTriangleList().lastTapNumber_}, lastTapSide: ${my_view.getTriangleList().lastTapSide_}                                 
                         |viewX: ${my_view.getViewSize().x}, viewY ${my_view.getViewSize().y}, zoomsize: ${my_view.zoomSize}
                         |mtsX: ${
             myTriangleList.measureMostLongLine().x
@@ -1290,7 +1257,7 @@ class MainActivity : AppCompatActivity(),
             count: Int,
             after: Int
         ) {
-            val input = ("start=" + start
+            ("start=" + start
                     + ", count=" + count
                     + ", after=" + after
                     + ", s=" + s.toString())
@@ -1303,7 +1270,7 @@ class MainActivity : AppCompatActivity(),
             before: Int,
             count: Int
         ) {
-            val input = ("start=" + start
+            ("start=" + start
                     + ", before=" + before
                     + ", count=" + count
                     + ", s=" + s.toString())
@@ -1408,10 +1375,6 @@ class MainActivity : AppCompatActivity(),
 
     }
 
-    fun rotateColor(index: Int): Int{
-        return R.color.colorPink
-    }
-
     fun CreateNew(){
         val tri = Triangle(5f, 5f, 5f, PointXY(0f, 0f), 0f)
         tri.autoSetDimAlign()
@@ -1427,7 +1390,7 @@ class MainActivity : AppCompatActivity(),
 
         my_view.setTriangleList(trilist, mScale)
         my_view.setDeductionList(myDeductionList, mScale)
-        my_view.myTriangleList.lastTapNum_ = my_view.myTriangleList.size()
+        my_view.myTriangleList.lastTapNumber_ = my_view.myTriangleList.size()
         my_view.resetViewToLSTP()
 
         fab_fillcolor.backgroundTintList = getColorStateList(RColors.get(colorindex_))
@@ -1484,18 +1447,18 @@ class MainActivity : AppCompatActivity(),
                 ViewPdf(
                     AssetsFileProvider.CONTENT_URI.buildUpon()
                     .appendPath("pdf")
-                    .appendPath("sample.pdf")
+                    .appendPath("trilistusage.pdf")
                     .build()   )
                 return true
             }
             R.id.action_new -> {
-                val dialog: MyDialogFragment = MyDialogFragment()
+                val dialog = MyDialogFragment()
                 dialog.show(supportFragmentManager, "dialog.basic")
                 return true
             }
             R.id.action_save_csv -> {
                 fileType = "CSV"
-                val i: Intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
+                val i = Intent(Intent.ACTION_CREATE_DOCUMENT)
                 i.addCategory(Intent.CATEGORY_OPENABLE)
                 i.type = "text/csv"
                 i.putExtra(
@@ -1556,67 +1519,67 @@ class MainActivity : AppCompatActivity(),
                     .setMessage(R.string.inputcname)
                     .setView(editText)
                     .setPositiveButton("OK",
-                        DialogInterface.OnClickListener { dialog, which ->
-                            koujiname_ = editText.text.toString()
+                            { dialog, which ->
+                                koujiname_ = editText.text.toString()
 
-                            AlertDialog.Builder(this)
-                                .setTitle("Save PDF")
-                                .setMessage(R.string.inputdname)
-                                .setView(editText2)
-                                .setPositiveButton("OK",
-                                    DialogInterface.OnClickListener { dialog, which ->
-                                        rosenname_ = editText2.text.toString()
+                                AlertDialog.Builder(this)
+                                    .setTitle("Save PDF")
+                                    .setMessage(R.string.inputdname)
+                                    .setView(editText2)
+                                    .setPositiveButton("OK",
+                                        DialogInterface.OnClickListener { dialog, which ->
+                                            rosenname_ = editText2.text.toString()
 
-                                        AlertDialog.Builder(this)
-                                            .setTitle("Save PDF")
-                                            .setMessage(R.string.inputaname)
-                                            .setView(editText3)
-                                            .setPositiveButton("OK",
-                                                DialogInterface.OnClickListener { dialog, which ->
-                                                    gyousyaname_ =
-                                                        editText3.text.toString()
+                                            AlertDialog.Builder(this)
+                                                .setTitle("Save PDF")
+                                                .setMessage(R.string.inputaname)
+                                                .setView(editText3)
+                                                .setPositiveButton("OK",
+                                                    DialogInterface.OnClickListener { dialog, which ->
+                                                        gyousyaname_ =
+                                                            editText3.text.toString()
 
-                                                    AlertDialog.Builder(this)
-                                                        .setTitle("Save PDF")
-                                                        .setMessage(R.string.inputdnum)
-                                                        .setView(
-                                                            editText4
-                                                        )
-                                                        .setPositiveButton(
-                                                            "OK",
-                                                            DialogInterface.OnClickListener { dialog, which ->
-                                                                zumennum_ =
-                                                                    editText4.text.toString()
+                                                        AlertDialog.Builder(this)
+                                                            .setTitle("Save PDF")
+                                                            .setMessage(R.string.inputdnum)
+                                                            .setView(
+                                                                editText4
+                                                            )
+                                                            .setPositiveButton(
+                                                                "OK",
+                                                                DialogInterface.OnClickListener { dialog, which ->
+                                                                    zumennum_ =
+                                                                        editText4.text.toString()
 
-                                                                fileType =
-                                                                    "PDF"
-                                                                var i: Intent =
-                                                                    Intent(
-                                                                        Intent.ACTION_CREATE_DOCUMENT
-                                                                    ).apply {
-                                                                        addCategory(
-                                                                            Intent.CATEGORY_OPENABLE
-                                                                        )
-                                                                        type =
-                                                                            "application/pdf"
-                                                                        putExtra(
-                                                                            Intent.EXTRA_TITLE,
-                                                                            rosenname_ + "_" + LocalDate.now() + ".pdf"
-                                                                        )
+                                                                    fileType =
+                                                                        "PDF"
+                                                                    val i: Intent =
+                                                                        Intent(
+                                                                            Intent.ACTION_CREATE_DOCUMENT
+                                                                        ).apply {
+                                                                            addCategory(
+                                                                                Intent.CATEGORY_OPENABLE
+                                                                            )
+                                                                            type =
+                                                                                "application/pdf"
+                                                                            putExtra(
+                                                                                Intent.EXTRA_TITLE,
+                                                                                rosenname_ + "_" + LocalDate.now() + ".pdf"
+                                                                            )
 
-                                                                    }
-                                                                startActivityForResult(
-                                                                    i,
-                                                                    1
-                                                                )
+                                                                        }
+                                                                    startActivityForResult(
+                                                                        i,
+                                                                        1
+                                                                    )
 
-                                                            })
-                                                        .show()
-                                                })
-                                            .show()
-                                    })
-                                .show()
-                        })
+                                                                })
+                                                            .show()
+                                                    })
+                                                .show()
+                                        })
+                                    .show()
+                            })
                     .show()
 
                 return true
@@ -1657,22 +1620,6 @@ class MainActivity : AppCompatActivity(),
         startActivityForResult(intent, 2)
     }
 
-    fun actionLoadCSV(){
-        checkPermission()
-        var i: Intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
-        i.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-        i.addCategory(Intent.CATEGORY_OPENABLE)
-        i.type = "text/csv"
-        //i.putExtra(Intent.EXTRA_TITLE, ".csv")
-        startActivityForResult(i, 2)
-    }
-
-    fun actionSelectDir(){
-        checkPermission()
-        val i = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)   // 1
-        startActivityForResult(i, REQUEST_CODE )
-    }
-
     @RequiresApi(Build.VERSION_CODES.O)
     fun showExportDialog(fileprefix: String, title: String, filetype: String, intentType: String): Boolean{
         val hTstart = getString(R.string.inputtnum)
@@ -1693,7 +1640,7 @@ class MainActivity : AppCompatActivity(),
                     drawingNumberReversal_ = false
 
                     fileType = filetype
-                    var i: Intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
+                    val i = Intent(Intent.ACTION_CREATE_DOCUMENT)
                     i.type = intentType
                     i.putExtra(
                         Intent.EXTRA_TITLE,
@@ -1703,61 +1650,44 @@ class MainActivity : AppCompatActivity(),
                 }
             )
             .setNegativeButton("NumReverse",
-                DialogInterface.OnClickListener { dialog, which ->
-                    drawingStartNumber_ = editText5.text.toString().toInt()
-                    drawingNumberReversal_ = true
+                    { dialog, which ->
+                        drawingStartNumber_ = editText5.text.toString().toInt()
+                        drawingNumberReversal_ = true
 
-                    fileType = filetype
-                    var i: Intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
-                    i.type = intentType
-                    i.putExtra(
-                        Intent.EXTRA_TITLE,
-                        rosenname_ + " " + LocalDate.now() + fileprefix
-                    )
-                    startActivityForResult(i, 1)
-                }
+                        fileType = filetype
+                        val i = Intent(Intent.ACTION_CREATE_DOCUMENT)
+                        i.type = intentType
+                        i.putExtra(
+                            Intent.EXTRA_TITLE,
+                            rosenname_ + " " + LocalDate.now() + fileprefix
+                        )
+                        startActivityForResult(i, 1)
+                    }
             ).show()
         return true
-    }
-
-    // ファイル読み込み
-    private fun readFile() {
-        val uri = prefSetting.getString("uri", "")?.toUri() ?: return
-        // ファイル操作
-        DocumentFile.fromTreeUri(this, uri)?.apply {
-            // テキストファイル取り出し
-            if (findFile("test.txt")?.exists() == false) {
-                // なければ終了
-                return@apply
-            }
-            val textFile = findFile("test.txt") ?: return@apply
-            // テキスト取り出す
-            val text = contentResolver.openInputStream(textFile.uri)?.bufferedReader()?.readLine()
-            //editText.setText(text)
-        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if(data?.data == NULL || resultCode == RESULT_CANCELED) return
-        var title: Uri = Objects.requireNonNull(data?.data)!!
+        val title: Uri = Objects.requireNonNull(data?.data)!!
 
         if(requestCode == 1 && resultCode == RESULT_OK) {
             try {
-                var charset: String = "Shift-JIS"
-                var writer: BufferedWriter = BufferedWriter(
+                val charset = "Shift-JIS"
+                val writer = BufferedWriter(
                     OutputStreamWriter(contentResolver.openOutputStream(title), charset)
                 )
 
                 if (fileType == "DXF") saveDXF(writer)
                 if (fileType == "CSV") saveCSV(writer)
-                if (fileType == "PDF") savePDF(contentResolver.openOutputStream(title)!!, true)
+                if (fileType == "PDF") savePDF(contentResolver.openOutputStream(title)!!)
                 if (fileType == "SFC") saveSFC(
-                    BufferedOutputStream(
-                        contentResolver.openOutputStream(
-                            title
+                        BufferedOutputStream(
+                            contentResolver.openOutputStream(
+                                title
+                            )
                         )
-                    ), true
                 )
 
                 AutoSaveCSV() // オートセーブ
@@ -1768,9 +1698,9 @@ class MainActivity : AppCompatActivity(),
         }
 
         if(requestCode ==2 && resultCode == RESULT_OK) {
-            var str: StringBuilder = StringBuilder()
+            StringBuilder()
             try {
-                var reader: BufferedReader = BufferedReader(
+                val reader = BufferedReader(
                     InputStreamReader(contentResolver.openInputStream(title), "Shift-JIS")
                 )
                 loadCSV(reader)
@@ -1816,22 +1746,6 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    fun makeRStr() : ResStr {
-        return ResStr(
-            getString(R.string.tenkai_title),
-            koujiname_,
-            getString(R.string.tenkai_zumenmei),
-            rosenname_,
-            getString(R.string.tenkai_nengappi),
-            gyousyaname_,
-            getString(R.string.menseki),
-            getString(R.string.menseki_title),
-            getString(R.string.menseki_koujimei),
-            getString(R.string.menseki_syoukei),
-            getString(R.string.menseki_goukei),
-        )
-    }
-
     fun ViewPdf( contentUri: Uri ){
         AutoSavePDF()
 
@@ -1855,7 +1769,7 @@ class MainActivity : AppCompatActivity(),
         //AutoSaveDXF()
         //AutoSaveSFC()
 
-        var intent: Intent = Intent(Intent.ACTION_SEND_MULTIPLE)
+        val intent = Intent(Intent.ACTION_SEND_MULTIPLE)
         val contentUri = getAppLocalFile(this, "myLastTriList.pdf")
         val contentUri2 = getAppLocalFile(this, "myLastTriList.csv")
         //val contentUri3 = getAppLocalFile( this, "myLastTriList.dxf" )
@@ -1929,7 +1843,7 @@ class MainActivity : AppCompatActivity(),
         return bWriter
     }
 
-    fun saveSFC(out: BufferedOutputStream, isShowAd: Boolean) {
+    fun saveSFC(out: BufferedOutputStream) {
 
         val writer = SfcWriter(myTriangleList, myDeductionList, out, filename_, drawingStartNumber_)
         writer.setNames(koujiname_, rosenname_, gyousyaname_, zumennum_)
@@ -1946,8 +1860,8 @@ class MainActivity : AppCompatActivity(),
 
     }
 
-    fun savePDF(out: OutputStream, isShowAd: Boolean){
-        var writer: PdfWriter = PdfWriter(
+    fun savePDF(out: OutputStream){
+        val writer = PdfWriter(
             myTriangleList.getPrintScale(1f),
             myTriangleList
         )
@@ -1994,35 +1908,7 @@ class MainActivity : AppCompatActivity(),
 
     fun AutoSavePDF(){
         try {
-            savePDF(openFileOutput("myLastTriList.pdf", Context.MODE_PRIVATE), false)
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-    }
-
-    // show ad.
-    fun AutoSaveDXF(){
-        try {
-            val charset: String = "Shift-JIS"
-            var writer: BufferedWriter = BufferedWriter(
-                OutputStreamWriter(
-                    openFileOutput("myLastTriList.dxf", Context.MODE_PRIVATE),
-                    charset
-                )
-            )
-            writer = saveDXF(writer)
-
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-    }
-
-    fun AutoSaveSFC(){
-        try {
-            saveSFC(
-                BufferedOutputStream(openFileOutput("myLastTriList.sfc", Context.MODE_PRIVATE)),
-                false
-            )
+            savePDF(openFileOutput("myLastTriList.pdf", Context.MODE_PRIVATE))
         } catch (e: IOException) {
             e.printStackTrace()
         }
@@ -2030,7 +1916,7 @@ class MainActivity : AppCompatActivity(),
 
     fun AutoSaveCSV(){
         try {
-            var writer: BufferedWriter = BufferedWriter(
+            val writer = BufferedWriter(
                 OutputStreamWriter(openFileOutput("myLastTriList.csv", Context.MODE_PRIVATE))
             )
             saveCSV(writer)
@@ -2044,9 +1930,9 @@ class MainActivity : AppCompatActivity(),
     }
 
     fun ResumeCSV(){
-        var str: StringBuilder = StringBuilder()
+        StringBuilder()
         try {
-            var reader: BufferedReader = BufferedReader(
+            val reader = BufferedReader(
                 InputStreamReader(openFileInput("myLastTriList.csv"))
             )
             val ok = loadCSV(reader)
@@ -2070,8 +1956,8 @@ class MainActivity : AppCompatActivity(),
         writer.newLine()
 
         for (index in 1 .. myTriangleList.size()){
-            var mt: Triangle = myTriangleList.getTriangle(index)
-            var pt: PointXY = mt.pointNumber_
+            val mt: Triangle = myTriangleList.getTriangle(index)
+            val pt: PointXY = mt.pointNumber_
             val cp = parentBCtoCParam(mt.parentBC, mt.lengthAforce_, mt.cParam_)
             //if( mt.isPointNumberMoved_ == true ) pt.scale(PointXY(0f,0f),1f,-1f)
             writer.write(
@@ -2113,8 +1999,8 @@ class MainActivity : AppCompatActivity(),
 
         for(index in 1 .. myDeductionList.size()){
             val dd: Deduction = myDeductionList.get(index)
-            var pointAtRealscale = dd.point.scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
-            var pointFlagAtRealscale = dd.pointFlag.scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
+            val pointAtRealscale = dd.point.scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
+            val pointFlagAtRealscale = dd.pointFlag.scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
             dd.scale(PointXY(0f, 0f), 1f, -1f)
             writer.write(
                 "Deduction, " +              //0
@@ -2123,13 +2009,13 @@ class MainActivity : AppCompatActivity(),
                         dd.lengthX.toString() + ", " +     //3
                         dd.lengthY.toString() + ", " +     //4
                         dd.parentNum.toString() + ", " +   //5
-                        dd.type.toString() + ", " +        //6
+                        dd.type + ", " +        //6
                         dd.angle.toString() + ", " +       //7
                         pointAtRealscale.x.toString() + ", " +     //8
                         pointAtRealscale.y.toString() + ", " +     //9
                         pointFlagAtRealscale.x.toString() + ", " + //10
                         pointFlagAtRealscale.y.toString() + ", " + //11
-                        dd.shapeAngle_.toString()        //12
+                        dd.shapeAngle.toString()        //12
             )
             writer.newLine()
             dd.scale(PointXY(0f, 0f), 1f, -1f)
@@ -2140,7 +2026,7 @@ class MainActivity : AppCompatActivity(),
     fun loadCSV(reader: BufferedReader) :Boolean{
 //        myDeductionMode = true
 //        setDeductionMode(myDeductionMode)
-        var str: StringBuilder = StringBuilder()
+        val str: StringBuilder = StringBuilder()
         var line: String? = reader.readLine()
         if(line == null) return false
         var chunks: List<String?> = line.split(",").map { it.trim() }
@@ -2172,16 +2058,16 @@ class MainActivity : AppCompatActivity(),
             chunks = line?.split(",")!!.map { it.trim() }
         }
 
-        var trilist: TriangleList = TriangleList()
+        val trilist = TriangleList()
 
-        var pointfirst = PointXY(0f, 0f)
-        var anglefirst = 180f
-        if( chunks.size > 22 ) {
-            if( chunks[22]!!.toFloat() != 180f ){
+        val pointfirst = PointXY(0f, 0f)
+        val anglefirst = 180f
+        //if( chunks.size > 22 ) {
+            //if( chunks[22]!!.toFloat() != 180f ){
                 //pointfirst = PointXY( -chunks[23]!!.toFloat(), -chunks[24]!!.toFloat() )
                 //anglefirst = chunks[22]!!.toFloat() - 180f
-            }
-        }
+            //}
+        //}
 
         trilist.add(
             Triangle(
@@ -2227,8 +2113,7 @@ class MainActivity : AppCompatActivity(),
         }
 
 
-        var dedlist: DeductionList = DeductionList()
-        var revScale: Float = 1f
+        val dedlist = DeductionList()
 
         while (line != null){
             line = reader.readLine()
@@ -2240,7 +2125,6 @@ class MainActivity : AppCompatActivity(),
             }
             if(chunks[0] == "ListScale") {
                 trilist.setScale(PointXY(0f, 0f), chunks[1].toFloat())
-                revScale = mScale/ chunks[1].toFloat()
                 continue
             }
             if(chunks[0] == "TextSize") {
@@ -2257,9 +2141,9 @@ class MainActivity : AppCompatActivity(),
                 dedlist.add(
                     Deduction(
                         Params(
-                            chunks[2].toString(), chunks[6].toString(), chunks[1].toInt(),
+                                chunks[2], chunks[6], chunks[1].toInt(),
                             chunks[3].toFloat(), chunks[4].toFloat(), 0f,
-                            chunks[5].toInt(), typeToInt(chunks[6].toString()),
+                            chunks[5].toInt(), typeToInt(chunks[6]),
                             PointXY(
                                 chunks[8].toFloat(),
                                 -chunks[9].toFloat()
@@ -2271,7 +2155,7 @@ class MainActivity : AppCompatActivity(),
                         )
                     )
                 )
-                if( chunks[12].isEmpty() == false ) dedlist.get(dedlist.size()).shapeAngle_ = chunks[12].toFloat()
+                if( chunks[12].isEmpty() == false ) dedlist.get(dedlist.size()).shapeAngle = chunks[12].toFloat()
                 continue
             }
             //Connection Params
@@ -2340,7 +2224,7 @@ class MainActivity : AppCompatActivity(),
             }
 
             val mT = trilist.getTriangle(trilist.size())
-            mT.setMyName_(chunks[6].toString())
+            mT.setMyName_(chunks[6])
             if( trilist.size() > 1 ) trilist.get(trilist.size() - 1).childSide_ = chunks[5].toInt()
 
             if(chunks[9] == "true") mT.setPointNumberMoved_(
@@ -2396,7 +2280,7 @@ class MainActivity : AppCompatActivity(),
     }
 
     fun typeToInt(type: String) :Int{
-        var pl: Int = 0
+        var pl = 0
         if(type == "Box") pl = 1
         if(type == "Circle") pl = 2
         return pl
@@ -2427,9 +2311,9 @@ class MainActivity : AppCompatActivity(),
         val totalArea = roundByUnderTwo(triArea - dedArea)
         title = rStr_.menseki_ + ": ${ totalArea.formattedString(2) } m^2"
 
-        if( myTriangleList.lastTapNum_ > 0 ) title = rStr_.menseki_ + ": ${myTriangleList.getArea() - myDeductionList.getArea()} m^2" + " (${ myTriangleList.getAreaI(
-            myTriangleList.lastTapNum_
-        ) - myDeductionList.getAreaN(myTriangleList.lastTapNum_) } m^2)"
+        if( myTriangleList.lastTapNumber_ > 0 ) title = rStr_.menseki_ + ": ${myTriangleList.getArea() - myDeductionList.getArea()} m^2" + " (${ myTriangleList.getAreaI(
+            myTriangleList.lastTapNumber_
+        ) - myDeductionList.getAreaN(myTriangleList.lastTapNumber_) } m^2)"
     }
 
     fun roundByUnderTwo(fp: Float) :Float {

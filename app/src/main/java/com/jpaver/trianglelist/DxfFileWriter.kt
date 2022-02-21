@@ -31,7 +31,6 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
     override var cRed_ = 1
 
     override fun save(){
-        if(writer_ == null) return
 
         writeHeader()
         /* writeDXFTables(writer)
@@ -319,7 +318,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
 
         //val ded = dedlist_.get( dednumber )
         val textsize = 0.35f
-        val infoStrLength = ded.info_.length*textsize+0.3f
+        val infoStrLength = ded.infoStr.length*textsize+0.3f
         val point = ded.point
         val pointFlag = ded.pointFlag
         var textOffsetX = 0f
@@ -328,7 +327,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         if(point.x <= pointFlag.x) {  //ptFlag is RIGHT from pt
             writeLine( point, pointFlag, 1)
             writeTextAndLine(
-                ded.info_,
+                ded.infoStr,
                 pointFlag,
                 pointFlag.plus(infoStrLength + textOffsetX,0f),
                 textsize,
@@ -337,7 +336,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         } else {                     //ptFlag is LEFT from pt
             writeLine( point, pointFlag, 1)
             writeTextAndLine(
-                ded.info_,
+                ded.infoStr,
                 pointFlag.plus(-ded.getInfo().length*textsize - textOffsetX,0f),
                 pointFlag,
                 textsize,
@@ -350,7 +349,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
     }
 
     fun writeDedRect(ded: Deduction, color: Int){
-        ded.shapeAngle_ = -ded.shapeAngle_ // 逆回転
+        ded.shapeAngle = -ded.shapeAngle // 逆回転
         ded.setBox( 1f )
         writeLine( ded.plt, ded.plb, color)
         writeLine( ded.plt, ded.prt, color)

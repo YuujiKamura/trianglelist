@@ -1,13 +1,9 @@
 package com.jpaver.trianglelist
 
-import android.provider.Settings.Global.getString
 import android.text.method.KeyListener
 import android.widget.EditText
 import android.widget.Spinner
 import android.widget.TextView
-import androidx.core.content.res.TypedArrayUtils.getString
-
-data class TriParams(var name: String, var lengthA: Float, var lengthB: Float, var lengthC: Float, var ParentTriSt: String, var ParentTriSide: Int, var myNum: Int, var ParNum:Int )
 
 data class DeductionParams(var num: Int, var name: String, var lengthX: Float, var lengthY: Float, var parentNum: Int, var type: String, var angle: Float, var point: PointXY)
 
@@ -32,16 +28,9 @@ data class Params(var name: String = "",
                   var pts: PointXY = PointXY(0f, 0f))//,
 //                  var an: Float = 0f)
 
-data class OutlinePoints( var points: ArrayList<PointXY>, var opstr: String )
-
 class EditorTable {
-    var myCurrentTriNumber: Int = 0
-    var myCurrentDeductionNumber: Int = 0
     //var dTP: TriParams = TriParams(0f, 0f, 0f, "", 0, 0, 0)
     //var dDP: DeductionParams = DeductionParams(PointXY(0f,0f), 0f, 0f, "", "", 0f, 0f)
-
-    fun setTriNumber(i: Int){myCurrentTriNumber = i}
-    fun setDeductionNumber(i: Int){myCurrentDeductionNumber = i}
 
     fun setHeaderTable(tV1: TextView, tV2: TextView, tV3: TextView, tV4: TextView, tV5: TextView, tV6: TextView, tV7: TextView, tp: TitleParams){
         tV1.setText(tp.n)
@@ -53,56 +42,35 @@ class EditorTable {
         tV7.setText(tp.pl)
     }
 
-    fun scroll(movement: Int, myList: EditList, secondline: EditTextViewLine, thirdline: EditTextViewLine){
+    fun scroll(movement: Int, myList: EditList, secondly: EditTextViewLine, thirdly: EditTextViewLine){
         val max: Int = myList.size()
-        val min: Int = 1
+        val min = 1
         var current: Int = myList.getCurrent()
-        val secondkeys: Keys = Keys(secondline.n.keyListener, secondline.name.keyListener, secondline.a.keyListener, secondline.b.keyListener, secondline.c.keyListener, secondline.pn.keyListener)
-        val thirdkeys: Keys = Keys(thirdline.n.keyListener, thirdline.name.keyListener, thirdline.a.keyListener, thirdline.b.keyListener, thirdline.c.keyListener, thirdline.pn.keyListener)
-        //keys = setKeyListener(keys, thirdline)
+        Keys(secondly.n.keyListener, secondly.name.keyListener, secondly.a.keyListener, secondly.b.keyListener, secondly.c.keyListener, secondly.pn.keyListener)
+        Keys(thirdly.n.keyListener, thirdly.name.keyListener, thirdly.a.keyListener, thirdly.b.keyListener, thirdly.c.keyListener, thirdly.pn.keyListener)
+        //keys = setKeyListener(keys, thirdly)
 
         if( (max > current && movement > 0) ||
           (current > min && movement < 0) ) {
             current = myList.addCurrent(movement)
-            LineRewrite(myList.getParams(current), secondline)
+            lineRewrite(myList.getParams(current), secondly)
             if(current == 1) {
-                LineRewrite(Params("","",0,0f,0f,0f,0,0, PointXY(0f,0f),PointXY(0f,0f)), thirdline)
-                //setLineEditable(false, thirdkeys, thirdline)
+                lineRewrite(Params("","",0,0f,0f,0f,0,0, PointXY(0f,0f),PointXY(0f,0f)), thirdly)
+                //setLineEditable(false, thirdly, thirdly)
             }
             else {
-//                setLineEditable(true, thirdkeys, thirdline)
-                LineRewrite(myList.getParams(current - 1), thirdline)
+//                setLineEditable(true, thirdly, thirdly)
+                lineRewrite(myList.getParams(current - 1), thirdly)
             }
         }
 }
 
-    fun setKeyListener(keys: Keys, line: EditTextViewLine) :Keys{
-        keys.n = line.n.keyListener
-        keys.name = line.name.keyListener
-        keys.a = line.a.keyListener
-        keys.b = line.b.keyListener
-        keys.c = line.c.keyListener
-        keys.pn = line.pn.keyListener
-
-        return keys
-    }
-
-    fun setLineEditable(bool: Boolean, keys: Keys, line: EditTextViewLine){
-
-        if(bool == false) {
-            line.n.keyListener = null
-        }
-        else {
-            line.n.keyListener = keys.n
-        }
-    }
-
-    fun LineRewrite(prm: Params, line: EditTextViewLine){
+    fun lineRewrite(prm: Params, line: EditTextViewLine){
 
 //        if(prm.n == 0)  line.n.setText("")
         //else
         line.n.setText(prm.n.toString())
-        line.name.setText(prm.name.toString())
+        line.name.setText(prm.name)
 
         if(prm.a == 0f) line.a.setText("")
         else            line.a.setText(prm.a.toString())
@@ -115,7 +83,7 @@ class EditorTable {
         line.pl.setSelection(prm.pl)
     }
 
-    fun ReadLineTo(prm: Params, line: EditTextViewLine) :Params {
+    fun readLineTo(prm: Params, line: EditTextViewLine) :Params {
 
         var sa: String = line.a.text.toString()
         var sb: String = line.b.text.toString()

@@ -260,7 +260,7 @@ class TriListTest {
         val triList2 = triList.reverse()
         assertEquals(1, triList2.get(1).myNumber_)
         assertEquals(0, triList2.get(1).parentNumber_)
-        assertEquals(0, triList2.get(2).parentNumber_)
+        assertEquals(-1, triList2.get(2).parentNumber_)
 
 
         val triList3 = triList.numbered(5)
@@ -486,7 +486,7 @@ class TriListTest {
         trilist.add(tri2)
         trilist.add(tri3)
         tri2.reset(tri2, ConnParam(1, 1, 1, 3f))
-        trilist.lastTapNum_ = 2
+        trilist.lastTapNumber_ = 2
         trilist.rotateCurrentTriLCR()
         Assert.assertEquals(1.0f, tri3.pointCA_.y, 0.0001f)
         //trilist.resetTriConnection(2, ConnParam(1, 1, 0, 3f))
@@ -535,7 +535,7 @@ class TriListTest {
         val trilist = TriangleList(tri1)
         trilist.add(tri2)
         trilist.add(tri3)
-        trilist.lastTapNum_ = 2
+        trilist.lastTapNumber_ = 2
         trilist.rotateCurrentTriLCR() //3
         trilist.rotateCurrentTriLCR() //3.5
         Assert.assertEquals(4.0f, tri2.rotateLCR().y, 0.0001f)

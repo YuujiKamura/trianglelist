@@ -4,10 +4,8 @@ package com.jpaver.trianglelist.util
 
 import android.content.ContentProvider
 import android.content.ContentValues
-import android.content.UriMatcher
 import android.content.res.AssetFileDescriptor
 import android.database.Cursor
-import android.graphics.ColorSpace.match
 import android.net.Uri
 import java.io.FileNotFoundException
 import java.io.IOException

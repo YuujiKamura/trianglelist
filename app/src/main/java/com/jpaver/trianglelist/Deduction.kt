@@ -1,9 +1,10 @@
 package com.jpaver.trianglelist
 
+import kotlin.math.roundToInt
+
 data class ConnParam(var side: Int, var type: Int, var lcr: Int, var lenA: Float ){
      fun clone(): ConnParam {
-        val b = ConnParam(side, type, lcr, lenA)
-        return b
+         return ConnParam(side, type, lcr, lenA)
     }
 }
 
@@ -41,22 +42,21 @@ class Deduction(var num: Int = 0,
 
     )
 
-    var scale_ = 1f
-    var shapeAngle_ = 0f
+    var myscale = 1f
+    var shapeAngle = 0f
     lateinit var plt: PointXY
     lateinit var plb: PointXY
     lateinit var prt: PointXY
     lateinit var prb: PointXY
-    var info_: String
+    var infoStr: String
 
-    var distanceInPCA = 0f
-    var angleInParent = 0f
+    private var distanceInPCA = 0f
 
 
     init{
 
         if(type == "Box"){
-            setBox( scale_ )
+            setBox( myscale )
 //            plt = PointXY(point.getX()-lengthX*scale_*0.5f, point.getY()-lengthY*scale_*0.5f ).rotate(point, shapeAngle_)
   //          plb = PointXY(point.getX()-lengthX*scale_*0.5f, point.getY()+lengthY*scale_*0.5f ).rotate(point, shapeAngle_)
     //        prt = PointXY(point.getX()+lengthX*scale_*0.5f, point.getY()-lengthY*scale_*0.5f ).rotate(point, shapeAngle_)
@@ -69,19 +69,15 @@ class Deduction(var num: Int = 0,
             prb = PointXY( 0f, 0f )
         }
 
-        info_ = getInfo()
-    }
-
-    fun setInfo() {
-        info_ = getInfo()
+        infoStr = getInfo()
     }
 
     fun setBox(scale: Float){
-        scale_ = scale
-        plt = PointXY(point.x -lengthX*scale_*0.5f, point.y -lengthY*scale_*0.5f ).rotate(point, shapeAngle_)
-        plb = PointXY(point.x -lengthX*scale_*0.5f, point.y +lengthY*scale_*0.5f ).rotate(point, shapeAngle_)
-        prt = PointXY(point.x +lengthX*scale_*0.5f, point.y -lengthY*scale_*0.5f ).rotate(point, shapeAngle_)
-        prb = PointXY(point.x +lengthX*scale_*0.5f, point.y +lengthY*scale_*0.5f ).rotate(point, shapeAngle_)
+        myscale = scale
+        plt = PointXY(point.x -lengthX*myscale*0.5f, point.y -lengthY*myscale*0.5f ).rotate(point, shapeAngle)
+        plb = PointXY(point.x -lengthX*myscale*0.5f, point.y +lengthY*myscale*0.5f ).rotate(point, shapeAngle)
+        prt = PointXY(point.x +lengthX*myscale*0.5f, point.y -lengthY*myscale*0.5f ).rotate(point, shapeAngle)
+        prb = PointXY(point.x +lengthX*myscale*0.5f, point.y +lengthY*myscale*0.5f ).rotate(point, shapeAngle)
     }
 
     public override fun clone(): Deduction {
@@ -97,12 +93,12 @@ class Deduction(var num: Int = 0,
             b.angle = angle
             b.point = point
             b.pointFlag = pointFlag
-            b.scale_ = scale_
+            b.myscale = myscale
             b.plt = plt
             b.plb = plb
             b.prt = prt
             b.prb = prb
-            b.shapeAngle_ = shapeAngle_
+            b.shapeAngle = shapeAngle
             b.sameDedcount = sameDedcount
 
         } catch (e: Exception) {
@@ -121,27 +117,27 @@ class Deduction(var num: Int = 0,
         angle = 0f
         if( dp.pt.x != 0f && dp.pt.y != 0f ) point =  dp.pt
         pointFlag =  dp.pts
-        info_ = getInfo()
+        infoStr = getInfo()
     }
 
     fun getTap( tapP: PointXY ): Boolean{
 
-        val range = 0.5f * scale_
-        if( tapP.nearBy(point, lengthX*scale_) || tapP.nearBy(pointFlag, range) ) return true
+        val range = 0.5f * myscale
+        if( tapP.nearBy(point, lengthX*myscale) || tapP.nearBy(pointFlag, range) ) return true
 
         return false
     }
 
     fun getInfo(): String{
-        var str = num.toString() + "." + name
+        var str = "$num.$name"
         if( sameDedcount > 1 ) str += "(${sameDedcount})"
         if(type == "Circle") {
             val faif: Float = lengthX * 1000
             val fai: Int = faif.toInt()
-            str += " φ"+fai
+            str += " φ$fai"
         }
         if(type == "Box") {
-            str += " " + lengthX + " * " + lengthY
+            str += " $lengthX * $lengthY"
         }
         return str
     }
@@ -158,7 +154,7 @@ class Deduction(var num: Int = 0,
     fun scale(basepoint: PointXY, sx: Float, sy: Float) {
         point = point.scale(basepoint, sx, sy)
         pointFlag = pointFlag.scale(basepoint, sx, sy)
-        scale_ = sx
+        myscale = sx
 
         if(type == "Box"){
             plt = plt.scale( basepoint, sx, sy )
@@ -184,7 +180,7 @@ class Deduction(var num: Int = 0,
             plb = plb.rotate(bp, degree)
             prt = prt.rotate(bp, degree)
             prb = prb.rotate(bp, degree)
-            shapeAngle_ += degree
+            shapeAngle += degree
         }
     }
 
@@ -195,20 +191,13 @@ class Deduction(var num: Int = 0,
         }
         if( type == "Box" ) { area = lengthX * lengthY }
         //area = area.formattedString(2).toFloat() //roundByUnderTwo( ( Math.round(area.toDouble() * 100.0) / 100.0).toFloat() )//roundByUnderTwo(area)        return area
-        return Math.round( area * 100 ).toFloat() * 0.01f
+        return (area * 100).roundToInt().toFloat() * 0.01f
     }
 
-    fun typeToInt(type: String) :Int{
+    private fun typeToInt(type: String) :Int{
         var pl = 0
         if(type == "Box") pl = 1
         if(type == "Circle") pl = 2
-        return pl
-    }
-
-    fun typeFromInt(type: Int) :String{
-        var pl = ""
-        if(type == 1) pl = "Box"
-        if(type == 2) pl = "Circle"
         return pl
     }
 
@@ -219,13 +208,12 @@ class Deduction(var num: Int = 0,
     }
 
     override fun getParams() :Params{
-        val pr = Params(name,type,num,lengthX,lengthY,0f,parentNum,typeToInt(type),point,pointFlag)
 
-        return pr
+        return Params(name, type, num, lengthX, lengthY,0f, parentNum, typeToInt(type), point, pointFlag)
     }
 
     fun isCollide( tri: Triangle ): Boolean{
-        if( tri.isCollide( point ) == false ) return false
+        if(!tri.isCollide( point )) return false
 
         distanceInPCA = tri.pointCA_.lengthTo( point )
 
