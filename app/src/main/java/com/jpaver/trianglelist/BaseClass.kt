@@ -1,22 +1,22 @@
 package com.jpaver.trianglelist
 
 open class BaseClass {
-    var mydata_ = 0
+    var mydata = 0
 
-    open fun DoSomething(): Int{
-        mydata_ += 1
-        return mydata_
+    open fun doSomething(): Int{
+        mydata += 1
+        return mydata
     }
 
-    fun DoAnything(): Int{
-        return DoSomething()
+    fun doAnything(): Int{
+        return doSomething()
     }
 }
 
 class ExtendedClass : BaseClass(){
 
-    override fun DoSomething(): Int{
-        mydata_ += 2
-        return mydata_
+    override fun doSomething(): Int{
+        mydata += 2
+        return mydata
     }
 }

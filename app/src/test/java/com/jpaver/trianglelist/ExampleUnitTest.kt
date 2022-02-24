@@ -15,7 +15,7 @@ class ExampleUnitTest {
         val baseClass = BaseClass()
         val extendedClass = ExtendedClass()
 
-        assertEquals( 2, extendedClass.DoAnything() )
+        assertEquals( 2, extendedClass.doAnything() )
 
     }
 

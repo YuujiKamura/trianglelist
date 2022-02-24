@@ -11,6 +11,33 @@ import static org.junit.Assert.assertTrue;
 
 public class TriangleTest {
 
+    @Test
+    public void testCompareY(){
+        Triangle t = new Triangle(5f, 5f, 5f );
+        assertEquals( 4.33f, t.compareY( 1f ), 0.01f);
+
+        assertEquals( 0f, t.compareY( -1f ), 0.01f);
+
+
+    }
+
+    @Test
+    public void testDistanceHataage(){
+        Triangle t = new Triangle(5f, 5f, 5f );
+        PointXY p = t.hataage( new PointXY(-2.5f, 2f ), 0f );
+        assertEquals( 4.33f,  p.getY(), 0.01f );
+
+        p = t.hataage( new PointXY(2.5f, 3f ), 0f );
+        assertEquals( 4.33f,  p.getY(), 0.01f );
+
+        p = t.hataage( new PointXY(2.5f, 3f ), 1f );
+        assertEquals( 5.33f,  p.getY(), 0.01f );
+
+        p = t.hataage( new PointXY(2.5f, 1f ), 1f );
+        assertEquals( -1f,  p.getY(), 0.01f );
+
+
+    }
 
     @Test
     public void testResetNodeChain(){

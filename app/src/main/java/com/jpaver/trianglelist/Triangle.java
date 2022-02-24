@@ -1635,4 +1635,24 @@ public class Triangle extends EditObject implements Cloneable {
     public boolean isFloating(){
         return parentBC_ == 9 || parentBC_ == 10;
     }
+
+    public PointXY hataage(PointXY p, float offset ){
+        float distance = p.getY() - pointCenter_.getY();
+        float direction = p.getY() - pointCenter_.getY();
+        if( direction > 0 ) direction = 1;
+        else direction = -1;
+
+        PointXY hataage =  p.clone();
+        hataage.set( p.getX(), p.getY() + ( compareY( direction ) - distance ) + ( offset * direction ) );
+
+        return hataage;
+    }
+
+    public float compareY( float direction ){
+        float Y = pointCA_.getY();
+        if( Y < pointAB_.getY() * direction ) Y = pointAB_.getY();
+        if( Y < pointBC_.getY() * direction ) Y = pointBC_.getY();
+
+        return Y;
+    }
 }

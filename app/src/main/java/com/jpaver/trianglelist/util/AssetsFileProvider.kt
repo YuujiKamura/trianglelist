@@ -62,7 +62,7 @@ class AssetsFileProvider : ContentProvider() {
         // call the code to actually do the query
     }
 
-    override fun getType(uri: Uri): String? {
+    override fun getType(uri: Uri): String {
         //throw UnsupportedOperationException("Not yet implemented")
         //if (uri.path?.endsWith("pdf") == true) {
           //  return "application/pdf"

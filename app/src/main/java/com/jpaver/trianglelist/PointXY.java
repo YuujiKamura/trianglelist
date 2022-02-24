@@ -64,7 +64,7 @@ public class PointXY implements Cloneable {
     }
 
     public float[] equal( float x, float y){
-        float data[] = new float[2];
+        float[] data = new float[2];
         data[0] = X - x;
         data[1] = Y - y;
         return data;
