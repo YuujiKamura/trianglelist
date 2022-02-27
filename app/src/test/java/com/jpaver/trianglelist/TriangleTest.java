@@ -14,9 +14,9 @@ public class TriangleTest {
     @Test
     public void testCompareY(){
         Triangle t = new Triangle(5f, 5f, 5f );
-        assertEquals( 4.33f, t.compareY( 1f ), 0.01f);
+        assertEquals( 4.33f, t.compareY( 1f, 1f ), 0.01f);
 
-        assertEquals( 0f, t.compareY( -1f ), 0.01f);
+        assertEquals( 0f, t.compareY( -1f, 1f ), 0.01f);
 
 
     }
@@ -24,18 +24,27 @@ public class TriangleTest {
     @Test
     public void testDistanceHataage(){
         Triangle t = new Triangle(5f, 5f, 5f );
-        PointXY p = t.hataage( new PointXY(-2.5f, 2f ), 0f );
+        Triangle t2 = new Triangle(t,1, 5f, 5f );
+        Triangle t3 = new Triangle(t2,2, 5f, 5f );
+
+        PointXY p = t.hataage( new PointXY(-2.5f, 2f ), 0f, 1f );
         assertEquals( 4.33f,  p.getY(), 0.01f );
 
-        p = t.hataage( new PointXY(2.5f, 3f ), 0f );
+        p = t.hataage( new PointXY(2.5f, 3f ), 0f, 1f );
         assertEquals( 4.33f,  p.getY(), 0.01f );
 
-        p = t.hataage( new PointXY(2.5f, 3f ), 1f );
+        p = t.hataage( new PointXY(2.5f, 3f ), 1f, 1f );
         assertEquals( 5.33f,  p.getY(), 0.01f );
 
-        p = t.hataage( new PointXY(2.5f, 1f ), 1f );
+        p = t.hataage( new PointXY(2.5f, 1f ), 1f, 1f );
         assertEquals( -1f,  p.getY(), 0.01f );
 
+
+        PointXY p2 = t2.hataage( new PointXY(2.5f, 1f ), 1f, 1f );
+        assertEquals( -1f,  p2.getY(), 0.01f );
+
+        PointXY p3 = t3.hataage( new PointXY(2.5f, 5f ), 1f, 1f );
+        assertEquals( 3.33f,  p3.getY(), 0.01f );
 
     }
 

@@ -1,5 +1,7 @@
 package com.jpaver.trianglelist;
 
+import android.util.Log;
+
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -687,7 +689,7 @@ public class TriangleList extends EditList implements Cloneable {
         return hitC;
     }
 
-    public void getTap(PointXY tapP){
+    public int getTap(PointXY tapP){
         int ltn = lastTapNumber_ +lastTapSide_;
 
         isCollide(tapP);
@@ -704,21 +706,22 @@ public class TriangleList extends EditList implements Cloneable {
                     isDoubleTap_ = true;
 
                     if( i > 0 && lastTapSide_ == 0 ){
-                        lastTapNumber_ = i;
-                        lastTapSide_ = trilist_.get(i-1).getTapLength(tapP);
+//                        lastTapNumber_ = i;
+  //                      lastTapSide_ = trilist_.get(i-1).getTapLength(tapP);
                     }
 
                 }
                 else isDoubleTap_ = false;
             }
-
         }
 
         if( getTapHitCount( tapP ) == 0 ) {
             lastTapNumber_ = 0;
             isDoubleTap_ = false;
         }
+        Log.d("TriangleList", "Tap Triangle is " + lastTapNumber_ + lastTapSide_ );
 
+        return lastTapNumber_ * 10 + lastTapSide_;
     }
 
     public ArrayList<Triangle> move(PointXY to){

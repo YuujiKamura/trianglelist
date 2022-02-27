@@ -485,14 +485,17 @@ class MainActivity : AppCompatActivity(),
             if(!deductionMode_){
                 var dimside = my_view.myTriangleList.lastTapSide_
                 val trinum  = my_view.myTriangleList.lastTapNumber_
-                val tri = myTriangleList.get(trinum)
-                val triv = my_view.myTriangleList.get(trinum)
-                if( dimside == 0 && ( tri.parentBC_ == 1 ||  tri.parentBC_ == 2 ) ) {
+                Log.d("TriangleList", "Triangle dim rot w : " + trinum + dimside )
+
+                var tri = myTriangleList.get(trinum)
+                if( dimside == 0 && ( tri.parentBC_ == 1 ||  tri.parentBC_ == 2 ) && trinum > 1 ) {
                     dimside = tri.parentBC_
+                    tri = myTriangleList.get( trinum - 1 )
+                    Log.d("TriangleList", "Triangle dim rot w : " + tri.myNumber_ + dimside )
                 }
 
                 tri.rotateDimSideAlign(dimside)
-                triv.rotateDimSideAlign(dimside)//setTriangleList(myTriangleList, mScale)
+                my_view.setTriangleList(myTriangleList, mScale)
                 my_view.invalidate()
                 AutoSaveCSV()
             }
@@ -502,14 +505,17 @@ class MainActivity : AppCompatActivity(),
             if(!deductionMode_){
                 var dimside = my_view.myTriangleList.lastTapSide_
                 val trinum  = my_view.myTriangleList.lastTapNumber_
-                val tri = myTriangleList.get(trinum)
-                val triv = my_view.myTriangleList.get(trinum)
-                if( dimside == 0 && ( tri.parentBC_ == 1 ||  tri.parentBC_ == 2 ) ) {
+                Log.d("TriangleList", "Triangle dim rot w : " + trinum + dimside )
+
+                var tri = myTriangleList.get(trinum)
+                if( dimside == 0 && ( tri.parentBC_ == 1 ||  tri.parentBC_ == 2 ) && trinum > 1 ) {
                     dimside = tri.parentBC_
+                    tri = myTriangleList.get( trinum - 1 )
+                    Log.d("TriangleList", "Triangle dim rot w : " + tri.myNumber_ + dimside )
                 }
 
                 tri.flipDimAlignH(dimside)
-                triv.flipDimAlignH(dimside)//setTriangleList(myTriangleList, mScale)
+                my_view.setTriangleList(myTriangleList, mScale)
                 my_view.invalidate()
                 AutoSaveCSV()
             }
@@ -882,8 +888,13 @@ class MainActivity : AppCompatActivity(),
                 params.pn = my_view.myTriangleList.isCollide(params.pt.scale(PointXY(1f, -1f)))
 
                 if( params.pn != 0 ) {
-                    val ptri = my_view.myTriangleList.get( params.pn )
-                    params.pts = ptri.hataage( params.pt, 10f )
+                    val trilistinview = my_view.myTriangleList
+                    val ptri = trilistinview.get(params.pn)
+                    params.pts = ptri.hataage(params.pt, 25f, -1f)
+
+                    ptri.dedcount++
+                    myTriangleList.get(params.pn).dedcount++
+
                 }
             }
 
@@ -941,8 +952,8 @@ class MainActivity : AppCompatActivity(),
                 prms.pn = my_view.myTriangleList.isCollide(prms.pt.scale(PointXY(1f, -1f)))
 
                 if( params.pn != 0 ) {
-                    val ptri = my_view.myTriangleList.get( params.pn )
-                    params.pts = ptri.hataage( prms.pt, 10f )//params.pt.plus( 0f, hataage )
+                    val ptri = my_view.myTriangleList.get(params.pn)
+                    params.pts = ptri.hataage(prms.pt, 25f, -1f)//params.pt.plus( 0f, hataage )
                 }
 
             }
@@ -1110,6 +1121,9 @@ class MainActivity : AppCompatActivity(),
                 }
 
                 if( my_view.myTriangleList.lastTapSide_ == 3 ) my_view.resetViewToLSTP()
+
+                Log.d("MainActivity", "Tap Triangle is : " + my_view.myTriangleList.lastTapNumber_ + my_view.myTriangleList.lastTapSide_ )
+
             }
         }
     }
@@ -1796,7 +1810,7 @@ class MainActivity : AppCompatActivity(),
         val path = contentUri.authority+contentUri.path
         val file = File(path)
         try {
-            val ims = assets.open( filename )
+            val ims = assets.open(filename)
             //`in` = openFileInput(file.name)
             out = openFileOutput(file.name, MODE_WORLD_READABLE)
             copyFile(ims, out)

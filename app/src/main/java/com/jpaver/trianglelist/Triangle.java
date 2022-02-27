@@ -15,6 +15,9 @@ public class Triangle extends EditObject implements Cloneable {
      float lengthAforce_ = 0f;
      float lengthBforce_ = 0f;
      float lengthCforce_ = 0f;
+
+     float dedcount = 0f;
+
      String sla_ = "";
      String slb_ = "";
      String slc_ = "";
@@ -1636,22 +1639,22 @@ public class Triangle extends EditObject implements Cloneable {
         return parentBC_ == 9 || parentBC_ == 10;
     }
 
-    public PointXY hataage(PointXY p, float offset ){
-        float distance = p.getY() - pointCenter_.getY();
-        float direction = p.getY() - pointCenter_.getY();
-        if( direction > 0 ) direction = 1;
-        else direction = -1;
+    public PointXY hataage(PointXY p, float offset, float axisY ){
+        float hataageY = p.getY() - pointCenter_.getY() * axisY;
+        float direction = 1;
+        if( hataageY < 0 ) direction = -1;
 
         PointXY hataage =  p.clone();
-        hataage.set( p.getX(), p.getY() + ( compareY( direction ) - distance ) + ( offset * direction ) );
+        float compareY = compareY( direction, axisY );
+        hataage.set( p.getX(), p.getY() + ( compareY - p.getY() ) + ( offset * direction ) + ( offset * 2f * direction * dedcount ) );
 
         return hataage;
     }
 
-    public float compareY( float direction ){
-        float Y = pointCA_.getY();
-        if( Y < pointAB_.getY() * direction ) Y = pointAB_.getY();
-        if( Y < pointBC_.getY() * direction ) Y = pointBC_.getY();
+    public float compareY( float direction, float axisY ){
+        float Y = pointCA_.getY() * axisY;
+        if( Y * direction * axisY < pointAB_.getY() * direction * axisY ) Y = pointAB_.getY() * axisY;
+        if( Y * direction * axisY < pointBC_.getY() * direction * axisY ) Y = pointBC_.getY() * axisY;
 
         return Y;
     }
