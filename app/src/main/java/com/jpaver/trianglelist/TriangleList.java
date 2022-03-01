@@ -249,9 +249,9 @@ public class TriangleList extends EditList implements Cloneable {
             for(;;) {
                 rot -= 10f;
                 float beforeY = measureMostLongLine().getY();
-                rotate(basepoint, rot);
+                rotate(basepoint, rot, 0);
                 if( measureMostLongLine().getY() >= beforeY){
-                    rotate(basepoint, -rot);
+                    rotate(basepoint, -rot, 0);
                     return rot+10f;
                 }
             }
@@ -260,9 +260,9 @@ public class TriangleList extends EditList implements Cloneable {
             for(;;) {
                 rot += 10f;
                 float beforeY = measureMostLongLine().getY();
-                rotate(basepoint, rot);
+                rotate(basepoint, rot, 0);
                 if( measureMostLongLine().getY() <= beforeY){
-                    rotate(basepoint, -rot);
+                    rotate(basepoint, -rot, 0);
                     return rot-10f;
                 }
             }
@@ -327,9 +327,13 @@ public class TriangleList extends EditList implements Cloneable {
     }
 
 
-    public void rotate(PointXY bp, float angle) {
-        if( lastTapNumber_ > 0 && trilist_.get( lastTapNumber_ - 1 ).parentBC_ >= 9 ){
-
+    public void rotate(PointXY bp, float angle, int startnumber) {
+        int startindex = startnumber -1;
+        if( startnumber > 1 && trilist_.get( startindex ).parentBC_ >= 9 ){
+            for (int i = startindex; i < trilist_.size(); i++ ) {
+                trilist_.get(i).rotate( trilist_.get(startindex).pointCA_, angle );
+                trilist_.get(i).pointNumber_ = trilist_.get(i).pointNumber_.rotate(basepoint, angle);
+            }
         }
         else {
             myAngle += angle;
@@ -710,10 +714,10 @@ public class TriangleList extends EditList implements Cloneable {
 
                     isDoubleTap_ = true;
 
-                    if( i > 0 && lastTapSide_ == 0 ){
+                    //if( i > 0 && lastTapSide_ == 0 ){
 //                        lastTapNumber_ = i;
   //                      lastTapSide_ = trilist_.get(i-1).getTapLength(tapP);
-                    }
+                    //}
 
                 }
                 else isDoubleTap_ = false;

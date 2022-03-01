@@ -10,8 +10,6 @@ import org.junit.runner.RunWith
 import org.powermock.api.mockito.PowerMockito
 import org.powermock.core.classloader.annotations.PrepareForTest
 import org.powermock.modules.junit4.PowerMockRunner
-import org.robolectric.RobolectricGradleTestRunner
-import org.robolectric.annotation.Config
 
 
 @RunWith(PowerMockRunner::class)
@@ -735,15 +733,15 @@ class TriListTest {
         PowerMockito.mockStatic(Log::class.java)
         //setDimAlign();
 
-        val t1 = Triangle(3.0f, 4.0f, 5.0f, PointXY(5f, 5f), 180.0f)
+        val t1 = Triangle(3.0f, 4.0f, 5.0f, PointXY(0f, 0f), 180.0f)
         val trilist = TriangleList(t1)
-        trilist.add(Triangle(t1, 9, 3.0f, 5.0f, 4.0f))
+        trilist.add(Triangle(t1, 9, 4f, 3.0f, 5.0f))
 
-        trilist.rotate(PointXY(0f, 0f), -90f)
+        trilist.rotate(PointXY(0f, 0f), -90f, 2 )
 
-        Assert.assertEquals(0f, trilist[0].pointCA_.y, 0.001f)
-        Assert.assertEquals(-5f, trilist[1].pointCA_.y, 0.001f)
-        Log.d("Triangle", "num:" + trilist[0].myNumber_)
+        Assert.assertEquals(4f, trilist.get(1).pointBC_.y, 0.001f)
+        Assert.assertEquals(7f, trilist.get(2).pointBC_.y, 0.001f)
+        Log.d("Triangle", "num:" + trilist.get(1).myNumber_)
 
     }
 

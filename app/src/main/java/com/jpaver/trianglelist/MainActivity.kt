@@ -626,7 +626,7 @@ class MainActivity : AppCompatActivity(),
 
         fab_rot_l.setOnClickListener { view ->
             if( deductionMode_ == false ) {
-                myTriangleList.rotate(PointXY(0f, 0f), 5f)
+                myTriangleList.rotate(PointXY(0f, 0f), 5f, myTriangleList.lastTapNumber_ )
                 myDeductionList.rotate(PointXY(0f, 0f), -5f)
                 my_view.setTriangleList(myTriangleList, mScale)
                 my_view.setDeductionList(myDeductionList, mScale)
@@ -645,7 +645,7 @@ class MainActivity : AppCompatActivity(),
 
         fab_rot_r.setOnClickListener { view ->
             if( deductionMode_ == false ) {
-                myTriangleList.rotate(PointXY(0f, 0f), -5f)
+                myTriangleList.rotate(PointXY(0f, 0f), -5f, myTriangleList.lastTapNumber_ )
                 myDeductionList.rotate(PointXY(0f, 0f), 5f)
                 my_view.setTriangleList(myTriangleList, mScale)
                 my_view.setDeductionList(myDeductionList, mScale)
