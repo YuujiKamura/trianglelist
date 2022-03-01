@@ -73,4 +73,7 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
     implementation fileTree(dir: 'libs', include: ['*.aar', '*.jar'], exclude: [])
     implementation 'com.google.android.gms:play-services-ads:19.6.0'
+    testCompile 'org.powermock:powermock-module-junit4:1.6.3'
+    testCompile 'org.powermock:powermock-api-mockito:1.6.3'
+    testCompile 'org.robolectric:robolectric:3.0'
 }

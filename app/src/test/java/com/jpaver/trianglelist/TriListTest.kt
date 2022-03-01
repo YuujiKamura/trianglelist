@@ -2,10 +2,20 @@
 
 package com.jpaver.trianglelist
 
+import android.util.Log
 import junit.framework.Assert.assertEquals
 import org.junit.Assert
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.powermock.api.mockito.PowerMockito
+import org.powermock.core.classloader.annotations.PrepareForTest
+import org.powermock.modules.junit4.PowerMockRunner
+import org.robolectric.RobolectricGradleTestRunner
+import org.robolectric.annotation.Config
 
+
+@RunWith(PowerMockRunner::class)
+@PrepareForTest(Log::class)
 class TriListTest {
 
     @Test
@@ -45,8 +55,8 @@ class TriListTest {
         trilist.add(2, 2, 5f, 5f)
 
         trilist.resetNodeByID(Params("", "", 3, 6f, 6f, 6f, 1, 2))
-        assertEquals(trilist.get(1), trilist.get(3).nodeTriangleA_ )
-        assertEquals(trilist.get(3), trilist.get(1).nodeTriangleC_ )
+        assertEquals(trilist.get(1), trilist.get(3).nodeTriangleA_)
+        assertEquals(trilist.get(3), trilist.get(1).nodeTriangleC_)
 
     }
 
@@ -58,9 +68,9 @@ class TriListTest {
         trilist.add(2, 2, 5f, 5f)
 
         //trilist.resetPointAndAngleByNodeChain( Params("", "", 2, 6f, 6f, 6f, 1, 1) )
-        trilist.get(2).resetElegant( Params("", "", 2, 6f, 6f, 6f, 1, 1) )
+        trilist.get(2).resetElegant(Params("", "", 2, 6f, 6f, 6f, 1, 1))
 
-        assertEquals( 6f, trilist.get(1).lengthB_ )
+        assertEquals(6f, trilist.get(1).lengthB_)
         //assertEquals( trilist.get(2).pointCA_.x, trilist.get(1).pointBC_.x )
 
     }
@@ -605,19 +615,21 @@ class TriListTest {
 
     @Test
     fun testGetTapLength() {
-        val trilist = TriangleList( Triangle(5f, 5f, 5f ) )
+        PowerMockito.mockStatic(Log::class.java)
+
+        val trilist = TriangleList(Triangle(5f, 5f, 5f))
 
         //Assert.assertEquals( 10, trilist.getTap( PointXY( -2.5f, 0f ) ) )
         //Assert.assertEquals( 11, trilist.getTap( PointXY( -3.75f, 2.165f ) ) )
         //Assert.assertEquals( 12, trilist.getTap( PointXY( -1.25f, 2.165f ) ) )
 
-        trilist.add( Triangle( trilist[1], 1, 5f, 5f ) )
-        trilist.add( Triangle( trilist[2], 2, 5f, 5f ) )
+        trilist.add(Triangle(trilist[1], 1, 5f, 5f))
+        trilist.add(Triangle(trilist[2], 2, 5f, 5f))
         //Assert.assertEquals( 20, trilist.getTap( PointXY( -3.75f, 2.165f ) ) )
 
 
         //Assert.assertEquals( 21, trilist.getTap( PointXY( -6.25f, 2.165f ) ) )
-        Assert.assertEquals( 30, trilist.getTap( PointXY( -5f, 4.33f ) ) )
+        Assert.assertEquals(30, trilist.getTap(PointXY(-5f, 4.33f)))
 
         //Assert.assertEquals( 31, trilist.getTap( PointXY( -6.25f, 6.495f ) ) )
         //Assert.assertEquals( 32, trilist.getTap( PointXY( -3.75f, 6.495f ) ) )
@@ -652,6 +664,8 @@ class TriListTest {
 
     @Test
     fun testRotateBySize() {
+        PowerMockito.mockStatic(Log::class.java)
+
         val mytlist = TriangleList(Triangle(3f, 4f, 5f))
         mytlist.add(Triangle(mytlist[1], 2, 5f, 8f))
         mytlist.add(Triangle(mytlist[2], 2, 4f, 3f))
@@ -717,7 +731,27 @@ class TriListTest {
     }
 
     @Test
+    fun testRotateFloat() {
+        PowerMockito.mockStatic(Log::class.java)
+        //setDimAlign();
+
+        val t1 = Triangle(3.0f, 4.0f, 5.0f, PointXY(5f, 5f), 180.0f)
+        val trilist = TriangleList(t1)
+        trilist.add(Triangle(t1, 9, 3.0f, 5.0f, 4.0f))
+
+        trilist.rotate(PointXY(0f, 0f), -90f)
+
+        Assert.assertEquals(0f, trilist[0].pointCA_.y, 0.001f)
+        Assert.assertEquals(-5f, trilist[1].pointCA_.y, 0.001f)
+        Log.d("Triangle", "num:" + trilist[0].myNumber_)
+
+    }
+
+
+    @Test
     fun testRotate() {
+        PowerMockito.mockStatic(Log::class.java)
+
         val mytri1 = Triangle(3.0f, 4.0f, 5.0f, PointXY(5f, 5f), 180.0f)
         val myTrilist = TriangleList(mytri1)
         myTrilist.add(Triangle(mytri1, 2, 3.0f, 4.0f))

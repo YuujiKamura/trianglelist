@@ -890,7 +890,7 @@ class MainActivity : AppCompatActivity(),
                 if( params.pn != 0 ) {
                     val trilistinview = my_view.myTriangleList
                     val ptri = trilistinview.get(params.pn)
-                    params.pts = ptri.hataage(params.pt, 25f, -1f)
+                    params.pts = ptri.hataage(params.pt, 50f, -1f)
 
                     ptri.dedcount++
                     myTriangleList.get(params.pn).dedcount++
@@ -953,8 +953,10 @@ class MainActivity : AppCompatActivity(),
 
                 if( params.pn != 0 ) {
                     val ptri = my_view.myTriangleList.get(params.pn)
-                    params.pts = ptri.hataage(prms.pt, 25f, -1f)//params.pt.plus( 0f, hataage )
+                    params.pts = ptri.hataage(prms.pt, 50f, -1f)//params.pt.plus( 0f, hataage )
+
                 }
+
 
             }
 

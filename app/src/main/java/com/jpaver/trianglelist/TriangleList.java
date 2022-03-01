@@ -328,11 +328,16 @@ public class TriangleList extends EditList implements Cloneable {
 
 
     public void rotate(PointXY bp, float angle) {
-        myAngle += angle;
-        basepoint = bp.clone();
-        for (int i = 0; i < trilist_.size(); i++ ) {
-            trilist_.get(i).rotate(basepoint, angle);
-            trilist_.get(i).pointNumber_ = trilist_.get(i).pointNumber_.rotate(basepoint, angle);
+        if( lastTapNumber_ > 0 && trilist_.get( lastTapNumber_ - 1 ).parentBC_ >= 9 ){
+
+        }
+        else {
+            myAngle += angle;
+            basepoint = bp.clone();
+            for (int i = 0; i < trilist_.size(); i++ ) {
+                trilist_.get(i).rotate(basepoint, angle);
+                trilist_.get(i).pointNumber_ = trilist_.get(i).pointNumber_.rotate(basepoint, angle);
+            }
         }
     }
 

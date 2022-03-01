@@ -1,7 +1,13 @@
 package com.jpaver.trianglelist;
 
 
+import android.util.Log;
+
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -9,10 +15,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+@RunWith(PowerMockRunner.class)
+@PrepareForTest(Log.class)
 public class TriangleTest {
 
     @Test
     public void testCompareY(){
+        PowerMockito.mockStatic(Log.class);
+
         Triangle t = new Triangle(5f, 5f, 5f );
         assertEquals( 4.33f, t.compareY( 1f, 1f ), 0.01f);
 
@@ -23,6 +33,8 @@ public class TriangleTest {
 
     @Test
     public void testDistanceHataage(){
+        PowerMockito.mockStatic(Log.class);
+
         Triangle t = new Triangle(5f, 5f, 5f );
         Triangle t2 = new Triangle(t,1, 5f, 5f );
         Triangle t3 = new Triangle(t2,2, 5f, 5f );
