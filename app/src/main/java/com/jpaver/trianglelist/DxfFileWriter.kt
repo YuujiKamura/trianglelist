@@ -7,24 +7,23 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
     override var trilist_ = trilist
     //override lateinit var dedlist_: DeductionList// = deductionList
 
-    val numvector_ = trilist_.sokutenListVector
-    lateinit var writer_: BufferedWriter
-    lateinit var drawingLength_: PointXY // = drawingLength
-    val pageNum_ = 0
+    private val numvector = trilist_.sokutenListVector
+    lateinit var writer: BufferedWriter
+    lateinit var drawingLength: PointXY // = drawingLength
     //var sheetscale_ = 1000f //* setScale(drawingLength)    //metric to mill
     //val viewscale_ = 11.9f*4f//12.5f
 
-    var isDebug_ = false
+    var isDebug = false
     //var isReverse_ = false;
 
     override var textscale_ = trilist_.getPrintTextScale( 1f , "dxf")
     override var printscale_ = trilist_.getPrintScale(1f)//setScale(drawingLength)
     override var sizeX_ = 42000f * printscale_
     override var sizeY_ = 29700f * printscale_
-    val vpCenterX_ = sizeX_ * 0.5f
-    val vpCenterY_ = sizeY_ * 0.5f
+    private val vpCenterX = sizeX_ * 0.5f
+    private val vpCenterY = sizeY_ * 0.5f
 
-    var entityHandle = 100
+    private var entityHandle = 100
 
     override var cWhite_ = 7
     override var cBlue_ = 5
@@ -72,8 +71,8 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         val pab = tri.pointAB_
         val pbc = tri.pointBC_
 
-        val textsize: Float = textscale_
-        val textsize2: Float = textscale_
+        val textSize: Float = textscale_
+        val textSize2: Float = textscale_
 
         //if( tri.myAngle_ > 90 ) dimA = 1
         //if( tri.myAngle_ > 270 ) dimA = 3
@@ -86,10 +85,10 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         var lc = tri.lengthCforce_.formattedString(2)
 
 
-        if( isDebug_ == true ){
-            la += "-"+ dimA
-            lb += "-"+ dimB
-            lc += "-"+ dimC
+        if(isDebug){
+            la += "-$dimA"
+            lb += "-$dimB"
+            lc += "-$dimC"
         }
 
         // TriLines
@@ -106,13 +105,13 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         // 番号
         val pn = tri.pointNumberAutoAligned_
         val pc = tri.pointCenter_
-        val circleSize = textsize *0.85f
+        val circleSize = textSize *0.85f
         // 本体
-        writeCircle(pn, textsize, 5, 1f)
+        writeCircle(pn, textSize, 5, 1f)
         writeTextNumber(tri)
 
         //引き出し矢印線の描画
-        if( tri.isCollide(tri.pointNumber_) == false ){
+        if(!tri.isCollide(tri.pointNumber_)){
             val pcOffsetToN = pc.offset(pn, circleSize * 0.5f )
             val pnOffsetToC = pn.offset(pc, circleSize * 1.2f )
             val arrowTail = pcOffsetToN.offset(pn, pcOffsetToN.lengthTo(pnOffsetToC) * 0.7f).rotate(pcOffsetToN, 5f)
@@ -128,21 +127,21 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
                 tri.getMyName_(),
                 pab.offset(pca, -1.25f),
                 5,
-                textsize2,
+                textSize2,
                 1,
                 1,
-                pab.calcSokAngle( pca, numvector_ ),
+                pab.calcSokAngle( pca, numvector ),
                 1f
             )
             writeLine( pab.offset(pca, -tri.getMyName_().length*0.5f), pab.offset(pca, -0.25f), 5)
         }
     }
 
-    fun writeTextDimension(verticalalign: Int, len: String, p1: PointXY, angle: Float){
-        writeText(len, p1, 7, textscale_, 1, verticalalign, angle, 1f)
+    private fun writeTextDimension(verticalAlign: Int, len: String, p1: PointXY, angle: Float){
+        writeText(len, p1, 7, textscale_, 1, verticalAlign, angle, 1f)
     }
 
-    fun writeTextNumber(tri: Triangle){
+    private fun writeTextNumber(tri: Triangle){
         writeText(
             tri.getMyNumber_().toString(),
             tri.pointNumberAutoAligned_,
@@ -179,7 +178,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
 
         entityHandle += 1
 
-        writer_.write("""
+        writer.write("""
             0
             TEXT
             5
@@ -191,7 +190,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
             8
             0
             62
-            ${color}
+            $color
             100
             AcDbText
             10
@@ -203,13 +202,13 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
             40
             ${ts.formattedString(0)}
             1
-            ${text}
+            $text
             41
             1.00
             7
             DimStandard
             72
-            ${alignH}
+            $alignH
             11
             $x
             21
@@ -223,9 +222,9 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
             100
             AcDbText
             73
-            ${alignV}
+            $alignV
         """.trimIndent())
-        writer_.newLine()
+        writer.newLine()
     }
 
     override fun writeLine(p1: PointXY, p2: PointXY, color: Int, scale: Float ) {
@@ -236,7 +235,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
 
         entityHandle += 1
 
-        writer_.write(
+        writer.write(
                 """
                 0
                 LINE
@@ -266,7 +265,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
                 $color
             """.trimIndent()
         )
-        writer_.newLine()
+        writer.newLine()
     }
 
     override fun writeCircle(point: PointXY, size: Float, color: Int, scale: Float){
@@ -276,7 +275,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
 
         entityHandle += 1
 
-        writer_.write("""
+        writer.write("""
             0
             CIRCLE
             5
@@ -298,9 +297,9 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
             30
             0.0
             40
-            ${s} 
+            $s 
         """.trimIndent())
-        writer_.newLine()
+        writer.newLine()
     }
 
     override fun writeTextAndLine(
@@ -317,8 +316,8 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
     override fun writeDeduction( ded: Deduction ){
 
         //val ded = dedlist_.get( dednumber )
-        val textsize = 0.35f
-        val infoStrLength = ded.infoStr.length*textsize+0.3f
+        val textSize = 0.35f
+        val infoStrLength = ded.infoStr.length*textSize+0.3f
         val point = ded.point
         val pointFlag = ded.pointFlag
         var textOffsetX = 0f
@@ -330,25 +329,26 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
                 ded.infoStr,
                 pointFlag,
                 pointFlag.plus(infoStrLength + textOffsetX,0f),
-                textsize,
+                textSize,
                 1f
             )
         } else {                     //ptFlag is LEFT from pt
             writeLine( point, pointFlag, 1)
             writeTextAndLine(
                 ded.infoStr,
-                pointFlag.plus(-ded.getInfo().length*textsize - textOffsetX,0f),
+                pointFlag.plus(-ded.getInfo().length*textSize - textOffsetX,0f),
                 pointFlag,
-                textsize,
+                textSize,
                 1f
             )
         }
 
         if(ded.type == "Circle") writeCircle(point, ded.lengthX/2, 1, 1f)
-        if(ded.type == "Box")    writeDedRect(ded, 1)//writeDXFRect(wrtr, point, ded.lengthX, ded.lengthY, 1)
+        if(ded.type == "Box")    writeDedRect(ded)//writeDXFRect(writer, point, ded.lengthX, ded.lengthY, 1)
     }
 
-    fun writeDedRect(ded: Deduction, color: Int){
+    private fun writeDedRect(ded: Deduction){
+        val color = 1
         ded.shapeAngle = -ded.shapeAngle // 逆回転
         ded.setBox( 1f )
         writeLine( ded.plt, ded.plb, color)
@@ -360,27 +360,27 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
     override fun writeEntities(){
 
         // 最初に書く
-        writer_.write("""
+        writer.write("""
             0
             SECTION
             2
             ENTITIES
         """.trimIndent())
-        writer_.newLine()
+        writer.newLine()
 
         val myDXFTriList = trilist_.clone()
         val myDXFDedList = dedlist_.clone()
 
-        // Ｙ軸方向反転、かつビュースケールで割り戻して大きさをtrilistと揃える。
+        // Ｙ軸方向反転、かつビュースケールで割り戻して大きさをtriListと揃える。
         myDXFDedList.scale(PointXY(0f,0f),1/ viewscale_,-1/ viewscale_)
 
         val center = PointXY(21f*printscale_, 14.85f*printscale_)
         val tricenter = myDXFTriList.center
         myDXFDedList.move(PointXY(center.x-tricenter.x,center.y-tricenter.y))
-        myDXFTriList.move(PointXY(center.x-tricenter.x,center.y-tricenter.y))
+        myDXFTriList.move(PointXY(center.x - tricenter.x, center.y - tricenter.y))
 
         var trilistNumbered = myDXFTriList.numbered( startTriNumber_ )
-        if( isReverse_ == true ) {
+        if(isReverse_) {
             trilistNumbered = trilistNumbered.resetNumReverse()
             myDXFDedList.reverse()
         }
@@ -394,7 +394,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         val outlineLists = myDXFTriList.outlineLists //ArrayList<PointXY>()
         val array = ArrayList<PointXY>()
         myDXFTriList.traceOrJumpForward(0, 0, array )
-        if( outlineLists.size > 0 ) for( index in 0 .. outlineLists.size -1 ) writeDXFTriOutlines( writer_, outlineLists.get( index ) )
+        if( outlineLists.size > 0 ) for( index in 0 until outlineLists.size) writeDXFTriOutlines( writer, outlineLists[index])
 
         // deduction
         for (number in 1 .. myDXFDedList.size()) {
@@ -405,23 +405,23 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         writeFrame(textsize = 0.25f)
         unitscale_ = 1000f
 
-        if( isReverse_ == true ) {
+        if(isReverse_) {
             trilistNumbered = trilistNumbered.reverse()
         }
         // calcSheet
         writeCalcSheet(1f, textscale_, trilistNumbered, myDXFDedList )
 
         //一番最後に書く
-        writer_.write("""
+        writer.write("""
             0
             ENDSEC
         """.trimIndent())
-        writer_.newLine()
+        writer.newLine()
 
     }
 
 
-    fun writeDXFTriOutlines( wrtr: BufferedWriter, array: ArrayList<PointXY> ) {
+    private fun writeDXFTriOutlines(wrtr: BufferedWriter, array: ArrayList<PointXY> ) {
 
         entityHandle += 1
 
@@ -445,32 +445,19 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         """.trimIndent())
         wrtr.newLine()
 
-        for( index in 0 .. array.size - 1 ){
+        for( index in 0 until array.size){
             wrtr.write("""
                 10
-                ${( array.get( index ).x*unitscale_ )}
+                ${( array[index].x*unitscale_ )}
                 20
-                ${( array.get( index ).y*unitscale_ )}                
+                ${( array[index].y*unitscale_ )}                
             """.trimIndent())
             wrtr.newLine()
         }
 
     }
 
-    fun writeDXFBlock(wrtr: BufferedWriter){
-        wrtr.write("""
-            0
-            SECTION
-            2
-            BLOCKS
-            0
-            ENDSEC
-        """.trimIndent())
-        wrtr.newLine()
-
-    }
-
-    fun writeDXFTables(wrtr: BufferedWriter){
+    private fun writeDXFTables(wrtr: BufferedWriter){
         wrtr.write("""
               0
             SECTION
@@ -511,9 +498,9 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
              21
             1.0
              12
-            $vpCenterX_
+            $vpCenterX
              22
-            ${(vpCenterY_*0.1f)}
+            ${(vpCenterY*0.1f)}
              13
             0.0
              23
@@ -1023,7 +1010,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         val scaleX = 42000*printscale_
         val scaleY = 29700*printscale_
 
-        writer_.write("""
+        writer.write("""
              0
             SECTION
               2
@@ -1059,9 +1046,9 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
             9
             ${'$'}EXTMAX
             10
-            ${scaleX}
+            $scaleX
             20
-            ${scaleY}
+            $scaleY
             30
             0.0
             9
@@ -2035,14 +2022,14 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
               0
             ENDSEC
         """.trimIndent())
-        writer_.newLine()
+        writer.newLine()
 
-        writeDXFTables(writer_)
+        writeDXFTables(writer)
 
     }
 
     override fun writeFooter(){
-        writer_.write("""
+        writer.write("""
               0
             SECTION
               2
@@ -4864,7 +4851,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
             0
             EOF
         """.trimIndent())
-        writer_.newLine()
+        writer.newLine()
     }
 
     override fun PolymorphFunctionB(): String {

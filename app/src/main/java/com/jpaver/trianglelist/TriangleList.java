@@ -320,7 +320,7 @@ public class TriangleList extends EditList implements Cloneable {
         }
     }
 
-    public void setPath( float ts ){
+    public void setDimPathTextSize(float ts ){
         for (int i = 0; i < trilist_.size(); i++ ) {
             trilist_.get(i).setDimPath(ts);
         }
@@ -329,26 +329,23 @@ public class TriangleList extends EditList implements Cloneable {
 
     public void rotate(PointXY bp, float angle, int startnumber) {
         int startindex = startnumber -1;
-        if( startnumber > 1 && trilist_.get( startindex ).parentBC_ >= 9 ){
-            for (int i = startindex; i < trilist_.size(); i++ ) {
-                trilist_.get(i).rotate( trilist_.get(startindex).pointCA_, angle );
-                trilist_.get(i).pointNumber_ = trilist_.get(i).pointNumber_.rotate(basepoint, angle);
-            }
-        }
-        else {
+        if( !( startnumber > 1 && trilist_.get( startindex ).parentBC_ >= 9 ) ) {
             myAngle += angle;
             basepoint = bp.clone();
-            for (int i = 0; i < trilist_.size(); i++ ) {
-                trilist_.get(i).rotate(basepoint, angle);
-                trilist_.get(i).pointNumber_ = trilist_.get(i).pointNumber_.rotate(basepoint, angle);
-            }
+            startindex = 0;
         }
+
+        for (int i = startindex; i < trilist_.size(); i++ ) {
+            trilist_.get(i).rotate( trilist_.get(startindex).pointCA_, angle, false );
+            trilist_.get(i).pointNumber_ = trilist_.get(i).pointNumber_.rotate(basepoint, angle);
+        }
+
     }
 
     public void recoverState(PointXY bp) {
         basepoint = bp.clone();
         for (int i = 0; i < trilist_.size(); i++ ) {
-            trilist_.get(i).rotate(basepoint, myAngle-180);
+            trilist_.get(i).rotate(basepoint, myAngle-180, false);
 
         }
     }
@@ -459,7 +456,7 @@ public class TriangleList extends EditList implements Cloneable {
         //次以降の三角形の親番号を全部書き換える、ただし連続しない親で、かつ自分より若い親の場合はそのままにする。
         rewriteAllNodeFrom(nextTriangle, +1);
 
-        resetConnectedTriangles(nextTriangle.myNumber_, nextTriangle);
+        resetTriangles(nextTriangle.myNumber_, nextTriangle);
     }
 
     //次以降の三角形の親番号を全部書き換える、ただし連続しない親で、かつ自分より若い親の場合はそのままにする。
@@ -491,7 +488,7 @@ public class TriangleList extends EditList implements Cloneable {
         //次以降の三角形の親番号を全部書き換える
         rewriteAllNodeFrom( parentTriangle, -1 );
 
-        resetConnectedTriangles(parentTriangle.myNumber_, parentTriangle);
+        resetTriangles(parentTriangle.myNumber_, parentTriangle);
 
         current = number - 1;
         lastTapNumber_ = number - 1;
@@ -512,7 +509,7 @@ public class TriangleList extends EditList implements Cloneable {
             Triangle nextTri = trilist_.get(i);
             if( i > 0) {
                 int npmi = nextTri.nodeTriangleA_.myNumber_-1;
-                if( npmi == curTri.myNumber_ -1 ) nextTri.setParent(curTri.clone(), nextTri.parentBC_);
+                if( npmi == curTri.myNumber_ -1 ) nextTri.setParent(curTri.clone());
                 nextTri.resetByParent(trilist_.get(npmi), nextTri.cParam_);
             }
         }
@@ -542,12 +539,12 @@ public class TriangleList extends EditList implements Cloneable {
         tri.reset( prms );
 
         // 関係する三角形を書き換える
-        resetConnectedTriangles( prms.getN(), tri);
+        resetTriangles( prms.getN(), tri);
 
         return true;
     }
 
-    public boolean resetConnectedTriangles(int cNum, Triangle curtri){
+    public boolean resetTriangles(int cNum, Triangle curtri){
         if(curtri == null)  return false;
         if(!curtri.validTriangle()) return false;
 
@@ -612,13 +609,13 @@ public class TriangleList extends EditList implements Cloneable {
                 // ひとつ前の三角形の子接続を書き換える？
                 if( i+1 < trilist_.size() ) newParent.childSide_ = trilist_.get(i+1).parentBC_;
 
-                if( !trilist_.get(i).resetByParent(newParent, trilist_.get(i).parentBC_) ) return;
+                if(trilist_.get(i).resetByParent(newParent, trilist_.get(i).parentBC_)) return;
                 // 自身が次の親になる
                 newParent = trilist_.get(i);
             }
             else { //連番でないとき
                 //親を番号で参照する
-                if( !trilist_.get(i).resetByParent(trilist_.get(trilist_.get(i).parentNumber_ -1), trilist_.get(i).parentBC_) ) return;
+                if(trilist_.get(i).resetByParent(trilist_.get(trilist_.get(i).parentNumber_ - 1), trilist_.get(i).parentBC_)) return;
                 trilist_.get(trilist_.get(i).parentNumber_ -1).childSide_ = trilist_.get(i).parentBC_;
             }
             //else myTriList.get(i).reload();
@@ -684,7 +681,7 @@ public class TriangleList extends EditList implements Cloneable {
     public int[] getTapIndexArray(PointXY tapP){
         int[] tapIndexArray = new int[trilist_.size()];
         for(int i = 0; i < trilist_.size(); i++) {
-            tapIndexArray[i] = trilist_.get(i).getTapLength( tapP );
+            tapIndexArray[i] = trilist_.get(i).getTapLength( tapP, 0.6f);
         }
         return tapIndexArray;
     }
@@ -692,35 +689,29 @@ public class TriangleList extends EditList implements Cloneable {
     public int getTapHitCount(PointXY tapP ){
         int hitC = 0;
         for(int i = 0; i < trilist_.size(); i++) {
-            if( trilist_.get(i).getTapLength( tapP ) != -1 ) hitC++;
+            if( trilist_.get(i).getTapLength( tapP, 0.6f) != -1 ) hitC++;
         }
 
         return hitC;
     }
 
-    public int getTap(PointXY tapP){
+    public int getTap(PointXY tapP, float rangeRadius){
         int ltn = lastTapNumber_ +lastTapSide_;
 
         isCollide(tapP);
 
         for(int i = 0; i < trilist_.size(); i++) {
 
-            if( trilist_.get(i).getTapLength(tapP) != -1 ) {
+            if( trilist_.get(i).getTapLength(tapP, rangeRadius) != -1 ) {
 
                 lastTapNumber_ = i + 1;
-                lastTapSide_ = trilist_.get(i).getTapLength(tapP);
+                lastTapSide_ = trilist_.get(i).getTapLength(tapP, rangeRadius);
 
-                if(ltn == lastTapSide_+ lastTapNumber_) {
-
-                    isDoubleTap_ = true;
-
-                    //if( i > 0 && lastTapSide_ == 0 ){
-//                        lastTapNumber_ = i;
-  //                      lastTapSide_ = trilist_.get(i-1).getTapLength(tapP);
-                    //}
-
-                }
-                else isDoubleTap_ = false;
+                //if( i > 0 && lastTapSide_ == 0 ){
+                //                        lastTapNumber_ = i;
+                //                      lastTapSide_ = trilist_.get(i-1).getTapLength(tapP);
+                //}
+                isDoubleTap_ = ltn == lastTapSide_ + lastTapNumber_;
             }
         }
 
@@ -728,7 +719,7 @@ public class TriangleList extends EditList implements Cloneable {
             lastTapNumber_ = 0;
             isDoubleTap_ = false;
         }
-        Log.d("TriangleList", "Tap Triangle is " + lastTapNumber_ + lastTapSide_ );
+        Log.d("TriangleList", "Tap Triangle num: " + lastTapNumber_ + ", side:" + lastTapSide_ );
 
         return lastTapNumber_ * 10 + lastTapSide_;
     }
@@ -767,9 +758,9 @@ public class TriangleList extends EditList implements Cloneable {
     }
 
     public ArrayList<ArrayList<PointXY>> getOutlineLists( ){
+
         ArrayList<ArrayList<PointXY>> olplists = new ArrayList<>();
         olplists.add( new ArrayList<>() );
-
 
         traceOrJumpForward( 0, 0, olplists.get(0) );
 

@@ -1105,23 +1105,23 @@ class TriangleK(@kotlin.jvm.JvmField
     fun setDimPath(ts: Float) {
         dimH_ = ts
         dimpath[0] = PathAndOffset(
-                scale_,
-                point[1], point[0],
-                point[2], lengthforce[0], dimalignV[0], dimalignH[0], dimH_
+            scale_,
+            point[1], point[0],
+            dimalignV[0], dimalignH[0], dimH_
         )
         dimpath[1] = PathAndOffset(
-                scale_,
-                point[2], point[1],
-                point[0], lengthforce[1], dimalignV[1], dimalignH[1], dimH_
+            scale_,
+            point[2], point[1],
+            dimalignV[1], dimalignH[1], dimH_
         )
         dimpath[2] = PathAndOffset(
-                scale_,
-                point[0], point[2],
-                point[1], lengthforce[2], dimalignV[2], dimalignH[2], dimH_
+            scale_,
+            point[0], point[2],
+            dimalignV[2], dimalignH[2], dimH_
         )
         dimpath[3] = PathAndOffset(
-                scale_, point[1],
-                point[0], point[2], lengthforce[0], 4, 0, dimH_
+            scale_, point[1],
+            point[0], 4, 0, dimH_
         )
 
         //sla_ = formattedString( lengthforce[0], 3);

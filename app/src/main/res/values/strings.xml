@@ -61,6 +61,7 @@
 
     <string name="hello_first_fragment">三角形の辺長ＡＢＣを入力</string>
     <string name="hello_second_fragment">select a form to connection. Arg: %1$s</string>
+    <string name="title" translatable="false">title</string>
 
     <string-array name="TriNumList">
         <item>1</item>

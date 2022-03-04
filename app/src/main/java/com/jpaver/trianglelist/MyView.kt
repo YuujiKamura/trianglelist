@@ -474,10 +474,10 @@ val sokt = PathAndOffset(
         }
 
 
-        abca.textSpacer_ = textSpacer_
-        abbc.textSpacer_ = textSpacer_
-        bcca.textSpacer_ = textSpacer_
-        sokt.textSpacer_ = textSpacer_
+        abca.textSpacer = textSpacer_
+        abbc.textSpacer = textSpacer_
+        bcca.textSpacer = textSpacer_
+        sokt.textSpacer = textSpacer_
 
         drawTriLines( canvas, tri, paintTri )
 
@@ -485,10 +485,10 @@ val sokt = PathAndOffset(
 
         // 寸法
         if(tri.getMyNumber_() == 1 || tri.parentBC > 2 || tri.cParam_.type != 0 )
-            drawDigits( canvas, la, makePath(abca), abca.offsetH_, abca.offsetV_, paintDim, margin )
+            drawDigits( canvas, la, makePath(abca), abca.offsetH, abca.offsetV, paintDim, margin )
         //canvas.drawTextOnPath(la, makePath(abca), abca.offsetH_, abca.offsetV_, paintDim)
-        drawDigits( canvas, lb, makePath(abbc), abbc.offsetH_, abbc.offsetV_, paintDim, margin )
-        drawDigits( canvas, lc, makePath(bcca), bcca.offsetH_, bcca.offsetV_, paintDim, margin )
+        drawDigits( canvas, lb, makePath(abbc), abbc.offsetH, abbc.offsetV, paintDim, margin )
+        drawDigits( canvas, lc, makePath(bcca), bcca.offsetH, bcca.offsetV, paintDim, margin )
         //canvas.drawTextOnPath(lb, makePath(abbc), abbc.offsetH_, abbc.offsetV_, paintDim)
         //canvas.drawTextOnPath(lc, makePath(bcca), bcca.offsetH_, bcca.offsetV_, paintDim)
 
@@ -790,8 +790,8 @@ val sokt = PathAndOffset(
     fun makePath(PA: PathAndOffset): Path {
         val path = Path()
         path.rewind()
-        path.moveTo(PA.pointA_.x, -PA.pointA_.y)
-        path.lineTo(PA.pointB_.x, -PA.pointB_.y)
+        path.moveTo(PA.pointA.x, -PA.pointA.y)
+        path.lineTo(PA.pointB.x, -PA.pointB.y)
         return path
     }
 
@@ -812,12 +812,23 @@ val sokt = PathAndOffset(
     }
 
     fun setAllTextSize(ts: Float){
-        paintTexS.textSize = ts
-        paintBlue.textSize = ts
-        paintRed.textSize = ts
-        paintTexM.textSize = ts
+        if( ts <= 5f ) ts_ = 8f
+        else if( ts >= 30f ) ts_ = 30f
+        else ts_ = ts
+
+        paintTexS.textSize = ts_
+        paintBlue.textSize = ts_
+        paintBlue.strokeWidth = ts_ * 0.1f
+        paintRed.textSize = ts_
+        paintRed.strokeWidth = ts_ * 0.1f
+        paintYellow.strokeWidth = ts_ * 0.2f
+
+        paintTexM.textSize = ts_
         textSpacer_ = ts_ * 0.2f
-        myTriangleList.setPath( ts_ )
+        myTriangleList.setDimPathTextSize( ts_ )
+
+        invalidate()
+        Log.d( "CadView", "TextSize changed to:" + ts_ )
     }
 
     fun drawPDF(

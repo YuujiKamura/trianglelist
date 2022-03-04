@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.jpaver.trianglelist
 
 import junit.framework.Assert.assertEquals
@@ -20,7 +22,7 @@ class DrawingWriterTest {
 
     @Test
     fun testSfcwriter() {
-        val trilist = TriangleList()
+        TriangleList()
 
         val header = """ISO-10303-21;
                         HEADER;
@@ -44,14 +46,14 @@ class DrawingWriterTest {
 
         //val sfcWriter = SfcWriter( trilist, outputStream, "test.txt" )
 
-        //assertEquals( true, sfcWriter.compare( header ) )
+        //assertEquals( true, sfcWriter.compare( header ) ):
     }
 
 
     @Test
     fun testDXFwriter() {
         val trilist = TriangleList()
-        val dxfwr = DxfFileWriter( trilist )
+        DxfFileWriter( trilist )
     }
 
 }
