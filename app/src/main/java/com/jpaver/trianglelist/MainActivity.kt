@@ -1,7 +1,6 @@
 package com.jpaver.trianglelist
 
 import android.Manifest
-import android.app.Activity
 import android.app.AlertDialog
 import android.content.*
 import android.content.pm.PackageManager
@@ -29,11 +28,16 @@ import androidx.core.content.edit
 import androidx.fragment.app.DialogFragment
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
-import com.google.android.gms.ads.InterstitialAd
+import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.jpaver.trianglelist.databinding.ActivityMainBinding
+import com.jpaver.trianglelist.databinding.FragmentFirstBinding
 import com.jpaver.trianglelist.util.AssetsFileProvider
-import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.android.synthetic.main.fragment_first.*
+//import kotlinx.android.synthetic.main.activity_main.*
+//import kotlinx.android.synthetic.main.fragment_first.*
 import org.json.JSONObject.NULL
 import java.io.*
 import java.time.LocalDate
@@ -71,9 +75,39 @@ class MainActivity : AppCompatActivity(),
 
     private lateinit var prefSetting: SharedPreferences
 
+    private lateinit var bMyAct: ActivityMainBinding
+    private lateinit var bMyView: FragmentFirstBinding
+    private lateinit var my_view: MyView
+
+    lateinit var fab_replace: FloatingActionButton
+    lateinit var fab_flag: FloatingActionButton
+    lateinit var fab_dimsidew: FloatingActionButton
+    lateinit var fab_dimsideh: FloatingActionButton
+    lateinit var fab_nijyuualign: FloatingActionButton
+    lateinit var fab_minus: FloatingActionButton
+    lateinit var fab_undo: FloatingActionButton
+    lateinit var fab_fillcolor: FloatingActionButton
+    lateinit var fab_texplus: FloatingActionButton
+    lateinit var fab_texminus: FloatingActionButton
+    lateinit var fab_setB: FloatingActionButton
+    lateinit var fab_setC: FloatingActionButton
+    lateinit var fab_rot_l: FloatingActionButton
+    lateinit var fab_rot_r: FloatingActionButton
+    lateinit var fab_deduction: FloatingActionButton
+    lateinit var fab_resetView: FloatingActionButton
+    lateinit var fab_up: FloatingActionButton
+    lateinit var fab_down: FloatingActionButton
+    lateinit var fab_debug: FloatingActionButton
+    lateinit var fab_testbasic: FloatingActionButton
+    lateinit var fab_pdf: FloatingActionButton
+    lateinit var fab_share: FloatingActionButton
+    lateinit var fab_mail: FloatingActionButton
+    lateinit var fab_numreverse: FloatingActionButton
+    
+    
     private fun checkPermission() {
         if (isGranted()) {
-            //setEvent()
+
         } else {
             requestPermissions(PERMISSIONS, REQUESTPERMISSION)
         }
@@ -92,7 +126,6 @@ class MainActivity : AppCompatActivity(),
         }
         return true
     }
-
 
     override fun onRequestPermissionsResult(
             requestCode: Int,
@@ -398,7 +431,8 @@ class MainActivity : AppCompatActivity(),
     }
 
     private lateinit var mAdView : AdView
-    private lateinit var mInterstitialAd : InterstitialAd
+    private var mInterstitialAd: InterstitialAd? = null
+    private final var TAG = "MainActivity"
     //private val isAdTEST_ = true
     //private val TestAdID_ = "ca-app-pub-3940256099942544/6300978111"
     //private val UnitAdID_ = "ca-app-pub-6982449551349060/2369695624"
@@ -406,29 +440,62 @@ class MainActivity : AppCompatActivity(),
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
-        setTheme(R.style.AppTheme_NoActionBar)
-        setContentView(R.layout.activity_main)
+
+        bMyAct = ActivityMainBinding.inflate(layoutInflater)
+        val view = bMyAct.root
+        setTheme(R.style.AppTheme)
+        //setSupportActionBar(bMyAct.toolbar)
+        setContentView(view)
 
 
-        prefSetting = PreferenceManager.getDefaultSharedPreferences(this)
-
-
-        if( BuildConfig.FLAVOR == "free" ){
+        if( BuildConfig.FLAVOR == "free" ) {
+            mAdView = bMyAct.adView
+            //mInterstitialAd?.show(this) ?: Log.d("TAG", "The interstitial ad wasn't ready yet.")
             // must after setContentView
-            MobileAds.initialize(this) {}
-            mAdView = findViewById(R.id.adView)
+            //MobileAds.initialize(this) {}
+            //mAdView = findViewById(R.id.adView)
             //mAdView.adSize = AdSize.BANNER
 
             val adRequest = AdRequest.Builder().build()
             mAdView.loadAd(adRequest)
 
         }
-
-        setSupportActionBar(toolbar)
+        //setContentView(R.layout.activity_main)
+        
+        prefSetting = PreferenceManager.getDefaultSharedPreferences(this)
+        
         myDeductionList = DeductionList()
         //Toast.makeText(this, "Welcome back!", Toast.LENGTH_SHORT).show()
 
+        bMyView = FragmentFirstBinding.inflate(layoutInflater)
+        my_view = bMyView.myView
 
+        fab_replace =   bMyAct.fabReplace
+        fab_flag =      bMyAct.fabFlag
+        fab_dimsidew =  bMyAct.fabDimsidew
+        fab_dimsideh =  bMyAct.fabDimsideh
+        fab_nijyuualign = bMyAct.fabNijyuualign
+        fab_minus =     bMyAct.fabMinus
+        fab_undo =      bMyAct.fabUndo
+        fab_fillcolor = bMyAct.fabFillcolor
+        fab_texplus =   bMyAct.fabTexplus
+        fab_texminus =  bMyAct.fabTexminus
+        fab_setB =      bMyAct.fabSetB
+        fab_setC =      bMyAct.fabSetC
+        fab_rot_l =     bMyAct.fabRotL
+        fab_rot_r =     bMyAct.fabRotR
+        fab_deduction = bMyAct.fabDeduction
+        fab_resetView = bMyAct.fabResetView
+        fab_up =        bMyAct.fabUp
+        fab_down =      bMyAct.fabDown
+        fab_debug =     bMyAct.fabDebug
+        fab_testbasic = bMyAct.fabTestbasic
+        fab_pdf =       bMyAct.fabPdf
+        fab_share =     bMyAct.fabShare
+        fab_mail =      bMyAct.fabMail
+        fab_numreverse = bMyAct.fabNumreverse
+        
+        
         fab_replace.setOnClickListener {
             fabReplace(dParams, false)
         }
@@ -529,7 +596,7 @@ class MainActivity : AppCompatActivity(),
 
             if(listLength > 0 && deleteWarning == 0) {
                 deleteWarning = 1
-                fab_minus.backgroundTintList = getColorStateList(R.color.colorTT2)
+                bMyAct.fabMinus.backgroundTintList = getColorStateList(R.color.colorTT2)
 
             }
             else {
@@ -548,7 +615,7 @@ class MainActivity : AppCompatActivity(),
                     editorClear(getList(deductionMode), getList(deductionMode).size())
                 }
                 deleteWarning = 0
-                fab_minus.backgroundTintList = getColorStateList(R.color.colorAccent)
+                bMyAct.fabMinus.backgroundTintList = getColorStateList(R.color.colorAccent)
             }
             printDebugConsole()
             colorMovementFabs()
@@ -566,7 +633,7 @@ class MainActivity : AppCompatActivity(),
 
                 trilistStored.trilist_.clear()
 
-                fab_undo.backgroundTintList = getColorStateList(R.color.colorPrimary)
+                bMyAct.fabUndo.backgroundTintList = getColorStateList(R.color.colorPrimary)
                 editorClear(getList(deductionMode), getList(deductionMode).getCurrent())
                 setTitles()
             }
@@ -579,7 +646,7 @@ class MainActivity : AppCompatActivity(),
 
                 colorindex ++
                 if(colorindex == resColors.size) colorindex = 0
-                fab_fillcolor.backgroundTintList = getColorStateList(resColors[colorindex])
+                bMyAct.fabFillcolor.backgroundTintList = getColorStateList(resColors[colorindex])
 
                 //dParams_ = myEditor.ReadLine(dParams_, myELSecond)
                 myTriangleList.get(my_view.myTriangleList.current).color_ = colorindex
@@ -795,6 +862,7 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
+    
     private fun fabReplace(params: Params, useit: Boolean){
         //val editor = myEditor
         val dedmode = deductionMode
@@ -1452,10 +1520,24 @@ class MainActivity : AppCompatActivity(),
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         //インタースティシャル広告の読み込み
         if( BuildConfig.FLAVOR == "free"){
+            var adRequest = AdRequest.Builder().build()
+
+            InterstitialAd.load(this,"ca-app-pub-3940256099942544/1033173712", adRequest, object : InterstitialAdLoadCallback() {
+                override fun onAdFailedToLoad(adError: LoadAdError) {
+                    Log.d(TAG, adError?.message)
+                    mInterstitialAd = null
+                }
+
+                override fun onAdLoaded(interstitialAd: InterstitialAd) {
+                    Log.d(TAG, "Ad was loaded.")
+                    mInterstitialAd = interstitialAd
+                }
+            })
+            /*
             mInterstitialAd = InterstitialAd(this)
             if( BuildConfig.BUILD_TYPE == "debug" ) mInterstitialAd.adUnitId = "ca-app-pub-3940256099942544/1033173712"
             else if( BuildConfig.BUILD_TYPE == "release" ) mInterstitialAd.adUnitId = "ca-app-pub-6982449551349060/2369695624"
-            mInterstitialAd.loadAd(AdRequest.Builder().build())
+            mInterstitialAd.loadAd(AdRequest.Builder().build())*/
         }
 
         // Handle action bar item clicks here. The action bar will
@@ -1780,7 +1862,7 @@ class MainActivity : AppCompatActivity(),
 
         if ( contentUri != Uri.EMPTY ) {
             val intent = Intent(Intent.ACTION_VIEW)
-            intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED//flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+            intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION// or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED//flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
             //intent.flags = Intent.FLAG_GRANT_WRITE_URI_PERMISSION
             intent.setDataAndType(contentUri, "application/pdf")
             //intent.setPackage("com.adobe.reader")

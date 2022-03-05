@@ -5,7 +5,7 @@ import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import kotlinx.android.synthetic.main.activity_main.*
+//import kotlinx.android.synthetic.main.activity_main.*
 
 class fabController(
     val myEditor :EditorTable,
@@ -160,7 +160,7 @@ class fabController(
     fun addTriangleBy(params: Params) : Boolean {
         if (validTriangle(params)) {
             trilistStored_ = trilist.clone()
-            appActivity.fab_undo.backgroundTintList = context.getColorStateList(R.color.colorLime)
+            //appActivity.fab_undo.backgroundTintList = context.getColorStateList(R.color.colorLime)
 
             var myTri: Triangle = Triangle(
                 trilist.getTriangle(params.pn),
@@ -180,7 +180,7 @@ class fabController(
 
         if (validTriangle(params) == true){
             trilistStored_ = trilist.clone()
-            appActivity.fab_undo.backgroundTintList = context.getColorStateList(R.color.colorLime)
+            //appActivity.fab_undo.backgroundTintList = context.getColorStateList(R.color.colorLime)
 
             //if( dParams.n == 1 ) myTriangleList.resetTriangle( dParams.n, Triangle( dParams, myTriangleList.myAngle ) )
             //else
