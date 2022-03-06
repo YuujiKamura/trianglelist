@@ -12,13 +12,14 @@
             android:id="@+id/toolbarLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="@color/colorPrimary"
             android:theme="@style/AppTheme.AppBarOverlay">
 
             <androidx.appcompat.widget.Toolbar
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="40dp"
-                android:background="?attr/colorPrimary"
+                android:background="@color/colorPrimary"
                 app:popupTheme="@style/AppTheme.PopupOverlay" />
 
         </com.google.android.material.appbar.AppBarLayout>
@@ -209,7 +210,7 @@
             android:id="@+id/fab_setB"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignRight="@id/toolbarLayout"
+            android:layout_alignEnd="@id/toolbarLayout"
             android:layout_gravity="top|end"
             android:layout_marginTop="@dimen/top_btn"
             android:layout_marginEnd="136dp"
@@ -222,7 +223,7 @@
             android:id="@+id/fab_setC"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignRight="@id/toolbarLayout"
+            android:layout_alignEnd="@id/toolbarLayout"
             android:layout_gravity="top|end"
             android:layout_marginTop="@dimen/top_btn"
             android:layout_marginEnd="76dp"
@@ -235,7 +236,7 @@
             android:id="@+id/fab_replace"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignRight="@id/toolbarLayout"
+            android:layout_alignEnd="@id/toolbarLayout"
             android:layout_gravity="top|end"
             android:layout_marginTop="@dimen/top_btn"
             android:layout_marginEnd="16dp"

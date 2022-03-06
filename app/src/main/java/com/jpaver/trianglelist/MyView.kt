@@ -6,6 +6,8 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.*
 import android.view.ScaleGestureDetector.OnScaleGestureListener
+import com.jpaver.trianglelist.databinding.ActivityMainBinding
+import com.jpaver.trianglelist.databinding.FragmentFirstBinding
 import java.util.*
 import kotlin.math.roundToInt
 
@@ -117,6 +119,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
+
 
         screen_width = this.width
         screen_height = this.height
@@ -363,6 +366,9 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
     fun drawEntities(canvas: Canvas, paintTri: Paint, paintTex: Paint, paintRed: Paint, colors: Array<Int>, myTriangleList: TriangleList, myDeductionList: DeductionList ) {
 
+        Log.d( "myView", "drawEntities: " + myTriangleList.size() )
+        Log.d("myView", "Instance check in View: " + this )
+
         drawShadowTriangle( canvas, myTriangleList )
 
         for( i in 0 until myTriangleList.size() )  {
@@ -497,6 +503,8 @@ val sokt = PathAndOffset(
             canvas.drawTextOnPath(tri.getMyName_(), makePath(sokt), 0f, -2f, paintSok)
             canvas.drawPath(makePath(sokt), paintTri)
         }
+        Log.d( "myView", "drawTriangle: " + tri.myNumber_ )
+
     }
 
     fun drawShadowTriangle( canvas: Canvas, myTriangleList: TriangleList ){
@@ -604,7 +612,7 @@ val sokt = PathAndOffset(
                 point.x, point.y - 20f,
                 point.x, point.y + 20f, paintRed
             )
-
+            Log.d( "myView", "drawLocalPressPoint: " + point.x + " " + point.y )
             // draw pdf の時だけ使う
             //if( BuildConfig.BUILD_TYPE == "debug" ) canvas.drawText( point.x.toString() + " " + point.y.toString(), point.x+10f, point.y+10f, paintRed)
         }

@@ -36,6 +36,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.jpaver.trianglelist.databinding.ActivityMainBinding
 import com.jpaver.trianglelist.databinding.FragmentFirstBinding
 import com.jpaver.trianglelist.util.AssetsFileProvider
+//import kotlinx.android.synthetic.main.fragment_first.*
 //import kotlinx.android.synthetic.main.activity_main.*
 //import kotlinx.android.synthetic.main.fragment_first.*
 import org.json.JSONObject.NULL
@@ -440,13 +441,13 @@ class MainActivity : AppCompatActivity(),
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
+        setTheme(R.style.AppTheme_NoActionBar) //Note that this should be called before any views are instantiated in the Context (for example before calling Activity.setContentView(View) or LayoutInflater.inflate(int, ViewGroup)).
 
         bMyAct = ActivityMainBinding.inflate(layoutInflater)
         val view = bMyAct.root
-        setTheme(R.style.AppTheme)
-        //setSupportActionBar(bMyAct.toolbar)
-        setContentView(view)
 
+        setSupportActionBar(bMyAct.toolbar)
+        setContentView(view)
 
         if( BuildConfig.FLAVOR == "free" ) {
             mAdView = bMyAct.adView
@@ -467,8 +468,6 @@ class MainActivity : AppCompatActivity(),
         myDeductionList = DeductionList()
         //Toast.makeText(this, "Welcome back!", Toast.LENGTH_SHORT).show()
 
-        bMyView = FragmentFirstBinding.inflate(layoutInflater)
-        my_view = bMyView.myView
 
         fab_replace =   bMyAct.fabReplace
         fab_flag =      bMyAct.fabFlag
@@ -1369,6 +1368,11 @@ class MainActivity : AppCompatActivity(),
 
         super.onAttachedToWindow()
 
+        //bMyView = FragmentFirstBinding.bind( findViewById(R.id.my_view) )//inflate(layoutInflater)
+        my_view = findViewById(R.id.my_view)//bMyView.myView
+        Log.d("myView", "Instance check in MainActivity: " + my_view )
+
+
         rStr = ResStr(
                 getString(R.string.tenkai_title),
                 getString(R.string.rosen1),
@@ -1433,7 +1437,7 @@ class MainActivity : AppCompatActivity(),
         val filepath = this.filesDir.absolutePath + "/" + "myLastTriList.csv"
         val file = File(filepath)
         if(file.exists()) resumeCSV()
-        else                      createNew()
+        else createNew()
         loadEditTable()
         colorMovementFabs()
         //fab.setBackgroundTintList(getColorStateList(R.color.colorLime))
@@ -1479,6 +1483,8 @@ class MainActivity : AppCompatActivity(),
         my_view.setDeductionList(myDeductionList, mScale)
         my_view.myTriangleList.lastTapNumber_ = my_view.myTriangleList.size()
         my_view.resetViewToLSTP()
+
+        Log.d("FileLoader", "createNew: " + my_view.myTriangleList.size() )
 
         fab_fillcolor.backgroundTintList = getColorStateList(resColors[colorindex])
 
@@ -2048,7 +2054,10 @@ class MainActivity : AppCompatActivity(),
                     InputStreamReader(openFileInput("myLastTriList.csv"))
             )
             val ok = loadCSV(reader)
+
             if(!ok) createNew()
+
+            Log.d( "FileLoader", "Resume CSV is:" + ok )
         } catch (e: IOException) {
             e.printStackTrace()
         }
@@ -2387,6 +2396,7 @@ class MainActivity : AppCompatActivity(),
         my_view.setTriangleList(trilist, mScale)
         my_view.resetViewToLSTP()
 
+        Log.d( "FileLoader", "my_view.setTriangleList: " + my_view.myTriangleList.size() )
         // メニューバーのタイトル
         //setTitles()
 
