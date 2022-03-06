@@ -1,6 +1,7 @@
 package com.jpaver.trianglelist
 
 import android.Manifest
+import android.app.Activity
 import android.app.AlertDialog
 import android.content.*
 import android.content.pm.PackageManager
@@ -9,7 +10,6 @@ import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import androidx.preference.PreferenceManager
 import android.text.Editable
 import android.text.InputFilter
 import android.text.TextWatcher
@@ -21,24 +21,22 @@ import android.view.View
 import android.view.View.INVISIBLE
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider.getUriForFile
 import androidx.core.content.edit
 import androidx.fragment.app.DialogFragment
+import androidx.preference.PreferenceManager
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.interstitial.InterstitialAd
-import com.google.android.gms.ads.MobileAds
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.jpaver.trianglelist.databinding.ActivityMainBinding
-import com.jpaver.trianglelist.databinding.FragmentFirstBinding
 import com.jpaver.trianglelist.util.AssetsFileProvider
-//import kotlinx.android.synthetic.main.fragment_first.*
-//import kotlinx.android.synthetic.main.activity_main.*
-//import kotlinx.android.synthetic.main.fragment_first.*
 import org.json.JSONObject.NULL
 import java.io.*
 import java.time.LocalDate
@@ -77,7 +75,6 @@ class MainActivity : AppCompatActivity(),
     private lateinit var prefSetting: SharedPreferences
 
     private lateinit var bMyAct: ActivityMainBinding
-    private lateinit var bMyView: FragmentFirstBinding
     private lateinit var my_view: MyView
 
     lateinit var fab_replace: FloatingActionButton
@@ -433,7 +430,7 @@ class MainActivity : AppCompatActivity(),
 
     private lateinit var mAdView : AdView
     private var mInterstitialAd: InterstitialAd? = null
-    private final var TAG = "MainActivity"
+    private var TAG = "MainActivity"
     //private val isAdTEST_ = true
     //private val TestAdID_ = "ca-app-pub-3940256099942544/6300978111"
     //private val UnitAdID_ = "ca-app-pub-6982449551349060/2369695624"
@@ -1511,8 +1508,8 @@ class MainActivity : AppCompatActivity(),
         fileType = "CSV"
         val i = Intent(Intent.ACTION_CREATE_DOCUMENT)
         i.type = "text/csv"
-        i.putExtra(Intent.EXTRA_TITLE, rosenname + " " + LocalDate.now() + ".csv")
-        startActivityForResult(i, 1)
+        i.putExtra(Intent.EXTRA_TITLE, rosenname + " " + LocalDate.now().monthValue + "-" + LocalDate.now().dayOfMonth + ".csv")
+        saveContent.launch( i )
         setResult(RESULT_OK, i)
 
     }
@@ -1524,13 +1521,15 @@ class MainActivity : AppCompatActivity(),
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        rosenname = findViewById<EditText>(R.id.rosenname).text.toString()
+
         //インタースティシャル広告の読み込み
         if( BuildConfig.FLAVOR == "free"){
-            var adRequest = AdRequest.Builder().build()
+            val adRequest = AdRequest.Builder().build()
 
             InterstitialAd.load(this,"ca-app-pub-3940256099942544/1033173712", adRequest, object : InterstitialAdLoadCallback() {
                 override fun onAdFailedToLoad(adError: LoadAdError) {
-                    Log.d(TAG, adError?.message)
+                    Log.d(TAG, adError.message)
                     mInterstitialAd = null
                 }
 
@@ -1575,18 +1574,18 @@ class MainActivity : AppCompatActivity(),
                 dialog.show(supportFragmentManager, "dialog.basic")
                 return true
             }
+
             R.id.action_save_csv -> {
                 fileType = "CSV"
-                val i = Intent(Intent.ACTION_CREATE_DOCUMENT)
-                i.addCategory(Intent.CATEGORY_OPENABLE)
-                i.type = "text/csv"
-                i.putExtra(
+                val intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
+                intent.addCategory(Intent.CATEGORY_OPENABLE)
+                intent.type = "text/csv"
+                intent.putExtra(
                         Intent.EXTRA_TITLE,
-                        rosenname + " " + LocalDate.now().toString() + ".csv"
+                        rosenname + " " + LocalDate.now().monthValue + "." + LocalDate.now().dayOfMonth + ".csv"
                 )
-                startActivityForResult(i, 1)
-                setResult(RESULT_OK, i)
-                //finish()
+
+                saveContent.launch( intent )
 
                 return true
             }
@@ -1621,7 +1620,6 @@ class MainActivity : AppCompatActivity(),
                 editText.setText(koujiname)
                 val editText2 = EditText(this)
                 editText2.hint = hRname
-                rosenname = findViewById<EditText>(R.id.rosenname).text.toString()
                 editText2.setText(rosenname)
                 editText2.filters = filter
                 val editText3 = EditText(this)
@@ -1687,10 +1685,7 @@ class MainActivity : AppCompatActivity(),
                                                             )
 
                                                         }
-                                                    startActivityForResult(
-                                                        i,
-                                                        1
-                                                    )
+                                                    saveContent.launch( i )
 
                                                 }
                                                 .show()
@@ -1718,6 +1713,75 @@ class MainActivity : AppCompatActivity(),
     }
 
 
+    val loadContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
+
+        if (result.resultCode == Activity.RESULT_OK && result.data != NULL) {
+            val resultIntent = result.data
+            val title: Uri = Objects.requireNonNull( resultIntent?.data )!!
+
+            StringBuilder()
+            try {
+                val reader = BufferedReader(
+                    InputStreamReader(contentResolver.openInputStream(title), "Shift-JIS")
+                )
+                loadCSV(reader)
+
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+
+        setTitles()
+    }
+
+
+    val saveContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
+        //Log.d( "FileManager", "StartActivityForResult: " + result )
+
+        if (result.resultCode == Activity.RESULT_OK && result.data != NULL) {
+            val resultIntent = result.data
+            val title: Uri = Objects.requireNonNull( resultIntent?.data )!!
+
+
+            try {
+                autoSaveCSV() // オートセーブ
+
+                val charset = "Shift-JIS"
+                val writer = BufferedWriter(
+                    OutputStreamWriter(contentResolver.openOutputStream(title), charset)
+                )
+
+                if (fileType == "DXF") saveDXF(writer)
+                if (fileType == "CSV") saveCSV(writer)
+                if (fileType == "PDF") savePDF(contentResolver.openOutputStream(title)!!)
+                if (fileType == "SFC") saveSFC(
+                    BufferedOutputStream(
+                        contentResolver.openOutputStream(
+                            title
+                        )
+                    )
+                )
+
+                // Uriは再起すると使えなくなるので対策
+                contentResolver.takePersistableUriPermission(
+                    title,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+                // Uri保存。これでアプリ再起動後も使えます。
+                prefSetting.edit {
+                    putString("uri", title.toString())
+                }
+
+                if( BuildConfig.FLAVOR == "free" ) showInterStAd()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+
+        }
+
+        setTitles()
+    }
+
     private fun openDocumentPicker() {
         val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
             /**
@@ -1727,7 +1791,7 @@ class MainActivity : AppCompatActivity(),
              * See [Intent.setType] for more details.
              */
             flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-            type = "text/csv/*"
+            type = "text/csv"
 
             /**
              * Because we'll want to use [ContentResolver.openFileDescriptor] to read
@@ -1736,7 +1800,9 @@ class MainActivity : AppCompatActivity(),
              */
             addCategory(Intent.CATEGORY_OPENABLE)
         }
-        startActivityForResult(intent, 2)
+
+        //startActivityForResult( intent, 2 )
+        loadContent.launch( intent )
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -1765,7 +1831,7 @@ class MainActivity : AppCompatActivity(),
                         Intent.EXTRA_TITLE,
                         rosenname + " " + LocalDate.now() + fileprefix
                 )
-                startActivityForResult(i, 1)
+                saveContent.launch( i )
             }
                 .setNegativeButton("NumReverse"
                 ) { _, _ ->
@@ -1779,7 +1845,7 @@ class MainActivity : AppCompatActivity(),
                             Intent.EXTRA_TITLE,
                             rosenname + " " + LocalDate.now() + fileprefix
                     )
-                    startActivityForResult(i, 1)
+                    saveContent.launch( i )
                 }.show()
         return true
     }
@@ -2034,6 +2100,8 @@ class MainActivity : AppCompatActivity(),
 
     private fun autoSaveCSV(){
         try {
+            setTitles()
+
             val writer = BufferedWriter(
                     OutputStreamWriter(openFileOutput("myLastTriList.csv", MODE_PRIVATE))
             )
@@ -2284,16 +2352,21 @@ class MainActivity : AppCompatActivity(),
             if( chunks.size > 17 ) {
 
                 if( chunks[5].toInt() == 0 ){
+                    val pt = PointXY( 0f, 0f )
+                    var angle = 0f
+
+                    if( chunks.size > 22 ){
+                        pt.set( -chunks[23].toFloat(), -chunks[24].toFloat() )
+                        angle = chunks[22].toFloat()
+                    }
+
                     trilist.add(
                             Triangle(
-                                    chunks[1].toFloat(),
-                                    chunks[2].toFloat(),
-                                    chunks[3].toFloat(),
-                                    PointXY(
-                                            -chunks[23].toFloat(),
-                                            -chunks[24].toFloat()
-                                    ),
-                                    chunks[22].toFloat() - 180f
+                                chunks[1].toFloat(),
+                                chunks[2].toFloat(),
+                                chunks[3].toFloat(),
+                                pt,
+                                angle - 180f
                             )
                     )
                 }
@@ -2343,11 +2416,12 @@ class MainActivity : AppCompatActivity(),
 
                 val mT = trilist.getTriangle(trilist.size())
                 mT.parentBC_ = chunks[5].toInt()
+                /*
                 if( chunks.size > 25 && mT.parentBC_ >= 9 ) mT.rotate(
                     mT.pointCA_,
                     chunks[25].toFloat(),
                     false
-                )
+                )*/
                 // trilist.getTriangle(trilist.size()).setCParamFromParentBC( chunks[5]!!.toInt() )
             }
 

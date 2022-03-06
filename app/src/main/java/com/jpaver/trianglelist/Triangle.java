@@ -131,7 +131,7 @@ public class Triangle extends EditObject implements Cloneable {
             b.color_ = this.color_;
             b.connectionLCR_ = this.connectionLCR_;
             b.connectionType_ = this.connectionType_;
-            b.cParam_ = this.cParam_;
+            b.cParam_ = this.cParam_.clone();
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -800,6 +800,10 @@ public class Triangle extends EditObject implements Cloneable {
         if( cParam_.getSide() == 0 && (pbc == 7 || pbc == 8 ) ) curLCR = 1;
 
         switch (pbc){
+            case -1:// standalone
+            case 0:
+                cParam_ = new ConnParam( 0 ,0, 2, lengthAforce_);
+                break;
             case 1://B
                 cParam_ = new ConnParam( 1 ,0, 2, lengthAforce_);
                 break;
