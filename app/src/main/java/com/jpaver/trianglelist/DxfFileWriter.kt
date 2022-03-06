@@ -309,14 +309,14 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         textsize: Float,
         scale: Float
     ){
-        writeText(st, p1.plus(0.2f,0.1f), 1, textsize, 0, 1, 0f, 1f)
+        writeText(st, p1.plus(textsize,textsize*0.2f), 1, textsize, 0, 1, 0f, 1f)
         writeLine( p1, p2, 1)
     }
 
     override fun writeDeduction( ded: Deduction ){
 
         //val ded = dedlist_.get( dednumber )
-        val textSize = 0.35f
+        val textSize = textscale_
         val infoStrLength = ded.infoStr.length*textSize+0.3f
         val point = ded.point
         val pointFlag = ded.pointFlag

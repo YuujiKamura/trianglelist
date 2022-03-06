@@ -27,14 +27,14 @@ class TriangleKTest {
         Assert.assertEquals( t2.nodeTriangle[0], t2c.nodeTriangle[0] )
         Assert.assertEquals( t1, t2c.nodeTriangle[0] ) //クローンポインタからでも参照先は同一
 
-        t2c.nodeTriangle[0] = null
+        t2c.nodeTriangle[0] = null //消してしまうと
+        Assert.assertEquals( null, t2c.nodeTriangle[0] ) // 当然消える、でも
 
-        Assert.assertEquals( null, t2c.nodeTriangle[0] )
-        Assert.assertEquals( t1, t2.nodeTriangle[0] ) //ポインタは別
+        Assert.assertEquals( t1, t2.nodeTriangle[0] ) //クローン元のポインタは生きている
 
         t2.nodeTriangle[0] = null //実はポインタなので
 
-        //Assert.assertEquals( null, t1 ) // t1が消えてなくなるわけではない
+        Assert.assertTrue( t1.valid_ ) // t1が消えてなくなるわけではない
 
     }
 

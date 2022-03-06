@@ -1,5 +1,9 @@
 package com.jpaver.trianglelist
 
+import android.os.Build
+import androidx.annotation.RequiresApi
+import java.time.LocalDate
+
 open class DrawingFileWriter {
     open lateinit var trilist_: TriangleList
     open lateinit var dedlist_: DeductionList
@@ -123,6 +127,7 @@ open class DrawingFileWriter {
         writeLine( PointXY(19f,26.9f, scale ), PointXY(23f,26.9f, scale ), cWhite_, scale)
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     open fun writeFrame(scale: Float = 1f, textsize: Float){
 
         val tss = textsize * scale
@@ -179,9 +184,12 @@ open class DrawingFileWriter {
         else {
             writeText(koujiname_, PointXY(xr-tt, yb ), cWhite_, tss, 0, scale = 1f)
         }
+
+        val nengappi = LocalDate.now().year.toString() + " 年 " + LocalDate.now().monthValue.toString() + " 月 " + LocalDate.now().dayOfMonth.toString() + " 日"
+
         writeText(rStr_.tTitle_, PointXY(strx, 5.7f * scale ), cWhite_, tss, 0, 0, 0f, 1f)
         writeText(rosenname_, PointXY(strx, 4.7f * scale ), cWhite_, tss, 0, 0, 0f, 1f)
-        writeText("     "+rStr_.tDate_, PointXY(strx, 3.7f * scale ), cWhite_, tss, 0, 0, 0f, 1f)
+        writeText(nengappi, PointXY(strx, 3.7f * scale ), cWhite_, tss, 0, 0, 0f, 1f)
         writeText("1/${st.toInt()} (A3)", PointXY(34.5f, 2.7f, scale ), cWhite_, tss, 1, 0, 0f, 1f)
         writeText(zumennum_, PointXY(39.5f, 2.7f, scale ), cWhite_, tss, 1, 0, 0f, 1f)
         writeText(gyousyaname_, PointXY(strx, 1.7f * scale ), cWhite_, tss, 0, 0, 0f, 1f)

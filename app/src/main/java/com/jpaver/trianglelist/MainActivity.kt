@@ -35,6 +35,9 @@ import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory
+import com.google.android.play.core.install.model.AppUpdateType
+import com.google.android.play.core.install.model.UpdateAvailability
 import com.jpaver.trianglelist.databinding.ActivityMainBinding
 import com.jpaver.trianglelist.util.AssetsFileProvider
 import org.json.JSONObject.NULL
@@ -71,6 +74,8 @@ interface CustomTextWatcher: TextWatcher{
 
 class MainActivity : AppCompatActivity(),
         MyDialogFragment.NoticeDialogListener {
+
+
 
     private lateinit var prefSetting: SharedPreferences
 
@@ -446,6 +451,32 @@ class MainActivity : AppCompatActivity(),
         setSupportActionBar(bMyAct.toolbar)
         setContentView(view)
 
+        val appUpdateManager = AppUpdateManagerFactory.create(this)
+
+        // Returns an intent object that you use to check for an update.
+        val appUpdateInfoTask = appUpdateManager.appUpdateInfo
+
+        // Checks that the platform will allow the specified type of update.
+        appUpdateInfoTask.addOnSuccessListener { appUpdateInfo ->
+            if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
+                // This example applies an immediate update. To apply a flexible update
+                // instead, pass in AppUpdateType.FLEXIBLE
+                && appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)
+            ) {
+                // Request the update.
+                appUpdateManager.startUpdateFlowForResult(
+                    // Pass the intent that is returned by 'getAppUpdateInfo()'.
+                    appUpdateInfo,
+                    // Or 'AppUpdateType.FLEXIBLE' for flexible updates.
+                    AppUpdateType.FLEXIBLE,
+                    // The current activity making the update request.
+                    this,
+                    // Include a request code to later monitor this update request.
+                    1 )
+            }
+            else Log.d( "AppUpdate", "Update is not Available.")
+        }
+
         if( BuildConfig.FLAVOR == "free" ) {
             mAdView = bMyAct.adView
             //mInterstitialAd?.show(this) ?: Log.d("TAG", "The interstitial ad wasn't ready yet.")
@@ -535,6 +566,8 @@ class MainActivity : AppCompatActivity(),
         }
 
         fab_dimsidew.setOnClickListener {
+
+
             if(!deductionMode){
                 var dimside = my_view.myTriangleList.lastTapSide_
                 val trinum  = my_view.myTriangleList.lastTapNumber_
@@ -941,13 +974,13 @@ class MainActivity : AppCompatActivity(),
                 params.pn = my_view.myTriangleList.isCollide(params.pt.scale(PointXY(1f, -1f)))
 
                 if( params.pn != 0 ) {
+                    my_view.myTriangleList.dedmapping(myDeductionList, -1)
+                    Log.d( "DeductionList", "ptri dedcount" + my_view.myTriangleList.get(params.pn).dedcount )
+                    Log.d( "DeductionList", "params.pts" + params.pts.x + ", " + params.pts.y )
+
                     val trilistinview = my_view.myTriangleList
                     val ptri = trilistinview.get(params.pn)
-                    params.pts = ptri.hataage(params.pt, 50f, -1f)
-
-                    ptri.dedcount++
-                    myTriangleList.get(params.pn).dedcount++
-
+                    params.pts = ptri.hataage(params.pt, 30f, -1f, params.n.toFloat() )
                 }
             }
 
@@ -1004,11 +1037,13 @@ class MainActivity : AppCompatActivity(),
                 params.pn = my_view.myTriangleList.isCollide(params.pt.scale(PointXY(1f, -1f)))
 
                 if( params.pn != 0 ) {
+                    my_view.myTriangleList.dedmapping(myDeductionList, -1)
+                    Log.d( "DeductionList", "ptri dedcount" + my_view.myTriangleList.get(params.pn).dedcount )
+                    Log.d( "DeductionList", "params.pts" + params.pts.x + ", " + params.pts.y )
+
                     val ptri = my_view.myTriangleList.get(params.pn)
-                    params.pts = ptri.hataage(params.pt, 50f, -1f)//params.pt.plus( 0f, hataage )
-
+                    params.pts = ptri.hataage(params.pt, 30f, -1f, params.n.toFloat() )
                 }
-
 
             }
 
@@ -1508,7 +1543,7 @@ class MainActivity : AppCompatActivity(),
         fileType = "CSV"
         val i = Intent(Intent.ACTION_CREATE_DOCUMENT)
         i.type = "text/csv"
-        i.putExtra(Intent.EXTRA_TITLE, rosenname + " " + LocalDate.now().monthValue + "-" + LocalDate.now().dayOfMonth + ".csv")
+        i.putExtra(Intent.EXTRA_TITLE,LocalDate.now().monthValue.toString() + "." + LocalDate.now().dayOfMonth.toString() + " " + rosenname + ".csv" )
         saveContent.launch( i )
         setResult(RESULT_OK, i)
 
@@ -1582,7 +1617,7 @@ class MainActivity : AppCompatActivity(),
                 intent.type = "text/csv"
                 intent.putExtra(
                         Intent.EXTRA_TITLE,
-                        rosenname + " " + LocalDate.now().monthValue + "." + LocalDate.now().dayOfMonth + ".csv"
+                        LocalDate.now().monthValue.toString() + "." + LocalDate.now().dayOfMonth.toString() + " " + rosenname + ".csv"
                 )
 
                 saveContent.launch( intent )
@@ -1681,7 +1716,7 @@ class MainActivity : AppCompatActivity(),
                                                                 "application/pdf"
                                                             putExtra(
                                                                 Intent.EXTRA_TITLE,
-                                                                rosenname + "_" + LocalDate.now() + ".pdf"
+                                                                LocalDate.now().monthValue.toString() + "." + LocalDate.now().dayOfMonth.toString() + " " + rosenname + ".pdf"
                                                             )
 
                                                         }
@@ -1829,7 +1864,7 @@ class MainActivity : AppCompatActivity(),
                 i.type = intentType
                 i.putExtra(
                         Intent.EXTRA_TITLE,
-                        rosenname + " " + LocalDate.now() + fileprefix
+                    LocalDate.now().monthValue.toString() + "." + LocalDate.now().dayOfMonth.toString() + " " + rosenname + fileprefix
                 )
                 saveContent.launch( i )
             }

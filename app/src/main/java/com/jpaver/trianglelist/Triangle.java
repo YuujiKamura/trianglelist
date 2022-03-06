@@ -1,7 +1,5 @@
 package com.jpaver.trianglelist;
 
-import android.util.Log;
-
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -1500,7 +1498,7 @@ public class Triangle extends EditObject implements Cloneable {
         //Log.d("Triangle", "num:" + myNumber_ + "pCA: " + pointCA_.getX() + " , " + pointCA_.getY() );
         //Log.d("Triangle", "num:" + myNumber_ + "pAB: " + pointCA_.getX() + " , " + pointCA_.getY() );
         //Log.d("Triangle", "num:" + myNumber_ + "pBC: " + pointCA_.getX() + " , " + pointCA_.getY() );
-        Log.d("Triangle", "num:" + myNumber_ + "angleInGlobal/Local: " + angleInGlobal_ + " , " + angleInLocal_ );
+        //Log.d("Triangle", "num:" + myNumber_ + "angleInGlobal/Local: " + angleInGlobal_ + " , " + angleInLocal_ );
 
     }
 
@@ -1526,18 +1524,18 @@ public class Triangle extends EditObject implements Cloneable {
         return parentBC_ == 9 || parentBC_ == 10;
     }
 
-    public PointXY hataage(PointXY p, float offset, float axisY ){
+    public PointXY hataage(PointXY p, float offset, float axisY, Float number){
         float distanceFromCenter = p.getY() - pointCenter_.getY() * axisY;
         float direction = 1;
         if( distanceFromCenter < 0 ) direction = -1;
 
         PointXY hataage =  p.clone();
         float compareY = compareY( direction, axisY );
-        hataage.set( p.getX(), p.getY() + ( compareY - p.getY() ) + ( offset * direction ) + ( offset * 2f * direction * dedcount ) );
+        hataage.set( p.getX(), p.getY() + ( compareY - p.getY() ) + ( offset * direction * ( dedcount * number ) ) );
 
-        Log.d("Triangle Deduction", "p.getY: " + p.getY() + " , pointCenterY: " + pointCenter_.getY()+ " , axisY: " + axisY );
-        Log.d("Triangle Deduction", "DistanceFromCenter: " + distanceFromCenter + " , direction: " + direction );
-        Log.d("Triangle Deduction", "compareY: " + compareY + " , hataage.y: " + hataage.getY() );
+        //Log.d("Triangle Deduction", "p.getY: " + p.getY() + " , pointCenterY: " + pointCenter_.getY()+ " , axisY: " + axisY );
+        //Log.d("Triangle Deduction", "DistanceFromCenter: " + distanceFromCenter + " , direction: " + direction );
+        //Log.d("Triangle Deduction", "compareY: " + compareY + " , hataage.y: " + hataage.getY() );
 
 
         return hataage;
@@ -1547,7 +1545,7 @@ public class Triangle extends EditObject implements Cloneable {
         float pCAy = pointCA_.getY() * axisY;
         float pABy = pointAB_.getY() * axisY;
         float pBCy = pointBC_.getY() * axisY;
-        Log.d("Triangle Deduction", "pCAy: " + pCAy + " , pABy: " + pABy + " , pBCy: " + pBCy );
+        //Log.d("Triangle Deduction", "pCAy: " + pCAy + " , pABy: " + pABy + " , pBCy: " + pBCy );
 
         float Y = pCAy;
         if( direction == -1 ){

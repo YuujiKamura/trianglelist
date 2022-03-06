@@ -686,6 +686,7 @@ class TriangleK(@kotlin.jvm.JvmField
 
 
     fun calcPoints(ref: TriangleK?, refside: Int, pos: PointXY = PointXY(0f, 0f), angle_: Float = 0f) {
+        isValidLengthes( length[0], length[1], length[2] )
         setCParamFromParentBC( parentSide )
 
         if( ref != null || refside != -1 ) setNode(ref, refside, true )
@@ -1293,7 +1294,8 @@ class TriangleK(@kotlin.jvm.JvmField
     }
 
     fun isValidLengthes(A: Float, B: Float, C: Float): Boolean {
-        return A + B > C && B + C > A && C + A > B
+        valid_ = A + B > C && B + C > A && C + A > B
+        return valid_
     }
 
 

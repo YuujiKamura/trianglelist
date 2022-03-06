@@ -2,19 +2,41 @@
 
 package com.jpaver.trianglelist
 
-import android.util.Log
 import junit.framework.Assert.assertEquals
 import org.junit.Assert
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.powermock.api.mockito.PowerMockito
-import org.powermock.core.classloader.annotations.PrepareForTest
-import org.powermock.modules.junit4.PowerMockRunner
 
 
-@RunWith(PowerMockRunner::class)
-@PrepareForTest(Log::class)
+//@RunWith(PowerMockRunner::class)
+//@PrepareForTest(Log::class)
 class TriListTest {
+
+    @Test
+    fun testDedMapping(){
+        val trilist = TriangleList()
+        trilist.add(Triangle(5f, 5f, 5f))
+        trilist.add(1, 1, 5f, 5f)
+
+        printTriangle( trilist[1] ) // getに準拠していてnumber指定。
+        printTriangle( trilist[2] )
+
+        val dedlist = DeductionList()
+        dedlist.add( Deduction(1,"test",0.5f,0f,0,"Circle",0f, PointXY(-2.5f,-2.5f), PointXY(0f,0f )) )
+        dedlist.add( Deduction(2,"test2",0.5f,0f,0,"Circle",0f, PointXY(-5.0f,-2.5f),PointXY(0f,0f ) ) )
+
+        trilist.dedmapping(dedlist, -1)
+        assertEquals( 1, dedlist[1].parentNum )
+        assertEquals( 2, dedlist[2].parentNum )
+
+    }
+
+    fun printTriangle( t: Triangle ){
+        System.out.printf( "Triangle %s%n", t.myNumber_ )
+        System.out.printf( "pCA=%s, %s%n", t.pointCA_.x, t.pointCA_.y )
+        System.out.printf( "pAB=%s, %s%n", t.pointAB_.x, t.pointAB_.y )
+        System.out.printf( "pBC=%s, %s%n", t.pointBC_.x, t.pointBC_.y )
+        System.out.println( "")
+    }
 
     @Test
     fun testReverseNode() {
@@ -613,7 +635,7 @@ class TriListTest {
 
     @Test
     fun testGetTapLength() {
-        PowerMockito.mockStatic(Log::class.java)
+        //PowerMockito.mockStatic(Log::class.java)
 
         val trilist = TriangleList(Triangle(5f, 5f, 5f))
 
@@ -662,7 +684,7 @@ class TriListTest {
 
     @Test
     fun testRotateBySize() {
-        PowerMockito.mockStatic(Log::class.java)
+        //PowerMockito.mockStatic(Log::class.java)
 
         val mytlist = TriangleList(Triangle(3f, 4f, 5f))
         mytlist.add(Triangle(mytlist[1], 2, 5f, 8f))
@@ -730,7 +752,7 @@ class TriListTest {
 
     @Test
     fun testRotateFloat() {
-        PowerMockito.mockStatic(Log::class.java)
+        //PowerMockito.mockStatic(Log::class.java)
         //setDimAlign();
 
         val t1 = Triangle(3.0f, 4.0f, 5.0f, PointXY(0f, 0f), 180.0f )
@@ -760,17 +782,10 @@ class TriListTest {
 
     }
 
-    fun printTriangle( t: Triangle ){
-        System.out.printf( "Triangle %s%n", t.myNumber_ )
-        System.out.printf( "pCAy=%s, %s%n", t.pointCA_.x, t.pointCA_.y )
-        System.out.printf( "pABy=%s, %s%n", t.pointAB_.x, t.pointAB_.y )
-        System.out.printf( "pBCy=%s, %s%n", t.pointBC_.x, t.pointBC_.y )
-        System.out.println( "")
-    }
 
     @Test
     fun testRotate() {
-        PowerMockito.mockStatic(Log::class.java)
+        //PowerMockito.mockStatic(Log::class.java)
 
         val mytri1 = Triangle(3.0f, 4.0f, 5.0f, PointXY(5f, 5f), 180.0f)
         val myTrilist = TriangleList(mytri1)

@@ -1,7 +1,5 @@
 package com.jpaver.trianglelist;
 
-import android.util.Log;
-
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -678,6 +676,21 @@ public class TriangleList extends EditList implements Cloneable {
         return 0;
     }
 
+    public void dedmapping(DeductionList dedlist, int axisY){
+        for(int i = 0; i < trilist_.size(); i++) trilist_.get(i).dedcount = 0;
+
+        for(int i = 0; i < dedlist.size(); i++ ){
+            for(int ii = 0; ii < trilist_.size(); ii++) {
+                boolean isc = trilist_.get(ii).isCollide( dedlist.get(i+1).getPoint().scale( new PointXY(1f, axisY ) ) );
+                if( isc ) {
+                    trilist_.get(ii).dedcount++;
+                    dedlist.get(i+1).setParentNum( trilist_.get(ii).myNumber_ );
+                }
+            }
+        }
+    }
+
+
     public int[] getTapIndexArray(PointXY tapP){
         int[] tapIndexArray = new int[trilist_.size()];
         for(int i = 0; i < trilist_.size(); i++) {
@@ -719,7 +732,7 @@ public class TriangleList extends EditList implements Cloneable {
             lastTapNumber_ = 0;
             isDoubleTap_ = false;
         }
-        Log.d("TriangleList", "Tap Triangle num: " + lastTapNumber_ + ", side:" + lastTapSide_ );
+        //Log.d("TriangleList", "Tap Triangle num: " + lastTapNumber_ + ", side:" + lastTapSide_ );
 
         return lastTapNumber_ * 10 + lastTapSide_;
     }
