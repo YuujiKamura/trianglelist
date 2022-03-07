@@ -653,7 +653,7 @@ public class TriangleList extends EditList implements Cloneable {
     public ArrayList<TriangleList> spritByColors(){
         ArrayList<TriangleList> listByColors = new ArrayList<>();
 
-        listByColors.add(new TriangleList()); //0
+        listByColors.add(new TriangleList()); //0 val lightColors_ = arrayOf(LightPink_, LightOrange_, LightYellow_, LightGreen_, LightBlue_)
         listByColors.add(new TriangleList());
         listByColors.add(new TriangleList());
         listByColors.add(new TriangleList());
