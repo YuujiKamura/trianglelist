@@ -11,6 +11,18 @@ import org.junit.Test
 //@PrepareForTest(Log::class)
 class TriListTest {
 
+    fun printTriangle( t: Triangle ){
+        System.out.printf( "Triangle %s, parent %s, pbc %s, point %s, %s, %s, %s, %s, %s%n", t.myNumber_, t.parentNumber_, t.parentBC_, t.pointCA_.x, t.pointCA_.y, t.pointAB_.x, t.pointAB_.y, t.pointBC_.x, t.pointBC_.y )
+        //System.out.println( "" )
+    }
+
+    fun printTriList( tl: TriangleList ){
+        System.out.printf( "TriangleList size %s%n", tl.size() )
+        for( i in 0 until tl.size() ){
+            printTriangle( tl[i+1] )
+        }
+    }
+
     @Test
     fun testDedMapping(){
         val trilist = TriangleList()
@@ -28,14 +40,6 @@ class TriListTest {
         assertEquals( 1, dedlist[1].parentNum )
         assertEquals( 2, dedlist[2].parentNum )
 
-    }
-
-    fun printTriangle( t: Triangle ){
-        System.out.printf( "Triangle %s%n", t.myNumber_ )
-        System.out.printf( "pCA=%s, %s%n", t.pointCA_.x, t.pointCA_.y )
-        System.out.printf( "pAB=%s, %s%n", t.pointAB_.x, t.pointAB_.y )
-        System.out.printf( "pBC=%s, %s%n", t.pointBC_.x, t.pointBC_.y )
-        System.out.println( "")
     }
 
     @Test
@@ -299,6 +303,25 @@ class TriListTest {
     }
 
     @Test
+    fun testTriListOutlineSimple(){
+        val trilist = TriangleList()
+        // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
+        trilist.add(Triangle(8f, 6f, 8f))//1
+
+        val op = ArrayList<PointXY>()
+        val tlop = trilist.traceOrJumpForward(0, 0, op) //getOutLinePoints( 0 )
+        assertEquals(1, trilist.size())
+        assertEquals(3, tlop.size)
+        assertEquals(
+            "0ab,0bc,0ca,",
+            trilist.outlineStr_
+        )
+
+        System.out.printf( "outlinestr %s%n", trilist.outlineStr_ )
+        printTriList( trilist )
+    }
+
+    @Test
     fun testTriListOutline(){
         val trilist = TriangleList()
         // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
@@ -324,6 +347,8 @@ class TriListTest {
             "0ab,0bc,2bc,3bc,7bc,9bc,9ca,10bc,10ca,6bc,6ca,4ca,1bc,1ca,",
             trilist.outlineStr_
         )
+
+        printTriList( trilist )
 
  //       val tlop = trilist.traceOrJumpBackward( 10, 0, op ) //getOutLinePoints( 0 )
 

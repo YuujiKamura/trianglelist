@@ -128,7 +128,7 @@ open class DrawingFileWriter {
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    open fun writeFrame(scale: Float = 1f, textsize: Float){
+    open fun writeDrawingFrame(scale: Float = 1f, textsize: Float){
 
         val tss = textsize * scale
         writeOuterFrameAndTitle( scale , tss * 1.6f )

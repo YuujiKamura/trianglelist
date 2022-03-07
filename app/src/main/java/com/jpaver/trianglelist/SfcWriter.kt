@@ -111,7 +111,7 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
         }
 
         //writeFrame( sheetscale_ * 0.1f * scale_, scale_, centerX_, centerY_, sizeX_, sizeY_ )
-        writeFrame(unitscale_ * printscale_, 0.35f)
+        writeDrawingFrame(unitscale_ * printscale_, 0.35f)
 
         // calcSheet
         if( isReverse_ == true ) {

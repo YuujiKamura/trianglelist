@@ -1,6 +1,8 @@
 package com.jpaver.trianglelist
 
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import java.io.BufferedWriter
 
 class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
@@ -357,6 +359,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         writeLine( ded.plb, ded.prb, color)
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun writeEntities(){
 
         // 最初に書く
@@ -402,7 +405,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         }
 
         unitscale_ *= printscale_
-        writeFrame(textsize = 0.25f)
+        writeDrawingFrame(textsize = 0.25f)
         unitscale_ = 1000f
 
         if(isReverse_) {
