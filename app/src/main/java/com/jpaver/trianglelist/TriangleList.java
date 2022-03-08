@@ -788,6 +788,8 @@ public class TriangleList extends EditList implements Cloneable {
     }
 
     public ArrayList<PointXY> traceOrJumpForward( int startindex, int origin, ArrayList<PointXY> olp ){
+        if( startindex < 0 || startindex >= trilist_.size() ) return null;
+
         Triangle t = trilist_.get( startindex );
 
         //AB点を取る。すでにあったらキャンセル
@@ -837,8 +839,10 @@ public class TriangleList extends EditList implements Cloneable {
 
     // 同じポイントは二ついらない
     public boolean exist( PointXY it, ArrayList<PointXY> inthis ){
+        if( inthis.size() < 1 ) return false;
+
         for( int i=0; i<inthis.size(); i++ )
-         if(it.nearBy(inthis.get(i), 0.001f)) return false;
+         if( it.nearBy(inthis.get(i), 0.001f) ) return false;
 
         return true;
     }
