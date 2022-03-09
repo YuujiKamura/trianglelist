@@ -12,7 +12,7 @@ import org.junit.Test
 class TriListTest {
 
     fun printTriangle( t: Triangle ){
-        System.out.printf( "Triangle %s, parent %s, pbc %s, color %s, point %s, %s, %s, %s, %s, %s%n", t.myNumber_, t.parentNumber_, t.parentBC_, t.color_, t.pointCA_.x, t.pointCA_.y, t.pointAB_.x, t.pointAB_.y, t.pointBC_.x, t.pointBC_.y )
+        System.out.printf( "Triangle %s, %s, parent %s, pbc %s, color %s, point %s, %s, %s, %s, %s, %s%n", t.myNumber_, t, t.nodeTriangleA_, t.parentBC_, t.color_, t.pointCA_.x, t.pointCA_.y, t.pointAB_.x, t.pointAB_.y, t.pointBC_.x, t.pointBC_.y )
         //System.out.println( "" )
     }
 
@@ -28,7 +28,7 @@ class TriListTest {
             for( i in 0 until listlist.size )
                 if( listlist.get(i).size() > 0 ) {
                     val tlop = listlist.get(i).traceOrJumpForward(0, 0, ArrayList<PointXY>() )
-                    System.out.printf( "trilistlist[%s], tlop %s%n", i, tlop )
+                    System.out.printf( "trilistlist[%s], outlineStr_ %s%n", i, listlist.get(i).outlineStr_ )
                     printTriList( listlist.get(i) )
                 }
         }

@@ -571,7 +571,7 @@ public class TriangleList extends EditList implements Cloneable {
 
 
         // 浮いてる場合、さらに自己番が最後でない場合、一個前の三角形の位置と角度を自分の変化にあわせて動かしたい。
-        if( curtri.parentNumber_ <= 0 && trilist_.size() != cNum && exist(curtri.nodeTriangleA_)) {
+        if( curtri.parentNumber_ <= 0 && trilist_.size() != cNum && alreadyHave(curtri.nodeTriangleA_)) {
             curtri.resetByChild( trilist_.get(cNum) );
         }
 
@@ -588,7 +588,7 @@ public class TriangleList extends EditList implements Cloneable {
     }
 
     //　ターゲットポインターがリストの中にいたらtrue
-    public boolean exist( Triangle target ){
+    public boolean alreadyHave(Triangle target ){
         for ( int i = 0; i < trilist_.size(); i++ ){
             if( trilist_.get( i ) == target ) return true;
         }
@@ -793,58 +793,59 @@ public class TriangleList extends EditList implements Cloneable {
         Triangle t = trilist_.get( startindex );
 
         //AB点を取る。すでにあったらキャンセル
-        if(exist(t.pointAB_, olp)) {
+        if( !alreadyHave(t.pointAB_, olp) ) {
             olp.add( t.pointAB_ );
             outlineStr_ += startindex + "ab,";
         }
 
         // 再起呼び出しで派生方向に右手伝いにのびていく
-        if( t.nodeTriangleB_ != null && !t.nodeTriangleB_.isFloating() ) traceOrJumpForward( t.nodeTriangleB_.myNumber_ - 1, origin, olp );
+        if( t.nodeTriangleB_ != null && !t.nodeTriangleB_.isFloating() && t.color_ == t.nodeTriangleB_.color_ ) traceOrJumpForward( t.nodeTriangleB_.myNumber_ - 1, origin, olp );
 
         //BC点を取る。すでにあったらキャンセル
-        if(exist(t.pointBC_, olp)){
+        if( !alreadyHave(t.pointBC_, olp) ){
             olp.add( t.pointBC_ );
             outlineStr_ += startindex + "bc,";
         }
 
-        if( t.nodeTriangleC_ != null && !t.nodeTriangleC_.isFloating() ) traceOrJumpForward( t.nodeTriangleC_.myNumber_ - 1, origin, olp );
+        if( t.nodeTriangleC_ != null && !t.nodeTriangleC_.isFloating() && t.color_ == t.nodeTriangleC_.color_ )  traceOrJumpForward( t.nodeTriangleC_.myNumber_ - 1, origin, olp );
 
-        traceOrJumpBackward( startindex, origin, olp );
+        traceOrJumpBackward(t.nodeTriangleA_, startindex, origin, olp);
 
         return olp;
     }
 
-    public void traceOrJumpBackward(int startindex, int origin, ArrayList<PointXY> olp ){
+    public void traceOrJumpBackward(Triangle nodeTriangleA, int startindex, int origin, ArrayList<PointXY> olp){
         Triangle t = trilist_.get( startindex );
 
-        // C派生（ふたつとも接続）していたらそっちに伸びる、フロート接続だったり、すでに持っている点を見つけたらスルー
-        if( t.nodeTriangleB_ != null &&  t.nodeTriangleC_ != null ) if( exist(t.nodeTriangleC_.pointCA_, olp) && !t.nodeTriangleC_.isFloating() ) traceOrJumpForward( t.nodeTriangleC_.myNumber_ - 1, origin, olp );
+        // 派生（ふたつとも接続）していたらそっちに伸びる、フロート接続だったり、すでに持っている点を見つけたらスルー
+        if( t.nodeTriangleB_ != null &&  t.nodeTriangleC_ != null ) if( !alreadyHave(t.nodeTriangleC_.pointCA_, olp) && !t.nodeTriangleC_.isFloating() ) traceOrJumpForward( t.nodeTriangleC_.myNumber_ - 1, origin, olp );
 
         //BC点を取る。すでにあったらキャンセル
-        if(exist(t.pointBC_, olp)){
+        if( !alreadyHave( t.pointBC_, olp ) ){
             olp.add( t.pointBC_ );
             outlineStr_ += startindex + "bc,";
         }
 
         //CA点を取る。すでにあったらキャンセル
-        if(exist(t.pointCA_, olp)) {
+        if( !alreadyHave( t.pointCA_, olp )) {
             olp.add( t.pointCA_ );
             outlineStr_ += startindex + "ca,";
         }
 
         // 0まで戻る。
-        if( t.parentNumber_ > origin ) traceOrJumpBackward( t.parentNumber_ - 1, origin, olp );
+        if( t.myNumber_ <= t.parentNumber_ ) return;
+        if( t.nodeTriangleA_ != null ) traceOrJumpBackward(t.nodeTriangleA_, t.parentNumber_ - 1, origin, olp);
 
     }
 
     // 同じポイントは二ついらない
-    public boolean exist( PointXY it, ArrayList<PointXY> inthis ){
-        if( inthis.size() < 1 ) return false;
+    public boolean alreadyHave(PointXY it, ArrayList<PointXY> inthis ){
+        //if( inthis.size() < 1 ) return false;
 
         for( int i=0; i<inthis.size(); i++ )
-         if( it.nearBy(inthis.get(i), 0.001f) ) return false;
+         if( it.nearBy(inthis.get(i), 0.001f) ) return true;
 
-        return true;
+        return false;
     }
 
 
