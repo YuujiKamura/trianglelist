@@ -434,17 +434,22 @@ public class TriangleList extends EditList implements Cloneable {
     }
 
     public void setChildsToAllParents(){
-        for(int i = 0; i < trilist_.size(); i++){
-            int pnForMe = trilist_.get(i).parentNumber_;
-            Triangle me = trilist_.get(i);
-            if( pnForMe > -1 ){
-                // 改善版
-                Triangle parent = trilist_.get( pnForMe - 1 ); //batu->//index指定のget関数をnumberで呼んでいる。しかしなぜか上手くいっている。ふしぎー
-                // 親に対して、
-                parent.setChild( me, me.getParentBC() );
-            }
+            for(int i = 0; i < trilist_.size(); i++){
+                try{
+                    int pnForMe = trilist_.get(i).parentNumber_;
+                    Triangle me = trilist_.get(i);
+                    if( pnForMe > -1 ){
+                        // 改善版
+                        Triangle parent = trilist_.get( pnForMe - 1 );
+                        // 親に対して、
+                        parent.setChild( me, me.getParentBC() );
+                    }
+                }
+                catch ( NullPointerException e) {
+                    System.out.println( "NullPointerException!! trilistsize:" + trilist_.size() + " index:" + i );
+                }
 
-        }
+            }
     }
 
     public void insertAndSlide( Triangle nextTriangle ){
@@ -571,7 +576,7 @@ public class TriangleList extends EditList implements Cloneable {
 
 
         // 浮いてる場合、さらに自己番が最後でない場合、一個前の三角形の位置と角度を自分の変化にあわせて動かしたい。
-        if( curtri.parentNumber_ <= 0 && trilist_.size() != cNum && alreadyHave(curtri.nodeTriangleA_)) {
+        if( curtri.parentNumber_ <= 0 && trilist_.size() != cNum && notHave(curtri.nodeTriangleA_)) {
             curtri.resetByChild( trilist_.get(cNum) );
         }
 
@@ -588,7 +593,7 @@ public class TriangleList extends EditList implements Cloneable {
     }
 
     //　ターゲットポインターがリストの中にいたらtrue
-    public boolean alreadyHave(Triangle target ){
+    public boolean notHave(Triangle target ){
         for ( int i = 0; i < trilist_.size(); i++ ){
             if( trilist_.get( i ) == target ) return true;
         }
@@ -792,60 +797,61 @@ public class TriangleList extends EditList implements Cloneable {
 
         Triangle t = trilist_.get( startindex );
 
-        //AB点を取る。すでにあったらキャンセル
-        if( !alreadyHave(t.pointAB_, olp) ) {
-            olp.add( t.pointAB_ );
-            outlineStr_ += startindex + "ab,";
-        }
+        // AB点を取る。すでにあったらキャンセル
+        addOutlinePoint( startindex, t.pointAB_, "ab,",olp );
 
         // 再起呼び出しで派生方向に右手伝いにのびていく
-        if( t.nodeTriangleB_ != null && !t.nodeTriangleB_.isFloating() && t.color_ == t.nodeTriangleB_.color_ ) traceOrJumpForward( t.nodeTriangleB_.myNumber_ - 1, origin, olp );
+        traceOrNot( t, t.nodeTriangleB_, origin, olp);
 
-        //BC点を取る。すでにあったらキャンセル
-        if( !alreadyHave(t.pointBC_, olp) ){
-            olp.add( t.pointBC_ );
-            outlineStr_ += startindex + "bc,";
-        }
+        // BC点を取る。すでにあったらキャンセル
+        addOutlinePoint( startindex, t.pointBC_, "bc,",olp );
 
-        if( t.nodeTriangleC_ != null && !t.nodeTriangleC_.isFloating() && t.color_ == t.nodeTriangleC_.color_ )  traceOrJumpForward( t.nodeTriangleC_.myNumber_ - 1, origin, olp );
+        // 再起呼び出しで派生方向に右手伝いにのびていく
+        traceOrNot( t, t.nodeTriangleC_, origin, olp);
 
-        traceOrJumpBackward(t.nodeTriangleA_, startindex, origin, olp);
+        // 折り返し
+        traceOrJumpBackward(startindex, origin, olp);
 
         return olp;
     }
 
-    public void traceOrJumpBackward(Triangle nodeTriangleA, int startindex, int origin, ArrayList<PointXY> olp){
+    public void addOutlinePoint( int startindex, PointXY pt, String str, ArrayList<PointXY> olp ){
+        if(notHave(pt, olp)){
+            olp.add( pt );
+            outlineStr_ += startindex + str;
+        }
+    }
+
+    public void traceOrNot( Triangle t, Triangle node, int origin, ArrayList<PointXY> olp ){
+        if( node != null && !node.isFloating() && t.color_ == node.color_ ) traceOrJumpForward( node.myNumber_ - 1, origin, olp );
+    }
+
+    public void traceOrJumpBackward(int startindex, int origin, ArrayList<PointXY> olp){
         Triangle t = trilist_.get( startindex );
 
         // 派生（ふたつとも接続）していたらそっちに伸びる、フロート接続だったり、すでに持っている点を見つけたらスルー
-        if( t.nodeTriangleB_ != null &&  t.nodeTriangleC_ != null ) if( !alreadyHave(t.nodeTriangleC_.pointCA_, olp) && !t.nodeTriangleC_.isFloating() ) traceOrJumpForward( t.nodeTriangleC_.myNumber_ - 1, origin, olp );
+        if( t.nodeTriangleB_ != null &&  t.nodeTriangleC_ != null ) if( notHave(t.nodeTriangleC_.pointCA_, olp) && !t.nodeTriangleC_.isFloating() ) traceOrJumpForward( t.nodeTriangleC_.myNumber_ - 1, origin, olp );
 
         //BC点を取る。すでにあったらキャンセル
-        if( !alreadyHave( t.pointBC_, olp ) ){
-            olp.add( t.pointBC_ );
-            outlineStr_ += startindex + "bc,";
-        }
+        addOutlinePoint( startindex, t.pointBC_, "bc,",olp );
 
         //CA点を取る。すでにあったらキャンセル
-        if( !alreadyHave( t.pointCA_, olp )) {
-            olp.add( t.pointCA_ );
-            outlineStr_ += startindex + "ca,";
-        }
+        addOutlinePoint( startindex, t.pointCA_, "ca,",olp );
 
         // 0まで戻る。
         if( t.myNumber_ <= t.parentNumber_ ) return;
-        if( t.nodeTriangleA_ != null ) traceOrJumpBackward(t.nodeTriangleA_, t.parentNumber_ - 1, origin, olp);
+        if( t.nodeTriangleA_ != null ) traceOrJumpBackward(t.parentNumber_ - 1, origin, olp);
 
     }
 
     // 同じポイントは二ついらない
-    public boolean alreadyHave(PointXY it, ArrayList<PointXY> inthis ){
+    private boolean notHave(PointXY it, ArrayList<PointXY> inthis ){
         //if( inthis.size() < 1 ) return false;
 
         for( int i=0; i<inthis.size(); i++ )
-         if( it.nearBy(inthis.get(i), 0.001f) ) return true;
+         if( it.nearBy(inthis.get(i), 0.001f) ) return false;
 
-        return false;
+        return true;
     }
 
 
