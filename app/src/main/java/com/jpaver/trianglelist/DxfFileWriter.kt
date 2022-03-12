@@ -31,6 +31,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
     override var cBlue_ = 5
     override var cRed_ = 1
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun save(){
 
         writeHeader()
@@ -394,10 +395,14 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
 
         // アウトラインの描画
         myDXFTriList.setChildsToAllParents()
-        val outlineLists = myDXFTriList.outlineLists //ArrayList<PointXY>()
-        val array = ArrayList<PointXY>()
-        myDXFTriList.traceOrJumpForward(0, 0, array )
-        if( outlineLists.size > 0 ) for( index in 0 until outlineLists.size) writeDXFTriOutlines( writer, outlineLists[index])
+        val spritByColors = myDXFTriList.spritByColors()
+        for( index in 0 until spritByColors.size ){
+            val outlineLists = spritByColors[index].outlineList() //myDXFTriList.outlineList() //ArrayList<PointXY>()
+            val array = ArrayList<PointXY>()
+            spritByColors[index].traceOrJumpForward(0, 0, array )
+            if( outlineLists.size > 0 ) for( index2 in 0 until outlineLists.size) writeDXFTriOutlines( writer, outlineLists[index2])
+        }
+
 
         // deduction
         for (number in 1 .. myDXFDedList.size()) {

@@ -12,7 +12,7 @@ import org.junit.Test
 class TriListTest {
 
     fun printTriangle( t: Triangle ){
-        System.out.printf( "Triangle %s, %s, parent %s, pbc %s, color %s, point %s, %s, %s, %s, %s, %s%n", t.myNumber_, t, t.nodeTriangleA_, t.parentBC_, t.color_, t.pointCA_.x, t.pointCA_.y, t.pointAB_.x, t.pointAB_.y, t.pointBC_.x, t.pointBC_.y )
+        System.out.printf( "Triangle %s, isfloating %s, isColored %s, address %s, nodeTA %s, pbc %s, color %s, point %s, %s, %s, %s, %s, %s%n", t.myNumber_, t.isFloating_, t.isColored_, t, t.nodeTriangleA_, t.parentBC_, t.color_, t.pointCA_.x, t.pointCA_.y, t.pointAB_.x, t.pointAB_.y, t.pointBC_.x, t.pointBC_.y )
         //System.out.println( "" )
     }
 
@@ -25,12 +25,16 @@ class TriListTest {
 
     private fun printTriListList(listlist: java.util.ArrayList<TriangleList>?) {
         if (listlist != null) {
-            for( i in 0 until listlist.size )
+            for( i in 0 until listlist.size ){
+
                 if( listlist.get(i).size() > 0 ) {
-                    val tlop = listlist.get(i).traceOrJumpForward(0, 0, ArrayList<PointXY>() )
-                    System.out.printf( "trilistlist[%s], outlineStr_ %s%n", i, listlist.get(i).outlineStr_ )
-                    printTriList( listlist.get(i) )
+
+                    val tl = listlist.get(i)//traceOrJumpForward(0, 0, ArrayList<PointXY>() )
+                    System.out.printf( "trilistlist[%s], size %s, outlineStr_ %s%n", i, tl.size(), tl.outlineStr_ )
+                    printTriList( tl )
                 }
+            }
+
         }
     }
 
@@ -38,11 +42,9 @@ class TriListTest {
     fun testTrilistSpritByColors() {
         val trilist = TriangleList()
         trilist.add(Triangle(3f, 4f, 5f))
-        Assert.assertEquals(true, trilist.validTriangle(Triangle(trilist[1], 2, 3f, 4f)))
-
         trilist.add(Triangle(trilist[1], 2, 3f, 4f))
         trilist.add(Triangle(trilist[2], 1, 4f, 5f))
-        trilist.add(Triangle(trilist[3], 2, 3f, 4f))
+        trilist.add(Triangle(trilist[2], 2, 3f, 4f))
         trilist.add(Triangle(trilist[4], 1, 4f, 5f))
         Assert.assertEquals(5, trilist.size().toLong())
         trilist[2].setColor(0)

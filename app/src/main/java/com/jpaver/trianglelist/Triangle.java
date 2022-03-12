@@ -87,6 +87,8 @@ public class Triangle extends EditObject implements Cloneable {
     Triangle nodeTriangleC_ = null;
     boolean isChildB_ = false;
     boolean isChildC_ = false;
+    boolean isFloating_ = false;
+    boolean isColored_ = false;
 
     @NotNull
     @Override
@@ -130,9 +132,12 @@ public class Triangle extends EditObject implements Cloneable {
             b.connectionLCR_ = this.connectionLCR_;
             b.connectionType_ = this.connectionType_;
             b.cParam_ = this.cParam_.clone();
+            b.isFloating_ = this.isFloating_;
+            b.isColored_ = this.isColored_;
         }catch (Exception e){
             e.printStackTrace();
         }
+        assert b != null;
         return b;
     }
 
@@ -265,13 +270,11 @@ public class Triangle extends EditObject implements Cloneable {
 
         if(pbc == 1) {
             parentBC_ = 1;
-            lengthA_ = nodeTriangleA_.getLengthB_();
             lengthA_ = nodeTriangleA_.lengthBforce_;
             pointCA_ = nodeTriangleA_.getPointBC_();
             angleInGlobal_ = nodeTriangleA_.getAngleMpAB();
         } else if(pbc == 2){
             parentBC_ = 2;
-            lengthA_ = nodeTriangleA_.getLengthC_();
             lengthA_ = nodeTriangleA_.lengthCforce_;
             pointCA_ = nodeTriangleA_.getPointCA_();
             angleInGlobal_ = nodeTriangleA_.getAngleMmCA();
@@ -1267,11 +1270,11 @@ public class Triangle extends EditObject implements Cloneable {
     public void setChild(Triangle newchild, int cbc ){
         childSide_ = cbc;
         if( newchild.getPbc(cbc) == 1 ) {
-                nodeTriangleB_ = newchild.clone();
+                nodeTriangleB_ = newchild;
                 isChildB_ = true;
         }
         if( newchild.getPbc(cbc) == 2 ) {
-                nodeTriangleC_ = newchild.clone();
+                nodeTriangleC_ = newchild;
                 isChildC_ = true;
         }
         setDimAlignByChild();
@@ -1521,8 +1524,17 @@ public class Triangle extends EditObject implements Cloneable {
     }
 
     public boolean isFloating(){
-        return parentBC_ == 9 || parentBC_ == 10;
+        isFloating_ = nodeTriangleA_ != null && parentBC_ > 8;
+
+        return isFloating_;
     }
+
+    public boolean isColored(){
+        isColored_ = nodeTriangleA_ != null && color_ != nodeTriangleA_.color_;
+
+        return isColored_;
+    }
+
 
     public PointXY hataage(PointXY p, float offset, float axisY, Float number){
         float distanceFromCenter = p.getY() - pointCenter_.getY() * axisY;
