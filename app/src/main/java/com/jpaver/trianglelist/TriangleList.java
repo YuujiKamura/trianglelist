@@ -865,7 +865,7 @@ public class TriangleList extends EditList implements Cloneable {
 
         // 0まで戻る。同じ色でない時はリターン
         if( t.myNumber_ <= t.parentNumber_ ) return;
-        if( t.nodeTriangleA_ != null && t.isColored() && t.isFloating() ) traceOrJumpBackward(t.parentNumber_ - 1, origin, olp);
+        if( t.nodeTriangleA_ != null && !t.isColored() && !t.isFloating() ) traceOrJumpBackward(t.parentNumber_ - 1, origin, olp);
 
     }
 
