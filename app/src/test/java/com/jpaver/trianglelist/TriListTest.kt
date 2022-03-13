@@ -59,6 +59,20 @@ class TriListTest {
     }
 
     @Test
+    fun testTriListOutlineFloat(){
+        val trilist = TriangleList()
+        // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
+        trilist.add(Triangle(8f, 6f, 8f))//1
+        trilist.add(Triangle(trilist[1], 9, 5f,3f, 4f))
+        trilist.add(Triangle(trilist[1], 10, 5f,3f, 4f))
+
+        val listByColors = trilist.spritByColors()
+
+        assertEquals(3, listByColors[4].outlineList_.size )
+    }
+
+
+    @Test
     fun testTriListOutlineSimple(){
         val trilist = TriangleList()
         // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC

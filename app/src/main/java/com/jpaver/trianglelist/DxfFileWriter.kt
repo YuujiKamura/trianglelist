@@ -31,6 +31,8 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
     override var cBlue_ = 5
     override var cRed_ = 1
 
+    var activeLayer = "0"
+
     @RequiresApi(Build.VERSION_CODES.O)
     override fun save(){
 
@@ -191,7 +193,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
             100
             AcDbEntity
             8
-            0
+            $activeLayer
             62
             $color
             100
@@ -249,7 +251,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
                 100
                 AcDbEntity
                 8
-                0
+                $activeLayer
                 100
                 AcDbLine
                 10
@@ -288,7 +290,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
             100
             AcDbEntity
             8
-            0
+            $activeLayer
             62
             $color
             100
@@ -389,20 +391,47 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
             myDXFDedList.reverse()
         }
 
+
+        // アウトラインの描画
+        //myDXFTriList.setChildsToAllParents()
+
+        val RED = 16769517//16769000//16773364//16767449
+        val ORANGE = 16770756//16766660//16774376//16766890
+        val YELLOW = 16777180//n16646073//16775353//16776633//16776929//16777130
+        val GREEN = 14482130//14811071//13828031//15400929//11796394
+        val BLUE = 14939391//14941951//14286079
+        val sixtytwo = arrayOf( 254, 254, 51, 254, 7)
+        val color = arrayOf( RED, ORANGE, YELLOW, GREEN, BLUE )
+
+        val spritByColors = myDXFTriList.spritByColors()
+        for( index in 0 until spritByColors.size ){
+
+            val outlineLists = spritByColors[index].outlineList_ //myDXFTriList.outlineList() //ArrayList<PointXY>()
+
+            for( index2 in 0 until outlineLists.size){
+
+                if( outlineLists[index2].size > 0 ){
+                    writeDXFTriHatch(writer, outlineLists[index2], color[index], sixtytwo[index] )
+                    //writeDXFTriOutlines( writer, outlineLists[index2] )
+                }
+            }
+        }
+
         for (index in 1 .. myDXFTriList.size()) {
             writeTriangle(trilistNumbered.get(index))
         }
 
-        // アウトラインの描画
-        myDXFTriList.setChildsToAllParents()
-        val spritByColors = myDXFTriList.spritByColors()
         for( index in 0 until spritByColors.size ){
-            val outlineLists = spritByColors[index].outlineList() //myDXFTriList.outlineList() //ArrayList<PointXY>()
-            val array = ArrayList<PointXY>()
-            spritByColors[index].traceOrJumpForward(0, 0, array )
-            if( outlineLists.size > 0 ) for( index2 in 0 until outlineLists.size) writeDXFTriOutlines( writer, outlineLists[index2])
-        }
 
+            val outlineLists = spritByColors[index].outlineList_ //myDXFTriList.outlineList() //ArrayList<PointXY>()
+
+            for( index2 in 0 until outlineLists.size){
+
+                if( outlineLists[index2].size > 0 ){
+                    writeDXFTriOutlines( writer, outlineLists[index2] )
+                }
+            }
+        }
 
         // deduction
         for (number in 1 .. myDXFDedList.size()) {
@@ -410,6 +439,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         }
 
         unitscale_ *= printscale_
+        activeLayer = "C-TTL-FRAM"
         writeDrawingFrame(textsize = 0.25f)
         unitscale_ = 1000f
 
@@ -428,8 +458,91 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
 
     }
 
+    private fun writeDXFTriHatch(
+        wrtr: BufferedWriter,
+        array: ArrayList<PointXY>,
+        color: Int,
+        sixtytwo: Int
+    ){
+        entityHandle += 1
+
+        wrtr.write("""
+            0
+            HATCH
+            5
+            $entityHandle
+            100
+            AcDbEntity
+            8
+            C-COL-COL1
+            62
+            $sixtytwo
+            420
+            $color
+            370
+            -3
+            100
+            AcDbHatch
+            10
+            0.0
+            20
+            0.0
+            30
+            0.0
+            2
+            SOLID
+            70
+            1
+            71
+            0
+            91
+            1
+            92
+            1
+            93
+            ${array.size}
+            
+        """.trimIndent())
+
+        for( index in 0 until array.size){
+            if( index + 1 < array.size ){
+                wrtr.write("""
+                72
+                1
+                10
+                ${array[index].x*unitscale_}
+                20
+                ${( array[index].y*unitscale_ )}                
+                11
+                ${( array[index + 1].x*unitscale_ )}
+                21
+                ${( array[index + 1].y*unitscale_ )}                
+            """.trimIndent())
+                wrtr.newLine()
+            }
+        }
+
+        wrtr.write("""
+            97
+            0
+            75
+            0
+            76
+            1
+            98
+            1
+            10
+            0.0
+            20
+            0.0
+            
+        """.trimIndent())
+
+    }
 
     private fun writeDXFTriOutlines(wrtr: BufferedWriter, array: ArrayList<PointXY> ) {
+
+        //writeDXFTriHatch( wrtr, array )
 
         entityHandle += 1
 
@@ -441,11 +554,11 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
             100
             AcDbEntity
             8
-            0
+            C-COL-COL1
             100
             AcDbPolyline
             90
-            6
+            ${array.size}
             70
             1
             43
@@ -705,6 +818,54 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
                 -3
             390
             F
+              0
+            LAYER
+              5
+            74
+            330
+            2
+            100
+            AcDbSymbolTableRecord
+            100
+            AcDbLayerTableRecord
+              2
+            C-COL-COL1
+             70
+                 0
+             62
+                 7
+              6
+            Continuous
+            370
+                -3
+            390
+            F
+            347
+            46
+              0
+            LAYER
+              5
+            74
+            330
+            2
+            100
+            AcDbSymbolTableRecord
+            100
+            AcDbLayerTableRecord
+              2
+            C-TTL-FRAM
+             70
+                 0
+             62
+                 7
+              6
+            Continuous
+            370
+                -3
+            390
+            F
+            347
+            46
               0
             ENDTAB
               0
