@@ -683,14 +683,14 @@ public class TriangleList extends EditList implements Cloneable {
         return listByColors;
     }
 
-    public ArrayList<ArrayList<PointXY>> outlineList(){
+    public void outlineList(){
 
         ArrayList<ArrayList<PointXY>> olplists = outlineList_;
         olplists.add( new ArrayList<>() );
 
         traceOrJumpForward( 0, 0, olplists.get(0) );
 
-        if( trilist_.size() <= 1 ) return olplists;
+        if( trilist_.size() <= 1 ) return;
 
         for( int i = 0; i < trilist_.size(); i ++ ){
             Triangle t = trilist_.get( i );
@@ -701,7 +701,6 @@ public class TriangleList extends EditList implements Cloneable {
             }
         }
 
-        return olplists;
     }
 
     public int isCollide(PointXY tapP){
@@ -804,6 +803,19 @@ public class TriangleList extends EditList implements Cloneable {
         }
         return (float)(Math.round( area * 100.0) * 0.01 );
     }
+
+    public float getAreaC( int number ){
+
+        int clr = trilist_.get(number - 1 ).color_;
+
+        TriangleList listByColor = spritByColors().get( clr );
+
+        System.out.printf( "listbycolor[%s], size %s%n", clr, listByColor.size() );
+
+
+        return (float)(Math.round( listByColor.getArea() * 100.0 ) * 0.01 );
+    }
+
 
     public void addOutlinePoint( int startindex, PointXY pt, String str, ArrayList<PointXY> olp ){
         if(notHave(pt, olp)){

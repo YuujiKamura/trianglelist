@@ -1452,7 +1452,7 @@ public class Triangle extends EditObject implements Cloneable {
     public int getTapLength(PointXY tapP, float rangeRadius){
         setDimPoint();
 
-        float range = 0.3f*scale_;
+        float range = rangeRadius*scale_;
 
         if(tapP.nearBy(pointName_, range)) return lastTapSide_ = 4;
 

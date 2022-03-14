@@ -1173,7 +1173,7 @@ class MainActivity : AppCompatActivity(),
                 return
             }
 
-            my_view.myTriangleList.getTap(lpp, my_view.ts_ * 0.4f )
+            my_view.myTriangleList.getTap(lpp, my_view.ts_ * 0.025f )
 
             if ( my_view.myTriangleList.lastTapNumber_ != 0 ) {
                 //Toast.makeText(this, "Triangle tap", Toast.LENGTH_SHORT).show()
@@ -1752,7 +1752,7 @@ class MainActivity : AppCompatActivity(),
 
         if (result.resultCode == Activity.RESULT_OK && result.data != NULL) {
             val resultIntent = result.data
-            val title: Uri = Objects.requireNonNull( resultIntent?.data )!!
+            val title: Uri = Objects.requireNonNull(resultIntent?.data)!!
 
             StringBuilder()
             try {
@@ -1770,6 +1770,7 @@ class MainActivity : AppCompatActivity(),
     }
 
 
+    @RequiresApi(Build.VERSION_CODES.O)
     val saveContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
         //Log.d( "FileManager", "StartActivityForResult: " + result )
 
@@ -1884,7 +1885,8 @@ class MainActivity : AppCompatActivity(),
                 }.show()
         return true
     }
-
+/*
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if(data?.data == NULL || resultCode == RESULT_CANCELED) return
@@ -1951,7 +1953,7 @@ class MainActivity : AppCompatActivity(),
 
         setTitles()
     }
-
+*/
     private fun showInterStAd(){
         return
 /*
@@ -2037,6 +2039,7 @@ class MainActivity : AppCompatActivity(),
         //showInterStAd()
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun saveDXF(bWriter: BufferedWriter) :BufferedWriter{
 
         val writer = DxfFileWriter(
@@ -2549,9 +2552,12 @@ class MainActivity : AppCompatActivity(),
         val totalArea = roundByUnderTwo(triArea - dedArea)
         title = rStr.menseki_ + ": ${ totalArea.formattedString(2) } m^2"
 
-        if( myTriangleList.lastTapNumber_ > 0 ) title = rStr.menseki_ + ": ${myTriangleList.getArea() - myDeductionList.getArea()} m^2" + " (${ myTriangleList.getAreaI(
-                myTriangleList.lastTapNumber_
-        ) - myDeductionList.getAreaN(myTriangleList.lastTapNumber_) } m^2)"
+//        if( myTriangleList.lastTapNumber_ > 0 ) title = rStr.menseki_ + ": ${myTriangleList.getArea() - myDeductionList.getArea()} m^2" +
+  //              " (${ myTriangleList.getAreaI( myTriangleList.lastTapNumber_ ) - myDeductionList.getAreaN(myTriangleList.lastTapNumber_) } m^2)"
+
+        //if( myTriangleList.lastTapNumber_ > 0 ) title = rStr.menseki_ + " (${ myTriangleList.getAreaC( myTriangleList.lastTapNumber_ ) } m^2)"
+
+
     }
 
     private fun roundByUnderTwo(fp: Float) :Float {
