@@ -372,20 +372,20 @@ public class TriangleList extends EditList implements Cloneable {
     }
 
     public boolean add( int pnum, int pbc, float A, float B, float C ) {
-        return add( new Triangle(  get( pnum ), pbc, A, B, C ) );
+        return add( new Triangle(  get( pnum ), pbc, A, B, C ), true);
     }
 
     public boolean add( int pnum, int pbc, float B, float C ) {
-        return add( new Triangle(  get( pnum ), pbc, B, C ) );
+        return add( new Triangle(  get( pnum ), pbc, B, C ), true);
     }
 
-    public boolean add(Triangle nextTriangle){
+    public boolean add(Triangle nextTriangle, Boolean numbering){
         if(!validTriangle(nextTriangle)) return false;
 
         //trilistStored_ = (ArrayList<Triangle>) trilist_.clone();
 
         // 番号を受け取る
-        nextTriangle.myNumber_ = trilist_.size() + 1;
+        if( numbering ) nextTriangle.myNumber_ = trilist_.size() + 1;
 
         int pbc = nextTriangle.parentBC_;
 
@@ -670,9 +670,9 @@ public class TriangleList extends EditList implements Cloneable {
             TriangleList listByColor = listByColors.get( colorindex );
 
             for (int i = 0; i < trilist_.size(); i++) {
-                Triangle t = trilist_.get( i );
+                Triangle t = trilist_.get( i ).clone();
 
-                if( t.color_ == colorindex ) listByColor.add( t );
+                if( t.color_ == colorindex ) listByColor.add( t, false ); // 番号変更なしで追加する
 
                 t.isColored();
             }
@@ -716,8 +716,8 @@ public class TriangleList extends EditList implements Cloneable {
 
         for(int i = 0; i < dedlist.size(); i++ ){
             for(int ii = 0; ii < trilist_.size(); ii++) {
-                boolean isc = trilist_.get(ii).isCollide( dedlist.get(i+1).getPoint().scale( new PointXY(1f, axisY ) ) );
-                if( isc ) {
+                boolean isCol = trilist_.get(ii).isCollide( dedlist.get(i+1).getPoint().scale( new PointXY(1f, axisY ) ) );
+                if( isCol ) {
                     trilist_.get(ii).dedcount++;
                     dedlist.get(i+1).setParentNum( trilist_.get(ii).myNumber_ );
                 }
@@ -805,13 +805,14 @@ public class TriangleList extends EditList implements Cloneable {
     }
 
     public float getAreaC( int number ){
+        if( number < 1 ) return 0f;
+        int index = number - 1;
 
-        int clr = trilist_.get(number - 1 ).color_;
+        int clr = trilist_.get( index ).color_;
 
         TriangleList listByColor = spritByColors().get( clr );
 
         System.out.printf( "listbycolor[%s], size %s%n", clr, listByColor.size() );
-
 
         return (float)(Math.round( listByColor.getArea() * 100.0 ) * 0.01 );
     }
@@ -983,8 +984,8 @@ public class TriangleList extends EditList implements Cloneable {
             // 子の三角形を指定して生成する。
             //rev.add( new Triangle( trilist_.get( it.parentNumber_), it.parentBC_, it.lengthAforce_, it.lengthBforce_, it.lengthCforce_ ) );
 
-            if( it.parentNumber_ < 1 ) rev.add( it.clone() ); //new Triangle( it.lengthAforce_, it.lengthBforce_, it.lengthCforce_, it.pointCA_, it.angleInGlobal_)
-            else rev.add( new Triangle( rev.get( it.parentNumber_), it.parentBC_, it.lengthAforce_, it.lengthBforce_, it.lengthCforce_ ) );
+            if( it.parentNumber_ < 1 ) rev.add( it.clone(), true); //new Triangle( it.lengthAforce_, it.lengthBforce_, it.lengthCforce_, it.pointCA_, it.angleInGlobal_)
+            else rev.add( new Triangle( rev.get( it.parentNumber_), it.parentBC_, it.lengthAforce_, it.lengthBforce_, it.lengthCforce_ ), true);
         }
 
         // 名前の書き換え、反転後のひとつ先の三角形に移設し、1番の名前は消去

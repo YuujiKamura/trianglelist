@@ -167,7 +167,7 @@ class fabController(
                 params
             )
             myTri.myNumber_ = params.n
-            trilist.add(myTri)
+            trilist.add(myTri, true)
             appActivity.findViewById<EditText>(R.id.editLengthA1).requestFocus()
             trilist.lastTapNumber_ = trilist.size()
             //my_view.resetView()

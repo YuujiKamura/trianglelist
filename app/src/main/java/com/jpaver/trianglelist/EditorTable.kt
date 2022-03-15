@@ -80,7 +80,7 @@ class EditorTable {
         else            line.c.setText(prm.c.toString())
         if( prm.pn == 0 || prm.pn == -1 ) line.pn.setText("")
         else            line.pn.setText(prm.pn.toString())
-        line.pl.setSelection(prm.pl)
+         line.pl.setSelection(prm.pl)
     }
 
     fun readLineTo(prm: Params, line: EditTextViewLine) :Params {

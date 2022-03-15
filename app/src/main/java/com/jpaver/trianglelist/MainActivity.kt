@@ -1002,7 +1002,7 @@ class MainActivity : AppCompatActivity(),
                     params
             )
             myTri.myNumber_ = params.n
-            myTriangleList.add(myTri)
+            myTriangleList.add(myTri, true)
             findViewById<EditText>(R.id.editLengthA1).requestFocus()
             myTriangleList.lastTapNumber_ = myTriangleList.size()
             //my_view.resetView()
@@ -1080,7 +1080,7 @@ class MainActivity : AppCompatActivity(),
                             t.getLengthByIndex(i),
                             dParams.b,
                             dParams.c,
-                            t.getMyNumber_(),
+                            t.myNumber_,
                             i,
                             PointXY(0f, 0f),
                             PointXY(0f, 0f)
@@ -1131,7 +1131,8 @@ class MainActivity : AppCompatActivity(),
         val inputMethodManager: InputMethodManager =
             getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
 
-
+        val trilistV = my_view.myTriangleList
+        val trilist  = myTriangleList
         if(deductionMode){
             my_view.myDeductionList.setScale(my_view.myScale)
             my_view.myDeductionList.getTapIndex(my_view.localPressPoint)
@@ -1149,12 +1150,12 @@ class MainActivity : AppCompatActivity(),
             }
 
             // 三角形番号が押されたときはセンタリング
-            my_view.myTriangleList.getTap(
+            trilistV.getTap(
                 my_view.localPressPoint.scale(PointXY(0f, 0f), 1f, -1f),
                 0.6f
             )
-            if ( my_view.myTriangleList.lastTapNumber_ != 0 ) {
-                if( my_view.myTriangleList.lastTapSide_ == 3 ) my_view.resetViewToLSTP()
+            if ( trilistV.lastTapNumber_ != 0 ) {
+                if( trilistV.lastTapSide_ == 3 ) my_view.resetViewToLSTP()
             }
 
         }
@@ -1173,18 +1174,20 @@ class MainActivity : AppCompatActivity(),
                 return
             }
 
-            my_view.myTriangleList.getTap(lpp, my_view.ts_ * 0.025f )
+            // view　の　trilistのlastTapとcurrentをずらして editorTableを移動させる
+            trilistV.getTap(lpp, my_view.ts_ * 0.025f )
 
-            if ( my_view.myTriangleList.lastTapNumber_ != 0 ) {
+
+            if ( trilistV.lastTapNumber_ != 0 ) {
                 //Toast.makeText(this, "Triangle tap", Toast.LENGTH_SHORT).show()
                 myEditor.scroll(
-                        my_view.getTriangleList().lastTapNumber_ - my_view.getTriangleList()
-                                .getCurrent(),
-                        getList(deductionMode), myELSecond, myELThird
+                        trilistV.lastTapNumber_ - trilistV.current,
+                    trilist, myELSecond, myELThird
                 )
 
-                my_view.getTriangleList().setCurrent(my_view.getTriangleList().lastTapNumber_)
+                trilistV.current = trilistV.lastTapNumber_
                 myTriangleList.setCurrent(my_view.getTriangleList().lastTapNumber_)
+
                 myTriangleList.lastTapNumber_ = my_view.getTriangleList().lastTapNumber_
                 myTriangleList.lastTapSide_ = my_view.getTriangleList().lastTapSide_
                 findViewById<EditText>(R.id.editParentNumber1).setText(myTriangleList.lastTapNumber_.toString())
@@ -2298,13 +2301,14 @@ class MainActivity : AppCompatActivity(),
         //}
 
         trilist.add(
-                Triangle(
-                        chunks[1]!!.toFloat(),
-                        chunks[2]!!.toFloat(),
-                        chunks[3]!!.toFloat(),
-                        pointfirst,
-                        anglefirst
-                )
+            Triangle(
+                    chunks[1]!!.toFloat(),
+                    chunks[2]!!.toFloat(),
+                    chunks[3]!!.toFloat(),
+                    pointfirst,
+                    anglefirst
+            ),
+            true
         )
         val mt = trilist.getTriangle(trilist.size())
 
@@ -2399,13 +2403,14 @@ class MainActivity : AppCompatActivity(),
                     }
 
                     trilist.add(
-                            Triangle(
-                                chunks[1].toFloat(),
-                                chunks[2].toFloat(),
-                                chunks[3].toFloat(),
-                                pt,
-                                angle - 180f
-                            )
+                        Triangle(
+                            chunks[1].toFloat(),
+                            chunks[2].toFloat(),
+                            chunks[3].toFloat(),
+                            pt,
+                            angle - 180f
+                        ),
+                        true
                     )
                 }
                 else {
@@ -2418,11 +2423,12 @@ class MainActivity : AppCompatActivity(),
                             chunks[1].toFloat()
                     )
                     trilist.add(
-                            Triangle(
-                                    ptri, cp,
-                                    chunks[2].toFloat(),
-                                    chunks[3].toFloat()
-                            )
+                        Triangle(
+                                ptri, cp,
+                                chunks[2].toFloat(),
+                                chunks[3].toFloat()
+                        ),
+                        true
                     )
 
                 }
@@ -2440,16 +2446,17 @@ class MainActivity : AppCompatActivity(),
                     )
 
                     trilist.add(
-                            Triangle(
-                                    trilist.getTriangle(chunks[4].toInt()), ConnParam(
-                                    cp.side,
-                                    cp.type,
-                                    cp.lcr,
-                                    cp.lenA
-                            ),
-                                    chunks[2].toFloat(),
-                                    chunks[3].toFloat()
-                            )
+                        Triangle(
+                                trilist.getTriangle(chunks[4].toInt()), ConnParam(
+                                cp.side,
+                                cp.type,
+                                cp.lcr,
+                                cp.lenA
+                        ),
+                                chunks[2].toFloat(),
+                                chunks[3].toFloat()
+                        ),
+                        true
                     )
 
                 val mT = trilist.getTriangle(trilist.size())
@@ -2552,18 +2559,18 @@ class MainActivity : AppCompatActivity(),
         val totalArea = roundByUnderTwo(triArea - dedArea)
         title = rStr.menseki_ + ": ${ totalArea.formattedString(2) } m^2"
 
-//        if( myTriangleList.lastTapNumber_ > 0 ) title = rStr.menseki_ + ": ${myTriangleList.getArea() - myDeductionList.getArea()} m^2" +
-  //              " (${ myTriangleList.getAreaI( myTriangleList.lastTapNumber_ ) - myDeductionList.getAreaN(myTriangleList.lastTapNumber_) } m^2)"
-
-        //if( myTriangleList.lastTapNumber_ > 0 ) title = rStr.menseki_ + " (${ myTriangleList.getAreaC( myTriangleList.lastTapNumber_ ) } m^2)"
-
+        if( myTriangleList.lastTapNumber_ > 0 ){
+            val coloredArea = myTriangleList.getAreaC( myTriangleList.lastTapNumber_ )
+            val colorStr = arrayOf( "red: ", "orange: ", "yellow: ", "green: ", "blue: " )
+            val tapped = myTriangleList.get( myTriangleList.lastTapNumber_ )
+            title = rStr.menseki_ + ": ${ totalArea } m^2" + " ( ${ colorStr[tapped.color_]+coloredArea } m^2 )"
+        }
 
     }
 
     private fun roundByUnderTwo(fp: Float) :Float {
-        val ip: Float = fp * 100f
-        ip.roundToInt()
-        return ip / 100
+        val ip: Int = ( fp * 100f ).roundToInt()
+        return ip * 0.01f
     }
 
     companion object {

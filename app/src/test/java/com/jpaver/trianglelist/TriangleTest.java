@@ -315,11 +315,11 @@ public class TriangleTest {
         assertFalse(myTriF5.validTriangle());
 
         TriangleList myList = new TriangleList();
-        assertTrue(myList.add(myTriT));
+        assertTrue(myList.add(myTriT, true));
         //assertTrue(myList.add(myTriT2));
-        assertFalse(myList.add(myTriF));
-        assertFalse(myList.add(myTriF2));
-        assertFalse(myList.add(myTriF3));
+        assertFalse(myList.add(myTriF, true));
+        assertFalse(myList.add(myTriF2, true));
+        assertFalse(myList.add(myTriF3, true));
 
     }
 

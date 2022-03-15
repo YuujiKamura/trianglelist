@@ -214,8 +214,34 @@ open class DrawingFileWriter {
 
         writeLine( PointXY( baseX - xoffset *0.5f, baseY + yoffset + yspacer ), PointXY(baseX + xoffset * 4.5f, baseY + yoffset + yspacer ), cWhite_, scale)
 
-        baseY = writeCalcSheetEditList(trilist, titleTri_, baseX, baseY, ts, xoffset, scale)
-        if( dedlist.size() > 0 ) baseY = writeCalcSheetEditList(dedlist, titleDed_, baseX, baseY, ts, xoffset, scale)
+        var shokeiNum = 1
+        val tlSpC = trilist.spritByColors()
+        for( index in 4 downTo 0 ){
+            if( tlSpC[index].size() > 0 ) {
+                baseY = writeCalcSheetEditList(
+                    tlSpC[ index ],
+                    titleTri_,
+                    baseX,
+                    baseY,
+                    ts,
+                    xoffset,
+                    scale,
+                    shokeiNum
+                )
+                shokeiNum ++
+            }
+        }
+
+        if( dedlist.size() > 0 ) baseY = writeCalcSheetEditList(
+            dedlist,
+            titleDed_,
+            baseX,
+            baseY,
+            ts,
+            xoffset,
+            scale,
+            shokeiNum
+        )
 
         baseY -= yoffset
         writeText(rStr_.mGoukei_, PointXY(baseX, baseY), cWhite_, ts, 1, 1, 0f, scale)
@@ -242,10 +268,12 @@ open class DrawingFileWriter {
         baseY: Float,
         ts: Float,
         xoffset: Float,
-        scale: Float = 1f
+        scale: Float = 1f,
+        syokeiNum: Int
     ): Float {
+        if( editList.size() < 1 ) return 0f
+
         var basey = baseY
-        var sn = 1
 
         val yoffset = ts * 2f
         val yspacer = -ts * 0.01f
@@ -267,7 +295,6 @@ open class DrawingFileWriter {
             )
         }
         if( editList is DeductionList ) {
-            sn = 2
             writeText(titleParamStr.name, PointXY(baseX, basey), color, ts, 1, 1, 0f, scale)
             writeText(
                 titleParamStr.pl,
@@ -307,12 +334,12 @@ open class DrawingFileWriter {
 
         basey -= yoffset
 
-        for( index in 1 .. editList.size() ){
-            writeCalcSheetLine(editList.get(index), baseX, basey, ts, color, scale)
+        for( number in 1 .. editList.size() ){
+            writeCalcSheetLine( editList.get(number), baseX, basey, ts, color, scale )
             basey -= yoffset
         }
 
-        writeText(rStr_.mSyoukei_+"("+sn+")", PointXY(baseX, basey), color, ts, 1, 1, 0f, scale)
+        writeText(rStr_.mSyoukei_+"("+syokeiNum+")", PointXY(baseX, basey), color, ts, 1, 1, 0f, scale)
         writeText(
             editList.getArea().formattedString(2),
             PointXY(baseX + xoffset * 4, basey),
