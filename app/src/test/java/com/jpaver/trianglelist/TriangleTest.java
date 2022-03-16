@@ -40,17 +40,17 @@ public class TriangleTest {
         assertEquals( 4.33f,  p.getY(), 0.01f );
 
         p = t.hataage( new PointXY(2.5f, 3f ), 1f, 1f, 1f);
-        assertEquals( 5.33f,  p.getY(), 0.01f );
+        assertEquals( 4.33f,  p.getY(), 0.01f );
 
         p = t.hataage( new PointXY(2.5f, 1f ), 1f, 1f, 1f);
-        assertEquals( -1f,  p.getY(), 0.01f );
+        assertEquals( 0f,  p.getY(), 0.01f );
 
 
         PointXY p2 = t2.hataage( new PointXY(2.5f, 1f ), 1f, 1f, 1f);
-        assertEquals( -1f,  p2.getY(), 0.01f );
+        assertEquals( 0f,  p2.getY(), 0.01f );
 
         PointXY p3 = t3.hataage( new PointXY(2.5f, 5f ), 1f, 1f, 1f);
-        assertEquals( 3.33f,  p3.getY(), 0.01f );
+        assertEquals( 4.33f,  p3.getY(), 0.01f );
 
     }
 

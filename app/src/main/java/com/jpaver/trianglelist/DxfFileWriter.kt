@@ -403,33 +403,43 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         val sixtytwo = arrayOf( 254, 254, 51, 254, 7)
         val color = arrayOf( RED, ORANGE, YELLOW, GREEN, BLUE )
 
-        val spritByColors = myDXFTriList.spritByColors()
-        for( index in 0 until spritByColors.size ){
+        val sprit = false
 
-            val outlineLists = spritByColors[index].outlineList_ //myDXFTriList.outlineList() //ArrayList<PointXY>()
+        if( sprit == true ){
+            val spritByColors = myDXFTriList.spritByColors()
+            for( index in 0 until spritByColors.size ){
 
-            for( index2 in 0 until outlineLists.size){
+                val outlineLists = spritByColors[index].outlineList_ //myDXFTriList.outlineList() //ArrayList<PointXY>()
 
-                if( outlineLists[index2].size > 0 ){
-                    writeDXFTriHatch(writer, outlineLists[index2], color[index], sixtytwo[index] )
-                    //writeDXFTriOutlines( writer, outlineLists[index2] )
+                for( index2 in 0 until outlineLists.size){
+
+                    if( outlineLists[index2].size > 0 ){
+                        //writeDXFTriHatch(writer, outlineLists[index2], color[index], sixtytwo[index] )
+                        //writeDXFTriOutlines( writer, outlineLists[index2] )
+                    }
                 }
             }
-        }
 
-        for (index in 1 .. myDXFTriList.size()) {
-            writeTriangle(trilistNumbered.get(index))
-        }
+            for (index in 1 .. myDXFTriList.size()) {
+                writeTriangle(trilistNumbered.get(index))
+            }
 
-        for( index in 0 until spritByColors.size ){
+            for( index in 0 until spritByColors.size ){
 
-            val outlineLists = spritByColors[index].outlineList_ //myDXFTriList.outlineList() //ArrayList<PointXY>()
+                val outlineLists = spritByColors[index].outlineList_ //myDXFTriList.outlineList() //ArrayList<PointXY>()
 
-            for( index2 in 0 until outlineLists.size){
+                for( index2 in 0 until outlineLists.size){
 
-                if( outlineLists[index2].size > 0 ){
-                    writeDXFTriOutlines( writer, outlineLists[index2] )
+                    if( outlineLists[index2].size > 0 ){
+                        //writeDXFTriOutlines( writer, outlineLists[index2] )
+                    }
                 }
+            }
+
+        }
+        else{
+            for (index in 1 .. myDXFTriList.size()) {
+                writeTriangle(trilistNumbered.get(index))
             }
         }
 

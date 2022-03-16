@@ -670,11 +670,12 @@ public class TriangleList extends EditList implements Cloneable {
             TriangleList listByColor = listByColors.get( colorindex );
 
             for (int i = 0; i < trilist_.size(); i++) {
-                Triangle t = trilist_.get( i ).clone();
+                if( trilist_.get( i ) != null ) {
+                    Triangle t = trilist_.get( i ).clone();
+                    if( t.color_ == colorindex ) listByColor.add( t, false ); // 番号変更なしで追加する deep or shallow
 
-                if( t.color_ == colorindex ) listByColor.add( t, false ); // 番号変更なしで追加する
-
-                t.isColored();
+                    t.isColored();
+                }
             }
 
             if( listByColor.size()>0 ) listByColor.outlineList();
@@ -684,20 +685,19 @@ public class TriangleList extends EditList implements Cloneable {
     }
 
     public void outlineList(){
+        if( trilist_.size() <= 1 ) return;
 
         ArrayList<ArrayList<PointXY>> olplists = outlineList_;
-        olplists.add( new ArrayList<>() );
-
-        traceOrJumpForward( 0, 0, olplists.get(0) );
-
-        if( trilist_.size() <= 1 ) return;
 
         for( int i = 0; i < trilist_.size(); i ++ ){
             Triangle t = trilist_.get( i );
 
-            if( t.isFloating() || t.isColored_ ) {
+            if( i == 0 || t.isFloating() || t.isColored_ ) {
                 olplists.add( new ArrayList<>() );
-                traceOrJumpForward( i, i, olplists.get( olplists.size() - 1 ) );
+                trace( olplists.get(i), t, true );
+                //olplists.get(i).add( t.pointAB_ );
+                //outlineStr_ += t.myNumber_ + "ab, ";
+
             }
         }
 
@@ -818,67 +818,97 @@ public class TriangleList extends EditList implements Cloneable {
     }
 
 
-    public void addOutlinePoint( int startindex, PointXY pt, String str, ArrayList<PointXY> olp ){
-        if(notHave(pt, olp)){
+    public void addOutlinePoint(PointXY pt, String str, ArrayList<PointXY> olp, Triangle node){
+        if( node != null && notHave(pt, olp)){
             olp.add( pt );
-            outlineStr_ += startindex + str;
+            outlineStr_ += node.myNumber_ + str;
         }
     }
 
+    public boolean addOlp( PointXY pt, String str, ArrayList<PointXY> olp, Triangle node ){
+        if( notHave(pt, olp)){
+            olp.add( pt );
+            outlineStr_ += node.myNumber_ + str;
+            return true;
+        }
+        else return false;
+    }
+
     public void traceOrNot( Triangle t, Triangle node, int origin, ArrayList<PointXY> olp ){
-        if( node != null && !node.isFloating() && !node.isColored() ) traceOrJumpForward( node.myNumber_ - 1, origin, olp );
+        if( node != null && !node.isFloating() && !node.isColored() ) traceOrJumpForward( node.myNumber_ - 1, origin, olp, node );
     }
 
     public void branchOrNot( Triangle t, int origin, ArrayList<PointXY> olp ){
         if( t.nodeTriangleB_ != null &&  t.nodeTriangleC_ != null )
             if( notHave( t.nodeTriangleC_.pointCA_, olp ) && ( !t.nodeTriangleC_.isFloating_ && !t.nodeTriangleC_.isColored_ ) )
-                traceOrJumpForward( t.nodeTriangleC_.myNumber_ - 1, origin, olp );
+                traceOrJumpForward( t.nodeTriangleC_.myNumber_ - 1, origin, olp, t.nodeTriangleC_ );
     }
 
-    public ArrayList<PointXY> traceOrJumpForward( int startindex, int origin, ArrayList<PointXY> olp ){
+    public ArrayList<PointXY> trace(ArrayList<PointXY> olp, Triangle tri, Boolean first){
+        if( tri == null ) return olp;
+        if( ( tri.isFloating() || tri.isColored() ) && !first ) return olp;
+        int number = tri.myNumber_;
+
+        addOlp(tri.pointAB_, "ab,", olp, tri);
+        trace( olp, tri.nodeTriangleB_, false);
+
+        addOlp(tri.pointBC_, "bc,", olp, tri);
+        trace( olp, tri.nodeTriangleC_, false);
+
+        addOlp(tri.pointCA_, "ca,", olp, tri);
+        //trace( olp, tri.nodeTriangleA_, -1 ); //ネスト抜けながら勝手にトレースしていく筈
+
+        return olp;
+    }
+
+
+    public ArrayList<PointXY> traceOrJumpForward(int startindex, int origin, ArrayList<PointXY> olp, Triangle node){
         if( startindex < 0 || startindex >= trilist_.size() ) return null;
 
-        Triangle t = trilist_.get( startindex );
+        Triangle t = node;//trilist_.get( startindex );
 
         // AB点を取る。すでにあったらキャンセル
-        addOutlinePoint( startindex, t.pointAB_, "ab,",olp );
+        addOutlinePoint(t.pointAB_, "ab,",olp, t );
 
         // 再起呼び出しで派生方向に右手伝いにのびていく
         traceOrNot( t, t.nodeTriangleB_, origin, olp);
 
         // BC点を取る。すでにあったらキャンセル
-        addOutlinePoint( startindex, t.pointBC_, "bc,",olp );
+        addOutlinePoint(t.pointBC_, "bc,",olp, t );
 
         // 再起呼び出しで派生方向に右手伝いにのびていく
         traceOrNot( t, t.nodeTriangleC_, origin, olp);
 
         // 折り返し
-        traceOrJumpBackward(startindex, origin, olp);
+        traceOrJumpBackward(startindex, origin, olp, t );
 
         return olp;
     }
 
-    public void traceOrJumpBackward(int startindex, int origin, ArrayList<PointXY> olp){
-        Triangle t = trilist_.get( startindex );
+    public void traceOrJumpBackward(int startindex, int origin, ArrayList<PointXY> olp, Triangle node){
+        Triangle t = node;// trilist_.get( startindex );
 
         // 派生（ふたつとも接続）していたらそっちに伸びる、フロート接続だったり、すでに持っている点を見つけたらスルー
         branchOrNot( t, origin, olp );
 
         //BC点を取る。すでにあったらキャンセル
-        addOutlinePoint( startindex, t.pointBC_, "bc,",olp );
+        addOutlinePoint(t.pointBC_, "bc,",olp, t );
 
         //CA点を取る。すでにあったらキャンセル
-        addOutlinePoint( startindex, t.pointCA_, "ca,",olp );
+        addOutlinePoint(t.pointCA_, "ca,",olp, t );
+
+        //AB点を取る。すでにあったらキャンセル
+        addOutlinePoint(t.pointAB_, "ab,",olp, t );
 
         //AB点を取る。ダブりを許容
-        if( t.nodeTriangleA_ == null || t.isColored_ || t.isFloating_ ){
-            olp.add( t.pointAB_ );
-            outlineStr_ += startindex + "ab, ";
-        }
+        //if( t.nodeTriangleA_ == null || t.isColored_ || t.isFloating_ ){
+          //  olp.add( t.pointAB_ );
+            //outlineStr_ += t.myNumber_ + "ab, ";
+        //}
 
         // 0まで戻る。同じ色でない時はリターン
         if( t.myNumber_ <= t.parentNumber_ ) return;
-        if( t.nodeTriangleA_ != null && !t.isColored() && !t.isFloating() ) traceOrJumpBackward(t.parentNumber_ - 1, origin, olp);
+        if( t.nodeTriangleA_ != null && !t.isColored() && !t.isFloating() ) traceOrJumpBackward(t.parentNumber_ - 1, origin, olp, t.nodeTriangleA_ );
 
     }
 

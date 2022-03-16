@@ -830,6 +830,7 @@ val sokt = PathAndOffset(
         paintRed.textSize = ts_
         paintRed.strokeWidth = ts_ * 0.1f
         paintYellow.strokeWidth = ts_ * 0.2f
+        paintYellow.textSize = ts_
 
         paintTexM.textSize = ts_
         textSpacer_ = ts_ * 0.2f

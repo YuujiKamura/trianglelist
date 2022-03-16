@@ -39,6 +39,20 @@ class TriListTest {
     }
 
     @Test
+    fun testTrilistTrace() {
+        val trilist = TriangleList()
+        val olp = ArrayList<PointXY>()
+
+        trilist.add(Triangle(3f, 4f, 5f), true)
+        trilist.add(Triangle(trilist[1], 2, 3f, 4f), true)
+        trilist.add(Triangle(trilist[2], 1, 3f, 4f), true)
+        trilist.add(Triangle(trilist[2], 2, 3f, 4f), true)
+
+        trilist.trace(olp, trilist[1], false)
+        System.out.printf( "trilist size %s, outlineStr_ %s%n", trilist.size(), trilist.outlineStr_ )
+    }
+
+        @Test
     fun testTrilistSpritByColors() {
         val trilist = TriangleList()
         trilist.add(Triangle(3f, 4f, 5f), true)
@@ -47,7 +61,7 @@ class TriListTest {
         trilist.add(Triangle(trilist[2], 2, 3f, 4f), true)
         trilist.add(Triangle(trilist[4], 1, 4f, 5f), true)
         Assert.assertEquals(5, trilist.size().toLong())
-        trilist[2].setColor(0)
+        trilist[1].setColor(0)
         val listByColors = trilist.spritByColors()
         Assert.assertEquals(1, listByColors[0].size().toLong())
         Assert.assertEquals(0, listByColors[1].size().toLong())
@@ -79,11 +93,11 @@ class TriListTest {
         trilist.add(Triangle(8f, 6f, 8f), true)//1
 
         val op = ArrayList<PointXY>()
-        val tlop = trilist.traceOrJumpForward(0, 0, op) //getOutLinePoints( 0 )
+        val tlop = trilist.trace(op, trilist[1], false) //OrJumpForward(0, 0, op, trilist[1] ) //getOutLinePoints( 0 )
         assertEquals(1, trilist.size())
         assertEquals(3, tlop.size)
         assertEquals(
-            "0ab,0bc,0ca,",
+            "1ab,1bc,1ca,",
             trilist.outlineStr_
         )
 
@@ -110,11 +124,11 @@ class TriListTest {
         trilist.setChildsToAllParents()
 
         val op = ArrayList<PointXY>()
-        val tlop = trilist.traceOrJumpForward(0, 0, op) //getOutLinePoints( 0 )
+        val tlop = trilist.traceOrJumpForward(0, 0, op, trilist[1]) //getOutLinePoints( 0 )
         assertEquals(11, trilist.size())
         assertEquals(14, tlop.size)
         assertEquals(
-            "0ab,0bc,2bc,3bc,7bc,9bc,9ca,10bc,10ca,6bc,6ca,4ca,1bc,1ca,",
+            "1ab,1bc,3bc,4bc,8bc,10bc,10ca,11bc,11ca,7bc,7ca,5ca,2bc,2ca,",
             trilist.outlineStr_
         )
 
@@ -299,6 +313,9 @@ class TriListTest {
         assertEquals(trilist.get(3), trilist.get(1).nodeTriangleC_)
 
         val trilist2 = trilist.clone()
+
+        //assertEquals( trilist2.get(1), trilist2.get(3).nodeTriangleA_ )
+
 
         assertEquals(trilist2.get(1), trilist2.get(3).nodeTriangleA_)
         assertEquals(trilist2.get(1), trilist2.get(2).nodeTriangleA_)

@@ -215,11 +215,29 @@ open class DrawingFileWriter {
         writeLine( PointXY( baseX - xoffset *0.5f, baseY + yoffset + yspacer ), PointXY(baseX + xoffset * 4.5f, baseY + yoffset + yspacer ), cWhite_, scale)
 
         var shokeiNum = 1
-        val tlSpC = trilist.spritByColors()
-        for( index in 4 downTo 0 ){
-            if( tlSpC[index].size() > 0 ) {
+        val sprit = false
+        if( sprit ){
+            val tlSpC = trilist.spritByColors()
+            for( index in 4 downTo 0 ){
+                if( tlSpC[index].size() > 0 ) {
+                    baseY = writeCalcSheetEditList(
+                        tlSpC[ index ],
+                        titleTri_,
+                        baseX,
+                        baseY,
+                        ts,
+                        xoffset,
+                        scale,
+                        shokeiNum
+                    )
+                    shokeiNum ++
+                }
+            }
+        }
+        else{
+            if( trilist.size() > 0 ) {
                 baseY = writeCalcSheetEditList(
-                    tlSpC[ index ],
+                    trilist,
                     titleTri_,
                     baseX,
                     baseY,

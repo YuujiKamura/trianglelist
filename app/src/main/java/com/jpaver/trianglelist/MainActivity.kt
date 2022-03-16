@@ -357,7 +357,10 @@ class MainActivity : AppCompatActivity(),
     }
 
     fun validTriangle(dp: Params) : Boolean{
-        if (dp.a <= 0.0f || dp.b <= 0.0f || dp.c <= 0.0f) return false
+        if (dp.a <= 0.0f || dp.b <= 0.0f || dp.c <= 0.0f || ( dp.n > 1 && ( dp.pn <= 0 || dp.pl <= 0 ) ) ){
+            Toast.makeText(this, "Invalid!! : need more parameters.", Toast.LENGTH_LONG).show()
+            return false
+        }
         if (dp.a + dp.b <= dp.c ){
             Toast.makeText(this, "Invalid!! : C > A + B", Toast.LENGTH_LONG).show()
             return false
@@ -939,6 +942,7 @@ class MainActivity : AppCompatActivity(),
         my_view.setDeductionList(myDeductionList, mScale)
         printDebugConsole()
         autoSaveCSV()
+        rosenname = findViewById<EditText>(R.id.rosenname).getText().toString()
         setTitles()
         if(!dedmode) my_view.resetView(my_view.lstp())
         if(dedmode) my_view.resetView(usedDedPoint.scale(PointXY(0f, 0f), 1f, -1f))//resetViewToTP()
@@ -1196,7 +1200,7 @@ class MainActivity : AppCompatActivity(),
                 colorindex = myTriangleList.get(myTriangleList.lastTapNumber_).color_
                 colorMovementFabs()
                 printDebugConsole()
-                setTitles()
+                //setTitles()
                 if( my_view.myTriangleList.lastTapSide_ == 0 ) {
 
                     findViewById<EditText>(R.id.editLengthA2).requestFocus()
@@ -2552,19 +2556,19 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun setTitles(){
-        findViewById<EditText>(R.id.rosenname).setText(rosenname)
+        //findViewById<EditText>(R.id.rosenname).setText(rosenname)
 
         val dedArea = myDeductionList.getArea()
         val triArea = myTriangleList.getArea()
         val totalArea = roundByUnderTwo(triArea - dedArea)
         title = rStr.menseki_ + ": ${ totalArea.formattedString(2) } m^2"
 
-        if( myTriangleList.lastTapNumber_ > 0 ){
-            val coloredArea = myTriangleList.getAreaC( myTriangleList.lastTapNumber_ )
-            val colorStr = arrayOf( "red: ", "orange: ", "yellow: ", "green: ", "blue: " )
-            val tapped = myTriangleList.get( myTriangleList.lastTapNumber_ )
-            title = rStr.menseki_ + ": ${ totalArea } m^2" + " ( ${ colorStr[tapped.color_]+coloredArea } m^2 )"
-        }
+        //if( myTriangleList.lastTapNumber_ > 0 ){
+            //val coloredArea = myTriangleList.getAreaC( myTriangleList.lastTapNumber_ )
+            //val colorStr = arrayOf( "red: ", "orange: ", "yellow: ", "green: ", "blue: " )
+            //val tapped = myTriangleList.get( myTriangleList.lastTapNumber_ )
+            //title = rStr.menseki_ + ": ${ totalArea } m^2" + " ( ${ colorStr[tapped.color_]+coloredArea } m^2 )"
+        //}
 
     }
 
