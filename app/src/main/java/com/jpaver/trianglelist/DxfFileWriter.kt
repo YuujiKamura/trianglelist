@@ -403,7 +403,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         val sixtytwo = arrayOf( 254, 254, 51, 254, 7)
         val color = arrayOf( RED, ORANGE, YELLOW, GREEN, BLUE )
 
-        val sprit = false
+        val sprit = true
 
         if( sprit == true ){
             val spritByColors = myDXFTriList.spritByColors()
@@ -414,7 +414,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
                 for( index2 in 0 until outlineLists.size){
 
                     if( outlineLists[index2].size > 0 ){
-                        //writeDXFTriHatch(writer, outlineLists[index2], color[index], sixtytwo[index] )
+                        writeDXFTriHatch(writer, outlineLists[index2], color[index], sixtytwo[index] )
                         //writeDXFTriOutlines( writer, outlineLists[index2] )
                     }
                 }
@@ -431,7 +431,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
                 for( index2 in 0 until outlineLists.size){
 
                     if( outlineLists[index2].size > 0 ){
-                        //writeDXFTriOutlines( writer, outlineLists[index2] )
+                        writeDXFTriOutlines( writer, outlineLists[index2] )
                     }
                 }
             }

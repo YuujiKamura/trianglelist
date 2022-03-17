@@ -678,14 +678,14 @@ public class TriangleList extends EditList implements Cloneable {
                 }
             }
 
-            if( listByColor.size()>0 ) listByColor.outlineList();
+            if( listByColor.trilist_.size() > 0 ) listByColor.outlineList();
         }
 
         return listByColors;
     }
 
     public void outlineList(){
-        if( trilist_.size() <= 1 ) return;
+        if( trilist_.size() < 1 ) return;
 
         ArrayList<ArrayList<PointXY>> olplists = outlineList_;
 
@@ -694,13 +694,56 @@ public class TriangleList extends EditList implements Cloneable {
 
             if( i == 0 || t.isFloating() || t.isColored_ ) {
                 olplists.add( new ArrayList<>() );
-                trace( olplists.get(i), t, true );
-                //olplists.get(i).add( t.pointAB_ );
-                //outlineStr_ += t.myNumber_ + "ab, ";
+                trace( olplists.get( olplists.size()-1 ), t, true );
+                olplists.get( olplists.size()-1 ).add( trilist_.get( i ).pointAB_ ); //今のindexでtriを取り直し
+                outlineStr_ = outlineStr_ + ( trilist_.get( i ).myNumber_ + "ab, " );
 
             }
         }
 
+    }
+
+    public ArrayList<PointXY> trace(ArrayList<PointXY> olp, Triangle tri, Boolean first){
+        if( tri == null ) return olp;
+        if( ( tri.isFloating() || tri.isColored() ) && !first ) return olp;
+
+        addOlp(tri.pointAB_, "ab,", olp, tri);
+        trace( olp, tri.nodeTriangleB_, false);
+
+        addOlp(tri.pointBC_, "bc,", olp, tri);
+        trace( olp, tri.nodeTriangleC_, false);
+
+        addOlp(tri.pointCA_, "ca,", olp, tri);
+        //trace( olp, tri.nodeTriangleA_, -1 ); //ネスト抜けながら勝手にトレースしていく筈
+
+        return olp;
+    }
+
+    public void addOlp(PointXY pt, String str, ArrayList<PointXY> olp, Triangle node ){
+        if( notHave(pt, olp)){
+            olp.add( pt );
+            outlineStr_ += node.myNumber_ + str;
+        }
+    }
+
+    // 同じポイントは二ついらない
+    private boolean notHave(PointXY it, ArrayList<PointXY> inthis ){
+        //if( inthis.size() < 1 ) return false;
+
+        for( int i=0; i<inthis.size(); i++ )
+            if( it.nearBy(inthis.get(i), 0.001f) ) return false;
+
+        return true;
+    }
+
+    public void traceOrNot( Triangle t, Triangle node, int origin, ArrayList<PointXY> olp ){
+        if( node != null && !node.isFloating() && !node.isColored() ) traceOrJumpForward( node.myNumber_ - 1, origin, olp, node );
+    }
+
+    public void branchOrNot( Triangle t, int origin, ArrayList<PointXY> olp ){
+        if( t.nodeTriangleB_ != null &&  t.nodeTriangleC_ != null )
+            if( notHave( t.nodeTriangleC_.pointCA_, olp ) && ( !t.nodeTriangleC_.isFloating_ && !t.nodeTriangleC_.isColored_ ) )
+                traceOrJumpForward( t.nodeTriangleC_.myNumber_ - 1, origin, olp, t.nodeTriangleC_ );
     }
 
     public int isCollide(PointXY tapP){
@@ -825,43 +868,6 @@ public class TriangleList extends EditList implements Cloneable {
         }
     }
 
-    public boolean addOlp( PointXY pt, String str, ArrayList<PointXY> olp, Triangle node ){
-        if( notHave(pt, olp)){
-            olp.add( pt );
-            outlineStr_ += node.myNumber_ + str;
-            return true;
-        }
-        else return false;
-    }
-
-    public void traceOrNot( Triangle t, Triangle node, int origin, ArrayList<PointXY> olp ){
-        if( node != null && !node.isFloating() && !node.isColored() ) traceOrJumpForward( node.myNumber_ - 1, origin, olp, node );
-    }
-
-    public void branchOrNot( Triangle t, int origin, ArrayList<PointXY> olp ){
-        if( t.nodeTriangleB_ != null &&  t.nodeTriangleC_ != null )
-            if( notHave( t.nodeTriangleC_.pointCA_, olp ) && ( !t.nodeTriangleC_.isFloating_ && !t.nodeTriangleC_.isColored_ ) )
-                traceOrJumpForward( t.nodeTriangleC_.myNumber_ - 1, origin, olp, t.nodeTriangleC_ );
-    }
-
-    public ArrayList<PointXY> trace(ArrayList<PointXY> olp, Triangle tri, Boolean first){
-        if( tri == null ) return olp;
-        if( ( tri.isFloating() || tri.isColored() ) && !first ) return olp;
-        int number = tri.myNumber_;
-
-        addOlp(tri.pointAB_, "ab,", olp, tri);
-        trace( olp, tri.nodeTriangleB_, false);
-
-        addOlp(tri.pointBC_, "bc,", olp, tri);
-        trace( olp, tri.nodeTriangleC_, false);
-
-        addOlp(tri.pointCA_, "ca,", olp, tri);
-        //trace( olp, tri.nodeTriangleA_, -1 ); //ネスト抜けながら勝手にトレースしていく筈
-
-        return olp;
-    }
-
-
     public ArrayList<PointXY> traceOrJumpForward(int startindex, int origin, ArrayList<PointXY> olp, Triangle node){
         if( startindex < 0 || startindex >= trilist_.size() ) return null;
 
@@ -912,15 +918,7 @@ public class TriangleList extends EditList implements Cloneable {
 
     }
 
-    // 同じポイントは二ついらない
-    private boolean notHave(PointXY it, ArrayList<PointXY> inthis ){
-        //if( inthis.size() < 1 ) return false;
 
-        for( int i=0; i<inthis.size(); i++ )
-         if( it.nearBy(inthis.get(i), 0.001f) ) return false;
-
-        return true;
-    }
 
 
     public TriangleList resetNumReverse( ){

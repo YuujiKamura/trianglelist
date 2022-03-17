@@ -1265,7 +1265,7 @@ public class Triangle extends EditObject implements Cloneable {
     public int getParentNumber() { return parentNumber_; }
     public int getMyNumber_() { return myNumber_; }
     public void setNumber(int num) { myNumber_ = num; }
-    public void setColor(int num) { color_ = num; }
+    public void setColor(int num) { color_ = num; isColored_ = true; }
 
     public void setChild(Triangle newchild, int cbc ){
         childSide_ = cbc;

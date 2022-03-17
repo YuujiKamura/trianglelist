@@ -30,7 +30,7 @@ class TriListTest {
                 if( listlist.get(i).size() > 0 ) {
 
                     val tl = listlist.get(i)//traceOrJumpForward(0, 0, ArrayList<PointXY>() )
-                    System.out.printf( "trilistlist[%s], size %s, outlineStr_ %s%n", i, tl.size(), tl.outlineStr_ )
+                    System.out.printf( "trilistlist[%s], size %s, outlineList_ %s, outlineStr_ %s%n", i, tl.size(), tl.outlineList_.size, tl.outlineStr_ )
                     printTriList( tl )
                 }
             }
@@ -61,15 +61,25 @@ class TriListTest {
         trilist.add(Triangle(trilist[2], 2, 3f, 4f), true)
         trilist.add(Triangle(trilist[4], 1, 4f, 5f), true)
         Assert.assertEquals(5, trilist.size().toLong())
+
         trilist[1].setColor(0)
+        trilist[3].setColor(0)
+        trilist[4].setColor(0)
+
         val listByColors = trilist.spritByColors()
-        Assert.assertEquals(1, listByColors[0].size().toLong())
+        Assert.assertEquals(3, listByColors[0].size().toLong())
         Assert.assertEquals(0, listByColors[1].size().toLong())
         Assert.assertEquals(0, listByColors[2].size().toLong())
         Assert.assertEquals(0, listByColors[3].size().toLong())
-        Assert.assertEquals(4, listByColors[4].size().toLong())
+        Assert.assertEquals(2, listByColors[4].size().toLong())
 
         printTriListList( listByColors )
+
+        assertEquals(
+            "1ab,1bc,1ca,1ab, 3ab,3bc,3ca,3ab, 4ab,4bc,4ca,4ab, ",
+            listByColors[0].outlineStr_
+        )
+
     }
 
     @Test
