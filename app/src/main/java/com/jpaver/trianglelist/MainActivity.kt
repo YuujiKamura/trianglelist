@@ -10,6 +10,7 @@ import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.DocumentsContract
 import android.text.Editable
 import android.text.InputFilter
 import android.text.TextWatcher
@@ -27,6 +28,7 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider.getUriForFile
 import androidx.core.content.edit
+import androidx.core.net.toUri
 import androidx.fragment.app.DialogFragment
 import androidx.preference.PreferenceManager
 import com.google.android.gms.ads.AdRequest
@@ -1587,9 +1589,6 @@ class MainActivity : AppCompatActivity(),
             mInterstitialAd.loadAd(AdRequest.Builder().build())*/
         }
 
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         return when (item.itemId) {
             R.id.action_usage -> {
                 if (BuildConfig.FLAVOR == "free") {
@@ -1633,6 +1632,7 @@ class MainActivity : AppCompatActivity(),
             }
             R.id.action_load_csv -> {
                 //actionSelectDir()
+                //openDocumentTree()
                 openDocumentPicker()
 //                actionLoadCSV()
                 return true
@@ -1755,6 +1755,50 @@ class MainActivity : AppCompatActivity(),
     }
 
 
+    private fun openDocumentTree() {
+        // Choose a directory using the system's file picker.
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
+            // Optionally, specify a URI for the directory that should be opened in
+            // the system file picker when it loads.
+            //putExtra(DocumentsContract.EXTRA_INITIAL_URI, pickerInitialUri)
+        }
+
+        loadDocumentTree.launch( intent )
+    }
+
+    val loadDocumentTree = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
+
+        if (result.resultCode == Activity.RESULT_OK && result.data != NULL) {
+            val resultIntent = result.data
+            val title: Uri = Objects.requireNonNull(resultIntent?.data)!!
+            //val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION
+
+            // Uriは再起すると使えなくなるので対策
+            val prefSet = prefSetting
+            // Uri保存。これでアプリ再起動後も使えます。
+            prefSet.edit {
+                putString("uri", title.toString())
+            }
+            // Check for the freshest data.
+            contentResolver.takePersistableUriPermission(title, Intent.FLAG_GRANT_READ_URI_PERMISSION )
+
+            openDocumentPicker( )
+        }
+
+    }
+
+
+    private fun openDocumentPicker( ) {
+
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "text/*"
+        }
+
+        loadContent.launch( intent )
+    }
+
     val loadContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
 
         if (result.resultCode == Activity.RESULT_OK && result.data != NULL) {
@@ -1767,6 +1811,15 @@ class MainActivity : AppCompatActivity(),
                     InputStreamReader(contentResolver.openInputStream(title), "Shift-JIS")
                 )
                 loadCSV(reader)
+
+                // Uriは再起すると使えなくなるので対策
+                val prefSet = prefSetting
+                // Uri保存。これでアプリ再起動後も使えます。
+                prefSet.edit {
+                    putString("uri", title.toString())
+                }
+                // Check for the freshest data.
+                contentResolver.takePersistableUriPermission(title, Intent.FLAG_GRANT_READ_URI_PERMISSION )
 
             } catch (e: IOException) {
                 e.printStackTrace()
@@ -1805,13 +1858,17 @@ class MainActivity : AppCompatActivity(),
                     )
                 )
 
+                val contentResolver = applicationContext.contentResolver
+
+                val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                        Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                // Check for the freshest data.
+                contentResolver.takePersistableUriPermission(title, takeFlags)
                 // Uriは再起すると使えなくなるので対策
-                contentResolver.takePersistableUriPermission(
-                    title,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                )
+
+                val prefSet = prefSetting
                 // Uri保存。これでアプリ再起動後も使えます。
-                prefSetting.edit {
+                prefSet.edit {
                     putString("uri", title.toString())
                 }
 
@@ -1825,28 +1882,6 @@ class MainActivity : AppCompatActivity(),
         setTitles()
     }
 
-    private fun openDocumentPicker() {
-        val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
-            /**
-             * It's possible to limit the types of files by mime-type. Since this
-             * app displays pages from a PDF file, we'll specify `application/pdf`
-             * in `type`.
-             * See [Intent.setType] for more details.
-             */
-            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-            type = "text/csv"
-
-            /**
-             * Because we'll want to use [ContentResolver.openFileDescriptor] to read
-             * the data of whatever file is picked, we set [Intent.CATEGORY_OPENABLE]
-             * to ensure this will succeed.
-             */
-            addCategory(Intent.CATEGORY_OPENABLE)
-        }
-
-        //startActivityForResult( intent, 2 )
-        loadContent.launch( intent )
-    }
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun showExportDialog(fileprefix: String, title: String, filetype: String, intentType: String): Boolean{
@@ -2561,7 +2596,6 @@ class MainActivity : AppCompatActivity(),
         val dedArea = myDeductionList.getArea()
         val triArea = trilistM.getArea()
         val totalArea = roundByUnderTwo(triArea - dedArea)
-        title = rStr.menseki_ + ":${ totalArea.formattedString(2) } m^2"
 
         if( trilistM.lastTapNumber_ > 0 ){
             val coloredArea = trilistM.getAreaC( trilistM.lastTapNumber_ )
@@ -2569,6 +2603,9 @@ class MainActivity : AppCompatActivity(),
             val tapped = trilistM.get( trilistM.lastTapNumber_ )
             title = rStr.menseki_ + ":${ totalArea }m^2" + " (${ colorStr[tapped.color_]+coloredArea }m^2)"
         }
+        else
+            title = rStr.menseki_ + ":${ totalArea.formattedString(2) } m^2"
+
 
     }
 
