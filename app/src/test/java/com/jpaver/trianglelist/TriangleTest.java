@@ -246,8 +246,6 @@ public class TriangleTest {
 
     }
 
-
-
     @Test
     public void testDimPathAndOffset(){
         Triangle t1 = new Triangle(3,4,5);
@@ -261,8 +259,6 @@ public class TriangleTest {
         assertEquals(3, t1.myDimAlignC_ );// t1.getPath(2).getAlign_());
     }
 
-
-
     @Test
     public void testCalcAngleOfLength(){
         Triangle mytri = new Triangle(3.0f, 4.0f, 5.0f, new PointXY(0,0), 180.0f);
@@ -272,14 +268,11 @@ public class TriangleTest {
 
     }
 
-
-
     @Test
     public void testSuccess() {
         Triangle mytri1 = new Triangle(3.0f, 4.0f, 5.0f, new PointXY(0,0), 180.0f);
         assertThat(mytri1, is(mytri1));
     }
-
 
     @Test
     public void testTrianglePoint(){
@@ -322,7 +315,6 @@ public class TriangleTest {
         assertFalse(myList.add(myTriF3, true));
 
     }
-
 
     @Test
     public void testCalcThetaAlpha(){

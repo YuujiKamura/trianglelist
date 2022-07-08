@@ -8,7 +8,7 @@
     <string name="action_save_sfc" translatable="false">SFC出力</string>
     <string name="action_save_pdf" translatable="false">PDF出力</string>
     <string name="action_send_mail" translatable="false">メールを送信</string>
-    <string name="action_usage" translatable="false">取扱説明書</string>
+    <string name="action_usage" translatable="false">取扱説明動画</string>
 
     <string name="tenkai_title" translatable="false">面 積 展 開 図</string>
     <string name="tenkai_koujimei" translatable="false">工 事 名</string>
