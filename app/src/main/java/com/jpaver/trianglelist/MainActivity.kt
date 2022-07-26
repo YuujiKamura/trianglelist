@@ -39,7 +39,6 @@ import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.UpdateAvailability
 import com.jpaver.trianglelist.databinding.ActivityMainBinding
-import com.jpaver.trianglelist.util.AssetsFileProvider
 import org.json.JSONObject.NULL
 import java.io.*
 import java.time.LocalDate
@@ -74,8 +73,6 @@ interface CustomTextWatcher: TextWatcher{
 
 class MainActivity : AppCompatActivity(),
         MyDialogFragment.NoticeDialogListener {
-
-
 
     private lateinit var prefSetting: SharedPreferences
 
@@ -428,8 +425,6 @@ class MainActivity : AppCompatActivity(),
     }
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
-        //val col = my_view.collision(event!!)
-       // if(col.isHit == true) autoConnection(col.side)
         return super.onTouchEvent(event)
     }
 
@@ -612,7 +607,7 @@ class MainActivity : AppCompatActivity(),
                 myTriangleList.rotateCurrentTriLCR()
                 //myTriangleList.resetTriConnection(myTriangleList.lastTapNum_, );
                 my_view.setTriangleList(myTriangleList, mScale)
-                my_view.resetView(my_view.lstp())
+                my_view.resetView(my_view.toLastTapTriangle())
                 editorClear(getList(deductionMode), getList(deductionMode).getCurrent())
 
                 autoSaveCSV()
@@ -648,7 +643,7 @@ class MainActivity : AppCompatActivity(),
             }
             printDebugConsole()
             colorMovementFabs()
-            my_view.resetViewToLSTP()
+            my_view.resetViewToLastTapTriangle()
             setTitles()
 
         }
@@ -658,7 +653,7 @@ class MainActivity : AppCompatActivity(),
                 myTriangleList = trilistStored.clone()
                 //my_view.undo()
                 my_view.setTriangleList(trilistStored, mScale)
-                my_view.resetViewToLSTP()
+                my_view.resetViewToLastTapTriangle()
 
                 trilistStored.trilist_.clear()
 
@@ -711,41 +706,12 @@ class MainActivity : AppCompatActivity(),
         }
 
         fab_rot_l.setOnClickListener {
-            if(!deductionMode) {
-                myTriangleList.rotate(PointXY(0f, 0f), 5f, myTriangleList.lastTapNumber_ )
-                myDeductionList.rotate(PointXY(0f, 0f), -5f)
-                my_view.setTriangleList(myTriangleList, mScale)
-                my_view.setDeductionList(myDeductionList, mScale)
-                my_view.resetViewToLSTP()
-                printDebugConsole()
-            }
-            // ded rotate
-            else {
-                val vdltip = my_view.myDeductionList.lastTapIndex_+1
-                myDeductionList.get(vdltip).rotateShape(myDeductionList.get(vdltip).point, -5f)
-                my_view.setDeductionList(myDeductionList, mScale)
-                my_view.invalidate()
-            }
+            fabRotate(5f, true )
             autoSaveCSV()
         }
 
         fab_rot_r.setOnClickListener {
-            if(!deductionMode) {
-                myTriangleList.rotate(PointXY(0f, 0f), -5f, myTriangleList.lastTapNumber_ )
-                myDeductionList.rotate(PointXY(0f, 0f), 5f)
-                my_view.setTriangleList(myTriangleList, mScale)
-                my_view.setDeductionList(myDeductionList, mScale)
-                my_view.resetViewToLSTP()
-                printDebugConsole()
-                autoSaveCSV()
-            }
-            // ded rotate
-            else {
-                val vdltip = my_view.myDeductionList.lastTapIndex_+1
-                myDeductionList.get(vdltip).rotateShape(myDeductionList.get(vdltip).point, 5f)
-                my_view.setDeductionList(myDeductionList, mScale)
-                my_view.invalidate()
-            }
+            fabRotate(-5f, true )
             autoSaveCSV()
         }
 
@@ -758,7 +724,7 @@ class MainActivity : AppCompatActivity(),
 
         fab_resetView.setOnClickListener {
 
-            if(!deductionMode) my_view.resetViewToLSTP()
+            if(!deductionMode) my_view.resetViewToLastTapTriangle()
             else if( myDeductionList.size() > 0 ){
                 val currentIndex = my_view.myDeductionList.getCurrent()
                 my_view.resetView(
@@ -886,11 +852,27 @@ class MainActivity : AppCompatActivity(),
 
             myTriangleList = myTriangleList.reverse()
             my_view.setTriangleList(myTriangleList, mScale)
-            my_view.resetView(my_view.lstp())
+            my_view.resetView(my_view.toLastTapTriangle())
             editorClear(myTriangleList, myTriangleList.current)
         }
     }
 
+    fun fabRotate(degrees: Float, bSeparateFreeMode: Boolean){
+        if(!deductionMode) {
+            myTriangleList.rotate(PointXY(0f, 0f), degrees, myTriangleList.lastTapNumber_, bSeparateFreeMode )
+            myDeductionList.rotate(PointXY(0f, 0f), -degrees )
+            my_view.setTriangleList(myTriangleList, mScale)
+            my_view.setDeductionList(myDeductionList, mScale)
+            my_view.invalidate()//resetViewToLSTP()
+        }
+        // ded rotate
+        else {
+            val vdltip = my_view.myDeductionList.lastTapIndex_+1
+            myDeductionList.get(vdltip).rotateShape(myDeductionList.get(vdltip).point, -degrees )
+            my_view.setDeductionList(myDeductionList, mScale)
+            my_view.invalidate()
+        }
+    }
     
     private fun fabReplace(params: Params, useit: Boolean){
         //val editor = myEditor
@@ -940,7 +922,7 @@ class MainActivity : AppCompatActivity(),
         printDebugConsole()
         autoSaveCSV()
         setTitles()
-        if(!dedmode) my_view.resetView(my_view.lstp())
+        if(!dedmode) my_view.resetView(my_view.toLastTapTriangle())
         if(dedmode) my_view.resetView(usedDedPoint.scale(PointXY(0f, 0f), 1f, -1f))//resetViewToTP()
 
         my_view.myTriangleList.isDoubleTap_ = false
@@ -956,7 +938,7 @@ class MainActivity : AppCompatActivity(),
         my_view.getTriangleList().setCurrent(myTriangleList.getCurrent())
         my_view.myTriangleList.lastTapNumber_ = myTriangleList.getCurrent()
         myTriangleList.lastTapNumber_ = myTriangleList.getCurrent()
-        my_view.resetViewToLSTP()
+        my_view.resetViewToLastTapTriangle()
     }
 
     private fun addDeductionBy(params: Params) : Boolean {
@@ -1135,7 +1117,7 @@ class MainActivity : AppCompatActivity(),
         val trilist  = myTriangleList
         if(deductionMode){
             my_view.myDeductionList.setScale(my_view.myScale)
-            my_view.myDeductionList.getTapIndex(my_view.localPressPoint)
+            my_view.myDeductionList.getTapIndex(my_view.pressedInModel)
 
             if ( my_view.myDeductionList.lastTapIndex_ > -1 ) {
                 val tapIndex = my_view.myDeductionList.lastTapIndex_+1
@@ -1151,16 +1133,16 @@ class MainActivity : AppCompatActivity(),
 
             // 三角形番号が押されたときはセンタリング
             trilistV.getTap(
-                my_view.localPressPoint.scale(PointXY(0f, 0f), 1f, -1f),
+                my_view.pressedInModel.scale(PointXY(0f, 0f), 1f, -1f),
                 0.6f
             )
             if ( trilistV.lastTapNumber_ != 0 ) {
-                if( trilistV.lastTapSide_ == 3 ) my_view.resetViewToLSTP()
+                if( trilistV.lastTapSide_ == 3 ) my_view.resetViewToLastTapTriangle()
             }
 
         }
         else {
-            val lpp = my_view.localPressPoint.scale(PointXY(0f, 0f), 1f, -1f)
+            val lpp = my_view.pressedInModel.scale(PointXY(0f, 0f), 1f, -1f)
 
             val slpp = my_view.shadowTri_.getTapLength(lpp, 0.6f)
             if( slpp == 1) {
@@ -1215,7 +1197,7 @@ class MainActivity : AppCompatActivity(),
                     //inputMethodManager.showSoftInput(findViewById(R.id.editText6), 0)
                 }
 
-                if( my_view.myTriangleList.lastTapSide_ == 3 ) my_view.resetViewToLSTP()
+                if( my_view.myTriangleList.lastTapSide_ == 3 ) my_view.resetViewToLastTapTriangle()
 
                 Log.d("MainActivity", "Tap Triangle is : " + my_view.myTriangleList.lastTapNumber_ + my_view.myTriangleList.lastTapSide_ )
 
@@ -1518,7 +1500,7 @@ class MainActivity : AppCompatActivity(),
         my_view.setTriangleList(trilist, mScale)
         my_view.setDeductionList(myDeductionList, mScale)
         my_view.myTriangleList.lastTapNumber_ = my_view.myTriangleList.size()
-        my_view.resetViewToLSTP()
+        my_view.resetViewToLastTapTriangle()
 
         Log.d("FileLoader", "createNew: " + my_view.myTriangleList.size() )
 
@@ -1528,6 +1510,7 @@ class MainActivity : AppCompatActivity(),
         editorClear(getList(deductionMode), getList(deductionMode).size())
 
     }
+
 
     override fun onRestart() {
         super.onRestart()
@@ -1767,12 +1750,12 @@ class MainActivity : AppCompatActivity(),
 
         if (result.resultCode == Activity.RESULT_OK && result.data != NULL) {
             val resultIntent = result.data
-            val title: Uri = Objects.requireNonNull(resultIntent?.data)!!
+            val title: Uri? = Objects.requireNonNull(resultIntent?.data)
 
             StringBuilder()
             try {
                 val reader = BufferedReader(
-                    InputStreamReader(contentResolver.openInputStream(title), "Shift-JIS")
+                    InputStreamReader(title?.let { contentResolver.openInputStream(it) }, "Shift-JIS")
                 )
                 loadCSV(reader)
 
@@ -1791,13 +1774,15 @@ class MainActivity : AppCompatActivity(),
 
         if (result.resultCode == Activity.RESULT_OK && result.data != NULL) {
             val resultIntent = result.data
-            val title: Uri = Objects.requireNonNull( resultIntent?.data )!!
+            val title: Uri? = Objects.requireNonNull(resultIntent?.data)
 
             // Uriは再起すると使えなくなるので対策
-            contentResolver.takePersistableUriPermission(
-                title,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-            )
+            if (title != null) {
+                contentResolver.takePersistableUriPermission(
+                    title,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+            }
             // Uri保存。これでアプリ再起動後も使えます。
             prefSetting.edit {
                 putString("uri", title.toString())
@@ -1808,17 +1793,19 @@ class MainActivity : AppCompatActivity(),
 
                 val charset = "Shift-JIS"
                 val writer = BufferedWriter(
-                    OutputStreamWriter(contentResolver.openOutputStream(title), charset)
+                    OutputStreamWriter(title?.let { contentResolver.openOutputStream(it) }, charset)
                 )
 
                 if (fileType == "DXF") saveDXF(writer)
                 if (fileType == "CSV") saveCSV(writer)
-                if (fileType == "PDF") savePDF(contentResolver.openOutputStream(title)!!)
+                if (fileType == "PDF") savePDF(title?.let { contentResolver.openOutputStream(it) }!!)
                 if (fileType == "SFC") saveSFC(
                     BufferedOutputStream(
-                        contentResolver.openOutputStream(
-                            title
-                        )
+                        title?.let {
+                            contentResolver.openOutputStream(
+                                it
+                            )
+                        }
                     )
                 )
 
@@ -2122,7 +2109,7 @@ class MainActivity : AppCompatActivity(),
                 writer.sizeY_.toInt(),
                 writer.currentPageIndex_
         )
-        writer.translateCenter(writer.currentCanvas_)
+        writer.translateCenter()
 
         val viewPointer =
         my_view.drawPDF(
@@ -2527,7 +2514,7 @@ class MainActivity : AppCompatActivity(),
 //        myDeductionList.scale(PointXY(0f,0f), 1f, 1f)
         my_view.setDeductionList(dedlist, mScale)
         my_view.setTriangleList(trilist, mScale)
-        my_view.resetViewToLSTP()
+        my_view.resetViewToLastTapTriangle()
 
         Log.d( "FileLoader", "my_view.setTriangleList: " + my_view.myTriangleList.size() )
         // メニューバーのタイトル

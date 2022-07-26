@@ -5,7 +5,7 @@ class PathAndOffset(
     p1_: PointXY,
     p2_: PointXY,
     align: Int,
-    private var alignSide: Int,
+    var alignSide: Int,
     private var dimH: Float
 ) {
 
@@ -39,12 +39,26 @@ class PathAndOffset(
             //p1.set(p1.offset(p2, -len ))// )
             //p2.set(p2.offset(p1, -len ))//p2.lengthTo(p1)*-1.5f )
         //}
-        val llen = p1.vectorTo(p2).lengthXY()
+        val lineLength = p1.vectorTo(p2).lengthXY()
         // 幅寄せ
-        val haba = llen*0.275f
+        val haba = lineLength*0.275f
+
+        val hata = 4f*myScale
+        val sukima = 0.8f*myScale
 
         if( this.alignSide == 1 ) offsetH = -haba
         if( this.alignSide == 2 ) offsetH = haba
+        if( this.alignSide == 3 ) {
+            p1 = p1.offset(p2, -hata )
+            p2 = p2.offset(p1, sukima+lineLength)
+            offsetH = -0.5f*myScale
+        }
+        if( this.alignSide == 4 ){
+            p2 = p2.offset(p1, -hata )
+            p1 = p1.offset(p2, sukima+lineLength)
+            offsetH = 0.5f*myScale
+        }
+
 /*
         if(length < 1.0f){  // 短い辺の寸法を立てる
             p3 = p1.calcMidPoint(p2).offset(p3_, -0.3f*myScale_)
@@ -53,10 +67,11 @@ class PathAndOffset(
             p2 = p4
         }
 */
+
         pointA = p1
         pointB = p2
 
-                // 上下逆さまにならない様に反転
+        // 上下逆さまにならない様に反転
         if(p1.x >= p2.x && align != 4) flipPassAndOffset(align, p1, p2)
 
         if(align == 4){ // 線の左側、というか進行方向の左側

@@ -836,7 +836,7 @@ class TriListTest {
 
         printTriangle( t2 )
 
-        trilist.rotate(PointXY(0f, 0f), -90f, 2 )
+        trilist.rotate(PointXY(0f, 0f), -90f, 2, false)
         System.out.println( "Trilist rotate t2.")
 
         printTriangle( t2 )

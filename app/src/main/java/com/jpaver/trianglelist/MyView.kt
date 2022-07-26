@@ -1,13 +1,18 @@
 package com.jpaver.trianglelist
 
 import android.content.Context
-import android.graphics.*
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Path
 import android.util.AttributeSet
 import android.util.Log
-import android.view.*
+import android.view.MotionEvent
+import android.view.ScaleGestureDetector
 import android.view.ScaleGestureDetector.OnScaleGestureListener
-import com.jpaver.trianglelist.databinding.ActivityMainBinding
-import com.jpaver.trianglelist.databinding.FragmentFirstBinding
+import android.view.View
+import com.google.android.material.internal.ContextUtils.getActivity
+import com.jpaver.trianglelist.util.RotateGestureDetector
 import java.util.*
 import kotlin.math.roundToInt
 
@@ -21,6 +26,7 @@ fun Float?.formattedString(fractionDigits: Int): String{
 class MyView(context: Context?, attrs: AttributeSet?) :
     View(context, attrs) {
 
+    lateinit var rotateGestureDetector: RotateGestureDetector
     lateinit var scaleGestureDetector: ScaleGestureDetector
     private var time_elapsed: Long = 0
     private var time_start: Long = 0
@@ -31,6 +37,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     private var flg_pinch_in: Boolean? = null
     private var screen_width = 0
     private var screen_height = 0
+    private var canvasAngle = 0f
     //画面の対角線の長さ
     private var screen_diagonal = 0
 
@@ -67,22 +74,32 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
     var myScale = 1f
     var myTriangleList: TriangleList = TriangleList()
-
     var myDeductionList: DeductionList = DeductionList()
 
-
-    var drawPoint: PointXY = PointXY(0f, 0f)
-    var clickPoint: PointXY = PointXY(0f, 0f)
+    //var drawPoint: PointXY = PointXY(0f, 0f)
+    var pressedInView: PointXY = PointXY(0f, 0f)
     var lastCPoint: PointXY = PointXY(0f, 0f)
     var moveVector: PointXY = PointXY(0f, 0f)
     var movePoint: PointXY = PointXY(0f, 0f)
 
-    var myViewSize: PointXY = PointXY(0f, 0f)
-    var ViewCenter: PointXY = PointXY(0f, 0f)
-    var myLocalTriCenter: PointXY = PointXY(0f, 0f)
-    var BasePoint: PointXY = PointXY(0f, 0f)
+    var viewSize: PointXY = PointXY(0f, 0f)
+    var centerInView: PointXY = PointXY(0f, 0f)
+    var centerInModel: PointXY = PointXY(0f, 0f)
+    var baseInView: PointXY = PointXY(0f, 0f)
     var transOnce: Boolean = true
-    var localPressPoint: PointXY = PointXY(0f, 0f)
+    var pressedInModel: PointXY = PointXY(0f, 0f)
+
+    fun drawViewPoints( canvas: Canvas, paint: Paint, point: PointXY, ypitch: Float ) {
+        //if( isDebug_ == false ) return
+        canvas.drawText( "pressedInView " + pressedInView.info(), point.x, point.y + ypitch * 1, paint)
+        canvas.drawText( "centerInView " + centerInView.info(), point.x, point.y + ypitch * 2, paint)
+        canvas.drawText( "pressedInModel " + pressedInModel.info(), point.x, point.y + ypitch * 3, paint)
+        canvas.drawText( "centerInModel " + centerInModel.info(), point.x, point.y + ypitch * 4, paint)
+    }
+
+    fun incl( inc: Float) :Float{
+        return inc + inc
+    }
 
     var zoomSize: Float = 1.0f
 
@@ -105,10 +122,6 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
     var shadowTri_ = Triangle( 0f, 0f, 0f )
 
-    fun getViewSize() :PointXY{
-        return myViewSize
-    }
-
     fun setFillColor(colorindex: Int, index: Int){
         myTriangleList.get(index).color_ = colorindex
 
@@ -117,64 +130,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         invalidate()
     }
 
-    override fun onAttachedToWindow() {
-        super.onAttachedToWindow()
-
-
-        screen_width = this.width
-        screen_height = this.height
-        //対角線の長さを求める
-        screen_diagonal = Math.sqrt(
-            (Math.pow(screen_width.toDouble(), 2.0).toInt() + Math.pow(
-                screen_height.toDouble(),
-                2.0
-            ).toInt()).toDouble()
-        ).toInt()
-
-        scaleGestureDetector = ScaleGestureDetector(context, object : OnScaleGestureListener {
-            override fun onScale(detector: ScaleGestureDetector): Boolean {
-                time_current = detector.eventTime
-                time_elapsed = time_current - time_start
-                if (time_elapsed >= 0.5) {
-                    distance_current = detector.currentSpan
-                    if (distance_start == 0f) {
-                        distance_start = distance_current
-                    }
-                    flg_pinch_out = distance_current - distance_start > 5
-                    flg_pinch_in = distance_start - distance_current > 5
-                    if (flg_pinch_out!!) {
-                        zoom( ( distance_current - distance_start ) * 0.005f )
-
-                        time_start = time_current
-                        distance_start = distance_current
-                    } else if (flg_pinch_in!!) {
-                        zoom(-(distance_start - distance_current) * 0.005f)
-
-                        time_start = time_current
-                        distance_start = distance_current
-                    }
-                }
-
-                Log.d("MyView", "OnAttachedToWindow Process Done.")
-
-                return true
-            }
-
-            override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
-
-                distance_start = detector.eventTime.toFloat()
-                if (distance_start > screen_diagonal) {
-                    distance_start = 0f
-                }
-                time_start = detector.eventTime
-                return true
-            }
-
-            override fun onScaleEnd(detector: ScaleGestureDetector) {
-
-            }
-        })
-
+    private fun initParams(){
 
         val niigogo = 255
 
@@ -238,7 +194,183 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         paintBlue.textAlign = Paint.Align.CENTER
         paintBlue.textSize = ts_
 
+    }
 
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+
+        initParams()
+
+        rotateGestureDetector = RotateGestureDetector(object : RotateGestureDetector.SimpleOnRotateGestureDetector() {
+            override fun onRotate(degrees: Float, focusX: Float, focusY: Float): Boolean {
+                (getActivity(context) as MainActivity).fabRotate(-degrees * 3, false)
+
+                localpressReset( PointXY( focusX, focusY ) )
+                return true
+            }
+        })
+
+        screen_width = this.width
+        screen_height = this.height
+        //対角線の長さを求める
+        screen_diagonal = Math.sqrt(
+            (Math.pow(screen_width.toDouble(), 2.0).toInt() + Math.pow(
+                screen_height.toDouble(),
+                2.0
+            ).toInt()).toDouble()
+        ).toInt()
+
+        scaleGestureDetector = ScaleGestureDetector(context, object : OnScaleGestureListener {
+
+            override fun onScale(detector: ScaleGestureDetector): Boolean {
+
+                time_current = detector.eventTime
+                time_elapsed = time_current - time_start
+
+                if (time_elapsed >= 0.5) {
+                    distance_current = detector.currentSpan
+
+                    if (distance_start == 0f) {
+                        distance_start = distance_current
+                    }
+
+                    flg_pinch_out = distance_current - distance_start > 5
+                    flg_pinch_in  = distance_start - distance_current > 5
+
+                    if (flg_pinch_out!!) {
+                        zoom( ( distance_current - distance_start ) * 0.005f )
+
+                        time_start = time_current
+                        distance_start = distance_current
+                    } else if (flg_pinch_in!!) {
+                        zoom(-(distance_start - distance_current) * 0.005f)
+
+                        time_start = time_current
+                        distance_start = distance_current
+                    }
+
+                    localpressReset( PointXY( detector.focusX, detector.focusY ) )
+                    //centerInModel = pressedInModel
+                }
+
+                return true
+            }
+
+            override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
+
+                distance_start = detector.eventTime.toFloat()
+                if (distance_start > screen_diagonal) {
+                    distance_start = 0f
+                }
+                time_start = detector.eventTime
+
+
+                return true
+            }
+
+            override fun onScaleEnd(detector: ScaleGestureDetector) {
+
+            }
+        })
+
+        Log.d("MyView", "OnAttachedToWindow Process Done.")
+
+    }
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+
+        if( event.pointerCount == 1 ){
+            mPointerCount = event.pointerCount
+            mActivePointerId = event.getPointerId(0)
+
+            when (event.action) {
+                MotionEvent.ACTION_MOVE -> {
+                    if( mActivePointerId != 1 ) {
+                        move(event)
+                    }
+                }
+                MotionEvent.ACTION_DOWN -> {
+
+                    if( event.pointerCount == 1 ) {
+
+                        pressedInView.set(event.x, event.y)
+                        lastCPoint.set(event.x, event.y)
+                        localpressReset( pressedInView )
+                    }
+                }
+                MotionEvent.ACTION_POINTER_DOWN -> {
+                }
+
+                MotionEvent.ACTION_UP -> {
+                    mPointerCount = event.pointerCount
+                    mActivePointerId = -1
+
+                    (context as MainActivity).setTargetEditText()
+
+                }
+
+                MotionEvent.ACTION_POINTER_UP -> {
+
+                }
+            }
+            invalidate()
+            //resetView()
+
+            mLastC = mPointerCount
+            return true
+
+        }
+        else {
+
+            this.scaleGestureDetector.onTouchEvent(event)
+            this.rotateGestureDetector.onTouchEvent(event)
+            invalidate()
+            return true
+        }
+
+        //return false
+    }
+
+    fun move( event: MotionEvent ){
+        pressedInView.set(event.x, event.y)
+        moveVector.set(
+            pressedInView.x - lastCPoint.x,
+            pressedInView.y - lastCPoint.y
+        )
+        baseInView.set(
+            movePoint.x + moveVector.x,
+            movePoint.y + moveVector.y
+        )
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        transViewPoint()
+        canvas.translate(baseInView.x, baseInView.y)
+        canvas.scale(zoomSize, zoomSize )
+        canvas.translate(-centerInModel.x, centerInModel.y)
+        //canvas.rotate( canvasAngle )
+
+        // 背景
+        val zero = 0
+        canvas.drawColor(Color.argb(255, zero, zero, zero))
+        myCanvas = canvas
+
+        //if( isSkipDraw_ == true ) return
+
+        drawEntities(canvas, paintTri, paintTexS, paintRed, darkColors_, myTriangleList, myDeductionList )
+        //drawDebugData(canvas, PointXY(0.5f*myScale, 0.5f*myScale))
+        //drawViewPoints( canvas, paintRed, pressedInModel + PointXY(-200f, 0f ), 50f )
+        drawLocalPressPoint( canvas, pressedInModel )
+    }
+
+    fun localpressReset( point: PointXY ){
+        movePoint.set(baseInView.x, baseInView.y)
+        pressedInModel = point.convertToLocal(
+            baseInView,
+            zoomSize,
+            zoomSize,
+            centerInModel
+        )
 
     }
 
@@ -282,7 +414,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     }
 
     fun getTapPoint() :PointXY{
-        return localPressPoint.clone()
+        return pressedInModel.clone()
     }
 
     fun zoom(zoomstep: Float){
@@ -296,20 +428,20 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     }
 
     fun setLTP() {
-        myLocalTriCenter.set(myTriangleList.getTriangle(lstn()).pointNumber_)
+        centerInModel.set(myTriangleList.getTriangle(lstn()).pointNumber_)
     }
 
     fun resetView( pt: PointXY ){
-        myLocalTriCenter = pt.clone()
-        drawPoint = pt.clone()
+        centerInModel = pt.clone()
+        //drawPoint = pt.clone()
         resetPointToZero()
         viewReset()
         invalidate()
     }
 
-    fun resetViewToLSTP(){
-        myLocalTriCenter = lstp()
-        drawPoint = lstp()
+    fun resetViewToLastTapTriangle(){
+        centerInModel = toLastTapTriangle()
+        //drawPoint = toLastTapTriangle()
         resetPointToZero()
         viewReset()
         invalidate()
@@ -318,18 +450,18 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     fun resetPointToZero(){
         movePoint.set(0f, 0f)
         moveVector.set(0f, 0f)
-        clickPoint.set(0f, 0f)
+        pressedInView.set(0f, 0f)
         lastCPoint.set(0f, 0f)
-        localPressPoint.set(0f, 0f)
+        pressedInModel.set(0f, 0f)
     }
 
     fun viewReset(){
-        myViewSize.set( this.width.toFloat(), this.height.toFloat())
-        ViewCenter.set( myViewSize.x * 0.5f, myViewSize.y * 0.25f )
-        BasePoint.set( ViewCenter.x, ViewCenter.y )
+        viewSize.set( this.width.toFloat(), this.height.toFloat())
+        centerInView.set( viewSize.x * 0.5f, viewSize.y * 0.25f )
+        baseInView.set( centerInView.x, centerInView.y )
     }
 
-    fun lstp(): PointXY {
+    fun toLastTapTriangle(): PointXY {
         return myTriangleList.getTriangle(lstn()).pointNumber_
     }
 
@@ -342,26 +474,9 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     fun transViewPoint(){
         if(transOnce == true) {
             setLTP()
-            resetViewToLSTP()
+            resetViewToLastTapTriangle()
             transOnce = false
         }
-    }
-
-    override fun onDraw(canvas: Canvas) {
-        transViewPoint()
-        canvas.translate(BasePoint.x, BasePoint.y)
-        canvas.scale(zoomSize, zoomSize)
-        canvas.translate(-drawPoint.x, drawPoint.y)
-        // 背景
-        val zero = 0
-        canvas.drawColor(Color.argb(255, zero, zero, zero))
-        myCanvas = canvas
-
-        //if( isSkipDraw_ == true ) return
-
-        drawEntities(canvas, paintTri, paintTexS, paintRed, darkColors_, myTriangleList, myDeductionList )
-        //drawDebugData(canvas, PointXY(0.5f*myScale, 0.5f*myScale))
-        drawLocalPressPoint( canvas, localPressPoint )
     }
 
     fun drawEntities(canvas: Canvas, paintTri: Paint, paintTex: Paint, paintRed: Paint, colors: Array<Int>, myTriangleList: TriangleList, myDeductionList: DeductionList ) {
@@ -498,6 +613,10 @@ val sokt = PathAndOffset(
         //canvas.drawTextOnPath(lb, makePath(abbc), abbc.offsetH_, abbc.offsetV_, paintDim)
         //canvas.drawTextOnPath(lc, makePath(bcca), bcca.offsetH_, bcca.offsetV_, paintDim)
 
+        if(abca.alignSide > 2) canvas.drawPath(makePath(abca), paintTri)
+        if(abbc.alignSide > 2) canvas.drawPath(makePath(abbc), paintTri)
+        if(bcca.alignSide > 2) canvas.drawPath(makePath(bcca), paintTri)
+
         // 測点
         if(tri.getMyName_() != ""){
             canvas.drawTextOnPath(tri.getMyName_(), makePath(sokt), 0f, -2f, paintSok)
@@ -617,44 +736,6 @@ val sokt = PathAndOffset(
             //if( BuildConfig.BUILD_TYPE == "debug" ) canvas.drawText( point.x.toString() + " " + point.y.toString(), point.x+10f, point.y+10f, paintRed)
         }
 
-        if( isDebug_ == true ){
-            canvas.drawText(
-                "localpress: " + localPressPoint.info(),
-                localPressPoint.x,
-                localPressPoint.y + 50f,
-                paintRed
-            )
-            canvas.drawText(
-                "clickpoint: " + clickPoint.info(),
-                localPressPoint.x,
-                localPressPoint.y + 100f,
-                paintRed
-            )
-            canvas.drawText(
-                "ltcenter  : " + myLocalTriCenter.info(),
-                localPressPoint.x,
-                localPressPoint.y + 150f,
-                paintRed
-            )
-            canvas.drawText(
-                "activeP  : " + mActivePointerId,
-                localPressPoint.x,
-                localPressPoint.y + 200f,
-                paintRed
-            )
-            canvas.drawText(
-                "pCount  : " + mPointerCount,
-                localPressPoint.x,
-                localPressPoint.y + 250f,
-                paintRed
-            )
-            canvas.drawText(
-                "ltnD  : " + myDeductionList.lastTapIndex_,
-                localPressPoint.x,
-                localPressPoint.y + 300f,
-                paintRed
-            )
-        }
     }
 
     fun drawBlinkLine( canvas: Canvas, myTriangleList: TriangleList ){
@@ -705,7 +786,7 @@ val sokt = PathAndOffset(
         canvas.drawLine(p1.x * sx, p1.y * sy, p2.x * sx, p2.y * sy, paint)
     }
 
-    fun drawTriLines( canvas: Canvas, tri: Triangle, paintTri: Paint, ){
+    fun drawTriLines(canvas: Canvas, tri: Triangle, paintTri: Paint){
         // arrange
         val pca = tri.pointCA_
         val pab = tri.pointAB_
@@ -1002,68 +1083,6 @@ val sokt = PathAndOffset(
     private var mActivePointerId = -1
     private var mPointerCount = -1
     private var mLastC = -1
-
-    override fun onTouchEvent(event: MotionEvent): Boolean {
-        this.scaleGestureDetector.onTouchEvent(event)
-
-        mPointerCount = event.pointerCount
-        mActivePointerId = event.getPointerId(0)
-
-            when (event.action) {
-                MotionEvent.ACTION_MOVE -> {
-                    if( mActivePointerId != 1 ) {
-                        clickPoint.set(event.x, event.y)
-                        moveVector.set(
-                            clickPoint.x - lastCPoint.x,
-                            clickPoint.y - lastCPoint.y
-                        )
-                        BasePoint.set(
-                            movePoint.x + moveVector.x,
-                            movePoint.y + moveVector.y
-                        )
-                    }
-
-                }
-                MotionEvent.ACTION_DOWN -> {
-
-                    if( event.pointerCount == 1 ) {
-
-                        clickPoint.set(event.x, event.y)
-                        lastCPoint.set(event.x, event.y)
-                        localpressReset()
-                    }
-                }
-                MotionEvent.ACTION_POINTER_DOWN -> {
-                }
-                MotionEvent.ACTION_UP -> {
-                        mPointerCount = event.pointerCount
-                        mActivePointerId = -1
-
-                        (context as MainActivity).setTargetEditText()
-
-                    }
-
-                MotionEvent.ACTION_POINTER_UP -> {
-
-                    }
-            }
-            invalidate()
-            //resetView()
-
-        mLastC = mPointerCount
-        return true
-    }
-
-    fun localpressReset(){
-        movePoint.set(BasePoint.x, BasePoint.y)
-        localPressPoint = clickPoint.convertToLocal(
-            BasePoint,
-            zoomSize,
-            zoomSize,
-            myLocalTriCenter
-        )
-
-    }
 
 }
 

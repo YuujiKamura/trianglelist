@@ -1103,7 +1103,7 @@ public class Triangle extends EditObject implements Cloneable {
 
     public int rotateZeroToThree( int num){
         num++;
-        if(num>2)num = 0;
+        if(num>4)num = 0;
         return num;
     }
 
@@ -1121,6 +1121,8 @@ public class Triangle extends EditObject implements Cloneable {
         }
         if( lengthCforce_ < 1.5f ) dimSideAlignB_ = 1;
         if( lengthBforce_ < 1.5f ) dimSideAlignC_ = 2;
+        if( lengthCforce_ < 1.2f ) dimSideAlignB_ = 4;
+        if( lengthBforce_ < 1.2f ) dimSideAlignC_ = 4;
 
     }
 
@@ -1487,16 +1489,17 @@ public class Triangle extends EditObject implements Cloneable {
         return dimPoint.offset(offsetTo, haba);
     }
 
-    public void rotate(PointXY basepoint, float degree, boolean recover){
+    public void rotate(PointXY basepoint, float addDegree, boolean recover){
         if( parentBC_ < 9 && recover) return;
 
-        if(!recover) angleInLocal_ += degree;
-        else angleInLocal_ = degree;
+        if(!recover) angleInLocal_ += addDegree;
+        else angleInLocal_ = addDegree;
 
-        pointCA_ = pointCA_.rotate(basepoint, degree);
-        angleInGlobal_ += degree;
+        pointCA_ = pointCA_.rotate(basepoint, addDegree);
+        angleInGlobal_ += addDegree;
 
         calcPoints(pointCA_, angleInGlobal_);
+        setDimPath( dimH_ );
         //setDimAlign();
         //Log.d("Triangle", "num:" + myNumber_ + "pCA: " + pointCA_.getX() + " , " + pointCA_.getY() );
         //Log.d("Triangle", "num:" + myNumber_ + "pAB: " + pointCA_.getX() + " , " + pointCA_.getY() );

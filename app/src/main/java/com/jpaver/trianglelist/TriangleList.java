@@ -247,9 +247,9 @@ public class TriangleList extends EditList implements Cloneable {
             for(;;) {
                 rot -= 10f;
                 float beforeY = measureMostLongLine().getY();
-                rotate(basepoint, rot, 0);
+                rotate(basepoint, rot, 0, false);
                 if( measureMostLongLine().getY() >= beforeY){
-                    rotate(basepoint, -rot, 0);
+                    rotate(basepoint, -rot, 0, false);
                     return rot+10f;
                 }
             }
@@ -258,9 +258,9 @@ public class TriangleList extends EditList implements Cloneable {
             for(;;) {
                 rot += 10f;
                 float beforeY = measureMostLongLine().getY();
-                rotate(basepoint, rot, 0);
+                rotate(basepoint, rot, 0, false);
                 if( measureMostLongLine().getY() <= beforeY){
-                    rotate(basepoint, -rot, 0);
+                    rotate(basepoint, -rot, 0, false);
                     return rot-10f;
                 }
             }
@@ -326,9 +326,11 @@ public class TriangleList extends EditList implements Cloneable {
     }
 
 
-    public void rotate(PointXY bp, float angle, int startnumber) {
+    public void rotate(PointXY bp, float angle, int startnumber, Boolean separationFreeMode) {
         int startindex = startnumber -1;
-        if( !( startnumber > 1 && trilist_.get( startindex ).parentBC_ >= 9 ) ) {
+
+        // 0番からすべて回転させる場合
+        if(!(startnumber > 1 && trilist_.get(startindex).parentBC_ >= 9) || !separationFreeMode ) {
             myAngle += angle;
             basepoint = bp.clone();
             startindex = 0;
@@ -689,14 +691,17 @@ public class TriangleList extends EditList implements Cloneable {
 
         ArrayList<ArrayList<PointXY>> olplists = outlineList_;
 
+        StringBuilder sb = new StringBuilder();
+
         for( int i = 0; i < trilist_.size(); i ++ ){
+            sb.setLength(0);
             Triangle t = trilist_.get( i );
 
             if( i == 0 || t.isFloating() || t.isColored_ ) {
                 olplists.add( new ArrayList<>() );
                 trace( olplists.get( olplists.size()-1 ), t, true );
                 olplists.get( olplists.size()-1 ).add( trilist_.get( i ).pointAB_ ); //今のindexでtriを取り直し
-                outlineStr_ = outlineStr_ + ( trilist_.get( i ).myNumber_ + "ab, " );
+                outlineStr_ = sb.append(outlineStr_).append(( trilist_.get( i ).myNumber_)).append("ab, ").toString();//outlineStr_ + ( trilist_.get( i ).myNumber_ + "ab, " );
 
             }
         }
@@ -871,40 +876,37 @@ public class TriangleList extends EditList implements Cloneable {
     public ArrayList<PointXY> traceOrJumpForward(int startindex, int origin, ArrayList<PointXY> olp, Triangle node){
         if( startindex < 0 || startindex >= trilist_.size() ) return null;
 
-        Triangle t = node;//trilist_.get( startindex );
-
         // AB点を取る。すでにあったらキャンセル
-        addOutlinePoint(t.pointAB_, "ab,",olp, t );
+        addOutlinePoint(node.pointAB_, "ab,",olp, node);
 
         // 再起呼び出しで派生方向に右手伝いにのびていく
-        traceOrNot( t, t.nodeTriangleB_, origin, olp);
+        traceOrNot(node, node.nodeTriangleB_, origin, olp);
 
         // BC点を取る。すでにあったらキャンセル
-        addOutlinePoint(t.pointBC_, "bc,",olp, t );
+        addOutlinePoint(node.pointBC_, "bc,",olp, node);
 
         // 再起呼び出しで派生方向に右手伝いにのびていく
-        traceOrNot( t, t.nodeTriangleC_, origin, olp);
+        traceOrNot(node, node.nodeTriangleC_, origin, olp);
 
         // 折り返し
-        traceOrJumpBackward(startindex, origin, olp, t );
+        traceOrJumpBackward(startindex, origin, olp, node);
 
         return olp;
     }
 
     public void traceOrJumpBackward(int startindex, int origin, ArrayList<PointXY> olp, Triangle node){
-        Triangle t = node;// trilist_.get( startindex );
 
         // 派生（ふたつとも接続）していたらそっちに伸びる、フロート接続だったり、すでに持っている点を見つけたらスルー
-        branchOrNot( t, origin, olp );
+        branchOrNot(node, origin, olp );
 
         //BC点を取る。すでにあったらキャンセル
-        addOutlinePoint(t.pointBC_, "bc,",olp, t );
+        addOutlinePoint(node.pointBC_, "bc,",olp, node);
 
         //CA点を取る。すでにあったらキャンセル
-        addOutlinePoint(t.pointCA_, "ca,",olp, t );
+        addOutlinePoint(node.pointCA_, "ca,",olp, node);
 
         //AB点を取る。すでにあったらキャンセル
-        addOutlinePoint(t.pointAB_, "ab,",olp, t );
+        addOutlinePoint(node.pointAB_, "ab,",olp, node);
 
         //AB点を取る。ダブりを許容
         //if( t.nodeTriangleA_ == null || t.isColored_ || t.isFloating_ ){
@@ -913,8 +915,8 @@ public class TriangleList extends EditList implements Cloneable {
         //}
 
         // 0まで戻る。同じ色でない時はリターン
-        if( t.myNumber_ <= t.parentNumber_ ) return;
-        if( t.nodeTriangleA_ != null && !t.isColored() && !t.isFloating() ) traceOrJumpBackward(t.parentNumber_ - 1, origin, olp, t.nodeTriangleA_ );
+        if( node.myNumber_ <= node.parentNumber_ ) return;
+        if( node.nodeTriangleA_ != null && !node.isColored() && !node.isFloating() ) traceOrJumpBackward(node.parentNumber_ - 1, origin, olp, node.nodeTriangleA_ );
 
     }
 
