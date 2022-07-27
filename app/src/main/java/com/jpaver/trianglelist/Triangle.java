@@ -1476,17 +1476,27 @@ public class Triangle extends EditObject implements Cloneable {
         dimPointC_ = dimSideRotation( dimSideAlignC_, pointBC_.calcMidPoint(pointCA_), pointCA_, pointBC_);
     }
 
-    public PointXY dimSideRotation(int side, PointXY dimPoint, PointXY offsetLeft, PointXY offsetRight) {
-        if( side == 0 ) return dimPoint;
+    public PointXY dimSideRotation(int side, PointXY dimPoint, PointXY pointLeft, PointXY pointRight) {
 
-        PointXY offsetTo = offsetRight;
-        float haba = dimPoint.lengthTo( offsetRight ) * 0.5f;
+        float centerKaranoNagasa = dimPoint.lengthTo( pointRight ) * 0.5f;
+        float centerKaraSotonoNagasa = dimPoint.lengthTo( pointRight ) + 2f;
 
-        if( side == 1 ){
-            offsetTo = offsetLeft;
+        switch( side ){
+            default:
+                return dimPoint;
+            case 0:
+                return dimPoint;
+            case 1:
+                return dimPoint.offset(pointLeft, centerKaranoNagasa);
+            case 2:
+                return dimPoint.offset(pointRight, centerKaranoNagasa);
+            case 3:
+                return dimPoint.offset(pointLeft, centerKaraSotonoNagasa);
+            case 4:
+                return dimPoint.offset(pointRight, centerKaraSotonoNagasa);
+
         }
 
-        return dimPoint.offset(offsetTo, haba);
     }
 
     public void rotate(PointXY basepoint, float addDegree, boolean recover){

@@ -81,9 +81,9 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
 
         //if( tri.myAngle_ > 90 ) dimA = 1
         //if( tri.myAngle_ > 270 ) dimA = 3
-        val dimA = alignVByVector(tri.myDimAlignA_, pca, pab)
-        val dimB = alignVByVector(tri.myDimAlignB_, pab, pbc)//flip(tri.myDimAlignB_, tri.dimAngleB_ )
-        val dimC = alignVByVector(tri.myDimAlignC_, pbc, pca)//flip(tri.myDimAlignC_, tri.dimAngleC_ )
+        val tateAlignDimA = alignVByVector(tri.myDimAlignA_, pca, pab)
+        val tateAlignDimB = alignVByVector(tri.myDimAlignB_, pab, pbc)//flip(tri.myDimAlignB_, tri.dimAngleB_ )
+        val tateAlignDImC = alignVByVector(tri.myDimAlignC_, pbc, pca)//flip(tri.myDimAlignC_, tri.dimAngleC_ )
 
         var la = tri.lengthAforce_.formattedString(2)
         var lb = tri.lengthBforce_.formattedString(2)
@@ -91,9 +91,9 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
 
 
         if(isDebug){
-            la += "-$dimA"
-            lb += "-$dimB"
-            lc += "-$dimC"
+            la += "-$tateAlignDimA"
+            lb += "-$tateAlignDimB"
+            lc += "-$tateAlignDImC"
         }
 
         // TriLines
@@ -103,9 +103,9 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
 
         // DimTexts
         if( tri.getMyNumber_() == 1 || tri.parentBC > 2)
-            writeTextDimension(dimA, la, tri.dimPointA_, pab.calcDimAngle(pca))
-        writeTextDimension(dimB, lb, tri.dimPointB_, pbc.calcDimAngle(pab))
-        writeTextDimension(dimC, lc, tri.dimPointC_, pca.calcDimAngle(pbc))
+            writeTextDimension(tateAlignDimA, la, tri.dimPointA_, pab.calcDimAngle(pca))
+        writeTextDimension(tateAlignDimB, lb, tri.dimPointB_, pbc.calcDimAngle(pab))
+        writeTextDimension(tateAlignDImC, lc, tri.dimPointC_, pca.calcDimAngle(pbc))
 
         // 番号
         val pn = tri.pointNumberAutoAligned_

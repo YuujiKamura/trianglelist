@@ -43,20 +43,20 @@ class PathAndOffset(
         // 幅寄せ
         val haba = lineLength*0.275f
 
-        val hata = 4f*myScale
-        val sukima = 0.8f*myScale
+        val hata = 3.5f*myScale
+        val sukima = 0.3f*myScale
 
         if( this.alignSide == 1 ) offsetH = -haba
         if( this.alignSide == 2 ) offsetH = haba
         if( this.alignSide == 3 ) {
             p1 = p1.offset(p2, -hata )
             p2 = p2.offset(p1, sukima+lineLength)
-            offsetH = -0.5f*myScale
+            offsetH = -0.2f*myScale
         }
         if( this.alignSide == 4 ){
             p2 = p2.offset(p1, -hata )
             p1 = p1.offset(p2, sukima+lineLength)
-            offsetH = 0.5f*myScale
+            offsetH = 0.2f*myScale
         }
 
 /*
