@@ -78,8 +78,6 @@
         app:srcCompat="@android:drawable/ic_menu_mylocation"
         android:contentDescription="reset view"/>
 
-
-
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_up"
         android:layout_width="wrap_content"
@@ -379,17 +377,20 @@
             android:maxHeight="300dp"
             android:visibility="invisible" />
 
-    <com.google.android.gms.ads.AdView
-        xmlns:ads="http://schemas.android.com/apk/res-auto"
-        android:id="@+id/adView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_alignParentBottom="true"
-        ads:adSize="BANNER"
-        ads:adUnitId="ca-app-pub-3940256099942544/6300978111"
-        android:descendantFocusability="beforeDescendants"
-        android:focusableInTouchMode="true">
-    </com.google.android.gms.ads.AdView>
+
+        <com.google.android.gms.ads.AdView xmlns:ads="http://schemas.android.com/apk/res-auto"
+            android:id="@+id/adView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:descendantFocusability="beforeDescendants"
+            android:focusableInTouchMode="true"
+            ads:adSize="BANNER"
+            ads:adUnitId="ca-app-pub-6982449551349060/9421491034"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent" />
+
+
     </RelativeLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

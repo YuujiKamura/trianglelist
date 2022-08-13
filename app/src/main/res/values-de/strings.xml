@@ -84,4 +84,5 @@
         <item> CF </item>
     </string-array>
     <string name="action_save_sfc" translatable="false">"SFC-Ausgabe "</string>
+    <string name="action_privacy">Datenschutz-Bestimmungen</string>
 </resources>

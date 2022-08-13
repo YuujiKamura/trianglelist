@@ -11,6 +11,7 @@ class PathAndOffset(
 
     var pointA: PointXY
     var pointB: PointXY
+    var pointD: PointXY
     var offsetV = 0f
     var offsetH = 0f
     var textSpacer = 5f
@@ -43,7 +44,7 @@ class PathAndOffset(
         // 幅寄せ
         val haba = lineLength*0.275f
 
-        val hata = 3.5f*myScale
+        val hata = 2.5f*myScale
         val sukima = 0.3f*myScale
 
         if( this.alignSide == 1 ) offsetH = -haba
@@ -51,12 +52,12 @@ class PathAndOffset(
         if( this.alignSide == 3 ) {
             p1 = p1.offset(p2, -hata )
             p2 = p2.offset(p1, sukima+lineLength)
-            offsetH = -0.2f*myScale
+            offsetH = -0.15f*myScale
         }
         if( this.alignSide == 4 ){
             p2 = p2.offset(p1, -hata )
             p1 = p1.offset(p2, sukima+lineLength)
-            offsetH = 0.2f*myScale
+            offsetH = 0.15f*myScale
         }
 
 /*
@@ -83,6 +84,13 @@ class PathAndOffset(
             setPointAB( p1, p2 )
             if( pointA.y < pointB.y ) pointA.flip( pointB )
         }
+
+        pointD = pointA.calcMidPoint(pointB).offset(pointB, offsetH)
+    }
+
+    fun move(to: PointXY){
+        pointA.add(to)
+        pointB.add(to)
     }
 
     private fun setPointAB(p1: PointXY, p2: PointXY ){

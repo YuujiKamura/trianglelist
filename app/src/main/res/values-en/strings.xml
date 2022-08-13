@@ -82,6 +82,7 @@
         <item>BF</item>
         <item>CF</item>
     </string-array>
-    <string name="action_save_sfc" translatable="false">Export SFC (popAD)</string>
+    <string name="action_save_sfc" translatable="false">Export SFC</string>
     <string name="action_usage" translatable="false">Usage Video</string>
+    <string name="action_privacy">PrivacyPolicy</string>
 </resources>

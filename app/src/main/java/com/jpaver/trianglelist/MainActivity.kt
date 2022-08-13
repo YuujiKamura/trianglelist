@@ -29,9 +29,7 @@ import androidx.core.content.FileProvider.getUriForFile
 import androidx.core.content.edit
 import androidx.fragment.app.DialogFragment
 import androidx.preference.PreferenceManager
-import com.google.android.gms.ads.AdRequest
-import com.google.android.gms.ads.AdView
-import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.*
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -103,8 +101,7 @@ class MainActivity : AppCompatActivity(),
     lateinit var fab_share: FloatingActionButton
     lateinit var fab_mail: FloatingActionButton
     lateinit var fab_numreverse: FloatingActionButton
-    
-    
+
     private fun checkPermission() {
         if (isGranted()) {
 
@@ -204,6 +201,740 @@ class MainActivity : AppCompatActivity(),
             R.color.colorLime,   //3
             R.color.colorSky     //4
     )
+
+    private lateinit var mAdView : AdView
+    private var mInterstitialAd: InterstitialAd? = null
+    private var TAG = "MainActivity"
+    //private val isAdTEST_ = true
+    //private val TestAdID_ = "ca-app-pub-3940256099942544/6300978111"
+    //private val UnitAdID_ = "ca-app-pub-6982449551349060/2369695624"
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+
+        super.onCreate(savedInstanceState)
+        setTheme(R.style.AppTheme_NoActionBar) //Note that this should be called before any views are instantiated in the Context (for example before calling Activity.setContentView(View) or LayoutInflater.inflate(int, ViewGroup)).
+
+        bMyAct = ActivityMainBinding.inflate(layoutInflater)
+
+        val view = bMyAct.root
+
+        setSupportActionBar(bMyAct.toolbar)
+        setContentView(view)
+
+        val appUpdateManager = AppUpdateManagerFactory.create(this)
+
+        // Returns an intent object that you use to check for an update.
+        val appUpdateInfoTask = appUpdateManager.appUpdateInfo
+
+        // Checks that the platform will allow the specified type of update.
+        appUpdateInfoTask.addOnSuccessListener { appUpdateInfo ->
+            if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
+                // This example applies an immediate update. To apply a flexible update
+                // instead, pass in AppUpdateType.FLEXIBLE
+                && appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)
+            ) {
+                // Request the update.
+                appUpdateManager.startUpdateFlowForResult(
+                    // Pass the intent that is returned by 'getAppUpdateInfo()'.
+                    appUpdateInfo,
+                    // Or 'AppUpdateType.FLEXIBLE' for flexible updates.
+                    AppUpdateType.FLEXIBLE,
+                    // The current activity making the update request.
+                    this,
+                    // Include a request code to later monitor this update request.
+                    1 )
+            }
+            else Log.d( "AppUpdate", "Update is not Available.")
+        }
+
+        if( BuildConfig.FLAVOR == "free" ) {
+            mAdView = bMyAct.adView
+            //mInterstitialAd?.show(this) ?: Log.d("TAG", "The interstitial ad wasn't ready yet.")
+            // must after setContentView
+            MobileAds.initialize(this) {}
+            //mAdView = findViewById(R.id.adView)
+            //mAdView.adSize = AdSize.BANNER
+
+            val adRequest = AdRequest.Builder().build()
+            mAdView.loadAd(adRequest)
+
+        }
+        //setContentView(R.layout.activity_main)
+
+        prefSetting = PreferenceManager.getDefaultSharedPreferences(this)
+
+        myDeductionList = DeductionList()
+        //Toast.makeText(this, "Welcome back!", Toast.LENGTH_SHORT).show()
+
+        fab_replace =   bMyAct.fabReplace
+        fab_flag =      bMyAct.fabFlag
+        fab_dimsidew =  bMyAct.fabDimsidew
+        fab_dimsideh =  bMyAct.fabDimsideh
+        fab_nijyuualign = bMyAct.fabNijyuualign
+        fab_minus =     bMyAct.fabMinus
+        fab_undo =      bMyAct.fabUndo
+        fab_fillcolor = bMyAct.fabFillcolor
+        fab_texplus =   bMyAct.fabTexplus
+        fab_texminus =  bMyAct.fabTexminus
+        fab_setB =      bMyAct.fabSetB
+        fab_setC =      bMyAct.fabSetC
+        fab_rot_l =     bMyAct.fabRotL
+        fab_rot_r =     bMyAct.fabRotR
+        fab_deduction = bMyAct.fabDeduction
+        fab_resetView = bMyAct.fabResetView
+        fab_up =        bMyAct.fabUp
+        fab_down =      bMyAct.fabDown
+        fab_debug =     bMyAct.fabDebug
+        fab_testbasic = bMyAct.fabTestbasic
+        fab_pdf =       bMyAct.fabPdf
+        fab_share =     bMyAct.fabShare
+        fab_mail =      bMyAct.fabMail
+        fab_numreverse = bMyAct.fabNumreverse
+
+
+        fab_replace.setOnClickListener {
+            fabReplace(dParams, false)
+        }
+
+        fab_flag.setOnClickListener {
+
+            fabFlag()
+
+            autoSaveCSV()
+        }
+
+        fab_dimsidew.setOnClickListener {
+
+
+            if(!deductionMode){
+                var dimside = my_view.myTriangleList.lastTapSide_
+                val trinum  = my_view.myTriangleList.lastTapNumber_
+                Log.d("TriangleList", "Triangle dim rot w : $trinum$dimside")
+
+                var tri = myTriangleList.get(trinum)
+                if( dimside == 0 && ( tri.parentBC_ == 1 ||  tri.parentBC_ == 2 ) && trinum > 1 ) {
+                    dimside = tri.parentBC_
+                    tri = myTriangleList.get( trinum - 1 )
+                    Log.d("TriangleList", "Triangle dim rot w : " + tri.myNumber_ + dimside )
+                }
+
+                tri.rotateDimSideAlign(dimside)
+                my_view.setTriangleList(myTriangleList, mScale, false)
+                my_view.invalidate()
+                autoSaveCSV()
+            }
+        }
+
+        fab_dimsideh.setOnClickListener {
+            if(!deductionMode){
+                var dimside = my_view.myTriangleList.lastTapSide_
+                val trinum  = my_view.myTriangleList.lastTapNumber_
+                Log.d("TriangleList", "Triangle dim rot w : $trinum$dimside")
+
+                var tri = myTriangleList.get(trinum)
+                if( dimside == 0 && ( tri.parentBC_ == 1 ||  tri.parentBC_ == 2 ) && trinum > 1 ) {
+                    dimside = tri.parentBC_
+                    tri = myTriangleList.get( trinum - 1 )
+                    Log.d("TriangleList", "Triangle dim rot w : " + tri.myNumber_ + dimside )
+                }
+
+                tri.flipDimAlignH(dimside)
+                my_view.setTriangleList(myTriangleList, mScale, false )
+                my_view.invalidate()
+                autoSaveCSV()
+            }
+        }
+
+        fab_nijyuualign.setOnClickListener {
+            if(!deductionMode && myTriangleList.lastTapNumber_ > 1 ){
+                myTriangleList.rotateCurrentTriLCR()
+                //myTriangleList.resetTriConnection(myTriangleList.lastTapNum_, );
+                my_view.setTriangleList(myTriangleList, mScale, false )
+                my_view.resetView(my_view.toLastTapTriangle())
+                editorClear(getList(deductionMode), getList(deductionMode).getCurrent())
+
+                autoSaveCSV()
+            }
+        }
+
+        var deleteWarning = 0
+        fab_minus.setOnClickListener {
+            val listLength = getList(deductionMode).size()
+
+            if(listLength > 0 && deleteWarning == 0) {
+                deleteWarning = 1
+                bMyAct.fabMinus.backgroundTintList = getColorStateList(R.color.colorTT2)
+
+            }
+            else {
+                if (listLength > 0) {
+                    trilistStored = myTriangleList.clone()
+
+                    var eraseNum = listLength
+                    if(!deductionMode) eraseNum = myTriangleList.lastTapNumber_
+
+                    getList(deductionMode).remove(eraseNum)
+
+                    //my_view.removeTriangle()
+                    my_view.setDeductionList(myDeductionList, mScale)
+                    my_view.setTriangleList(myTriangleList, mScale)
+
+                    editorClear(getList(deductionMode), getList(deductionMode).size())
+                }
+                deleteWarning = 0
+                bMyAct.fabMinus.backgroundTintList = getColorStateList(R.color.colorAccent)
+            }
+            printDebugConsole()
+            colorMovementFabs()
+            my_view.resetViewToLastTapTriangle()
+            setTitles()
+
+        }
+
+        fab_undo.setOnClickListener{
+            if( trilistStored.size() > 0 ){
+                myTriangleList = trilistStored.clone()
+                //my_view.undo()
+                my_view.setTriangleList(trilistStored, mScale)
+                my_view.resetViewToLastTapTriangle()
+
+                trilistStored.trilist_.clear()
+
+                bMyAct.fabUndo.backgroundTintList = getColorStateList(R.color.colorPrimary)
+                editorClear(getList(deductionMode), getList(deductionMode).getCurrent())
+                setTitles()
+            }
+        }
+
+        fab_fillcolor.setOnClickListener {
+            if(!deductionMode){
+                myTriangleList.get(my_view.myTriangleList.current)
+
+
+                colorindex ++
+                if(colorindex == resColors.size) colorindex = 0
+                bMyAct.fabFillcolor.backgroundTintList = getColorStateList(resColors[colorindex])
+
+                //dParams_ = myEditor.ReadLine(dParams_, myELSecond)
+                myTriangleList.get(my_view.myTriangleList.current).color_ = colorindex
+
+                my_view.setFillColor(colorindex, myTriangleList.current)
+                autoSaveCSV()
+            }
+        }
+
+        fab_texplus.setOnClickListener {
+            my_view.ts_ += 5f
+            my_view.setAllTextSize(my_view.ts_)
+
+//            my_view.paintTexS.textSize = my_view.ts_
+            my_view.invalidate()
+        }
+
+        fab_texminus.setOnClickListener {
+            my_view.ts_ -= 5f
+            my_view.setAllTextSize(my_view.ts_)
+
+            my_view.invalidate()
+        }
+
+        fab_setB.setOnClickListener {
+            autoConnection(1)
+            findViewById<EditText>(R.id.editLengthB1).requestFocus()
+        }
+
+        fab_setC.setOnClickListener {
+            autoConnection(2)
+            findViewById<EditText>(R.id.editLengthB1).requestFocus()
+        }
+
+        fab_rot_l.setOnClickListener {
+            fabRotate(5f, true )
+            autoSaveCSV()
+        }
+
+        fab_rot_r.setOnClickListener {
+            fabRotate(-5f, true )
+            autoSaveCSV()
+        }
+
+        fab_deduction.setOnClickListener {
+            deleteWarning = 0
+            fab_minus.backgroundTintList = getColorStateList(R.color.colorAccent)
+            flipDeductionMode()
+            colorMovementFabs()
+        }
+
+        fab_resetView.setOnClickListener {
+
+            if(!deductionMode) my_view.resetViewToLastTapTriangle()
+            else if( myDeductionList.size() > 0 ){
+                val currentIndex = my_view.myDeductionList.getCurrent()
+                my_view.resetView(
+                    my_view.myDeductionList.get(currentIndex).point.scale(
+                        PointXY(
+                            1f,
+                            -1f
+                        )
+                    )
+                )
+            }
+        }
+
+        fab_up.setOnClickListener {
+            myEditor.scroll(-1, getList(deductionMode), myELSecond, myELThird)
+
+            if(!deductionMode) moveTrilist()
+            else if( myDeductionList.size() > 0 ){
+                my_view.myDeductionList.setCurrent(myDeductionList.getCurrent())
+                val currentIndex = my_view.myDeductionList.getCurrent()
+                my_view.resetView(
+                    my_view.myDeductionList.get(currentIndex).point.scale(
+                        PointXY(
+                            1f,
+                            -1f
+                        )
+                    )
+                )
+            }
+
+            colorMovementFabs()
+            printDebugConsole()
+            setTitles()
+        }
+
+        fab_down.setOnClickListener {
+            myEditor.scroll(1, getList(deductionMode), myELSecond, myELThird)
+
+            if(!deductionMode) moveTrilist()
+            else if( myDeductionList.size() > 0 ){
+                my_view.myDeductionList.setCurrent(myDeductionList.getCurrent())
+                val currentIndex = my_view.myDeductionList.getCurrent()
+                my_view.resetView(
+                    my_view.myDeductionList.get(currentIndex).point.scale(
+                        PointXY(
+                            1f,
+                            -1f
+                        )
+                    )
+                )
+            }
+
+            colorMovementFabs()
+            printDebugConsole()
+            setTitles()
+
+        }
+
+        fab_debug.setOnClickListener {
+            //my_view.isDebug_ = !my_view.isDebug_
+
+            if(!my_view.isAreaOff_){
+                my_view.isAreaOff_ = true
+                fab_debug.backgroundTintList = getColorStateList(R.color.colorAccent)
+            }
+            else{
+                my_view.isAreaOff_ = false
+                fab_debug.backgroundTintList = getColorStateList(R.color.colorLime)
+            }
+
+            my_view.invalidate()
+
+            // オートセーブpdf, dxf
+            //if( BuildConfig.BUILD_TYPE == "debug" ) {
+            //    AutoSavePDF()
+            //AutoSaveDXF()
+            //}
+
+        }
+
+        fab_testbasic.setOnClickListener {
+            //CreateNew()
+
+            findViewById<TextView>(R.id.editLengthB1).text = "" // reset
+            fabReplace(Params("", "", 1, 7f, 7f, 7f, 0, 0), true)
+            findViewById<TextView>(R.id.editLengthB1).text = 0.6f.toString()//"6f" // add
+            fabReplace(Params("", "", 2, 7f, 6f, 6f, 1, 2), true)
+
+            findViewById<TextView>(R.id.editLengthA1).text = 0.23f.toString()//"0.23f" // add
+            deductionMode = true
+            fabReplace(
+                Params(
+                    "仕切弁", "Circle", 1, 0.23f, 0f, 0f, 1, 0, PointXY(1f, 0f), PointXY(
+                        0f,
+                        0f
+                    )
+                ), true
+            )
+            deductionMode = false
+
+
+            Toast.makeText(this, "Basic Senario Test Done.", Toast.LENGTH_SHORT).show()
+        }
+
+        fab_pdf.setOnClickListener {
+            viewPdf(getAppLocalFile(this, "myLastTriList.pdf"))
+        }
+
+        fab_share.setOnClickListener {
+            sendPdf(this)
+        }
+
+        fab_mail.setOnClickListener {
+            //findViewById<ProgressBar>(R.id.indeterminateBar).visibility = View.VISIBLE
+            //progressBar.visibility = View.VISIBLE
+
+            sendMail()
+
+            //    progressBar.visibility = View.INVISIBLE
+
+        }
+
+        fab_numreverse.setOnClickListener{
+            trilistStored = myTriangleList.clone()
+
+            myTriangleList = myTriangleList.reverse()
+            my_view.setTriangleList(myTriangleList, mScale)
+            my_view.resetView(my_view.toLastTapTriangle())
+            editorClear(myTriangleList, myTriangleList.current)
+        }
+    }
+
+    override fun onAttachedToWindow() {
+
+        super.onAttachedToWindow()
+
+        //bMyView = FragmentFirstBinding.bind( findViewById(R.id.my_view) )//inflate(layoutInflater)
+        my_view = findViewById(R.id.my_view)//bMyView.myView
+        Log.d("myView", "Instance check in MainActivity: " + my_view )
+
+
+        rStr = ResStr(
+            getString(R.string.tenkai_title),
+            getString(R.string.rosen1),
+            getString(R.string.tenkai_koujimei),
+            getString(
+                R.string.tenkai_zumenmei
+            ),
+            getString(R.string.tenkai_rosenmei),
+            getString(R.string.tenkai_syukusyaku),
+            getString(R.string.tenkai_zuban),
+            getString(
+                R.string.tenkai_sakuseibi
+            ),
+            getString(R.string.tenkai_nengappi),
+            getString(R.string.tenkai_sekousya),
+            getString(R.string.menseki),
+            getString(
+                R.string.menseki_title
+            ),
+            getString(R.string.menseki_koujimei),
+            getString(R.string.menseki_syoukei),
+            getString(R.string.menseki_goukei),
+            getString(
+                R.string.credit
+            )
+        )
+        titleTri = TitleParams(
+            R.string.menseki,
+            R.string.editor_number,
+            R.string.editor_sokuten,
+            R.string.editor_lA,
+            R.string.editor_lB,
+            R.string.editor_lC,
+            R.string.editor_parent,
+            R.string.editor_setuzoku
+        )
+        titleDed = TitleParams(
+            R.string.menseki,
+            R.string.editor_number,
+            R.string.editor_name,
+            R.string.editor_lA,
+            R.string.editor_lB,
+            R.string.editor_lC,
+            R.string.editor_syozoku,
+            R.string.editor_form
+        )
+        titleTriStr = TitleParamStr(
+            getString(titleTri.type), getString(titleTri.n), getString(
+                titleTri.name
+            ), getString(titleTri.a), getString(titleTri.b), getString(titleTri.c), getString(
+                titleTri.pn
+            ), getString(titleTri.pl)
+        )
+        titleDedStr = TitleParamStr(
+            getString(titleDed.type), getString(titleDed.n), getString(
+                titleDed.name
+            ), getString(titleDed.a), getString(titleDed.b), getString(titleDed.c), getString(
+                titleDed.pn
+            ), getString(titleDed.pl)
+        )
+
+        val filepath = this.filesDir.absolutePath + "/" + "myLastTriList.csv"
+        val file = File(filepath)
+        if(file.exists()) resumeCSV()
+        else createNew()
+        loadEditTable()
+        colorMovementFabs()
+        //fab.setBackgroundTintList(getColorStateList(R.color.colorLime))
+        fab_replace.backgroundTintList = getColorStateList(R.color.colorLime)
+        setEditNameAdapter(sNumberList)
+
+        checkPermission()
+
+        // リスナーを登録
+        val etB1 = findViewById<EditText>(R.id.editLengthB1)
+        etB1.addTextChangedListener(object : CustomTextWatcher {
+            override fun afterTextChanged(p0: Editable?) {
+                if (etB1.isFocused) my_view.watchedB_ = p0.toString()
+                my_view.invalidate()
+            }
+        })
+        val etC1 = findViewById<EditText>(R.id.editLengthC1)
+        etC1.addTextChangedListener(object : CustomTextWatcher {
+            override fun afterTextChanged(p0: Editable?) {
+                if (etC1.isFocused) my_view.watchedC_ = p0.toString()
+                my_view.invalidate()
+            }
+        })
+
+        Log.d("MainActivity", "OnAttachedToWindow Process Done.")
+
+    }
+
+    override fun onRestart() {
+        super.onRestart()
+
+        // 広告の非表示
+        if( BuildConfig.FLAVOR == "free" ) mAdView.visibility = INVISIBLE
+    }
+
+    override fun onTouchEvent(event: MotionEvent?): Boolean {
+        return super.onTouchEvent(event)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        // 上部のOptionsMenuの表示　Inflate the menu; this adds items to the action bar if it is present.
+        menuInflater.inflate(R.menu.menu_main, menu)
+        return true
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    override fun onDialogPositiveClick(dialog: DialogFragment?) {
+        mIsCreateNew = true
+        fileType = "CSV"
+        val i = Intent(Intent.ACTION_CREATE_DOCUMENT)
+        i.type = "text/csv"
+        i.putExtra(Intent.EXTRA_TITLE,LocalDate.now().monthValue.toString() + "." + LocalDate.now().dayOfMonth.toString() + " " + rosenname + ".csv" )
+        saveContent.launch( i )
+        setResult(RESULT_OK, i)
+
+    }
+
+    override fun onDialogNegativeClick(dialog: DialogFragment?) {
+        editorClear(getList(deductionMode), getList(deductionMode).size())
+        createNew()
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        rosenname = findViewById<EditText>(R.id.rosenname).text.toString()
+
+        //インタースティシャル広告の読み込み
+        if( BuildConfig.FLAVOR == "free"){
+            val adRequest = AdRequest.Builder().build()
+
+            InterstitialAd.load(this,"ca-app-pub-3940256099942544/1033173712", adRequest, object : InterstitialAdLoadCallback() {
+                override fun onAdFailedToLoad(adError: LoadAdError) {
+                    Log.d(TAG, adError.message)
+                    mInterstitialAd = null
+                }
+
+                override fun onAdLoaded(interstitialAd: InterstitialAd) {
+                    Log.d(TAG, "Ad was loaded.")
+                    mInterstitialAd = interstitialAd
+                }
+            })
+            /*
+            mInterstitialAd = InterstitialAd(this)
+            if( BuildConfig.BUILD_TYPE == "debug" ) mInterstitialAd.adUnitId = "ca-app-pub-3940256099942544/1033173712"
+            else if( BuildConfig.BUILD_TYPE == "release" ) mInterstitialAd.adUnitId = "ca-app-pub-6982449551349060/2369695624"
+            mInterstitialAd.loadAd(AdRequest.Builder().build())*/
+        }
+
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        return when (item.itemId) {
+            R.id.action_new -> {
+                val dialog = MyDialogFragment()
+                dialog.show(supportFragmentManager, "dialog.basic")
+                return true
+            }
+
+            R.id.action_save_csv -> {
+                fileType = "CSV"
+                val intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
+                intent.addCategory(Intent.CATEGORY_OPENABLE)
+                intent.type = "text/csv"
+                intent.putExtra(
+                    Intent.EXTRA_TITLE,
+                    LocalDate.now().monthValue.toString() + "." + LocalDate.now().dayOfMonth.toString() + " " + rosenname + ".csv"
+                )
+
+                saveContent.launch( intent )
+
+                return true
+            }
+            R.id.action_load_csv -> {
+                //actionSelectDir()
+                openDocumentPicker()
+//                actionLoadCSV()
+                return true
+            }
+
+            R.id.action_save_dxf -> {
+                showExportDialog(".dxf", "Export DXF", "DXF", "text/dxf")
+                return true
+            }
+
+            R.id.action_save_sfc -> {
+                showExportDialog(".sfc", "Export SFC", "SFC", "text/sfc")
+                return true
+            }
+
+            R.id.action_save_pdf -> {
+                // 入力ヒントの表示
+                val hCname = getString(R.string.inputcname)
+                val hSpace = getString(R.string.space)
+                val hRname = getString(R.string.inputdname)
+                val hAname = getString(R.string.inputaname)
+                val hRnum = getString(R.string.inputdnum)
+                val editText = EditText(this)
+                editText.hint = "$hCname $hSpace"
+                val filter = arrayOf(InputFilter.LengthFilter(50))
+                editText.filters = filter
+                editText.setText(koujiname)
+                val editText2 = EditText(this)
+                editText2.hint = hRname
+                editText2.setText(rosenname)
+                editText2.filters = filter
+                val editText3 = EditText(this)
+                editText3.hint = hAname
+                editText3.setText(gyousyaname)
+                editText3.filters = filter
+                val editText4 = EditText(this)
+                editText4.hint = hRnum
+                editText4.setText(zumennum)
+                editText4.filters = filter
+
+                AlertDialog.Builder(this)
+                    .setTitle("Save PDF")
+                    .setMessage(R.string.inputcname)
+                    .setView(editText)
+                    .setPositiveButton("OK"
+                    ) { _, _ ->
+                        koujiname = editText.text.toString()
+
+                        AlertDialog.Builder(this)
+                            .setTitle("Save PDF")
+                            .setMessage(R.string.inputdname)
+                            .setView(editText2)
+                            .setPositiveButton("OK"
+                            ) { _, _ ->
+                                rosenname = editText2.text.toString()
+
+                                AlertDialog.Builder(this)
+                                    .setTitle("Save PDF")
+                                    .setMessage(R.string.inputaname)
+                                    .setView(editText3)
+                                    .setPositiveButton("OK"
+                                    ) { _, _ ->
+                                        gyousyaname =
+                                            editText3.text.toString()
+
+                                        AlertDialog.Builder(this)
+                                            .setTitle("Save PDF")
+                                            .setMessage(R.string.inputdnum)
+                                            .setView(
+                                                editText4
+                                            )
+                                            .setPositiveButton(
+                                                "OK"
+                                            ) { _, _ ->
+                                                zumennum =
+                                                    editText4.text.toString()
+
+                                                fileType =
+                                                    "PDF"
+                                                val i: Intent =
+                                                    Intent(
+                                                        Intent.ACTION_CREATE_DOCUMENT
+                                                    ).apply {
+                                                        addCategory(
+                                                            Intent.CATEGORY_OPENABLE
+                                                        )
+                                                        type =
+                                                            "application/pdf"
+                                                        putExtra(
+                                                            Intent.EXTRA_TITLE,
+                                                            LocalDate.now().monthValue.toString() + "." + LocalDate.now().dayOfMonth.toString() + " " + rosenname + ".pdf"
+                                                        )
+
+                                                    }
+                                                saveContent.launch( i )
+
+                                            }
+                                            .show()
+                                    }
+                                    .show()
+                            }
+                            .show()
+                    }
+                    .show()
+
+                return true
+            }
+
+            R.id.action_send_mail -> {
+                sendMail()
+                return true
+            }
+
+            R.id.action_usage -> {
+                playMedia( Uri.parse("https://youtu.be/5aOLkfZHB10") )
+/*                if (BuildConfig.FLAVOR == "free") {
+                    viewPdf(
+                            AssetsFileProvider.CONTENT_URI_FREE.buildUpon()
+                                    .appendPath("pdf")
+                                    .appendPath("trilistusage.pdf")
+                                    .build()
+                    )
+                }
+                if (BuildConfig.FLAVOR == "full") {
+                    viewPdf(
+                            AssetsFileProvider.CONTENT_URI_FULL.buildUpon()
+                                    .appendPath("pdf")
+                                    .appendPath("trilistusage.pdf")
+                                    .build()
+                    )
+                }
+*/
+                return true
+            }
+
+            R.id.action_privacy -> {
+                playMedia( Uri.parse("https://drive.google.com/file/d/1C7xlXZGvabeQoNEjmVpOCAxQGrFCXS60/view?usp=sharing") )
+                return true
+            }
+
+            else -> {
+                super.onOptionsItemSelected(item)
+            }
+        }
+
+        //return true
+    }
 
     private fun flipDeductionMode() {
         myDeductionList.setCurrent(myDeductionList.size())
@@ -424,437 +1155,32 @@ class MainActivity : AppCompatActivity(),
         else myTriangleList
     }
 
-    override fun onTouchEvent(event: MotionEvent?): Boolean {
-        return super.onTouchEvent(event)
-    }
+    fun fabFlag(){
+        dParams = myEditor.readLineTo(dParams, myELSecond)// 200703 // if式の中に入っていると当然ながら更新されない時があるので注意
 
-    private lateinit var mAdView : AdView
-    private var mInterstitialAd: InterstitialAd? = null
-    private var TAG = "MainActivity"
-    //private val isAdTEST_ = true
-    //private val TestAdID_ = "ca-app-pub-3940256099942544/6300978111"
-    //private val UnitAdID_ = "ca-app-pub-6982449551349060/2369695624"
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-
-        super.onCreate(savedInstanceState)
-        setTheme(R.style.AppTheme_NoActionBar) //Note that this should be called before any views are instantiated in the Context (for example before calling Activity.setContentView(View) or LayoutInflater.inflate(int, ViewGroup)).
-
-        bMyAct = ActivityMainBinding.inflate(layoutInflater)
-        val view = bMyAct.root
-
-        setSupportActionBar(bMyAct.toolbar)
-        setContentView(view)
-
-        val appUpdateManager = AppUpdateManagerFactory.create(this)
-
-        // Returns an intent object that you use to check for an update.
-        val appUpdateInfoTask = appUpdateManager.appUpdateInfo
-
-        // Checks that the platform will allow the specified type of update.
-        appUpdateInfoTask.addOnSuccessListener { appUpdateInfo ->
-            if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
-                // This example applies an immediate update. To apply a flexible update
-                // instead, pass in AppUpdateType.FLEXIBLE
-                && appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)
-            ) {
-                // Request the update.
-                appUpdateManager.startUpdateFlowForResult(
-                    // Pass the intent that is returned by 'getAppUpdateInfo()'.
-                    appUpdateInfo,
-                    // Or 'AppUpdateType.FLEXIBLE' for flexible updates.
-                    AppUpdateType.FLEXIBLE,
-                    // The current activity making the update request.
-                    this,
-                    // Include a request code to later monitor this update request.
-                    1 )
-            }
-            else Log.d( "AppUpdate", "Update is not Available.")
-        }
-
-        if( BuildConfig.FLAVOR == "free" ) {
-            mAdView = bMyAct.adView
-            //mInterstitialAd?.show(this) ?: Log.d("TAG", "The interstitial ad wasn't ready yet.")
-            // must after setContentView
-            //MobileAds.initialize(this) {}
-            //mAdView = findViewById(R.id.adView)
-            //mAdView.adSize = AdSize.BANNER
-
-            val adRequest = AdRequest.Builder().build()
-            mAdView.loadAd(adRequest)
-
-        }
-        //setContentView(R.layout.activity_main)
-        
-        prefSetting = PreferenceManager.getDefaultSharedPreferences(this)
-        
-        myDeductionList = DeductionList()
-        //Toast.makeText(this, "Welcome back!", Toast.LENGTH_SHORT).show()
-
-
-        fab_replace =   bMyAct.fabReplace
-        fab_flag =      bMyAct.fabFlag
-        fab_dimsidew =  bMyAct.fabDimsidew
-        fab_dimsideh =  bMyAct.fabDimsideh
-        fab_nijyuualign = bMyAct.fabNijyuualign
-        fab_minus =     bMyAct.fabMinus
-        fab_undo =      bMyAct.fabUndo
-        fab_fillcolor = bMyAct.fabFillcolor
-        fab_texplus =   bMyAct.fabTexplus
-        fab_texminus =  bMyAct.fabTexminus
-        fab_setB =      bMyAct.fabSetB
-        fab_setC =      bMyAct.fabSetC
-        fab_rot_l =     bMyAct.fabRotL
-        fab_rot_r =     bMyAct.fabRotR
-        fab_deduction = bMyAct.fabDeduction
-        fab_resetView = bMyAct.fabResetView
-        fab_up =        bMyAct.fabUp
-        fab_down =      bMyAct.fabDown
-        fab_debug =     bMyAct.fabDebug
-        fab_testbasic = bMyAct.fabTestbasic
-        fab_pdf =       bMyAct.fabPdf
-        fab_share =     bMyAct.fabShare
-        fab_mail =      bMyAct.fabMail
-        fab_numreverse = bMyAct.fabNumreverse
-        
-        
-        fab_replace.setOnClickListener {
-            fabReplace(dParams, false)
-        }
-
-        fab_flag.setOnClickListener {
-            dParams = myEditor.readLineTo(dParams, myELSecond)// 200703 // if式の中に入っていると当然ながら更新されない時があるので注意
-
-            if(deductionMode){
-                val d = myDeductionList.get(dParams.n)
-                dParams.pts = my_view.getTapPoint()
-                dParams.pt = d.point
-                //var ded = myDeductionList.get(dParams_.n)
-                my_view.getTapPoint().scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
-                if(validDeduction(dParams)) {// あまり遠い時はスルー
-                    myDeductionList.replace(dParams.n, dParams)
+        if(deductionMode){
+            val d = myDeductionList.get(dParams.n)
+            dParams.pts = my_view.getTapPoint()
+            dParams.pt = d.point
+            //var ded = myDeductionList.get(dParams_.n)
+            my_view.getTapPoint().scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
+            if(validDeduction(dParams)) {// あまり遠い時はスルー
+                myDeductionList.replace(dParams.n, dParams)
 //                    EditorReset(getList(myDeductionMode),getList(myDeductionMode).length())
-                    my_view.setDeductionList(myDeductionList, mScale)
-                }
+                my_view.setDeductionList(myDeductionList, mScale)
             }
-            else{
-                val tri = myTriangleList.get(dParams.n)
-                val tp = my_view.getTapPoint().scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
-                if( tp.lengthTo(tri.pointCenter_) < 10f ){ // あまり遠い時はスルー
-                    tri.pointNumber_ = tp
-                    tri.isPointNumberMoved_ = true
-                    my_view.setTriangleList(myTriangleList, mScale)
-                }
-            }
-            val resetPoint :PointXY = my_view.getTapPoint().scale(PointXY(0f, 0f), 1f, -1f) //= PointXY(0f, 0f)
-
-            //my_view.invalidate()
-            my_view.resetView(resetPoint)
-
-            if( BuildConfig.BUILD_TYPE == "debug" ) Toast.makeText(
-                    this,
-                    " Test Done.",
-                    Toast.LENGTH_SHORT
-            ).show()
-
-            autoSaveCSV()
         }
-
-        fab_dimsidew.setOnClickListener {
-
-
-            if(!deductionMode){
-                var dimside = my_view.myTriangleList.lastTapSide_
-                val trinum  = my_view.myTriangleList.lastTapNumber_
-                Log.d("TriangleList", "Triangle dim rot w : $trinum$dimside")
-
-                var tri = myTriangleList.get(trinum)
-                if( dimside == 0 && ( tri.parentBC_ == 1 ||  tri.parentBC_ == 2 ) && trinum > 1 ) {
-                    dimside = tri.parentBC_
-                    tri = myTriangleList.get( trinum - 1 )
-                    Log.d("TriangleList", "Triangle dim rot w : " + tri.myNumber_ + dimside )
-                }
-
-                tri.rotateDimSideAlign(dimside)
-                my_view.setTriangleList(myTriangleList, mScale)
-                my_view.invalidate()
-                autoSaveCSV()
+        else{
+            val tri = myTriangleList.get(dParams.n)
+            val tp = my_view.getTapPoint().scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
+            if( tp.lengthTo(tri.pointCenter_) < 10f ){ // あまり遠い時はスルー
+                tri.pointNumber_ = tp
+                tri.isPointNumberMoved_ = true
+                my_view.setTriangleList(myTriangleList, mScale, false)
             }
         }
 
-        fab_dimsideh.setOnClickListener {
-            if(!deductionMode){
-                var dimside = my_view.myTriangleList.lastTapSide_
-                val trinum  = my_view.myTriangleList.lastTapNumber_
-                Log.d("TriangleList", "Triangle dim rot w : $trinum$dimside")
-
-                var tri = myTriangleList.get(trinum)
-                if( dimside == 0 && ( tri.parentBC_ == 1 ||  tri.parentBC_ == 2 ) && trinum > 1 ) {
-                    dimside = tri.parentBC_
-                    tri = myTriangleList.get( trinum - 1 )
-                    Log.d("TriangleList", "Triangle dim rot w : " + tri.myNumber_ + dimside )
-                }
-
-                tri.flipDimAlignH(dimside)
-                my_view.setTriangleList(myTriangleList, mScale)
-                my_view.invalidate()
-                autoSaveCSV()
-            }
-        }
-
-        fab_nijyuualign.setOnClickListener {
-            if(!deductionMode && myTriangleList.lastTapNumber_ > 1 ){
-                myTriangleList.rotateCurrentTriLCR()
-                //myTriangleList.resetTriConnection(myTriangleList.lastTapNum_, );
-                my_view.setTriangleList(myTriangleList, mScale)
-                my_view.resetView(my_view.toLastTapTriangle())
-                editorClear(getList(deductionMode), getList(deductionMode).getCurrent())
-
-                autoSaveCSV()
-            }
-        }
-
-        var deleteWarning = 0
-        fab_minus.setOnClickListener {
-            val listLength = getList(deductionMode).size()
-
-            if(listLength > 0 && deleteWarning == 0) {
-                deleteWarning = 1
-                bMyAct.fabMinus.backgroundTintList = getColorStateList(R.color.colorTT2)
-
-            }
-            else {
-                if (listLength > 0) {
-                    trilistStored = myTriangleList.clone()
-
-                    var eraseNum = listLength
-                    if(!deductionMode) eraseNum = myTriangleList.lastTapNumber_
-
-                    getList(deductionMode).remove(eraseNum)
-
-                    //my_view.removeTriangle()
-                    my_view.setDeductionList(myDeductionList, mScale)
-                    my_view.setTriangleList(myTriangleList, mScale)
-
-                    editorClear(getList(deductionMode), getList(deductionMode).size())
-                }
-                deleteWarning = 0
-                bMyAct.fabMinus.backgroundTintList = getColorStateList(R.color.colorAccent)
-            }
-            printDebugConsole()
-            colorMovementFabs()
-            my_view.resetViewToLastTapTriangle()
-            setTitles()
-
-        }
-
-        fab_undo.setOnClickListener{
-            if( trilistStored.size() > 0 ){
-                myTriangleList = trilistStored.clone()
-                //my_view.undo()
-                my_view.setTriangleList(trilistStored, mScale)
-                my_view.resetViewToLastTapTriangle()
-
-                trilistStored.trilist_.clear()
-
-                bMyAct.fabUndo.backgroundTintList = getColorStateList(R.color.colorPrimary)
-                editorClear(getList(deductionMode), getList(deductionMode).getCurrent())
-                setTitles()
-            }
-        }
-
-        fab_fillcolor.setOnClickListener {
-            if(!deductionMode){
-                myTriangleList.get(my_view.myTriangleList.current)
-
-
-                colorindex ++
-                if(colorindex == resColors.size) colorindex = 0
-                bMyAct.fabFillcolor.backgroundTintList = getColorStateList(resColors[colorindex])
-
-                //dParams_ = myEditor.ReadLine(dParams_, myELSecond)
-                myTriangleList.get(my_view.myTriangleList.current).color_ = colorindex
-
-                my_view.setFillColor(colorindex, myTriangleList.current)
-                autoSaveCSV()
-            }
-        }
-
-        fab_texplus.setOnClickListener {
-            my_view.ts_ += 5f
-            my_view.setAllTextSize(my_view.ts_)
-
-//            my_view.paintTexS.textSize = my_view.ts_
-            my_view.invalidate()
-        }
-
-        fab_texminus.setOnClickListener {
-            my_view.ts_ -= 5f
-            my_view.setAllTextSize(my_view.ts_)
-
-            my_view.invalidate()
-        }
-
-        fab_setB.setOnClickListener {
-            autoConnection(1)
-            findViewById<EditText>(R.id.editLengthB1).requestFocus()
-        }
-
-        fab_setC.setOnClickListener {
-            autoConnection(2)
-            findViewById<EditText>(R.id.editLengthB1).requestFocus()
-        }
-
-        fab_rot_l.setOnClickListener {
-            fabRotate(5f, true )
-            autoSaveCSV()
-        }
-
-        fab_rot_r.setOnClickListener {
-            fabRotate(-5f, true )
-            autoSaveCSV()
-        }
-
-        fab_deduction.setOnClickListener {
-            deleteWarning = 0
-            fab_minus.backgroundTintList = getColorStateList(R.color.colorAccent)
-            flipDeductionMode()
-            colorMovementFabs()
-        }
-
-        fab_resetView.setOnClickListener {
-
-            if(!deductionMode) my_view.resetViewToLastTapTriangle()
-            else if( myDeductionList.size() > 0 ){
-                val currentIndex = my_view.myDeductionList.getCurrent()
-                my_view.resetView(
-                        my_view.myDeductionList.get(currentIndex).point.scale(
-                                PointXY(
-                                        1f,
-                                        -1f
-                                )
-                        )
-                )
-            }
-        }
-
-        fab_up.setOnClickListener {
-            myEditor.scroll(-1, getList(deductionMode), myELSecond, myELThird)
-
-            if(!deductionMode) moveTrilist()
-            else if( myDeductionList.size() > 0 ){
-                my_view.myDeductionList.setCurrent(myDeductionList.getCurrent())
-                val currentIndex = my_view.myDeductionList.getCurrent()
-                my_view.resetView(
-                        my_view.myDeductionList.get(currentIndex).point.scale(
-                                PointXY(
-                                        1f,
-                                        -1f
-                                )
-                        )
-                )
-            }
-
-            colorMovementFabs()
-            printDebugConsole()
-            setTitles()
-        }
-
-        fab_down.setOnClickListener {
-            myEditor.scroll(1, getList(deductionMode), myELSecond, myELThird)
-
-            if(!deductionMode) moveTrilist()
-            else if( myDeductionList.size() > 0 ){
-                my_view.myDeductionList.setCurrent(myDeductionList.getCurrent())
-                val currentIndex = my_view.myDeductionList.getCurrent()
-                my_view.resetView(
-                        my_view.myDeductionList.get(currentIndex).point.scale(
-                                PointXY(
-                                        1f,
-                                        -1f
-                                )
-                        )
-                )
-            }
-
-            colorMovementFabs()
-            printDebugConsole()
-            setTitles()
-
-        }
-
-        fab_debug.setOnClickListener {
-            //my_view.isDebug_ = !my_view.isDebug_
-
-            if(!my_view.isAreaOff_){
-                my_view.isAreaOff_ = true
-                fab_debug.backgroundTintList = getColorStateList(R.color.colorAccent)
-            }
-            else{
-                my_view.isAreaOff_ = false
-                fab_debug.backgroundTintList = getColorStateList(R.color.colorLime)
-            }
-
-            my_view.invalidate()
-
-            // オートセーブpdf, dxf
-            //if( BuildConfig.BUILD_TYPE == "debug" ) {
-            //    AutoSavePDF()
-                //AutoSaveDXF()
-            //}
-
-        }
-
-        fab_testbasic.setOnClickListener {
-            //CreateNew()
-
-            findViewById<TextView>(R.id.editLengthB1).text = "" // reset
-            fabReplace(Params("", "", 1, 7f, 7f, 7f, 0, 0), true)
-            findViewById<TextView>(R.id.editLengthB1).text = 0.6f.toString()//"6f" // add
-            fabReplace(Params("", "", 2, 7f, 6f, 6f, 1, 2), true)
-
-            findViewById<TextView>(R.id.editLengthA1).text = 0.23f.toString()//"0.23f" // add
-            deductionMode = true
-            fabReplace(
-                    Params(
-                            "仕切弁", "Circle", 1, 0.23f, 0f, 0f, 1, 0, PointXY(1f, 0f), PointXY(
-                            0f,
-                            0f
-                    )
-                    ), true
-            )
-            deductionMode = false
-
-
-            Toast.makeText(this, "Basic Senario Test Done.", Toast.LENGTH_SHORT).show()
-        }
-
-        fab_pdf.setOnClickListener {
-            viewPdf(getAppLocalFile(this, "myLastTriList.pdf"))
-        }
-
-        fab_share.setOnClickListener {
-            sendPdf(this)
-        }
-
-        fab_mail.setOnClickListener {
-            //findViewById<ProgressBar>(R.id.indeterminateBar).visibility = View.VISIBLE
-            //progressBar.visibility = View.VISIBLE
-
-            sendMail()
-
-        //    progressBar.visibility = View.INVISIBLE
-
-        }
-
-        fab_numreverse.setOnClickListener{
-            trilistStored = myTriangleList.clone()
-
-            myTriangleList = myTriangleList.reverse()
-            my_view.setTriangleList(myTriangleList, mScale)
-            my_view.resetView(my_view.toLastTapTriangle())
-            editorClear(myTriangleList, myTriangleList.current)
-        }
+        my_view.invalidate()
     }
 
     fun fabRotate(degrees: Float, bSeparateFreeMode: Boolean){
@@ -874,7 +1200,7 @@ class MainActivity : AppCompatActivity(),
         }
     }
     
-    private fun fabReplace(params: Params, useit: Boolean){
+    fun fabReplace(params: Params = dParams, useit: Boolean = false ){
         //val editor = myEditor
         val dedmode = deductionMode
         val editlist = getList(deductionMode)
@@ -1381,108 +1707,6 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    override fun onAttachedToWindow() {
-
-        super.onAttachedToWindow()
-
-        //bMyView = FragmentFirstBinding.bind( findViewById(R.id.my_view) )//inflate(layoutInflater)
-        my_view = findViewById(R.id.my_view)//bMyView.myView
-        Log.d("myView", "Instance check in MainActivity: " + my_view )
-
-
-        rStr = ResStr(
-                getString(R.string.tenkai_title),
-                getString(R.string.rosen1),
-                getString(R.string.tenkai_koujimei),
-                getString(
-                        R.string.tenkai_zumenmei
-                ),
-                getString(R.string.tenkai_rosenmei),
-                getString(R.string.tenkai_syukusyaku),
-                getString(R.string.tenkai_zuban),
-                getString(
-                        R.string.tenkai_sakuseibi
-                ),
-                getString(R.string.tenkai_nengappi),
-                getString(R.string.tenkai_sekousya),
-                getString(R.string.menseki),
-                getString(
-                        R.string.menseki_title
-                ),
-                getString(R.string.menseki_koujimei),
-                getString(R.string.menseki_syoukei),
-                getString(R.string.menseki_goukei),
-                getString(
-                        R.string.credit
-                )
-        )
-        titleTri = TitleParams(
-                R.string.menseki,
-                R.string.editor_number,
-                R.string.editor_sokuten,
-                R.string.editor_lA,
-                R.string.editor_lB,
-                R.string.editor_lC,
-                R.string.editor_parent,
-                R.string.editor_setuzoku
-        )
-        titleDed = TitleParams(
-                R.string.menseki,
-                R.string.editor_number,
-                R.string.editor_name,
-                R.string.editor_lA,
-                R.string.editor_lB,
-                R.string.editor_lC,
-                R.string.editor_syozoku,
-                R.string.editor_form
-        )
-        titleTriStr = TitleParamStr(
-                getString(titleTri.type), getString(titleTri.n), getString(
-                titleTri.name
-        ), getString(titleTri.a), getString(titleTri.b), getString(titleTri.c), getString(
-                titleTri.pn
-        ), getString(titleTri.pl)
-        )
-        titleDedStr = TitleParamStr(
-                getString(titleDed.type), getString(titleDed.n), getString(
-                titleDed.name
-        ), getString(titleDed.a), getString(titleDed.b), getString(titleDed.c), getString(
-                titleDed.pn
-        ), getString(titleDed.pl)
-        )
-
-        val filepath = this.filesDir.absolutePath + "/" + "myLastTriList.csv"
-        val file = File(filepath)
-        if(file.exists()) resumeCSV()
-        else createNew()
-        loadEditTable()
-        colorMovementFabs()
-        //fab.setBackgroundTintList(getColorStateList(R.color.colorLime))
-        fab_replace.backgroundTintList = getColorStateList(R.color.colorLime)
-        setEditNameAdapter(sNumberList)
-
-        checkPermission()
-
-        // リスナーを登録
-        val etB1 = findViewById<EditText>(R.id.editLengthB1)
-        etB1.addTextChangedListener(object : CustomTextWatcher {
-            override fun afterTextChanged(p0: Editable?) {
-                if (etB1.isFocused) my_view.watchedB_ = p0.toString()
-                my_view.invalidate()
-            }
-        })
-        val etC1 = findViewById<EditText>(R.id.editLengthC1)
-        etC1.addTextChangedListener(object : CustomTextWatcher {
-            override fun afterTextChanged(p0: Editable?) {
-                if (etC1.isFocused) my_view.watchedC_ = p0.toString()
-                my_view.invalidate()
-            }
-        })
-
-        Log.d("MainActivity", "OnAttachedToWindow Process Done.")
-
-    }
-
     private fun createNew(){
         val tri = Triangle(5f, 5f, 5f, PointXY(0f, 0f), 0f)
         tri.autoSetDimAlign()
@@ -1511,37 +1735,6 @@ class MainActivity : AppCompatActivity(),
 
     }
 
-
-    override fun onRestart() {
-        super.onRestart()
-
-        // 広告の非表示
-        if( BuildConfig.FLAVOR == "free" ) mAdView.visibility = INVISIBLE
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        // 上部のOptionsMenuの表示　Inflate the menu; this adds items to the action bar if it is present.
-        menuInflater.inflate(R.menu.menu_main, menu)
-        return true
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    override fun onDialogPositiveClick(dialog: DialogFragment?) {
-        mIsCreateNew = true
-        fileType = "CSV"
-        val i = Intent(Intent.ACTION_CREATE_DOCUMENT)
-        i.type = "text/csv"
-        i.putExtra(Intent.EXTRA_TITLE,LocalDate.now().monthValue.toString() + "." + LocalDate.now().dayOfMonth.toString() + " " + rosenname + ".csv" )
-        saveContent.launch( i )
-        setResult(RESULT_OK, i)
-
-    }
-
-    override fun onDialogNegativeClick(dialog: DialogFragment?) {
-        editorClear(getList(deductionMode), getList(deductionMode).size())
-        createNew()
-    }
-
     fun playMedia(file: Uri) {
         val intent = Intent(Intent.ACTION_VIEW).apply {
             data = file
@@ -1550,201 +1743,6 @@ class MainActivity : AppCompatActivity(),
             startActivity(intent)
         }
     }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        rosenname = findViewById<EditText>(R.id.rosenname).text.toString()
-
-        //インタースティシャル広告の読み込み
-        if( BuildConfig.FLAVOR == "free"){
-            val adRequest = AdRequest.Builder().build()
-
-            InterstitialAd.load(this,"ca-app-pub-3940256099942544/1033173712", adRequest, object : InterstitialAdLoadCallback() {
-                override fun onAdFailedToLoad(adError: LoadAdError) {
-                    Log.d(TAG, adError.message)
-                    mInterstitialAd = null
-                }
-
-                override fun onAdLoaded(interstitialAd: InterstitialAd) {
-                    Log.d(TAG, "Ad was loaded.")
-                    mInterstitialAd = interstitialAd
-                }
-            })
-            /*
-            mInterstitialAd = InterstitialAd(this)
-            if( BuildConfig.BUILD_TYPE == "debug" ) mInterstitialAd.adUnitId = "ca-app-pub-3940256099942544/1033173712"
-            else if( BuildConfig.BUILD_TYPE == "release" ) mInterstitialAd.adUnitId = "ca-app-pub-6982449551349060/2369695624"
-            mInterstitialAd.loadAd(AdRequest.Builder().build())*/
-        }
-
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        return when (item.itemId) {
-            R.id.action_usage -> {
-                playMedia( Uri.parse("https://youtu.be/5aOLkfZHB10") )
-/*                if (BuildConfig.FLAVOR == "free") {
-                    viewPdf(
-                            AssetsFileProvider.CONTENT_URI_FREE.buildUpon()
-                                    .appendPath("pdf")
-                                    .appendPath("trilistusage.pdf")
-                                    .build()
-                    )
-                }
-                if (BuildConfig.FLAVOR == "full") {
-                    viewPdf(
-                            AssetsFileProvider.CONTENT_URI_FULL.buildUpon()
-                                    .appendPath("pdf")
-                                    .appendPath("trilistusage.pdf")
-                                    .build()
-                    )
-                }
-*/
-                return true
-            }
-            R.id.action_new -> {
-                val dialog = MyDialogFragment()
-                dialog.show(supportFragmentManager, "dialog.basic")
-                return true
-            }
-
-            R.id.action_save_csv -> {
-                fileType = "CSV"
-                val intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
-                intent.addCategory(Intent.CATEGORY_OPENABLE)
-                intent.type = "text/csv"
-                intent.putExtra(
-                        Intent.EXTRA_TITLE,
-                        LocalDate.now().monthValue.toString() + "." + LocalDate.now().dayOfMonth.toString() + " " + rosenname + ".csv"
-                )
-
-                saveContent.launch( intent )
-
-                return true
-            }
-            R.id.action_load_csv -> {
-                //actionSelectDir()
-                openDocumentPicker()
-//                actionLoadCSV()
-                return true
-            }
-
-            R.id.action_save_dxf -> {
-                showExportDialog(".dxf", "Export DXF", "DXF", "text/dxf")
-                return true
-            }
-
-            R.id.action_save_sfc -> {
-                showExportDialog(".sfc", "Export SFC", "SFC", "text/sfc")
-                return true
-            }
-
-            R.id.action_save_pdf -> {
-                // 入力ヒントの表示
-                val hCname = getString(R.string.inputcname)
-                val hSpace = getString(R.string.space)
-                val hRname = getString(R.string.inputdname)
-                val hAname = getString(R.string.inputaname)
-                val hRnum = getString(R.string.inputdnum)
-                val editText = EditText(this)
-                editText.hint = "$hCname $hSpace"
-                val filter = arrayOf(InputFilter.LengthFilter(50))
-                editText.filters = filter
-                editText.setText(koujiname)
-                val editText2 = EditText(this)
-                editText2.hint = hRname
-                editText2.setText(rosenname)
-                editText2.filters = filter
-                val editText3 = EditText(this)
-                editText3.hint = hAname
-                editText3.setText(gyousyaname)
-                editText3.filters = filter
-                val editText4 = EditText(this)
-                editText4.hint = hRnum
-                editText4.setText(zumennum)
-                editText4.filters = filter
-
-                AlertDialog.Builder(this)
-                        .setTitle("Save PDF")
-                        .setMessage(R.string.inputcname)
-                        .setView(editText)
-                        .setPositiveButton("OK"
-                        ) { _, _ ->
-                            koujiname = editText.text.toString()
-
-                            AlertDialog.Builder(this)
-                                .setTitle("Save PDF")
-                                .setMessage(R.string.inputdname)
-                                .setView(editText2)
-                                .setPositiveButton("OK"
-                                ) { _, _ ->
-                                    rosenname = editText2.text.toString()
-
-                                    AlertDialog.Builder(this)
-                                        .setTitle("Save PDF")
-                                        .setMessage(R.string.inputaname)
-                                        .setView(editText3)
-                                        .setPositiveButton("OK"
-                                        ) { _, _ ->
-                                            gyousyaname =
-                                                editText3.text.toString()
-
-                                            AlertDialog.Builder(this)
-                                                .setTitle("Save PDF")
-                                                .setMessage(R.string.inputdnum)
-                                                .setView(
-                                                    editText4
-                                                )
-                                                .setPositiveButton(
-                                                    "OK"
-                                                ) { _, _ ->
-                                                    zumennum =
-                                                        editText4.text.toString()
-
-                                                    fileType =
-                                                        "PDF"
-                                                    val i: Intent =
-                                                        Intent(
-                                                            Intent.ACTION_CREATE_DOCUMENT
-                                                        ).apply {
-                                                            addCategory(
-                                                                Intent.CATEGORY_OPENABLE
-                                                            )
-                                                            type =
-                                                                "application/pdf"
-                                                            putExtra(
-                                                                Intent.EXTRA_TITLE,
-                                                                LocalDate.now().monthValue.toString() + "." + LocalDate.now().dayOfMonth.toString() + " " + rosenname + ".pdf"
-                                                            )
-
-                                                        }
-                                                    saveContent.launch( i )
-
-                                                }
-                                                .show()
-                                        }
-                                        .show()
-                                }
-                                .show()
-                        }
-                    .show()
-
-                return true
-            }
-
-            R.id.action_send_mail -> {
-                sendMail()
-                return true
-            }
-
-            else -> {
-                super.onOptionsItemSelected(item)
-            }
-        }
-
-        //return true
-    }
-
 
     val loadContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
 
@@ -1766,7 +1764,6 @@ class MainActivity : AppCompatActivity(),
 
         setTitles()
     }
-
 
     @RequiresApi(Build.VERSION_CODES.O)
     val saveContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->

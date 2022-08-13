@@ -85,15 +85,15 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         val tateAlignDimB = alignVByVector(tri.myDimAlignB_, pab, pbc)//flip(tri.myDimAlignB_, tri.dimAngleB_ )
         val tateAlignDImC = alignVByVector(tri.myDimAlignC_, pbc, pca)//flip(tri.myDimAlignC_, tri.dimAngleC_ )
 
-        var la = tri.lengthAforce_.formattedString(2)
-        var lb = tri.lengthBforce_.formattedString(2)
-        var lc = tri.lengthCforce_.formattedString(2)
+        var nagasaA = tri.lengthAforce_.formattedString(2)
+        var nagasaB = tri.lengthBforce_.formattedString(2)
+        var nagasaC = tri.lengthCforce_.formattedString(2)
 
 
         if(isDebug){
-            la += "-$tateAlignDimA"
-            lb += "-$tateAlignDimB"
-            lc += "-$tateAlignDImC"
+            nagasaA += "-$tateAlignDimA"
+            nagasaB += "-$tateAlignDimB"
+            nagasaC += "-$tateAlignDImC"
         }
 
         // TriLines
@@ -103,9 +103,18 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
 
         // DimTexts
         if( tri.getMyNumber_() == 1 || tri.parentBC > 2)
-            writeTextDimension(tateAlignDimA, la, tri.dimPointA_, pab.calcDimAngle(pca))
-        writeTextDimension(tateAlignDimB, lb, tri.dimPointB_, pbc.calcDimAngle(pab))
-        writeTextDimension(tateAlignDImC, lc, tri.dimPointC_, pca.calcDimAngle(pbc))
+            writeTextDimension(tateAlignDimA, nagasaA, tri.dimPointA_, pab.calcDimAngle(pca))
+        writeTextDimension(tateAlignDimB, nagasaB, tri.dimPointB_, pbc.calcDimAngle(pab))
+        writeTextDimension(tateAlignDImC, nagasaC, tri.dimPointC_, pca.calcDimAngle(pbc))
+
+        // DimTextの旗上げ
+        val tPathA = tri.pathA_
+        val tPathB = tri.pathB_
+        val tPathC = tri.pathC_
+        if(tPathA.alignSide > 2) writeLine( tPathA.pointA, tPathA.pointB, 7)
+        if(tPathB.alignSide > 2) writeLine( tPathB.pointA, tPathB.pointB, 7)
+        if(tPathC.alignSide > 2) writeLine( tPathC.pointA, tPathC.pointB, 7)
+
 
         // 番号
         val pn = tri.pointNumberAutoAligned_

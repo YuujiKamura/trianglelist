@@ -1004,9 +1004,8 @@ public class Triangle extends EditObject implements Cloneable {
 
         if(!isPointNumberMoved_) autoAlignPointNumber();
 
-        dimPointA_ = pointCA_.calcMidPoint(pointAB_);//.crossOffset(pointBC_, 0.2f*scale_);
-        dimPointB_ = pointAB_.calcMidPoint(pointBC_);
-        dimPointC_ = pointBC_.calcMidPoint(pointCA_);
+
+        setDimPath(dimH_);
         setDimPoint();
 
         dimAngleB_ = getAngleMpAB();
@@ -1306,6 +1305,11 @@ public class Triangle extends EditObject implements Cloneable {
         myBP_.setRight(myBP_.getRight()+to.getX());
         myBP_.setTop(myBP_.getTop()+to.getY());
         myBP_.setBottom(myBP_.getBottom()+to.getX());
+        pathA_.move(to);
+        pathB_.move(to);
+        pathC_.move(to);
+        pathS_.move(to);
+
     }
 
     public void setScale( float scale){
@@ -1471,15 +1475,15 @@ public class Triangle extends EditObject implements Cloneable {
     }
 
     public void setDimPoint(){
-        dimPointA_ = dimSideRotation( dimSideAlignA_, pointCA_.calcMidPoint(pointAB_), pointAB_, pointCA_);
-        dimPointB_ = dimSideRotation( dimSideAlignB_, pointAB_.calcMidPoint(pointBC_), pointBC_, pointAB_);
-        dimPointC_ = dimSideRotation( dimSideAlignC_, pointBC_.calcMidPoint(pointCA_), pointCA_, pointBC_);
+        dimPointA_ = pathA_.getPointD();//dimSideRotation( dimSideAlignA_, pointCA_.calcMidPoint(pointAB_), pointAB_, pointCA_);
+        dimPointB_ = pathB_.getPointD();//dimSideRotation( dimSideAlignB_, pointAB_.calcMidPoint(pointBC_), pointBC_, pointAB_);
+        dimPointC_ = pathC_.getPointD();//dimSideRotation( dimSideAlignC_, pointBC_.calcMidPoint(pointCA_), pointCA_, pointBC_);
     }
 
     public PointXY dimSideRotation(int side, PointXY dimPoint, PointXY pointLeft, PointXY pointRight) {
 
-        float centerKaranoNagasa = dimPoint.lengthTo( pointRight ) * 0.5f;
-        float centerKaraSotonoNagasa = dimPoint.lengthTo( pointRight ) + 2f;
+        float centerKaranoNagasa = dimPoint.lengthTo( pointRight ) * 0.3f;
+        float centerKaraSotonoNagasa = dimPoint.lengthTo( pointRight ) + 2.5f;
 
         switch( side ){
             default:

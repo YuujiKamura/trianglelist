@@ -1,5 +1,6 @@
 package com.jpaver.trianglelist
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
@@ -7,10 +8,12 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.util.AttributeSet
 import android.util.Log
+import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.ScaleGestureDetector.OnScaleGestureListener
 import android.view.View
+import androidx.core.view.GestureDetectorCompat
 import com.google.android.material.internal.ContextUtils.getActivity
 import com.jpaver.trianglelist.util.RotateGestureDetector
 import java.util.*
@@ -24,10 +27,12 @@ fun Float?.formattedString(fractionDigits: Int): String{
 }
 
 class MyView(context: Context?, attrs: AttributeSet?) :
-    View(context, attrs) {
+    View(context, attrs),
+    GestureDetector.OnGestureListener {
 
     lateinit var rotateGestureDetector: RotateGestureDetector
     lateinit var scaleGestureDetector: ScaleGestureDetector
+    lateinit var mDetector: GestureDetectorCompat
     private var time_elapsed: Long = 0
     private var time_start: Long = 0
     private var time_current: Long = 0
@@ -102,6 +107,8 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     }
 
     var zoomSize: Float = 1.0f
+    var mFocusX = 0f
+    var mFocusY = 0f
 
     var parentNum: Int = 0
     var parentSide: Int = 0
@@ -121,6 +128,193 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     var watchedC_ = ""
 
     var shadowTri_ = Triangle( 0f, 0f, 0f )
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+
+        initParams()
+
+        mDetector = GestureDetectorCompat(context, this)
+
+        rotateGestureDetector = RotateGestureDetector(object : RotateGestureDetector.SimpleOnRotateGestureDetector() {
+            override fun onRotate(degrees: Float, focusX: Float, focusY: Float): Boolean {
+                (getActivity(context) as MainActivity).fabRotate(-degrees * 3, false)
+
+                return true
+            }
+        })
+
+        screen_width = this.width
+        screen_height = this.height
+        //対角線の長さを求める
+        screen_diagonal = Math.sqrt(
+            (Math.pow(screen_width.toDouble(), 2.0).toInt() + Math.pow(
+                screen_height.toDouble(),
+                2.0
+            ).toInt()).toDouble()
+        ).toInt()
+
+        scaleGestureDetector = ScaleGestureDetector(context, object : OnScaleGestureListener {
+
+            override fun onScale(detector: ScaleGestureDetector): Boolean {
+
+                time_current = detector.eventTime
+                time_elapsed = time_current - time_start
+
+                if (time_elapsed >= 0.5) {
+                    distance_current = detector.currentSpan
+
+                    if (distance_start == 0f) {
+                        distance_start = distance_current
+                    }
+
+                    flg_pinch_out = distance_current - distance_start > 5
+                    flg_pinch_in  = distance_start - distance_current > 5
+
+                    if (flg_pinch_out!!) {
+                        zoom( ( distance_current - distance_start ) * 0.005f )
+
+                        time_start = time_current
+                        distance_start = distance_current
+                    } else if (flg_pinch_in!!) {
+                        zoom(-(distance_start - distance_current) * 0.005f)
+
+                        time_start = time_current
+                        distance_start = distance_current
+                    }
+
+                }
+
+                mFocusX = detector.focusX
+                mFocusY = detector.focusY
+                resetPressedInModel( PointXY( detector.focusX, detector.focusY ) )
+
+                return true
+            }
+
+            override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
+                //resetPointToZero()
+                distance_start = detector.eventTime.toFloat()
+                if (distance_start > screen_diagonal) {
+                    distance_start = 0f
+                }
+                time_start = detector.eventTime
+
+                //resetPressedInModel( PointXY( detector.focusX, detector.focusY ) )
+                //(context as MainActivity).setTargetEditText()
+
+
+                return true
+            }
+
+            override fun onScaleEnd(detector: ScaleGestureDetector) {
+
+            }
+        })
+
+        Log.d("MyView", "OnAttachedToWindow Process Done.")
+
+    }
+
+
+    @SuppressLint("ClickableViewAccessibility")
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+
+        if( event.pointerCount == 1 ){
+            mDetector.onTouchEvent(event)
+            invalidate()
+            return true
+
+        }
+        else {
+
+            this.scaleGestureDetector.onTouchEvent(event)
+            this.rotateGestureDetector.onTouchEvent(event)
+            invalidate()
+            return true
+        }
+
+        //return false
+    }
+
+    override fun onDown(event: MotionEvent?): Boolean {
+
+        setPressEvent( event, null )
+        return true
+    }
+
+    override fun onScroll(
+        e1: MotionEvent?,
+        e2: MotionEvent?,
+        distanceX: Float,
+        distanceY: Float
+    ): Boolean {
+        if (e2 != null) {
+            move(e2)
+        }
+        return true
+    }
+
+    override fun onShowPress(e: MotionEvent?) {
+
+    }
+
+    override fun onSingleTapUp(e: MotionEvent?): Boolean {
+        if( e != null ) {
+            (context as MainActivity).setTargetEditText()
+            return true
+
+        }
+
+        return false
+    }
+
+    fun setPressEvent(event: MotionEvent?, method1: (() -> Unit)? ){
+        if ( event != null ) {
+            pressedInView.set(event.x, event.y)
+            lastCPoint.set(event.x, event.y)
+            resetPressedInModel( pressedInView )
+            if(method1 != null) method1()
+        }
+    }
+
+    override fun onLongPress(event: MotionEvent?) {
+        if ( event != null && event.downTime > 80000 && event.pointerCount < 2 ) {
+            //setPressEvent( event ) { (context as MainActivity).fabFlag() }
+            //setPressEvent( event ) { (context as MainActivity).setTargetEditText() }
+        }
+
+    }
+
+    override fun onFling(
+        e1: MotionEvent?,
+        e2: MotionEvent?,
+        velocityX: Float,
+        velocityY: Float
+    ): Boolean {
+        if( ( velocityY * velocityY ) > 10000000f ) (context as MainActivity).fabReplace()
+        return true
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        transViewPoint()
+        canvas.translate(baseInView.x, baseInView.y)
+        canvas.scale(zoomSize, zoomSize )
+        canvas.translate(-centerInModel.x, centerInModel.y)
+        //canvas.rotate( canvasAngle )
+
+        // 背景
+        val zero = 0
+        canvas.drawColor(Color.argb(255, zero, zero, zero))
+        myCanvas = canvas
+
+        //if( isSkipDraw_ == true ) return
+
+        drawEntities(canvas, paintTri, paintTexS, paintRed, darkColors_, myTriangleList, myDeductionList )
+        //drawDebugData(canvas, PointXY(0.5f*myScale, 0.5f*myScale))
+        //drawViewPoints( canvas, paintRed, pressedInModel + PointXY(-200f, 0f ), 50f )
+        drawLocalPressPoint( canvas, pressedInModel )
+    }
 
     fun setFillColor(colorindex: Int, index: Int){
         myTriangleList.get(index).color_ = colorindex
@@ -196,141 +390,6 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
     }
 
-    override fun onAttachedToWindow() {
-        super.onAttachedToWindow()
-
-        initParams()
-
-        rotateGestureDetector = RotateGestureDetector(object : RotateGestureDetector.SimpleOnRotateGestureDetector() {
-            override fun onRotate(degrees: Float, focusX: Float, focusY: Float): Boolean {
-                (getActivity(context) as MainActivity).fabRotate(-degrees * 3, false)
-
-                localpressReset( PointXY( focusX, focusY ) )
-                return true
-            }
-        })
-
-        screen_width = this.width
-        screen_height = this.height
-        //対角線の長さを求める
-        screen_diagonal = Math.sqrt(
-            (Math.pow(screen_width.toDouble(), 2.0).toInt() + Math.pow(
-                screen_height.toDouble(),
-                2.0
-            ).toInt()).toDouble()
-        ).toInt()
-
-        scaleGestureDetector = ScaleGestureDetector(context, object : OnScaleGestureListener {
-
-            override fun onScale(detector: ScaleGestureDetector): Boolean {
-
-                time_current = detector.eventTime
-                time_elapsed = time_current - time_start
-
-                if (time_elapsed >= 0.5) {
-                    distance_current = detector.currentSpan
-
-                    if (distance_start == 0f) {
-                        distance_start = distance_current
-                    }
-
-                    flg_pinch_out = distance_current - distance_start > 5
-                    flg_pinch_in  = distance_start - distance_current > 5
-
-                    if (flg_pinch_out!!) {
-                        zoom( ( distance_current - distance_start ) * 0.005f )
-
-                        time_start = time_current
-                        distance_start = distance_current
-                    } else if (flg_pinch_in!!) {
-                        zoom(-(distance_start - distance_current) * 0.005f)
-
-                        time_start = time_current
-                        distance_start = distance_current
-                    }
-
-                    localpressReset( PointXY( detector.focusX, detector.focusY ) )
-                    //centerInModel = pressedInModel
-                }
-
-                return true
-            }
-
-            override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
-
-                distance_start = detector.eventTime.toFloat()
-                if (distance_start > screen_diagonal) {
-                    distance_start = 0f
-                }
-                time_start = detector.eventTime
-
-
-                return true
-            }
-
-            override fun onScaleEnd(detector: ScaleGestureDetector) {
-
-            }
-        })
-
-        Log.d("MyView", "OnAttachedToWindow Process Done.")
-
-    }
-
-    override fun onTouchEvent(event: MotionEvent): Boolean {
-
-        if( event.pointerCount == 1 ){
-            mPointerCount = event.pointerCount
-            mActivePointerId = event.getPointerId(0)
-
-            when (event.action) {
-                MotionEvent.ACTION_MOVE -> {
-                    if( mActivePointerId != 1 ) {
-                        move(event)
-                    }
-                }
-                MotionEvent.ACTION_DOWN -> {
-
-                    if( event.pointerCount == 1 ) {
-
-                        pressedInView.set(event.x, event.y)
-                        lastCPoint.set(event.x, event.y)
-                        localpressReset( pressedInView )
-                    }
-                }
-                MotionEvent.ACTION_POINTER_DOWN -> {
-                }
-
-                MotionEvent.ACTION_UP -> {
-                    mPointerCount = event.pointerCount
-                    mActivePointerId = -1
-
-                    (context as MainActivity).setTargetEditText()
-
-                }
-
-                MotionEvent.ACTION_POINTER_UP -> {
-
-                }
-            }
-            invalidate()
-            //resetView()
-
-            mLastC = mPointerCount
-            return true
-
-        }
-        else {
-
-            this.scaleGestureDetector.onTouchEvent(event)
-            this.rotateGestureDetector.onTouchEvent(event)
-            invalidate()
-            return true
-        }
-
-        //return false
-    }
-
     fun move( event: MotionEvent ){
         pressedInView.set(event.x, event.y)
         moveVector.set(
@@ -343,27 +402,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         )
     }
 
-    override fun onDraw(canvas: Canvas) {
-        transViewPoint()
-        canvas.translate(baseInView.x, baseInView.y)
-        canvas.scale(zoomSize, zoomSize )
-        canvas.translate(-centerInModel.x, centerInModel.y)
-        //canvas.rotate( canvasAngle )
-
-        // 背景
-        val zero = 0
-        canvas.drawColor(Color.argb(255, zero, zero, zero))
-        myCanvas = canvas
-
-        //if( isSkipDraw_ == true ) return
-
-        drawEntities(canvas, paintTri, paintTexS, paintRed, darkColors_, myTriangleList, myDeductionList )
-        //drawDebugData(canvas, PointXY(0.5f*myScale, 0.5f*myScale))
-        //drawViewPoints( canvas, paintRed, pressedInModel + PointXY(-200f, 0f ), 50f )
-        drawLocalPressPoint( canvas, pressedInModel )
-    }
-
-    fun localpressReset( point: PointXY ){
+    fun resetPressedInModel(point: PointXY ){
         movePoint.set(baseInView.x, baseInView.y)
         pressedInModel = point.convertToLocal(
             baseInView,
@@ -389,13 +428,13 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
     }
 
-    fun setTriangleList(triList: EditList, setscale: Float){
+    fun setTriangleList(triList: EditList, setscale: Float, moveCenter: Boolean = true){
         //if( myTriangleList.size() > 0 ) trilistStored_ = myTriangleList.clone()
         myScale = setscale    // 描画倍率は外から指定する
         myTriangleList = triList.clone() as TriangleList
         myTriangleList.scaleAndSetPath( PointXY(0f, 0f), setscale, paintTexS.textSize )
         setTriListLengthStr()
-        setLTP()
+        if( moveCenter ) setCenterInModelToLastTappedTriNumber() //画面を動かしてしまうので注意
         //resetView()
         //invalidate()
         watchedB_ = ""
@@ -424,10 +463,10 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         //myTriangleList.scale(PointXY(0f,0f), myScale)
 
         //resetViewNotMove()
-        invalidate()
+        //invalidate()
     }
 
-    fun setLTP() {
+    fun setCenterInModelToLastTappedTriNumber() {
         centerInModel.set(myTriangleList.getTriangle(lstn()).pointNumber_)
     }
 
@@ -473,7 +512,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
     fun transViewPoint(){
         if(transOnce == true) {
-            setLTP()
+            setCenterInModelToLastTappedTriNumber()
             resetViewToLastTapTriangle()
             transOnce = false
         }
@@ -526,57 +565,15 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         tri.pointCA_
         tri.pointAB_
         tri.pointBC_
-        val abca = tri.pathA_
-        val abbc = tri.pathB_
-        val bcca = tri.pathC_
-        val sokt = tri.pathS_
+        val tPathA = tri.pathA_
+        val tPathB = tri.pathB_
+        val tPathC = tri.pathC_
+        val tPathS = tri.pathS_
 
         var la = tri.sla_
         var lb = tri.slb_
         var lc = tri.slc_
 
-        /*
-// make Path and Offsets to Dims.
-val abca = PathAndOffset( //　反時計回り
-    myScale,
-    pab,
-    pca,
-    pbc,
-    tri.lengthAforce_,//getLengthAS(1 / triScale),
-    tri.myDimAlignA_,
-    tri.dimSideAlignA_,
-    paintDim.textSize
-)
-val abbc = PathAndOffset(
-    myScale,
-    pbc,
-    pab,
-    pca,
-    tri.lengthBforce_,//getLengthBS(1 / triScale),
-    tri.myDimAlignB_,
-    tri.dimSideAlignB_,
-    paintDim.textSize
-)
-val bcca = PathAndOffset(
-    myScale,
-    pca,
-    pbc,
-    pab,
-    tri.lengthCforce_,//getLengthCS(1 / triScale),
-    tri.myDimAlignC_,
-    tri.dimSideAlignC_,
-    paintDim.textSize
-)
-val sokt = PathAndOffset(
-    myScale,///myTriangleList.getPrintScale(myScale),
-    pab,
-    pca,
-    pbc,
-    tri.lengthAforce_,
-    4, 0,
-    paintSok.textSize
-)
-*/
         if( isPrintPDF_ == false ) {
             if (isDebug_ == true) {
                 //val name = tri.myName_ + " :" + sokt.pointA_.x + " :" + sokt.pointA_.y + " :" + sokt.pointB_.x + " :" + sokt.pointB_.y
@@ -595,10 +592,10 @@ val sokt = PathAndOffset(
         }
 
 
-        abca.textSpacer = textSpacer_
-        abbc.textSpacer = textSpacer_
-        bcca.textSpacer = textSpacer_
-        sokt.textSpacer = textSpacer_
+        tPathA.textSpacer = textSpacer_
+        tPathB.textSpacer = textSpacer_
+        tPathC.textSpacer = textSpacer_
+        tPathS.textSpacer = textSpacer_
 
         drawTriLines( canvas, tri, paintTri )
 
@@ -606,21 +603,21 @@ val sokt = PathAndOffset(
 
         // 寸法
         if(tri.getMyNumber_() == 1 || tri.parentBC > 2 || tri.cParam_.type != 0 )
-            drawDigits( canvas, la, makePath(abca), abca.offsetH, abca.offsetV, paintDim, margin )
+            drawDigits( canvas, la, makePath(tPathA), tPathA.offsetH, tPathA.offsetV, paintDim, margin )
         //canvas.drawTextOnPath(la, makePath(abca), abca.offsetH_, abca.offsetV_, paintDim)
-        drawDigits( canvas, lb, makePath(abbc), abbc.offsetH, abbc.offsetV, paintDim, margin )
-        drawDigits( canvas, lc, makePath(bcca), bcca.offsetH, bcca.offsetV, paintDim, margin )
+        drawDigits( canvas, lb, makePath(tPathB), tPathB.offsetH, tPathB.offsetV, paintDim, margin )
+        drawDigits( canvas, lc, makePath(tPathC), tPathC.offsetH, tPathC.offsetV, paintDim, margin )
         //canvas.drawTextOnPath(lb, makePath(abbc), abbc.offsetH_, abbc.offsetV_, paintDim)
         //canvas.drawTextOnPath(lc, makePath(bcca), bcca.offsetH_, bcca.offsetV_, paintDim)
 
-        if(abca.alignSide > 2) canvas.drawPath(makePath(abca), paintTri)
-        if(abbc.alignSide > 2) canvas.drawPath(makePath(abbc), paintTri)
-        if(bcca.alignSide > 2) canvas.drawPath(makePath(bcca), paintTri)
+        if(tPathA.alignSide > 2) canvas.drawPath(makePath(tPathA), paintTri)
+        if(tPathB.alignSide > 2) canvas.drawPath(makePath(tPathB), paintTri)
+        if(tPathC.alignSide > 2) canvas.drawPath(makePath(tPathC), paintTri)
 
         // 測点
         if(tri.getMyName_() != ""){
-            canvas.drawTextOnPath(tri.getMyName_(), makePath(sokt), 0f, -2f, paintSok)
-            canvas.drawPath(makePath(sokt), paintTri)
+            canvas.drawTextOnPath(tri.getMyName_(), makePath(tPathS), 0f, -2f, paintSok)
+            canvas.drawPath(makePath(tPathS), paintTri)
         }
         Log.d( "myView", "drawTriangle: " + tri.myNumber_ )
 
@@ -779,8 +776,6 @@ val sokt = PathAndOffset(
         paintYellow.style = Paint.Style.FILL
 
     }
-
-
 
     fun drawLine(canvas: Canvas, p1: PointXY, p2: PointXY, sx: Float, sy: Float, paint: Paint){
         canvas.drawLine(p1.x * sx, p1.y * sy, p2.x * sx, p2.y * sy, paint)
@@ -1080,9 +1075,7 @@ val sokt = PathAndOffset(
         return printPoint
     }
 
-    private var mActivePointerId = -1
-    private var mPointerCount = -1
-    private var mLastC = -1
+
 
 }
 

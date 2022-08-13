@@ -85,4 +85,5 @@
     </string-array>
     <string name="action_save_sfc" translatable="false">" Salida SFC"</string>
     <string name="action_usage" translatable="false">Ayudar</string>
+    <string name="action_privacy">Política de privacidad</string>
 </resources>
