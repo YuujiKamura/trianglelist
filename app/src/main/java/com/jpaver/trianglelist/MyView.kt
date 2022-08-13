@@ -220,21 +220,22 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
 
-        if( event.pointerCount == 1 ){
-            mDetector.onTouchEvent(event)
-            invalidate()
-            return true
+        when( event.pointerCount ){
+            1 -> {
+                mDetector.onTouchEvent(event)
+                invalidate()
+                return true
+            }
+            2 -> {
+                this.scaleGestureDetector.onTouchEvent(event)
+                this.rotateGestureDetector.onTouchEvent(event)
+                invalidate()
+                return true
+            }
 
         }
-        else {
 
-            this.scaleGestureDetector.onTouchEvent(event)
-            this.rotateGestureDetector.onTouchEvent(event)
-            invalidate()
-            return true
-        }
-
-        //return false
+        return false
     }
 
     override fun onDown(event: MotionEvent?): Boolean {
