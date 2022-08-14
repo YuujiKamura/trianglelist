@@ -433,22 +433,6 @@
         </TableRow>
     </TableLayout>
 
-
-
-    <com.google.android.gms.ads.AdView xmlns:ads="http://schemas.android.com/apk/res-auto"
-        android:id="@+id/adView"
-        android:layout_width="match_parent"
-        android:layout_height="40dp"
-        android:descendantFocusability="beforeDescendants"
-        android:focusableInTouchMode="true"
-        ads:adSize="BANNER"
-        ads:adUnitId="ca-app-pub-6982449551349060/9421491034"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/my_view" />
-
-
     <com.jpaver.trianglelist.MyView
         android:id="@+id/my_view"
         android:layout_width="wrap_content"
@@ -458,5 +442,15 @@
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/editTextLayout" />
 
+    <com.google.android.gms.ads.AdView xmlns:ads="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/adView"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        ads:adSize="BANNER"
+        ads:adUnitId="ca-app-pub-6982449551349060/9421491034"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/my_view" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

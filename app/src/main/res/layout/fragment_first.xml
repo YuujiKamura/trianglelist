@@ -449,8 +449,6 @@
         android:id="@+id/adView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:descendantFocusability="beforeDescendants"
-        android:focusableInTouchMode="true"
         ads:adSize="BANNER"
         ads:adUnitId="ca-app-pub-6982449551349060/9421491034"
         app:layout_constraintTop_toBottomOf="@+id/my_view"

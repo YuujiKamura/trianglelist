@@ -10,11 +10,11 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.GestureDetector
 import android.view.MotionEvent
+import android.view.MotionEvent.ACTION_UP
 import android.view.ScaleGestureDetector
 import android.view.ScaleGestureDetector.OnScaleGestureListener
 import android.view.View
 import androidx.core.view.GestureDetectorCompat
-import com.google.android.material.internal.ContextUtils.getActivity
 import com.jpaver.trianglelist.util.RotateGestureDetector
 import java.util.*
 import kotlin.math.roundToInt
@@ -93,6 +93,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     var baseInView: PointXY = PointXY(0f, 0f)
     var transOnce: Boolean = true
     var pressedInModel: PointXY = PointXY(0f, 0f)
+    var scaleCenter: PointXY = PointXY(0f, 0f)
 
     fun drawViewPoints( canvas: Canvas, paint: Paint, point: PointXY, ypitch: Float ) {
         //if( isDebug_ == false ) return
@@ -109,6 +110,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     var zoomSize: Float = 1.0f
     var mFocusX = 0f
     var mFocusY = 0f
+    var isScale = false
 
     var parentNum: Int = 0
     var parentSide: Int = 0
@@ -138,7 +140,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
         rotateGestureDetector = RotateGestureDetector(object : RotateGestureDetector.SimpleOnRotateGestureDetector() {
             override fun onRotate(degrees: Float, focusX: Float, focusY: Float): Boolean {
-                (getActivity(context) as MainActivity).fabRotate(-degrees * 3, false)
+                (context as MainActivity).fabRotate(-degrees * 3, false)
 
                 return true
             }
@@ -203,7 +205,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
                 //resetPressedInModel( PointXY( detector.focusX, detector.focusY ) )
                 //(context as MainActivity).setTargetEditText()
 
-
+                isScale = true
                 return true
             }
 
@@ -217,6 +219,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     }
 
 
+
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
 
@@ -224,19 +227,22 @@ class MyView(context: Context?, attrs: AttributeSet?) :
             1 -> {
                 mDetector.onTouchEvent(event)
                 invalidate()
-                return true
             }
             2 -> {
                 this.scaleGestureDetector.onTouchEvent(event)
                 this.rotateGestureDetector.onTouchEvent(event)
                 invalidate()
-                return true
+                setPressEvent( event, null )
             }
 
         }
 
-        return false
+        if( event.action == ACTION_UP ) isScale = false
+
+        return true
+
     }
+
 
     override fun onDown(event: MotionEvent?): Boolean {
 
@@ -251,6 +257,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         distanceY: Float
     ): Boolean {
         if (e2 != null) {
+            if( isScale == true ) return false
             move(e2)
         }
         return true
@@ -262,7 +269,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
     override fun onSingleTapUp(e: MotionEvent?): Boolean {
         if( e != null ) {
-            (context as MainActivity).setTargetEditText()
+            (context as MainActivity).setTargetEditText(zoomSize*0.5f)
             return true
 
         }
@@ -299,10 +306,13 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
     override fun onDraw(canvas: Canvas) {
         transViewPoint()
+        scaleCenter.set( centerInView - baseInView )
         canvas.translate(baseInView.x, baseInView.y)
         canvas.scale(zoomSize, zoomSize )
         canvas.translate(-centerInModel.x, centerInModel.y)
         //canvas.rotate( canvasAngle )
+
+        logModelViewPoints()
 
         // 背景
         val zero = 0
@@ -315,6 +325,20 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         //drawDebugData(canvas, PointXY(0.5f*myScale, 0.5f*myScale))
         //drawViewPoints( canvas, paintRed, pressedInModel + PointXY(-200f, 0f ), 50f )
         drawLocalPressPoint( canvas, pressedInModel )
+    }
+
+    fun logModelViewPoints(){
+        Log.d("ModelView", "     movePoint:" + movePoint.x + ", " + movePoint.y )
+        Log.d("ModelView", "    moveVector:" + moveVector.x + ", " + moveVector.y )
+        Log.d("ModelView", "    baseInView:" + baseInView.x + ", " + baseInView.y )
+        Log.d("ModelView", "  centerInView:" + centerInView.x + ", " + centerInView.y )
+        Log.d("ModelView", " pressedInView:" + pressedInView.x + ", " + pressedInView.y )
+        Log.d("ModelView", " centerInModel:" + centerInModel.x + ", " + centerInModel.y )
+        Log.d("ModelView", "pressedInModel:" + pressedInModel.x + ", " + pressedInModel.y )
+        Log.d("ModelView", "   scaleCenter:" + scaleCenter.x + ", " + scaleCenter.y )
+        Log.d("ModelView", "      zoomSize:" + zoomSize )
+        Log.d("ModelView", " " )
+
     }
 
     fun setFillColor(colorindex: Int, index: Int){

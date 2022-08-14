@@ -247,19 +247,23 @@ class MainActivity : AppCompatActivity(),
             else Log.d( "AppUpdate", "Update is not Available.")
         }
 
+        // must after setContentView
         if( BuildConfig.FLAVOR == "free" ) {
-            mAdView = bMyAct.adView
-            //mInterstitialAd?.show(this) ?: Log.d("TAG", "The interstitial ad wasn't ready yet.")
-            // must after setContentView
+            mAdView = findViewById(R.id.adView)
+
             MobileAds.initialize(this) {}
-            //mAdView = findViewById(R.id.adView)
-            //mAdView.adSize = AdSize.BANNER
+
+            if( BuildConfig.FLAVOR == "debug" ) {
+                var testDeviceIds = Arrays.asList("ca-app-pub-3940256099942544/6300978111")//33BE2250B43518CCDA7DE426D04EE231")
+                val configuration = RequestConfiguration.Builder().setTestDeviceIds(testDeviceIds).build()
+                MobileAds.setRequestConfiguration(configuration)
+            }
 
             val adRequest = AdRequest.Builder().build()
             mAdView.loadAd(adRequest)
+            Log.d("adMob", "adMob Loaded.")
 
         }
-        //setContentView(R.layout.activity_main)
 
         prefSetting = PreferenceManager.getDefaultSharedPreferences(this)
 
@@ -1435,7 +1439,7 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    fun setTargetEditText() {
+    fun setTargetEditText(zoomsize: Float) {
         val inputMethodManager: InputMethodManager =
             getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
 
@@ -1460,7 +1464,7 @@ class MainActivity : AppCompatActivity(),
             // 三角形番号が押されたときはセンタリング
             trilistV.getTap(
                 my_view.pressedInModel.scale(PointXY(0f, 0f), 1f, -1f),
-                0.6f
+                0.8f / zoomsize
             )
             if ( trilistV.lastTapNumber_ != 0 ) {
                 if( trilistV.lastTapSide_ == 3 ) my_view.resetViewToLastTapTriangle()
@@ -1470,7 +1474,7 @@ class MainActivity : AppCompatActivity(),
         else {
             val lpp = my_view.pressedInModel.scale(PointXY(0f, 0f), 1f, -1f)
 
-            val slpp = my_view.shadowTri_.getTapLength(lpp, 0.6f)
+            val slpp = my_view.shadowTri_.getTapLength(lpp, 0.8f / zoomsize)
             if( slpp == 1) {
                 findViewById<EditText>(R.id.editLengthB1).requestFocus()
 //                my_view.myTriangleList.lastTapSide_ = 1
@@ -1483,7 +1487,7 @@ class MainActivity : AppCompatActivity(),
             }
 
             // view　の　trilistのlastTapとcurrentをずらして editorTableを移動させる
-            trilistV.getTap(lpp, my_view.ts_ * 0.025f )
+            trilistV.getTap(lpp, my_view.ts_ * 0.04f / zoomsize )
 
 
             if ( trilistV.lastTapNumber_ != 0 ) {
@@ -2555,8 +2559,8 @@ class MainActivity : AppCompatActivity(),
 
         val dedArea = myDeductionList.getArea()
         val triArea = myTriangleList.getArea()
-        val totalArea = roundByUnderTwo(triArea - dedArea)
-        title = rStr.menseki_ + ": ${ totalArea.formattedString(2) } m^2"
+        val totalArea = roundByUnderTwo(triArea - dedArea).formattedString(2)
+        title = rStr.menseki_ + ": ${ totalArea } m^2"
 
         if( myTriangleList.lastTapNumber_ > 0 ){
             val coloredArea = myTriangleList.getAreaC( myTriangleList.lastTapNumber_ )
