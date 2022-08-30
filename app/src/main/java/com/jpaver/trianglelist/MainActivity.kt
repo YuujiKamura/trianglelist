@@ -254,7 +254,7 @@ class MainActivity : AppCompatActivity(),
             MobileAds.initialize(this) {}
 
             if( BuildConfig.FLAVOR == "debug" ) {
-                var testDeviceIds = Arrays.asList("ca-app-pub-3940256099942544/6300978111")//33BE2250B43518CCDA7DE426D04EE231")
+                val testDeviceIds = Arrays.asList("ca-app-pub-3940256099942544/6300978111")//33BE2250B43518CCDA7DE426D04EE231")
                 val configuration = RequestConfiguration.Builder().setTestDeviceIds(testDeviceIds).build()
                 MobileAds.setRequestConfiguration(configuration)
             }
@@ -1487,7 +1487,7 @@ class MainActivity : AppCompatActivity(),
             }
 
             // view　の　trilistのlastTapとcurrentをずらして editorTableを移動させる
-            trilistV.getTap(lpp, my_view.ts_ * 0.04f / zoomsize )
+            trilistV.getTap(lpp, my_view.ts_ * 0.02f / zoomsize )
 
 
             if ( trilistV.lastTapNumber_ != 0 ) {

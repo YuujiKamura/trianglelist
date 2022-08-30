@@ -260,6 +260,9 @@ class MyView(context: Context?, attrs: AttributeSet?) :
             if( isScale == true ) return false
             move(e2)
         }
+
+        moveVector.set(0f, 0f)
+
         return true
     }
 
@@ -308,11 +311,12 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         transViewPoint()
         scaleCenter.set( centerInView - baseInView )
         canvas.translate(baseInView.x, baseInView.y)
-        canvas.scale(zoomSize, zoomSize )
+        canvas.scale(zoomSize, zoomSize)//, centerInModel.x-pressedInModel.x, pressedInModel.y+centerInModel.y )
         canvas.translate(-centerInModel.x, centerInModel.y)
+        //canvas.translate(-pressedInModel.x, pressedInModel.y)
         //canvas.rotate( canvasAngle )
 
-        logModelViewPoints()
+        logModelViewPoints(canvas)
 
         // 背景
         val zero = 0
@@ -324,10 +328,12 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         drawEntities(canvas, paintTri, paintTexS, paintRed, darkColors_, myTriangleList, myDeductionList )
         //drawDebugData(canvas, PointXY(0.5f*myScale, 0.5f*myScale))
         //drawViewPoints( canvas, paintRed, pressedInModel + PointXY(-200f, 0f ), 50f )
-        drawLocalPressPoint( canvas, pressedInModel )
+        drawCrossLines(canvas, pressedInModel, paintRed )
+        //drawCrossLines(canvas, scaleCenter, paintYellow )
+        drawCrossLines(canvas, centerInModel, paintBlue )
     }
 
-    fun logModelViewPoints(){
+    fun logModelViewPoints(canvas: Canvas){
         Log.d("ModelView", "     movePoint:" + movePoint.x + ", " + movePoint.y )
         Log.d("ModelView", "    moveVector:" + moveVector.x + ", " + moveVector.y )
         Log.d("ModelView", "    baseInView:" + baseInView.x + ", " + baseInView.y )
@@ -743,17 +749,17 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
     }
 
-    fun drawLocalPressPoint(canvas: Canvas, point: PointXY){
+    fun drawCrossLines(canvas: Canvas, point: PointXY, paint: Paint){
         if(point.x != 0f){
             canvas.drawLine(
                 point.x - 20f, point.y,
-                point.x + 20f, point.y, paintRed
+                point.x + 20f, point.y, paint
             )
             canvas.drawLine(
                 point.x, point.y - 20f,
-                point.x, point.y + 20f, paintRed
+                point.x, point.y + 20f, paint
             )
-            Log.d( "myView", "drawLocalPressPoint: " + point.x + " " + point.y )
+            //Log.d( "myView", "drawLocalPressPoint: " + point.x + " " + point.y )
             // draw pdf の時だけ使う
             //if( BuildConfig.BUILD_TYPE == "debug" ) canvas.drawText( point.x.toString() + " " + point.y.toString(), point.x+10f, point.y+10f, paintRed)
         }
