@@ -115,10 +115,11 @@ public class PointXY implements Cloneable {
         this.Y = sp.getY();
     }
 
-    public PointXY convertToLocal(PointXY tp, float zoomx, float zoomy, PointXY ltp){
-        PointXY inLocal = this.minus(tp);
-        inLocal.set(inLocal.getX()/zoomx, inLocal.getY()/zoomy);
-        inLocal.set(inLocal.getX()+ltp.getX(), inLocal.getY()-ltp.getY());
+    public PointXY convertToLocal(PointXY baseInView, PointXY centerInModel, PointXY scalebase, float zoom){
+        PointXY inLocal = this.clone();
+        inLocal.addminus( baseInView ).scale( new PointXY(0f,0f), 1/zoom); // // 左上起点座標を自身(pressedInView)から引く
+        inLocal.add( centerInModel.scale(1f,-1f) );
+        //inLocal.scale( baseInView.add(centerInModel.scale(1f,-1f)), 1/zoom);
         return inLocal;
     }
 
@@ -226,9 +227,15 @@ public class PointXY implements Cloneable {
         return new PointXY(X*scale, Y*scale);
     }
 
+    public PointXY scale(float scaleX, float scaleY ){
+        return new PointXY(X*scaleX, Y*scaleY );
+    }
+
     public PointXY scale(PointXY scale){
         return new PointXY(X*scale.getX(), Y*scale.getY());
     }
+
+
 
     public PointXY scale(PointXY a, float sx, float sy){
         return new PointXY(X*sx + a.X, Y*sy + a.Y);
@@ -291,5 +298,6 @@ public class PointXY implements Cloneable {
 
         return new PointXY(x,y);
     }
+
 
 }

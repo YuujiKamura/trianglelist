@@ -19,6 +19,7 @@ import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
 import android.view.View.INVISIBLE
+import android.view.View.VISIBLE
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import androidx.activity.result.ActivityResult
@@ -37,6 +38,7 @@ import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.UpdateAvailability
 import com.jpaver.trianglelist.databinding.ActivityMainBinding
+import com.jpaver.trianglelist.util.AdManager
 import org.json.JSONObject.NULL
 import java.io.*
 import java.time.LocalDate
@@ -704,13 +706,21 @@ class MainActivity : AppCompatActivity(),
 
         Log.d("MainActivity", "OnAttachedToWindow Process Done.")
 
+        showInterStAd()
+
     }
 
-    override fun onRestart() {
-        super.onRestart()
+    override fun onResume() {
+        super.onResume()
+        Log.d("AdMob", "OnResume")
 
         // 広告の非表示
-        if( BuildConfig.FLAVOR == "free" ) mAdView.visibility = INVISIBLE
+        if( BuildConfig.FLAVOR == "free" ){
+            val adManager = AdManager()
+            //adManager.disableAd(mAdView)
+            //findViewById<EditText>(R.id.editLengthC1).requestFocus()
+            //mAdView.visibility = VISIBLE
+        }
     }
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
@@ -744,27 +754,7 @@ class MainActivity : AppCompatActivity(),
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         rosenname = findViewById<EditText>(R.id.rosenname).text.toString()
 
-        //インタースティシャル広告の読み込み
-        if( BuildConfig.FLAVOR == "free"){
-            val adRequest = AdRequest.Builder().build()
 
-            InterstitialAd.load(this,"ca-app-pub-3940256099942544/1033173712", adRequest, object : InterstitialAdLoadCallback() {
-                override fun onAdFailedToLoad(adError: LoadAdError) {
-                    Log.d(TAG, adError.message)
-                    mInterstitialAd = null
-                }
-
-                override fun onAdLoaded(interstitialAd: InterstitialAd) {
-                    Log.d(TAG, "Ad was loaded.")
-                    mInterstitialAd = interstitialAd
-                }
-            })
-            /*
-            mInterstitialAd = InterstitialAd(this)
-            if( BuildConfig.BUILD_TYPE == "debug" ) mInterstitialAd.adUnitId = "ca-app-pub-3940256099942544/1033173712"
-            else if( BuildConfig.BUILD_TYPE == "release" ) mInterstitialAd.adUnitId = "ca-app-pub-6982449551349060/2369695624"
-            mInterstitialAd.loadAd(AdRequest.Builder().build())*/
-        }
 
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
@@ -906,7 +896,7 @@ class MainActivity : AppCompatActivity(),
             }
 
             R.id.action_usage -> {
-                playMedia( Uri.parse("https://youtu.be/5aOLkfZHB10") )
+                playMedia( Uri.parse("https://trianglelist.home.blog") )
 /*                if (BuildConfig.FLAVOR == "free") {
                     viewPdf(
                             AssetsFileProvider.CONTENT_URI_FREE.buildUpon()
@@ -1367,7 +1357,7 @@ class MainActivity : AppCompatActivity(),
 
     private fun autoConnection(i: Int){
         // 広告の再表示
-        //if( BuildConfig.FLAVOR == "free" ) mAdView.visibility = INVISIBLE
+        //if( BuildConfig.FLAVOR == "free" ) mAdView.visibility = VISIBLE
 
         my_view.myTriangleList.lastTapSide_ = i
         dParams = myEditor.readLineTo(dParams, myELFirst) //keep them
@@ -1439,7 +1429,8 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    fun setTargetEditText(zoomsize: Float) {
+    fun setTargetEditText(zoomsize: Float)
+    {
         val inputMethodManager: InputMethodManager =
             getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
 
@@ -1529,10 +1520,12 @@ class MainActivity : AppCompatActivity(),
 
                 if( my_view.myTriangleList.lastTapSide_ == 3 ) my_view.resetViewToLastTapTriangle()
 
-                Log.d("MainActivity", "Tap Triangle is : " + my_view.myTriangleList.lastTapNumber_ + my_view.myTriangleList.lastTapSide_ )
 
             }
         }
+
+        Log.d("SetTarget", "Tap Triangle is : " + my_view.myTriangleList.lastTapNumber_ + ", side is :" + my_view.myTriangleList.lastTapSide_ )
+
     }
 
     private fun printDebugConsole(){
@@ -1960,15 +1953,29 @@ class MainActivity : AppCompatActivity(),
     }
 */
     private fun showInterStAd(){
-        return
-/*
-        if ( mInterstitialAd.isLoaded && BuildConfig.FLAVOR == "free" ) {
-            // 広告の再表示
-            //mInterstitialAd.loadAd(AdRequest.Builder().build())
-            mInterstitialAd.show()
-        } else {
-            Log.d("TAG", "The interstitial wasn't loaded yet.")
-        }*/
+        //インタースティシャル広告の読み込み
+        if( BuildConfig.FLAVOR == "free") {
+            val adRequest = AdRequest.Builder().build()
+
+            InterstitialAd.load(
+                this,
+                "ca-app-pub-3940256099942544/1033173712",
+                adRequest,
+                object : InterstitialAdLoadCallback() {
+                    override fun onAdFailedToLoad(adError: LoadAdError) {
+                        Log.d(TAG, adError.message)
+                        mInterstitialAd = null
+                    }
+
+                    override fun onAdLoaded(interstitialAd: InterstitialAd) {
+                        Log.d("AdMob", "Ad was loaded.")
+                        mInterstitialAd = interstitialAd
+                    }
+                })
+
+            mInterstitialAd?.show(this)
+        }
+
     }
 
     private fun viewPdf(contentUri: Uri){

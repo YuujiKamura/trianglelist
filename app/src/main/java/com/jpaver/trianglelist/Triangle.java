@@ -1588,4 +1588,12 @@ public class Triangle extends EditObject implements Cloneable {
 
         return Y;
     }
+
+    public boolean trimming( ArrayList<PointXY> trimline){
+        return isCollide( pathA_, trimline );
+    }
+
+    public boolean isCollide( PathAndOffset path, ArrayList<PointXY> trimline ){
+        return true;
+    }
 }

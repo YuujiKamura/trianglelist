@@ -24,7 +24,7 @@ class TriListKTest {
         trilist.add(2, 2, 5f, 5f)
         trilist.add(3, 2, 5f, 5f)
 
-        trilist[2].reset( TriangleK( trilist[1], 2, 6f, 6f ), arrayOf( trilist[2] ) )
+        trilist[2].reset(TriangleK( trilist[1], 2, 6f, 6f ))
 
     }
 
@@ -595,10 +595,10 @@ class TriListKTest {
         //tri2.setConnectionType( 1, 1, 1, 4f);
         Assert.assertEquals(5f, tri2.nodeTriangle[0]!!.point[1].x, 0.0001f)
         Assert.assertEquals(2.5f, tri2.getParentPointByLCR(1 ).x, 0.0001f)
-        Assert.assertEquals(2.5f, tri2.getParentPointByType(1, 0, 1).x, 0.0001f)
-        Assert.assertEquals(2.5f, tri2.getParentPointByType(1, 1, 1).x, 0.0001f)
-        Assert.assertEquals(3.3660f, tri2.getParentPointByType(1, 2, 1).x, 0.0001f)
-        Assert.assertEquals(-4.8301f, tri2.getParentPointByType(1, 2, 1).y, 0.0001f)
+        Assert.assertEquals(2.5f, tri2.getParentPointByType(1, 0).x, 0.0001f)
+        Assert.assertEquals(2.5f, tri2.getParentPointByType(1, 1).x, 0.0001f)
+        Assert.assertEquals(3.3660f, tri2.getParentPointByType(1, 2).x, 0.0001f)
+        Assert.assertEquals(-4.8301f, tri2.getParentPointByType(1, 2).y, 0.0001f)
         Assert.assertEquals(-4.8301f, tri2.setBasePoint(1, 2, 1).y, 0.0001f)
         Assert.assertEquals(-3.4641f, tri2.rotateLCR().y, 0.0001f)
         Assert.assertEquals(-4.3301f, tri2.rotateLCR().y, 0.0001f)
@@ -712,7 +712,7 @@ class TriListKTest {
     @Test
     fun testCollision() {
         val tri = TriangleK(3f, 4f, 5f)
-        Assert.assertEquals(true, tri.collision(-2f, 2f))
+        Assert.assertEquals(true, tri.collision())
         Assert.assertEquals(false, PointXY(-2f, -2f).isCollide(tri))
         Assert.assertEquals(true, PointXY(2f, -2f).isCollide(tri))
         Assert.assertEquals(true, tri.isCollide(PointXY(2f, -2f)))

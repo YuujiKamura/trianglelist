@@ -7,6 +7,38 @@ import org.junit.Test
 class PointXYtest {
 
     @Test
+    fun testCrossProduct(){
+        val vec1 = arrayOf( PointXY(0f, 0f), PointXY(1f, 1f) )
+        val vec2 = arrayOf( PointXY(0f, 1f), PointXY(1f, 0f) )
+        val vec3 = arrayOf( PointXY(0f, 0.5f), PointXY(1f, 1.5f) )
+
+        Assert.assertEquals( -2.0, vec1[1].minus(vec1[0]).outerProduct( vec2[1].minus(vec2[0]) ), 0.0001 )
+
+    }
+
+    @Test
+    fun testTrimming(){
+
+        val trimline = ArrayList<PointXY>()
+        trimline.add( PointXY(0f, 0f))
+        trimline.add( PointXY(1f, 1f) )
+
+        val tri = Triangle(5f,5f,5f, PointXY(-0.5f,-0.5f), 0f )
+
+        Assert.assertEquals( true, tri.trimming(trimline) )
+
+    }
+
+    @Test
+    fun testViewToModel(){
+        val pressedInView = PointXY(1f, 0f)
+        val pressedInModel = pressedInView.convertToLocal( PointXY(0f, 0f), PointXY(0f, 0f ),PointXY(0f, 0f ), 1f,  )
+
+        Assert.assertEquals(1f, pressedInModel.x, 0.001f)
+
+    }
+
+    @Test
     fun testAddMinusAdd(){
         val p1 = PointXY(1f, 0f)
         val p2 = PointXY(1f, 0f)

@@ -15,6 +15,7 @@ import android.view.ScaleGestureDetector
 import android.view.ScaleGestureDetector.OnScaleGestureListener
 import android.view.View
 import androidx.core.view.GestureDetectorCompat
+import com.jpaver.trianglelist.util.AdManager
 import com.jpaver.trianglelist.util.RotateGestureDetector
 import java.util.*
 import kotlin.math.roundToInt
@@ -160,6 +161,9 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
             override fun onScale(detector: ScaleGestureDetector): Boolean {
 
+                mFocusX = detector.focusX
+                mFocusY = detector.focusY
+
                 time_current = detector.eventTime
                 time_elapsed = time_current - time_start
 
@@ -186,10 +190,6 @@ class MyView(context: Context?, attrs: AttributeSet?) :
                     }
 
                 }
-
-                mFocusX = detector.focusX
-                mFocusY = detector.focusY
-                resetPressedInModel( PointXY( detector.focusX, detector.focusY ) )
 
                 return true
             }
@@ -220,6 +220,25 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
 
 
+    override fun onDraw(canvas: Canvas) {
+        transViewPoint()
+        scaleCenter.set( (mFocusX - baseInView.x), (mFocusY - baseInView.y) )
+        canvas.translate(baseInView.x, baseInView.y) // baseInViewはview座標系の中央を標準としていて、そこからスクロールによって移動した数値になる。
+        canvas.scale(zoomSize, zoomSize)//, mFocusX, mFocusY )//, scaleCenter.x, scaleCenter.y )//この位置に来ることでscaleの中心がbaseInViewに依存する。
+        canvas.translate(-centerInModel.x, centerInModel.y)
+
+        logModelViewPoints()
+
+        // 背景
+        val zero = 0
+        canvas.drawColor(Color.argb(255, zero, zero, zero))
+        myCanvas = canvas
+
+        drawEntities(canvas, paintTri, paintTexS, paintRed, darkColors_, myTriangleList, myDeductionList )
+        drawCrossLines(canvas, pressedInModel, paintRed )
+        //drawCrossLines(canvas, centerInModel.scale( PointXY(1f, -1f) ), paintBlue )
+    }
+
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
 
@@ -231,8 +250,8 @@ class MyView(context: Context?, attrs: AttributeSet?) :
             2 -> {
                 this.scaleGestureDetector.onTouchEvent(event)
                 this.rotateGestureDetector.onTouchEvent(event)
+                setPressEvent(mFocusX, mFocusY)
                 invalidate()
-                setPressEvent( event, null )
             }
 
         }
@@ -244,53 +263,44 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     }
 
 
-    override fun onDown(event: MotionEvent?): Boolean {
+    override fun onDown(event: MotionEvent): Boolean {
 
-        setPressEvent( event, null )
+        setPressEvent(event.x, event.y)
         return true
     }
 
     override fun onScroll(
-        e1: MotionEvent?,
-        e2: MotionEvent?,
+        e1: MotionEvent,
+        e2: MotionEvent,
         distanceX: Float,
         distanceY: Float
     ): Boolean {
-        if (e2 != null) {
-            if( isScale == true ) return false
-            move(e2)
-        }
+        if( isScale == true ) return false
+        move(e2)
 
         moveVector.set(0f, 0f)
 
         return true
     }
 
-    override fun onShowPress(e: MotionEvent?) {
+    override fun onShowPress(e: MotionEvent) {
 
     }
 
-    override fun onSingleTapUp(e: MotionEvent?): Boolean {
-        if( e != null ) {
-            (context as MainActivity).setTargetEditText(zoomSize*0.5f)
-            return true
+    override fun onSingleTapUp(e: MotionEvent): Boolean {
+        (context as MainActivity).setTargetEditText(zoomSize*0.5f)
+        return true
 
-        }
-
-        return false
     }
 
-    fun setPressEvent(event: MotionEvent?, method1: (() -> Unit)? ){
-        if ( event != null ) {
-            pressedInView.set(event.x, event.y)
-            lastCPoint.set(event.x, event.y)
-            resetPressedInModel( pressedInView )
-            if(method1 != null) method1()
-        }
+    fun setPressEvent(x: Float, y: Float){
+        pressedInView.set(x, y)
+        lastCPoint.set(x, y)
+        resetPressedInModel( pressedInView, pressedInView )
     }
 
-    override fun onLongPress(event: MotionEvent?) {
-        if ( event != null && event.downTime > 80000 && event.pointerCount < 2 ) {
+    override fun onLongPress(event: MotionEvent) {
+        if ( event.downTime > 80000 && event.pointerCount < 2 ) {
             //setPressEvent( event ) { (context as MainActivity).fabFlag() }
             //setPressEvent( event ) { (context as MainActivity).setTargetEditText() }
         }
@@ -298,8 +308,8 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     }
 
     override fun onFling(
-        e1: MotionEvent?,
-        e2: MotionEvent?,
+        e1: MotionEvent,
+        e2: MotionEvent,
         velocityX: Float,
         velocityY: Float
     ): Boolean {
@@ -307,33 +317,8 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         return true
     }
 
-    override fun onDraw(canvas: Canvas) {
-        transViewPoint()
-        scaleCenter.set( centerInView - baseInView )
-        canvas.translate(baseInView.x, baseInView.y)
-        canvas.scale(zoomSize, zoomSize)//, centerInModel.x-pressedInModel.x, pressedInModel.y+centerInModel.y )
-        canvas.translate(-centerInModel.x, centerInModel.y)
-        //canvas.translate(-pressedInModel.x, pressedInModel.y)
-        //canvas.rotate( canvasAngle )
 
-        logModelViewPoints(canvas)
-
-        // 背景
-        val zero = 0
-        canvas.drawColor(Color.argb(255, zero, zero, zero))
-        myCanvas = canvas
-
-        //if( isSkipDraw_ == true ) return
-
-        drawEntities(canvas, paintTri, paintTexS, paintRed, darkColors_, myTriangleList, myDeductionList )
-        //drawDebugData(canvas, PointXY(0.5f*myScale, 0.5f*myScale))
-        //drawViewPoints( canvas, paintRed, pressedInModel + PointXY(-200f, 0f ), 50f )
-        drawCrossLines(canvas, pressedInModel, paintRed )
-        //drawCrossLines(canvas, scaleCenter, paintYellow )
-        drawCrossLines(canvas, centerInModel, paintBlue )
-    }
-
-    fun logModelViewPoints(canvas: Canvas){
+    fun logModelViewPoints(){
         Log.d("ModelView", "     movePoint:" + movePoint.x + ", " + movePoint.y )
         Log.d("ModelView", "    moveVector:" + moveVector.x + ", " + moveVector.y )
         Log.d("ModelView", "    baseInView:" + baseInView.x + ", " + baseInView.y )
@@ -343,7 +328,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         Log.d("ModelView", "pressedInModel:" + pressedInModel.x + ", " + pressedInModel.y )
         Log.d("ModelView", "   scaleCenter:" + scaleCenter.x + ", " + scaleCenter.y )
         Log.d("ModelView", "      zoomSize:" + zoomSize )
-        Log.d("ModelView", " " )
+        Log.d("ModelView", "        mFocus:" + mFocusX + ", " + mFocusY  )
 
     }
 
@@ -433,13 +418,13 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         )
     }
 
-    fun resetPressedInModel(point: PointXY ){
+    fun resetPressedInModel(pressedInView: PointXY, scaleCenter:PointXY ){
         movePoint.set(baseInView.x, baseInView.y)
-        pressedInModel = point.convertToLocal(
+        pressedInModel = pressedInView.convertToLocal(
             baseInView,
+            centerInModel,
+            scaleCenter,
             zoomSize,
-            zoomSize,
-            centerInModel
         )
 
     }
@@ -491,10 +476,8 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         zoomSize += zoomstep
         if(zoomSize<=0.1f) zoomSize = 0.1f
         if(zoomSize>=5) zoomSize = 5f
-        //myTriangleList.scale(PointXY(0f,0f), myScale)
 
-        //resetViewNotMove()
-        //invalidate()
+        resetPressedInModel( PointXY( mFocusX, mFocusY ), PointXY( mFocusX, mFocusY ) )
     }
 
     fun setCenterInModelToLastTappedTriNumber() {
@@ -543,7 +526,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
     fun transViewPoint(){
         if(transOnce == true) {
-            setCenterInModelToLastTappedTriNumber()
+            //setCenterInModelToLastTappedTriNumber() // 同じこと2回やってる
             resetViewToLastTapTriangle()
             transOnce = false
         }

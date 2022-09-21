@@ -13,7 +13,6 @@
         android:importantForAutofill="noExcludeDescendants"
         android:shrinkColumns="0,2,3,4,5"
         app:autoSizeMinTextSize="4sp"
-        app:layout_constraintBottom_toTopOf="@id/my_view"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
@@ -437,7 +436,6 @@
         android:id="@+id/my_view"
         android:layout_width="wrap_content"
         android:layout_height="580dp"
-        app:layout_constraintBottom_toTopOf="@+id/adView"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/editTextLayout" />

@@ -1,7 +1,5 @@
 package com.jpaver.trianglelist
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import java.time.LocalDate
 
 open class DrawingFileWriter {
@@ -127,7 +125,6 @@ open class DrawingFileWriter {
         writeLine( PointXY(19f,26.9f, scale ), PointXY(23f,26.9f, scale ), cWhite_, scale)
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     open fun writeDrawingFrame(scale: Float = 1f, textsize: Float){
 
         val tss = textsize * scale

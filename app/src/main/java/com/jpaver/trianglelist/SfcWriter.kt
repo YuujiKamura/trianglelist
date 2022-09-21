@@ -271,13 +271,13 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
 
     }
 
-    override fun writeCircle(point: PointXY, radius: Float, color: Int, scale: Float){
-        adas( "circle_feature('1','${color}','1','1','${point.x}','${point.y}','${radius}')" )
+    override fun writeCircle(point: PointXY, size: Float, color: Int, scale: Float){
+        adas( "circle_feature('1','${color}','1','1','${point.x}','${point.y}','${size}')" )
         //レイヤ、２番目がプリセット色指定(８が白、４が青、２が赤)、続いて、線種、線幅、座標XYと、半径
     }
 
-    override fun writeLine( point1: PointXY, point2: PointXY, color: Int, scale: Float ){
-        adas("line_feature('1','${color}','1','1','${point1.x}','${point1.y}','${point2.x}','${point2.y}')" )
+    override fun writeLine(p1: PointXY, p2: PointXY, color: Int, scale: Float ){
+        adas("line_feature('1','${color}','1','1','${p1.x}','${p1.y}','${p2.x}','${p2.y}')" )
         //レイヤ、色、線種、線幅、始点ＸＹ、終点ＸＹ SXF*/
     }
 

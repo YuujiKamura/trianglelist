@@ -2,14 +2,14 @@ package com.jpaver.trianglelist
 
 import java.util.*
 
-class TriangleK(@kotlin.jvm.JvmField
+class TriangleK(@JvmField
                     var nodeTriangle: Array<TriangleK?> = arrayOfNulls(3),
-                @kotlin.jvm.JvmField
+                @JvmField
                     var length: Array<Float> = Array(3) { 0f },
-                @kotlin.jvm.JvmField
+                @JvmField
                     var point: Array<PointXY> = Array(3) { PointXY(0f, 0f) },
                     var parentBC_: Int = -1,
-                @kotlin.jvm.JvmField
+                @JvmField
                     var baseangle: Float = 0f
 ) : EditObject(), Cloneable {
 
@@ -107,24 +107,21 @@ class TriangleK(@kotlin.jvm.JvmField
     }
 
 
-    @kotlin.jvm.JvmField
+    @JvmField
         var innerangle = arrayOf( 0f, 0f, 0f )
-    @kotlin.jvm.JvmField
+    @JvmField
         var lengthforce = arrayOf( 0f, 0f, 0f )
-    @kotlin.jvm.JvmField
+    @JvmField
         var dimpoint = arrayOf( PointXY(0f, 0f), PointXY(0f, 0f), PointXY(0f, 0f) )
-    @kotlin.jvm.JvmField
+    @JvmField
         var dimalignV = arrayOf( 3, 3, 3 )
-    @kotlin.jvm.JvmField
+    @JvmField
         var dimalignH = arrayOf( 0, 0, 0 )
-    @kotlin.jvm.JvmField
+    @JvmField
         var dimpath :Array<PathAndOffset?> = arrayOfNulls(4)
     
     var valid_ = false
     var scale_ = 1f
-    var sla_ = ""
-    var slb_ = ""
-    var slc_ = ""
     var pointCenter_ = PointXY(0f, 0f)
     var pointNumber_ = PointXY(0f, 0f)
     var isPointNumberMoved_ = false
@@ -148,8 +145,6 @@ class TriangleK(@kotlin.jvm.JvmField
 
     var myNumber_ = 1
 
-    var myDimAlign_ = 0
-    var isChangeDimAlignA_ = false
     var isChangeDimAlignB_ = false
     var isChangeDimAlignC_ = false
     var lastTapSide_ = -1
@@ -424,7 +419,7 @@ class TriangleK(@kotlin.jvm.JvmField
         if (nodeTriangle[0] != null) nodeTriangle[0]!!.resetByNode(parentSide)
     }
 
-    fun reset( new :TriangleK?, triarray : Array<TriangleK?> ) {
+    fun reset(new: TriangleK?) {
         if( new == null ) return
 
         if( new.nodeTriangle[0] != null )
@@ -475,25 +470,6 @@ class TriangleK(@kotlin.jvm.JvmField
         return triIsValid != null
     }
 
-    fun resetByChild(myChild: TriangleK, cParam: ConnParam) {
-        val cbc = myChild.cParam_.side
-        childSide_ = myChild.parentBC_
-        if (nodeTriangle[0] == null) {
-            if (cbc == 1) resetLength(length[0], myChild.length[0], length[2])
-            if (cbc == 2) resetLength(length[0], length[1], myChild.length[0])
-            return
-        }
-        if (cbc == 1) {
-            set(nodeTriangle[0]!!, cParam, myChild.length[0], length[2])
-            nodeTriangle[1] = myChild.clone()
-        }
-        if (cbc == 2) {
-            set(nodeTriangle[0]!!, cParam, length[1], myChild.length[0])
-            nodeTriangle[2] = myChild.clone()
-        }
-        setDimAlignByChild()
-    }
-
     // reset by parent.
     fun resetByParent(prnt: TriangleK, pbc: Int): Boolean {
         var triIsValid: TriangleK? = null
@@ -502,7 +478,6 @@ class TriangleK(@kotlin.jvm.JvmField
         //if(pbc == 1 ) triIsValid = set(prnt, pbc, length[0], parentLength, );
         if (pbc <= 2) {
             if (!isValidLengthes(parentLength, length[1], length[2])) {
-                triIsValid = set(prnt, pbc, length[0], length[1], length[2])
                 return false
             } else triIsValid = set(prnt, pbc, parentLength, length[1], length[2])
         }
@@ -614,12 +589,6 @@ class TriangleK(@kotlin.jvm.JvmField
         if (nodeTriangle[2] === target) nodeTriangle[2] = null
     }
 
-    fun removeTheirNode() {
-        if (nodeTriangle[0] != null) nodeTriangle[0]!!.removeNode(this)
-        if (nodeTriangle[1] != null) nodeTriangle[1]!!.removeNode(this)
-        if (nodeTriangle[2] != null) nodeTriangle[2]!!.removeNode(this)
-    }
-
     fun rotateNode( clockwise : Boolean = true ){
 
         when( clockwise ){
@@ -658,10 +627,6 @@ class TriangleK(@kotlin.jvm.JvmField
 
     }
 
-    fun <A>rotArray( array: Array<A>, someFunction: (A) -> Unit ) {
-            someFunction(array[0])
-    }
-
     fun autoRotateNode( clockwise : Boolean = true ){
         rotateArray( nodeTriangle, clockwise )
         rotateArray( length, clockwise )
@@ -676,14 +641,6 @@ class TriangleK(@kotlin.jvm.JvmField
         if( target.nodeTriangle[2] == me ) target.autoRotateNode(  )
     }
 
-    fun isConstant(): Boolean{
-        if( nodeTriangle[0] == null ) return false
-        return ( myNumber_ - nodeTriangle[0]!!.myNumber_ == 1 )
-    }
-
-    val lengthByType: Float
-        get() = 0f
-
 
     fun calcPoints(ref: TriangleK?, refside: Int, pos: PointXY = PointXY(0f, 0f), angle_: Float = 0f) {
         isValidLengthes( length[0], length[1], length[2] )
@@ -694,7 +651,7 @@ class TriangleK(@kotlin.jvm.JvmField
         val plist: Array<PointXY?>
         val llist: FloatArray
         val powlist: DoubleArray
-        var angle = 0f
+        val angle: Float
 
         when (refside) {
             -1 -> {
@@ -831,17 +788,12 @@ class TriangleK(@kotlin.jvm.JvmField
         return point1
     }
 
-    fun getPointByCParam(cparam: ConnParam, prnt: TriangleK): PointXY {
+    fun getPointByCParam(cparam: ConnParam): PointXY {
         val cside = cparam.side
-        val ctype = cparam.type
-        val clcr = cparam.lcr
+        cparam.type
+        cparam.lcr
         //pp.add( getPointBy( pp, length[0], clcr ) );
         return getPointBySide(cside)
-    }
-
-    fun getPointBy(p: PointXY, la: Float, lcr: Int): PointXY {
-        return if (lcr == 2) p else p
-        //        if( lcr == 1 ) return p.offset(  );
     }
 
     fun getPointByBackSide(i: Int): PointXY? {
@@ -871,10 +823,10 @@ class TriangleK(@kotlin.jvm.JvmField
     }
 
     fun getParentPointByType(cParam: ConnParam = this.cParam_): PointXY {
-        return getParentPointByType(cParam.side, cParam.type, cParam.lcr)
+        return getParentPointByType(cParam.side, cParam.type)
     }
 
-    fun getParentPointByType(pbc: Int, conntype: Int, lcr :Int = -1 ): PointXY {
+    fun getParentPointByType(pbc: Int, conntype: Int): PointXY {
         return if (nodeTriangle[0] == null) PointXY(0f, 0f)
         else when (conntype) {
             1 -> getParentPointByLCR(pbc)
@@ -960,18 +912,18 @@ class TriangleK(@kotlin.jvm.JvmField
             0 -> if (cParam.lenA != 0.0f) {
                 length[0] = cParam.lenA
                 lengthforce[0] = cParam.lenA
-                point[0] = getParentPointByType(cParam.side, cParam.type, cParam.lcr)
+                point[0] = getParentPointByType(cParam.side, cParam.type)
             } else {
                 length[0] = nodeTriangle[0]!!.getLengthBySide(cParam.side)
                 lengthforce[0] = nodeTriangle[0]!!.getLengthBySide(cParam.side)
-                point[0] = nodeTriangle[0]!!.getPointByCParam(cParam, nodeTriangle[0]!!)
+                point[0] = nodeTriangle[0]!!.getPointByCParam(cParam)
             }
             else -> {
                 if (cParam.lenA != 0.0f) {
                     length[0] = cParam.lenA
                     lengthforce[0] = cParam.lenA
                 }
-                point[0] = getParentPointByType(cParam.side, cParam.type, cParam.lcr)
+                point[0] = getParentPointByType(cParam.side, cParam.type)
             }
         }
     }
@@ -996,7 +948,7 @@ class TriangleK(@kotlin.jvm.JvmField
     }
 
     fun setBasePoint(cParam: ConnParam): PointXY {
-        point[0] = getParentPointByType(cParam.side, cParam.type, cParam.lcr)
+        point[0] = getParentPointByType(cParam.side, cParam.type)
         connectionType_ = cParam.type
         connectionLCR_ = cParam.lcr
         calcPoints(point[0], baseangle)
@@ -1004,20 +956,20 @@ class TriangleK(@kotlin.jvm.JvmField
     }
 
     fun setBasePoint(pbc: Int, pct: Int, lcr: Int): PointXY {
-        point[0] = getParentPointByType(pbc, pct, lcr)
+        point[0] = getParentPointByType(pbc, pct)
         connectionType_ = pct
         connectionLCR_ = lcr
         calcPoints(point[0], baseangle)
         return point[0]
     }
 
-    fun setParent(parent: TriangleK, pbc: Int) {
+    fun setParent(parent: TriangleK) {
         nodeTriangle[0] = parent.clone()
         //myParentBC_ = pbc;
     }
 
     fun setCParamFromParentBC(pbc: Int) {
-        var curLCR = cParam_.lcr
+        val curLCR = cParam_.lcr
         // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
         //if (cParam_.side == 0 && (pbc == 4 || pbc == 6)) curLCR = 0
         //if (cParam_.side == 0 && (pbc == 7 || pbc == 8)) curLCR = 1
@@ -1044,21 +996,12 @@ class TriangleK(@kotlin.jvm.JvmField
         }
     }
 
-    fun setDimAligns(sa: Int, sb: Int, sc: Int, ha: Int, hb: Int, hc: Int) {
-        dimalignH[0] = sa
-        dimalignH[1] = sb
-        dimalignH[2] = sc
-        dimalignV[0] = ha
-        dimalignV[1] = hb
-        dimalignV[2] = hc
-    }
-
     private fun setMyBound() {
-        var lb = point[0].min(point[1])
+        val lb: PointXY
         lb = point[1].min(point[2])
         myBP_.left = lb.x
         myBP_.bottom = lb.y
-        var rt = point[0].max(point[1])
+        val rt: PointXY
         rt = point[1].max(point[2])
         myBP_.right = rt.x
         myBP_.top = rt.y
@@ -1083,12 +1026,6 @@ class TriangleK(@kotlin.jvm.JvmField
         calcPoints(point[0], baseangle)
     }
 
-    //maybe not use.
-    private fun setParentInfo(myParNum: Int, myParBC: Int, myConne: Int) {
-        parentNumber_ = myParNum
-        parentBC_ = myParBC
-    }
-
     fun setDimPoint() {
         dimpoint[0] =
                 dimSideRotation(dimalignH[0], point[0].calcMidPoint(point[1]), point[1], point[0])
@@ -1096,11 +1033,6 @@ class TriangleK(@kotlin.jvm.JvmField
                 dimSideRotation(dimalignH[1], point[1].calcMidPoint(point[2]), point[2], point[1])
         dimpoint[2] =
                 dimSideRotation(dimalignH[2], point[2].calcMidPoint(point[0]), point[0], point[2])
-    }
-
-    fun setPointNumberMoved_(p: PointXY) {
-        pointNumber_ = p
-        isPointNumberMoved_ = true
     }
 
     fun setDimPath(ts: Float) {
@@ -1146,20 +1078,18 @@ class TriangleK(@kotlin.jvm.JvmField
         get() = baseangle - innerangle[0]
     val angleMpAB: Float
         get() = baseangle + innerangle[1]
-    val angleMpBC: Float
-        get() = baseangle + innerangle[2]
 
     val parent: TriangleK?
         get() = if (nodeTriangle[0] != null) nodeTriangle[0] else null
 
     val dimAlignA: Int
-        get() = calcDimAlignByInnerAngleOf(0, baseangle)
+        get() = calcDimAlignByInnerAngleOf(0)
 
     val dimAlignB: Int
-        get() = calcDimAlignByInnerAngleOf(1, angleMpAB)
+        get() = calcDimAlignByInnerAngleOf(1)
 
     val dimAlignC: Int
-        get() = calcDimAlignByInnerAngleOf(2, angleMmCA)
+        get() = calcDimAlignByInnerAngleOf(2)
 
     val pointNumberAutoAligned_: PointXY
         get() {
@@ -1224,11 +1154,6 @@ class TriangleK(@kotlin.jvm.JvmField
         return iscons <= 1
     }
 
-    fun crossOffset(pbc: Int): PointXY? {
-        if (pbc == 1) return point[0].crossOffset(point[2], 1.0f)
-        return if (pbc == 2) point[2].crossOffset(point[1], 1.0f) else point[0]
-    }
-
     fun rotateLCRandGet(): TriangleK {
         rotateLCR()
         return this
@@ -1243,26 +1168,11 @@ class TriangleK(@kotlin.jvm.JvmField
         return setBasePoint(cParam_)
     }
 
-    fun reload() {
-        if (nodeTriangle[0] != null) {
-            nodeTriangle[0]!!.reload()
-            calcPoints(
-                    nodeTriangle[0]!!.getPointBySide(parentBC_).also {
-                        if (it != null) {
-                            point[0] = it
-                        }
-                    },
-                    nodeTriangle[0]!!.getAngleBySide(
-                            parentBC_
-                    ).also { baseangle = it })
-        }
-    }
-
     fun hasChild(): Boolean {
         return nodeTriangle[1] != null || nodeTriangle[2] != null
     }
 
-    fun collision(x: Float, y: Float): Boolean {
+    fun collision(): Boolean {
         return true
     }
 
@@ -1338,16 +1248,7 @@ class TriangleK(@kotlin.jvm.JvmField
         if (isPointNumberMoved_ == false) pointNumber_ = pointCenter_ //とりあえず重心にする
     }
 
-    fun autoSetDimAlign(): Int { // 1:下 3:上
-        dimalignV[0] = calcDimAlignByInnerAngleOf(0, baseangle)
-        dimalignV[1] = calcDimAlignByInnerAngleOf(1, angleMpAB)
-        dimalignV[2] = calcDimAlignByInnerAngleOf(2, angleMmCA)
-
-        setDimPath(dimH_)
-        return myDimAlign_
-    }
-
-    fun calcDimAlignByInnerAngleOf(ABC: Int, angle: Float): Int {    // 夾角の、1:外 　3:内
+    fun calcDimAlignByInnerAngleOf(ABC: Int): Int {    // 夾角の、1:外 　3:内
         if (ABC == 0) {
             if (parentBC_ == 9 || parentBC_ == 10) return 1
             if (parentBC_ > 2 || nodeTriangle[1] != null || nodeTriangle[2] != null) return 3
@@ -1403,23 +1304,13 @@ class TriangleK(@kotlin.jvm.JvmField
         setDimPath(dimH_)
     }
 
-    fun zeroTwoRotate(num_: Int): Int {
-        var num = num_
-        num = num + 1
-        return if (num > 2) 0.also { num = it } else num
-    }
-
-    fun isName(name: String): Boolean {
-        return myName_ == name
-    }
-
     // 自分の次の番号がくっついている辺を調べてA辺にする。
     // 他の番号にあって自身の辺上に無い場合は、A辺を変更しない。
     fun rotateLengthBy(side: Int): TriangleK {
         //Triangle this = this.clone();
-        var pf = 0f
-        var pi = 0
-        var pp = PointXY(0f, 0f)
+        var pf: Float
+        var pi: Int
+        var pp: PointXY
         if (side == 1) { // B to A
             pf = length[0]
             length[0] = length[1]
@@ -1466,7 +1357,7 @@ class TriangleK(@kotlin.jvm.JvmField
             point[0] = point[2]
             point[2] = point[1]
             point[1] = pp.clone()
-            val ga = baseangle
+            baseangle
             pf = innerangle[0]
             innerangle[0] = innerangle[2]
             innerangle[2] = innerangle[1]
@@ -1509,19 +1400,12 @@ class TriangleK(@kotlin.jvm.JvmField
         return dimPoint.offset(offsetTo, haba)
     }
 
-    fun formattedString(digit: Float, fractionDigits: Int): String {
-        // 0の場合は空文字
-        if (digit == 0f) return "0.00"
-        val formatter = "%.\${fractionDigits}f"
-        return String.format(java.lang.Float.toString(digit))
-    }
-
     fun alreadyHaveChild(pbc: Int): Boolean {
         if (pbc < 1) return false
         return if (getSideByIndex(pbc) === "B" && isChildB_ == true) true else getSideByIndex(pbc) === "C" && isChildC_ == true
     }
 
-    fun hasChildIn(cbc: Int): Boolean? {
+    fun hasChildIn(cbc: Int): Boolean {
         return if ((nodeTriangle[1] != null || isChildB_ == true) && cbc == 1) true else (nodeTriangle[2] != null || isChildC_ == true) && cbc == 2
     }
 

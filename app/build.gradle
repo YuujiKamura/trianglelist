@@ -1,14 +1,14 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-android-extensions'
+//apply plugin: 'kotlin-android-extensions'
 
 android {
-    compileSdkVersion 32
+    compileSdkVersion 33
 
     defaultConfig {
         applicationId "com.jpaver.myapplication"
-        minSdkVersion 23
-        targetSdkVersion 32
+        minSdkVersion 26
+        targetSdkVersion 33
         versionCode 1283
         versionName "6.49"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -33,9 +33,10 @@ android {
 
     productFlavors {
         dev {
+            resConfigs 'jp', 'xxhdpi'
+
             // The following configuration limits the "dev" flavor to using
             // English stringresources and xxhdpi screen-density resources.
-            resConfigs "jp", "xxhdpi"
             dimension "mode"
             applicationId "com.jpaver.myapplication"
         }
@@ -75,14 +76,14 @@ android {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${kotlin_version}"
-    implementation 'androidx.appcompat:appcompat:1.4.2'
-    implementation 'androidx.activity:activity-ktx:1.6.0-alpha05'
-    implementation 'androidx.core:core-ktx:1.8.0'
+    implementation 'androidx.appcompat:appcompat:1.5.1'
+    implementation 'androidx.activity:activity-ktx:1.6.0-rc02'
+    implementation 'androidx.core:core-ktx:1.9.0'
     implementation 'com.google.android.material:material:1.6.1'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    implementation 'androidx.navigation:navigation-fragment-ktx:2.5.0'
-    implementation 'androidx.navigation:navigation-ui-ktx:2.5.0'
-    implementation 'com.google.android.gms:play-services-ads:21.1.0'
+    implementation 'androidx.navigation:navigation-fragment-ktx:2.5.2'
+    implementation 'androidx.navigation:navigation-ui-ktx:2.5.2'
+    implementation 'com.google.android.gms:play-services-ads:21.2.0'
     implementation 'androidx.preference:preference-ktx:1.2.0'
     implementation 'com.google.android.play:core-ktx:1.8.1'
     testImplementation 'junit:junit:4.13.2'
@@ -93,4 +94,5 @@ dependencies {
     testImplementation 'org.powermock:powermock-api-mockito:1.7.4'
     testImplementation 'org.robolectric:robolectric:4.7.3'
     androidTestImplementation 'androidx.test:rules:1.4.0'
+    implementation 'org.apache.poi:poi-ooxml:4.1.0'
 }
