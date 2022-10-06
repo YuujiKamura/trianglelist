@@ -841,7 +841,7 @@ class TriListTest {
 
         printTriangle( t2 )
 
-        Assert.assertEquals(4f, t1.pointBC_.y, 0.001f)
+        Assert.assertEquals(3f, t1.pointBC_.y, 0.001f)
         Assert.assertEquals(7f, t2.pointBC_.y, 0.001f)
 
         trilist.resetTriangles(1, Triangle(3.0f, 4.0f, 5.0f, PointXY(0f, 0f), 180.0f) )
@@ -885,7 +885,7 @@ class TriListTest {
         val mytri1 = Triangle(3.0f, 4.0f, 5.0f, PointXY(0f, 0f), 180.0f)
         val myTrilist = TriangleList()
         myTrilist.add(mytri1, true)
-        Assert.assertEquals(3.0f, myTrilist.getTriangle(1).getLengthA_(), 0.001f)
+        Assert.assertEquals(3.0f, myTrilist.getTriangle(1).getLengthA(), 0.001f)
         Assert.assertEquals(1, myTrilist.size().toLong())
     }
 
@@ -898,7 +898,7 @@ class TriListTest {
         trilist.add(Triangle(trilist.get(1), 2, 5f, 5f), true)
 
         // 新しい三角形を作って渡すと連動しないので、ポインタを取得してリセットする。
-        trilist.resetTriangles(1, trilist.get(2).set(trilist.get(1), 2, 5f, 5f))
+        trilist.resetTriangles(2, trilist.get(2).set(trilist.get(1), 2, 5f, 5f))
         assertEquals(trilist.get(2).pointAB_.x, trilist.get(1).pointBC_.x, 0.001f)
         assertEquals(trilist.get(2).pointAB_.y, trilist.get(1).pointBC_.y, 0.001f)
 
@@ -915,9 +915,9 @@ class TriListTest {
         myTrilist.add(Triangle(mytri1, 1, 3f, 5f), true)
         myTrilist.resetTriangles(1, mytri1.resetLength(3f, 2f, 4.5f))
         //myTrilist.getTriangle(3).reset(mytri1, 1);
-        Assert.assertEquals(2.0f, myTrilist.getTriangle(1).getLengthB_(), 0.001f)
-        Assert.assertEquals(3.0f, myTrilist.getTriangle(1).getLengthA_(), 0.001f)
-        Assert.assertEquals(4.0f, myTrilist.getTriangle(3).getLengthA_(), 0.001f)
+        Assert.assertEquals(2.0f, myTrilist.getTriangle(1).getLengthB(), 0.001f)
+        Assert.assertEquals(3.0f, myTrilist.getTriangle(1).getLengthA(), 0.001f)
+        Assert.assertEquals(4.0f, myTrilist.getTriangle(3).getLengthA(), 0.001f)
         Assert.assertEquals(1, myTrilist.getTriangle(1).myNumber_.toLong())
         Assert.assertEquals(3, myTrilist.size().toLong())
 
@@ -959,10 +959,10 @@ class TriListTest {
         myTrilist.add(Triangle(mytri1, 2, 3.0f, 4.0f), true)
         myTrilist.add(Triangle(myTrilist.getTriangle(myTrilist.size()), 1, 4.0f, 5.0f), true)
         myTrilist.add(Triangle(myTrilist.getTriangle(myTrilist.size()), 2, 3.0f, 4.0f), true)
-        Assert.assertEquals(5.0, myTrilist.getTriangle(4).getLengthA_().toDouble(), 0.001)
+        Assert.assertEquals(5.0, myTrilist.getTriangle(4).getLengthA().toDouble(), 0.001)
 
         myTrilist.resetTriangles(1, Triangle(myTrilist.getTriangle(1), 2, 5.0f, 5.0f))
         Assert.assertEquals(2.0, myTrilist.getTriangle(2).getMyNumber_().toDouble(), 0.001)
-        Assert.assertEquals(3.0, myTrilist.getTriangle(3).getLengthA_().toDouble(), 0.001)
+        Assert.assertEquals(3.0, myTrilist.getTriangle(3).getLengthA().toDouble(), 0.001)
     }
 }

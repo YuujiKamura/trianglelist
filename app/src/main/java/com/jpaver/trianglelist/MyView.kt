@@ -15,7 +15,6 @@ import android.view.ScaleGestureDetector
 import android.view.ScaleGestureDetector.OnScaleGestureListener
 import android.view.View
 import androidx.core.view.GestureDetectorCompat
-import com.jpaver.trianglelist.util.AdManager
 import com.jpaver.trianglelist.util.RotateGestureDetector
 import java.util.*
 import kotlin.math.roundToInt
@@ -461,9 +460,10 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
         for( i in 0 until myTriangleList.size() ){
             val tri = myTriangleList.get(i+1)
-            tri.sla_ = tri.lengthAforce_.formattedString(2)
-            tri.slb_ = tri.lengthBforce_.formattedString(2)
-            tri.slc_ = tri.lengthCforce_.formattedString(2)
+            tri.sla_ = tri.lengthNotSized[0].formattedString(2)
+            tri.slb_ = tri.lengthNotSized[1].formattedString(2)
+            tri.slc_ = tri.lengthNotSized[2].formattedString(2)
+
         }
 
     }
@@ -1017,7 +1017,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
                     numkyori = numkyoriC - ( katamuki * 1f )
                 }
 
-                zukeinohaba = numberList.get(i).lengthA_ * 2
+                zukeinohaba = numberList.get(i).length[0] * 2
                 var hTransLen = zukeinohaba + hYohaku + hkaishi// 分割数で上下の描画位置を変えたらいけない。
 
                 // mirror -X +Y

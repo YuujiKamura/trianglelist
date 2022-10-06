@@ -49,6 +49,8 @@ class Deduction(var num: Int = 0,
     lateinit var prt: PointXY
     lateinit var prb: PointXY
     var infoStr: String
+    var typestring: String
+    var typenum: Int
 
     private var distanceInPCA = 0f
 
@@ -57,12 +59,13 @@ class Deduction(var num: Int = 0,
 
         if(type == "Box"){
             setBox( myscale )
-//            plt = PointXY(point.getX()-lengthX*scale_*0.5f, point.getY()-lengthY*scale_*0.5f ).rotate(point, shapeAngle_)
-  //          plb = PointXY(point.getX()-lengthX*scale_*0.5f, point.getY()+lengthY*scale_*0.5f ).rotate(point, shapeAngle_)
-    //        prt = PointXY(point.getX()+lengthX*scale_*0.5f, point.getY()-lengthY*scale_*0.5f ).rotate(point, shapeAngle_)
-      //      prb = PointXY(point.getX()+lengthX*scale_*0.5f, point.getY()+lengthY*scale_*0.5f ).rotate(point, shapeAngle_)
+            typestring = "長方形"
+            typenum = 0
         }
         else{
+            typestring = "円"
+            typenum = 1
+
             plt = PointXY( 0f, 0f )
             plb = PointXY( 0f, 0f )
             prt = PointXY( 0f, 0f )

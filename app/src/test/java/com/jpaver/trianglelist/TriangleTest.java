@@ -60,7 +60,7 @@ public class TriangleTest {
 
         //t2.set( t, 1, 6f, 6f,6f, true );
 
-        assertEquals(5f, t.getLengthB_(), 0.001f );
+        assertEquals(5f, t.getLengthB(), 0.001f );
         //assertEquals(6f, t3.lengthA_, 0.001f );
 
     }
@@ -160,10 +160,10 @@ public class TriangleTest {
     @Test
     public void testCalcDimAngle() {
         Triangle tri = new Triangle(5, 5, 5);
-        float angle = tri.pointCA_.calcAngle(tri.pointAB_,tri.pointBC_);
+        float angle = tri.point[0].calcAngle(tri.pointAB_,tri.pointBC_);
         assertEquals( -120f, angle, 0.0001f);
-        assertEquals( -120f, tri.pointBC_.calcAngle(tri.pointCA_,tri.pointAB_), 0.0001f);
-        assertEquals( -120f, tri.pointAB_.calcAngle(tri.pointBC_,tri.pointCA_), 0.0001f);
+        assertEquals( -120f, tri.pointBC_.calcAngle(tri.point[0],tri.pointAB_), 0.0001f);
+        assertEquals( -120f, tri.pointAB_.calcAngle(tri.pointBC_,tri.point[0]), 0.0001f);
 }
 
     @Test
@@ -174,7 +174,7 @@ public class TriangleTest {
         assertEquals(1, tri1.dimSideAlignA_);
 
         tri1.setDimPoint();
-        assertEquals( -2.25f, tri1.dimPointA_.getX(), 0.001f);
+        assertEquals( -2.325f, tri1.dimPointA_.getX(), 0.001f);
 
         PointXY dim = new PointXY(-1.5f,0f);
         PointXY offsetLeft = new PointXY(-3f,0f);
@@ -190,7 +190,7 @@ public class TriangleTest {
 
         tri1.rotateDimSideAlign(0);
         tri1.setDimPoint();
-        assertEquals( -0.75f, tri1.dimPointA_.getX(), 0.001f);
+        assertEquals( -0.67f, tri1.dimPointA_.getX(), 0.01f);
 
         tri1.flipDimAlignH(0);
         assertEquals( 1, tri1.myDimAlignA_);
@@ -223,7 +223,7 @@ public class TriangleTest {
         Triangle t1 = new Triangle(3,4,5);
 
         Triangle t2 = new Triangle(t1,7,3,5,4); // connection 7 is set to B-Center
-        assertEquals( 3.5f, t2.pointCA_.getY(), 0.001);
+        assertEquals( 3.5f, t2.point[0].getY(), 0.001);
 
         Triangle t3 = new Triangle(t2,8,3,4,5); // connection 8 is set to C-Center
         assertEquals( -6.5f, t3.pointAB_.getX(), 0.001);
@@ -263,8 +263,8 @@ public class TriangleTest {
     public void testCalcAngleOfLength(){
         Triangle mytri = new Triangle(3.0f, 4.0f, 5.0f, new PointXY(0,0), 180.0f);
 
-        assertEquals(0f, mytri.getPointCA_().calcDimAngle(mytri.getPointAB_()), 0.001);
-        assertEquals(-1.5, mytri.getPointCA_().calcMidPoint(mytri.getPointAB_()).getX(), 0.01f);
+        assertEquals(0f, mytri.point[0].calcDimAngle(mytri.getPointAB_()), 0.001);
+        assertEquals(-1.5, mytri.point[0].calcMidPoint(mytri.getPointAB_()).getX(), 0.01f);
 
     }
 
@@ -278,8 +278,8 @@ public class TriangleTest {
     public void testTrianglePoint(){
         PointXY myXY0 = new PointXY(0.0f, 0.0f);
         Triangle myTriangle = new Triangle(3.0f, 4.0f, 5.0f, myXY0, 180.0f);
-        assertEquals(myTriangle.getPointCA_().getX(), myXY0.getX(), 0.001);
-        assertEquals(myTriangle.getPointCA_().getY(), myXY0.getY(), 0.001);
+        assertEquals(myTriangle.point[0].getX(), myXY0.getX(), 0.001);
+        assertEquals(myTriangle.point[0].getY(), myXY0.getY(), 0.001);
 
         assertEquals(myTriangle.getPointAB_().getX(), -3.0, 0.001);
         assertEquals(myTriangle.getPointAB_().getY(), -0.0, 0.001);
@@ -323,7 +323,7 @@ public class TriangleTest {
 
         // atan2( y, x );
         double theta = Math.atan2(pCA.getY()-myTriangle.getPointAB_().getY(), pCA.getX()-myTriangle.getPointAB_().getX());
-        double alpha = Math.acos(Math.pow(myTriangle.getLengthA_(),2)+Math.pow(myTriangle.getLengthB_(),2)-Math.pow(myTriangle.getLengthC_(),2));
+        double alpha = Math.acos(Math.pow(myTriangle.getLengthA(),2)+Math.pow(myTriangle.getLengthB(),2)-Math.pow(myTriangle.getLengthC(),2));
 
         assertEquals( pCA.getX()-myTriangle.getPointAB_().getX(), 3.0, 0.005);
         assertEquals( pCA.getY()-myTriangle.getPointAB_().getY(), 0.0, 0.005);
@@ -340,15 +340,15 @@ public class TriangleTest {
         Triangle tri1 = new Triangle(3f, 5f, 4f, new PointXY(0f,0f), 0.0f);
         Triangle tri2 = new Triangle( tri1, 3, 6f, 5f, 4f );
         // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
-        assertEquals( true, tri1.pointCA_.equals( 0f, 0f ) );
+        assertEquals( true, tri1.point[0].equals( 0f, 0f ) );
         assertEquals( true, tri1.pointAB_.equals( 3f, 0f ) );
         assertEquals( true, tri1.pointBC_.equals( 0f, -4f ) );
-        assertEquals( true, tri2.pointCA_.equals( 0f, -4f ) );
+        assertEquals( true, tri2.point[0].equals( 0f, -4f ) );
         assertEquals( false, tri2.pointAB_.equals( 3f, 0f ) );
         assertEquals( false, tri2.pointBC_.equals( 0f, -4f ) );
 
         tri1.calcPoints( tri2, 1 );
-        assertEquals( false, tri1.pointCA_.equals( 0f, 0f ) );
+        assertEquals( false, tri1.point[0].equals( 0f, 0f ) );
         assertEquals( false, tri1.pointAB_.equals( 3f, 0f ) );
         assertEquals( false, tri1.pointBC_.equals( 0f, -4f ) );
 
@@ -359,12 +359,12 @@ public class TriangleTest {
         Triangle tri1 = new Triangle(3f, 4f, 5f, new PointXY(0f,0f), 0.0f);
         Triangle tri2 = new Triangle( tri1, 2, 3f, 4f );
 
-        assertEquals( true, tri1.pointCA_.equals( 0f, 0f ) );
+        assertEquals( true, tri1.point[0].equals( 0f, 0f ) );
         assertEquals( true, tri1.pointAB_.equals( 3f, 0f ) );
         assertEquals( true, tri1.pointBC_.equals( 3f, -4f ) );
 
         tri1.calcPoints( tri2, 2 );
-        assertEquals( true, tri1.pointCA_.equals( 0f, 0f ) );
+        assertEquals( true, tri1.point[0].equals( 0f, 0f ) );
         assertEquals( true, tri1.pointAB_.equals( 3f, 0f ) );
         assertEquals( true, tri1.pointBC_.equals( 3f, -4f ) );
 
@@ -375,12 +375,12 @@ public class TriangleTest {
         Triangle tri1 = new Triangle(3f, 5f, 4f, new PointXY(0f,0f), 0.0f);
         Triangle tri2 = new Triangle( tri1, 1, 4f, 3f );
 
-        assertEquals( true, tri1.pointCA_.equals( 0f, 0f ) );
+        assertEquals( true, tri1.point[0].equals( 0f, 0f ) );
         assertEquals( true, tri1.pointAB_.equals( 3f, 0f ) );
         assertEquals( true, tri1.pointBC_.equals( 0f, -4f ) );
 
         tri1.calcPoints( tri2, 1 );
-        assertEquals( true, tri1.pointCA_.equals( 0f, 0f ) );
+        assertEquals( true, tri1.point[0].equals( 0f, 0f ) );
         assertEquals( true, tri1.pointAB_.equals( 3f, 0f ) );
         assertEquals( true, tri1.pointBC_.equals( 0f, -4f ) );
 

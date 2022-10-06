@@ -8,7 +8,6 @@ import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.drawable.Icon
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.text.Editable
 import android.text.InputFilter
@@ -18,13 +17,10 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
-import android.view.View.INVISIBLE
-import android.view.View.VISIBLE
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider.getUriForFile
 import androidx.core.content.edit
@@ -38,6 +34,7 @@ import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.UpdateAvailability
 import com.jpaver.trianglelist.databinding.ActivityMainBinding
+import com.jpaver.trianglelist.filemanager.XlsxWriter
 import com.jpaver.trianglelist.util.AdManager
 import org.json.JSONObject.NULL
 import java.io.*
@@ -103,6 +100,7 @@ class MainActivity : AppCompatActivity(),
     lateinit var fab_share: FloatingActionButton
     lateinit var fab_mail: FloatingActionButton
     lateinit var fab_numreverse: FloatingActionButton
+    lateinit var fab_xlsx: FloatingActionButton
 
     private fun checkPermission() {
         if (isGranted()) {
@@ -296,7 +294,7 @@ class MainActivity : AppCompatActivity(),
         fab_share =     bMyAct.fabShare
         fab_mail =      bMyAct.fabMail
         fab_numreverse = bMyAct.fabNumreverse
-
+        fab_xlsx = bMyAct.fabXlsx
 
         fab_replace.setOnClickListener {
             fabReplace(dParams, false)
@@ -579,7 +577,11 @@ class MainActivity : AppCompatActivity(),
         }
 
         fab_pdf.setOnClickListener {
-            viewPdf(getAppLocalFile(this, "myLastTriList.pdf"))
+            viewPdf( getAppLocalFile(this, "myLastTriList.pdf") )
+        }
+
+        fab_xlsx.setOnClickListener{
+            viewXlsx( getAppLocalFile(this, "myLastTriList.xlsx") )
         }
 
         fab_share.setOnClickListener {
@@ -604,6 +606,7 @@ class MainActivity : AppCompatActivity(),
             my_view.resetView(my_view.toLastTapTriangle())
             editorClear(myTriangleList, myTriangleList.current)
         }
+
     }
 
     override fun onAttachedToWindow() {
@@ -717,7 +720,7 @@ class MainActivity : AppCompatActivity(),
         // 広告の非表示
         if( BuildConfig.FLAVOR == "free" ){
             val adManager = AdManager()
-            //adManager.disableAd(mAdView)
+            adManager.disableAd(mAdView)
             //findViewById<EditText>(R.id.editLengthC1).requestFocus()
             //mAdView.visibility = VISIBLE
         }
@@ -733,7 +736,6 @@ class MainActivity : AppCompatActivity(),
         return true
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onDialogPositiveClick(dialog: DialogFragment?) {
         mIsCreateNew = true
         fileType = "CSV"
@@ -750,11 +752,8 @@ class MainActivity : AppCompatActivity(),
         createNew()
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         rosenname = findViewById<EditText>(R.id.rosenname).text.toString()
-
-
 
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
@@ -794,6 +793,21 @@ class MainActivity : AppCompatActivity(),
 
             R.id.action_save_sfc -> {
                 showExportDialog(".sfc", "Export SFC", "SFC", "text/sfc")
+                return true
+            }
+
+            R.id.action_save_xlsx -> {
+                fileType = "XLS"
+                val intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
+                intent.addCategory(Intent.CATEGORY_OPENABLE)
+                intent.type = "application/vnd.ms-excel"
+                intent.putExtra(
+                    Intent.EXTRA_TITLE,
+                    LocalDate.now().monthValue.toString() + "." + LocalDate.now().dayOfMonth.toString() + " " + rosenname + ".xlsx"
+                )
+
+                saveContent.launch( intent )
+
                 return true
             }
 
@@ -1762,7 +1776,6 @@ class MainActivity : AppCompatActivity(),
         setTitles()
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     val saveContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
         //Log.d( "FileManager", "StartActivityForResult: " + result )
 
@@ -1786,24 +1799,25 @@ class MainActivity : AppCompatActivity(),
                 autoSaveCSV() // オートセーブ
 
                 val charset = "Shift-JIS"
+                val content = title?.let { contentResolver.openOutputStream(it) }!!
                 val writer = BufferedWriter(
-                    OutputStreamWriter(title?.let { contentResolver.openOutputStream(it) }, charset)
+                    OutputStreamWriter(content, charset)
                 )
 
                 if (fileType == "DXF") saveDXF(writer)
                 if (fileType == "CSV") saveCSV(writer)
-                if (fileType == "PDF") savePDF(title?.let { contentResolver.openOutputStream(it) }!!)
+                if (fileType == "PDF") savePDF( content )
                 if (fileType == "SFC") saveSFC(
-                    BufferedOutputStream(
-                        title?.let {
-                            contentResolver.openOutputStream(
-                                it
-                            )
-                        }
-                    )
+                    BufferedOutputStream( content )
                 )
+                if(fileType == "XLS"){
 
-                if( BuildConfig.FLAVOR == "free" ) showInterStAd()
+                    val xlsxWriter = XlsxWriter()
+                    xlsxWriter.write( content, myTriangleList,  myDeductionList, rosenname )
+
+                }
+
+                //if( BuildConfig.FLAVOR == "free" ) showInterStAd()
             } catch (e: IOException) {
                 e.printStackTrace()
             }
@@ -1836,7 +1850,6 @@ class MainActivity : AppCompatActivity(),
         loadContent.launch( intent )
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     fun showExportDialog(fileprefix: String, title: String, filetype: String, intentType: String): Boolean{
         val hTstart = getString(R.string.inputtnum)
         val editText5 = EditText(this)
@@ -1883,75 +1896,7 @@ class MainActivity : AppCompatActivity(),
                 }.show()
         return true
     }
-/*
-    @RequiresApi(Build.VERSION_CODES.O)
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if(data?.data == NULL || resultCode == RESULT_CANCELED) return
-        val title: Uri = Objects.requireNonNull(data?.data)!!
 
-        if(requestCode == 1 && resultCode == RESULT_OK) {
-            try {
-                val charset = "Shift-JIS"
-                val writer = BufferedWriter(
-                        OutputStreamWriter(contentResolver.openOutputStream(title), charset)
-                )
-
-                if (fileType == "DXF") saveDXF(writer)
-                if (fileType == "CSV") saveCSV(writer)
-                if (fileType == "PDF") savePDF(contentResolver.openOutputStream(title)!!)
-                if (fileType == "SFC") saveSFC(
-                        BufferedOutputStream(
-                                contentResolver.openOutputStream(
-                                        title
-                                )
-                        )
-                )
-
-                autoSaveCSV() // オートセーブ
-                if( BuildConfig.FLAVOR == "free" ) showInterStAd()
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
-
-        if(requestCode ==2 && resultCode == RESULT_OK) {
-            StringBuilder()
-            try {
-                val reader = BufferedReader(
-                        InputStreamReader(contentResolver.openInputStream(title), "Shift-JIS")
-                )
-                loadCSV(reader)
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
-
-        //フォルダ選択
-        if (requestCode == REQUESTCODE && resultCode == RESULT_OK) {
-            // リクエストコードが一致&成功のとき
-            val uri = data?.data ?: return
-            // Uriは再起すると使えなくなるので対策
-            contentResolver.takePersistableUriPermission(
-                    uri,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-            )
-            // Uri保存。これでアプリ再起動後も使えます。
-            prefSetting.edit {
-                putString("uri", uri.toString())
-            }
-
-            openDocumentPicker()
-        }
-
-        if(mIsCreateNew){
-            createNew()
-            mIsCreateNew = false
-        }
-
-        setTitles()
-    }
-*/
     private fun showInterStAd(){
         //インタースティシャル広告の読み込み
         if( BuildConfig.FLAVOR == "free") {
@@ -1987,6 +1932,23 @@ class MainActivity : AppCompatActivity(),
             //intent.flags = Intent.FLAG_GRANT_WRITE_URI_PERMISSION
             intent.setDataAndType(contentUri, "application/pdf")
             //intent.setPackage("com.adobe.reader")
+            try {
+                startActivity(intent)
+            } catch (e: ActivityNotFoundException) {
+                //if user doesn't have pdf reader instructing to download a pdf reader
+            }
+        }
+    }
+
+    private fun viewXlsx(contentUri: Uri){
+        autoSaveXlsx()
+        setTitles()
+
+        if ( contentUri != Uri.EMPTY ) {
+            val intent = Intent(Intent.ACTION_VIEW)
+            intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+            intent.setDataAndType(contentUri, "application/vnd.ms-excel")
+
             try {
                 startActivity(intent)
             } catch (e: ActivityNotFoundException) {
@@ -2051,7 +2013,6 @@ class MainActivity : AppCompatActivity(),
         //showInterStAd()
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     private fun saveDXF(bWriter: BufferedWriter) :BufferedWriter{
 
         val writer = DxfFileWriter(
@@ -2148,6 +2109,15 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
+    private fun autoSaveXlsx(){
+        try {
+            val writer = XlsxWriter()
+            writer.write( openFileOutput("myLastTriList.xlsx", MODE_PRIVATE ), myTriangleList, myDeductionList, rosenname )
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+    }
+
     private fun autoSaveCSV(){
         try {
             setTitles()
@@ -2197,13 +2167,13 @@ class MainActivity : AppCompatActivity(),
         for (index in 1 .. myTriangleList.size()){
             val mt: Triangle = myTriangleList.getTriangle(index)
             val pt: PointXY = mt.pointNumber_
-            val cp = parentBCtoCParam(mt.parentBC, mt.lengthAforce_, mt.cParam_)
+            val cp = parentBCtoCParam(mt.parentBC, mt.lengthNotSized[0], mt.cParam_)
             //if( mt.isPointNumberMoved_ == true ) pt.scale(PointXY(0f,0f),1f,-1f)
             writer.write(
                     mt.getMyNumber_().toString() + ", " +           //0
-                            mt.getLengthA_().toString() + ", " +        //1
-                            mt.getLengthB_().toString() + ", " +        //2
-                            mt.getLengthC_().toString() + ", " +        //3
+                            mt.getLengthA().toString() + ", " +        //1
+                            mt.getLengthB().toString() + ", " +        //2
+                            mt.getLengthC().toString() + ", " +        //3
                             mt.parentNumber.toString() + ", " +   //4
                             mt.parentBC.toString() + ", " +       //5
                             mt.getMyName_() + ", " +                    //6
@@ -2569,12 +2539,12 @@ class MainActivity : AppCompatActivity(),
         val totalArea = roundByUnderTwo(triArea - dedArea).formattedString(2)
         title = rStr.menseki_ + ": ${ totalArea } m^2"
 
-        if( myTriangleList.lastTapNumber_ > 0 ){
+        /*if( myTriangleList.lastTapNumber_ > 0 ){
             val coloredArea = myTriangleList.getAreaC( myTriangleList.lastTapNumber_ )
             val colorStr = arrayOf( "red: ", "orange: ", "yellow: ", "green: ", "blue: " )
             val tapped = myTriangleList.get( myTriangleList.lastTapNumber_ )
             title = rStr.menseki_ + ": ${ totalArea } m^2" + " ( ${ colorStr[tapped.color_]+coloredArea } m^2 )"
-        }
+        }*/
 
     }
 

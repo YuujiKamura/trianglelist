@@ -34,7 +34,7 @@
     <string name = "editor_syozoku">pertene</string>
     <string name = "editor_form">forma</string>
     <string name = "editor_koujyo">deducción</string>
-    <string name = "credit"> ※ Este dibujo fue creado usando la aplicación para teléfonos inteligentes "Triangle List". </string>
+    <string name = "credit">http://trianglelist.home.blog</string>
 
     <string name = "rosen1"> ruta 1 </string>
     <string name = "savecurrent"> ¿Desea guardar la imagen actual? </string>
@@ -84,6 +84,7 @@
         <item> CF </item>
     </string-array>
     <string name="action_save_sfc" translatable="false">" Salida SFC"</string>
-    <string name="action_usage" translatable="false">Ayudar</string>
+    <string name="action_usage" translatable="false">manual de instrucciones</string>
     <string name="action_privacy">Política de privacidad</string>
+    <string name="action_save_xlsx">" Salida Xlsx"</string>
 </resources>

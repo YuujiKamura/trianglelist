@@ -34,7 +34,7 @@
     <string name = "editor_syozoku">소속</string>
     <string name = "editor_form">모양</string>
     <string name = "editor_koujyo"> 공제 </string>
-    <string name = "credit"> ※ 본 도면은 스마트 폰 어플리케이션 「Triangle List "를 사용하여 작성되었습니다. </string>
+    <string name = "credit">http://trianglelist.home.blog</string>
 
     <string name = "rosen1"> 노선 1 </string>
     <string name = "savecurrent"> 현재 그림을 저장 하시겠습니까? </string>
@@ -84,6 +84,7 @@
         <item> CF </item>
     </string-array>
     <string name="action_save_sfc" translatable="false">"SFC 출력 "</string>
-    <string name="action_usage" translatable="false">돕다</string>
+    <string name="action_usage" translatable="false">취급 설명서</string>
     <string name="action_privacy">개인 정보 정책</string>
+    <string name="action_save_xlsx">"Xlsx 출력 "</string>
 </resources>

@@ -263,7 +263,7 @@ public class PointXY implements Cloneable {
 
 
     public boolean isCollide(Triangle tri){
-            return isCollide(tri.pointAB_,tri.pointBC_,tri.pointCA_); //Inside Triangle
+            return isCollide(tri.pointAB_,tri.pointBC_,tri.point[0]); //Inside Triangle
     }
 
     public boolean isCollide(TriangleK tri){

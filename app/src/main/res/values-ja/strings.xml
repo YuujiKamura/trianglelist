@@ -8,7 +8,7 @@
     <string name="action_save_sfc">SFC出力</string>
     <string name="action_save_pdf">PDF出力</string>
     <string name="action_send_mail">メールを送信</string>
-    <string name="action_usage" translatable="false">取扱説明動画</string>
+    <string name="action_usage" translatable="false">取扱説明書</string>
 
     <string name="tenkai_title">面 積 展 開 図</string>
     <string name="tenkai_koujimei">工 事 名</string>
@@ -36,7 +36,7 @@
     <string name="editor_syozoku">所属</string>
     <string name="editor_form">形状</string>
     <string name="editor_koujyo">控除</string>
-    <string name="credit">※ この図面はスマートフォンアプリ 「Triangle List」 を使用して作成されました。</string>
+    <string name="credit">http://trianglelist.home.blog</string>
 
     <string name="rosen1">路線1</string>
     <string name="savecurrent">現在の図形を保存しますか？</string>
@@ -86,4 +86,5 @@
         <item>CF</item>
     </string-array>
     <string name="action_privacy">プライバシーポリシー</string>
+    <string name="action_save_xlsx">Xlsx出力</string>
 </resources>

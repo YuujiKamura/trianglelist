@@ -3,6 +3,9 @@ package com.jpaver.trianglelist;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 import static java.lang.Integer.parseInt;
 
@@ -86,24 +89,24 @@ public class TriangleList extends EditList implements Cloneable {
         if( getSokutenListVector() > 0 && sokTriList.size() > 1 ){
             Triangle lasttri = sokTriList.get( sokTriList.size() - 1 );
             Triangle pasttri = sokTriList.get( sokTriList.size() - 2 );
-            float lastx = lasttri.pointCA_.getX();
-            float pastx = pasttri.pointCA_.getX();
+            float lastx = lasttri.point[0].getX();
+            float pastx = pasttri.point[0].getX();
             sokTriList.add( new Triangle( 5f, 5f, 5f) );
-            sokTriList.get( sokTriList.size() - 1 ).pointCA_.setX( lastx + (lastx - pastx) );
-            sokTriList.get( sokTriList.size() - 1 ).lengthAforce_ = lasttri.lengthAforce_;
-            sokTriList.get( sokTriList.size() - 1 ).lengthA_ = lasttri.lengthA_;
+            sokTriList.get( sokTriList.size() - 1 ).point[0].setX( lastx + (lastx - pastx) );
+            sokTriList.get( sokTriList.size() - 1 ).lengthNotSized[0] = lasttri.lengthNotSized[0];
+            sokTriList.get( sokTriList.size() - 1 ).length[0] = lasttri.length[0];
         }
 
         // 最初にいっこ足す
         if( getSokutenListVector() < 0 && sokTriList.size() > 1 ){
             Triangle firsttri = sokTriList.get( 0 );
             Triangle secondtri = sokTriList.get( 1 );
-            PointXY first = firsttri.pointCA_;
-            PointXY second = secondtri.pointCA_;
+            PointXY first = firsttri.point[0];
+            PointXY second = secondtri.point[0];
             sokTriList.add( 0, new Triangle( 5f, 5f, 5f) );
-            sokTriList.get( 0 ).pointCA_ = first.minus( second ).plus( first );
-            sokTriList.get( 0 ).lengthAforce_ = firsttri.lengthAforce_;
-            sokTriList.get( 0 ).lengthA_ = firsttri.lengthA_;
+            sokTriList.get( 0 ).point[0] = first.minus( second ).plus( first );
+            sokTriList.get( 0 ).lengthNotSized[0] = firsttri.lengthNotSized[0];
+            sokTriList.get( 0 ).length[0] = firsttri.length[0];
         }
 
 
@@ -136,50 +139,35 @@ public class TriangleList extends EditList implements Cloneable {
         return 0;
     }
 
-    public float getPrintTextScale (float drawingScale, String type){
-        float pdfts = 10f;
-        float dxfts = 0.45f;
+    public float getPrintTextScale (float drawingScale, String exportFileType){
 
-        switch((int)(getPrintScale(drawingScale)*10)){
-            case 150:
-            case 100:
-            case 90:
-            case 80:
-            case 70:
-            case 60:
-            case 50:
-            case 45:
-                pdfts = 3f;
-                //dxfts = 0.7f;
-                break;
-            //dxftextsize = 0.7f;
-            case 40:
-                pdfts = 5f;
-                //dxftextsize = 0.4f;
-                break;
-            case 30:
-            case 25:
-                pdfts = 6f;
-                //dxftextsize = 0.7f;
-                break;
-            //dxftextsize = 0.7f;
-            case 20:
-                pdfts = 8f;
-                break;
-            case 15:
-                pdfts = 8f;
-                dxfts = 0.35f;
-                break;
-            case 10:
-                dxfts = 0.35f;
-                break;
-            case 5:
-                dxfts = 0.25f;
-                break;
-        }
+        Map<Float, Float> textScaleMapPDF = new HashMap<>();
+        textScaleMapPDF.put(45f, 3f);
+        textScaleMapPDF.put(40f, 5f);
+        textScaleMapPDF.put(25f, 6f);
+        textScaleMapPDF.put(20f, 8f);
+        textScaleMapPDF.put(15f, 8f);
 
-        if( type.equals( "dxf" ) || type.equals( "sfc" )) return dxfts;
-        return pdfts;
+        Map<Float, Float> textScaleMapDXF = new HashMap<>();
+        textScaleMapDXF.put(15f, 0.35f);
+        textScaleMapDXF.put(5f, 0.25f);
+
+        Map<String, Map<Float,Float>> exportFileTypeMap = new HashMap<>();
+        exportFileTypeMap.put( "dxf", textScaleMapDXF );
+        exportFileTypeMap.put( "sfc", textScaleMapDXF );
+        exportFileTypeMap.put( "pdf", textScaleMapPDF );
+
+        Map<String, Float> defaultTextScaleMap = new HashMap<>();
+        defaultTextScaleMap.put( "dxf", 0.45f );
+        defaultTextScaleMap.put( "sfc", 0.45f );
+        defaultTextScaleMap.put( "pdf", 10f );
+
+        float defaultValue = Optional.ofNullable(defaultTextScaleMap.get( exportFileType )).orElse(10f);
+
+        Map<Float, Float> selectedMap = Optional.ofNullable( exportFileTypeMap.get( exportFileType ) ).orElse( textScaleMapDXF );
+
+        return Optional.ofNullable( selectedMap.get( getPrintScale(drawingScale)*10 ) ).orElse( defaultValue );
+
     }
 
     public float getPrintScale(float drawingScale){ // ex. 1/100 is w40m h27m drawing in range.
@@ -337,7 +325,7 @@ public class TriangleList extends EditList implements Cloneable {
         }
 
         for (int i = startindex; i < trilist_.size(); i++ ) {
-            trilist_.get(i).rotate( trilist_.get(startindex).pointCA_, angle, false );
+            trilist_.get(i).rotate( trilist_.get(startindex).point[0], angle, false );
             trilist_.get(i).pointNumber_ = trilist_.get(i).pointNumber_.rotate(basepoint, angle);
         }
 
@@ -367,10 +355,10 @@ public class TriangleList extends EditList implements Cloneable {
     public void setCurrent(int c){current = c;}
 
     public boolean validTriangle(Triangle tri){
-        if (tri.lengthA_ <= 0.0f || tri.lengthB_ <= 0.0f || tri.lengthC_ <=0.0f) return false;
-        return !((tri.lengthA_ + tri.lengthB_) <= tri.lengthC_) &&
-                !((tri.lengthB_ + tri.lengthC_) <= tri.lengthA_) &&
-                !((tri.lengthC_ + tri.lengthA_) <= tri.lengthB_);
+        if (tri.length[0] <= 0.0f || tri.length[1] <= 0.0f || tri.length[2] <=0.0f) return false;
+        return !((tri.length[0] + tri.length[1]) <= tri.length[2]) &&
+                !((tri.length[1] + tri.length[2]) <= tri.length[0]) &&
+                !((tri.length[2] + tri.length[0]) <= tri.length[1]);
     }
 
     public boolean add( int pnum, int pbc, float A, float B, float C ) {
@@ -634,7 +622,7 @@ public class TriangleList extends EditList implements Cloneable {
         Triangle me = trilist_.get(number-1);
         Triangle pr = trilist_.get(pnum-1);
 
-        me.set( pr, me.parentBC_, me.lengthA_, me.lengthB_, me.lengthC_ );
+        me.set( pr, me.parentBC_, me.length[0], me.length[1], me.length[2] );
 
         return true;
     }
@@ -718,7 +706,7 @@ public class TriangleList extends EditList implements Cloneable {
         addOlp(tri.pointBC_, "bc,", olp, tri);
         trace( olp, tri.nodeTriangleC_, false);
 
-        addOlp(tri.pointCA_, "ca,", olp, tri);
+        addOlp(tri.point[0], "ca,", olp, tri);
         //trace( olp, tri.nodeTriangleA_, -1 ); //ネスト抜けながら勝手にトレースしていく筈
 
         return olp;
@@ -747,7 +735,7 @@ public class TriangleList extends EditList implements Cloneable {
 
     public void branchOrNot( Triangle t, int origin, ArrayList<PointXY> olp ){
         if( t.nodeTriangleB_ != null &&  t.nodeTriangleC_ != null )
-            if( notHave( t.nodeTriangleC_.pointCA_, olp ) && ( !t.nodeTriangleC_.isFloating_ && !t.nodeTriangleC_.isColored_ ) )
+            if( notHave( t.nodeTriangleC_.point[0], olp ) && ( !t.nodeTriangleC_.isFloating_ && !t.nodeTriangleC_.isColored_ ) )
                 traceOrJumpForward( t.nodeTriangleC_.myNumber_ - 1, origin, olp, t.nodeTriangleC_ );
     }
 
@@ -832,7 +820,7 @@ public class TriangleList extends EditList implements Cloneable {
     public Params getParams(int i) {
         if(i> trilist_.size())return new Params("","",0,0f,0f,0f,0,0, new PointXY(0f,0f),new PointXY(0f,0f));
         Triangle t = trilist_.get(i-1);
-        return new Params(t.getMyName_(),"",t.getMyNumber_(), t.getLengthA_(), t.getLengthB_(), t.getLengthC_(), t.getParentNumber(), t.getParentBC(), t.getPointCenter_(), t.getPointNumberAutoAligned_());
+        return new Params(t.getMyName_(),"",t.getMyNumber_(), t.getLengthA(), t.getLengthB(), t.getLengthC(), t.getParentNumber(), t.getParentBC(), t.getPointCenter_(), t.getPointNumberAutoAligned_());
     }
 
     @Override
@@ -903,7 +891,7 @@ public class TriangleList extends EditList implements Cloneable {
         addOutlinePoint(node.pointBC_, "bc,",olp, node);
 
         //CA点を取る。すでにあったらキャンセル
-        addOutlinePoint(node.pointCA_, "ca,",olp, node);
+        addOutlinePoint(node.point[0], "ca,",olp, node);
 
         //AB点を取る。すでにあったらキャンセル
         addOutlinePoint(node.pointAB_, "ab,",olp, node);
@@ -1014,8 +1002,8 @@ public class TriangleList extends EditList implements Cloneable {
             // 子の三角形を指定して生成する。
             //rev.add( new Triangle( trilist_.get( it.parentNumber_), it.parentBC_, it.lengthAforce_, it.lengthBforce_, it.lengthCforce_ ) );
 
-            if( it.parentNumber_ < 1 ) rev.add( it.clone(), true); //new Triangle( it.lengthAforce_, it.lengthBforce_, it.lengthCforce_, it.pointCA_, it.angleInGlobal_)
-            else rev.add( new Triangle( rev.get( it.parentNumber_), it.parentBC_, it.lengthAforce_, it.lengthBforce_, it.lengthCforce_ ), true);
+            if( it.parentNumber_ < 1 ) rev.add( it.clone(), true); //new Triangle( it.lengthAforce_, it.lengthBforce_, it.lengthCforce_, it.point[0], it.angleInGlobal_)
+            else rev.add( new Triangle( rev.get( it.parentNumber_), it.parentBC_, it.getLengthAforce_(), it.getLengthBforce_(), it.getLengthCforce_() ), true);
         }
 
         // 名前の書き換え、反転後のひとつ先の三角形に移設し、1番の名前は消去

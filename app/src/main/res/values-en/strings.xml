@@ -34,7 +34,7 @@
     <string name="editor_syozoku">inside</string>
     <string name="editor_form">Form</string>
     <string name="editor_koujyo">Deduction</string>
-    <string name="credit">This drawing exported by an App "Triangle List".</string>
+    <string name="credit">http://trianglelist.home.blog</string>
 
     <string name="rosen1">Drawing1</string>
     <string name="savecurrent">Save current drawing?</string>
@@ -83,6 +83,7 @@
         <item>CF</item>
     </string-array>
     <string name="action_save_sfc" translatable="false">Export SFC</string>
-    <string name="action_usage" translatable="false">Usage Video</string>
+    <string name="action_usage" translatable="false">Instruction</string>
     <string name="action_privacy">PrivacyPolicy</string>
+    <string name="action_save_xlsx">Export Xlsx</string>
 </resources>

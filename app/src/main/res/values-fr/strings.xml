@@ -34,7 +34,7 @@
     <string name = "editor_syozoku">appart</string>
     <string name = "editor_form">forme</string>
     <string name = "editor_koujyo"> déduction </string>
-    <string name = "credit"> ※ Ce dessin a été créé à l\'aide de l\'application pour smartphone "Triangle List". </string>
+    <string name = "credit">http://trianglelist.home.blog</string>
 
     <string name = "rosen1"> route 1 </string>
     <string name = "savecurrent"> Voulez-vous enregistrer l\'image actuelle? </string>
@@ -84,6 +84,7 @@
         <item> CF </item>
     </string-array>
     <string name="action_save_sfc" translatable="false">" Sortie SFC"</string>
-    <string name="action_usage" translatable="false">Aider</string>
+    <string name="action_usage" translatable="false">Manuel d\'instructions</string>
     <string name="action_privacy">Politique de confidentialité</string>
+    <string name="action_save_xlsx">Sortie Xlsx</string>
 </resources>

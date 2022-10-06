@@ -1,8 +1,6 @@
 package com.jpaver.trianglelist
 
-import android.os.Build
 import android.util.Log
-import androidx.annotation.RequiresApi
 import java.io.BufferedWriter
 
 class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
@@ -33,7 +31,6 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
 
     var activeLayer = "0"
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun save(){
 
         writeHeader()
@@ -371,7 +368,6 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         writeLine( ded.plb, ded.prb, color)
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun writeEntities(){
 
         // 最初に書く

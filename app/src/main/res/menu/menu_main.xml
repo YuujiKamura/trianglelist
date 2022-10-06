@@ -28,6 +28,11 @@
         android:title="@string/action_save_sfc"
         app:showAsAction="never" />
     <item
+        android:id="@+id/action_save_xlsx"
+        android:orderInCategory="100"
+        android:title="@string/action_save_xlsx"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/action_save_pdf"
         android:orderInCategory="100"
         android:title="@string/action_save_pdf"

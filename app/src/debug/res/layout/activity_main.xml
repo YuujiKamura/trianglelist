@@ -106,33 +106,47 @@
         app:srcCompat="@drawable/down"
         android:contentDescription="list to down"/>
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_fillcolor"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="top|start"
-        android:layout_marginStart="16dp"
-        android:layout_alignTop="@id/fab_down"
-        android:layout_marginTop="50dp"
-        android:visibility="visible"
-        app:fabSize="mini"
-        app:layout_constraintTop_toBottomOf="@id/fab_down"
-        app:srcCompat="@drawable/fillcolor"
-        android:contentDescription="fill color"/>
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_fillcolor"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|start"
+            android:layout_marginStart="16dp"
+            android:layout_alignTop="@id/fab_down"
+            android:layout_marginTop="50dp"
+            android:visibility="invisible"
+            app:fabSize="mini"
+            app:layout_constraintTop_toBottomOf="@id/fab_down"
+            app:srcCompat="@drawable/fillcolor"
+            android:contentDescription="fill color"/>
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_texplus"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="top|start"
-        android:layout_marginStart="16dp"
-        android:layout_alignTop="@id/fab_fillcolor"
-        android:layout_marginTop="60dp"
-        android:visibility="visible"
-        app:fabSize="mini"
-        app:layout_constraintTop_toBottomOf="@id/fab_fillcolor"
-        app:srcCompat="@drawable/texplus"
-        android:contentDescription="increase text size"/>
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_xlsx"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|start"
+            android:layout_marginStart="16dp"
+            android:layout_alignTop="@id/fab_down"
+            android:layout_marginTop="50dp"
+            android:visibility="visible"
+            app:fabSize="mini"
+            app:layout_constraintTop_toBottomOf="@id/fab_down"
+            app:srcCompat="@drawable/xlsx"
+            android:contentDescription="show xlsx"/>
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_texplus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|start"
+            android:layout_marginStart="16dp"
+            android:layout_alignTop="@id/fab_xlsx"
+            android:layout_marginTop="60dp"
+            android:visibility="visible"
+            app:fabSize="mini"
+            app:layout_constraintTop_toBottomOf="@id/fab_xlsx"
+            app:srcCompat="@drawable/texplus"
+            android:contentDescription="increase text size"/>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_texminus"

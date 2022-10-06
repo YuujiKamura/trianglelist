@@ -34,7 +34,7 @@
     <string name = "editor_syozoku">perth</string>
     <string name = "editor_form">siâp</string>
     <string name = "editor_koujyo">didyniad</string>
-    <string name = "credit"> ※ Crëwyd y lluniad hwn gan ddefnyddio\'r cymhwysiad ffôn clyfar "Rhestr Triongl". </string>
+    <string name = "credit">http://trianglelist.home.blog</string>
 
     <string name = "rosen1"> llwybr 1 </string>
     <string name = "savecurrent"> Ydych chi am achub y llun cyfredol? </string>
@@ -84,6 +84,7 @@
         <item> CF </item>
     </string-array>
     <string name="action_save_sfc" translatable="false">" Allbwn SFC"</string>
-    <string name="action_usage" translatable="false">Help</string>
+    <string name="action_usage" translatable="false">llawlyfr cyfarwyddiadau</string>
     <string name="action_privacy">Polisi Preifatrwydd</string>
+    <string name="action_save_xlsx">" Allbwn Xlsx"</string>
 </resources>
