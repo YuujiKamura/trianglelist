@@ -9,6 +9,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import com.jpaver.trianglelist.util.Params;
+
 //@RunWith(PowerMockRunner.class)
 //@PrepareForTest(Log.class)
 public class TriangleTest {

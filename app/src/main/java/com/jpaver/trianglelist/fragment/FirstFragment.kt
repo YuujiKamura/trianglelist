@@ -1,13 +1,13 @@
 
-package com.jpaver.trianglelist
+package com.jpaver.trianglelist.fragment
 
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ProgressBar
 import androidx.fragment.app.Fragment
+import com.jpaver.trianglelist.R
 import com.jpaver.trianglelist.databinding.FragmentFirstBinding
 
 /**
@@ -28,7 +28,7 @@ class FirstFragment : Fragment() {
         Log.d( "myView", "Instance Check in FirstFragment inflater: " + view )
 
         bMyView = FragmentFirstBinding.bind( view )
-        Log.d( "myView", "Instance Check in FirstFragment: " + bMyView.myView )
+        //Log.d( "myView", "Instance Check in FirstFragment: " + bMyView.myView )
 
 
         // Inflate the layout for this fragment

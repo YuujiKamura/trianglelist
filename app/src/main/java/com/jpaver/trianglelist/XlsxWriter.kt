@@ -1,8 +1,5 @@
-package com.jpaver.trianglelist.filemanager
+package com.jpaver.trianglelist
 
-import com.jpaver.trianglelist.DeductionList
-import com.jpaver.trianglelist.EditList
-import com.jpaver.trianglelist.TriangleList
 import org.apache.poi.common.usermodel.HyperlinkType
 import org.apache.poi.ss.usermodel.*
 import org.apache.poi.xssf.usermodel.XSSFHyperlink
@@ -79,7 +76,7 @@ class XlsxWriter() {
 
     }
 
-    fun writeBody(rownum: Int, list: TriangleList ){
+    fun writeBody(rownum: Int, list: TriangleList){
         for( i in 0 until list.size() ){
             val rowBody = sheet.createRow(rownum + i )
             rowBody.heightInPoints *= rowsizer

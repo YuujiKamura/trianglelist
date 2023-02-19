@@ -1,6 +1,6 @@
 package com.jpaver.trianglelist
 
-import org.junit.Assert
+import com.jpaver.trianglelist.PointXY
 import org.junit.Test
 
 class RectangleTest {

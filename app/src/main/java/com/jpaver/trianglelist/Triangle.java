@@ -7,6 +7,8 @@ import java.util.Arrays;
 
 import static java.lang.Math.toRadians;
 
+import com.jpaver.trianglelist.util.Params;
+
 public class Triangle extends EditObject implements Cloneable {
     boolean valid_ = false;
     float[] length = new float[3];

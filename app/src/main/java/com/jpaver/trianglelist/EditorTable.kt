@@ -1,9 +1,11 @@
-package com.jpaver.trianglelist
+package com.jpaver.trianglelist.util
 
 import android.text.method.KeyListener
 import android.widget.EditText
 import android.widget.Spinner
 import android.widget.TextView
+import com.jpaver.trianglelist.EditList
+import com.jpaver.trianglelist.PointXY
 
 data class DeductionParams(var num: Int, var name: String, var lengthX: Float, var lengthY: Float, var parentNum: Int, var type: String, var angle: Float, var point: PointXY)
 
@@ -24,8 +26,15 @@ data class Params(var name: String = "",
                   var c: Float = 0f,
                   var pn: Int = 0,
                   var pl: Int = 0,
-                  var pt: PointXY = PointXY(0f, 0f),
-                  var pts: PointXY = PointXY(0f, 0f))//,
+                  var pt: PointXY = PointXY(
+                      0f,
+                      0f
+                  ),
+                  var pts: PointXY = PointXY(
+                      0f,
+                      0f
+                  )
+)//,
 //                  var an: Float = 0f)
 
 class EditorTable {
@@ -55,7 +64,11 @@ class EditorTable {
             current = myList.addCurrent(movement)
             lineRewrite(myList.getParams(current), secondly)
             if(current == 1) {
-                lineRewrite(Params("","",0,0f,0f,0f,0,0, PointXY(0f,0f),PointXY(0f,0f)), thirdly)
+                lineRewrite(
+                    Params("","",0,0f,0f,0f,0,0,
+                    PointXY(0f, 0f),
+                    PointXY(0f, 0f)
+                ), thirdly)
                 //setLineEditable(false, thirdly, thirdly)
             }
             else {
@@ -83,7 +96,7 @@ class EditorTable {
          line.pl.setSelection(prm.pl)
     }
 
-    fun readLineTo(prm: Params, line: EditTextViewLine) :Params {
+    fun readLineTo(prm: Params, line: EditTextViewLine) : Params {
 
         var sa: String = line.a.text.toString()
         var sb: String = line.b.text.toString()

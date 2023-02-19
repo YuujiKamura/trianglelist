@@ -1,5 +1,8 @@
 package com.jpaver.trianglelist;
 
+import com.jpaver.trianglelist.util.DeductionParams;
+import com.jpaver.trianglelist.util.Params;
+
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;

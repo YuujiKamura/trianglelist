@@ -34,8 +34,8 @@ import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.UpdateAvailability
 import com.jpaver.trianglelist.databinding.ActivityMainBinding
-import com.jpaver.trianglelist.filemanager.XlsxWriter
-import com.jpaver.trianglelist.util.AdManager
+import com.jpaver.trianglelist.fragment.MyDialogFragment
+import com.jpaver.trianglelist.util.*
 import org.json.JSONObject.NULL
 import java.io.*
 import java.time.LocalDate
@@ -103,9 +103,7 @@ class MainActivity : AppCompatActivity(),
     lateinit var fab_xlsx: FloatingActionButton
 
     private fun checkPermission() {
-        if (isGranted()) {
-
-        } else {
+        if (!isGranted()) {
             requestPermissions(PERMISSIONS, REQUESTPERMISSION)
         }
     }
@@ -131,7 +129,7 @@ class MainActivity : AppCompatActivity(),
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQUESTPERMISSION) {
-            checkPermission()
+            //checkPermission()
         }
     }
 
@@ -162,7 +160,9 @@ class MainActivity : AppCompatActivity(),
     // val dedmap = MapOf(dedNameList to )
 
     private var myEditor: EditorTable = EditorTable()
-    private var dParams: Params = Params("", "", 0, 0f, 0f, 0f, 0, 0, PointXY(0f, 0f))
+    private var dParams: Params = Params("", "", 0, 0f, 0f, 0f, 0, 0,
+        PointXY(0f, 0f)
+    )
     private var lastParams: Params = dParams
 
     // タイトルパラメータ、stringリソースから構成する
@@ -564,7 +564,9 @@ class MainActivity : AppCompatActivity(),
             deductionMode = true
             fabReplace(
                 Params(
-                    "仕切弁", "Circle", 1, 0.23f, 0f, 0f, 1, 0, PointXY(1f, 0f), PointXY(
+                    "仕切弁", "Circle", 1, 0.23f, 0f, 0f, 1, 0,
+                    PointXY(1f, 0f),
+                    PointXY(
                         0f,
                         0f
                     )
@@ -1072,7 +1074,7 @@ class MainActivity : AppCompatActivity(),
                         0f,
                         elist.size(),
                         0,
-                        PointXY(0f, 0f)
+                    PointXY(0f, 0f)
                 ), myELFirst
         )
         myEditor.lineRewrite(eo.getParams(), myELSecond)
@@ -1087,7 +1089,7 @@ class MainActivity : AppCompatActivity(),
                         0f,
                         0,
                         0,
-                        PointXY(0f, 0f)
+                    PointXY(0f, 0f)
                 ), myELThird
         )
     }
@@ -1106,8 +1108,13 @@ class MainActivity : AppCompatActivity(),
             Toast.makeText(this, "Invalid!! : B > C + A", Toast.LENGTH_LONG).show()
             return false
         }
+
         if ( dp.pn > myTriangleList.size() || ( dp.pn < 1 && dp.n != 1 )) {
             Toast.makeText(this, "Invalid!! : number of parent", Toast.LENGTH_LONG).show()
+            return false
+        }
+        if (  dp.pl < 1 && dp.n != 1  ) {
+            Toast.makeText(this, "Invalid!! : connection in parent", Toast.LENGTH_LONG).show()
             return false
         }
 
@@ -1158,7 +1165,7 @@ class MainActivity : AppCompatActivity(),
         return true
     }
 
-    private fun getList(dMode: Boolean) :EditList{
+    private fun getList(dMode: Boolean) : EditList {
         return if(dMode) myDeductionList
         else myTriangleList
     }
@@ -1171,7 +1178,11 @@ class MainActivity : AppCompatActivity(),
             dParams.pts = my_view.getTapPoint()
             dParams.pt = d.point
             //var ded = myDeductionList.get(dParams_.n)
-            my_view.getTapPoint().scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
+            my_view.getTapPoint().scale(
+                PointXY(
+                    0f,
+                    0f
+                ), 1 / mScale, -1 / mScale)
             if(validDeduction(dParams)) {// あまり遠い時はスルー
                 myDeductionList.replace(dParams.n, dParams)
 //                    EditorReset(getList(myDeductionMode),getList(myDeductionMode).length())
@@ -1180,7 +1191,11 @@ class MainActivity : AppCompatActivity(),
         }
         else{
             val tri = myTriangleList.get(dParams.n)
-            val tp = my_view.getTapPoint().scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
+            val tp = my_view.getTapPoint().scale(
+                PointXY(
+                    0f,
+                    0f
+                ), 1 / mScale, -1 / mScale)
             if( tp.lengthTo(tri.pointCenter_) < 10f ){ // あまり遠い時はスルー
                 tri.pointNumber_ = tp
                 tri.isPointNumberMoved_ = true
@@ -1257,7 +1272,11 @@ class MainActivity : AppCompatActivity(),
         autoSaveCSV()
         setTitles()
         if(!dedmode) my_view.resetView(my_view.toLastTapTriangle())
-        if(dedmode) my_view.resetView(usedDedPoint.scale(PointXY(0f, 0f), 1f, -1f))//resetViewToTP()
+        if(dedmode) my_view.resetView(usedDedPoint.scale(
+            PointXY(
+                0f,
+                0f
+            ), 1f, -1f))//resetViewToTP()
 
         my_view.myTriangleList.isDoubleTap_ = false
         my_view.myTriangleList.lastTapSide_ = 0
@@ -1278,7 +1297,12 @@ class MainActivity : AppCompatActivity(),
     private fun addDeductionBy(params: Params) : Boolean {
         params.pt = my_view.getTapPoint()
         params.pts = params.pt //PointXY(0f, 0f)
-        params.pn = my_view.myTriangleList.isCollide(dParams.pt.scale(PointXY(1f, -1f)))
+        params.pn = my_view.myTriangleList.isCollide(dParams.pt.scale(
+            PointXY(
+                1f,
+                -1f
+            )
+        ))
 
         //形状の自動判定
         if( params.b > 0f ) params.type = "Box"
@@ -1286,8 +1310,13 @@ class MainActivity : AppCompatActivity(),
 
         if (validDeduction(params)) {
             // 所属する三角形の判定処理
-            if( params.pt != PointXY(0f, 0f) ) {
-                params.pn = my_view.myTriangleList.isCollide(params.pt.scale(PointXY(1f, -1f)))
+            if( params.pt != PointXY(0f, 0f)) {
+                params.pn = my_view.myTriangleList.isCollide(params.pt.scale(
+                    PointXY(
+                        1f,
+                        -1f
+                    )
+                ))
 
                 if( params.pn != 0 ) {
                     my_view.myTriangleList.dedmapping(myDeductionList, -1)
@@ -1349,8 +1378,13 @@ class MainActivity : AppCompatActivity(),
 
         if(validDeduction(params)) {
             // 所属する三角形の判定処理
-            if( params.pt != PointXY(0f, 0f) ) {
-                params.pn = my_view.myTriangleList.isCollide(params.pt.scale(PointXY(1f, -1f)))
+            if( params.pt != PointXY(0f, 0f)) {
+                params.pn = my_view.myTriangleList.isCollide(params.pt.scale(
+                    PointXY(
+                        1f,
+                        -1f
+                    )
+                ))
 
                 if( params.pn != 0 ) {
                     my_view.myTriangleList.dedmapping(myDeductionList, -1)
@@ -1387,7 +1421,7 @@ class MainActivity : AppCompatActivity(),
             my_view.watchedB_ = elb1.text.toString()
             my_view.watchedC_ = findViewById<EditText>(R.id.editLengthC1).text.toString()
 
-            val t:Triangle = myTriangleList.get(dParams.pn)
+            val t: Triangle = myTriangleList.get(dParams.pn)
             myEditor.lineRewrite(
                     Params(
                             dParams.name,
@@ -1398,8 +1432,8 @@ class MainActivity : AppCompatActivity(),
                             dParams.c,
                             t.myNumber_,
                             i,
-                            PointXY(0f, 0f),
-                            PointXY(0f, 0f)
+                        PointXY(0f, 0f),
+                        PointXY(0f, 0f)
                     ), myELFirst
             )
 
@@ -1427,10 +1461,10 @@ class MainActivity : AppCompatActivity(),
                             dParams.c,
                             dParams.pn,
                             i,
-                            PointXY(
-                                    0f,
-                                    0f
-                            )
+                        PointXY(
+                            0f,
+                            0f
+                        )
                     ), myELFirst
             )
         }
@@ -1468,7 +1502,11 @@ class MainActivity : AppCompatActivity(),
 
             // 三角形番号が押されたときはセンタリング
             trilistV.getTap(
-                my_view.pressedInModel.scale(PointXY(0f, 0f), 1f, -1f),
+                my_view.pressedInModel.scale(
+                    PointXY(
+                        0f,
+                        0f
+                    ), 1f, -1f),
                 0.8f / zoomsize
             )
             if ( trilistV.lastTapNumber_ != 0 ) {
@@ -1477,7 +1515,11 @@ class MainActivity : AppCompatActivity(),
 
         }
         else {
-            val lpp = my_view.pressedInModel.scale(PointXY(0f, 0f), 1f, -1f)
+            val lpp = my_view.pressedInModel.scale(
+                PointXY(
+                    0f,
+                    0f
+                ), 1f, -1f)
 
             val slpp = my_view.shadowTri_.getTapLength(lpp, 0.8f / zoomsize)
             if( slpp == 1) {
@@ -1622,8 +1664,8 @@ class MainActivity : AppCompatActivity(),
     }
 
     private class MyTextWatcher(
-            val mELine: EditTextViewLine,
-            var lastParams: Params
+        val mELine: EditTextViewLine,
+        var lastParams: Params
     ) : TextWatcher {
         //private val afterTextChanged_: TextView = findViewById<TextView>(R.id.afterTextChanged)
         //private val beforeTextChanged_: TextView = findViewById<TextView>(R.id.beforeTextChanged)
@@ -1719,7 +1761,8 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun createNew(){
-        val tri = Triangle(5f, 5f, 5f, PointXY(0f, 0f), 0f)
+        val tri = Triangle(5f, 5f, 5f,
+            PointXY(0f, 0f), 0f)
         tri.autoSetDimAlign()
         val trilist = TriangleList(tri)
         myTriangleList = trilist
@@ -2209,8 +2252,16 @@ class MainActivity : AppCompatActivity(),
 
         for(index in 1 .. myDeductionList.size()){
             val dd: Deduction = myDeductionList.get(index)
-            val pointAtRealscale = dd.point.scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
-            val pointFlagAtRealscale = dd.pointFlag.scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
+            val pointAtRealscale = dd.point.scale(
+                PointXY(
+                    0f,
+                    0f
+                ), 1 / mScale, -1 / mScale)
+            val pointFlagAtRealscale = dd.pointFlag.scale(
+                PointXY(
+                    0f,
+                    0f
+                ), 1 / mScale, -1 / mScale)
             dd.scale(PointXY(0f, 0f), 1f, -1f)
             writer.write(
                     "Deduction, " +              //0
@@ -2294,10 +2345,10 @@ class MainActivity : AppCompatActivity(),
 
         mt.setMyName_(chunks[6]!!.toString())
         if(chunks[9]!! == "true") mt.setPointNumberMoved_(
-                PointXY(
-                        chunks[7]!!.toFloat(),
-                        chunks[8]!!.toFloat()
-                )
+            PointXY(
+                chunks[7]!!.toFloat(),
+                chunks[8]!!.toFloat()
+            )
         )
         // 色
         if( chunks.size > 10 ) mt.setColor(chunks[10]!!.toInt())
@@ -2356,12 +2407,12 @@ class MainActivity : AppCompatActivity(),
                                         chunks[3].toFloat(), chunks[4].toFloat(), 0f,
                                         chunks[5].toInt(), typeToInt(chunks[6]),
                                         PointXY(
-                                                chunks[8].toFloat(),
-                                                -chunks[9].toFloat()
+                                            chunks[8].toFloat(),
+                                            -chunks[9].toFloat()
                                         ).scale(mScale),
                                         PointXY(
-                                                chunks[10].toFloat(),
-                                                -chunks[11].toFloat()
+                                            chunks[10].toFloat(),
+                                            -chunks[11].toFloat()
                                         ).scale(mScale)
                                 )
                         )
@@ -2373,7 +2424,7 @@ class MainActivity : AppCompatActivity(),
             if( chunks.size > 17 ) {
 
                 if( chunks[5].toInt() == 0 ){
-                    val pt = PointXY( 0f, 0f )
+                    val pt = PointXY(0f, 0f)
                     var angle = 0f
 
                     if( chunks.size > 22 ){
@@ -2454,10 +2505,10 @@ class MainActivity : AppCompatActivity(),
             if( trilist.size() > 1 ) trilist.get(trilist.size() - 1).childSide_ = chunks[5].toInt()
 
             if(chunks[9] == "true") mT.setPointNumberMoved_(
-                    PointXY(
-                            chunks[7].toFloat(),
-                            chunks[8].toFloat()
-                    )
+                PointXY(
+                    chunks[7].toFloat(),
+                    chunks[8].toFloat()
+                )
             )
 
             // 色
@@ -2513,7 +2564,7 @@ class MainActivity : AppCompatActivity(),
         return pl
     }
 
-    private fun parentBCtoCParam(pbc: Int, lenA: Float, cp: ConnParam) : ConnParam{
+    private fun parentBCtoCParam(pbc: Int, lenA: Float, cp: ConnParam) : ConnParam {
         when(pbc){
             1 -> return ConnParam(1, 0, 2, 0f)//B
             2 -> return ConnParam(2, 0, 2, 0f)//C

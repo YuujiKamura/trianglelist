@@ -82,20 +82,30 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     var myDeductionList: DeductionList = DeductionList()
 
     //var drawPoint: PointXY = PointXY(0f, 0f)
-    var pressedInView: PointXY = PointXY(0f, 0f)
-    var lastCPoint: PointXY = PointXY(0f, 0f)
-    var moveVector: PointXY = PointXY(0f, 0f)
-    var movePoint: PointXY = PointXY(0f, 0f)
+    var pressedInView: PointXY =
+        PointXY(0f, 0f)
+    var lastCPoint: PointXY =
+        PointXY(0f, 0f)
+    var moveVector: PointXY =
+        PointXY(0f, 0f)
+    var movePoint: PointXY =
+        PointXY(0f, 0f)
 
-    var viewSize: PointXY = PointXY(0f, 0f)
-    var centerInView: PointXY = PointXY(0f, 0f)
-    var centerInModel: PointXY = PointXY(0f, 0f)
-    var baseInView: PointXY = PointXY(0f, 0f)
+    var viewSize: PointXY =
+        PointXY(0f, 0f)
+    var centerInView: PointXY =
+        PointXY(0f, 0f)
+    var centerInModel: PointXY =
+        PointXY(0f, 0f)
+    var baseInView: PointXY =
+        PointXY(0f, 0f)
     var transOnce: Boolean = true
-    var pressedInModel: PointXY = PointXY(0f, 0f)
-    var scaleCenter: PointXY = PointXY(0f, 0f)
+    var pressedInModel: PointXY =
+        PointXY(0f, 0f)
+    var scaleCenter: PointXY =
+        PointXY(0f, 0f)
 
-    fun drawViewPoints( canvas: Canvas, paint: Paint, point: PointXY, ypitch: Float ) {
+    fun drawViewPoints(canvas: Canvas, paint: Paint, point: PointXY, ypitch: Float ) {
         //if( isDebug_ == false ) return
         canvas.drawText( "pressedInView " + pressedInView.info(), point.x, point.y + ypitch * 1, paint)
         canvas.drawText( "centerInView " + centerInView.info(), point.x, point.y + ypitch * 2, paint)
@@ -417,7 +427,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         )
     }
 
-    fun resetPressedInModel(pressedInView: PointXY, scaleCenter:PointXY ){
+    fun resetPressedInModel(pressedInView: PointXY, scaleCenter: PointXY){
         movePoint.set(baseInView.x, baseInView.y)
         pressedInModel = pressedInView.convertToLocal(
             baseInView,
@@ -447,7 +457,11 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         //if( myTriangleList.size() > 0 ) trilistStored_ = myTriangleList.clone()
         myScale = setscale    // 描画倍率は外から指定する
         myTriangleList = triList.clone() as TriangleList
-        myTriangleList.scaleAndSetPath( PointXY(0f, 0f), setscale, paintTexS.textSize )
+        myTriangleList.scaleAndSetPath(
+            PointXY(
+                0f,
+                0f
+            ), setscale, paintTexS.textSize )
         setTriListLengthStr()
         if( moveCenter ) setCenterInModelToLastTappedTriNumber() //画面を動かしてしまうので注意
         //resetView()
@@ -468,7 +482,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
     }
 
-    fun getTapPoint() :PointXY{
+    fun getTapPoint() : PointXY {
         return pressedInModel.clone()
     }
 
@@ -477,14 +491,19 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         if(zoomSize<=0.1f) zoomSize = 0.1f
         if(zoomSize>=5) zoomSize = 5f
 
-        resetPressedInModel( PointXY( mFocusX, mFocusY ), PointXY( mFocusX, mFocusY ) )
+        resetPressedInModel(
+            PointXY(
+                mFocusX,
+                mFocusY
+            ), PointXY(mFocusX, mFocusY)
+        )
     }
 
     fun setCenterInModelToLastTappedTriNumber() {
         centerInModel.set(myTriangleList.getTriangle(lstn()).pointNumber_)
     }
 
-    fun resetView( pt: PointXY ){
+    fun resetView( pt: PointXY){
         centerInModel = pt.clone()
         //drawPoint = pt.clone()
         resetPointToZero()
@@ -532,7 +551,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         }
     }
 
-    fun drawEntities(canvas: Canvas, paintTri: Paint, paintTex: Paint, paintRed: Paint, colors: Array<Int>, myTriangleList: TriangleList, myDeductionList: DeductionList ) {
+    fun drawEntities(canvas: Canvas, paintTri: Paint, paintTex: Paint, paintRed: Paint, colors: Array<Int>, myTriangleList: TriangleList, myDeductionList: DeductionList) {
 
         Log.d( "myView", "drawEntities: " + myTriangleList.size() )
         Log.d("myView", "Instance check in View: " + this )
@@ -564,13 +583,13 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     }
 
     fun drawTriangle(
-            canvas: Canvas,
-            tri: Triangle,
-            paintTri: Paint,
-            paintDim: Paint,
-            paintSok: Paint,
-            paintB: Paint,
-            myTriangleList: TriangleList
+        canvas: Canvas,
+        tri: Triangle,
+        paintTri: Paint,
+        paintDim: Paint,
+        paintSok: Paint,
+        paintB: Paint,
+        myTriangleList: TriangleList
     ){
         // 番号
         drawTriangleNumber(canvas, tri, paintDim, paintB)
@@ -637,7 +656,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
     }
 
-    fun drawShadowTriangle( canvas: Canvas, myTriangleList: TriangleList ){
+    fun drawShadowTriangle( canvas: Canvas, myTriangleList: TriangleList){
         if( isPrintPDF_ == true || myTriangleList.lastTapSide_ < 1 || myTriangleList.isDoubleTap_ == false ) {
             shadowTri_ = Triangle( 0f, 0f, 0f )
             return
@@ -749,7 +768,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
     }
 
-    fun drawBlinkLine( canvas: Canvas, myTriangleList: TriangleList ){
+    fun drawBlinkLine( canvas: Canvas, myTriangleList: TriangleList){
         if( myTriangleList.lastTapNumber_ < 1 || myTriangleList.lastTapSide_ < 0 || isPrintPDF_ == true ) return
 
         paintYellow.color = Color.argb(alpha, 255, 255, 0)
@@ -814,10 +833,10 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     }
 
     fun drawTriangleNumber(
-            canvas: Canvas,
-            tri: Triangle,
-            paint1: Paint,
-            paint2: Paint
+        canvas: Canvas,
+        tri: Triangle,
+        paint1: Paint,
+        paint2: Paint
     ){
         val mn: String = tri.getMyNumber_().toString()
         val pnX = tri.pointNumberAutoAligned_.x
@@ -877,7 +896,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         drawLine(canvas, dd.prt, dd.prb, 1f, 1f, paint)
     }
 
-    fun makePath( p1: PointXY, p2: PointXY ): Path {
+    fun makePath(p1: PointXY, p2: PointXY): Path {
         val path = Path()
         path.rewind()
         path.moveTo(p1.x, -p1.y)
@@ -958,7 +977,11 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         val scaleFactor = 1.19f * writer.kaizoudo_ *(2.0f/experience/printScale)// - (myScale/100)
         myScale *= scaleFactor
         // scale
-        myTriangleList.scaleAndSetPath( PointXY(0f, 0f), scaleFactor, paintTex.textSize )
+        myTriangleList.scaleAndSetPath(
+            PointXY(
+                0f,
+                0f
+            ), scaleFactor, paintTex.textSize )
         myDeductionList.scale(PointXY(0f, 0f), scaleFactor)
         myDeductionList.setScale( myScale )
 
@@ -985,7 +1008,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         val halfAreaH = printAreaH*0.5f*myTriangleList.myScale
 
         // canvasの動きを追跡する
-        val printPoint = PointXY(0f,0f)
+        val printPoint = PointXY(0f, 0f)
         val numberList = myTriangleList.getSokutenList( 2, 4 )
 
         if( separateCount > 1 && numberList.size > 1 && myTriangleList.get(0).angleInGlobal_ > 45f && myTriangleList.get(0).angleInGlobal_ < 135f  ){
@@ -1076,7 +1099,11 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
         //scale back
         myScale /= scaleFactor
-        myTriangleList.scaleAndSetPath( PointXY(0f, 0f), 1 / scaleFactor, paintTexS.textSize )
+        myTriangleList.scaleAndSetPath(
+            PointXY(
+                0f,
+                0f
+            ), 1 / scaleFactor, paintTexS.textSize )
         myDeductionList.scale(PointXY(0f, 0f), 1 / scaleFactor)
         myDeductionList.setScale(myScale)
         //isAreaOff_ = true

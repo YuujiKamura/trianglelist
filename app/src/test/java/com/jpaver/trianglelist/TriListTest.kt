@@ -2,6 +2,8 @@
 
 package com.jpaver.trianglelist
 
+import com.jpaver.trianglelist.model.*
+import com.jpaver.trianglelist.util.Params
 import junit.framework.Assert.assertEquals
 import org.junit.Assert
 import org.junit.Test
@@ -11,12 +13,12 @@ import org.junit.Test
 //@PrepareForTest(Log::class)
 class TriListTest {
 
-    fun printTriangle( t: Triangle ){
+    fun printTriangle( t: Triangle){
         System.out.printf( "Triangle %s, isfloating %s, isColored %s, address %s, nodeTA %s, pbc %s, color %s, point %s, %s, %s, %s, %s, %s%n", t.myNumber_, t.isFloating_, t.isColored_, t, t.nodeTriangleA_, t.parentBC_, t.color_, t.pointCA_.x, t.pointCA_.y, t.pointAB_.x, t.pointAB_.y, t.pointBC_.x, t.pointBC_.y )
         //System.out.println( "" )
     }
 
-    fun printTriList( tl: TriangleList ){
+    fun printTriList( tl: TriangleList){
         System.out.printf( "TriangleList size %s%n", tl.size() )
         for( i in 0 until tl.size() ){
             printTriangle( tl[i+1] )
@@ -155,8 +157,14 @@ class TriListTest {
         printTriangle( trilist[2] )
 
         val dedlist = DeductionList()
-        dedlist.add( Deduction(1,"test",0.5f,0f,0,"Circle",0f, PointXY(-2.5f,-2.5f), PointXY(0f,0f )) )
-        dedlist.add( Deduction(2,"test2",0.5f,0f,0,"Circle",0f, PointXY(-5.0f,-2.5f),PointXY(0f,0f ) ) )
+        dedlist.add( Deduction(1,"test",0.5f,0f,0,"Circle",0f,
+            PointXY(-2.5f, -2.5f),
+            PointXY(0f, 0f)
+        ) )
+        dedlist.add( Deduction(2,"test2",0.5f,0f,0,"Circle",0f,
+            PointXY(-5.0f, -2.5f),
+            PointXY(0f, 0f)
+        ) )
 
         trilist.dedmapping(dedlist, -1)
         assertEquals( 1, dedlist[1].parentNum )
@@ -366,7 +374,9 @@ class TriListTest {
     fun testTriTreeReverse2() {
         val tritree = TriangleList()
         // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
-        tritree.add(Triangle(5f, 5f, 5f, PointXY(0f, 0f), 0f), true)
+        tritree.add(
+            Triangle(5f, 5f, 5f,
+            PointXY(0f, 0f), 0f), true)
         tritree.add(1, 1, 5f, 5f, 5f)
         tritree.add(2, 1, 5f, 5f, 5f)
         tritree.add(3, 2, 5f, 5f, 5f)
@@ -384,7 +394,9 @@ class TriListTest {
     fun testTriTreeReverse() {
         val tritree = TriangleList()
         // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
-        tritree.add(Triangle(5f, 5f, 5f, PointXY(0f, 0f), 0f), true)
+        tritree.add(
+            Triangle(5f, 5f, 5f,
+            PointXY(0f, 0f), 0f), true)
         tritree.add(1, 1, 5f, 5f, 5f)
         tritree.add(2, 1, 5f, 5f, 5f)
         tritree.add(2, 2, 5f, 5f, 5f)
@@ -597,8 +609,18 @@ class TriListTest {
         val trilist = TriangleList(tri1)
         trilist.add(tri2, true)
         trilist.add(tri3, true)
-        Assert.assertEquals(3, trilist.getTapIndexArray(PointXY(-3f, 2f)).size.toLong())
-        Assert.assertEquals(2, trilist.getTapHitCount(PointXY(-3f, 2f)).toLong())
+        Assert.assertEquals(3, trilist.getTapIndexArray(
+            PointXY(
+                -3f,
+                2f
+            )
+        ).size.toLong())
+        Assert.assertEquals(2, trilist.getTapHitCount(
+            PointXY(
+                -3f,
+                2f
+            )
+        ).toLong())
     }
 
     @Test
@@ -620,12 +642,18 @@ class TriListTest {
         val tri5 = Triangle(tri1, ConnParam(2, 1, 2, 3f), 3f, 5f)
         Assert.assertEquals(true, tri5.pointCA_.equals(0f, 0f))
         val tri8 =
-            Triangle(tri1, Params("", "", 2, 3f, 3f, 5f, 2, 5, tri1.pointCA_, PointXY(0f, 0f)))
+            Triangle(tri1, Params("", "", 2, 3f, 3f, 5f, 2, 5, tri1.pointCA_,
+                PointXY(0f, 0f)
+            )
+            )
         Assert.assertEquals(true, tri8.pointCA_.equals(0f, 0f))
         val tri6 = Triangle(tri1, ConnParam(2, 1, 0, 3f), 3f, 5f)
         Assert.assertEquals(true, tri6.pointCA_.equals(-1.1999f, 1.5999f))
         val tri7 =
-            Triangle(tri1, Params("", "", 2, 3f, 3f, 5f, 2, 6, tri1.pointCA_, PointXY(0f, 0f)))
+            Triangle(tri1, Params("", "", 2, 3f, 3f, 5f, 2, 6, tri1.pointCA_,
+                PointXY(0f, 0f)
+            )
+            )
         Assert.assertEquals(true, tri7.pointCA_.equals(-1.1999f, 1.5999f))
     }
 
@@ -722,7 +750,11 @@ class TriListTest {
 
 
         //Assert.assertEquals( 21, trilist.getTap( PointXY( -6.25f, 2.165f ) ) )
-        Assert.assertEquals(30, trilist.getTap(PointXY(-5f, 4.33f), 0.6f))
+        Assert.assertEquals(30, trilist.getTap(
+            PointXY(
+                -5f,
+                4.33f
+            ), 0.6f))
 
         //Assert.assertEquals( 31, trilist.getTap( PointXY( -6.25f, 6.495f ) ) )
         //Assert.assertEquals( 32, trilist.getTap( PointXY( -3.75f, 6.495f ) ) )
@@ -793,22 +825,39 @@ class TriListTest {
     fun testCollision() {
         val tri = Triangle(3f, 4f, 5f)
         Assert.assertEquals(true, tri.collision())
-        Assert.assertEquals(false, PointXY(-2f, -2f).isCollide(tri))
+        Assert.assertEquals(false, PointXY(-2f, -2f)
+            .isCollide(tri))
         Assert.assertEquals(true, PointXY(-2f, 2f).isCollide(tri))
-        Assert.assertEquals(true, tri.isCollide(PointXY(-2f, 2f)))
+        Assert.assertEquals(true, tri.isCollide(
+            PointXY(
+                -2f,
+                2f
+            )
+        ))
         val trilist = TriangleList(tri)
         val tri2 = Triangle(tri, 2, 3f, 4f)
         trilist.add(tri2, true)
         Assert.assertEquals(4f, tri2.pointBC_.y, 0.001f)
-        Assert.assertEquals(2, trilist.isCollide(PointXY(-1f, 3f)).toLong())
-        Assert.assertEquals(1, trilist.isCollide(PointXY(-2f, 2f)).toLong())
+        Assert.assertEquals(2, trilist.isCollide(
+            PointXY(
+                -1f,
+                3f
+            )
+        ).toLong())
+        Assert.assertEquals(1, trilist.isCollide(
+            PointXY(
+                -2f,
+                2f
+            )
+        ).toLong())
     }
 
     @Test
     fun testClone() {
         //val p1 = PointXY(0f, 0f)
         //val p2 = p1.clone()
-        val mytri1 = Triangle(3.0f, 4.0f, 5.0f, PointXY(0f, 0f), 180.0f)
+        val mytri1 = Triangle(3.0f, 4.0f, 5.0f,
+            PointXY(0f, 0f), 180.0f)
         val t2 = mytri1.clone()
         mytri1.setNumber(10)
         Assert.assertEquals(10, mytri1.getMyNumber_().toLong())
@@ -828,7 +877,8 @@ class TriListTest {
         //PowerMockito.mockStatic(Log::class.java)
         //setDimAlign();
 
-        val t1 = Triangle(3.0f, 4.0f, 5.0f, PointXY(0f, 0f), 180.0f )
+        val t1 = Triangle(3.0f, 4.0f, 5.0f,
+            PointXY(0f, 0f), 180.0f )
         val t2 = Triangle( t1, 9, 4f, 3.0f, 5.0f )
         val trilist = TriangleList( t1 )
         trilist.add(t2, true)
@@ -844,7 +894,8 @@ class TriListTest {
         Assert.assertEquals(3f, t1.pointBC_.y, 0.001f)
         Assert.assertEquals(7f, t2.pointBC_.y, 0.001f)
 
-        trilist.resetTriangles(1, Triangle(3.0f, 4.0f, 5.0f, PointXY(0f, 0f), 180.0f) )
+        trilist.resetTriangles(1, Triangle(3.0f, 4.0f, 5.0f,
+            PointXY(0f, 0f), 180.0f) )
         System.out.println( "Trilist reset t1.")
 
         printTriangle( t2 )
@@ -860,7 +911,8 @@ class TriListTest {
     fun testRotate() {
         //PowerMockito.mockStatic(Log::class.java)
 
-        val mytri1 = Triangle(3.0f, 4.0f, 5.0f, PointXY(5f, 5f), 180.0f)
+        val mytri1 = Triangle(3.0f, 4.0f, 5.0f,
+            PointXY(5f, 5f), 180.0f)
         val myTrilist = TriangleList(mytri1)
         myTrilist.add(Triangle(mytri1, 2, 3.0f, 4.0f), true)
         mytri1.rotate(PointXY(0f, 0f), -90f, false)
@@ -873,7 +925,8 @@ class TriListTest {
 
     @Test
     fun testScale() {
-        val mytri1 = Triangle(3.0f, 4.0f, 5.0f, PointXY(0f, 0f), 180.0f)
+        val mytri1 = Triangle(3.0f, 4.0f, 5.0f,
+            PointXY(0f, 0f), 180.0f)
         val myTrilist = TriangleList(mytri1)
         myTrilist.add(Triangle(mytri1, 2, 3.0f, 4.0f), true)
         myTrilist.setScale(PointXY(0f, 0f), 5f)
@@ -882,7 +935,8 @@ class TriListTest {
 
     @Test
     fun testGetTriangle() {
-        val mytri1 = Triangle(3.0f, 4.0f, 5.0f, PointXY(0f, 0f), 180.0f)
+        val mytri1 = Triangle(3.0f, 4.0f, 5.0f,
+            PointXY(0f, 0f), 180.0f)
         val myTrilist = TriangleList()
         myTrilist.add(mytri1, true)
         Assert.assertEquals(3.0f, myTrilist.getTriangle(1).getLengthA(), 0.001f)
@@ -894,7 +948,9 @@ class TriListTest {
     @Test
     fun testReplaceA() {
         val trilist = TriangleList()
-        trilist.add(Triangle(5.0f, 5.0f, 5.0f, PointXY(0f, 0f), 180.0f), true)
+        trilist.add(
+            Triangle(5.0f, 5.0f, 5.0f,
+            PointXY(0f, 0f), 180.0f), true)
         trilist.add(Triangle(trilist.get(1), 2, 5f, 5f), true)
 
         // 新しい三角形を作って渡すと連動しないので、ポインタを取得してリセットする。
@@ -909,7 +965,8 @@ class TriListTest {
     }
     @Test
     fun testReplace() {
-        val mytri1 = Triangle(3.0f, 4.0f, 5.0f, PointXY(0f, 0f), 180.0f)
+        val mytri1 = Triangle(3.0f, 4.0f, 5.0f,
+            PointXY(0f, 0f), 180.0f)
         val myTrilist = TriangleList(mytri1)
         myTrilist.add(Triangle(mytri1, 2, 3f, 4f), true)
         myTrilist.add(Triangle(mytri1, 1, 3f, 5f), true)
@@ -928,14 +985,16 @@ class TriListTest {
 
     @Test
     fun testTriangleArea() {
-        val mytrilist = TriangleList(Triangle(3.0f, 4.0f, 5.0f, PointXY(0f, 0f), 180.0f))
+        val mytrilist = TriangleList(Triangle(3.0f, 4.0f, 5.0f,
+            PointXY(0f, 0f), 180.0f))
         mytrilist.add(Triangle(mytrilist.getTriangle(1), 2, 3f, 4f), true)
         Assert.assertEquals(12f, mytrilist.getArea(), 0.01f)
     }
 
     @Test
     fun testDimAlign() {
-        val mytri1 = Triangle(2.0f, 2.3f, 1.2f, PointXY(0f, 0f), 180.0f)
+        val mytri1 = Triangle(2.0f, 2.3f, 1.2f,
+            PointXY(0f, 0f), 180.0f)
         val myTrilist = TriangleList(mytri1)
         myTrilist.add(Triangle(mytri1, 3, 2.5f, 1.1f, 2.0f), true) //2
 
@@ -954,7 +1013,8 @@ class TriListTest {
 
     @Test
     fun testTriangleList() {
-        val mytri1 = Triangle(3.0f, 4.0f, 5.0f, PointXY(0f, 0f), 180.0f)
+        val mytri1 = Triangle(3.0f, 4.0f, 5.0f,
+            PointXY(0f, 0f), 180.0f)
         val myTrilist = TriangleList(mytri1)
         myTrilist.add(Triangle(mytri1, 2, 3.0f, 4.0f), true)
         myTrilist.add(Triangle(myTrilist.getTriangle(myTrilist.size()), 1, 4.0f, 5.0f), true)

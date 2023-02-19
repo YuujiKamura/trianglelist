@@ -7,17 +7,17 @@ import static java.lang.Math.atan2;
 public class PointXY implements Cloneable {
     private float X, Y;
 
-    PointXY(float x, float y){
+    public PointXY(float x, float y){
         this.X = x;
         this.Y = y;
     }
 
-    PointXY(float x, float y, float s){
+    public PointXY(float x, float y, float s){
         this.X = x * s;
         this.Y = y * s;
     }
 
-    PointXY(PointXY p){
+    public PointXY(PointXY p){
         this.X = p.getX();
         this.Y = p.getY();
     }

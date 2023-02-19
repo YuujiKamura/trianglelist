@@ -1,12 +1,14 @@
 package com.jpaver.trianglelist
 
+import com.jpaver.trianglelist.Bounds
+import com.jpaver.trianglelist.util.Params
 import kotlin.collections.ArrayList
 
 class TriangleListK() :Cloneable {
 
 
 
-    constructor( tri1: TriangleK ) : this() {
+    constructor( tri1: TriangleK) : this() {
         //trilist_ = ArrayList()
         //trilistStored_ = ArrayList()
         trilist_.add( tri1 )
@@ -559,7 +561,10 @@ class TriangleListK() :Cloneable {
     }
 
     fun getParams(i: Int): Params {
-        if (i > trilist_.size) return Params("", "", 0, 0f, 0f, 0f, 0, 0, PointXY(0f, 0f), PointXY(0f, 0f))
+        if (i > trilist_.size) return Params("", "", 0, 0f, 0f, 0f, 0, 0,
+            PointXY(0f, 0f),
+            PointXY(0f, 0f)
+        )
         val t = trilist_[i - 1]
         return Params(t!!.myName_, "", t.myNumber_, t.length[0], t.length[1], t.length[2], t.parentNumber_, t.parentBC_, t.pointCenter_, t.pointNumberAutoAligned_)
     }
@@ -624,7 +629,7 @@ class TriangleListK() :Cloneable {
     }
 
 
-    fun reverse(): TriangleListK{
+    fun reverse(): TriangleListK {
         if( trilist_.size < 2 ) return this
 
         val re = this.clone()

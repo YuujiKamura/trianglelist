@@ -1,5 +1,7 @@
 package com.jpaver.trianglelist
 
+import com.jpaver.trianglelist.util.DeductionParams
+import com.jpaver.trianglelist.util.Params
 import kotlin.math.roundToInt
 
 data class ConnParam(var side: Int, var type: Int, var lcr: Int, var lenA: Float ){
@@ -9,14 +11,21 @@ data class ConnParam(var side: Int, var type: Int, var lcr: Int, var lenA: Float
 }
 
 class Deduction(var num: Int = 0,
-                 var name: String = "",
-                 var lengthX: Float = 0f,
-                 var lengthY: Float = 0f,
-                 var parentNum: Int = 0,
-                 var type: String = "",
-                 var angle: Float = 0f,
-                 var point: PointXY = PointXY(0f, 0f),
-                 var pointFlag: PointXY = PointXY(0f, 0f)) :EditObject() {
+                var name: String = "",
+                var lengthX: Float = 0f,
+                var lengthY: Float = 0f,
+                var parentNum: Int = 0,
+                var type: String = "",
+                var angle: Float = 0f,
+                var point: PointXY = PointXY(
+                    0f,
+                    0f
+                ),
+                var pointFlag: PointXY = PointXY(
+                    0f,
+                    0f
+                )
+) : EditObject() {
 
     constructor(ddp: DeductionParams) :this(
         num = ddp.num,
@@ -66,10 +75,10 @@ class Deduction(var num: Int = 0,
             typestring = "円"
             typenum = 1
 
-            plt = PointXY( 0f, 0f )
-            plb = PointXY( 0f, 0f )
-            prt = PointXY( 0f, 0f )
-            prb = PointXY( 0f, 0f )
+            plt = PointXY(0f, 0f)
+            plb = PointXY(0f, 0f)
+            prt = PointXY(0f, 0f)
+            prb = PointXY(0f, 0f)
         }
 
         infoStr = getInfo()
@@ -77,10 +86,22 @@ class Deduction(var num: Int = 0,
 
     fun setBox(scale: Float){
         myscale = scale
-        plt = PointXY(point.x -lengthX*myscale*0.5f, point.y -lengthY*myscale*0.5f ).rotate(point, shapeAngle)
-        plb = PointXY(point.x -lengthX*myscale*0.5f, point.y +lengthY*myscale*0.5f ).rotate(point, shapeAngle)
-        prt = PointXY(point.x +lengthX*myscale*0.5f, point.y -lengthY*myscale*0.5f ).rotate(point, shapeAngle)
-        prb = PointXY(point.x +lengthX*myscale*0.5f, point.y +lengthY*myscale*0.5f ).rotate(point, shapeAngle)
+        plt = PointXY(
+            point.x - lengthX * myscale * 0.5f,
+            point.y - lengthY * myscale * 0.5f
+        ).rotate(point, shapeAngle)
+        plb = PointXY(
+            point.x - lengthX * myscale * 0.5f,
+            point.y + lengthY * myscale * 0.5f
+        ).rotate(point, shapeAngle)
+        prt = PointXY(
+            point.x + lengthX * myscale * 0.5f,
+            point.y - lengthY * myscale * 0.5f
+        ).rotate(point, shapeAngle)
+        prb = PointXY(
+            point.x + lengthX * myscale * 0.5f,
+            point.y + lengthY * myscale * 0.5f
+        ).rotate(point, shapeAngle)
     }
 
     public override fun clone(): Deduction {
@@ -123,7 +144,7 @@ class Deduction(var num: Int = 0,
         infoStr = getInfo()
     }
 
-    fun getTap( tapP: PointXY ): Boolean{
+    fun getTap( tapP: PointXY): Boolean{
 
         val range = 0.5f * myscale
         if( tapP.nearBy(point, lengthX*myscale) || tapP.nearBy(pointFlag, range) ) return true
@@ -177,7 +198,7 @@ class Deduction(var num: Int = 0,
 
     }
 
-    fun rotateShape( bp: PointXY, degree: Float ){
+    fun rotateShape(bp: PointXY, degree: Float ){
         if(type == "Box"){
             plt = plt.rotate(bp, degree)
             plb = plb.rotate(bp, degree)
@@ -205,17 +226,17 @@ class Deduction(var num: Int = 0,
     }
 
 
-    fun verify( dp: Params ): Boolean{
+    fun verify( dp: Params): Boolean{
         if( name == dp.name && lengthX == dp.a && lengthY == dp.b) return true
         return false
     }
 
-    override fun getParams() :Params{
+    override fun getParams() : Params {
 
         return Params(name, type, num, lengthX, lengthY,0f, parentNum, typeToInt(type), point, pointFlag)
     }
 
-    fun isCollide( tri: Triangle ): Boolean{
+    fun isCollide( tri: Triangle): Boolean{
         if(!tri.isCollide( point )) return false
 
         distanceInPCA = tri.pointCA_.lengthTo( point )

@@ -1,4 +1,4 @@
-package com.jpaver.trianglelist;
+package com.jpaver.trianglelist.fragment;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -7,6 +7,8 @@ import android.content.DialogInterface;
 import android.os.Bundle;
 
 import androidx.fragment.app.DialogFragment;
+
+import com.jpaver.trianglelist.R;
 
 public class MyDialogFragment extends DialogFragment {
 

@@ -1,7 +1,10 @@
 package com.jpaver.trianglelist
 
 class Collision(
-    var point: PointXY = PointXY(0f,0f),
+    var point: PointXY = PointXY(
+        0f,
+        0f
+    ),
     var num: Int = 0,
     var side: Int = 0,
     var isHit: Boolean = false,
@@ -9,7 +12,7 @@ class Collision(
     var wy: Float = 0f
 ){
 
-    fun detect(list: ArrayList<Collision>) :Collision{
+    fun detect(list: ArrayList<Collision>) : Collision {
         if(list.size == 0) return Collision()
         for( i in 0 until list.size){
             if(true == list.get(i).inside(point)) return list.get(i)

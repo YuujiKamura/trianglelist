@@ -1,5 +1,7 @@
 package com.jpaver.trianglelist
 
+import com.jpaver.trianglelist.Bounds
+import com.jpaver.trianglelist.util.Params
 import java.util.*
 
 class TriangleK(@JvmField
@@ -7,8 +9,13 @@ class TriangleK(@JvmField
                 @JvmField
                     var length: Array<Float> = Array(3) { 0f },
                 @JvmField
-                    var point: Array<PointXY> = Array(3) { PointXY(0f, 0f) },
-                    var parentBC_: Int = -1,
+                    var point: Array<PointXY> = Array(3) {
+                    PointXY(
+                        0f,
+                        0f
+                    )
+                },
+                var parentBC_: Int = -1,
                 @JvmField
                     var baseangle: Float = 0f
 ) : EditObject(), Cloneable {
@@ -17,7 +24,10 @@ class TriangleK(@JvmField
     constructor(A: Float, B: Float, C: Float, pCA: PointXY, angle_: Float) :this(
             nodeTriangle = arrayOf( null, null, null ),
             length       = arrayOf( A, B, C ),
-            point        = arrayOf( pCA, PointXY(0f,0f), PointXY(0f,0f) ),
+            point        = arrayOf( pCA,
+                PointXY(0f, 0f),
+                PointXY(0f, 0f)
+            ),
             parentBC_    = -1,
             baseangle    = angle_
     ){
@@ -28,7 +38,11 @@ class TriangleK(@JvmField
     constructor(A: Float, B: Float, C: Float) :this(
             nodeTriangle = arrayOf( null, null, null ),
             length       = arrayOf( A, B, C ),
-            point        = arrayOf( PointXY(0f,0f), PointXY(0f,0f), PointXY(0f,0f) ),
+            point        = arrayOf(
+                PointXY(0f, 0f),
+                PointXY(0f, 0f),
+                PointXY(0f, 0f)
+            ),
             parentBC_    = -1,
             baseangle    = 0f
     ){
@@ -39,7 +53,10 @@ class TriangleK(@JvmField
     constructor(parent: TriangleK, pbc: Int, B: Float, C: Float) :this(
             nodeTriangle = arrayOf( parent, null, null ),
             length       = arrayOf( parent.getLengthBySide(pbc), B, C ),
-            point        = arrayOf( parent.getPointBySide(pbc), PointXY(0f,0f), PointXY(0f,0f) ),
+            point        = arrayOf( parent.getPointBySide(pbc),
+                PointXY(0f, 0f),
+                PointXY(0f, 0f)
+            ),
             parentBC_    = pbc,
             baseangle    = parent.getAngleBySide(pbc)
     ){
@@ -51,7 +68,10 @@ class TriangleK(@JvmField
     constructor(parent: TriangleK, pbc: Int, A: Float, B: Float, C: Float) :this(
             nodeTriangle = arrayOf( parent, null, null ),
             length       = arrayOf( parent.getLengthBySide(pbc), B, C ),
-            point        = arrayOf( parent.getPointBySide(pbc), PointXY(0f,0f), PointXY(0f,0f) ),
+            point        = arrayOf( parent.getPointBySide(pbc),
+                PointXY(0f, 0f),
+                PointXY(0f, 0f)
+            ),
             parentBC_    = pbc,
             baseangle    = parent.getAngleBySide(pbc)
     ){
@@ -63,7 +83,11 @@ class TriangleK(@JvmField
     constructor(child: TriangleK, A: Float, B: Float, C: Float) :this(
             nodeTriangle = arrayOf( null, null, null ),
             length       = arrayOf( A, B, C ),
-            point        = arrayOf( PointXY(0f,0f), PointXY(0f,0f), PointXY(0f,0f) ),
+            point        = arrayOf(
+                PointXY(0f, 0f),
+                PointXY(0f, 0f),
+                PointXY(0f, 0f)
+            ),
             parentBC_    = -1,
             baseangle    = 0f
     ) {
@@ -74,7 +98,10 @@ class TriangleK(@JvmField
     constructor(parent: TriangleK, cParam: ConnParam, B: Float, C: Float) :this(
             nodeTriangle = arrayOf( parent, null, null ),
             length       = arrayOf( parent.getLengthBySide(cParam.side), B, C ),
-            point        = arrayOf( parent.getPointBySide(cParam.side), PointXY(0f,0f), PointXY(0f,0f) ),
+            point        = arrayOf( parent.getPointBySide(cParam.side),
+                PointXY(0f, 0f),
+                PointXY(0f, 0f)
+            ),
             parentBC_    = getPbcByCParam(cParam),
             baseangle    = parent.getAngleBySide(cParam.side)
     ){
@@ -84,7 +111,10 @@ class TriangleK(@JvmField
     constructor(parent: TriangleK, dP: Params) :this(
             nodeTriangle = arrayOf( parent, null, null ),
             length       = arrayOf( parent.getLengthBySide(dP.pl), dP.b, dP.c ),
-            point        = arrayOf( parent.getPointBySide(dP.pl), PointXY(0f,0f), PointXY(0f,0f) ),
+            point        = arrayOf( parent.getPointBySide(dP.pl),
+                PointXY(0f, 0f),
+                PointXY(0f, 0f)
+            ),
             parentBC_    = dP.pl,
             baseangle    = parent.getAngleBySide(dP.pl)
     ) {
@@ -96,7 +126,10 @@ class TriangleK(@JvmField
     constructor(dP: Params, angle: Float) :this(
             nodeTriangle = arrayOf( null, null, null ),
             length       = arrayOf( dP.a, dP.b, dP.c ),
-            point        = arrayOf( dP.pt, PointXY(0f,0f), PointXY(0f,0f) ),
+            point        = arrayOf( dP.pt,
+                PointXY(0f, 0f),
+                PointXY(0f, 0f)
+            ),
             parentBC_    = -1,
             baseangle    = angle
     ) {
@@ -112,7 +145,11 @@ class TriangleK(@JvmField
     @JvmField
         var lengthforce = arrayOf( 0f, 0f, 0f )
     @JvmField
-        var dimpoint = arrayOf( PointXY(0f, 0f), PointXY(0f, 0f), PointXY(0f, 0f) )
+        var dimpoint = arrayOf(
+        PointXY(0f, 0f),
+        PointXY(0f, 0f),
+        PointXY(0f, 0f)
+    )
     @JvmField
         var dimalignV = arrayOf( 3, 3, 3 )
     @JvmField
@@ -256,12 +293,12 @@ class TriangleK(@JvmField
     }
 
     operator fun set(
-            parent: TriangleK,
-            pbc: Int,
-            A: Float,
-            B: Float,
-            C: Float,
-            byNode: Boolean
+        parent: TriangleK,
+        pbc: Int,
+        A: Float,
+        B: Float,
+        C: Float,
+        byNode: Boolean
     ): TriangleK {
         set(parent, pbc, A, B, C)
         if (byNode) {
@@ -352,15 +389,15 @@ class TriangleK(@JvmField
         calcPoints(point[0], baseangle)
         if (parentBC_ == 4) {
             val vector = PointXY(
-                    parent.point[1].x - point[1].x,
-                    parent.point[1].y - point[1].y
+                parent.point[1].x - point[1].x,
+                parent.point[1].y - point[1].y
             )
             move(vector)
         }
         if (parentBC_ == 6) {
             val vector = PointXY(
-                    parent.point[2].x - point[1].x,
-                    parent.point[2].y - point[1].y
+                parent.point[2].x - point[1].x,
+                parent.point[2].y - point[1].y
             )
             move(vector)
         }
@@ -636,13 +673,16 @@ class TriangleK(@JvmField
         if( nodeTriangle[2] != null ) setNodeToZero( nodeTriangle[2]!! )
     }
 
-    fun setNodeToZero( target :TriangleK, me :TriangleK = this ){
+    fun setNodeToZero(target : TriangleK, me : TriangleK = this ){
         if( target.nodeTriangle[1] == me ) target.autoRotateNode( false )
         if( target.nodeTriangle[2] == me ) target.autoRotateNode(  )
     }
 
 
-    fun calcPoints(ref: TriangleK?, refside: Int, pos: PointXY = PointXY(0f, 0f), angle_: Float = 0f) {
+    fun calcPoints(ref: TriangleK?, refside: Int, pos: PointXY = PointXY(
+        0f,
+        0f
+    ), angle_: Float = 0f) {
         isValidLengthes( length[0], length[1], length[2] )
         setCParamFromParentBC( parentSide )
 
@@ -763,7 +803,7 @@ class TriangleK(@JvmField
         dimAngleC_ = angleMmCA
     }
 
-    fun getBasePoint(t: TriangleK, point1: PointXY, point2: PointXY) :PointXY {
+    fun getBasePoint(t: TriangleK, point1: PointXY, point2: PointXY) : PointXY {
 
         val length = t.getLengthBySide(cParam_.side)
 
@@ -808,7 +848,10 @@ class TriangleK(@JvmField
 
     fun getPointBySide(i: Int): PointXY {
         if (getSideByIndex(i) === "B") return point[2]
-        return if (getSideByIndex(i) === "C") point[0] else PointXY(0f, 0f)
+        return if (getSideByIndex(i) === "C") point[0] else PointXY(
+            0f,
+            0f
+        )
     }
 
     fun getAngleBySide(i: Int): Float {
@@ -827,7 +870,10 @@ class TriangleK(@JvmField
     }
 
     fun getParentPointByType(pbc: Int, conntype: Int): PointXY {
-        return if (nodeTriangle[0] == null) PointXY(0f, 0f)
+        return if (nodeTriangle[0] == null) PointXY(
+            0f,
+            0f
+        )
         else when (conntype) {
             1 -> getParentPointByLCR(pbc)
             2 -> getParentPointByLCR(
@@ -838,7 +884,10 @@ class TriangleK(@JvmField
     }
 
     fun getParentPointByLCR(pbc: Int): PointXY {
-        if (nodeTriangle[0] == null) return PointXY(0f, 0f)
+        if (nodeTriangle[0] == null) return PointXY(
+            0f,
+            0f
+        )
         when (pbc) {
             1 -> when (cParam_.lcr) {
                 0 -> return nodeTriangle[0]!!.point[1].offset(nodeTriangle[0]!!.point[2], length[0])
@@ -855,7 +904,10 @@ class TriangleK(@JvmField
     }
 
     fun getParentOffsetPointBySide(pbc: Int): PointXY {
-        if (nodeTriangle[0] == null) return PointXY(0f, 0f)
+        if (nodeTriangle[0] == null) return PointXY(
+            0f,
+            0f
+        )
         when (pbc) {
             1 -> return nodeTriangle[0]!!.point[1].offset(
                     nodeTriangle[0]!!.point[2],
@@ -1386,10 +1438,10 @@ class TriangleK(@JvmField
     }
 
     fun dimSideRotation(
-            side: Int,
-            dimPoint: PointXY,
-            offsetLeft: PointXY?,
-            offsetRight: PointXY?
+        side: Int,
+        dimPoint: PointXY,
+        offsetLeft: PointXY?,
+        offsetRight: PointXY?
     ): PointXY {
         if (side == 0) return dimPoint
         var offsetTo = offsetRight

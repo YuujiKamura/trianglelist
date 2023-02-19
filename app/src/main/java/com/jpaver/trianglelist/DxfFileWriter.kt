@@ -3,7 +3,7 @@ package com.jpaver.trianglelist
 import android.util.Log
 import java.io.BufferedWriter
 
-class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
+class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
     override var trilist_ = trilist
     //override lateinit var dedlist_: DeductionList// = deductionList
 
@@ -44,7 +44,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
 
     }
 
-    fun alignVByVector(num: Int, p1: PointXY, p2: PointXY ): Int{
+    fun alignVByVector(num: Int, p1: PointXY, p2: PointXY): Int{
         // 垂直方向の文字位置合わせタイプ(省略可能、既定 = 0): 整数コード(ビットコードではありません):
         // 0 = 基準線、1 = 下、2 = 中央、3 = 上
         // ベクトルの方向でB,Cを表現するなら
@@ -324,7 +324,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         writeLine( p1, p2, 1)
     }
 
-    override fun writeDeduction( ded: Deduction ){
+    override fun writeDeduction( ded: Deduction){
 
         //val ded = dedlist_.get( dednumber )
         val textSize = textscale_
@@ -383,12 +383,25 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         val myDXFDedList = dedlist_.clone()
 
         // Ｙ軸方向反転、かつビュースケールで割り戻して大きさをtriListと揃える。
-        myDXFDedList.scale(PointXY(0f,0f),1/ viewscale_,-1/ viewscale_)
+        myDXFDedList.scale(PointXY(0f, 0f),1/ viewscale_,-1/ viewscale_)
 
-        val center = PointXY(21f*printscale_, 14.85f*printscale_)
+        val center = PointXY(
+            21f * printscale_,
+            14.85f * printscale_
+        )
         val tricenter = myDXFTriList.center
-        myDXFDedList.move(PointXY(center.x-tricenter.x,center.y-tricenter.y))
-        myDXFTriList.move(PointXY(center.x - tricenter.x, center.y - tricenter.y))
+        myDXFDedList.move(
+            PointXY(
+                center.x - tricenter.x,
+                center.y - tricenter.y
+            )
+        )
+        myDXFTriList.move(
+            PointXY(
+                center.x - tricenter.x,
+                center.y - tricenter.y
+            )
+        )
 
         var trilistNumbered = myDXFTriList.numbered( startTriNumber_ )
         if(isReverse_) {

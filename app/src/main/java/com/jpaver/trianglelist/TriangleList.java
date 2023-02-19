@@ -9,6 +9,8 @@ import java.util.Optional;
 
 import static java.lang.Integer.parseInt;
 
+import com.jpaver.trianglelist.util.Params;
+
 public class TriangleList extends EditList implements Cloneable {
     ArrayList<Triangle> trilist_;
     ArrayList<Triangle> trilistStored_;
@@ -155,12 +157,12 @@ public class TriangleList extends EditList implements Cloneable {
         Map<String, Map<Float,Float>> exportFileTypeMap = new HashMap<>();
         exportFileTypeMap.put( "dxf", textScaleMapDXF );
         exportFileTypeMap.put( "sfc", textScaleMapDXF );
-        exportFileTypeMap.put( "pdf", textScaleMapPDF );
+        exportFileTypeMap.put("pdf", textScaleMapPDF );
 
         Map<String, Float> defaultTextScaleMap = new HashMap<>();
         defaultTextScaleMap.put( "dxf", 0.45f );
         defaultTextScaleMap.put( "sfc", 0.45f );
-        defaultTextScaleMap.put( "pdf", 10f );
+        defaultTextScaleMap.put("pdf", 10f );
 
         float defaultValue = Optional.ofNullable(defaultTextScaleMap.get( exportFileType )).orElse(10f);
 

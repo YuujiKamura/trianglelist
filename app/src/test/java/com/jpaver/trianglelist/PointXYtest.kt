@@ -1,5 +1,7 @@
 package com.jpaver.trianglelist
 
+import com.jpaver.trianglelist.PointXY
+import com.jpaver.trianglelist.Triangle
 import junit.framework.Assert.assertEquals
 import org.junit.Assert
 import org.junit.Test
@@ -8,9 +10,18 @@ class PointXYtest {
 
     @Test
     fun testCrossProduct(){
-        val vec1 = arrayOf( PointXY(0f, 0f), PointXY(1f, 1f) )
-        val vec2 = arrayOf( PointXY(0f, 1f), PointXY(1f, 0f) )
-        val vec3 = arrayOf( PointXY(0f, 0.5f), PointXY(1f, 1.5f) )
+        val vec1 = arrayOf(
+            PointXY(0f, 0f),
+            PointXY(1f, 1f)
+        )
+        val vec2 = arrayOf(
+            PointXY(0f, 1f),
+            PointXY(1f, 0f)
+        )
+        val vec3 = arrayOf(
+            PointXY(0f, 0.5f),
+            PointXY(1f, 1.5f)
+        )
 
         Assert.assertEquals( -2.0, vec1[1].minus(vec1[0]).outerProduct( vec2[1].minus(vec2[0]) ), 0.0001 )
 
@@ -20,10 +31,11 @@ class PointXYtest {
     fun testTrimming(){
 
         val trimline = ArrayList<PointXY>()
-        trimline.add( PointXY(0f, 0f))
-        trimline.add( PointXY(1f, 1f) )
+        trimline.add(PointXY(0f, 0f))
+        trimline.add(PointXY(1f, 1f))
 
-        val tri = Triangle(5f,5f,5f, PointXY(-0.5f,-0.5f), 0f )
+        val tri = Triangle(5f,5f,5f,
+            PointXY(-0.5f, -0.5f), 0f )
 
         Assert.assertEquals( true, tri.trimming(trimline) )
 
@@ -32,7 +44,13 @@ class PointXYtest {
     @Test
     fun testViewToModel(){
         val pressedInView = PointXY(1f, 0f)
-        val pressedInModel = pressedInView.convertToLocal( PointXY(0f, 0f), PointXY(0f, 0f ),PointXY(0f, 0f ), 1f,  )
+        val pressedInModel = pressedInView.convertToLocal(
+            PointXY(
+                0f,
+                0f
+            ),
+            PointXY(0f, 0f),
+            PointXY(0f, 0f), 1f,  )
 
         Assert.assertEquals(1f, pressedInModel.x, 0.001f)
 
@@ -95,9 +113,29 @@ class PointXYtest {
     @Test
     fun testMinMax() {
         val p = PointXY(0f, 0f)
-        Assert.assertEquals(0f, p.min(PointXY(1f, 0f)).x, 0.001f)
-        Assert.assertEquals(1f, p.max(PointXY(1f, 0f)).x, 0.001f)
-        Assert.assertEquals(0f, p.max(PointXY(-1f, 0f)).x, 0.001f)
-        Assert.assertEquals(-1f, p.min(PointXY(-1f, 0f)).x, 0.001f)
+        Assert.assertEquals(0f, p.min(
+            PointXY(
+                1f,
+                0f
+            )
+        ).x, 0.001f)
+        Assert.assertEquals(1f, p.max(
+            PointXY(
+                1f,
+                0f
+            )
+        ).x, 0.001f)
+        Assert.assertEquals(0f, p.max(
+            PointXY(
+                -1f,
+                0f
+            )
+        ).x, 0.001f)
+        Assert.assertEquals(-1f, p.min(
+            PointXY(
+                -1f,
+                0f
+            )
+        ).x, 0.001f)
     }
 }

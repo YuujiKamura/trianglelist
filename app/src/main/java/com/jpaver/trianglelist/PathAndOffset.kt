@@ -20,7 +20,7 @@ class PathAndOffset(
         var p1 = p1_.clone()
         var p2 = p2_.clone()
         val p3: PointXY
-        PointXY(0f,0f)
+        PointXY(0f, 0f)
         setOffset(0, align)
 
         //val vlP2P3 = p2_.vectorTo(p3_).lengthXY()
@@ -93,7 +93,7 @@ class PathAndOffset(
         pointB.add(to)
     }
 
-    private fun setPointAB(p1: PointXY, p2: PointXY ){
+    private fun setPointAB(p1: PointXY, p2: PointXY){
         pointA = p1
         pointB = p2
     }
