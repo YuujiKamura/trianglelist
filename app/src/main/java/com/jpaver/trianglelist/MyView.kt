@@ -500,7 +500,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     }
 
     fun setCenterInModelToLastTappedTriNumber() {
-        centerInModel.set(myTriangleList.getTriangle(lstn()).pointNumber_)
+        centerInModel.set(myTriangleList.getMemberByIndex(lstn()).pointNumber_)
     }
 
     fun resetView( pt: PointXY){
@@ -534,7 +534,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     }
 
     fun toLastTapTriangle(): PointXY {
-        return myTriangleList.getTriangle(lstn()).pointNumber_
+        return myTriangleList.getMemberByIndex(lstn()).pointNumber_
     }
 
     fun lstn(): Int{

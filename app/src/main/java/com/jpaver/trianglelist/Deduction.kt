@@ -153,8 +153,7 @@ class Deduction(var num: Int = 0,
     }
 
     fun getInfo(): String{
-        var str = "$num.$name"
-        if( sameDedcount > 1 ) str += "(${sameDedcount})"
+        var str = getNumNameCount()
         if(type == "Circle") {
             val faif: Float = lengthX * 1000
             val fai: Int = faif.toInt()
@@ -164,6 +163,17 @@ class Deduction(var num: Int = 0,
             str += " $lengthX * $lengthY"
         }
         return str
+    }
+
+    fun getNumNameCount(): String {
+        var str = "$num.$name"
+        if (sameDedcount > 1) str += "(${sameDedcount})"
+        return str
+    }
+
+    fun setNumAndInfo( num_: Int ){
+        num = num_
+        infoStr = getInfo()
     }
 
     fun move(to: PointXY){

@@ -10,13 +10,14 @@
         android:id="@+id/editTextLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:importantForAutofill="noExcludeDescendants"
+        android:shrinkColumns="0,2,3,4,5"
+        app:autoSizeMinTextSize="15sp"
+        app:autoSizeMaxTextSize="15sp"
         app:layout_constraintBottom_toTopOf="@id/my_view"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        android:importantForAutofill="noExcludeDescendants"
-        android:shrinkColumns="0,2,3,4,5"
-        app:autoSizeMinTextSize="4sp">
+        app:layout_constraintTop_toTopOf="parent">
 
         <TableRow
             android:id="@+id/LRosenName"
@@ -35,7 +36,9 @@
                 android:inputType="text"
                 android:maxLength="30"
                 android:text="@string/rosenname"
-                android:textSize="16sp" />
+                android:textSize="16sp"
+                app:autoSizeMaxTextSize="@dimen/ts"
+                />
         </TableRow>
 
         <TableRow
@@ -316,7 +319,7 @@
                 android:gravity="center_horizontal"
                 android:inputType="number"
                 android:maxLength="5"
-                android:nextFocusDown="@+id/editLengthA1"
+                android:nextFocusDown="@+id/editParentConnect1"
                 android:selectAllOnFocus="true"
                 android:text="@string/first"
                 android:textSize="14sp" />
@@ -330,6 +333,7 @@
                 android:ems="3"
                 android:entries="@array/ParentList"
                 android:maxLength="5"
+                android:nextFocusDown="@+id/editLengthA1"
                 android:spinnerMode="dropdown"
                 android:textSize="14sp" />
 

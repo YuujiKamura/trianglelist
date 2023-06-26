@@ -7,6 +7,7 @@ open class EditList :Cloneable {
     private var list :MutableList<EditObject?> = ArrayList()
 
     open var counter: Int = 0
+    open var basepoint = PointXY(0f, 0f)
 
     public override fun clone() :Any { return super.clone() }
     open fun getCurrent() :Int { return 0 }
@@ -16,6 +17,7 @@ open class EditList :Cloneable {
     }
     open fun remove(i: Int) {}
 
+    open fun reverse(): EditList{ return this }
     open fun size() :Int { return 0 }
     open fun get(number: Int) : EditObject {
         //if( list_.size > number ) return null

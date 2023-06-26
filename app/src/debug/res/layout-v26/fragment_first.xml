@@ -9,10 +9,11 @@
     <TableLayout
         android:id="@+id/editTextLayout"
         android:layout_width="match_parent"
-        android:layout_height="100dp"
+        android:layout_height="wrap_content"
         android:importantForAutofill="noExcludeDescendants"
         android:shrinkColumns="0,2,3,4,5"
-        app:autoSizeMinTextSize="4sp"
+        app:autoSizeMinTextSize="15sp"
+        app:autoSizeMaxTextSize="15sp"
         app:layout_constraintBottom_toTopOf="@id/my_view"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -35,7 +36,7 @@
                 android:inputType="text"
                 android:maxLength="30"
                 android:text="@string/rosenname"
-                android:textSize="16sp" />
+                android:textSize="@dimen/ts" />
         </TableRow>
 
         <TableRow
@@ -68,6 +69,7 @@
                 android:padding="0dp"
                 android:text="@string/editor_sokuten"
                 android:textSize="@dimen/ts"
+                app:autoSizeMaxTextSize="15sp"
                 tools:visibility="visible" />
 
             <TextView
@@ -148,7 +150,7 @@
                 android:inputType="number"
                 android:maxLength="5"
                 android:text="@string/first"
-                android:textSize="14sp" />
+                android:textSize="@dimen/ts" />
 
             <AutoCompleteTextView
                 android:id="@+id/editName2"
@@ -159,7 +161,7 @@
                 android:inputType="textAutoComplete|textAutoCorrect"
                 android:maxLength="15"
                 android:text=""
-                android:textSize="14sp" />
+                android:textSize="@dimen/ts" />
 
             <EditText
                 android:id="@+id/editLengthA2"
@@ -173,7 +175,7 @@
                 android:nextFocusDown="@+id/editLengthB2"
                 android:selectAllOnFocus="true"
                 android:text="@string/zero"
-                android:textSize="14sp" />
+                android:textSize="@dimen/ts" />
 
             <EditText
                 android:id="@+id/editLengthB2"
@@ -187,7 +189,7 @@
                 android:nextFocusDown="@+id/editLengthC2"
                 android:selectAllOnFocus="true"
                 android:text="@string/zero"
-                android:textSize="14sp" />
+                android:textSize="@dimen/ts" />
 
             <EditText
                 android:id="@+id/editLengthC2"
@@ -198,9 +200,10 @@
                 android:gravity="center_horizontal"
                 android:inputType="numberDecimal"
                 android:maxLength="5"
+                android:nextFocusDown="@+id/editParentNumber2"
                 android:selectAllOnFocus="true"
                 android:text="@string/zero"
-                android:textSize="14sp" />
+                android:textSize="@dimen/ts" />
 
             <EditText
                 android:id="@+id/editParentNumber2"
@@ -210,9 +213,10 @@
                 android:gravity="center_horizontal"
                 android:inputType="number"
                 android:maxLength="5"
+                android:nextFocusDown="@+id/editParentConnect2"
                 android:selectAllOnFocus="true"
                 android:text="@string/zero"
-                android:textSize="14sp" />
+                android:textSize="@dimen/ts" />
 
             <Spinner
                 android:id="@+id/editParentConnect2"
@@ -224,7 +228,7 @@
                 android:entries="@array/ParentList"
                 android:maxLength="5"
                 android:spinnerMode="dropdown"
-                android:textSize="14sp" />
+                android:textSize="@dimen/ts" />
 
         </TableRow>
 
@@ -245,7 +249,7 @@
                 android:inputType="number"
                 android:maxLength="5"
                 android:text="@string/second"
-                android:textSize="14sp" />
+                android:textSize="@dimen/ts" />
 
             <AutoCompleteTextView
                 android:id="@+id/editName1"
@@ -258,7 +262,7 @@
                 android:maxLength="15"
                 android:selectAllOnFocus="true"
                 android:text=""
-                android:textSize="14sp" />
+                android:textSize="@dimen/ts" />
 
             <EditText
                 android:id="@+id/editLengthA1"
@@ -273,7 +277,7 @@
                 android:nextFocusDown="@+id/editLengthB1"
                 android:selectAllOnFocus="true"
                 android:text="@string/zero"
-                android:textSize="14sp">
+                android:textSize="@dimen/ts">
 
                 <requestFocus />
             </EditText>
@@ -291,7 +295,7 @@
                 android:nextFocusDown="@+id/editLengthC1"
                 android:selectAllOnFocus="true"
                 android:text="@string/zero"
-                android:textSize="14sp" />
+                android:textSize="@dimen/ts" />
 
 
             <EditText
@@ -306,7 +310,7 @@
                 android:nextFocusDown="@+id/editParentNumber1"
                 android:selectAllOnFocus="true"
                 android:text="@string/zero"
-                android:textSize="14sp" />
+                android:textSize="@dimen/ts" />
 
             <EditText
                 android:id="@+id/editParentNumber1"
@@ -316,10 +320,10 @@
                 android:gravity="center_horizontal"
                 android:inputType="number"
                 android:maxLength="5"
-                android:nextFocusDown="@+id/editLengthA1"
+                android:nextFocusDown="@+id/editParentConnect1"
                 android:selectAllOnFocus="true"
                 android:text="@string/first"
-                android:textSize="14sp" />
+                android:textSize="@dimen/ts" />
 
             <Spinner
                 android:id="@+id/editParentConnect1"
@@ -330,8 +334,11 @@
                 android:ems="3"
                 android:entries="@array/ParentList"
                 android:maxLength="5"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:nextFocusDown="@+id/editLengthA1"
                 android:spinnerMode="dropdown"
-                android:textSize="14sp" />
+                android:textSize="@dimen/ts" />
 
 
         </TableRow>
@@ -351,7 +358,7 @@
                 android:inputType="number"
                 android:maxLength="5"
                 android:text="@string/first"
-                android:textSize="14sp" />
+                android:textSize="@dimen/ts" />
 
             <AutoCompleteTextView
                 android:id="@+id/editName3"
@@ -363,7 +370,7 @@
                 android:maxLength="15"
                 android:selectAllOnFocus="true"
                 android:text=""
-                android:textSize="14sp" />
+                android:textSize="@dimen/ts" />
 
             <EditText
                 android:id="@+id/editLengthA3"
@@ -377,7 +384,7 @@
                 android:nextFocusDown="@+id/editLengthB3"
                 android:selectAllOnFocus="true"
                 android:text="@string/zero"
-                android:textSize="14sp" />
+                android:textSize="@dimen/ts" />
 
             <EditText
                 android:id="@+id/editLengthB3"
@@ -391,7 +398,7 @@
                 android:nextFocusDown="@+id/editLengthC3"
                 android:selectAllOnFocus="true"
                 android:text="@string/zero"
-                android:textSize="14sp" />
+                android:textSize="@dimen/ts" />
 
             <EditText
                 android:id="@+id/editLengthC3"
@@ -404,7 +411,7 @@
                 android:maxLength="5"
                 android:selectAllOnFocus="true"
                 android:text="@string/zero"
-                android:textSize="14sp" />
+                android:textSize="@dimen/ts" />
 
             <EditText
                 android:id="@+id/editParentNumber3"
@@ -416,7 +423,7 @@
                 android:maxLength="5"
                 android:selectAllOnFocus="true"
                 android:text="@string/zero"
-                android:textSize="14sp" />
+                android:textSize="@dimen/ts" />
 
             <Spinner
                 android:id="@+id/editParentConnect3"
@@ -428,7 +435,7 @@
                 android:entries="@array/ParentList"
                 android:maxLength="5"
                 android:spinnerMode="dropdown"
-                android:textSize="14sp" />
+                android:textSize="@dimen/ts" />
 
         </TableRow>
     </TableLayout>

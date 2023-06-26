@@ -24,9 +24,7 @@ public class Triangle extends EditObject implements Cloneable {
     public PointXY getPointCA_(){ return point[0].clone(); }
     public PointXY getPointAB_() { return new PointXY(this.pointAB_); }
     public PointXY getPointBC_() { return new PointXY(this.pointBC_); }
-
     float scale_ = 1f;
-
     float angleInGlobal_ = 180f;
     float angleInLocal_ = 0f;
 
@@ -1546,6 +1544,8 @@ public class Triangle extends EditObject implements Cloneable {
 
 
     public void setDimPath( float ts ){
+        if( point[0] == null || pointAB_ == null || pointBC_ == null ) return;
+
         dimH_ = ts;
         pathA_ = new PathAndOffset(scale_, pointAB_, point[0], myDimAlignA_, dimSideAlignA_, dimH_);
         pathB_ = new PathAndOffset(scale_, pointBC_, pointAB_, myDimAlignB_, dimSideAlignB_, dimH_);

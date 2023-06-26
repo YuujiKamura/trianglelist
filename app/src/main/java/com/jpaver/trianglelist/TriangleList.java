@@ -25,7 +25,6 @@ public class TriangleList extends EditList implements Cloneable {
     float myScale = 1f;
 
     float myAngle = 0f;
-    PointXY basepoint = new PointXY(0f,0f);
 
     Bounds myBounds = new Bounds(0f,0f,0f,0f);
     PointXY myCenter = new PointXY(0f,0f);
@@ -41,7 +40,7 @@ public class TriangleList extends EditList implements Cloneable {
 
         TriangleList b = new TriangleList();
         try {
-            b.basepoint = basepoint.clone();
+            b.setBasepoint(getBasepoint().clone());
             b.myBounds = myBounds;
             b.myCenter = myCenter.clone();
             b.myLength = myLength.clone();
@@ -51,7 +50,7 @@ public class TriangleList extends EditList implements Cloneable {
             b.lastTapSide_ = this.lastTapSide_;
             b.myScale = this.myScale;
             b.myAngle = this.myAngle;
-            b.basepoint = this.basepoint.clone();
+            b.setBasepoint(this.getBasepoint().clone());
             b.outlineList_ = outlineList_;
 
             for(int i = 0; i < this.trilist_.size(); i++){
@@ -237,9 +236,9 @@ public class TriangleList extends EditList implements Cloneable {
             for(;;) {
                 rot -= 10f;
                 float beforeY = measureMostLongLine().getY();
-                rotate(basepoint, rot, 0, false);
+                rotate(getBasepoint(), rot, 0, false);
                 if( measureMostLongLine().getY() >= beforeY){
-                    rotate(basepoint, -rot, 0, false);
+                    rotate(getBasepoint(), -rot, 0, false);
                     return rot+10f;
                 }
             }
@@ -248,9 +247,9 @@ public class TriangleList extends EditList implements Cloneable {
             for(;;) {
                 rot += 10f;
                 float beforeY = measureMostLongLine().getY();
-                rotate(basepoint, rot, 0, false);
+                rotate(getBasepoint(), rot, 0, false);
                 if( measureMostLongLine().getY() <= beforeY){
-                    rotate(basepoint, -rot, 0, false);
+                    rotate(getBasepoint(), -rot, 0, false);
                     return rot-10f;
                 }
             }
@@ -282,7 +281,7 @@ public class TriangleList extends EditList implements Cloneable {
 
     public void setScale(PointXY bp, float sc) {
         myScale = sc;
-        basepoint = bp.clone();
+        setBasepoint(bp.clone());
 //        this.cloneByScale(basepoint, myScale);
     }
 
@@ -322,21 +321,21 @@ public class TriangleList extends EditList implements Cloneable {
         // 0番からすべて回転させる場合
         if(!(startnumber > 1 && trilist_.get(startindex).parentBC_ >= 9) || !separationFreeMode ) {
             myAngle += angle;
-            basepoint = bp.clone();
+            setBasepoint(bp.clone());
             startindex = 0;
         }
 
         for (int i = startindex; i < trilist_.size(); i++ ) {
             trilist_.get(i).rotate( trilist_.get(startindex).point[0], angle, false );
-            trilist_.get(i).pointNumber_ = trilist_.get(i).pointNumber_.rotate(basepoint, angle);
+            trilist_.get(i).pointNumber_ = trilist_.get(i).pointNumber_.rotate(getBasepoint(), angle);
         }
 
     }
 
     public void recoverState(PointXY bp) {
-        basepoint = bp.clone();
+        setBasepoint(bp.clone());
         for (int i = 0; i < trilist_.size(); i++ ) {
-            trilist_.get(i).rotate(basepoint, myAngle-180, false);
+            trilist_.get(i).rotate(getBasepoint(), myAngle-180, false);
 
         }
     }
@@ -382,7 +381,7 @@ public class TriangleList extends EditList implements Cloneable {
         int pbc = nextTriangle.parentBC_;
 
         if( nextTriangle.parentNumber_ > 0 ){
-            Triangle parent = getTriangle(nextTriangle.parentNumber_);
+            Triangle parent = getMemberByIndex(nextTriangle.parentNumber_);
             if(parent.alreadyHaveChild(pbc)){
                 // すでに親の接続辺上に子供がいたら、挿入処理
                 //nextTriangle.myNumber_ = nextTriangle.parentNumber_ +1;
@@ -447,7 +446,7 @@ public class TriangleList extends EditList implements Cloneable {
 
     public void insertAndSlide( Triangle nextTriangle ){
         trilist_.add(nextTriangle.myNumber_-1, nextTriangle);
-        getTriangle(nextTriangle.parentNumber_).setChild(nextTriangle, nextTriangle.getParentBC());
+        getMemberByIndex(nextTriangle.parentNumber_).setChild(nextTriangle, nextTriangle.getParentBC());
 
         //次以降の三角形の親番号を全部書き換える、ただし連続しない親で、かつ自分より若い親の場合はそのままにする。
         rewriteAllNodeFrom(nextTriangle, +1);
@@ -637,7 +636,7 @@ public class TriangleList extends EditList implements Cloneable {
     }
 
     // オブジェクトポインタを返す。
-    public Triangle getTriangle(int number){
+    public Triangle getMemberByIndex(int number){
         if( number < 1 || number > trilist_.size() ) return new Triangle();  //under 0 is empty. cant hook null. can hook lenA is not 0.
         else return this.trilist_.get(number-1);
     }
@@ -645,7 +644,7 @@ public class TriangleList extends EditList implements Cloneable {
     @NotNull
     @Override // by number start 1, not index start 0.
     public Triangle get(int number){
-        return getTriangle(number);
+        return getMemberByIndex(number);
     }
 
     public ArrayList<TriangleList> spritByColors(){
@@ -813,7 +812,7 @@ public class TriangleList extends EditList implements Cloneable {
         for (int i = 0; i < trilist_.size(); i++ ) {
             trilist_.get(i).move(to);
         }
-        basepoint.add(to);
+        getBasepoint().add(to);
         return trilist_;
     }
 
@@ -928,6 +927,7 @@ public class TriangleList extends EditList implements Cloneable {
     }
 
 
+    @Override
     public TriangleList reverse(){
 
         for( int i = 0; i < trilist_.size(); i++ ) {

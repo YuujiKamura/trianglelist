@@ -96,6 +96,11 @@ class EditorTable {
          line.pl.setSelection(prm.pl)
     }
 
+    fun toFloatIgnoreDot(str: String ): Float {
+        if( str == "." ) return 0f
+        return str.toFloat()
+    }
+
     fun readLineTo(prm: Params, line: EditTextViewLine) : Params {
 
         var sa: String = line.a.text.toString()
@@ -114,9 +119,9 @@ class EditorTable {
         prm.pn = spn.toInt()
 
         prm.name = line.name.text.toString()
-        prm.a = sa.toFloat()
-        prm.b = sb.toFloat()
-        prm.c = sc.toFloat()
+        prm.a = toFloatIgnoreDot(sa)
+        prm.b = toFloatIgnoreDot(sb)
+        prm.c = toFloatIgnoreDot(sc)
         prm.pl = line.pl.selectedItemPosition
         prm.type = line.pl.selectedItem.toString()
 

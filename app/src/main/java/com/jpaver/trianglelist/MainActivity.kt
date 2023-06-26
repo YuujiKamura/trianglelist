@@ -34,6 +34,7 @@ import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.UpdateAvailability
 import com.jpaver.trianglelist.databinding.ActivityMainBinding
+import com.jpaver.trianglelist.filemanager.XlsxWriter
 import com.jpaver.trianglelist.fragment.MyDialogFragment
 import com.jpaver.trianglelist.util.*
 import org.json.JSONObject.NULL
@@ -176,7 +177,7 @@ class MainActivity : AppCompatActivity(),
     private lateinit var myTriangleList: TriangleList //= TriangleList(Triangle(0f,0f,0f,PointXY(0f,0f),180f))
     private lateinit var myDeductionList: DeductionList
 
-    private var trilistStored: TriangleList = TriangleList()
+    private var trilistUndo: TriangleList = TriangleList()
 
     private var fileType: String = "notyet"
     private var filename = "notyet"
@@ -216,11 +217,13 @@ class MainActivity : AppCompatActivity(),
 
         bMyAct = ActivityMainBinding.inflate(layoutInflater)
 
+
         val view = bMyAct.root
 
         setSupportActionBar(bMyAct.toolbar)
         setContentView(view)
-
+        val tArray = resources.getStringArray(R.array.ParentList)
+        initSpinner(tArray)
         val appUpdateManager = AppUpdateManagerFactory.create(this)
 
         // Returns an intent object that you use to check for an update.
@@ -253,7 +256,7 @@ class MainActivity : AppCompatActivity(),
 
             MobileAds.initialize(this) {}
 
-            if( BuildConfig.FLAVOR == "debug" ) {
+            if( BuildConfig.DEBUG ) {
                 val testDeviceIds = Arrays.asList("ca-app-pub-3940256099942544/6300978111")//33BE2250B43518CCDA7DE426D04EE231")
                 val configuration = RequestConfiguration.Builder().setTestDeviceIds(testDeviceIds).build()
                 MobileAds.setRequestConfiguration(configuration)
@@ -296,6 +299,8 @@ class MainActivity : AppCompatActivity(),
         fab_numreverse = bMyAct.fabNumreverse
         fab_xlsx = bMyAct.fabXlsx
 
+        val mainViewModel = MainViewModel()
+
         fab_replace.setOnClickListener {
             fabReplace(dParams, false)
         }
@@ -307,46 +312,18 @@ class MainActivity : AppCompatActivity(),
             autoSaveCSV()
         }
 
+
         fab_dimsidew.setOnClickListener {
 
+            mainViewModel.setMember( deductionMode, myTriangleList, myDeductionList )
+            mainViewModel.fabDimSide("W", { setListAndAutoSave( { my_view.invalidate() } ) } )
 
-            if(!deductionMode){
-                var dimside = my_view.myTriangleList.lastTapSide_
-                val trinum  = my_view.myTriangleList.lastTapNumber_
-                Log.d("TriangleList", "Triangle dim rot w : $trinum$dimside")
-
-                var tri = myTriangleList.get(trinum)
-                if( dimside == 0 && ( tri.parentBC_ == 1 ||  tri.parentBC_ == 2 ) && trinum > 1 ) {
-                    dimside = tri.parentBC_
-                    tri = myTriangleList.get( trinum - 1 )
-                    Log.d("TriangleList", "Triangle dim rot w : " + tri.myNumber_ + dimside )
-                }
-
-                tri.rotateDimSideAlign(dimside)
-                my_view.setTriangleList(myTriangleList, mScale, false)
-                my_view.invalidate()
-                autoSaveCSV()
-            }
         }
 
         fab_dimsideh.setOnClickListener {
-            if(!deductionMode){
-                var dimside = my_view.myTriangleList.lastTapSide_
-                val trinum  = my_view.myTriangleList.lastTapNumber_
-                Log.d("TriangleList", "Triangle dim rot w : $trinum$dimside")
+            mainViewModel.setMember( deductionMode, myTriangleList, myDeductionList )
+            mainViewModel.fabDimSide("H", { setListAndAutoSave( { my_view.invalidate() } ) }  )
 
-                var tri = myTriangleList.get(trinum)
-                if( dimside == 0 && ( tri.parentBC_ == 1 ||  tri.parentBC_ == 2 ) && trinum > 1 ) {
-                    dimside = tri.parentBC_
-                    tri = myTriangleList.get( trinum - 1 )
-                    Log.d("TriangleList", "Triangle dim rot w : " + tri.myNumber_ + dimside )
-                }
-
-                tri.flipDimAlignH(dimside)
-                my_view.setTriangleList(myTriangleList, mScale, false )
-                my_view.invalidate()
-                autoSaveCSV()
-            }
         }
 
         fab_nijyuualign.setOnClickListener {
@@ -355,7 +332,7 @@ class MainActivity : AppCompatActivity(),
                 //myTriangleList.resetTriConnection(myTriangleList.lastTapNum_, );
                 my_view.setTriangleList(myTriangleList, mScale, false )
                 my_view.resetView(my_view.toLastTapTriangle())
-                editorClear(getList(deductionMode), getList(deductionMode).getCurrent())
+                editorResetBy(getList(deductionMode))
 
                 autoSaveCSV()
             }
@@ -372,7 +349,7 @@ class MainActivity : AppCompatActivity(),
             }
             else {
                 if (listLength > 0) {
-                    trilistStored = myTriangleList.clone()
+                    trilistUndo = myTriangleList.clone()
 
                     var eraseNum = listLength
                     if(!deductionMode) eraseNum = myTriangleList.lastTapNumber_
@@ -383,7 +360,7 @@ class MainActivity : AppCompatActivity(),
                     my_view.setDeductionList(myDeductionList, mScale)
                     my_view.setTriangleList(myTriangleList, mScale)
 
-                    editorClear(getList(deductionMode), getList(deductionMode).size())
+                    editorResetBy(getList(deductionMode))
                 }
                 deleteWarning = 0
                 bMyAct.fabMinus.backgroundTintList = getColorStateList(R.color.colorAccent)
@@ -396,16 +373,16 @@ class MainActivity : AppCompatActivity(),
         }
 
         fab_undo.setOnClickListener{
-            if( trilistStored.size() > 0 ){
-                myTriangleList = trilistStored.clone()
+            if( trilistUndo.size() > 0 ){
+                myTriangleList = trilistUndo.clone()
                 //my_view.undo()
-                my_view.setTriangleList(trilistStored, mScale)
+                my_view.setTriangleList(trilistUndo, mScale)
                 my_view.resetViewToLastTapTriangle()
 
-                trilistStored.trilist_.clear()
+                trilistUndo.trilist_.clear()
 
                 bMyAct.fabUndo.backgroundTintList = getColorStateList(R.color.colorPrimary)
-                editorClear(getList(deductionMode), getList(deductionMode).getCurrent())
+                editorResetBy(getList(deductionMode))
                 setTitles()
             }
         }
@@ -601,14 +578,42 @@ class MainActivity : AppCompatActivity(),
         }
 
         fab_numreverse.setOnClickListener{
-            trilistStored = myTriangleList.clone()
+            trilistUndo = myTriangleList.clone()
+            mainViewModel.setMember( deductionMode, myTriangleList, myDeductionList )
 
-            myTriangleList = myTriangleList.reverse()
-            my_view.setTriangleList(myTriangleList, mScale)
-            my_view.resetView(my_view.toLastTapTriangle())
-            editorClear(myTriangleList, myTriangleList.current)
+            whenTriDed({
+                    if( BuildConfig.DEBUG ){
+                        myTriangleList = mainViewModel.fabReverse() as TriangleList
+                        setListAndAutoSave( { my_view.toLastTapTriangle() } )
+                    }
+                }, {
+                    myDeductionList = mainViewModel.fabReverse() as DeductionList
+                    setListAndAutoSave( { my_view.invalidate() } )
+                })
+
         }
 
+    }
+
+    private fun whenTriDed(methodFalse:() -> Unit, methodTrue:() -> Unit ){
+        when( deductionMode ){
+            false -> methodFalse()
+            true -> methodTrue()
+        }
+    }
+    private fun setListByDedMode(){
+        whenTriDed({
+            my_view.setTriangleList(myTriangleList, mScale)
+        },{
+            my_view.setDeductionList(myDeductionList, mScale)
+        })
+    }
+    private fun setListAndAutoSave( resetViewMethod:() -> Unit ) {
+        editorResetBy(getList(deductionMode))
+        setListByDedMode()
+        resetViewMethod()
+        printDebugConsole()
+        autoSaveCSV()
     }
 
     override fun onAttachedToWindow() {
@@ -750,7 +755,7 @@ class MainActivity : AppCompatActivity(),
     }
 
     override fun onDialogNegativeClick(dialog: DialogFragment?) {
-        editorClear(getList(deductionMode), getList(deductionMode).size())
+        editorResetBy(getList(deductionMode))
         createNew()
     }
 
@@ -978,6 +983,7 @@ class MainActivity : AppCompatActivity(),
             fab_resetView.backgroundTintList = getColorStateList(R.color.colorTT2)
             fab_up.backgroundTintList = getColorStateList(R.color.colorTT2)
             fab_down.backgroundTintList = getColorStateList(R.color.colorTT2)
+            fab_numreverse.backgroundTintList = getColorStateList(R.color.colorTT2)
             fab_deduction.backgroundTintList = getColorStateList(R.color.colorWhite)
             fab_flag.backgroundTintList = getColorStateList(R.color.colorWhite)
             val iconB: Icon = Icon.createWithResource(this, R.drawable.box)
@@ -993,12 +999,7 @@ class MainActivity : AppCompatActivity(),
 
             //　入力テーブルのオートコンプリート候補の変更、名前入力列にフォーカス、ソフトキーボード表示
             val dArray = resources.getStringArray(R.array.DeductionFormList)
-            val spinnerArrayAdapter: ArrayAdapter<String> = ArrayAdapter<String>(
-                    this, android.R.layout.simple_spinner_item, dArray
-            )
-            findViewById<Spinner>(R.id.editParentConnect1).adapter = spinnerArrayAdapter
-            findViewById<Spinner>(R.id.editParentConnect2).adapter = spinnerArrayAdapter
-            findViewById<Spinner>(R.id.editParentConnect3).adapter = spinnerArrayAdapter
+            initSpinner(dArray)
             findViewById<EditText>(R.id.editName1).requestFocus()
             inputMethodManager.showSoftInput(findViewById(R.id.editName1), 0)
             setEditNameAdapter(dedNameListC)
@@ -1028,7 +1029,7 @@ class MainActivity : AppCompatActivity(),
             fab_resetView.backgroundTintList = getColorStateList(R.color.colorSky)
             fab_up.backgroundTintList = getColorStateList(R.color.colorSky)
             fab_down.backgroundTintList = getColorStateList(R.color.colorSky)
-
+            fab_numreverse.backgroundTintList = getColorStateList(R.color.colorAccent)
             fab_deduction.backgroundTintList = getColorStateList(R.color.colorAccent)
             fab_flag.backgroundTintList = getColorStateList(R.color.colorAccent)
             val iconB: Icon = Icon.createWithResource(this, R.drawable.set_b)
@@ -1044,21 +1045,35 @@ class MainActivity : AppCompatActivity(),
 
             //　入力テーブルのオートコンプリート候補の変更、名前入力列にフォーカス、ソフトキーボードは出さない
             val tArray = resources.getStringArray(R.array.ParentList)
-            val spinnerArrayAdapter: ArrayAdapter<String> = ArrayAdapter<String>(
-                    this, android.R.layout.simple_spinner_item, tArray
-            )
-            findViewById<Spinner>(R.id.editParentConnect1).adapter = spinnerArrayAdapter
-            findViewById<Spinner>(R.id.editParentConnect2).adapter = spinnerArrayAdapter
-            findViewById<Spinner>(R.id.editParentConnect3).adapter = spinnerArrayAdapter
-            findViewById<EditText>(R.id.editLengthA1).requestFocus()
+            initSpinner(tArray)
+            findViewById<EditText>(R.id.editLengthA2).requestFocus()
             setEditNameAdapter(sNumberList)
         }
-        editorClear(getList(deductionMode), getList(deductionMode).size())
+        editorResetBy(getList(deductionMode))
         //inputMethodManager.hideSoftInputFromWindow(this.getCurrentFocus().getWindowToken(), 0)
 
     }
 
-    private fun editorClear(elist: EditList, currentNum: Int){
+    private fun initSpinner(tArray: Array<out String>) {
+        //val spinnerItemBinding = SpinnerItemBinding.inflate(layoutInflater)
+
+        val R = android.R.layout.simple_spinner_item
+        //val R2 = spinnerItemBinding.hashCode()
+
+        val spinnerArrayAdapter: ArrayAdapter<String> = ArrayAdapter<String>(
+            this, R, tArray
+        )
+        setSpinnerAdapter(spinnerArrayAdapter)
+    }
+
+    private fun setSpinnerAdapter(spinnerArrayAdapter: ArrayAdapter<String>) {
+        findViewById<Spinner>(R.id.editParentConnect1).adapter = spinnerArrayAdapter
+        findViewById<Spinner>(R.id.editParentConnect2).adapter = spinnerArrayAdapter
+        findViewById<Spinner>(R.id.editParentConnect3).adapter = spinnerArrayAdapter
+    }
+
+    private fun editorResetBy(elist: EditList){
+        val currentNum = elist.getCurrent()
         val eo = elist.get(currentNum)
         val eob = elist.get(currentNum - 1)
 
@@ -1094,7 +1109,7 @@ class MainActivity : AppCompatActivity(),
         )
     }
 
-    fun validTriangle(dp: Params) : Boolean{
+    fun isValid(dp: Params) : Boolean{
         if (dp.a <= 0.0f || dp.b <= 0.0f || dp.c <= 0.0f) return false
         if (dp.a + dp.b <= dp.c ){
             Toast.makeText(this, "Invalid!! : C > A + B", Toast.LENGTH_LONG).show()
@@ -1222,11 +1237,11 @@ class MainActivity : AppCompatActivity(),
             my_view.invalidate()
         }
     }
-    
+
     fun fabReplace(params: Params = dParams, useit: Boolean = false ){
         //val editor = myEditor
+        trilistSaving(myTriangleList)
         val dedmode = deductionMode
-        val editlist = getList(deductionMode)
 
         var readedFirst  = Params()
         var readedSecond = Params()
@@ -1240,7 +1255,7 @@ class MainActivity : AppCompatActivity(),
         val strTopB = findViewById<TextView>(R.id.editLengthB1).text.toString()
         val strTopC = findViewById<TextView>(R.id.editLengthC1).text.toString()
 
-        var usedDedPoint = params.pt.clone()
+        var dedPoint = params.pt.clone().scale(PointXY(0f, 0f), 1f, -1f)
 
         //var isSucceed = false
 
@@ -1255,7 +1270,7 @@ class MainActivity : AppCompatActivity(),
             //if (validDeduction(params) == false) return
 
 
-            usedDedPoint = if( strTopA == "" ) {
+            dedPoint = if( strTopA == "" ) {
                 resetDeductionsBy(readedSecond)
                 my_view.myDeductionList.get(readedSecond.n).point
             } else{
@@ -1265,18 +1280,10 @@ class MainActivity : AppCompatActivity(),
             findViewById<EditText>(R.id.editName1).requestFocus()
         }
 
-        editorClear(editlist, editlist.getCurrent())
         my_view.setTriangleList(myTriangleList, mScale)
-        my_view.setDeductionList(myDeductionList, mScale)
-        printDebugConsole()
-        autoSaveCSV()
+        setListAndAutoSave( { whenTriDed( {my_view.resetView(my_view.toLastTapTriangle())}, {my_view.invalidate()} ) } )
         setTitles()
-        if(!dedmode) my_view.resetView(my_view.toLastTapTriangle())
-        if(dedmode) my_view.resetView(usedDedPoint.scale(
-            PointXY(
-                0f,
-                0f
-            ), 1f, -1f))//resetViewToTP()
+
 
         my_view.myTriangleList.isDoubleTap_ = false
         my_view.myTriangleList.lastTapSide_ = 0
@@ -1286,6 +1293,8 @@ class MainActivity : AppCompatActivity(),
                 Toast.LENGTH_SHORT
         ).show()*/
     }
+
+
 
     private fun moveTrilist(){
         my_view.getTriangleList().setCurrent(myTriangleList.getCurrent())
@@ -1337,20 +1346,39 @@ class MainActivity : AppCompatActivity(),
         else return false
     }
 
-    private fun addTriangleBy(params: Params) : Boolean {
-        if (validTriangle(params)) {
-            trilistStored = myTriangleList.clone()
-            fab_undo.backgroundTintList = getColorStateList(R.color.colorLime)
+    private fun setFabColor(fab: FloatingActionButton, colorIndex: Int ){
+        fab.backgroundTintList = getColorStateList( colorIndex )
+    }
 
-            val myTri = Triangle(
-                    myTriangleList.getTriangle(params.pn),
-                    params
-            )
-            myTri.myNumber_ = params.n
-            myTriangleList.add(myTri, true)
-            findViewById<EditText>(R.id.editLengthA1).requestFocus()
-            myTriangleList.lastTapNumber_ = myTriangleList.size()
-            //my_view.resetView()
+    private fun trilistSaving( from: TriangleList ){
+        trilistUndo = from.clone()
+    }
+    private fun createNewTriangle( params: Params, parentTri: Triangle ): Triangle{
+        val newTri = Triangle(
+            parentTri,
+            params
+        )
+        newTri.myNumber_ = params.n
+        return newTri
+    }
+
+    private fun trilistAdd(params: Params, triList: TriangleList ){
+        val newTri = createNewTriangle( params, triList.getMemberByIndex(params.pn) )
+        triList.add(newTri, true)
+        triList.lastTapNumber_ = triList.size()
+    }
+    private fun setUI(){
+        setFabColor( fab_undo, R.color.colorLime )
+        findViewById<EditText>(R.id.editLengthA1).requestFocus()
+    }
+
+    private fun addTriangleBy(params: Params) : Boolean {
+        if ( isValid( params ) ) {
+
+            trilistSaving( myTriangleList )
+            trilistAdd( params, myTriangleList )
+            setUI()
+
             return true
         }
         return false
@@ -1358,8 +1386,8 @@ class MainActivity : AppCompatActivity(),
 
     private fun resetTrianglesBy(params: Params) : Boolean {
 
-        return if (validTriangle(params)){
-            trilistStored = myTriangleList.clone()
+        return if (isValid(params)){
+            trilistUndo = myTriangleList.clone()
             fab_undo.backgroundTintList = getColorStateList(R.color.colorLime)
 
             //if( dParams.n == 1 ) myTriangleList.resetTriangle( dParams.n, Triangle( dParams, myTriangleList.myAngle ) )
@@ -1393,6 +1421,7 @@ class MainActivity : AppCompatActivity(),
 
                     val ptri = my_view.myTriangleList.get(params.pn)
                     params.pts = ptri.hataage(params.pt, 30f, -1f, params.n.toFloat() )
+                    myTriangleList.lastTapNumber_ = params.pn
                 }
 
             }
@@ -1785,7 +1814,7 @@ class MainActivity : AppCompatActivity(),
         fab_fillcolor.backgroundTintList = getColorStateList(resColors[colorindex])
 
         printDebugConsole()
-        editorClear(getList(deductionMode), getList(deductionMode).size())
+        editorResetBy(getList(deductionMode))
 
     }
 
@@ -2208,7 +2237,7 @@ class MainActivity : AppCompatActivity(),
         writer.newLine()
 
         for (index in 1 .. myTriangleList.size()){
-            val mt: Triangle = myTriangleList.getTriangle(index)
+            val mt: Triangle = myTriangleList.getMemberByIndex(index)
             val pt: PointXY = mt.pointNumber_
             val cp = parentBCtoCParam(mt.parentBC, mt.lengthNotSized[0], mt.cParam_)
             //if( mt.isPointNumberMoved_ == true ) pt.scale(PointXY(0f,0f),1f,-1f)
@@ -2332,6 +2361,17 @@ class MainActivity : AppCompatActivity(),
 
         trilist.add(
             Triangle(
+                chunks.getOrNull(1)?.toFloatOrNull() ?: 0f,
+                chunks.getOrNull(2)?.toFloatOrNull() ?: 0f,
+                chunks.getOrNull(3)?.toFloatOrNull() ?: 0f,
+                pointfirst,
+                anglefirst
+            ),
+            true
+        )
+        /*
+        trilist.add(
+            Triangle(
                     chunks[1]!!.toFloat(),
                     chunks[2]!!.toFloat(),
                     chunks[3]!!.toFloat(),
@@ -2339,8 +2379,9 @@ class MainActivity : AppCompatActivity(),
                     anglefirst
             ),
             true
-        )
-        val mt = trilist.getTriangle(trilist.size())
+        )*/
+
+        val mt = trilist.getMemberByIndex(trilist.size())
 
 
         mt.setMyName_(chunks[6]!!.toString())
@@ -2445,7 +2486,7 @@ class MainActivity : AppCompatActivity(),
                 }
                 else {
 
-                    val ptri = trilist.getTriangle(chunks[4].toInt())
+                    val ptri = trilist.getMemberByIndex(chunks[4].toInt())
                     val cp = ConnParam(
                             chunks[17].toInt(),
                             chunks[18].toInt(),
@@ -2462,7 +2503,7 @@ class MainActivity : AppCompatActivity(),
                     )
 
                 }
-                trilist.getTriangle(trilist.size()).parentBC_ = chunks[5].toInt()
+                trilist.getMemberByIndex(trilist.size()).parentBC_ = chunks[5].toInt()
             }
             else{
 
@@ -2477,7 +2518,7 @@ class MainActivity : AppCompatActivity(),
 
                     trilist.add(
                         Triangle(
-                                trilist.getTriangle(chunks[4].toInt()), ConnParam(
+                                trilist.getMemberByIndex(chunks[4].toInt()), ConnParam(
                                 cp.side,
                                 cp.type,
                                 cp.lcr,
@@ -2489,7 +2530,7 @@ class MainActivity : AppCompatActivity(),
                         true
                     )
 
-                val mT = trilist.getTriangle(trilist.size())
+                val mT = trilist.getMemberByIndex(trilist.size())
                 mT.parentBC_ = chunks[5].toInt()
                 /*
                 if( chunks.size > 25 && mT.parentBC_ >= 9 ) mT.rotate(
@@ -2500,7 +2541,7 @@ class MainActivity : AppCompatActivity(),
                 // trilist.getTriangle(trilist.size()).setCParamFromParentBC( chunks[5]!!.toInt() )
             }
 
-            val mT = trilist.getTriangle(trilist.size())
+            val mT = trilist.getMemberByIndex(trilist.size())
             mT.setMyName_(chunks[6])
             if( trilist.size() > 1 ) trilist.get(trilist.size() - 1).childSide_ = chunks[5].toInt()
 
@@ -2534,7 +2575,7 @@ class MainActivity : AppCompatActivity(),
         }
         //dedlist.scale(PointXY(0f,0f),3f,3f)
         myTriangleList = trilist
-        trilistStored = myTriangleList.clone()
+        trilistUndo = myTriangleList.clone()
         myDeductionList = dedlist
         //trilist.scale(PointXY(0f,0f), 5f)
         //if( anglefirst != 180f )
@@ -2550,7 +2591,7 @@ class MainActivity : AppCompatActivity(),
         //setTitles()
 
         deductionMode = true
-        editorClear(myTriangleList, myTriangleList.size())
+        editorResetBy(myTriangleList)
         //colorMovementFabs()
         flipDeductionMode()
         //printDebugConsole()

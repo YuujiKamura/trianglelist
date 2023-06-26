@@ -1,5 +1,7 @@
 package com.jpaver.trianglelist;
 
+import androidx.annotation.NonNull;
+
 import com.jpaver.trianglelist.util.DeductionParams;
 import com.jpaver.trianglelist.util.Params;
 
@@ -172,19 +174,19 @@ public class DeductionList extends EditList implements Cloneable {
         dedlist_.get(index-1).setParam(dp);
     }
 
+    @NonNull
     public DeductionList reverse(){
         DeductionList rev = new DeductionList();
 
         int iBackward = dedlist_.size()-1;
 
         for( int i = 0; i < dedlist_.size(); i++ ) {
-
-            dedlist_.get( iBackward ).setNum( i+1 );
-
             rev.add( dedlist_.get( iBackward ) );
-
+            rev.dedlist_.get( i ).setNumAndInfo( i+1 );
             iBackward--;
+
         }
+
         dedlist_ = rev.dedlist_;
         return rev;
     }

@@ -21,6 +21,6 @@ public class CadView {
     }
 
     public Triangle getTriangle(int index){
-        return myTriangleList.getTriangle(index);
+        return myTriangleList.getMemberByIndex(index);
     }
 }
