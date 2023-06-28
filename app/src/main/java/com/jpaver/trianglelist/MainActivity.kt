@@ -316,13 +316,13 @@ class MainActivity : AppCompatActivity(),
         fab_dimsidew.setOnClickListener {
 
             mainViewModel.setMember( deductionMode, myTriangleList, myDeductionList )
-            mainViewModel.fabDimSide("W", { setListAndAutoSave( { my_view.invalidate() } ) } )
+            mainViewModel.fabDimSide("W", { setListAndAutoSave( { my_view.invalidate() }, false ) } )
 
         }
 
         fab_dimsideh.setOnClickListener {
             mainViewModel.setMember( deductionMode, myTriangleList, myDeductionList )
-            mainViewModel.fabDimSide("H", { setListAndAutoSave( { my_view.invalidate() } ) }  )
+            mainViewModel.fabDimSide("H", { setListAndAutoSave( { my_view.invalidate() }, false ) }  )
 
         }
 
@@ -601,16 +601,16 @@ class MainActivity : AppCompatActivity(),
             true -> methodTrue()
         }
     }
-    private fun setListByDedMode(){
+    private fun setListByDedMode( moveCenter: Boolean = true ){
         whenTriDed({
-            my_view.setTriangleList(myTriangleList, mScale)
+            my_view.setTriangleList( myTriangleList, mScale, moveCenter )
         },{
             my_view.setDeductionList(myDeductionList, mScale)
         })
     }
-    private fun setListAndAutoSave( resetViewMethod:() -> Unit ) {
+    private fun setListAndAutoSave( resetViewMethod:() -> Unit, moveCenter: Boolean = true ) {
         editorResetBy(getList(deductionMode))
-        setListByDedMode()
+        setListByDedMode( moveCenter )
         resetViewMethod()
         printDebugConsole()
         autoSaveCSV()
@@ -2575,11 +2575,11 @@ class MainActivity : AppCompatActivity(),
         }
         //dedlist.scale(PointXY(0f,0f),3f,3f)
         myTriangleList = trilist
-        trilistUndo = myTriangleList.clone()
+        //trilistUndo = myTriangleList.clone()
         myDeductionList = dedlist
         //trilist.scale(PointXY(0f,0f), 5f)
         //if( anglefirst != 180f )
-            trilist.recoverState(PointXY(0f, 0f))
+        trilist.recoverState(PointXY(0f, 0f))
         //trilist.setChildsToAllParents()
 //        myDeductionList.scale(PointXY(0f,0f), 1f, 1f)
         my_view.setDeductionList(dedlist, mScale)
