@@ -78,6 +78,13 @@ class EditorTable {
         }
 }
 
+    fun Float?.formattedString(fractionDigits:Int): String{
+        // nullの場合は空文字
+        if(this == null) return ""
+        val format = "%.${fractionDigits}f"
+        return format.format(this)
+    }
+
     fun lineRewrite(prm: Params, line: EditTextViewLine){
 
 //        if(prm.n == 0)  line.n.setText("")
@@ -86,11 +93,11 @@ class EditorTable {
         line.name.setText(prm.name)
 
         if(prm.a == 0f) line.a.setText("")
-        else            line.a.setText(prm.a.toString())
+        else            line.a.setText(prm.a.formattedString(2))
         if(prm.b == 0f) line.b.setText("")
-        else            line.b.setText(prm.b.toString())
+        else            line.b.setText(prm.b.formattedString(2))
         if(prm.c == 0f) line.c.setText("")
-        else            line.c.setText(prm.c.toString())
+        else            line.c.setText(prm.c.formattedString(2))
         if( prm.pn == 0 || prm.pn == -1 ) line.pn.setText("")
         else            line.pn.setText(prm.pn.toString())
          line.pl.setSelection(prm.pl)

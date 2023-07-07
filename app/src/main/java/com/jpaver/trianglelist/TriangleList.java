@@ -543,6 +543,9 @@ public class TriangleList extends EditList implements Cloneable {
         if(curtri == null)  return false;
         if(!curtri.validTriangle()) return false;
 
+        //ノードの配列として定義した方がすっきりまとまる気がする。
+        //親方向に走査するなら0、自身の接続方向がCなら２、二つの引数を渡して、総当たりに全方向走査する
+
         //trilistStored_ = (ArrayList<Triangle>) trilist_.clone();
 
         curtri.myNumber_ = cNum; //useless?

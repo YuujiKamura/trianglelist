@@ -103,6 +103,19 @@ class MainActivity : AppCompatActivity(),
     lateinit var fab_numreverse: FloatingActionButton
     lateinit var fab_xlsx: FloatingActionButton
 
+    lateinit var ela1 : EditText
+    lateinit var elb1 : EditText
+    lateinit var elc1 : EditText
+    lateinit var ela2 : EditText
+    lateinit var elb2 : EditText
+    lateinit var elc2 : EditText
+    lateinit var elsa1 : String
+    lateinit var elsb1 : String
+    lateinit var elsc1 : String
+    lateinit var elsa2 : String
+    lateinit var elsb2 : String
+    lateinit var elsc2 : String
+
     private fun checkPermission() {
         if (!isGranted()) {
             requestPermissions(PERMISSIONS, REQUESTPERMISSION)
@@ -273,6 +286,11 @@ class MainActivity : AppCompatActivity(),
         myDeductionList = DeductionList()
         //Toast.makeText(this, "Welcome back!", Toast.LENGTH_SHORT).show()
 
+        initFabs()
+        fabController()
+
+    }
+    private fun initFabs(){
         fab_replace =   bMyAct.fabReplace
         fab_flag =      bMyAct.fabFlag
         fab_dimsidew =  bMyAct.fabDimsidew
@@ -298,6 +316,8 @@ class MainActivity : AppCompatActivity(),
         fab_mail =      bMyAct.fabMail
         fab_numreverse = bMyAct.fabNumreverse
         fab_xlsx = bMyAct.fabXlsx
+    }
+    private fun fabController(){
 
         val mainViewModel = MainViewModel()
 
@@ -448,17 +468,21 @@ class MainActivity : AppCompatActivity(),
 
         fab_resetView.setOnClickListener {
 
-            if(!deductionMode) my_view.resetViewToLastTapTriangle()
-            else if( myDeductionList.size() > 0 ){
-                val currentIndex = my_view.myDeductionList.getCurrent()
-                my_view.resetView(
-                    my_view.myDeductionList.get(currentIndex).point.scale(
-                        PointXY(
-                            1f,
-                            -1f
+            try{
+                if(!deductionMode) my_view.resetViewToLastTapTriangle()
+                else if( myDeductionList.size() > 0 ){
+                    val currentIndex = my_view.myDeductionList.getCurrent()
+                    my_view.resetView(
+                        my_view.myDeductionList.get(currentIndex).point.scale(
+                            PointXY(
+                                1f,
+                                -1f
+                            )
                         )
                     )
-                )
+                }
+            } catch ( e: NullPointerException ){
+                Toast.makeText(this, "List is NUll.", Toast.LENGTH_LONG).show()
             }
         }
 
@@ -582,14 +606,14 @@ class MainActivity : AppCompatActivity(),
             mainViewModel.setMember( deductionMode, myTriangleList, myDeductionList )
 
             whenTriDed({
-                    if( BuildConfig.DEBUG ){
-                        myTriangleList = mainViewModel.fabReverse() as TriangleList
-                        setListAndAutoSave( { my_view.toLastTapTriangle() } )
-                    }
-                }, {
-                    myDeductionList = mainViewModel.fabReverse() as DeductionList
-                    setListAndAutoSave( { my_view.invalidate() } )
-                })
+                if( BuildConfig.DEBUG ){
+                    myTriangleList = mainViewModel.fabReverse() as TriangleList
+                    setListAndAutoSave( { my_view.toLastTapTriangle() } )
+                }
+            }, {
+                myDeductionList = mainViewModel.fabReverse() as DeductionList
+                setListAndAutoSave( { my_view.invalidate() } )
+            })
 
         }
 
@@ -698,18 +722,54 @@ class MainActivity : AppCompatActivity(),
 
         checkPermission()
 
-        // リスナーを登録
-        val etB1 = findViewById<EditText>(R.id.editLengthB1)
-        etB1.addTextChangedListener(object : CustomTextWatcher {
+        ela1 = findViewById<EditText>(R.id.editLengthA1)
+        elb1 = findViewById<EditText>(R.id.editLengthB1)
+        elc1 = findViewById<EditText>(R.id.editLengthC1)
+        ela2 = findViewById<EditText>(R.id.editLengthA2)
+        elb2 = findViewById<EditText>(R.id.editLengthB2)
+        elc2 = findViewById<EditText>(R.id.editLengthC2)
+
+        // EditTextの入力値の変化を追跡するリスナーを登録
+        elb1.addTextChangedListener(object : CustomTextWatcher {
+            override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
+                my_view.watchedB1_ = p0.toString()
+                my_view.invalidate()
+            }
             override fun afterTextChanged(p0: Editable?) {
-                if (etB1.isFocused) my_view.watchedB_ = p0.toString()
+                my_view.watchedB1_ = p0.toString()
                 my_view.invalidate()
             }
         })
-        val etC1 = findViewById<EditText>(R.id.editLengthC1)
-        etC1.addTextChangedListener(object : CustomTextWatcher {
+
+        elc1.addTextChangedListener(object : CustomTextWatcher {
+            override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
+                my_view.watchedC1_ = p0.toString()
+                my_view.invalidate()
+            }
             override fun afterTextChanged(p0: Editable?) {
-                if (etC1.isFocused) my_view.watchedC_ = p0.toString()
+                my_view.watchedC1_ = p0.toString()
+                my_view.invalidate()
+            }
+        })
+
+        ela2.addTextChangedListener(object : CustomTextWatcher {
+            override fun afterTextChanged(p0: Editable?) {
+                my_view.watchedA2_ = p0.toString()
+                my_view.invalidate()
+            }
+        })
+
+
+        elb2.addTextChangedListener(object : CustomTextWatcher {
+            override fun afterTextChanged(p0: Editable?) {
+                my_view.watchedB2_ = p0.toString()
+                my_view.invalidate()
+            }
+        })
+
+        elc2.addTextChangedListener(object : CustomTextWatcher {
+            override fun afterTextChanged(p0: Editable?) {
+                my_view.watchedC2_ = p0.toString()
                 my_view.invalidate()
             }
         })
@@ -962,6 +1022,7 @@ class MainActivity : AppCompatActivity(),
 
         if(!deductionMode) {
             deductionMode = true
+            my_view.deductionMode = true
             Toast.makeText(this, "Edit Mode : Area Deductions", Toast.LENGTH_LONG).show()
 
             // 入力テーブルの見かけの変更、タイトル行の文字列とカラー
@@ -1009,6 +1070,7 @@ class MainActivity : AppCompatActivity(),
 
         } else {
             deductionMode = false
+            my_view.deductionMode = false
             Toast.makeText(this, "Edit Mode : Triangles", Toast.LENGTH_LONG).show()
             // 入力テーブルの見かけの変更、タイトル行の文字列とカラー
             myEditor.setHeaderTable(
@@ -1432,23 +1494,31 @@ class MainActivity : AppCompatActivity(),
         else return false
     }
 
+    fun toString( editText: EditText ) : String{
+        return editText.text.toString()
+    }
+
+    private fun updateElStrings(){
+        elsa1 = toString( ela1 )
+        elsb1 = toString( elb1 )
+        elsc1 = toString( elc1 )
+        elsa2 = toString( ela2 )
+        elsb2 = toString( elb2 )
+        elsc2 = toString( elc2 )
+    }
     private fun autoConnection(i: Int){
-        // 広告の再表示
-        //if( BuildConfig.FLAVOR == "free" ) mAdView.visibility = VISIBLE
 
         my_view.myTriangleList.lastTapSide_ = i
         dParams = myEditor.readLineTo(dParams, myELFirst) //keep them
-        val elb1 = findViewById<EditText>(R.id.editLengthB1)
+
         var focusTo = elb1
 
         if( my_view.myTriangleList.isDoubleTap_ == true ){
-            if(i == 1) focusTo = findViewById(R.id.editLengthB2)
-            if(i == 2) focusTo = findViewById(R.id.editLengthC2)
+            if(i == 1) focusTo = elb2
+            if(i == 2) focusTo = elc2
         }
 
         if(!deductionMode) {
-            my_view.watchedB_ = elb1.text.toString()
-            my_view.watchedC_ = findViewById<EditText>(R.id.editLengthC1).text.toString()
 
             val t: Triangle = myTriangleList.get(dParams.pn)
             myEditor.lineRewrite(
@@ -1514,6 +1584,7 @@ class MainActivity : AppCompatActivity(),
         val trilistV = my_view.myTriangleList
         val trilist  = myTriangleList
         if(deductionMode){
+
             my_view.myDeductionList.setScale(my_view.myScale)
             my_view.myDeductionList.getTapIndex(my_view.pressedInModel)
 
@@ -1544,6 +1615,9 @@ class MainActivity : AppCompatActivity(),
 
         }
         else {
+            updateElStrings()
+            my_view.setWatchedStrings(elsa1,elsb1,elsc1,elsa2,elsb2,elsc2)
+
             val lpp = my_view.pressedInModel.scale(
                 PointXY(
                     0f,
@@ -2007,7 +2081,8 @@ class MainActivity : AppCompatActivity(),
             try {
                 startActivity(intent)
             } catch (e: ActivityNotFoundException) {
-                //if user doesn't have pdf reader instructing to download a pdf reader
+                Log.d("viewPDF", "PDF viewer is not installed." )
+                Toast.makeText(this, "PDF viewer is not installed.", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -2024,36 +2099,46 @@ class MainActivity : AppCompatActivity(),
             try {
                 startActivity(intent)
             } catch (e: ActivityNotFoundException) {
-                //if user doesn't have pdf reader instructing to download a pdf reader
+                Log.d("viewXlsx", ".xlsx viewer is not installed." )
+                Toast.makeText(this, ".xlsx viewer is not installed.", Toast.LENGTH_LONG).show()
             }
         }
     }
 
     private fun sendMail(){
+        Log.d("SendMail", "begin" )
 
         autoSaveCSV()
         autoSavePDF()
-        //AutoSaveDXF()
-        //AutoSaveSFC()
+        Log.d("SendMail", "autoSaved" )
 
         val intent = Intent(Intent.ACTION_SEND_MULTIPLE)
         val contentUri = getAppLocalFile(this, "myLastTriList.pdf")
         val contentUri2 = getAppLocalFile(this, "myLastTriList.csv")
-        //val contentUri3 = getAppLocalFile( this, "myLastTriList.dxf" )
-        //val contentUri4 = getAppLocalFile( this, "myLastTriList.sfc" )
+        Log.d("SendMail", "getLocalFile succeed." )
+
 
         val ar = ArrayList<Uri>()
         ar.add(contentUri)
         ar.add(contentUri2)
-        //ar.add( contentUri3 )
-        //ar.add( contentUri4 )
+        Log.d("SendMail", "contentUrl add succeed." )
 
         intent.putExtra(Intent.EXTRA_STREAM, ar)
-
         intent.type = "message/rfc822"
         intent.setPackage("com.google.android.gm")
+        Log.d("SendMail", "intent setPackage succeed." )
 
-        startActivity(intent)
+        try {
+            startActivity(intent)
+        } catch (e: ActivityNotFoundException) {
+            // Gmailアプリがインストールされていない場合の処理
+            Log.d("SendMail", "Gmail is not installed." )
+            Toast.makeText(this, "Gmail is not installed.", Toast.LENGTH_LONG).show()
+
+            return
+        }
+
+        Log.d("SendMail", "process done." )
         return
 
     }
@@ -2575,8 +2660,8 @@ class MainActivity : AppCompatActivity(),
         }
         //dedlist.scale(PointXY(0f,0f),3f,3f)
         myTriangleList = trilist
-        //trilistUndo = myTriangleList.clone()
         myDeductionList = dedlist
+        turnToBlankTrilistUndo()
         //trilist.scale(PointXY(0f,0f), 5f)
         //if( anglefirst != 180f )
         trilist.recoverState(PointXY(0f, 0f))
@@ -2596,6 +2681,11 @@ class MainActivity : AppCompatActivity(),
         flipDeductionMode()
         //printDebugConsole()
         return true
+    }
+
+    private fun turnToBlankTrilistUndo(){
+        trilistUndo = TriangleList() // reset
+        bMyAct.fabUndo.backgroundTintList = getColorStateList(R.color.colorPrimary)
     }
 
     private fun typeToInt(type: String) :Int{

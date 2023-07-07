@@ -296,7 +296,6 @@
                 android:text="@string/zero"
                 android:textSize="14sp" />
 
-
             <EditText
                 android:id="@+id/editLengthC1"
                 android:layout_width="wrap_content"
@@ -336,7 +335,6 @@
                 android:nextFocusDown="@+id/editLengthA1"
                 android:spinnerMode="dropdown"
                 android:textSize="14sp" />
-
 
         </TableRow>
 
