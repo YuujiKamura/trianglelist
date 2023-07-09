@@ -171,19 +171,12 @@ class MyView(context: Context?, attrs: AttributeSet?) :
             }
         })
 
-        screen_width = this.width
-        screen_height = this.height
-        //対角線の長さを求める
-        screen_diagonal = Math.sqrt(
-            (Math.pow(screen_width.toDouble(), 2.0).toInt() + Math.pow(
-                screen_height.toDouble(),
-                2.0
-            ).toInt()).toDouble()
-        ).toInt()
+        setScreenSize()
 
         scaleGestureDetector = ScaleGestureDetector(context, object : OnScaleGestureListener {
 
             override fun onScale(detector: ScaleGestureDetector): Boolean {
+
 
                 mFocusX = detector.focusX
                 mFocusY = detector.focusY
@@ -219,6 +212,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
             }
 
             override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
+                Log.d("MyViewLifeCycle", "onScaleBegin")
                 //resetPointToZero()
                 distance_start = detector.eventTime.toFloat()
                 if (distance_start > screen_diagonal) {
@@ -238,13 +232,27 @@ class MyView(context: Context?, attrs: AttributeSet?) :
             }
         })
 
-        Log.d("MyView", "OnAttachedToWindow Process Done.")
+        Log.d("MyViewLifeCycle", "OnAttachedToWindow Process Done.")
 
     }
 
+    fun setScreenSize() {
+        screen_width = this.width
+        screen_height = this.height
+        //対角線の長さを求める
+        screen_diagonal = Math.sqrt(
+            (Math.pow(screen_width.toDouble(), 2.0).toInt() + Math.pow(
+                screen_height.toDouble(),
+                2.0
+            ).toInt()).toDouble()
+        ).toInt()
+        Log.d("MyViewLifeCycle", "SetScreenSize.")
+    }
 
 
     override fun onDraw(canvas: Canvas) {
+        Log.d("MyViewLifeCycle", "onDraw.")
+
         transViewPoint()
         scaleCenter.set( (mFocusX - baseInView.x), (mFocusY - baseInView.y) )
         canvas.translate(baseInView.x, baseInView.y) // baseInViewはview座標系の中央を標準としていて、そこからスクロールによって移動した数値になる。
@@ -365,7 +373,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     }
 
     private fun initParams(){
-
+        Log.d("MyViewLifeCycle", "initParams")
         val niigogo = 255
 
         paintFill.strokeWidth = 0.1f

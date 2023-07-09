@@ -145,6 +145,7 @@ class MainActivity : AppCompatActivity(),
         if (requestCode == REQUESTPERMISSION) {
             //checkPermission()
         }
+        Log.d("MainActivityLifeCycle", "onRequestPermissionsResult")
     }
 
     private lateinit var myELFirst: EditTextViewLine
@@ -224,6 +225,7 @@ class MainActivity : AppCompatActivity(),
     //private val UnitAdID_ = "ca-app-pub-6982449551349060/2369695624"
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        Log.d("MainActivityLifeCycle", "onCreate")
 
         super.onCreate(savedInstanceState)
         setTheme(R.style.AppTheme_NoActionBar) //Note that this should be called before any views are instantiated in the Context (for example before calling Activity.setContentView(View) or LayoutInflater.inflate(int, ViewGroup)).
@@ -235,6 +237,8 @@ class MainActivity : AppCompatActivity(),
 
         setSupportActionBar(bMyAct.toolbar)
         setContentView(view)
+        Log.d("MainActivityLifeCycle", "setContentView")
+
         val tArray = resources.getStringArray(R.array.ParentList)
         initSpinner(tArray)
         val appUpdateManager = AppUpdateManagerFactory.create(this)
@@ -278,6 +282,7 @@ class MainActivity : AppCompatActivity(),
             val adRequest = AdRequest.Builder().build()
             mAdView.loadAd(adRequest)
             Log.d("adMob", "adMob Loaded.")
+            Log.d("MainActivityLifeCycle", "adMob Loaded.")
 
         }
 
@@ -647,7 +652,7 @@ class MainActivity : AppCompatActivity(),
         //bMyView = FragmentFirstBinding.bind( findViewById(R.id.my_view) )//inflate(layoutInflater)
         my_view = findViewById(R.id.my_view)//bMyView.myView
         Log.d("myView", "Instance check in MainActivity: " + my_view )
-
+        Log.d("MainActivityLifeCyce", "onAttachedToWindow")
 
         rStr = ResStr(
             getString(R.string.tenkai_title),
@@ -782,8 +787,7 @@ class MainActivity : AppCompatActivity(),
 
     override fun onResume() {
         super.onResume()
-        Log.d("AdMob", "OnResume")
-
+        Log.d("MainActivityLifeCycle", "OnResume")
         // 広告の非表示
         if( BuildConfig.FLAVOR == "free" ){
             val adManager = AdManager()
@@ -791,19 +795,24 @@ class MainActivity : AppCompatActivity(),
             //findViewById<EditText>(R.id.editLengthC1).requestFocus()
             //mAdView.visibility = VISIBLE
         }
+
+        //my_view.setScreenSize() //スクリーンサイズの更新
     }
+
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         return super.onTouchEvent(event)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        Log.d("MainActivityLifeCycle", "onCreateOptionsMenu")
         // 上部のOptionsMenuの表示　Inflate the menu; this adds items to the action bar if it is present.
         menuInflater.inflate(R.menu.menu_main, menu)
         return true
     }
 
     override fun onDialogPositiveClick(dialog: DialogFragment?) {
+        Log.d("MainActivityLifeCycle", "onDialogPositiveClick")
         mIsCreateNew = true
         fileType = "CSV"
         val i = Intent(Intent.ACTION_CREATE_DOCUMENT)
