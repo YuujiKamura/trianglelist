@@ -71,6 +71,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     val LightGreen_ = Color.argb(255, 225, 255, 155)
     val LightBlue_ = Color.argb(255, 220, 240, 255)
     val White_ = Color.argb(255, 255, 255, 255)
+    val Black_ = Color.argb(255, 0, 0, 0)
     val Gray_ = Color.argb(255, 50, 50, 50)
 
     val darkColors_ = arrayOf(DarkPink_, DarkOrange_, DarkYellow_, DarkGreen_, DarkBlue_)
@@ -578,6 +579,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
         Log.d( "myView", "drawEntities: " + myTriangleList.size() )
         Log.d("myView", "Instance check in View: " + this )
+        Log.d( "myView", "drawEntities- paintTex " + paintTex )
 
         // draw the Shadow...
         drawShadowTriangle( canvas, myTriangleList )
@@ -621,8 +623,6 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         paintB: Paint,
         myTriangleList: TriangleList
     ){
-        // 番号
-        drawTriangleNumber(canvas, tri, paintDim, paintB)
 
         // arrange
         tri.pointCA_
@@ -643,9 +643,10 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         tPathS.textSpacer = textSpacer_
 
         val margin = paintDim.textSize*0.52f
+        val savedDimColor = paintDim.color
 
-        // 寸法
-        if( tri.myNumber_ == myTriangleList.lastTapNumber_ && deductionMode == false ){
+        // タップされた三角形の塗りつぶし
+        if( tri.myNumber_ == myTriangleList.lastTapNumber_ && deductionMode == false && isPrintPDF_ == false ){
             paintDim.color = DarkBlue_
             drawDigits( canvas, la, makePath(tPathA), tPathA.offsetH, tPathA.offsetV, paintDim, margin )
             paintDim.color = LightYellow_
@@ -672,19 +673,21 @@ class MyView(context: Context?, attrs: AttributeSet?) :
             else if( tri.myNumber_ < myTriangleList.size() ) paintDim.color = White_
         }
 
+        // 線
+        drawTriLines( canvas, tri, paintLine )
+        if(tPathA.alignSide > 2) canvas.drawPath(makePath(tPathA), paintLine)
+        if(tPathB.alignSide > 2) canvas.drawPath(makePath(tPathB), paintLine)
+        if(tPathC.alignSide > 2) canvas.drawPath(makePath(tPathC), paintLine)
+
+        // 寸法
         if(tri.getMyNumber_() == 1 || tri.parentBC > 2 || tri.cParam_.type != 0 || tri.myNumber_ == myTriangleList.lastTapNumber_ )
             drawDigits( canvas, la, makePath(tPathA), tPathA.offsetH, tPathA.offsetV, paintDim, margin )
         drawDigits( canvas, lb, makePath(tPathB), tPathB.offsetH, tPathB.offsetV, paintDim, margin )
         drawDigits( canvas, lc, makePath(tPathC), tPathC.offsetH, tPathC.offsetV, paintDim, margin )
+        paintDim.color = savedDimColor
 
-        paintDim.color = White_
-
-        // 線
-        drawTriLines( canvas, tri, paintLine )
-
-        if(tPathA.alignSide > 2) canvas.drawPath(makePath(tPathA), paintLine)
-        if(tPathB.alignSide > 2) canvas.drawPath(makePath(tPathB), paintLine)
-        if(tPathC.alignSide > 2) canvas.drawPath(makePath(tPathC), paintLine)
+        // 番号
+        drawTriangleNumber(canvas, tri, paintDim, paintB)
 
         // 測点
         if(tri.getMyName_() != ""){
@@ -696,7 +699,11 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     }
 
     fun drawShadowTriangle( canvas: Canvas, myTriangleList: TriangleList){
-        if( isPrintPDF_ == true || myTriangleList.lastTapSide_ < 1 || myTriangleList.isDoubleTap_ == false ) {
+        if( isPrintPDF_ == true ){
+            Log.d( "myVIew", "drawShadowTriangle - isPrintPDF:" + isPrintPDF_ )
+            return
+        }
+        if( myTriangleList.lastTapSide_ < 1 || myTriangleList.isDoubleTap_ == false ) {
             shadowTri_ = Triangle( 0f, 0f, 0f )
             return
         }
@@ -810,6 +817,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     fun drawBlinkLine( canvas: Canvas, myTriangleList: TriangleList){
         if( myTriangleList.lastTapNumber_ < 1 || myTriangleList.lastTapSide_ < 0 || isPrintPDF_ == true ) return
 
+        Log.d( "myView", "drawBrinkLine - isPrintPDF: " + isPrintPDF_ )
         paintYellow.color = Color.argb(alpha, 255, 255, 0)
 
         val tri = myTriangleList.get( myTriangleList.lastTapNumber_ )
@@ -1050,6 +1058,9 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         val printPoint = PointXY(0f, 0f)
         val numberList = myTriangleList.getSokutenList( 2, 4 )
 
+
+        // 描画処理
+        Log.d( "myView", "drawPDF - isPrintPDF: " + isPrintPDF_ )
         if( separateCount > 1 && numberList.size > 1 && myTriangleList.get(0).angleInGlobal_ > 45f && myTriangleList.get(0).angleInGlobal_ < 135f  ){
 
             //測点を持つ三角形のリスト
@@ -1124,17 +1135,6 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         paintmin.color = Gray_
 
         paintmin.letterSpacing = 0.05f
-        //canvas.drawText( "Text minimalize test", 0f, -60f, paintmin )
-
-
-//        canvas.scale( 4f,4f )
-
-        //    paintmin.letterSpacing = 0.5f
-        //      canvas.drawText( "Text minimalize test", 0f, 0f, paintmin )
-
-        //  canvas.scale( 0.25f,0.25f )
-        //canvas.drawText( "Text minimalize test", 0f, 30f, paintmin )
-
 
         //scale back
         myScale /= scaleFactor
