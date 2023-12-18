@@ -954,7 +954,7 @@ class TriListTest {
         trilist.add(Triangle(trilist.get(1), 2, 5f, 5f), true)
 
         // 新しい三角形を作って渡すと連動しないので、ポインタを取得してリセットする。
-        trilist.resetTriangles(2, trilist.get(2).set(trilist.get(1), 2, 5f, 5f))
+        trilist.resetTriangles(2, trilist.get(2).setOn(trilist.get(1), 2, 5f, 5f))
         assertEquals(trilist.get(2).pointAB_.x, trilist.get(1).pointBC_.x, 0.001f)
         assertEquals(trilist.get(2).pointAB_.y, trilist.get(1).pointBC_.y, 0.001f)
 

@@ -91,7 +91,7 @@ public class TriangleTest {
         assertEquals( one, two.nodeTriangleA_ );
         assertEquals( one.nodeTriangleB_, two );
 
-        two.set( one, 2, 5f, 5f);
+        two.setOn( one, 2, 5f, 5f);
 
         // オブジェクトポインタの一致。
         assertEquals( one, two.nodeTriangleA_ );
@@ -112,7 +112,7 @@ public class TriangleTest {
         assertEquals( one, two.nodeTriangleA_ );
         assertEquals( one.nodeTriangleB_, two );
 
-        two.set( one, 2, 5f, 5f);
+        two.setOn( one, 2, 5f, 5f);
 
         // オブジェクトポインタの一致。
         assertEquals( one, two.nodeTriangleA_ );
@@ -133,7 +133,7 @@ public class TriangleTest {
         assertEquals( one, two.nodeTriangleA_ );
         assertEquals( one.nodeTriangleB_, two );
 
-        two.set( one, 2, 5f, 5f);
+        two.setOn( one, 2, 5f, 5f);
 
         // オブジェクトポインタの一致。
         assertEquals( one, two.nodeTriangleA_ );
