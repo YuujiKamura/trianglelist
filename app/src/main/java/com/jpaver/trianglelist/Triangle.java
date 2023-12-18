@@ -178,18 +178,18 @@ public class Triangle extends EditObject implements Cloneable {
 
     Triangle(Triangle myParent, int pbc, float A, float B, float C){
 
-        set(myParent, pbc, A, B, C);
+        setOn(myParent, pbc, A, B, C);
         //autoSetDimAlign();
     }
 
     Triangle(Triangle myParent, ConnParam cParam, float B, float C){
-        set(myParent, cParam, B, C);
+        setOn(myParent, cParam, B, C);
     }
 
     Triangle(Triangle parent, int pbc, float B, float C){
         initBasicArguments(parent.getLengthByIndex(pbc), B, C, parent.getPointBySide(pbc), parent.getAngleBySide(pbc));
 
-        set(parent, pbc, B, C);
+        setOn(parent, pbc, B, C);
 
 
     }
@@ -220,7 +220,7 @@ public class Triangle extends EditObject implements Cloneable {
     }
 
     Triangle(Triangle myParent, Params dP){
-        set(myParent,dP.getPl(),dP.getA(),dP.getB(),dP.getC());
+        setOn(myParent,dP.getPl(),dP.getA(),dP.getB(),dP.getC());
         myName_ = dP.getName();
         autoSetDimSideAlign();
     }
@@ -267,7 +267,7 @@ public class Triangle extends EditObject implements Cloneable {
 
     }
 
-    Triangle set(Triangle parent, int pbc, float B, float C){
+    Triangle setOn(Triangle parent, int pbc, float B, float C){
         //myNumber_ = parent.myNumber_ + 1;
         parentBC_ = pbc;
 
@@ -323,7 +323,7 @@ public class Triangle extends EditObject implements Cloneable {
 
     }
 */
-    Triangle set(Triangle parent, int pbc, float A, float B, float C){
+    Triangle setOn(Triangle parent, int pbc, float A, float B, float C){
         //myNumber_ = parent.myNumber_ + 1;
         parentBC_ = pbc;
 
@@ -413,19 +413,19 @@ public class Triangle extends EditObject implements Cloneable {
         return this.clone();
     }
 
-    public void set(Triangle myParent, int pbc){
+    public void setOn(Triangle myParent, int pbc){
 
-        this.set(myParent, pbc, this.length[1], this.length[2]);
+        this.setOn(myParent, pbc, this.length[1], this.length[2]);
 
     }
 
-    public void set(Triangle myParent, Params dP){
-        set(myParent,dP.getPl(),dP.getA(),dP.getB(),dP.getC());
+    public void setOn(Triangle myParent, Params dP){
+        setOn(myParent,dP.getPl(),dP.getA(),dP.getB(),dP.getC());
         myName_ = dP.getName();
 
     }
 
-    Triangle set(Triangle parent, ConnParam cParam, float B, float C) {
+    Triangle setOn(Triangle parent, ConnParam cParam, float B, float C) {
         //myNumber_ = parent.myNumber_ + 1;
         //parentBC_ = cParam.getSide();
 
@@ -439,7 +439,7 @@ public class Triangle extends EditObject implements Cloneable {
         }
 
         //setParent( parent, cParam.getSide() );
-        angleInGlobal_ = nodeTriangleA_.getAngleBySide( cParam.getSide() );
+        angleInGlobal_ = parent.getAngleBySide( cParam.getSide() );
 
         setConnectionType( cParam );
 
@@ -468,7 +468,7 @@ public class Triangle extends EditObject implements Cloneable {
 
         if( nodeTriangleA_ == null || parentNumber_ < 1 ) resetLength( prm.getA(), prm.getB(), prm.getC() );
         else{
-            set(nodeTriangleA_, cParam_, prm.getB(), prm.getC() );
+            setOn(nodeTriangleA_, cParam_, prm.getB(), prm.getC() );
         }
         //set(parent_, tParams.getPl(), tParams.getA(), tParams.getB(), tParams.getC() );
         //cParam_ = thisCP.clone();
@@ -550,7 +550,7 @@ public class Triangle extends EditObject implements Cloneable {
             angleInLocal_ = newTri.angleInLocal_;
             resetLength( newTri.length[0], newTri.length[1], newTri.length[2]);
         }
-        else set(nodeTriangleA_, newTri.parentBC_, newTri.length[0], newTri.length[1], newTri.length[2]);
+        else setOn(nodeTriangleA_, newTri.parentBC_, newTri.length[0], newTri.length[1], newTri.length[2]);
         cParam_ = thisCP.clone();
         this.myName_ = newTri.myName_;
         this.clone();
@@ -558,7 +558,7 @@ public class Triangle extends EditObject implements Cloneable {
 
     Triangle reset(Triangle newTri, ConnParam cParam){
         if(nodeTriangleA_ == null) resetLength( newTri.length[0], newTri.length[1], newTri.length[2]);
-        else set(nodeTriangleA_, cParam, newTri.length[1], newTri.length[2]);
+        else setOn(nodeTriangleA_, cParam, newTri.length[1], newTri.length[2]);
         this.myName_ = newTri.myName_;
         return this.clone();
     }
@@ -574,7 +574,7 @@ public class Triangle extends EditObject implements Cloneable {
     public boolean resetByParent(Triangle prnt, ConnParam cParam){
         if( !isValidLengthes( prnt.getLengthByIndex( getParentSide() ), length[1], length[2] ) ) return false;
 
-        Triangle triIsValid = set(prnt, cParam, length[1], length[2]);
+        Triangle triIsValid = setOn(prnt, cParam, length[1], length[2]);
 
         return triIsValid != null;
     }
@@ -589,9 +589,9 @@ public class Triangle extends EditObject implements Cloneable {
             if( !isValidLengthes( parentLength, length[1], length[2] ) ){
                 return true;
             }
-            else triIsValid = set(prnt, pbc, parentLength, length[1], length[2] );
+            else triIsValid = setOn(prnt, pbc, parentLength, length[1], length[2] );
         }
-        if(pbc >  2 ) triIsValid = set(prnt, pbc, length[0], length[1], length[2]);
+        if(pbc >  2 ) triIsValid = setOn(prnt, pbc, length[0], length[1], length[2]);
 
         return triIsValid == null;
     }
@@ -612,11 +612,11 @@ public class Triangle extends EditObject implements Cloneable {
             return;
         }
         if( cbc == 1 ) {
-            set(nodeTriangleA_, parentBC_, length[0], myChild.length[0], length[2]);
+            setOn(nodeTriangleA_, parentBC_, length[0], myChild.length[0], length[2]);
             //nodeTriangleB_ = myChild;
         }
         if( cbc == 2 ) {
-            set(nodeTriangleA_, parentBC_, length[0], length[1], myChild.length[0]);
+            setOn(nodeTriangleA_, parentBC_, length[0], length[1], myChild.length[0]);
             //nodeTriangleC_ = myChild;
         }
     }

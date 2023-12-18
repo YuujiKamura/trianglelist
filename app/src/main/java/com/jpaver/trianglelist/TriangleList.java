@@ -626,7 +626,7 @@ public class TriangleList extends EditList implements Cloneable {
         Triangle me = trilist_.get(number-1);
         Triangle pr = trilist_.get(pnum-1);
 
-        me.set( pr, me.parentBC_, me.length[0], me.length[1], me.length[2] );
+        me.setOn( pr, me.parentBC_, me.length[0], me.length[1], me.length[2] );
 
         return true;
     }
