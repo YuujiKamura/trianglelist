@@ -260,6 +260,8 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
                 $activeLayer
                 100
                 AcDbLine
+                370
+                13
                 10
                 $ax
                 20
@@ -299,6 +301,8 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
             $activeLayer
             62
             $color
+            370
+            13
             100
             AcDbCircle
             10
@@ -585,6 +589,8 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
             C-COL-COL1
             100
             AcDbPolyline
+            370
+            13
             90
             ${array.size}
             70

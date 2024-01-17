@@ -873,10 +873,10 @@ class MainActivity : AppCompatActivity(),
             }
 
             R.id.action_save_xlsx -> {
-                fileType = "XLS"
+                fileType = "XLSX"
                 val intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
                 intent.addCategory(Intent.CATEGORY_OPENABLE)
-                intent.type = "application/vnd.ms-excel"
+                intent.setType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
                 intent.putExtra(
                     Intent.EXTRA_TITLE,
                     LocalDate.now().monthValue.toString() + "." + LocalDate.now().dayOfMonth.toString() + " " + rosenname + ".xlsx"
@@ -1326,10 +1326,6 @@ class MainActivity : AppCompatActivity(),
         val strTopB = findViewById<TextView>(R.id.editLengthB1).text.toString()
         val strTopC = findViewById<TextView>(R.id.editLengthC1).text.toString()
 
-        var dedPoint = params.pt.clone().scale(PointXY(0f, 0f), 1f, -1f)
-
-        //var isSucceed = false
-
         if(!dedmode) {
 
             if( strTopB == "" ) resetTrianglesBy(readedSecond)
@@ -1341,7 +1337,7 @@ class MainActivity : AppCompatActivity(),
             //if (validDeduction(params) == false) return
 
 
-            dedPoint = if( strTopA == "" ) {
+            if( strTopA == "" ) {
                 resetDeductionsBy(readedSecond)
                 my_view.myDeductionList.get(readedSecond.n).point
             } else{
@@ -1965,7 +1961,7 @@ class MainActivity : AppCompatActivity(),
                 if (fileType == "SFC") saveSFC(
                     BufferedOutputStream( content )
                 )
-                if(fileType == "XLS"){
+                if(fileType == "XLSX"){
 
                     val xlsxWriter = XlsxWriter()
                     xlsxWriter.write( content, myTriangleList,  myDeductionList, rosenname )
@@ -2103,7 +2099,8 @@ class MainActivity : AppCompatActivity(),
         if ( contentUri != Uri.EMPTY ) {
             val intent = Intent(Intent.ACTION_VIEW)
             intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-            intent.setDataAndType(contentUri, "application/vnd.ms-excel")
+            intent.setDataAndType(contentUri, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            //intent.setType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 
             try {
                 startActivity(intent)

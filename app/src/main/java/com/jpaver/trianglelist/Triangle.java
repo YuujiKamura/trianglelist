@@ -1132,14 +1132,17 @@ public class Triangle extends EditObject implements Cloneable {
 
     // 呼び出す場所によって、強制になってしまう。
     public void autoSetDimSideAlign(){
+        // 短い時は外側？
         if( lengthNotSized[2] < 1.5f || lengthNotSized[1] < 1.5f ){
             myDimAlignB_ = 1;
             myDimAlignC_ = 1;
         }
-        if( lengthNotSized[2] < 1.5f ) dimSideAlignB_ = 1;
-        if( lengthNotSized[1] < 1.5f ) dimSideAlignC_ = 2;
-        if( lengthNotSized[2] < 1.2f ) dimSideAlignB_ = 4;
-        if( lengthNotSized[1] < 1.2f ) dimSideAlignC_ = 4;
+        // 和が短い時は寄せる
+        //if( lengthNotSized[2]+lengthNotSized[0] < 7.0f ) dimSideAlignB_ = 1;
+        //if( lengthNotSized[1]+lengthNotSized[2] < 7.0f ) dimSideAlignC_ = 2;
+        // 和が短い時は外に出す
+        //if( lengthNotSized[2]+lengthNotSized[0] < 5.0f ) dimSideAlignB_ = 4;
+        //if( lengthNotSized[1]+lengthNotSized[2] < 5.0f ) dimSideAlignC_ = 4;
 
     }
 
