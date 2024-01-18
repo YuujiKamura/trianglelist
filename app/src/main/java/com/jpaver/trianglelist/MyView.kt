@@ -304,13 +304,13 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
 
     override fun onScroll(
-        e1: MotionEvent,
-        e2: MotionEvent,
+        p0: MotionEvent?,
+        p1: MotionEvent,
         distanceX: Float,
         distanceY: Float
     ): Boolean {
         if( isScale == true ) return false
-        move(e2)
+        move(p1)
 
         moveVector.set(0f, 0f)
 
@@ -318,7 +318,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     }
 
     override fun onFling(
-        p0: MotionEvent,
+        p0: MotionEvent?,
         p1: MotionEvent,
         p2: Float,
         p3: Float
