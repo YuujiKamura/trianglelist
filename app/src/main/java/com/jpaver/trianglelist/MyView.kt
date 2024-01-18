@@ -42,7 +42,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     private var flg_pinch_in: Boolean? = null
     private var screen_width = 0
     private var screen_height = 0
-    private var canvasAngle = 0f
+
     //画面の対角線の長さ
     private var screen_diagonal = 0
 
@@ -71,7 +71,6 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     val LightGreen_ = Color.argb(255, 225, 255, 155)
     val LightBlue_ = Color.argb(255, 220, 240, 255)
     val White_ = Color.argb(255, 255, 255, 255)
-    val Black_ = Color.argb(255, 0, 0, 0)
     val Gray_ = Color.argb(255, 50, 50, 50)
 
     val darkColors_ = arrayOf(DarkPink_, DarkOrange_, DarkYellow_, DarkGreen_, DarkBlue_)
@@ -108,17 +107,6 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     var scaleCenter: PointXY =
         PointXY(0f, 0f)
 
-    fun drawViewPoints(canvas: Canvas, paint: Paint, point: PointXY, ypitch: Float ) {
-        //if( isDebug_ == false ) return
-        canvas.drawText( "pressedInView " + pressedInView.info(), point.x, point.y + ypitch * 1, paint)
-        canvas.drawText( "centerInView " + centerInView.info(), point.x, point.y + ypitch * 2, paint)
-        canvas.drawText( "pressedInModel " + pressedInModel.info(), point.x, point.y + ypitch * 3, paint)
-        canvas.drawText( "centerInModel " + centerInModel.info(), point.x, point.y + ypitch * 4, paint)
-    }
-
-    fun incl( inc: Float) :Float{
-        return inc + inc
-    }
 
     var zoomSize: Float = 1.0f
     var mFocusX = 0f
@@ -136,8 +124,6 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     lateinit var myCanvas: Canvas
 
     var ts_ = 25f
-
-    var tapTL_: String = "n"
 
     var watchedA1_ = ""
     var watchedB1_ = ""
@@ -592,7 +578,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
         // 三角形の線、寸法、番号の描画
         for( i in 0 until myTriangleList.size() )  {
-            var paintLine = paintTri
+            val paintLine = paintTri
             //if( i + 1 == myTriangleList.lastTapNumber_ ) paintLine = paintYellow
             drawTriangle(
                 canvas,
@@ -1045,7 +1031,6 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
         //キャンバスをどれだけ動かすか決める。幅は固定値、縦はリストのナンバーを検索し、ナンバー上のA辺の長さによって動かす。
         var wTransLen: Float
-        var lastPointX = 0f
 
 
         // 縦方向の移動量
@@ -1103,7 +1088,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
                 }
                 else{
                     // 次の中心座標へ動かす
-                    if( i > 0) lastPointX = numberList.get( i - 1 ).pointCA_.x
+                    val lastPointX = numberList.get( i - 1 ).pointCA_.x
                     wTransLen  = numberList.get(i).pointCA_.x - lastPointX
 
                     // 縦にのびていく理由はなんだろう？それは図形の座標差が蓄積されていくからと思われる
