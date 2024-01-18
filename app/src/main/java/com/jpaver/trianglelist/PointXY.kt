@@ -1,303 +1,263 @@
-package com.jpaver.trianglelist;
+package com.jpaver.trianglelist
 
-import org.jetbrains.annotations.NotNull;
+class PointXY : Cloneable {
+    var x: Float
+    var y: Float
 
-import static java.lang.Math.atan2;
-
-public class PointXY implements Cloneable {
-    private float X, Y;
-
-    public PointXY(float x, float y){
-        this.X = x;
-        this.Y = y;
+    constructor(x: Float, y: Float) {
+        this.x = x
+        this.y = y
     }
 
-    public PointXY(float x, float y, float s){
-        this.X = x * s;
-        this.Y = y * s;
+    constructor(x: Float, y: Float, s: Float) {
+        this.x = x * s
+        this.y = y * s
     }
 
-    public PointXY(PointXY p){
-        this.X = p.getX();
-        this.Y = p.getY();
+    constructor(p: PointXY) {
+        x = p.x
+        y = p.y
     }
 
-    @NotNull
-    @Override
-    public PointXY clone() {
+    public override fun clone(): PointXY {
         try {
-            return (PointXY)super.clone();
-        } catch (CloneNotSupportedException e) {
-            e.printStackTrace();
+            return super.clone() as PointXY
+        } catch (e: CloneNotSupportedException) {
+            e.printStackTrace()
         }
-        return null;
+        return this
     }
 
-    public PointXY flip(PointXY p2){
-        PointXY p3 = new PointXY(p2.getX(),p2.getY());
-
-        p2.set(X,Y);
-        this.set( p3.X, p3.Y );
-
-        return p3;
+    fun flip(p2: PointXY): PointXY {
+        val p3 = PointXY(p2.x, p2.y)
+        p2[x] = y
+        this[p3.x] = p3.y
+        return p3
     }
 
-    public PointXY min(PointXY p){
-        PointXY sp = new PointXY(X,Y);
-        if(X > p.getX())sp.setX(p.getX());
-        if(Y > p.getY())sp.setY(p.getY());
-
-        return sp;
+    fun min(p: PointXY): PointXY {
+        val sp = PointXY(x, y)
+        if (x > p.x) sp.x = p.x
+        if (y > p.y) sp.y = p.y
+        return sp
     }
 
-    public PointXY max(PointXY p){
-        PointXY sp = new PointXY(X,Y);
-        if(X < p.getX())sp.setX(p.getX());
-        if(Y < p.getY())sp.setY(p.getY());
-
-        return sp;
+    fun max(p: PointXY): PointXY {
+        val sp = PointXY(x, y)
+        if (x < p.x) sp.x = p.x
+        if (y < p.y) sp.y = p.y
+        return sp
     }
 
-    public Boolean equals( float x, float y){
-        float range = 0.001f;
-        return X < x + range && X > x - range && Y < y + range && Y > y - range;
+    fun equals(x: Float, y: Float): Boolean {
+        val range = 0.001f
+        return this.x < x + range && this.x > x - range && this.y < y + range && this.y > y - range
     }
 
-    public float[] equal( float x, float y){
-        float[] data = new float[2];
-        data[0] = X - x;
-        data[1] = Y - y;
-        return data;
+    operator fun set(x: Float, y: Float): PointXY {
+        this.x = x
+        this.y = y
+        return this
     }
 
-
-    public float getX(){ return this.X; }
-    public float getY(){ return this.Y; }
-
-    public String info(){
-        return getX() + " " + getY();
+    fun side(): Int {
+        return if (x < 0) -1 else 1
     }
 
-    public PointXY set(float x, float y){
-        this.X = x;
-        this.Y = y;
-        return this;
-    }
-
-    public void setX(float x){
-        this.X = x;
-    }
-
-    public void setY(float y){
-        this.Y = y;
-    }
-
-    public int side(){
-        if( X < 0 ) return -1;
-        else return 1;
-    }
-
-    public float calcAngle( PointXY p2, PointXY p3){
-
-        PointXY v1 = p2.subtract(this);
-        PointXY v2 = p2.subtract(p3);
-        double angleRadian = Math.acos(v1.innerProduct(v2) / (v1.magnitude() * v2.magnitude()));
-        double angleDegree = angleRadian * 180 / Math.PI;
-        if (v1.outerProduct(v2) > 0) {
-            return (float)angleDegree - 180;
+    fun calcAngle(p2: PointXY, p3: PointXY): Float {
+        val v1 = p2.subtract(this)
+        val v2 = p2.subtract(p3)
+        val angleRadian = Math.acos(v1.innerProduct(v2) / (v1.magnitude() * v2.magnitude()))
+        val angleDegree = angleRadian * 180 / Math.PI
+        return if (v1.outerProduct(v2) > 0) {
+            angleDegree.toFloat() - 180
         } else {
-            return 180 - (float)angleDegree;
+            180 - angleDegree.toFloat()
         }
     }
 
-    public void set(PointXY sp){
-        this.X = sp.getX();
-        this.Y = sp.getY();
+    fun set(sp: PointXY) {
+        x = sp.x
+        y = sp.y
     }
 
-    public PointXY convertToLocal(PointXY baseInView, PointXY centerInModel, PointXY scalebase, float zoom){
-        PointXY inLocal = this.clone();
-        inLocal.addminus( baseInView ).scale( new PointXY(0f,0f), 1/zoom); // // 左上起点座標を自身(pressedInView)から引く
-        inLocal.add( centerInModel.scale(1f,-1f) );
+    fun convertToLocal(
+        baseInView: PointXY,
+        centerInModel: PointXY,
+        zoom: Float
+    ): PointXY {
+        val inLocal = clone()
+        inLocal.addminus(baseInView)
+            .scale(PointXY(0f, 0f), 1 / zoom) // // 左上起点座標を自身(pressedInView)から引く
+        inLocal.add(centerInModel.scale(1f, -1f))
         //inLocal.scale( baseInView.add(centerInModel.scale(1f,-1f)), 1/zoom);
-        return inLocal;
+        return inLocal
     }
 
-    public PointXY add(PointXY a){
-        X = X + a.X;
-        Y = Y + a.Y;
-        return this;
+    fun add(a: PointXY): PointXY {
+        x = x + a.x
+        y = y + a.y
+        return this
     }
 
-    public PointXY add(float a, float b){
-        X = X + a;
-        Y = Y + b;
-        return this;
+    fun add(a: Float, b: Float): PointXY {
+        x = x + a
+        y = y + b
+        return this
     }
 
-    public PointXY plus(float x, float y){
-        return new PointXY(X+x, Y+y);
+    fun plus(x: Float, y: Float): PointXY {
+        return PointXY(this.x + x, this.y + y)
     }
 
-    public PointXY plus(PointXY a){
-        return new PointXY(X+a.X, Y+a.Y);
+    operator fun plus(a: PointXY): PointXY {
+        return PointXY(x + a.x, y + a.y)
     }
 
-
-    public PointXY minus(PointXY a){
-        return new PointXY(X-a.X, Y-a.Y);
+    operator fun minus(a: PointXY): PointXY {
+        return PointXY(x - a.x, y - a.y)
     }
 
-    public PointXY addminus(PointXY a){
-        X = X - a.X;
-        Y = Y - a.Y;
-        return this;
+    fun addminus(a: PointXY): PointXY {
+        x = x - a.x
+        y = y - a.y
+        return this
     }
 
-    public PointXY calcMidPoint(PointXY a){
-        return new PointXY((X+a.X)/2, (Y+a.Y)/2);
+    fun calcMidPoint(a: PointXY): PointXY {
+        return PointXY((x + a.x) / 2, (y + a.y) / 2)
     }
 
-    public PointXY offset(PointXY p2, float movement){
-        PointXY vector = this.vectorTo(p2);
-        PointXY normalizedVector = vector.normalize();
-        PointXY itsScaled = normalizedVector.scale( movement );
-
-        return new PointXY( itsScaled ).add( this );
-
+    fun offset(p2: PointXY, movement: Float): PointXY {
+        val vector = vectorTo(p2)
+        val normalizedVector = vector.normalize()
+        val itsScaled = normalizedVector.scale(movement)
+        return PointXY(itsScaled).add(this)
     }
 
     // 直交方向へのオフセット p2 is base line, p3 is cross vector align
-    public PointXY crossOffset(PointXY p2, float movement){
+    fun crossOffset(p2: PointXY, movement: Float): PointXY {
         //PointXY normalizedVector = vectorTo(p2).normalize();
 
         // 一行にいろいろ書いてみる
-        return new PointXY(this.minus(this.vectorTo(p2.rotate(this, -90)).normalize().scale(movement)));
+        return PointXY(this.minus(vectorTo(p2.rotate(this, -90f)).normalize().scale(movement)))
         //return new PointXY(this.minus(normalizedVector.scale(movement)));
         //return new PointXY( X-(normalizedVector.getX()*movement), Y-(normalizedVector.getY()*movement) );
     }
 
-
-    public PointXY vectorTo(PointXY p2)
-    {
-        return new PointXY(p2.X-X, p2.Y-Y);
+    fun vectorTo(p2: PointXY): PointXY {
+        return PointXY(p2.x - x, p2.y - y)
     }
 
-    public float lengthTo(PointXY p2){
-        return new PointXY(this.X, this.Y).vectorTo(p2).lengthXY();
+    fun lengthTo(p2: PointXY): Float {
+        return PointXY(x, y).vectorTo(p2).lengthXY()
     }
 
-    public PointXY normalize(){
-        return new PointXY(X/ lengthXY(), Y/ lengthXY());
+    fun normalize(): PointXY {
+        return PointXY(x / lengthXY(), y / lengthXY())
     }
 
-    public float lengthXY(){
-        return (float)(Math.pow(Math.pow(X,2)+Math.pow(Y,2), 0.5));
+    fun lengthXY(): Float {
+        return Math.pow(Math.pow(x.toDouble(), 2.0) + Math.pow(y.toDouble(), 2.0), 0.5)
+            .toFloat()
     }
 
-    public float calcDimAngle(PointXY a){
-        float angle = (float)(atan2(a.X-X, a.Y-Y) * 180 / Math.PI);
+    fun calcDimAngle(a: PointXY): Float {
+        var angle =
+            (Math.atan2((a.x - x).toDouble(), (a.y - y).toDouble()) * 180 / Math.PI).toFloat()
         //if(0 > angle )
-        angle = -angle;
-        angle += 90f;
-        if(90 < angle) angle -= 180;
-
-        if( angle < 0 ) angle += 360;
-
-        return angle;
+        angle = -angle
+        angle += 90f
+        if (90 < angle) angle -= 180f
+        if (angle < 0) angle += 360f
+        return angle
     }
 
-    public float calcSokAngle(PointXY a, int vector){
-        float angle = (float)(atan2(a.X-X, a.Y-Y) * 180 / Math.PI);
+    fun calcSokAngle(a: PointXY, vector: Int): Float {
+        var angle =
+            (Math.atan2((a.x - x).toDouble(), (a.y - y).toDouble()) * 180 / Math.PI).toFloat()
         //if(0 > angle )
-        angle = -angle;
-        angle += 90f;
-        if( vector < 0 ) angle -= 180;
-
-        return angle;
+        angle = -angle
+        angle += 90f
+        if (vector < 0) angle -= 180f
+        return angle
     }
 
-
-    public void scale(PointXY a, float scale){
-        X = X*scale + a.X;
-        Y = Y*scale + a.Y;
+    fun scale(a: PointXY, scale: Float) {
+        x = x * scale + a.x
+        y = y * scale + a.y
     }
 
-    public PointXY scale(float scale){
-        return new PointXY(X*scale, Y*scale);
+    fun scale(scale: Float): PointXY {
+        return PointXY(x * scale, y * scale)
     }
 
-    public PointXY scale(float scaleX, float scaleY ){
-        return new PointXY(X*scaleX, Y*scaleY );
+    fun scale(scaleX: Float, scaleY: Float): PointXY {
+        return PointXY(x * scaleX, y * scaleY)
     }
 
-    public PointXY scale(PointXY scale){
-        return new PointXY(X*scale.getX(), Y*scale.getY());
+    fun scale(scale: PointXY): PointXY {
+        return PointXY(x * scale.x, y * scale.y)
     }
 
-
-
-    public PointXY scale(PointXY a, float sx, float sy){
-        return new PointXY(X*sx + a.X, Y*sy + a.Y);
+    fun scale(a: PointXY, sx: Float, sy: Float): PointXY {
+        return PointXY(x * sx + a.x, y * sy + a.y)
     }
 
-    public boolean nearBy( PointXY target, float range){
-        return this.X > target.X - range && this.X < target.X + range && this.Y > target.Y - range && this.Y < target.Y + range;
+    fun nearBy(target: PointXY, range: Float): Boolean {
+        return x > target.x - range && x < target.x + range && y > target.y - range && y < target.y + range
     }
 
-    public boolean isCollide(PointXY ab, PointXY bc, PointXY ca){
-
-        boolean b1, b2, b3;
-
-        b1 = sign(this, ab, bc) < 0.0f;
-        b2 = sign(this, bc, ca) < 0.0f;
-        b3 = sign(this, ca, ab) < 0.0f;
-
-        return ((b1 == b2) && (b2 == b3));
+    fun isCollide(ab: PointXY, bc: PointXY, ca: PointXY): Boolean {
+        val b1: Boolean
+        val b2: Boolean
+        val b3: Boolean
+        b1 = sign(this, ab, bc) < 0.0f
+        b2 = sign(this, bc, ca) < 0.0f
+        b3 = sign(this, ca, ab) < 0.0f
+        return b1 == b2 && b2 == b3
     }
 
-    float sign (PointXY p1, PointXY p2, PointXY p3)
-    {
-        return (p1.X - p3.X) * (p2.Y - p3.Y) - (p2.X - p3.X) * (p1.Y - p3.Y);
+    fun sign(p1: PointXY, p2: PointXY, p3: PointXY): Float {
+        return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y)
     }
 
-
-    public boolean isCollide(Triangle tri){
-            return isCollide(tri.pointAB_,tri.pointBC_,tri.point[0]); //Inside Triangle
+    fun isCollide(tri: Triangle): Boolean {
+        return isCollide(tri.pointAB_, tri.pointBC_, tri.point[0]) //Inside Triangle
     }
 
-    public boolean isCollide(TriangleK tri){
-        return isCollide(tri.point[1],tri.point[2],tri.point[0]); //Inside Triangle
+    fun isCollide(tri: TriangleK): Boolean {
+        return isCollide(tri.point[1], tri.point[2], tri.point[0]) //Inside Triangle
     }
 
-
-    public PointXY subtract(PointXY point) {
-        return new PointXY(this.X - point.X, this.Y - point.Y);
+    fun subtract(point: PointXY): PointXY {
+        return PointXY(x - point.x, y - point.y)
     }
 
-    public double magnitude() {
-        return Math.sqrt(X * X + Y * Y);
+    fun magnitude(): Double {
+        return Math.sqrt((x * x + y * y).toDouble())
     }
 
-    public double innerProduct(PointXY point) {
-        return this.X * point.X + this.Y * point.Y;
+    fun innerProduct(point: PointXY): Double {
+        return (x * point.x + y * point.y).toDouble()
     }
 
-    public double outerProduct(PointXY point) {
-        return this.X * point.Y - this.Y * point.X;
+    fun outerProduct(point: PointXY): Double {
+        return (x * point.y - y * point.x).toDouble()
     }
 
     // 座標回転メソッド
-    public PointXY rotate( PointXY cp, float degree) {
-        float x,y;            //回転後の座標
-        double px,py;
-        px = X-cp.getX();
-        py = Y-cp.getY();
-        x= (float)(px*Math.cos(degree/180*3.141592))-(float)(py*Math.sin(degree/180*3.141592))+cp.getX();
-        y= (float)(px*Math.sin(degree/180*3.141592))+(float)(py*Math.cos(degree/180*3.141592))+cp.getY();
-
-        return new PointXY(x,y);
+    fun rotate(cp: PointXY, degree: Float): PointXY {
+        val x: Float
+        val y: Float //回転後の座標
+        val px: Double
+        val py: Double
+        px = (this.x - cp.x).toDouble()
+        py = (this.y - cp.y).toDouble()
+        x =
+            (px * Math.cos(degree / 180 * 3.141592)).toFloat() - (py * Math.sin(degree / 180 * 3.141592)).toFloat() + cp.x
+        y =
+            (px * Math.sin(degree / 180 * 3.141592)).toFloat() + (py * Math.cos(degree / 180 * 3.141592)).toFloat() + cp.y
+        return PointXY(x, y)
     }
-
-
 }

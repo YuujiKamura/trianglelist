@@ -2,7 +2,7 @@
 
 package com.jpaver.trianglelist
 
-import com.jpaver.trianglelist.model.*
+//import com.jpaver.trianglelist.model.*
 import com.jpaver.trianglelist.util.Params
 import junit.framework.Assert.assertEquals
 import org.junit.Assert
