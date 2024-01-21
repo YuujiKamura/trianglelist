@@ -1,7 +1,5 @@
 package com.jpaver.trianglelist
 
-import com.jpaver.trianglelist.PointXY
-import com.jpaver.trianglelist.Triangle
 import junit.framework.Assert.assertEquals
 import org.junit.Assert
 import org.junit.Test
@@ -18,7 +16,7 @@ class PointXYtest {
             PointXY(0f, 1f),
             PointXY(1f, 0f)
         )
-        val vec3 = arrayOf(
+        arrayOf(
             PointXY(0f, 0.5f),
             PointXY(1f, 1.5f)
         )
@@ -50,7 +48,7 @@ class PointXYtest {
                 0f
             ),
             PointXY(0f, 0f),
-            PointXY(0f, 0f), 1f,  )
+            1f,  )
 
         Assert.assertEquals(1f, pressedInModel.x, 0.001f)
 

@@ -136,11 +136,8 @@ class MainActivity : AppCompatActivity(),
         return true
     }
 
-    override fun onRequestPermissionsResult(
-            requestCode: Int,
-            permissions: Array<String?>,
-            grantResults: IntArray
-    ) {
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQUESTPERMISSION) {
             //checkPermission()
@@ -876,7 +873,7 @@ class MainActivity : AppCompatActivity(),
                 fileType = "XLSX"
                 val intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
                 intent.addCategory(Intent.CATEGORY_OPENABLE)
-                intent.setType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+                intent.setType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
                 intent.putExtra(
                     Intent.EXTRA_TITLE,
                     LocalDate.now().monthValue.toString() + "." + LocalDate.now().dayOfMonth.toString() + " " + rosenname + ".xlsx"

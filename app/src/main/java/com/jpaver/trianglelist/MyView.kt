@@ -326,7 +326,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     fun setPressEvent(x: Float, y: Float){
         pressedInView.set(x, y)
         lastCPoint.set(x, y)
-        resetPressedInModel( pressedInView, pressedInView )
+        resetPressedInModel(pressedInView)
     }
 
     override fun onLongPress(event: MotionEvent) {
@@ -437,12 +437,11 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         )
     }
 
-    fun resetPressedInModel(pressedInView: PointXY, scaleCenter: PointXY){
+    fun resetPressedInModel(pressedInView: PointXY){
         movePoint.set(baseInView.x, baseInView.y)
         pressedInModel = pressedInView.convertToLocal(
             baseInView,
             centerInModel,
-            scaleCenter,
             zoomSize,
         )
 
@@ -505,7 +504,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
             PointXY(
                 mFocusX,
                 mFocusY
-            ), PointXY(mFocusX, mFocusY)
+            )
         )
     }
 

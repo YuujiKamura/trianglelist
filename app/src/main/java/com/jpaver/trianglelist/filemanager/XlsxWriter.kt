@@ -62,12 +62,6 @@ class XlsxWriter() {
         }
     }
 
-    fun setColumnHeights(sheet: Sheet, rowIndexes: IntArray, rowWidths: IntArray) {
-        for (i in rowIndexes.indices) {
-            sheet.setColumnWidth(rowIndexes[i], 256 * rowWidths[i])
-        }
-    }
-
     fun setStyle( style: CellStyle, align: HorizontalAlignment, border: BorderStyle ){
         style.alignment = align
         style.borderBottom = border
@@ -244,75 +238,4 @@ class XlsxWriter() {
 
     }
 
-    /**
-     * 指定されたセル範囲の外枠を指定された罫線スタイルで描画します。
-     *
-     * @param sheet 外枠を描画するシートオブジェクト
-     * @param startRow 範囲の開始行番号（0ベース）
-     * @param startColumn 範囲の開始列番号（0ベース）
-     * @param endRow 範囲の終了行番号（0ベース）
-     * @param endColumn 範囲の終了列番号（0ベース）
-     * @param borderStyle 外枠の罫線スタイル
-     *
-     * @throws IllegalArgumentException 無効な引数が指定された場合にスローされます。
-     *                                   無効な引数としては、
-     *                                   ・シートオブジェクトがnullの場合
-     *                                   ・開始行番号または開始列番号が負数の場合
-     *                                   ・終了行番号または終了列番号が開始行番号または開始列番号より小さい場合
-     * @throws IllegalStateException    シートオブジェクトの設定が無効な場合にスローされます。
-     *                                   例えば、シートオブジェクトの作成に失敗した場合など。
-     */
-    fun drawCellBorders(
-        sheet: Sheet,
-        startRow: Int,
-        startColumn: Int,
-        endRow: Int,
-        endColumn: Int,
-        borderStyle: BorderStyle
-    ) {
-        require(sheet != null) { "sheet must not be null" }
-        require(startRow >= 0) { "startRow must be greater than or equal to 0" }
-        require(startColumn >= 0) { "startColumn must be greater than or equal to 0" }
-        require(endRow >= startRow) { "endRow must be greater than or equal to startRow" }
-        require(endColumn >= startColumn) { "endColumn must be greater than or equal to startColumn" }
-
-        // セル範囲のCellStyleを取得する
-        val cellStyle: CellStyle = sheet.getRow(startRow).getCell(startColumn).cellStyle
-
-        // セル範囲の上部の外枠を描く
-        for (col in startColumn..endColumn) {
-            val row = sheet.getRow(startRow)
-            val cell: Cell = row.getCell(col)?: row.createCell(col)
-            val currentStyle: CellStyle = if (cell.cellStyle != null) cell.cellStyle else cellStyle
-            currentStyle.borderTop = borderStyle
-            cell.cellStyle = currentStyle
-        }
-
-        // セル範囲の下部の外枠を描く
-        for (col in startColumn..endColumn) {
-            val row = sheet.getRow(endRow)
-            val cell: Cell = row.getCell(col)?: row.createCell(col)
-            val currentStyle: CellStyle = if (cell.cellStyle != null) cell.cellStyle else cellStyle
-            currentStyle.borderBottom = borderStyle
-            cell.cellStyle = currentStyle
-        }
-
-        // セル範囲の左部の外枠を描く
-        for (rowLeft in startRow..endRow) {
-            val row = sheet.getRow(rowLeft)
-            val cell: Cell = row.getCell(startColumn)?: row.createCell(startColumn)
-            val currentStyle: CellStyle = if (cell.cellStyle != null) cell.cellStyle else cellStyle
-            currentStyle.borderLeft = borderStyle
-            cell.cellStyle = currentStyle
-        }
-
-        // セル範囲の右部の外枠を描く
-        for (rowRight in startRow..endRow) {
-            val row = sheet.getRow(rowRight)
-            val cell: Cell = row.getCell(endColumn)?: row.createCell(endColumn)
-            val currentStyle: CellStyle = if (cell.cellStyle != null) cell.cellStyle else cellStyle
-            currentStyle.borderRight = borderStyle
-            cell.cellStyle = currentStyle
-        }
-    }
 }

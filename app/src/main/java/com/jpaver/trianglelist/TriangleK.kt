@@ -1,6 +1,5 @@
 package com.jpaver.trianglelist
 
-import com.jpaver.trianglelist.Bounds
 import com.jpaver.trianglelist.util.Params
 import java.util.*
 
@@ -777,9 +776,9 @@ class TriangleK(@JvmField
         setCenterAndBoundsAndDimPoints()
     }
 
-    fun calculateInternalAngle(p1: PointXY?, p2: PointXY?, p3: PointXY?): Double {
-        val v1 = p1!!.subtract(p2)
-        val v2 = p3!!.subtract(p2)
+    fun calculateInternalAngle(p1: PointXY, p2: PointXY, p3: PointXY): Double {
+        val v1 = p1.subtract(p2)
+        val v2 = p3.subtract(p2)
         val angleRadian = Math.acos(v1.innerProduct(v2) / (v1.magnitude() * v2.magnitude()))
         return angleRadian * 180 / Math.PI
     }
@@ -876,9 +875,11 @@ class TriangleK(@JvmField
         )
         else when (conntype) {
             1 -> getParentPointByLCR(pbc)
-            2 -> getParentPointByLCR(
+            2 -> nodeTriangle[0]!!.getPointByBackSide(pbc)?.let {
+                getParentPointByLCR(
                     pbc
-            ).crossOffset(nodeTriangle[0]!!.getPointByBackSide(pbc), -1.0f)
+                ).crossOffset(it, -1.0f)
+            }
             else -> nodeTriangle[0]!!.getPointBySide(pbc)
         }!!
     }
@@ -1276,7 +1277,7 @@ class TriangleK(@JvmField
         myBP_.bottom = myBP_.bottom + to.x
     }
 
-    fun scale(basepoint: PointXY?, scale: Float) {
+    fun scale(basepoint: PointXY, scale: Float) {
         scale_ *= scale
         //point[1].scale(basepoint, scale);
         //point[2].scale(basepoint, scale);
@@ -1289,7 +1290,7 @@ class TriangleK(@JvmField
         calcPoints(point[0], baseangle)
     }
 
-    fun rotate(basepoint: PointXY?, degree: Float) {
+    fun rotate(basepoint: PointXY, degree: Float) {
         point[0] = point[0].rotate(basepoint, degree)
         baseangle += degree
         calcPoints(point[0], baseangle)
@@ -1440,8 +1441,8 @@ class TriangleK(@JvmField
     fun dimSideRotation(
         side: Int,
         dimPoint: PointXY,
-        offsetLeft: PointXY?,
-        offsetRight: PointXY?
+        offsetLeft: PointXY,
+        offsetRight: PointXY
     ): PointXY {
         if (side == 0) return dimPoint
         var offsetTo = offsetRight

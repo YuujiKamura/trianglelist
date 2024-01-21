@@ -1,8 +1,6 @@
 package com.jpaver.trianglelist
 
-import com.jpaver.trianglelist.Bounds
 import com.jpaver.trianglelist.util.Params
-import kotlin.collections.ArrayList
 
 class TriangleListK() :Cloneable {
 
@@ -462,7 +460,7 @@ class TriangleListK() :Cloneable {
             myTriListAtView.get(i).scale(basepoint, scale);
         }
     }*/
-    fun scale(basepoint: PointXY?, scale: Float) {
+    fun scale(basepoint: PointXY, scale: Float) {
         myScale *= scale
         for (i in trilist_.indices) {
             trilist_[i]!!.scale(basepoint, scale)
@@ -552,9 +550,9 @@ class TriangleListK() :Cloneable {
         return hitC
     }
 
-    fun move(to: PointXY?): MutableList<TriangleK?> {
+    fun move(to: PointXY): MutableList<TriangleK?> {
         for (i in trilist_.indices) {
-            trilist_[i]!!.move(to!!)
+            trilist_[i]!!.move(to)
         }
         basepoint.add(to)
         return trilist_
