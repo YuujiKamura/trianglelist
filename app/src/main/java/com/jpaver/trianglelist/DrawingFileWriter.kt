@@ -1,6 +1,5 @@
 package com.jpaver.trianglelist
 
-import com.jpaver.trianglelist.ResStr
 import com.jpaver.trianglelist.util.TitleParamStr
 import java.time.LocalDate
 

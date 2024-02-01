@@ -20,6 +20,7 @@ import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import androidx.activity.result.ActivityResult
+import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider.getUriForFile
@@ -814,8 +815,8 @@ class MainActivity : AppCompatActivity(),
         fileType = "CSV"
         val i = Intent(Intent.ACTION_CREATE_DOCUMENT)
         i.type = "text/csv"
-        i.putExtra(Intent.EXTRA_TITLE, setStrWithDateRosennameAndFilePrefix(".csv"))
-        saveContent.launch( i )
+        i.putExtra(Intent.EXTRA_TITLE, getStrWithDateRosennameAndFilePrefix(".csv"))
+        saveContent.launch( Pair( "text/csv", getStrWithDateRosennameAndFilePrefix(".csv") ) )
         setResult(RESULT_OK, i)
 
     }
@@ -845,10 +846,10 @@ class MainActivity : AppCompatActivity(),
                 intent.type = "text/csv"
                 intent.putExtra(
                     Intent.EXTRA_TITLE,
-                    setStrWithDateRosennameAndFilePrefix(".csv")
+                    getStrWithDateRosennameAndFilePrefix(".csv")
                 )
 
-                saveContent.launch( intent )
+                saveContent.launch( Pair( "text/csv", getStrWithDateRosennameAndFilePrefix(".csv") ) )
 
                 return true
             }
@@ -860,12 +861,12 @@ class MainActivity : AppCompatActivity(),
             }
 
             R.id.action_save_dxf -> {
-                showExportDialog(".dxf", "Export DXF", "DXF", "text/dxf")
+                showExportDialog(".dxf", "Export DXF", "DXF", "application/octet-stream")
                 return true
             }
 
             R.id.action_save_sfc -> {
-                showExportDialog(".sfc", "Export SFC", "SFC", "text/sfc")
+                showExportDialog(".sfc", "Export SFC", "SFC", "application/octet-stream")
                 return true
             }
 
@@ -876,10 +877,10 @@ class MainActivity : AppCompatActivity(),
                 intent.setType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
                 intent.putExtra(
                     Intent.EXTRA_TITLE,
-                    setStrWithDateRosennameAndFilePrefix(".xlsx")
+                    getStrWithDateRosennameAndFilePrefix(".xlsx")
                 )
 
-                saveContent.launch( intent )
+                saveContent.launch( Pair( "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", getStrWithDateRosennameAndFilePrefix(".xlsx") ) )
 
                 return true
             }
@@ -993,22 +994,22 @@ class MainActivity : AppCompatActivity(),
     private fun launchIntentToSavePdf() {
         fileType =
             "PDF"
-        val i: Intent =
-            Intent(
-                Intent.ACTION_CREATE_DOCUMENT
-            ).apply {
-                addCategory(
-                    Intent.CATEGORY_OPENABLE
-                )
-                type =
-                    "application/pdf"
-                putExtra(
-                    Intent.EXTRA_TITLE,
-                    setStrWithDateRosennameAndFilePrefix(".pdf")
-                )
+        Intent(
+            Intent.ACTION_CREATE_DOCUMENT
+        ).apply {
+            addCategory(
+                Intent.CATEGORY_OPENABLE
+            )
+            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            type =
+                "application/pdf"
+            putExtra(
+                Intent.EXTRA_TITLE,
+                getStrWithDateRosennameAndFilePrefix(".pdf")
+            )
 
-            }
-        saveContent.launch(i)
+        }
+        saveContent.launch( Pair( "application/pdf", getStrWithDateRosennameAndFilePrefix(".pdf") ) )
     }
 
     private fun flipDeductionMode() {
@@ -1917,8 +1918,9 @@ class MainActivity : AppCompatActivity(),
 
         setTitles()
     }
-
-    val saveContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
+/*
+    val saveContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult())
+    { result: ActivityResult ->
         //Log.d( "FileManager", "StartActivityForResult: " + result )
 
         if (result.resultCode == Activity.RESULT_OK && result.data != NULL) {
@@ -1932,6 +1934,7 @@ class MainActivity : AppCompatActivity(),
                     Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                 )
             }
+
             // Uri保存。これでアプリ再起動後も使えます。
             prefSetting.edit {
                 putString("uri", title.toString())
@@ -1968,6 +1971,106 @@ class MainActivity : AppCompatActivity(),
 
         setTitles()
     }
+*/
+
+/*    // ActivityResultLauncherの定義
+    private val saveContent = registerForActivityResult(ActivityResultContracts.CreateDocument()) { uri: Uri? ->
+        uri?.let {
+            try {
+                // 永続的なアクセス権を取得
+                contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+
+                // Uri保存
+                prefSetting.edit {
+                    putString("uri", uri.toString())
+                }
+
+                // 保存処理
+                contentResolver.openOutputStream(uri).use { outputStream ->
+                    when (fileType) {
+                        "DXF" -> saveDXF(BufferedWriter(OutputStreamWriter(outputStream!!, "Shift-JIS")))
+                        "CSV" -> saveCSV(BufferedWriter(OutputStreamWriter(outputStream!!, "Shift-JIS")))
+                        "PDF" -> savePDF(outputStream!!)
+                        "SFC" -> saveSFC(BufferedOutputStream(outputStream!!))
+                        "XLSX" -> {
+                            val xlsxWriter = XlsxWriter()
+                            xlsxWriter.write(outputStream!!, myTriangleList, myDeductionList, rosenname)
+                        }
+                        else -> {}
+                    }
+                }
+            } catch (e: IOException) {
+                e.printStackTrace()
+            } catch (e: SecurityException) {
+                e.printStackTrace()
+                // 権限取得失敗時の処理
+            }
+        }
+        setTitles()
+    }
+*/
+
+    class CreateDocumentWithType : ActivityResultContract<Pair<String, String>, Uri?>() {
+        override fun createIntent(context: Context, input: Pair<String, String>): Intent {
+            // input ペアから MIME タイプとファイル名を取得
+            val (mimeType, fileName) = input
+            return Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = mimeType  // 動的に指定された MIME タイプを設定
+                putExtra(Intent.EXTRA_TITLE, fileName)  // ファイル名を設定
+            }
+        }
+
+        override fun parseResult(resultCode: Int, intent: Intent?): Uri? {
+            if (resultCode == Activity.RESULT_OK) {
+                return intent?.data
+            }
+            return null
+        }
+    }
+
+    // ActivityResultLauncher の定義
+    private val saveContent = registerForActivityResult(CreateDocumentWithType()) { uri: Uri? ->
+        uri?.let {
+            try {
+                // 永続的なアクセス権を取得
+                contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+
+                // Uri 保存
+                prefSetting.edit {
+                    putString("uri", uri.toString())
+                }
+
+                // 保存処理
+                contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    when (fileType) {
+                        "DXF" -> saveDXF(BufferedWriter(OutputStreamWriter(outputStream, "Shift-JIS")))
+                        "CSV" -> saveCSV(BufferedWriter(OutputStreamWriter(outputStream, "Shift-JIS")))
+                        "PDF" -> savePDF(outputStream)
+                        "SFC" -> saveSFC(BufferedOutputStream(outputStream))
+                        "XLSX" -> {
+                            val xlsxWriter = XlsxWriter()
+                            xlsxWriter.write(outputStream, myTriangleList, myDeductionList, rosenname)
+                        }
+                        else -> {}
+                    }
+                }
+            } catch (e: IOException) {
+                e.printStackTrace()
+            } catch (e: SecurityException) {
+                e.printStackTrace()
+                // 権限取得失敗時の処理
+            }
+        }
+        setTitles()
+    }
+
 
     private fun openDocumentPicker() {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
@@ -2026,7 +2129,7 @@ class MainActivity : AppCompatActivity(),
         return true
     }
 
-    private fun setStrWithDateRosennameAndFilePrefix(fileprefix: String): String {
+    private fun getStrWithDateRosennameAndFilePrefix(fileprefix: String): String {
         return LocalDate.now().monthValue.toString() + "." + LocalDate.now().dayOfMonth.toString() + " " + rosenname + fileprefix
     }
 
@@ -2043,14 +2146,18 @@ class MainActivity : AppCompatActivity(),
         fileType = filetype
         val i = Intent(Intent.ACTION_CREATE_DOCUMENT)
         i.type = intentType
+        i.apply{
+            addCategory( Intent.CATEGORY_OPENABLE )
+            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+        }
         i.putExtra(
             Intent.EXTRA_TITLE,
-            setStrWithDateRosennameAndFilePrefix(fileprefix)
+            getStrWithDateRosennameAndFilePrefix(fileprefix)
         )
 
-        i.flags =
-            Intent.FLAG_GRANT_WRITE_URI_PERMISSION// or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED//flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-        saveContent.launch(i)
+
+        //i.flags = Intent.FLAG_GRANT_WRITE_URI_PERMISSION// or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED//flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+        saveContent.launch( Pair( intentType, getStrWithDateRosennameAndFilePrefix(fileprefix) ) )
     }
 
     private fun showInterStAd(){
@@ -2747,7 +2854,6 @@ class MainActivity : AppCompatActivity(),
     }
 
     companion object {
-        private const val REQUESTCODE = 816 // 2
         private val PERMISSIONS = arrayOf(
                 Manifest.permission.WRITE_EXTERNAL_STORAGE,
                 Manifest.permission.READ_EXTERNAL_STORAGE,
