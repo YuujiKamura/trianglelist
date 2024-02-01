@@ -203,7 +203,7 @@ class MainActivity : AppCompatActivity(),
     private var gyousyaname = ""
     private var zumennum = "1/1"
     private var drawingStartNumber = 1
-    private var drawingNumberReversal = false
+    private var isNumberReverse = false
 
     private var colorindex = 4
     private val resColors = arrayOf(
@@ -814,7 +814,7 @@ class MainActivity : AppCompatActivity(),
         fileType = "CSV"
         val i = Intent(Intent.ACTION_CREATE_DOCUMENT)
         i.type = "text/csv"
-        i.putExtra(Intent.EXTRA_TITLE,LocalDate.now().monthValue.toString() + "." + LocalDate.now().dayOfMonth.toString() + " " + rosenname + ".csv" )
+        i.putExtra(Intent.EXTRA_TITLE, setStrWithDateRosennameAndFilePrefix(".csv"))
         saveContent.launch( i )
         setResult(RESULT_OK, i)
 
@@ -845,7 +845,7 @@ class MainActivity : AppCompatActivity(),
                 intent.type = "text/csv"
                 intent.putExtra(
                     Intent.EXTRA_TITLE,
-                    LocalDate.now().monthValue.toString() + "." + LocalDate.now().dayOfMonth.toString() + " " + rosenname + ".csv"
+                    setStrWithDateRosennameAndFilePrefix(".csv")
                 )
 
                 saveContent.launch( intent )
@@ -876,7 +876,7 @@ class MainActivity : AppCompatActivity(),
                 intent.setType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
                 intent.putExtra(
                     Intent.EXTRA_TITLE,
-                    LocalDate.now().monthValue.toString() + "." + LocalDate.now().dayOfMonth.toString() + " " + rosenname + ".xlsx"
+                    setStrWithDateRosennameAndFilePrefix(".xlsx")
                 )
 
                 saveContent.launch( intent )
@@ -885,94 +885,7 @@ class MainActivity : AppCompatActivity(),
             }
 
             R.id.action_save_pdf -> {
-                // 入力ヒントの表示
-                val hCname = getString(R.string.inputcname)
-                val hSpace = getString(R.string.space)
-                val hRname = getString(R.string.inputdname)
-                val hAname = getString(R.string.inputaname)
-                val hRnum = getString(R.string.inputdnum)
-                val editText = EditText(this)
-                editText.hint = "$hCname $hSpace"
-                val filter = arrayOf(InputFilter.LengthFilter(50))
-                editText.filters = filter
-                editText.setText(koujiname)
-                val editText2 = EditText(this)
-                editText2.hint = hRname
-                editText2.setText(rosenname)
-                editText2.filters = filter
-                val editText3 = EditText(this)
-                editText3.hint = hAname
-                editText3.setText(gyousyaname)
-                editText3.filters = filter
-                val editText4 = EditText(this)
-                editText4.hint = hRnum
-                editText4.setText(zumennum)
-                editText4.filters = filter
-
-                AlertDialog.Builder(this)
-                    .setTitle("Save PDF")
-                    .setMessage(R.string.inputcname)
-                    .setView(editText)
-                    .setPositiveButton("OK"
-                    ) { _, _ ->
-                        koujiname = editText.text.toString()
-
-                        AlertDialog.Builder(this)
-                            .setTitle("Save PDF")
-                            .setMessage(R.string.inputdname)
-                            .setView(editText2)
-                            .setPositiveButton("OK"
-                            ) { _, _ ->
-                                rosenname = editText2.text.toString()
-
-                                AlertDialog.Builder(this)
-                                    .setTitle("Save PDF")
-                                    .setMessage(R.string.inputaname)
-                                    .setView(editText3)
-                                    .setPositiveButton("OK"
-                                    ) { _, _ ->
-                                        gyousyaname =
-                                            editText3.text.toString()
-
-                                        AlertDialog.Builder(this)
-                                            .setTitle("Save PDF")
-                                            .setMessage(R.string.inputdnum)
-                                            .setView(
-                                                editText4
-                                            )
-                                            .setPositiveButton(
-                                                "OK"
-                                            ) { _, _ ->
-                                                zumennum =
-                                                    editText4.text.toString()
-
-                                                fileType =
-                                                    "PDF"
-                                                val i: Intent =
-                                                    Intent(
-                                                        Intent.ACTION_CREATE_DOCUMENT
-                                                    ).apply {
-                                                        addCategory(
-                                                            Intent.CATEGORY_OPENABLE
-                                                        )
-                                                        type =
-                                                            "application/pdf"
-                                                        putExtra(
-                                                            Intent.EXTRA_TITLE,
-                                                            LocalDate.now().monthValue.toString() + "." + LocalDate.now().dayOfMonth.toString() + " " + rosenname + ".pdf"
-                                                        )
-
-                                                    }
-                                                saveContent.launch( i )
-
-                                            }
-                                            .show()
-                                    }
-                                    .show()
-                            }
-                            .show()
-                    }
-                    .show()
+                showDialogInputZumenTitles( "Save PDF", { launchIntentToSavePdf() } )
 
                 return true
             }
@@ -1015,6 +928,87 @@ class MainActivity : AppCompatActivity(),
         }
 
         //return true
+    }
+
+    private fun showDialogInputZumenTitles( title: String, onComplete: () -> Unit ) {
+        // 入力に関する情報をリストで管理
+        val inputs = listOf(
+            Pair(getString(R.string.inputcname), koujiname),
+            Pair(getString(R.string.inputdname), rosenname),
+            Pair(getString(R.string.inputaname), gyousyaname),
+            Pair(getString(R.string.inputdnum), zumennum)
+        )
+
+        // 再帰的にダイアログを表示する関数
+        fun showInputDialogRecursively(index: Int = 0) {
+            if (index >= inputs.size) {
+                onComplete() // 全ての入力が完了したらonCompleteを実行
+                return
+            }
+
+            val (message, prefillText) = inputs[index]
+            showInputDialog(
+                title,
+                message = message,
+                prefillText = prefillText,
+                onInputReceived = { input ->
+                    // 入力された値を適切な変数に格納
+                    when (index) {
+                        0 -> koujiname = input
+                        1 -> rosenname = input
+                        2 -> gyousyaname = input
+                        3 -> zumennum = input
+                    }
+                    // 次の入力ダイアログを表示
+                    showInputDialogRecursively(index + 1)
+                }
+            )
+        }
+
+        // 最初のダイアログを表示
+        showInputDialogRecursively()
+    }
+
+    private fun showInputDialog(title: String, message: String, prefillText: String?, onInputReceived: (String) -> Unit) {
+        val inputForm = EditText(this).apply {
+            hint = message
+            filters = arrayOf(InputFilter.LengthFilter(50))
+            setText(prefillText)
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle(title)
+            .setMessage(message)
+            .setView(inputForm)
+            .setPositiveButton("OK") { _, _ ->
+                onInputReceived(inputForm.text.toString())
+            }
+            .setNegativeButton("Cancel", null)
+            .setNeutralButton("NotUse"){ _, _ ->
+                onInputReceived("")
+            }
+            .show()
+    }
+
+    private fun launchIntentToSavePdf() {
+        fileType =
+            "PDF"
+        val i: Intent =
+            Intent(
+                Intent.ACTION_CREATE_DOCUMENT
+            ).apply {
+                addCategory(
+                    Intent.CATEGORY_OPENABLE
+                )
+                type =
+                    "application/pdf"
+                putExtra(
+                    Intent.EXTRA_TITLE,
+                    setStrWithDateRosennameAndFilePrefix(".pdf")
+                )
+
+            }
+        saveContent.launch(i)
     }
 
     private fun flipDeductionMode() {
@@ -2007,42 +2001,56 @@ class MainActivity : AppCompatActivity(),
         editText5.setText(drawingStartNumber.toString())
 
         filename = rosenname + " " + LocalDate.now() + fileprefix
+
         AlertDialog.Builder(this)
             .setTitle(title)
             .setMessage(R.string.inputtnum)
             .setView(editText5)
-            .setPositiveButton("OK"
+            .setPositiveButton("[OK]"
             ) { _, _ ->
-                drawingStartNumber = editText5.text.toString().toInt()
-                drawingNumberReversal = false
-
-                fileType = filetype
-                val i = Intent(Intent.ACTION_CREATE_DOCUMENT)
-                i.type = intentType
-                i.putExtra(
-                        Intent.EXTRA_TITLE,
-                    LocalDate.now().monthValue.toString() + "." + LocalDate.now().dayOfMonth.toString() + " " + rosenname + fileprefix
+                showDialogInputZumenTitles( title, {
+                    launchIntentToSaveDXF(editText5, filetype, intentType, fileprefix, false) }
                 )
-                i.flags = Intent.FLAG_GRANT_WRITE_URI_PERMISSION// or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED//flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-                saveContent.launch( i )
             }
-                .setNegativeButton("NumReverse"
-                ) { _, _ ->
-                    drawingStartNumber = editText5.text.toString().toInt()
-                    drawingNumberReversal = true
+            .setNegativeButton("[Cancel]"
+            ) { _, _ ->
+                return@setNegativeButton
+            }
+            .setNeutralButton("[番号を反転する]"
+            ) { _, _ ->
+                showDialogInputZumenTitles( title, {
+                    launchIntentToSaveDXF(editText5, filetype, intentType, fileprefix, true ) }
+                )
+            }.show()
 
-                    fileType = filetype
-                    val i = Intent(Intent.ACTION_CREATE_DOCUMENT)
-                    i.type = intentType
-                    i.putExtra(
-                            Intent.EXTRA_TITLE,
-                            rosenname + " " + LocalDate.now() + fileprefix
-                    )
-
-                    i.flags = Intent.FLAG_GRANT_WRITE_URI_PERMISSION// or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED//flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-                    saveContent.launch( i )
-                }.show()
         return true
+    }
+
+    private fun setStrWithDateRosennameAndFilePrefix(fileprefix: String): String {
+        return LocalDate.now().monthValue.toString() + "." + LocalDate.now().dayOfMonth.toString() + " " + rosenname + fileprefix
+    }
+
+    private fun launchIntentToSaveDXF(
+        editText5: EditText,
+        filetype: String,
+        intentType: String,
+        fileprefix: String,
+        isNumReverse: Boolean = false
+    ) {
+        drawingStartNumber = editText5.text.toString().toInt()
+        isNumberReverse = isNumReverse
+
+        fileType = filetype
+        val i = Intent(Intent.ACTION_CREATE_DOCUMENT)
+        i.type = intentType
+        i.putExtra(
+            Intent.EXTRA_TITLE,
+            setStrWithDateRosennameAndFilePrefix(fileprefix)
+        )
+
+        i.flags =
+            Intent.FLAG_GRANT_WRITE_URI_PERMISSION// or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED//flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+        saveContent.launch(i)
     }
 
     private fun showInterStAd(){
@@ -2190,7 +2198,7 @@ class MainActivity : AppCompatActivity(),
         writer.isDebug = my_view.isDebug_
 
         writer.setStartNumber(drawingStartNumber)
-        writer.isReverse_ = drawingNumberReversal
+        writer.isReverse_ = isNumberReverse
 
         writer.save()
         bWriter.close()
@@ -2208,7 +2216,7 @@ class MainActivity : AppCompatActivity(),
         writer.titleDed_ = titleDedStr
 
         writer.setStartNumber(drawingStartNumber)
-        writer.isReverse_ = drawingNumberReversal
+        writer.isReverse_ = isNumberReverse
 
         writer.save()
         out.close()

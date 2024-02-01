@@ -514,8 +514,8 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
         writeText( rStr_.tCredit_,
             PointXY(50f, yb + 10f), 1f, 7, 7f, 0 )
 
-
-        if( koujiname_.length > 20 ) {
+/*
+        if( koujiname_.length > 17 ) {
             if( koujiname_.contains(" ") ){
                 val array = koujiname_.split(' ')
                 writeText(array[0],
@@ -524,8 +524,8 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
                     PointXY(xr - tt, yb - 85f), 1f, 7, 8f, 0)
             }
             else{
-                val array1 = koujiname_.substring(0, 20)
-                val array2 = koujiname_.substring(20, koujiname_.length)
+                val array1 = koujiname_.substring(0, 17)
+                val array2 = koujiname_.substring(17, koujiname_.length)
                 writeText(array1,
                     PointXY(xr - tt, yb - 100f), 1f, 7, 8f, 0)
                 writeText(array2,
@@ -533,11 +533,12 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
             }
         }
         else {
-            writeText(koujiname_,
-                PointXY(xr - tt, yb - 95f + ofs), 1f, 7, 8f, 0 )
+
         }
+  */
         //}
         //else writeText(koujiname_, PointXY(xr-tt, yb-95f+ofs ), 1f, 7, 8f, 0 )
+        drawTextWithLineBreak(koujiname_, xr, yb, tt)
 
         writeText(rStr_.tTitle_,
             PointXY(xr - tt, yb - 70f + ofs), 1f, 7, 8f, 0 )
@@ -554,6 +555,27 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
 
         currentCanvas_.translate(sizeX_/2f,sizeY_/2f)
         //  translateCenter()
+    }
+
+    // 定数定義
+    private val MAX_LENGTH = 17
+    private val FIRST_LINE_OFFSET = -100f
+    private val SECOND_LINE_OFFSET = -85f
+    private val SINGLE_LINE_OFFSET = -95f
+    private fun drawTextWithLineBreak(text: String, xr: Float, yb: Float, tt: Float) {
+        if (text.length > MAX_LENGTH) {
+            splitAndDrawText(text, xr, yb, tt)
+        } else {
+            writeText(text, PointXY(xr - tt, yb + SINGLE_LINE_OFFSET), 1f, 7, 8f, 0)
+        }
+    }
+
+    private fun splitAndDrawText(text: String, xr: Float, yb: Float, tt: Float) {
+        val splitText = if (text.contains(" ")) text.split(' ', limit = 2) else listOf(text.take(MAX_LENGTH), text.drop(MAX_LENGTH))
+        writeText( splitText[0], PointXY(xr - tt, yb + FIRST_LINE_OFFSET), 1f, 7, 8f, 0)
+        if (splitText.size > 1) {
+            writeText( splitText[1], PointXY(xr - tt, yb + SECOND_LINE_OFFSET), 1f, 7, 8f, 0)
+        }
     }
 
     fun writeRect(point: PointXY, sizeX: Float, sizeY: Float, scale: Float, color: Int){
