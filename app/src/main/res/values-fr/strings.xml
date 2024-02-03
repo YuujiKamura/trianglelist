@@ -43,7 +43,7 @@
     <string name = "inputdnum"> Vous pouvez entrer le numéro du dessin </string>
     <string name = "inputaname"> Vous pouvez saisir le nom du contractant (peut être vide) </string>
     <string name = "space"> Sauts de ligne avec des espaces. </string>
-    <string name = "inputtnum"> Vous pouvez saisir le numéro de départ du triangle </string>
+    <string name = "hintInputTriNumber"> Vous pouvez saisir le numéro de départ du triangle </string>
 
 
     <!-- Chaînes utilisées pour les fragments pour la navigation -->

@@ -25,8 +25,8 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
 
     private var entityHandle = 100
 
-    override var cWhite_ = 7
-    override var cBlue_ = 5
+    override var iWhite_ = 7
+    override var iBlue_ = 5
     override var cRed_ = 1
 
     var activeLayer = "0"
@@ -54,17 +54,16 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
         // ただし、Triangleで外(1)を指定しているときは、そちらを優先したい。
         // 正の時は上３が外、負の時は下１が外。
         val isVectorRight = p1.vectorTo(p2).side()
-        if( num == 1 ){
-            if(  isVectorRight >= 0 ) return 1
-            if(  isVectorRight <  0 ) return 3
+
+        // 'num == 1' の場合のみ特別な処理を行い、それ以外は基本的なルールに従う
+        if (num == 1) {
+            // 'isVectorRight >= 0' の場合、1 を返し、そうでなければ 3 を返す
+            return if (isVectorRight >= 0) 1 else 3
         }
 
-        // 基本は内側。正の時は下1が内、負の時は上3が内。
-        if(  isVectorRight >= 0 ) return 3
-        if(  isVectorRight <  0 ) return 1
+        // 'num != 1' の場合、'isVectorRight >= 0' であれば 3 を、そうでなければ 1 を返す
+        return if (isVectorRight >= 0) 3 else 1
 
-
-        return num
     }
 
     override fun writeTriangle(tri: Triangle){

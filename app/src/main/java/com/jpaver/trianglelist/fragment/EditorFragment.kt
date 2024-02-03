@@ -14,9 +14,9 @@ import com.jpaver.trianglelist.databinding.FragmentFirstBinding
  * A simple [Fragment] subclass as the default destination in the navigation.
  */
 
-class FirstFragment : Fragment() {
+class EditorFragment : Fragment() {
 
-    private lateinit var bMyView: FragmentFirstBinding
+    private lateinit var binding: FragmentFirstBinding
 
 
     override fun onCreateView(
@@ -27,7 +27,7 @@ class FirstFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_first, container, false)
         Log.d( "myView", "Instance Check in FirstFragment inflater: " + view )
 
-        bMyView = FragmentFirstBinding.bind( view )
+        binding = FragmentFirstBinding.bind( view )
         //Log.d( "myView", "Instance Check in FirstFragment: " + bMyView.myView )
 
 
@@ -35,5 +35,7 @@ class FirstFragment : Fragment() {
         return view
 
     }
+
+
 
 }

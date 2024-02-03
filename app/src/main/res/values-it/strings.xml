@@ -43,7 +43,7 @@
     <string name = "inputdnum"> Puoi inserire il numero del disegno </string>
     <string name = "inputaname"> Puoi inserire il nome del contraente (può essere vuoto) </string>
     <string name = "space"> Interruzioni di riga con spazi. </string>
-    <string name = "inputtnum"> Puoi inserire il numero iniziale del triangolo </string>
+    <string name = "hintInputTriNumber"> Puoi inserire il numero iniziale del triangolo </string>
 
 
     <!-- Stringhe usate per i frammenti per la navigazione -->

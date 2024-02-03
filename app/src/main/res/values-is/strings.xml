@@ -43,7 +43,7 @@
     <string name = "inputdnum"> Þú getur slegið inn teikninúmerið </string>
     <string name = "inputaname"> Þú getur slegið inn nafn verktaka (getur verið autt) </string>
     <string name = "space"> Línubrot með bilum. </string>
-    <string name = "inputtnum"> Þú getur slegið inn upphafsnúmer þríhyrningsins </string>
+    <string name = "hintInputTriNumber"> Þú getur slegið inn upphafsnúmer þríhyrningsins </string>
 
 
     <!-- Strengir notaðir fyrir brot til siglingar -->

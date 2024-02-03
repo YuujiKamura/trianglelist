@@ -22,13 +22,13 @@ open class DrawingFileWriter {
 
 
     open var textscale_ = 5f//trilist_.getPrintTextScale( 1f , "dxf") * drawscale_
-    open val sizeX_ = 420 * printscale_
-    open val sizeY_ = 297 * printscale_
-    open val centerX_ = sizeX_ * 0.5f
-    open var centerY_ = sizeY_ * 0.5f
+    open val sizeX_ get() = 420 * printscale_ // カスタムゲッター
+    open val sizeY_ get() = 297 * printscale_ // カスタムゲッター
+    open val centerX_ get() = sizeX_ * 0.5f   // カスタムゲッター
+    open val centerY_ get() = sizeY_ * 0.5f   // カスタムゲッター
 
-    open var cWhite_ = 8
-    open var cBlue_  = 4
+    open var iWhite_ = 8
+    open var iBlue_  = 4
     open var cRed_   = 2
 
 
@@ -116,128 +116,131 @@ open class DrawingFileWriter {
 
     fun writeOuterFrameAndTitle( scale: Float = 1f, textsize: Float ){
         // 外枠描画
-        writeRect(PointXY(21f, 14.85f, scale), 40f * scale, 27f * scale,  cWhite_, scale)
+        writeRect(PointXY(21f, 14.85f, scale), 40f * scale, 27f * scale,  iWhite_, scale)
 
         // 上のタイトル
         writeText(rStr_.tTitle_,
-            PointXY(21f, 27.1f, scale),  cWhite_, textsize, 1, 1, 0f, scale)
+            PointXY(21f, 27.1f, scale),  iWhite_, textsize, 1, 1, 0f, scale)
         writeText(rosenname_,
-            PointXY(21f, 26f, scale), cWhite_, textsize, 1, 1, 0f, scale)
+            PointXY(21f, 26f, scale), iWhite_, textsize, 1, 1, 0f, scale)
 
         writeLine(
             PointXY(19f, 27f, scale),
-            PointXY(23f, 27f, scale), cWhite_, scale)
+            PointXY(23f, 27f, scale), iWhite_, scale)
         writeLine(
             PointXY(19f, 26.9f, scale),
-            PointXY(23f, 26.9f, scale), cWhite_, scale)
+            PointXY(23f, 26.9f, scale), iWhite_, scale)
     }
 
     open fun writeDrawingFrame(scale: Float = 1f, textsize: Float){
 
-        val tss = textsize * scale
-        writeOuterFrameAndTitle( scale , tss * 1.6f )
+        val frameTextSize = textsize * scale
+        writeOuterFrameAndTitle( scale , frameTextSize * 1.6f )
 
         //右下のタイトル枠
         writeLine(
             PointXY(31f, 7.35f, scale),
-            PointXY(41f, 7.35f, scale), cWhite_ ) //yoko
+            PointXY(41f, 7.35f, scale), iWhite_ ) //yoko
         writeLine(
             PointXY(31f, 1.35f, scale),
-            PointXY(31f, 7.35f, scale), cWhite_ ) //tate
+            PointXY(31f, 7.35f, scale), iWhite_ ) //tate
         writeLine(
             PointXY(33f, 1.35f, scale),
-            PointXY(33f, 7.35f, scale), cWhite_ ) //uchi-tate
+            PointXY(33f, 7.35f, scale), iWhite_ ) //uchi-tate
 
         writeLine(
             PointXY(31f, 6.35f, scale),
-            PointXY(41f, 6.35f, scale), cWhite_ )
+            PointXY(41f, 6.35f, scale), iWhite_ )
         writeLine(
             PointXY(31f, 5.35f, scale),
-            PointXY(41f, 5.35f, scale), cWhite_ )
+            PointXY(41f, 5.35f, scale), iWhite_ )
         writeLine(
             PointXY(31f, 4.35f, scale),
-            PointXY(41f, 4.35f, scale), cWhite_ )
+            PointXY(41f, 4.35f, scale), iWhite_ )
         writeLine(
             PointXY(31f, 3.35f, scale),
-            PointXY(41f, 3.35f, scale), cWhite_ )
+            PointXY(41f, 3.35f, scale), iWhite_ )
         writeLine(
             PointXY(31f, 2.35f, scale),
-            PointXY(41f, 2.35f, scale), cWhite_ )
+            PointXY(41f, 2.35f, scale), iWhite_ )
         writeLine(
             PointXY(36f, 2.35f, scale),
-            PointXY(36f, 3.35f, scale), cWhite_ )
+            PointXY(36f, 3.35f, scale), iWhite_ )
         writeLine(
             PointXY(38f, 2.35f, scale),
-            PointXY(38f, 3.35f, scale), cWhite_ )
+            PointXY(38f, 3.35f, scale), iWhite_ )
 
         val st = printscale_*100f
         val strx = 33.5f * scale
 
-        val xr = strx
-        val yb = 6.7f * scale
+        val yKOUJIMEI = 6.7f * scale
         val yo = 0.2f * scale
-        160f * scale
-        val tt = 0
-        3f * scale
 
-        // 題字
+        // 題字(工事名　路線名　など）
         writeText(rStr_.tCname_,
-            PointXY(32f, 6.7f, scale), cWhite_, tss, 1, 0, 0f, 1f)
+            PointXY(32f, 6.7f, scale), iWhite_, frameTextSize, 1, 0, 0f, 1f)
         writeText(rStr_.tDtype_,
-            PointXY(32f, 5.7f, scale), cWhite_, tss, 1, 0, 0f, 1f)
+            PointXY(32f, 5.7f, scale), iWhite_, frameTextSize, 1, 0, 0f, 1f)
         writeText(rStr_.tDname_,
-            PointXY(32f, 4.7f, scale), cWhite_, tss, 1, 0, 0f, 1f)
+            PointXY(32f, 4.7f, scale), iWhite_, frameTextSize, 1, 0, 0f, 1f)
         writeText(rStr_.tDateHeader_,
-            PointXY(32f, 3.7f, scale), cWhite_, tss, 1, 0, 0f, 1f)
+            PointXY(32f, 3.7f, scale), iWhite_, frameTextSize, 1, 0, 0f, 1f)
         writeText(rStr_.tScale_,
-            PointXY(32f, 2.7f, scale), cWhite_, tss, 1, 0, 0f, 1f)
+            PointXY(32f, 2.7f, scale), iWhite_, frameTextSize, 1, 0, 0f, 1f)
         writeText(rStr_.tNum_,
-            PointXY(37f, 2.7f, scale), cWhite_, tss, 1, 0, 0f, 1f)
+            PointXY(37f, 2.7f, scale), iWhite_, frameTextSize, 1, 0, 0f, 1f)
         writeText(rStr_.tAname_,
-            PointXY(32f, 1.7f, scale), cWhite_, tss, 1, 0, 0f, 1f)
+            PointXY(32f, 1.7f, scale), iWhite_, frameTextSize, 1, 0, 0f, 1f)
         writeText(rStr_.tCredit_,
-            PointXY(8f, 1f, scale), cWhite_, tss, 1, 0, 0f, 1f)
+            PointXY(8f, 1f, scale), iWhite_, frameTextSize, 1, 0, 0f, 1f)
 
         // 内容
         // 工事名
-        if( koujiname_.length > 20 ) {
-            if( koujiname_.contains(" ") ){
-                val array = koujiname_.split(' ')
-                writeText(array[0],
-                    PointXY(xr - tt, yb + yo), cWhite_, tss, 0, scale = 1f)
-                writeText(array[1],
-                    PointXY(xr - tt, yb - yo), cWhite_, tss, 0, scale = 1f)
-            }
-            else{
-                val array1 = koujiname_.substring(0, 20)
-                val array2 = koujiname_.substring(20, koujiname_.length)
-                writeText(array1,
-                    PointXY(xr - tt, yb + yo), cWhite_, tss, 0, scale = 1f)
-                writeText(array2,
-                    PointXY(xr - tt, yb - yo), cWhite_, tss, 0, scale = 1f)
-            }
-        }
-        else {
-            writeText(koujiname_,
-                PointXY(xr - tt, yb), cWhite_, tss, 0, scale = 1f)
-        }
+        writeTextWithKaigyou(koujiname_, 25, strx, yKOUJIMEI, yo, iWhite_, frameTextSize)
+
+        //writeText(koujiname_, PointXY(strx, yKOUJIMEI ), iWhite_, textsize, 0, 0, 0f, 1f)
+
 
         val nengappi = LocalDate.now().year.toString() + " 年 " + LocalDate.now().monthValue.toString() + " 月 " + LocalDate.now().dayOfMonth.toString() + " 日"
 
         writeText(rStr_.tTitle_,
-            PointXY(strx, 5.7f * scale), cWhite_, tss, 0, 0, 0f, 1f)
+            PointXY(strx, 5.7f * scale), iWhite_, frameTextSize, 0, 0, 0f, 1f)
         writeText(rosenname_,
-            PointXY(strx, 4.7f * scale), cWhite_, tss, 0, 0, 0f, 1f)
+            PointXY(strx, 4.7f * scale), iWhite_, frameTextSize, 0, 0, 0f, 1f)
         writeText(nengappi,
-            PointXY(strx, 3.7f * scale), cWhite_, tss, 0, 0, 0f, 1f)
+            PointXY(strx, 3.7f * scale), iWhite_, frameTextSize, 0, 0, 0f, 1f)
         writeText("1/${st.toInt()} (A3)",
-            PointXY(34.5f, 2.7f, scale), cWhite_, tss, 1, 0, 0f, 1f)
+            PointXY(34.5f, 2.7f, scale), iWhite_, frameTextSize, 1, 0, 0f, 1f)
         writeText(zumennum_,
-            PointXY(39.5f, 2.7f, scale), cWhite_, tss, 1, 0, 0f, 1f)
+            PointXY(39.5f, 2.7f, scale), iWhite_, frameTextSize, 1, 0, 0f, 1f)
         writeText(gyousyaname_,
-            PointXY(strx, 1.7f * scale), cWhite_, tss, 0, 0, 0f, 1f)
+            PointXY(strx, 1.7f * scale), iWhite_, frameTextSize, 0, 0, 0f, 1f)
 
         //myDXFscale = 1000f  // 1:1
+    }
+
+    fun writeTextWithKaigyou(str: String, iKaigyou: Int, xr: Float, yb: Float, yo: Float, iColor: Int, textsize: Float) {
+
+        if (str.length > iKaigyou ) {
+            splitAndWriteText(str, iKaigyou, xr, yb, yo, iColor, textsize)
+        } else {
+            writeText(str, PointXY(xr, yb), iColor, textsize, 0, 0,0f, 1f)
+        }
+    }
+
+    private fun splitAndWriteText(str: String, iKaigyou: Int, xr: Float, yb: Float, yo: Float, iColor: Int, textsize: Float) {
+
+        val parts = if (str.contains(" ")) {
+            str.split(' ', limit = 2)
+        } else {
+            listOf(str.substring(0, iKaigyou), str.substring(iKaigyou))
+        }
+
+        writeText(parts[0], PointXY(xr, yb + yo), iColor, textsize, 0, 0,0f, 1f)
+        // Check if there is a second part to avoid IndexOutOfBoundsException
+        if (parts.size > 1) {
+            writeText(parts[1], PointXY(xr, yb - yo), iColor, textsize, 0, 0,0f, 1f)
+        }
     }
 
     fun writeCalcSheet(
@@ -263,7 +266,7 @@ open class DrawingFileWriter {
             PointXY(
                 baseX + xoffset * 4.5f,
                 baseY + yoffset + yspacer
-            ), cWhite_, scale)
+            ), iWhite_, scale)
 
         var shokeiNum = 1
         val sprit = false
@@ -314,11 +317,11 @@ open class DrawingFileWriter {
 
         baseY -= yoffset
         writeText(rStr_.mGoukei_,
-            PointXY(baseX, baseY), cWhite_, ts, 1, 1, 0f, scale)
+            PointXY(baseX, baseY), iWhite_, ts, 1, 1, 0f, scale)
         writeText(
             ( trilist_.getArea() - dedlist_.getArea() ).formattedString(2),
             PointXY(baseX + xoffset * 4, baseY),
-            cWhite_,
+            iWhite_,
             ts,
             1,
             1,
@@ -333,7 +336,7 @@ open class DrawingFileWriter {
             PointXY(
                 baseX + xoffset * 4.5f,
                 baseY + yspacer
-            ),cWhite_, scale)
+            ),iWhite_, scale)
         writeLine(
             PointXY(
                 baseX - xoffset * 0.5f,
@@ -342,7 +345,7 @@ open class DrawingFileWriter {
             PointXY(
                 baseX - xoffset * 0.5f,
                 baseY + yspacer
-            ),cWhite_, scale)
+            ),iWhite_, scale)
         writeLine(
             PointXY(
                 baseX + xoffset * 4.5f,
@@ -351,7 +354,7 @@ open class DrawingFileWriter {
             PointXY(
                 baseX + xoffset * 4.5f,
                 baseY + yspacer
-            ),cWhite_, scale)
+            ),iWhite_, scale)
 
     }
 
@@ -372,7 +375,7 @@ open class DrawingFileWriter {
         val yoffset = ts * 2f
         val yspacer = -ts * 0.01f
 
-        var color = cWhite_
+        var color = iWhite_
         if( editList is DeductionList) color = cRed_
 
         if( editList is TriangleList) {
@@ -433,7 +436,7 @@ open class DrawingFileWriter {
             PointXY(
                 baseX + xoffset * 4.5f,
                 basey + yspacer
-            ),cWhite_, scale)
+            ),iWhite_, scale)
         writeLine(
             PointXY(
                 baseX - xoffset * 0.5f,
@@ -442,7 +445,7 @@ open class DrawingFileWriter {
             PointXY(
                 baseX - xoffset * 0.5f,
                 basey + yspacer
-            ),cWhite_, scale)
+            ),iWhite_, scale)
         writeLine(
             PointXY(
                 baseX + xoffset * 4.5f,
@@ -451,7 +454,7 @@ open class DrawingFileWriter {
             PointXY(
                 baseX + xoffset * 4.5f,
                 basey + yspacer
-            ),cWhite_, scale)
+            ),iWhite_, scale)
 
         basey -= yoffset
 
@@ -480,7 +483,7 @@ open class DrawingFileWriter {
             PointXY(
                 baseX + xoffset * 4.5f,
                 basey + yspacer
-            ),cWhite_, scale)
+            ),iWhite_, scale)
         writeLine(
             PointXY(
                 baseX - xoffset * 0.5f,
@@ -489,7 +492,7 @@ open class DrawingFileWriter {
             PointXY(
                 baseX - xoffset * 0.5f,
                 basey + yspacer
-            ),cWhite_, scale)
+            ),iWhite_, scale)
         writeLine(
             PointXY(
                 baseX + xoffset * 4.5f,
@@ -498,7 +501,7 @@ open class DrawingFileWriter {
             PointXY(
                 baseX + xoffset * 4.5f,
                 basey + yspacer
-            ),cWhite_, scale)
+            ),iWhite_, scale)
 
         basey -= yoffset
         return basey
@@ -595,7 +598,7 @@ open class DrawingFileWriter {
             PointXY(
                 baseX + xoffset * 4.5f,
                 baseY + yspacer
-            ),cWhite_, scale)
+            ),iWhite_, scale)
 
         writeLine(
             PointXY(
@@ -605,7 +608,7 @@ open class DrawingFileWriter {
             PointXY(
                 baseX - xoffset * 0.5f,
                 baseY + yspacer
-            ),cWhite_, scale)
+            ),iWhite_, scale)
         writeLine(
             PointXY(
                 baseX + xoffset * 4.5f,
@@ -614,7 +617,7 @@ open class DrawingFileWriter {
             PointXY(
                 baseX + xoffset * 4.5f,
                 baseY + yspacer
-            ),cWhite_, scale)
+            ),iWhite_, scale)
 
         return editObject.getArea()
     }

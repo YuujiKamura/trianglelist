@@ -75,7 +75,8 @@ class MainActivity : AppCompatActivity(),
 
     private lateinit var prefSetting: SharedPreferences
 
-    private lateinit var bMyAct: ActivityMainBinding
+    private lateinit var bindingMain: ActivityMainBinding
+
     private lateinit var my_view: MyView
 
     lateinit var fab_replace: FloatingActionButton
@@ -228,12 +229,11 @@ class MainActivity : AppCompatActivity(),
         super.onCreate(savedInstanceState)
         setTheme(R.style.AppTheme_NoActionBar) //Note that this should be called before any views are instantiated in the Context (for example before calling Activity.setContentView(View) or LayoutInflater.inflate(int, ViewGroup)).
 
-        bMyAct = ActivityMainBinding.inflate(layoutInflater)
+        bindingMain = ActivityMainBinding.inflate(layoutInflater)
 
+        val view = bindingMain.root
 
-        val view = bMyAct.root
-
-        setSupportActionBar(bMyAct.toolbar)
+        setSupportActionBar(bindingMain.toolbar)
         setContentView(view)
         Log.d("MainActivityLifeCycle", "setContentView")
 
@@ -294,31 +294,31 @@ class MainActivity : AppCompatActivity(),
 
     }
     private fun initFabs(){
-        fab_replace =   bMyAct.fabReplace
-        fab_flag =      bMyAct.fabFlag
-        fab_dimsidew =  bMyAct.fabDimsidew
-        fab_dimsideh =  bMyAct.fabDimsideh
-        fab_nijyuualign = bMyAct.fabNijyuualign
-        fab_minus =     bMyAct.fabMinus
-        fab_undo =      bMyAct.fabUndo
-        fab_fillcolor = bMyAct.fabFillcolor
-        fab_texplus =   bMyAct.fabTexplus
-        fab_texminus =  bMyAct.fabTexminus
-        fab_setB =      bMyAct.fabSetB
-        fab_setC =      bMyAct.fabSetC
-        fab_rot_l =     bMyAct.fabRotL
-        fab_rot_r =     bMyAct.fabRotR
-        fab_deduction = bMyAct.fabDeduction
-        fab_resetView = bMyAct.fabResetView
-        fab_up =        bMyAct.fabUp
-        fab_down =      bMyAct.fabDown
-        fab_debug =     bMyAct.fabDebug
-        fab_testbasic = bMyAct.fabTestbasic
-        fab_pdf =       bMyAct.fabPdf
-        fab_share =     bMyAct.fabShare
-        fab_mail =      bMyAct.fabMail
-        fab_numreverse = bMyAct.fabNumreverse
-        fab_xlsx = bMyAct.fabXlsx
+        fab_replace =   bindingMain.fabReplace
+        fab_flag =      bindingMain.fabFlag
+        fab_dimsidew =  bindingMain.fabDimsidew
+        fab_dimsideh =  bindingMain.fabDimsideh
+        fab_nijyuualign = bindingMain.fabNijyuualign
+        fab_minus =     bindingMain.fabMinus
+        fab_undo =      bindingMain.fabUndo
+        fab_fillcolor = bindingMain.fabFillcolor
+        fab_texplus =   bindingMain.fabTexplus
+        fab_texminus =  bindingMain.fabTexminus
+        fab_setB =      bindingMain.fabSetB
+        fab_setC =      bindingMain.fabSetC
+        fab_rot_l =     bindingMain.fabRotL
+        fab_rot_r =     bindingMain.fabRotR
+        fab_deduction = bindingMain.fabDeduction
+        fab_resetView = bindingMain.fabResetView
+        fab_up =        bindingMain.fabUp
+        fab_down =      bindingMain.fabDown
+        fab_debug =     bindingMain.fabDebug
+        fab_testbasic = bindingMain.fabTestbasic
+        fab_pdf =       bindingMain.fabPdf
+        fab_share =     bindingMain.fabShare
+        fab_mail =      bindingMain.fabMail
+        fab_numreverse = bindingMain.fabNumreverse
+        fab_xlsx = bindingMain.fabXlsx
     }
     private fun fabController(){
 
@@ -367,7 +367,7 @@ class MainActivity : AppCompatActivity(),
 
             if(listLength > 0 && deleteWarning == 0) {
                 deleteWarning = 1
-                bMyAct.fabMinus.backgroundTintList = getColorStateList(R.color.colorTT2)
+                bindingMain.fabMinus.backgroundTintList = getColorStateList(R.color.colorTT2)
 
             }
             else {
@@ -386,7 +386,7 @@ class MainActivity : AppCompatActivity(),
                     editorResetBy(getList(deductionMode))
                 }
                 deleteWarning = 0
-                bMyAct.fabMinus.backgroundTintList = getColorStateList(R.color.colorAccent)
+                bindingMain.fabMinus.backgroundTintList = getColorStateList(R.color.colorAccent)
             }
             printDebugConsole()
             colorMovementFabs()
@@ -404,7 +404,7 @@ class MainActivity : AppCompatActivity(),
 
                 trilistUndo.trilist_.clear()
 
-                bMyAct.fabUndo.backgroundTintList = getColorStateList(R.color.colorPrimary)
+                bindingMain.fabUndo.backgroundTintList = getColorStateList(R.color.colorPrimary)
                 editorResetBy(getList(deductionMode))
                 setTitles()
             }
@@ -417,7 +417,7 @@ class MainActivity : AppCompatActivity(),
 
                 colorindex ++
                 if(colorindex == resColors.size) colorindex = 0
-                bMyAct.fabFillcolor.backgroundTintList = getColorStateList(resColors[colorindex])
+                bindingMain.fabFillcolor.backgroundTintList = getColorStateList(resColors[colorindex])
 
                 //dParams_ = myEditor.ReadLine(dParams_, myELSecond)
                 myTriangleList.get(my_view.myTriangleList.current).color_ = colorindex
@@ -1238,8 +1238,16 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun validDeduction(dp: Params): Boolean {
-        if( dp.name == "" || dp.a < 0.1f ) return false
-        if( dp.type == "Box" && ( dp.a < 0.1f || dp.b < 0.1f ) ) return false
+        return isValidName(dp.name) && isValidDimensions(dp)
+    }
+
+    private fun isValidName(name: String): Boolean {
+        return name.isNotEmpty()
+    }
+
+    private fun isValidDimensions(dp: Params): Boolean {
+        if (dp.a < 0.1f) return false
+        if (dp.type == "Box" && dp.b < 0.1f) return false
         return true
     }
 
@@ -1579,7 +1587,7 @@ class MainActivity : AppCompatActivity(),
             getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
 
         val trilistV = my_view.myTriangleList
-        val trilist  = myTriangleList
+
         if(deductionMode){
 
             my_view.myDeductionList.setScale(my_view.myScale)
@@ -1615,73 +1623,77 @@ class MainActivity : AppCompatActivity(),
             updateElStrings()
             my_view.setWatchedStrings(elsa1,elsb1,elsc1,elsa2,elsb2,elsc2)
 
-            val lpp = my_view.pressedInModel.scale(
-                PointXY(
-                    0f,
-                    0f
-                ), 1f, -1f)
-
+            val lpp = my_view.pressedInModel.scale(PointXY(0f, 0f), 1f, -1f)
             val slpp = my_view.shadowTri_.getTapLength(lpp, 0.8f / zoomsize)
-            if( slpp == 1) {
-                findViewById<EditText>(R.id.editLengthB1).requestFocus()
-//                my_view.myTriangleList.lastTapSide_ = 1
-                return
+
+            when (slpp) {
+                1 -> {
+                    findViewById<EditText>(R.id.editLengthB1).requestFocus() // EditTextB1にフォーカスを設定
+                    // my_view.myTriangleList.lastTapSide_ = 1
+                    return
+                }
+                2 -> {
+
+                    findViewById<EditText>(R.id.editLengthC1).requestFocus() // EditTextC1にフォーカスを設定
+                    // my_view.myTriangleList.lastTapSide_ = 2
+                    return
+                }
             }
-            if( slpp == 2){
-                findViewById<EditText>(R.id.editLengthC1).requestFocus()
-//                my_view.myTriangleList.lastTapSide_ = 2
-                return
-            }
+
 
             // view　の　trilistのlastTapとcurrentをずらして editorTableを移動させる
             trilistV.getTap(lpp, my_view.ts_ * 0.02f / zoomsize )
 
+            // タップされた三角形がある場合の処理を行う
+            if (trilistV.lastTapNumber_ != 0) {
+                handleTriangleTap(trilistV, myEditor, myTriangleList) // タップされた三角形の基本処理を行う
+                setTriangleDetails(myTriangleList) // タップされた三角形の詳細設定を行う
+                setEditTextContent(myTriangleList) // EditTextに三角形情報をセットする
 
-            if ( trilistV.lastTapNumber_ != 0 ) {
-                //Toast.makeText(this, "Triangle tap", Toast.LENGTH_SHORT).show()
-                myEditor.scroll(
-                        trilistV.lastTapNumber_ - trilistV.current,
-                    trilist, myELSecond, myELThird
-                )
-
-                trilistV.current = trilistV.lastTapNumber_
-                myTriangleList.setCurrent(my_view.getTriangleList().lastTapNumber_)
-
-                myTriangleList.lastTapNumber_ = my_view.getTriangleList().lastTapNumber_
-                myTriangleList.lastTapSide_ = my_view.getTriangleList().lastTapSide_
-                findViewById<EditText>(R.id.editParentNumber1).setText(myTriangleList.lastTapNumber_.toString())
-                findViewById<EditText>(R.id.editNumber1).setText(myTriangleList.size().toString())
-
-                colorindex = myTriangleList.get(myTriangleList.lastTapNumber_).color_
-                colorMovementFabs()
-                printDebugConsole()
-                setTitles()
-                if( my_view.myTriangleList.lastTapSide_ == 0 ) {
-
-                    findViewById<EditText>(R.id.editLengthA2).requestFocus()
-                    findViewById<EditText>(R.id.editLengthA2).setSelection(findViewById<EditText>(R.id.editLengthA2).text.length)
-                    inputMethodManager.showSoftInput(findViewById(R.id.editLengthA2), 0)
-                    my_view.setParentSide(my_view.getTriangleList().lastTapNumber_, 3)
+                // タップされた辺に応じた処理を行う
+                when (my_view.myTriangleList.lastTapSide_) {
+                    0 -> handleSideZero(inputMethodManager) // 辺0がタップされたときの処理
+                    1, 2 -> autoConnection(my_view.myTriangleList.lastTapSide_) // 辺1または2がタップされたときの自動接続処理
+                    3 -> my_view.resetViewToLastTapTriangle() // 辺3がタップされたときのビューをリセットする処理
                 }
-                if( my_view.myTriangleList.lastTapSide_ == 1 || slpp == 1 ) {
-                    autoConnection(1)
-                    //findViewById<EditText>(R.id.editText5).requestFocus()
-                    //inputMethodManager.showSoftInput(findViewById(R.id.editText5), 0)
-                }
-                if( my_view.myTriangleList.lastTapSide_ == 2 || slpp == 2 ) {
-                    autoConnection(2)
-                    //findViewById<EditText>(R.id.editText6).requestFocus()
-                    //inputMethodManager.showSoftInput(findViewById(R.id.editText6), 0)
-                }
-
-                if( my_view.myTriangleList.lastTapSide_ == 3 ) my_view.resetViewToLastTapTriangle()
-
-
             }
+
         }
 
         Log.d("SetTarget", "Tap Triangle is : " + my_view.myTriangleList.lastTapNumber_ + ", side is :" + my_view.myTriangleList.lastTapSide_ )
 
+    }
+
+    // タップされた三角形に関連する基本処理を行う関数
+    fun handleTriangleTap(trilistV: TriangleList, myEditor: EditorTable, myTriangleList: TriangleList ) {
+        myEditor.scroll(trilistV.lastTapNumber_ - trilistV.current, myTriangleList, myELSecond, myELThird) // スクロールしてタップされた三角形を表示
+        trilistV.current = trilistV.lastTapNumber_ // 現在の三角形を更新
+        myTriangleList.setCurrent(my_view.myTriangleList.lastTapNumber_) // myTriangleListの現在の三角形を更新
+        myTriangleList.lastTapNumber_ = my_view.myTriangleList.lastTapNumber_ // 最後にタップされた三角形の番号を更新
+        myTriangleList.lastTapSide_ = my_view.myTriangleList.lastTapSide_ // 最後にタップされた三角形の辺を更新
+    }
+
+    // タップされた三角形の詳細設定を行う関数
+    fun setTriangleDetails(myTriangleList: TriangleList) {
+        colorindex = myTriangleList.get(myTriangleList.lastTapNumber_).color_ // タップされた三角形の色を取得
+        colorMovementFabs() // 色の設定を更新
+        printDebugConsole() // デバッグコンソールに情報を出力
+        setTitles() // タイトルを設定
+    }
+
+    // EditTextに三角形情報をセットする関数
+    fun setEditTextContent(myTriangleList: TriangleList) {
+        findViewById<EditText>(R.id.editParentNumber1).setText(myTriangleList.lastTapNumber_.toString()) // 最後にタップされた三角形の番号を設定
+        findViewById<EditText>(R.id.editNumber1).setText(myTriangleList.size().toString()) // 三角形リストのサイズを設定
+    }
+
+    // 辺0がタップされたときの処理を行う関数
+    fun handleSideZero(inputMethodManager: InputMethodManager) {
+        val editLengthA2 = findViewById<EditText>(R.id.editLengthA2) // 辺Aの長さを編集するEditTextを取得
+        editLengthA2.requestFocus() // フォーカスを設定
+        editLengthA2.setSelection(editLengthA2.text.length) // EditTextのテキストを選択状態にする
+        inputMethodManager.showSoftInput(editLengthA2, 0) // ソフトキーボードを表示
+        my_view.setParentSide(my_view.getTriangleList().lastTapNumber_, 3) // 親となる辺を設定
     }
 
     private fun printDebugConsole(){
@@ -1905,12 +1917,11 @@ class MainActivity : AppCompatActivity(),
             val title: Uri? = Objects.requireNonNull(resultIntent?.data)
 
             StringBuilder()
+            val reader = BufferedReader(
+                InputStreamReader(title?.let { contentResolver.openInputStream(it) }, "Shift-JIS")
+            )
             try {
-                val reader = BufferedReader(
-                    InputStreamReader(title?.let { contentResolver.openInputStream(it) }, "Shift-JIS")
-                )
                 loadCSV(reader)
-
             } catch (e: IOException) {
                 e.printStackTrace()
             }
@@ -2094,39 +2105,42 @@ class MainActivity : AppCompatActivity(),
         //startActivityForResult( intent, 2 )
         loadContent.launch( intent )
     }
+    fun showExportDialog(filePrefix: String, title: String, fileType: String, intentType: String): Boolean {
+        val editText = createNumberInputEditText()
+        filename = createFileName(filePrefix)
 
-    fun showExportDialog(fileprefix: String, title: String, filetype: String, intentType: String): Boolean{
-        val hTstart = getString(R.string.inputtnum)
-        val editText5 = EditText(this)
-        editText5.hint = hTstart
-        val filter2 = arrayOf(InputFilter.LengthFilter(3))
-        editText5.filters = filter2
-        editText5.setText(drawingStartNumber.toString())
-
-        filename = rosenname + " " + LocalDate.now() + fileprefix
-
-        AlertDialog.Builder(this)
+        val dialogBuilder = AlertDialog.Builder(this)
             .setTitle(title)
-            .setMessage(R.string.inputtnum)
-            .setView(editText5)
-            .setPositiveButton("[OK]"
-            ) { _, _ ->
-                showDialogInputZumenTitles( title, {
-                    launchIntentToSaveDXF(editText5, filetype, intentType, fileprefix, false) }
-                )
+            .setMessage(R.string.hintInputTriNumber)
+            .setView(editText)
+            .setPositiveButton("OK") { _, _ ->
+                processExport(title, editText, fileType, intentType, filePrefix, reverseNumber = false)
             }
-            .setNegativeButton("[Cancel]"
-            ) { _, _ ->
-                return@setNegativeButton
+            .setNegativeButton("Cancel", null)
+            .setNeutralButton("NumReverse") { _, _ ->
+                processExport(title, editText, fileType, intentType, filePrefix, reverseNumber = true)
             }
-            .setNeutralButton("[番号を反転する]"
-            ) { _, _ ->
-                showDialogInputZumenTitles( title, {
-                    launchIntentToSaveDXF(editText5, filetype, intentType, fileprefix, true ) }
-                )
-            }.show()
 
+        dialogBuilder.show()
         return true
+    }
+
+    private fun createNumberInputEditText(): EditText {
+        return EditText(this).apply {
+            hint = getString(R.string.hintInputTriNumber)
+            filters = arrayOf(InputFilter.LengthFilter(3))
+            setText(drawingStartNumber.toString())
+        }
+    }
+
+    private fun createFileName(filePrefix: String): String {
+        return "$rosenname ${LocalDate.now()} $filePrefix"
+    }
+
+    private fun processExport( title:String, editText: EditText, fileType: String, intentType: String, filePrefix: String, reverseNumber: Boolean) {
+        showDialogInputZumenTitles(title) {
+            launchIntentToSaveDXF(editText, fileType, intentType, filePrefix, reverseNumber)
+        }
     }
 
     private fun getStrWithDateRosennameAndFilePrefix(fileprefix: String): String {
@@ -2803,7 +2817,7 @@ class MainActivity : AppCompatActivity(),
 
     private fun turnToBlankTrilistUndo(){
         trilistUndo = TriangleList() // reset
-        bMyAct.fabUndo.backgroundTintList = getColorStateList(R.color.colorPrimary)
+        bindingMain.fabUndo.backgroundTintList = getColorStateList(R.color.colorPrimary)
     }
 
     private fun typeToInt(type: String) :Int{

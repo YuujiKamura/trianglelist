@@ -43,7 +43,7 @@
     <string name = "inputdnum"> Puede ingresar el número de dibujo </string>
     <string name = "inputaname"> Puede ingresar el nombre del contratista (puede estar en blanco) </string>
     <string name = "space"> Saltos de línea con espacios. </string>
-    <string name = "inputtnum"> Puede ingresar el número inicial del triángulo </string>
+    <string name = "hintInputTriNumber"> Puede ingresar el número inicial del triángulo </string>
 
 
     <!-- Cadenas utilizadas para fragmentos de navegación -->

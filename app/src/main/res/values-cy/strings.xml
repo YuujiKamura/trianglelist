@@ -43,7 +43,7 @@
     <string name = "inputdnum"> Gallwch nodi\'r rhif lluniadu </string>
     <string name = "inputaname"> Gallwch nodi enw\'r contractwr (gall fod yn wag) </string>
     <string name = "space"> Mae\'r llinell yn torri gyda bylchau. </string>
-    <string name = "inputtnum"> Gallwch nodi rhif cychwyn y triongl </string>
+    <string name = "hintInputTriNumber"> Gallwch nodi rhif cychwyn y triongl </string>
 
 
     <!-- Llinynnau a ddefnyddir ar gyfer darnau ar gyfer llywio -->

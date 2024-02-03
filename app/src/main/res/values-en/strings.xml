@@ -36,14 +36,14 @@
     <string name="editor_koujyo">Deduction</string>
     <string name="credit">http://trianglelist.home.blog</string>
 
-    <string name="rosen1">Drawing1</string>
+    <string name="rosen1">Drawing!</string>
     <string name="savecurrent">Save current drawing?</string>
     <string name="inputcname">You can input Constrution name here.</string>
     <string name="inputdname">You can input Drawing name here.</string>
     <string name="inputdnum">You can input Drawing number here.</string>
     <string name="inputaname">You can input Author name here.</string>
     <string name="space">Name layout to double line when you input a space.</string>
-    <string name="inputtnum">You can input a number of triangles start here.</string>
+    <string name="hintInputTriNumber">You can input a number of triangles start here.</string>
 
     <!-- Strings used for fragments for navigation -->
     <string name="first_fragment_label">First Fragment</string>

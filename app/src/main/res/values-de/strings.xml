@@ -43,7 +43,7 @@
     <string name = "inputdnum"> Sie können die Zeichnungsnummer </string> eingeben
     <string name = "inputaname"> Sie können den Namen des Auftragnehmers eingeben (kann leer sein) </string>
     <string name = "space"> Zeilenumbrüche mit Leerzeichen. </string>
-    <string name = "inputtnum"> Sie können die Startnummer des Dreiecks </string> eingeben
+    <string name = "hintInputTriNumber"> Sie können die Startnummer des Dreiecks </string> eingeben
 
 
     <!-- Zeichenfolgen für Fragmente zur Navigation -->

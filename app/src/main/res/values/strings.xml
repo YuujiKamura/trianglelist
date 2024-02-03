@@ -45,7 +45,7 @@
     <string name="inputdnum">図面番号を入力できます</string>
     <string name="inputaname">施工者名を入力できます（空白可）</string>
     <string name="space">半角スペースで改行します。</string>
-    <string name="inputtnum">三角形の開始番号を入力できます</string>
+    <string name="hintInputTriNumber">三角形の開始番号を入力できます</string>
 
 
     <!-- Strings used for fragments for navigation -->
