@@ -997,35 +997,59 @@ public class Triangle extends EditObject implements Cloneable {
 
     }
 
-    public void calcPoints(PointXY pCA, float angle){
-        this.pointAB_.set((float) (pCA.getX()+(this.length[0] *Math.cos(toRadians(angle)))),
-                         (float) (pCA.getY()+(this.length[0] *Math.sin(toRadians(angle)))));
+    public void calcPoints(PointXY pCA, float angle) {
+        calculatePointAB(pCA, angle);
+        calculateTheta(pCA);
+        calculateSidesSquared();
+        calculateAlpha();
+        calculatePointBC();
+        calculateInternalAngles();
+        calculatePointCenter();
+        finalizeCalculations();
+    }
 
-        this.myTheta_ = Math.atan2( pCA.getY()- pointAB_.getY(), pCA.getX()-this.pointAB_.getX() );
+    private void calculatePointAB(PointXY pCA, float angle) {
+        this.pointAB_.set((float) (pCA.getX() + (this.length[0] * Math.cos(Math.toRadians(angle)))),
+                (float) (pCA.getY() + (this.length[0] * Math.sin(Math.toRadians(angle)))));
+    }
 
+    private void calculateTheta(PointXY pCA) {
+        this.myTheta_ = Math.atan2(pCA.getY() - this.pointAB_.getY(), pCA.getX() - this.pointAB_.getX());
+    }
+
+    private void calculateSidesSquared() {
         this.myPowA_ = Math.pow(this.length[0], 2);
         this.myPowB_ = Math.pow(this.length[1], 2);
         this.myPowC_ = Math.pow(this.length[2], 2);
+    }
 
-        this.myAlpha_ = Math.acos((myPowA_ + this.myPowB_ - this.myPowC_)/(2* length[0] * length[1]));
+    private void calculateAlpha() {
+        this.myAlpha_ = Math.acos((this.myPowA_ + this.myPowB_ - this.myPowC_) / (2 * this.length[0] * this.length[1]));
+    }
 
-        this.pointBC_.set((float)(this.pointAB_.getX()+(this.length[1] *Math.cos(this.myTheta_ +this.myAlpha_))),
-                         (float)(this.pointAB_.getY()+(this.length[1] *Math.sin(this.myTheta_ +this.myAlpha_))));
+    private void calculatePointBC() {
+        this.pointBC_.set((float) (this.pointAB_.getX() + (this.length[1] * Math.cos(this.myTheta_ + this.myAlpha_))),
+                (float) (this.pointAB_.getY() + (this.length[1] * Math.sin(this.myTheta_ + this.myAlpha_))));
+    }
 
-        this.angleInnerAB_ = (float)calculateInternalAngle(this.point[0], this.pointAB_, this.pointBC_);
-        this.angleInnerBC_ = (float)calculateInternalAngle(this.pointAB_, this.pointBC_, this.point[0]);
-        this.angleInnerCA_ = (float)calculateInternalAngle(this.pointBC_, this.point[0], this.pointAB_);
+    private void calculateInternalAngles() {
+        this.angleInnerAB_ = (float) calculateInternalAngle(this.point[0], this.pointAB_, this.pointBC_);
+        this.angleInnerBC_ = (float) calculateInternalAngle(this.pointAB_, this.pointBC_, this.point[0]);
+        this.angleInnerCA_ = (float) calculateInternalAngle(this.pointBC_, this.point[0], this.pointAB_);
+    }
 
-        this.pointCenter_.set((pointAB_.getX()+ pointBC_.getX()+ point[0].getX())/3,
-                                (pointAB_.getY()+ pointBC_.getY()+ point[0].getY())/3 );
+    private void calculatePointCenter() {
+        this.pointCenter_.set((this.pointAB_.getX() + this.pointBC_.getX() + this.point[0].getX()) / 3,
+                (this.pointAB_.getY() + this.pointBC_.getY() + this.point[0].getY()) / 3);
+    }
+
+    private void finalizeCalculations() {
+        if (!isPointNumberMoved_) {
+            autoAlignPointNumber();
+        }
         setMyBound();
-
-        if(!isPointNumberMoved_) autoAlignPointNumber();
-
-
         setDimPath(dimH_);
         setDimPoint();
-
         dimAngleB_ = getAngleMpAB();
         dimAngleC_ = getAngleMmCA();
     }
@@ -1101,14 +1125,22 @@ public class Triangle extends EditObject implements Cloneable {
     }
 
     public int calcDimAlignByInnerAngleOf(int ABC){    // 夾角の、1:外 　3:内
-            if (ABC == 0 ){
-                if( parentBC_ == 9 || parentBC_ == 10 ) return 1;
-                if( parentBC_ > 2 || nodeTriangleB_ != null || nodeTriangleC_ != null ) return 3;
-            }
-            if (ABC == 1 && ( nodeTriangleB_ != null ) ) return 1;
-            if (ABC == 2 && ( nodeTriangleC_ != null ) ) return 1;
-            return 3; // if ABC = 0
+        // ABC == 0 の場合の特定の条件で 1 を返す
+        if (ABC == 0 && (parentBC_ == 9 || parentBC_ == 10 || parentBC_ > 2 ||
+                nodeTriangleB_ != null || nodeTriangleC_ != null)) {
+            return 1;
         }
+
+        // ABC == 1 または ABC == 2 の場合、それぞれ nodeTriangleB_ と nodeTriangleC_ が null でなければ 1 を返す
+        if ((ABC == 1 && nodeTriangleB_ != null) ||
+                (ABC == 2 && nodeTriangleC_ != null)) {
+            return 1;
+        }
+
+        // 上記のいずれの条件にも当てはまらない場合は 3 を返す
+        return 3;
+    }
+
 
     public void rotateDimSideAlign(int side){
         if(side == 0) dimSideAlignA_ = rotateZeroToThree( dimSideAlignA_ );
@@ -1204,23 +1236,31 @@ public class Triangle extends EditObject implements Cloneable {
     public Bounds getMyBP_(){ return myBP_; }
 
     public PointXY getPointCenter_() { return new PointXY(pointCenter_); }
+
     public PointXY getPointNumberAutoAligned_() {
-        if(isPointNumberMoved_) return pointNumber_;
-        //if( (lengthA+lengthB+lengthC)/scale_ < 7 ){
-            //if( childSide_ == 0 ) return pointNumber.offset(pointBC, pointCA.calcMidPoint(pointAB).vectorTo(pointBC).lengthXY()*1.5f);
-            //if( childSide_ == 1 ) return  pointNumber.offset(pointAB, pointCA.calcMidPoint(pointBC).vectorTo(pointAB).lengthXY()*1.5f);
-            //if( childSide_ == 2 ) return  pointNumber.offset(pointCA, pointAB.calcMidPoint(pointBC).vectorTo(pointCA).lengthXY()*1.5f);
-        //}
-
-        //if( myAngleBC > 90 ) return pointNumber.offset(pointBC, pointNumber.calcMidPoint(pointAB).vectorTo(pointBC).lengthXY()*0.2f);
-        //if( myAngleAB > 90 ) return pointNumber.offset(pointAB, pointNumber.calcMidPoint(pointCA).vectorTo(pointAB).lengthXY()*0.2f);
-        //if( myAngleCA > 90 ) return pointNumber.offset(pointCA, pointNumber.calcMidPoint(pointBC).vectorTo(pointCA).lengthXY()*0.2f);
-
-        if( lengthNotSized[0] < 2.5f ) return pointNumber_.offset(pointBC_, pointNumber_.vectorTo(pointBC_).lengthXY()*-0.3f);
-        if( lengthNotSized[1] < 2.5f ) return pointNumber_.offset(point[0], pointNumber_.vectorTo(point[0]).lengthXY()*-0.3f);
-        if( lengthNotSized[2] < 2.5f ) return pointNumber_.offset(pointAB_, pointNumber_.vectorTo(pointAB_).lengthXY()*-0.3f);
-
         return pointNumber_;
+        /*
+        // 固定値を意味のある名前の変数に置き換え
+        final float CLOSENESS_THRESHOLD = 2.5f; // 辺に「近い」と判断する距離の閾値
+        final float OFFSET_MULTIPLIER = -0.2f; // オフセットする距離の倍率
+
+        // 点が手動で移動された場合は、その位置をそのまま返す
+        if(isPointNumberMoved_) return pointNumber_;
+
+        // 点が辺BCに近い場合、点を辺から適切にオフセットする
+        if( lengthNotSized[0] < CLOSENESS_THRESHOLD )
+            return pointNumber_.offset(pointBC_, pointNumber_.vectorTo(pointBC_).lengthXY() * OFFSET_MULTIPLIER);
+
+        // 点が辺A（point[0]）に近い場合、点を辺から適切にオフセットする
+        if( lengthNotSized[1] < CLOSENESS_THRESHOLD )
+            return pointNumber_.offset(point[0], pointNumber_.vectorTo(point[0]).lengthXY() * OFFSET_MULTIPLIER);
+
+        // 点が辺ABに近い場合、点を辺から適切にオフセットする
+        if( lengthNotSized[2] < CLOSENESS_THRESHOLD )
+            return pointNumber_.offset(pointAB_, pointNumber_.vectorTo(pointAB_).lengthXY() * OFFSET_MULTIPLIER);
+
+        // どの辺にも近くない場合は、点の現在位置をそのまま返す
+        return pointNumber_;*/
     }
 
 

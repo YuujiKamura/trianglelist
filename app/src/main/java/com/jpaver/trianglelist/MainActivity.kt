@@ -20,6 +20,7 @@ import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import androidx.activity.result.ActivityResult
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -38,7 +39,6 @@ import com.jpaver.trianglelist.databinding.ActivityMainBinding
 import com.jpaver.trianglelist.filemanager.XlsxWriter
 import com.jpaver.trianglelist.fragment.MyDialogFragment
 import com.jpaver.trianglelist.util.*
-import org.json.JSONObject.NULL
 import java.io.*
 import java.time.LocalDate
 import java.util.*
@@ -223,6 +223,43 @@ class MainActivity : AppCompatActivity(),
     //private val TestAdID_ = "ca-app-pub-3940256099942544/6300978111"
     //private val UnitAdID_ = "ca-app-pub-6982449551349060/2369695624"
 
+    private lateinit var sendMailLauncher: ActivityResultLauncher<Intent>
+    private lateinit var shareFilesLauncher: ActivityResultLauncher<Intent>
+    private lateinit var loadContent: ActivityResultLauncher<Intent>
+
+    val shareFiles: MutableList<String> = mutableListOf(strDateRosenname(".csv"), strDateRosenname(".xlsx"), strDateRosenname(".dxf"))
+    private fun handleSendMailResult(result: ActivityResult) {
+        if (result.resultCode == Activity.RESULT_OK) {
+            // メールアプリが正常に終了した後の処理
+            deletePrivateFile(strDateRosenname(".xlsx"))
+            deletePrivateFile(strDateRosenname(".dxf"))
+            // その他の必要な処理
+        }
+    }
+
+    private fun handleShareFilesResult(result: ActivityResult, fileNamesToDelete: List<String>) {
+        if (result.resultCode == Activity.RESULT_OK) {
+            // 正常に終了した後、指定されたファイルを削除
+            deletePrivateFiles(fileNamesToDelete)
+        }
+    }
+
+    private fun handleLoadContentResult(result: ActivityResult) {
+        if (result.resultCode == Activity.RESULT_OK && result.data != null) {
+            result.data?.data?.let { uri ->
+                try {
+                    contentResolver.openInputStream(uri)?.use { inputStream ->
+                        val reader = BufferedReader(InputStreamReader(inputStream, "Shift-JIS"))
+                        loadCSV(reader)
+                    }
+                } catch (e: IOException) {
+                    e.printStackTrace()
+                }
+                setTitles()
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         Log.d("MainActivityLifeCycle", "onCreate")
 
@@ -236,6 +273,17 @@ class MainActivity : AppCompatActivity(),
         setSupportActionBar(bindingMain.toolbar)
         setContentView(view)
         Log.d("MainActivityLifeCycle", "setContentView")
+
+        sendMailLauncher =
+            registerForActivityResult(ActivityResultContracts.StartActivityForResult(), ::handleSendMailResult)
+
+        shareFilesLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            // ラムダ式内で handleShareFilesResult を呼び出し、追加のパラメータを渡す
+            handleShareFilesResult(result, shareFiles)
+        }
+
+        loadContent =
+            registerForActivityResult(ActivityResultContracts.StartActivityForResult(), ::handleLoadContentResult)
 
         val tArray = resources.getStringArray(R.array.ParentList)
         initSpinner(tArray)
@@ -332,7 +380,7 @@ class MainActivity : AppCompatActivity(),
 
             fabFlag()
 
-            autoSaveCSV()
+            saveCSVtoPrivate("privateTriList.csv")
         }
 
 
@@ -357,7 +405,7 @@ class MainActivity : AppCompatActivity(),
                 my_view.resetView(my_view.toLastTapTriangle())
                 editorResetBy(getList(deductionMode))
 
-                autoSaveCSV()
+                saveCSVtoPrivate("privateTriList.csv")
             }
         }
 
@@ -423,7 +471,7 @@ class MainActivity : AppCompatActivity(),
                 myTriangleList.get(my_view.myTriangleList.current).color_ = colorindex
 
                 my_view.setFillColor(colorindex, myTriangleList.current)
-                autoSaveCSV()
+                saveCSVtoPrivate("privateTriList.csv")
             }
         }
 
@@ -454,12 +502,12 @@ class MainActivity : AppCompatActivity(),
 
         fab_rot_l.setOnClickListener {
             fabRotate(5f, true )
-            autoSaveCSV()
+            saveCSVtoPrivate()
         }
 
         fab_rot_r.setOnClickListener {
             fabRotate(-5f, true )
-            autoSaveCSV()
+            saveCSVtoPrivate()
         }
 
         fab_deduction.setOnClickListener {
@@ -591,7 +639,7 @@ class MainActivity : AppCompatActivity(),
         }
 
         fab_share.setOnClickListener {
-            sendPdf(this)
+            sendFiles()
         }
 
         fab_mail.setOnClickListener {
@@ -640,7 +688,7 @@ class MainActivity : AppCompatActivity(),
         setListByDedMode( moveCenter )
         resetViewMethod()
         printDebugConsole()
-        autoSaveCSV()
+        saveCSVtoPrivate()
     }
 
     override fun onAttachedToWindow() {
@@ -815,8 +863,8 @@ class MainActivity : AppCompatActivity(),
         fileType = "CSV"
         val i = Intent(Intent.ACTION_CREATE_DOCUMENT)
         i.type = "text/csv"
-        i.putExtra(Intent.EXTRA_TITLE, getStrWithDateRosennameAndFilePrefix(".csv"))
-        saveContent.launch( Pair( "text/csv", getStrWithDateRosennameAndFilePrefix(".csv") ) )
+        i.putExtra(Intent.EXTRA_TITLE, strDateRosenname(".csv"))
+        saveContent.launch( Pair( "text/csv", strDateRosenname(".csv") ) )
         setResult(RESULT_OK, i)
 
     }
@@ -829,107 +877,56 @@ class MainActivity : AppCompatActivity(),
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         rosenname = findViewById<EditText>(R.id.rosenname).text.toString()
 
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        return when (item.itemId) {
+        when (item.itemId) {
             R.id.action_new -> {
-                val dialog = MyDialogFragment()
-                dialog.show(supportFragmentManager, "dialog.basic")
+                MyDialogFragment().show(supportFragmentManager, "dialog.basic")
                 return true
             }
-
             R.id.action_save_csv -> {
-                fileType = "CSV"
-                val intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
-                intent.addCategory(Intent.CATEGORY_OPENABLE)
-                intent.type = "text/csv"
-                intent.putExtra(
-                    Intent.EXTRA_TITLE,
-                    getStrWithDateRosennameAndFilePrefix(".csv")
-                )
-
-                saveContent.launch( Pair( "text/csv", getStrWithDateRosennameAndFilePrefix(".csv") ) )
-
+                launchCreateDocumentIntent("CSV", "text/csv", ".csv")
                 return true
             }
             R.id.action_load_csv -> {
-                //actionSelectDir()
-                openDocumentPicker()
-//                actionLoadCSV()
+                openDocumentPicker()  // CSVファイルの読み込み
+
                 return true
             }
-
             R.id.action_save_dxf -> {
                 showExportDialog(".dxf", "Export DXF", "DXF", "application/octet-stream")
                 return true
             }
-
             R.id.action_save_sfc -> {
                 showExportDialog(".sfc", "Export SFC", "SFC", "application/octet-stream")
                 return true
             }
-
             R.id.action_save_xlsx -> {
-                fileType = "XLSX"
-                val intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
-                intent.addCategory(Intent.CATEGORY_OPENABLE)
-                intent.setType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-                intent.putExtra(
-                    Intent.EXTRA_TITLE,
-                    getStrWithDateRosennameAndFilePrefix(".xlsx")
-                )
-
-                saveContent.launch( Pair( "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", getStrWithDateRosennameAndFilePrefix(".xlsx") ) )
-
+                launchCreateDocumentIntent("XLSX", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ".xlsx")
                 return true
             }
-
             R.id.action_save_pdf -> {
-                showDialogInputZumenTitles( "Save PDF", { launchIntentToSavePdf() } )
-
+                showDialogInputZumenTitles("Save PDF") { launchIntentToSavePdf() }
                 return true
             }
-
             R.id.action_send_mail -> {
                 sendMail()
                 return true
             }
-
-            R.id.action_usage -> {
-                playMedia( Uri.parse("https://trianglelist.home.blog") )
-/*                if (BuildConfig.FLAVOR == "free") {
-                    viewPdf(
-                            AssetsFileProvider.CONTENT_URI_FREE.buildUpon()
-                                    .appendPath("pdf")
-                                    .appendPath("trilistusage.pdf")
-                                    .build()
-                    )
-                }
-                if (BuildConfig.FLAVOR == "full") {
-                    viewPdf(
-                            AssetsFileProvider.CONTENT_URI_FULL.buildUpon()
-                                    .appendPath("pdf")
-                                    .appendPath("trilistusage.pdf")
-                                    .build()
-                    )
-                }
-*/
+            R.id.action_usage, R.id.action_privacy -> {
+                val url = if (item.itemId == R.id.action_usage) "https://trianglelist.home.blog" else "https://drive.google.com/file/d/1C7xlXZGvabeQoNEjmVpOCAxQGrFCXS60/view?usp=sharing"
+                playMedia(Uri.parse(url))
                 return true
             }
-
-            R.id.action_privacy -> {
-                playMedia( Uri.parse("https://drive.google.com/file/d/1C7xlXZGvabeQoNEjmVpOCAxQGrFCXS60/view?usp=sharing") )
-                return true
-            }
-
-            else -> {
-                super.onOptionsItemSelected(item)
-            }
+            else -> super.onOptionsItemSelected(item)
         }
 
-        //return true
+        return false
     }
+
+    private fun launchCreateDocumentIntent(fileType: String, mimeType: String, fileExtension: String) {
+        this.fileType = fileType
+        saveContent.launch(Pair(mimeType, strDateRosenname(fileExtension)))
+    }
+
 
     private fun showDialogInputZumenTitles( title: String, onComplete: () -> Unit ) {
         // 入力に関する情報をリストで管理
@@ -1005,11 +1002,11 @@ class MainActivity : AppCompatActivity(),
                 "application/pdf"
             putExtra(
                 Intent.EXTRA_TITLE,
-                getStrWithDateRosennameAndFilePrefix(".pdf")
+                strDateRosenname(".pdf")
             )
 
         }
-        saveContent.launch( Pair( "application/pdf", getStrWithDateRosennameAndFilePrefix(".pdf") ) )
+        saveContent.launch( Pair( "application/pdf", strDateRosenname(".pdf") ) )
     }
 
     private fun flipDeductionMode() {
@@ -1910,120 +1907,6 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    val loadContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
-
-        if (result.resultCode == Activity.RESULT_OK && result.data != NULL) {
-            val resultIntent = result.data
-            val title: Uri? = Objects.requireNonNull(resultIntent?.data)
-
-            StringBuilder()
-            val reader = BufferedReader(
-                InputStreamReader(title?.let { contentResolver.openInputStream(it) }, "Shift-JIS")
-            )
-            try {
-                loadCSV(reader)
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
-
-        setTitles()
-    }
-/*
-    val saveContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult())
-    { result: ActivityResult ->
-        //Log.d( "FileManager", "StartActivityForResult: " + result )
-
-        if (result.resultCode == Activity.RESULT_OK && result.data != NULL) {
-            val resultIntent = result.data
-            val title: Uri? = Objects.requireNonNull(resultIntent?.data)
-
-            // Uriは再起すると使えなくなるので対策
-            if (title != null) {
-                contentResolver.takePersistableUriPermission(
-                    title,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                )
-            }
-
-            // Uri保存。これでアプリ再起動後も使えます。
-            prefSetting.edit {
-                putString("uri", title.toString())
-            }
-
-            try {
-                autoSaveCSV() // オートセーブ
-
-                val charset = "Shift-JIS"
-                val content = title?.let { contentResolver.openOutputStream(it) }!!
-                val writer = BufferedWriter(
-                    OutputStreamWriter(content, charset)
-                )
-
-                if (fileType == "DXF") saveDXF(writer)
-                if (fileType == "CSV") saveCSV(writer)
-                if (fileType == "PDF") savePDF( content )
-                if (fileType == "SFC") saveSFC(
-                    BufferedOutputStream( content )
-                )
-                if(fileType == "XLSX"){
-
-                    val xlsxWriter = XlsxWriter()
-                    xlsxWriter.write( content, myTriangleList,  myDeductionList, rosenname )
-
-                }
-
-                //if( BuildConfig.FLAVOR == "free" ) showInterStAd()
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-
-        }
-
-        setTitles()
-    }
-*/
-
-/*    // ActivityResultLauncherの定義
-    private val saveContent = registerForActivityResult(ActivityResultContracts.CreateDocument()) { uri: Uri? ->
-        uri?.let {
-            try {
-                // 永続的なアクセス権を取得
-                contentResolver.takePersistableUriPermission(
-                    uri,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                )
-
-                // Uri保存
-                prefSetting.edit {
-                    putString("uri", uri.toString())
-                }
-
-                // 保存処理
-                contentResolver.openOutputStream(uri).use { outputStream ->
-                    when (fileType) {
-                        "DXF" -> saveDXF(BufferedWriter(OutputStreamWriter(outputStream!!, "Shift-JIS")))
-                        "CSV" -> saveCSV(BufferedWriter(OutputStreamWriter(outputStream!!, "Shift-JIS")))
-                        "PDF" -> savePDF(outputStream!!)
-                        "SFC" -> saveSFC(BufferedOutputStream(outputStream!!))
-                        "XLSX" -> {
-                            val xlsxWriter = XlsxWriter()
-                            xlsxWriter.write(outputStream!!, myTriangleList, myDeductionList, rosenname)
-                        }
-                        else -> {}
-                    }
-                }
-            } catch (e: IOException) {
-                e.printStackTrace()
-            } catch (e: SecurityException) {
-                e.printStackTrace()
-                // 権限取得失敗時の処理
-            }
-        }
-        setTitles()
-    }
-*/
-
     class CreateDocumentWithType : ActivityResultContract<Pair<String, String>, Uri?>() {
         override fun createIntent(context: Context, input: Pair<String, String>): Intent {
             // input ペアから MIME タイプとファイル名を取得
@@ -2082,6 +1965,33 @@ class MainActivity : AppCompatActivity(),
         setTitles()
     }
 
+    private fun saveToFile(filename: String, writeData: (OutputStream) -> Unit) {
+        try {
+            // プライベート領域にファイルを開く
+            openFileOutput(filename, Context.MODE_PRIVATE).use { fileOutputStream ->
+                // データの書き込みを委譲
+                writeData(fileOutputStream)
+            }
+        } catch (e: IOException) {
+            e.printStackTrace()  // エラーハンドリング
+        }
+    }
+
+    private fun saveDxfToPrivate(filename: String) {
+        saveToFile(filename) { outputStream ->
+            BufferedWriter(OutputStreamWriter(outputStream, "Shift-JIS")).use { bufferedWriter ->
+                saveDXF(bufferedWriter)
+            }
+        }
+    }
+
+    private fun saveSfcToPrivate(filename: String) {
+        saveToFile(filename) { outputStream ->
+            BufferedOutputStream(outputStream).use { bufferedOutputStream ->
+                saveSFC(bufferedOutputStream)
+            }
+        }
+    }
 
     private fun openDocumentPicker() {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
@@ -2102,7 +2012,6 @@ class MainActivity : AppCompatActivity(),
             addCategory(Intent.CATEGORY_OPENABLE)
         }
 
-        //startActivityForResult( intent, 2 )
         loadContent.launch( intent )
     }
     fun showExportDialog(filePrefix: String, title: String, fileType: String, intentType: String): Boolean {
@@ -2143,7 +2052,7 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    private fun getStrWithDateRosennameAndFilePrefix(fileprefix: String): String {
+    private fun strDateRosenname(fileprefix: String): String {
         return LocalDate.now().monthValue.toString() + "." + LocalDate.now().dayOfMonth.toString() + " " + rosenname + fileprefix
     }
 
@@ -2166,12 +2075,12 @@ class MainActivity : AppCompatActivity(),
         }
         i.putExtra(
             Intent.EXTRA_TITLE,
-            getStrWithDateRosennameAndFilePrefix(fileprefix)
+            strDateRosenname(fileprefix)
         )
 
 
         //i.flags = Intent.FLAG_GRANT_WRITE_URI_PERMISSION// or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED//flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-        saveContent.launch( Pair( intentType, getStrWithDateRosennameAndFilePrefix(fileprefix) ) )
+        saveContent.launch( Pair( intentType, strDateRosenname(fileprefix) ) )
     }
 
     private fun showInterStAd(){
@@ -2201,7 +2110,7 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun viewPdf(contentUri: Uri){
-        autoSavePDF()
+        savePDFinPrivate()
 
         if ( contentUri != Uri.EMPTY ) {
             val intent = Intent(Intent.ACTION_VIEW)
@@ -2219,7 +2128,9 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun viewXlsx(contentUri: Uri){
-        autoSaveXlsx()
+        // ファイル名を生成。ここでは日付とrosennameも含める仕様で、使用後に削除する
+        val filename = strDateRosenname(".xlsx")
+        saveXlsxInPrivate( filename )
         setTitles()
 
         if ( contentUri != Uri.EMPTY ) {
@@ -2235,44 +2146,72 @@ class MainActivity : AppCompatActivity(),
                 Toast.makeText(this, ".xlsx viewer is not installed.", Toast.LENGTH_LONG).show()
             }
         }
+
+        deletePrivateFile( filename )//使用後に削除する
+    }
+
+    private fun deletePrivateFile(fileName: String) {
+
+        try {
+            // 内部ストレージのアプリプライベート領域(filesDir)からファイルを取得
+            val file = File(filesDir, fileName)
+
+            // ファイルが存在する場合は削除
+            if (file.exists()) {
+                if (file.delete()) {
+                    Log.d("deletePrivateFile", "$fileName was successfully deleted.")
+                } else {
+                    Log.d("deletePrivateFile", "Failed to delete $fileName.")
+                }
+            } else {
+                Log.d("deletePrivateFile", "$fileName does not exist.")
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun deletePrivateFiles(fileNames: List<String>) {
+        fileNames.forEach { fileName ->
+            deletePrivateFile(fileName)
+        }
+    }
+
+
+    private fun saveFileAndGetUri(filename: String): Uri {
+        // ファイルをプライベート領域に保存
+        saveToPrivate(filename)
+
+        // プライベート領域からファイルのContent URIを取得
+        return getAppLocalFile(this, filename)
     }
 
     private fun sendMail(){
         Log.d("SendMail", "begin" )
 
-        autoSaveCSV()
-        autoSavePDF()
-        Log.d("SendMail", "autoSaved" )
+        showDialogInputZumenTitles("Send Mail", {
+            showFileTypeSelectionDialog( {
+                val intent = Intent(Intent.ACTION_SEND_MULTIPLE)
+                intent.putExtra(Intent.EXTRA_STREAM, makeShareUris(shareFiles) )
+                Log.d("SendMail", "contentUrl add succeed." )
 
-        val intent = Intent(Intent.ACTION_SEND_MULTIPLE)
-        val contentUri = getAppLocalFile(this, "myLastTriList.pdf")
-        val contentUri2 = getAppLocalFile(this, "myLastTriList.csv")
-        Log.d("SendMail", "getLocalFile succeed." )
+                intent.type = "message/rfc822"
+                intent.setPackage("com.google.android.gm")
+                Log.d("SendMail", "intent setPackage succeed." )
 
+                try {
+                    sendMailLauncher.launch(intent) //startActivity(intent)
+                } catch (e: ActivityNotFoundException) {
+                    // Gmailアプリがインストールされていない場合の処理
+                    Log.d("SendMail", "Gmail is not installed." )
+                    Toast.makeText(this, "Gmail is not installed.", Toast.LENGTH_LONG).show()
 
-        val ar = ArrayList<Uri>()
-        ar.add(contentUri)
-        ar.add(contentUri2)
-        Log.d("SendMail", "contentUrl add succeed." )
+                }
 
-        intent.putExtra(Intent.EXTRA_STREAM, ar)
-        intent.type = "message/rfc822"
-        intent.setPackage("com.google.android.gm")
-        Log.d("SendMail", "intent setPackage succeed." )
-
-        try {
-            startActivity(intent)
-        } catch (e: ActivityNotFoundException) {
-            // Gmailアプリがインストールされていない場合の処理
-            Log.d("SendMail", "Gmail is not installed." )
-            Toast.makeText(this, "Gmail is not installed.", Toast.LENGTH_LONG).show()
-
-            return
-        }
-
-        Log.d("SendMail", "process done." )
+                Log.d("SendMail", "process done." )
+            } )
+        } )
         return
-
     }
 
     private fun getAppLocalFile(context: Context, filename: String) :Uri {
@@ -2282,24 +2221,90 @@ class MainActivity : AppCompatActivity(),
         else Uri.EMPTY
     }
 
-    private fun sendPdf(context: Context){
-        autoSavePDF()
+    private fun showFileTypeSelectionDialog(onComplete: () -> Unit, checkedItems: BooleanArray = booleanArrayOf(true, true, true, false, false)) {
+        val fileTypes = arrayOf(".csv", ".xlsx", ".dxf", ".sfc", ".pdf")
+        val selectedFileTypes = ArrayList<String>()
 
-        val contentUri = getAppLocalFile(context, "myLastTriList.pdf")
-
-        if ( contentUri != Uri.EMPTY ) {
-           val intent = Intent(Intent.ACTION_SEND)
-            intent.setDataAndType(contentUri, "application/pdf")
-            intent.putExtra(Intent.EXTRA_STREAM, contentUri)
-            intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-            try {
-                startActivity(intent)
-            } catch (e: ActivityNotFoundException) {
-                //if user doesn't have pdf reader instructing to download a pdf reader
+        AlertDialog.Builder(this)
+            .setTitle("Select File Types")
+            .setMultiChoiceItems(fileTypes, checkedItems) { _, which, isChecked ->
+                // チェック状態が変更されたらcheckedItemsを更新
+                checkedItems[which] = isChecked
             }
+            .setPositiveButton("OK") { _, _ ->
+                // OKボタンが押された時、checkedItemsに基づいてselectedFileTypesを更新
+                selectedFileTypes.clear()
+                fileTypes.forEachIndexed { index, fileType ->
+                    if (checkedItems[index]) {
+                        selectedFileTypes.add(fileType)
+                    }
+                }
+                // 選択されたファイルタイプに対する処理
+                handleSelectedFileTypes(selectedFileTypes, onComplete)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun handleSelectedFileTypes(selectedFileTypes: List<String>, onComplete: () -> Unit ) {
+        // 選択されたファイルタイプに対する処理をここに記述
+        // 例: 選択されたファイルタイプをログに出力
+        shareFiles.clear()
+        var i = 0
+        selectedFileTypes.forEach { fileType ->
+            shareFiles.add( strDateRosenname(fileType) )
+            Log.d("SelectedFileType", fileType)
+            Log.d("SelectedFileType", shareFiles[i] )
+            i++
         }
 
-        //showInterStAd()
+
+        // 必要に応じて他の処理を追加
+        onComplete()
+    }
+
+
+    private fun sendFiles(){
+
+        //先に路線名を決めてもらう（削除する為のファイル名が変わる）
+        showDialogInputZumenTitles("Share Files", {
+            showFileTypeSelectionDialog( { shareFiles(shareFiles) } )
+        } )
+
+    }
+
+    private fun shareFiles(fileNames: List<String>) {
+        Log.d("ShareFiles", "begin")
+
+        val uris = makeShareUris(fileNames)
+        val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+            type = "message/rfc822" // MIMEタイプを指定（メールの場合）
+            putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris) // 添付ファイルのURIリストを追加
+        }
+
+        // ユーザーにアプリを選択させる
+        val chooser = Intent.createChooser(intent, "Choose an app to share")
+
+        try {
+            shareFilesLauncher.launch(chooser)
+        } catch (e: ActivityNotFoundException) {
+            Toast.makeText(this, "No suitable app installed.", Toast.LENGTH_LONG).show()
+        }
+
+        Log.d("ShareFiles", "process done.")
+    }
+
+    private fun makeShareUris(fileNames: List<String>): ArrayList<Uri> {
+        // URIのリストを作成
+        val uris = ArrayList<Uri>()
+
+        // ファイル名のリストをループして各ファイルのURIを取得
+        for (fileName in fileNames) {
+            val uri = saveFileAndGetUri(fileName)
+            uris.add(uri)
+            Log.d("ShareFiles", "$fileName saved and URI obtained.")
+        }
+        return uris
     }
 
     private fun saveDXF(bWriter: BufferedWriter) :BufferedWriter{
@@ -2390,29 +2395,44 @@ class MainActivity : AppCompatActivity(),
         writer.closeDocAndStream()
     }
 
-    private fun autoSavePDF(){
+    private fun savePDFinPrivate(filename: String = "privateTriList.pdf"){
         try {
-            savePDF(openFileOutput("myLastTriList.pdf", MODE_PRIVATE))
+            savePDF(openFileOutput(filename, MODE_PRIVATE))
         } catch (e: IOException) {
             e.printStackTrace()
         }
     }
 
-    private fun autoSaveXlsx(){
+    private fun saveXlsxInPrivate(filename: String){
         try {
-            val writer = XlsxWriter()
-            writer.write( openFileOutput("myLastTriList.xlsx", MODE_PRIVATE ), myTriangleList, myDeductionList, rosenname )
+            XlsxWriter().write( openFileOutput(filename, MODE_PRIVATE ), myTriangleList, myDeductionList, rosenname )
         } catch (e: IOException) {
             e.printStackTrace()
         }
     }
 
-    private fun autoSaveCSV(){
+    private fun saveToPrivate(filename: String) {
+        // ファイル名から拡張子を取得
+        val extension = filename.substringAfterLast('.', "")
+
+        when (extension) {
+            "xlsx" -> XlsxWriter().write( openFileOutput(filename, MODE_PRIVATE ), myTriangleList, myDeductionList, rosenname )
+            "pdf" -> savePDFinPrivate(filename)
+            "dxf" -> saveDxfToPrivate(filename)
+            "sfc" -> saveSfcToPrivate(filename)
+            "csv" -> saveCSVtoPrivate(filename)
+            // その他のファイル形式に対応する処理を追加
+            else -> throw IllegalArgumentException("Unsupported file format: $extension")
+        }
+    }
+
+
+    private fun saveCSVtoPrivate(filename: String = "privateTriList.csv" ){
         try {
             setTitles()
 
             val writer = BufferedWriter(
-                    OutputStreamWriter(openFileOutput("myLastTriList.csv", MODE_PRIVATE))
+                    OutputStreamWriter(openFileOutput(filename, MODE_PRIVATE))
             )
             saveCSV(writer)
         } catch (e: IOException) {

@@ -123,7 +123,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
     lateinit var myCanvas: Canvas
 
-    var ts_ = 25f
+    var ts_ = 30f
 
     var watchedA1_ = ""
     var watchedB1_ = ""
