@@ -30,7 +30,7 @@ import androidx.fragment.app.DialogFragment
 import androidx.preference.PreferenceManager
 import com.google.android.gms.ads.*
 import com.google.android.gms.ads.interstitial.InterstitialAd
-import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
+//import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.install.model.AppUpdateType
@@ -216,9 +216,9 @@ class MainActivity : AppCompatActivity(),
             R.color.colorSky     //4
     )
 
-    private lateinit var mAdView : AdView
-    private var mInterstitialAd: InterstitialAd? = null
-    private var TAG = "MainActivity"
+    //private lateinit var mAdView : AdView
+    //private var mInterstitialAd: InterstitialAd? = null
+    //private var TAG = "MainActivity"
     //private val isAdTEST_ = true
     //private val TestAdID_ = "ca-app-pub-3940256099942544/6300978111"
     //private val UnitAdID_ = "ca-app-pub-6982449551349060/2369695624"
@@ -228,6 +228,7 @@ class MainActivity : AppCompatActivity(),
     private lateinit var loadContent: ActivityResultLauncher<Intent>
 
     val shareFiles: MutableList<String> = mutableListOf(strDateRosenname(".csv"), strDateRosenname(".xlsx"), strDateRosenname(".dxf"))
+    val shareUris: MutableList<Uri> = mutableListOf()
     private fun handleSendMailResult(result: ActivityResult) {
         if (result.resultCode == Activity.RESULT_OK) {
             // メールアプリが正常に終了した後の処理
@@ -237,10 +238,22 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    private fun handleShareFilesResult(result: ActivityResult, fileNamesToDelete: List<String>) {
+    private fun handleShareFilesResult(result: ActivityResult, fileNamesToDelete: List<String>, fileUris: List<Uri>) {
         if (result.resultCode == Activity.RESULT_OK) {
-            // 正常に終了した後、指定されたファイルを削除
+            // 正常に終了した後、指定された内部ファイルを削除
             deletePrivateFiles(fileNamesToDelete)
+            // 共有操作が成功した後、ファイルに対する永続的なアクセス権を取得
+            fileUris.forEach { uri ->
+                try {
+                    // 永続的なアクセス権を付与
+                    val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                            Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    contentResolver.takePersistableUriPermission(uri, takeFlags)
+                } catch (e: SecurityException) {
+                    // アクセス権の付与に失敗した場合の処理
+                    e.printStackTrace()
+                }
+            }
         }
     }
 
@@ -279,7 +292,7 @@ class MainActivity : AppCompatActivity(),
 
         shareFilesLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             // ラムダ式内で handleShareFilesResult を呼び出し、追加のパラメータを渡す
-            handleShareFilesResult(result, shareFiles)
+            handleShareFilesResult(result, shareFiles, shareUris )
         }
 
         loadContent =
@@ -313,7 +326,7 @@ class MainActivity : AppCompatActivity(),
             else Log.d( "AppUpdate", "Update is not Available.")
         }
 
-        // must after setContentView
+/*        // must after setContentView
         if( BuildConfig.FLAVOR == "free" ) {
             mAdView = findViewById(R.id.adView)
 
@@ -331,7 +344,7 @@ class MainActivity : AppCompatActivity(),
             Log.d("MainActivityLifeCycle", "adMob Loaded.")
 
         }
-
+*/
         prefSetting = PreferenceManager.getDefaultSharedPreferences(this)
 
         myDeductionList = DeductionList()
@@ -827,7 +840,7 @@ class MainActivity : AppCompatActivity(),
 
         Log.d("MainActivity", "OnAttachedToWindow Process Done.")
 
-        showInterStAd()
+        //showInterStAd()
 
     }
 
@@ -835,12 +848,13 @@ class MainActivity : AppCompatActivity(),
         super.onResume()
         Log.d("MainActivityLifeCycle", "OnResume")
         // 広告の非表示
+        /*
         if( BuildConfig.FLAVOR == "free" ){
             val adManager = AdManager()
             adManager.disableAd(mAdView)
             //findViewById<EditText>(R.id.editLengthC1).requestFocus()
             //mAdView.visibility = VISIBLE
-        }
+        }*/
 
         //my_view.setScreenSize() //スクリーンサイズの更新
     }
@@ -874,52 +888,57 @@ class MainActivity : AppCompatActivity(),
         createNew()
     }
 
+    private fun launchIntentBasedOnFileType(fileType: String, mimeType: String, fileExtension: String) {
+        when (fileType) {
+            "CSV", "XLSX" -> {
+                launchCreateDocumentIntent(fileType, mimeType, fileExtension)
+            }
+            "DXF", "SFC" -> {
+                showExportDialog(fileExtension, "Export $fileType", fileType, mimeType)
+            }
+            "PDF" -> {
+                showDialogInputZumenTitles("Save PDF") { launchIntentToSavePdf() }
+            }
+            // 他のファイルタイプに関する処理を追加する場合は、ここに記述
+        }
+    }
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         rosenname = findViewById<EditText>(R.id.rosenname).text.toString()
 
         when (item.itemId) {
             R.id.action_new -> {
                 MyDialogFragment().show(supportFragmentManager, "dialog.basic")
-                return true
             }
             R.id.action_save_csv -> {
-                launchCreateDocumentIntent("CSV", "text/csv", ".csv")
-                return true
+                launchIntentBasedOnFileType("CSV", "*/*", ".csv")
             }
             R.id.action_load_csv -> {
                 openDocumentPicker()  // CSVファイルの読み込み
-
-                return true
             }
             R.id.action_save_dxf -> {
-                showExportDialog(".dxf", "Export DXF", "DXF", "application/octet-stream")
-                return true
+                launchIntentBasedOnFileType("DXF", "*/*", ".dxf")
             }
             R.id.action_save_sfc -> {
-                showExportDialog(".sfc", "Export SFC", "SFC", "application/octet-stream")
-                return true
+                launchIntentBasedOnFileType("SFC", "*/*", ".sfc")
             }
             R.id.action_save_xlsx -> {
-                launchCreateDocumentIntent("XLSX", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ".xlsx")
-                return true
+                launchIntentBasedOnFileType("XLSX", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ".xlsx")
             }
             R.id.action_save_pdf -> {
-                showDialogInputZumenTitles("Save PDF") { launchIntentToSavePdf() }
-                return true
+                launchIntentBasedOnFileType("PDF", "", "")
             }
             R.id.action_send_mail -> {
                 sendMail()
-                return true
             }
             R.id.action_usage, R.id.action_privacy -> {
                 val url = if (item.itemId == R.id.action_usage) "https://trianglelist.home.blog" else "https://drive.google.com/file/d/1C7xlXZGvabeQoNEjmVpOCAxQGrFCXS60/view?usp=sharing"
                 playMedia(Uri.parse(url))
-                return true
             }
-            else -> super.onOptionsItemSelected(item)
+            else -> return super.onOptionsItemSelected(item)
         }
 
-        return false
+        return true
     }
 
     private fun launchCreateDocumentIntent(fileType: String, mimeType: String, fileExtension: String) {
@@ -2082,7 +2101,7 @@ class MainActivity : AppCompatActivity(),
         //i.flags = Intent.FLAG_GRANT_WRITE_URI_PERMISSION// or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED//flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
         saveContent.launch( Pair( intentType, strDateRosenname(fileprefix) ) )
     }
-
+/*
     private fun showInterStAd(){
         //インタースティシャル広告の読み込み
         if( BuildConfig.FLAVOR == "free") {
@@ -2108,7 +2127,7 @@ class MainActivity : AppCompatActivity(),
         }
 
     }
-
+*/
     private fun viewPdf(contentUri: Uri){
         savePDFinPrivate()
 
@@ -2194,8 +2213,9 @@ class MainActivity : AppCompatActivity(),
                 val intent = Intent(Intent.ACTION_SEND_MULTIPLE)
                 intent.putExtra(Intent.EXTRA_STREAM, makeShareUris(shareFiles) )
                 Log.d("SendMail", "contentUrl add succeed." )
+                intent.type = "*/*" // MIMEタイプを指定（汎用）
 
-                intent.type = "message/rfc822"
+                //intent.type = "message/rfc822"
                 intent.setPackage("com.google.android.gm")
                 Log.d("SendMail", "intent setPackage succeed." )
 
@@ -2278,7 +2298,7 @@ class MainActivity : AppCompatActivity(),
 
         val uris = makeShareUris(fileNames)
         val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
-            type = "message/rfc822" // MIMEタイプを指定（メールの場合）
+            type = "*/*" // MIMEタイプを指定（汎用）
             putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris) // 添付ファイルのURIリストを追加
         }
 
@@ -2298,9 +2318,11 @@ class MainActivity : AppCompatActivity(),
         // URIのリストを作成
         val uris = ArrayList<Uri>()
 
+        shareUris.clear()
         // ファイル名のリストをループして各ファイルのURIを取得
         for (fileName in fileNames) {
             val uri = saveFileAndGetUri(fileName)
+            shareUris.add(uri)
             uris.add(uri)
             Log.d("ShareFiles", "$fileName saved and URI obtained.")
         }
