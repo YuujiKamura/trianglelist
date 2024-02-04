@@ -30,7 +30,7 @@ import androidx.fragment.app.DialogFragment
 import androidx.preference.PreferenceManager
 import com.google.android.gms.ads.*
 import com.google.android.gms.ads.interstitial.InterstitialAd
-//import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.install.model.AppUpdateType
@@ -216,9 +216,9 @@ class MainActivity : AppCompatActivity(),
             R.color.colorSky     //4
     )
 
-    //private lateinit var mAdView : AdView
-    //private var mInterstitialAd: InterstitialAd? = null
-    //private var TAG = "MainActivity"
+    private lateinit var mAdView : AdView
+    private var mInterstitialAd: InterstitialAd? = null
+    private var TAG = "MainActivity"
     //private val isAdTEST_ = true
     //private val TestAdID_ = "ca-app-pub-3940256099942544/6300978111"
     //private val UnitAdID_ = "ca-app-pub-6982449551349060/2369695624"
@@ -326,8 +326,8 @@ class MainActivity : AppCompatActivity(),
             else Log.d( "AppUpdate", "Update is not Available.")
         }
 
-/*        // must after setContentView
-        if( BuildConfig.FLAVOR == "free" ) {
+        // must after setContentView
+        //if( BuildConfig.FLAVOR == "free" ) {
             mAdView = findViewById(R.id.adView)
 
             MobileAds.initialize(this) {}
@@ -343,8 +343,8 @@ class MainActivity : AppCompatActivity(),
             Log.d("adMob", "adMob Loaded.")
             Log.d("MainActivityLifeCycle", "adMob Loaded.")
 
-        }
-*/
+        //}
+
         prefSetting = PreferenceManager.getDefaultSharedPreferences(this)
 
         myDeductionList = DeductionList()
@@ -840,7 +840,7 @@ class MainActivity : AppCompatActivity(),
 
         Log.d("MainActivity", "OnAttachedToWindow Process Done.")
 
-        //showInterStAd()
+        showInterStAd()
 
     }
 
@@ -848,13 +848,12 @@ class MainActivity : AppCompatActivity(),
         super.onResume()
         Log.d("MainActivityLifeCycle", "OnResume")
         // 広告の非表示
-        /*
-        if( BuildConfig.FLAVOR == "free" ){
+        //if( BuildConfig.FLAVOR == "free" ){
             val adManager = AdManager()
             adManager.disableAd(mAdView)
             //findViewById<EditText>(R.id.editLengthC1).requestFocus()
             //mAdView.visibility = VISIBLE
-        }*/
+        //}
 
         //my_view.setScreenSize() //スクリーンサイズの更新
     }
@@ -2101,10 +2100,10 @@ class MainActivity : AppCompatActivity(),
         //i.flags = Intent.FLAG_GRANT_WRITE_URI_PERMISSION// or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED//flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
         saveContent.launch( Pair( intentType, strDateRosenname(fileprefix) ) )
     }
-/*
+
     private fun showInterStAd(){
         //インタースティシャル広告の読み込み
-        if( BuildConfig.FLAVOR == "free") {
+        //if( BuildConfig.FLAVOR == "free") {
             val adRequest = AdRequest.Builder().build()
 
             InterstitialAd.load(
@@ -2124,10 +2123,10 @@ class MainActivity : AppCompatActivity(),
                 })
 
             mInterstitialAd?.show(this)
-        }
+        //}
 
     }
-*/
+
     private fun viewPdf(contentUri: Uri){
         savePDFinPrivate()
 
