@@ -1,8 +1,8 @@
 package com.jpaver.trianglelist
 
 class PointXY : Cloneable {
-    var x: Float
-    var y: Float
+     var x: Float
+     var y: Float
 
     constructor(x: Float, y: Float) {
         this.x = x

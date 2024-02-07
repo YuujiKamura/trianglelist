@@ -1237,15 +1237,41 @@ public class Triangle extends EditObject implements Cloneable {
 
     public PointXY getPointCenter_() { return new PointXY(pointCenter_); }
 
+
+    public PointXY weightedMidpoint( float bias) {
+
+        // 角度が大きいほど重みを大きくするための調整
+        float weight1 = angleInnerAB_ + bias; // 角度が大きいほど重みが大きくなる
+        float weight2 = angleInnerBC_ + bias;
+        float weight3 = angleInnerCA_ + bias;
+
+        // 重みの合計で正規化
+        float totalWeight = weight1 + weight2 + weight3;
+        weight1 /= totalWeight;
+        weight2 /= totalWeight;
+        weight3 /= totalWeight;
+
+        PointXY p1 = pointAB_;
+        PointXY p2 = pointBC_;
+        PointXY p3 = point[0];
+
+        // 重み付き座標の計算
+        float weightedX = p1.getX() * weight1 + p2.getX() * weight2 + p3.getX() * weight3;
+        float weightedY = p1.getY() * weight1 + p2.getY() * weight2 + p3.getY() * weight3;
+
+        return new PointXY(weightedX, weightedY);
+    }
+
     public PointXY getPointNumberAutoAligned_() {
-        return pointNumber_;
+        // 点が手動で移動された場合は、その位置をそのまま返す
+        if(isPointNumberMoved_) return pointNumber_;
+
+        return weightedMidpoint(25f);
         /*
         // 固定値を意味のある名前の変数に置き換え
         final float CLOSENESS_THRESHOLD = 2.5f; // 辺に「近い」と判断する距離の閾値
         final float OFFSET_MULTIPLIER = -0.2f; // オフセットする距離の倍率
 
-        // 点が手動で移動された場合は、その位置をそのまま返す
-        if(isPointNumberMoved_) return pointNumber_;
 
         // 点が辺BCに近い場合、点を辺から適切にオフセットする
         if( lengthNotSized[0] < CLOSENESS_THRESHOLD )

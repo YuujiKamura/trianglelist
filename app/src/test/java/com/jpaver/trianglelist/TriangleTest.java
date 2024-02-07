@@ -16,6 +16,16 @@ import com.jpaver.trianglelist.util.Params;
 public class TriangleTest {
 
     @Test
+    public void testCalcWeitedMidPoint(){
+        Triangle t345 = new Triangle(3f, 4f, 5f );
+        assertEquals( 2.5f,  t345.getPointNumberAutoAligned_().getX(), 0.01f );
+
+        Triangle t = new Triangle(5f, 5f, 5f );
+        assertEquals( 2.5f,  t.getPointNumberAutoAligned_().getX(), 0.01f );
+
+    }
+
+    @Test
     public void testCompareY(){
         //PowerMockito.mockStatic(Log.class);
 
