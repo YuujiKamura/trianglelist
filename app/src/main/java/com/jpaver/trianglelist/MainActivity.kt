@@ -4,7 +4,11 @@ import AdInitializerImpl
 import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
-import android.content.*
+import android.content.ActivityNotFoundException
+import android.content.ContentResolver
+import android.content.Context
+import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.drawable.Icon
@@ -19,7 +23,13 @@ import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.InputMethodManager
-import android.widget.*
+import android.widget.ArrayAdapter
+import android.widget.AutoCompleteTextView
+import android.widget.EditText
+import android.widget.Spinner
+import android.widget.TableRow
+import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContract
@@ -29,7 +39,12 @@ import androidx.core.content.FileProvider.getUriForFile
 import androidx.core.content.edit
 import androidx.fragment.app.DialogFragment
 import androidx.preference.PreferenceManager
-import com.google.android.gms.ads.*
+import com.google.android.gms.ads.AdListener
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.AdView
+import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.RequestConfiguration
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -39,8 +54,21 @@ import com.google.android.play.core.install.model.UpdateAvailability
 import com.jpaver.trianglelist.databinding.ActivityMainBinding
 import com.jpaver.trianglelist.filemanager.XlsxWriter
 import com.jpaver.trianglelist.fragment.MyDialogFragment
-import com.jpaver.trianglelist.util.*
-import java.io.*
+import com.jpaver.trianglelist.util.AdInitializer
+import com.jpaver.trianglelist.util.AdManager
+import com.jpaver.trianglelist.util.EditTextViewLine
+import com.jpaver.trianglelist.util.EditorTable
+import com.jpaver.trianglelist.util.Params
+import com.jpaver.trianglelist.util.TitleParamStr
+import com.jpaver.trianglelist.util.TitleParams
+import java.io.BufferedOutputStream
+import java.io.BufferedReader
+import java.io.BufferedWriter
+import java.io.File
+import java.io.IOException
+import java.io.InputStreamReader
+import java.io.OutputStream
+import java.io.OutputStreamWriter
 import java.time.LocalDate
 import kotlin.math.roundToInt
 
@@ -307,6 +335,7 @@ class MainActivity : AppCompatActivity(),
 
     val shareFiles: MutableList<String> = mutableListOf(strDateRosenname(".csv"), strDateRosenname(".xlsx"), strDateRosenname(".dxf"))
     val shareUris: MutableList<Uri> = mutableListOf()
+
     //endregion
 
     //region File ActivityResultLauncher
@@ -700,9 +729,18 @@ class MainActivity : AppCompatActivity(),
 
     }
 
+    var isCSVsavedToPrivate = false
+
     override fun onPause(){
         super.onPause()
-        saveCSVtoPrivate()
+    }
+
+    override fun onStop(){
+        super.onStop()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
     }
 
     override fun onResume() {
@@ -771,6 +809,7 @@ class MainActivity : AppCompatActivity(),
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         rosenname = findViewById<EditText>(R.id.rosenname).text.toString()
 
+
         when (item.itemId) {
             R.id.action_new -> {
                 MyDialogFragment().show(supportFragmentManager, "dialog.basic")
@@ -802,6 +841,9 @@ class MainActivity : AppCompatActivity(),
             }
             else -> return super.onOptionsItemSelected(item)
         }
+
+        isCSVsavedToPrivate = false
+        isCSVsavedToPrivate = saveCSVtoPrivate()
 
         return true
     }
@@ -1290,36 +1332,47 @@ class MainActivity : AppCompatActivity(),
         fab_numreverse = bindingMain.fabNumreverse
         fab_xlsx = bindingMain.fabXlsx
     }
+
+    private fun saveAndPerform(action: () -> Unit) {
+        action()
+        isCSVsavedToPrivate = false
+        isCSVsavedToPrivate = saveCSVtoPrivate()
+    }
+
+    private fun setCommonFabListener(fab: FloatingActionButton, action: () -> Unit) {
+        fab.setOnClickListener {
+            saveAndPerform(action)
+        }
+    }
+
     private fun fabController(){
 
         val mainViewModel = MainViewModel()
 
-        fab_replace.setOnClickListener {
+        setCommonFabListener(fab_replace) {
             fabReplace(dParams, false)
         }
 
-        fab_flag.setOnClickListener {
+        setCommonFabListener(fab_flag) {
 
             fabFlag()
-
-            saveCSVtoPrivate("privateTriList.csv")
         }
 
 
-        fab_dimsidew.setOnClickListener {
+        setCommonFabListener(fab_dimsidew) {
 
             mainViewModel.setMember( deductionMode, myTriangleList, myDeductionList )
-            mainViewModel.fabDimSide("W", { setListAndAutoSave( { my_view.invalidate() }, false ) } )
+            mainViewModel.fabDimSide("W", { setListAndResetView( { my_view.invalidate() }, false ) } )
 
         }
 
-        fab_dimsideh.setOnClickListener {
+        setCommonFabListener(fab_dimsideh) {
             mainViewModel.setMember( deductionMode, myTriangleList, myDeductionList )
-            mainViewModel.fabDimSide("H", { setListAndAutoSave( { my_view.invalidate() }, false ) }  )
+            mainViewModel.fabDimSide("H", { setListAndResetView( { my_view.invalidate() }, false ) }  )
 
         }
 
-        fab_nijyuualign.setOnClickListener {
+        setCommonFabListener(fab_nijyuualign) {
             if(!deductionMode && myTriangleList.lastTapNumber_ > 1 ){
                 myTriangleList.rotateCurrentTriLCR()
                 //myTriangleList.resetTriConnection(myTriangleList.lastTapNum_, );
@@ -1327,12 +1380,11 @@ class MainActivity : AppCompatActivity(),
                 my_view.resetView(my_view.toLastTapTriangle())
                 editorResetBy(getList(deductionMode))
 
-                saveCSVtoPrivate("privateTriList.csv")
             }
         }
 
         var deleteWarning = 0
-        fab_minus.setOnClickListener {
+        setCommonFabListener(fab_minus) {
             val listLength = getList(deductionMode).size()
 
             if(listLength > 0 && deleteWarning == 0) {
@@ -1365,7 +1417,7 @@ class MainActivity : AppCompatActivity(),
 
         }
 
-        fab_undo.setOnClickListener{
+        setCommonFabListener(fab_undo){
             if( trilistUndo.size() > 0 ){
                 myTriangleList = trilistUndo.clone()
                 //my_view.undo()
@@ -1380,7 +1432,7 @@ class MainActivity : AppCompatActivity(),
             }
         }
 
-        fab_fillcolor.setOnClickListener {
+        setCommonFabListener(fab_fillcolor) {
             if(!deductionMode){
                 myTriangleList.get(my_view.myTriangleList.current)
 
@@ -1393,11 +1445,10 @@ class MainActivity : AppCompatActivity(),
                 myTriangleList.get(my_view.myTriangleList.current).color_ = colorindex
 
                 my_view.setFillColor(colorindex, myTriangleList.current)
-                saveCSVtoPrivate("privateTriList.csv")
             }
         }
 
-        fab_texplus.setOnClickListener {
+        setCommonFabListener(fab_texplus) {
             my_view.ts_ += 5f
             my_view.setAllTextSize(my_view.ts_)
 
@@ -1405,13 +1456,39 @@ class MainActivity : AppCompatActivity(),
             my_view.invalidate()
         }
 
-        fab_texminus.setOnClickListener {
+        setCommonFabListener(fab_texminus) {
             my_view.ts_ -= 5f
             my_view.setAllTextSize(my_view.ts_)
 
             my_view.invalidate()
         }
 
+
+        setCommonFabListener(fab_rot_l) {
+            fabRotate(5f, true )
+        }
+
+        setCommonFabListener(fab_rot_r) {
+            fabRotate(-5f, true )
+        }
+
+        setCommonFabListener(fab_numreverse){
+            trilistUndo = myTriangleList.clone()
+            mainViewModel.setMember( deductionMode, myTriangleList, myDeductionList )
+
+            whenTriDed({
+                if( BuildConfig.DEBUG ){
+                    myTriangleList = mainViewModel.fabReverse() as TriangleList
+                    setListAndResetView( { my_view.toLastTapTriangle() } )
+                }
+            }, {
+                myDeductionList = mainViewModel.fabReverse() as DeductionList
+                setListAndResetView( { my_view.invalidate() } )
+            })
+
+        }
+
+        //ここからはビュー操作用とファイルシェア用のFAB、図形を書き換えないのでオートセーブの対象外
         fab_setB.setOnClickListener {
             autoConnection(1)
             findViewById<EditText>(R.id.editLengthB1).requestFocus()
@@ -1422,15 +1499,6 @@ class MainActivity : AppCompatActivity(),
             findViewById<EditText>(R.id.editLengthB1).requestFocus()
         }
 
-        fab_rot_l.setOnClickListener {
-            fabRotate(5f, true )
-            saveCSVtoPrivate()
-        }
-
-        fab_rot_r.setOnClickListener {
-            fabRotate(-5f, true )
-            saveCSVtoPrivate()
-        }
 
         fab_deduction.setOnClickListener {
             deleteWarning = 0
@@ -1553,11 +1621,11 @@ class MainActivity : AppCompatActivity(),
         }
 
         fab_pdf.setOnClickListener {
-            viewPdf( getAppLocalFile(this, "myLastTriList.pdf") )
+            viewPdf( getAppLocalFile(this, "privateTrilist.pdf") )
         }
 
         fab_xlsx.setOnClickListener{
-            viewXlsx( getAppLocalFile(this, "myLastTriList.xlsx") )
+            viewXlsx( getAppLocalFile(this, "privateTrilist.xlsx") )
         }
 
         fab_share.setOnClickListener {
@@ -1574,21 +1642,6 @@ class MainActivity : AppCompatActivity(),
 
         }
 
-        fab_numreverse.setOnClickListener{
-            trilistUndo = myTriangleList.clone()
-            mainViewModel.setMember( deductionMode, myTriangleList, myDeductionList )
-
-            whenTriDed({
-                if( BuildConfig.DEBUG ){
-                    myTriangleList = mainViewModel.fabReverse() as TriangleList
-                    setListAndAutoSave( { my_view.toLastTapTriangle() } )
-                }
-            }, {
-                myDeductionList = mainViewModel.fabReverse() as DeductionList
-                setListAndAutoSave( { my_view.invalidate() } )
-            })
-
-        }
 
     }
 
@@ -1605,12 +1658,12 @@ class MainActivity : AppCompatActivity(),
             my_view.setDeductionList(myDeductionList, mScale)
         })
     }
-    private fun setListAndAutoSave( resetViewMethod:() -> Unit, moveCenter: Boolean = true ) {
+    private fun setListAndResetView(resetViewMethod:() -> Unit, moveCenter: Boolean = true ) {
         editorResetBy(getList(deductionMode))
         setListByDedMode( moveCenter )
         resetViewMethod()
         printDebugConsole()
-        saveCSVtoPrivate()
+        //saveCSVtoPrivate()
     }
 
     fun fabFlag(){
@@ -1705,7 +1758,7 @@ class MainActivity : AppCompatActivity(),
         }
 
         my_view.setTriangleList(myTriangleList, mScale)
-        setListAndAutoSave( { whenTriDed( {my_view.resetView(my_view.toLastTapTriangle())}, {my_view.invalidate()} ) } )
+        setListAndResetView( { whenTriDed( {my_view.resetView(my_view.toLastTapTriangle())}, {my_view.invalidate()} ) } )
         setTitles()
 
 
@@ -2306,9 +2359,8 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun viewXlsx(contentUri: Uri){
-        // ファイル名を生成。ここでは日付とrosennameも含める仕様で、使用後に削除する
-        val filename = strDateRosenname(".xlsx")
-        saveXlsxInPrivate( filename )
+        // ファイルを生成。
+        saveXlsxInPrivate()
         setTitles()
 
         if ( contentUri != Uri.EMPTY ) {
@@ -2325,7 +2377,6 @@ class MainActivity : AppCompatActivity(),
             }
         }
 
-        deletePrivateFile( filename )//使用後に削除する
     }
 
     private fun deletePrivateFile(fileName: String) {
@@ -2611,7 +2662,7 @@ class MainActivity : AppCompatActivity(),
 
     }
 
-    private fun savePDFinPrivate(filename: String = "privateTriList.pdf"){
+    private fun savePDFinPrivate(filename: String = "privateTrilist.pdf"){
         try {
             savePDF(openFileOutput(filename, MODE_PRIVATE))
         } catch (e: IOException) {
@@ -2619,7 +2670,7 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    private fun saveXlsxInPrivate(filename: String){
+    private fun saveXlsxInPrivate(filename: String = "privateTrilist.xlsx"){
         try {
             XlsxWriter().write( openFileOutput(filename, MODE_PRIVATE ), myTriangleList, myDeductionList, rosenname )
         } catch (e: IOException) {
@@ -2646,106 +2697,88 @@ class MainActivity : AppCompatActivity(),
 
     //region File CSV Save and Load
 
-    private fun saveCSV(writer: BufferedWriter){
-        //myTriangleList.scale(PointXY(0f,0f),1/myTriangleList.getScale())
-        rosenname = findViewById<EditText>(R.id.rosenname).text.toString()
+    private fun saveCSV(writer: BufferedWriter): Boolean {
+        return try {
+            // 入力データの取得
+            rosenname = findViewById<EditText>(R.id.rosenname).text.toString()
 
-        writer.write("koujiname, $koujiname")
-        writer.newLine()
-        writer.write("rosenname, $rosenname")
-        writer.newLine()
-        writer.write("gyousyaname, $gyousyaname")
-        writer.newLine()
-        writer.write("zumennum, $zumennum")
-        writer.newLine()
+            // CSVファイルへのヘッダー情報の書き込み
+            writer.apply {
+                write("koujiname, $koujiname")
+                newLine()
+                write("rosenname, $rosenname")
+                newLine()
+                write("gyousyaname, $gyousyaname")
+                newLine()
+                write("zumennum, $zumennum")
+                newLine()
+            }
 
-        for (index in 1 .. myTriangleList.size()){
-            val mt: Triangle = myTriangleList.getMemberByIndex(index)
-            val pt: PointXY = mt.pointNumber_
-            val cp = parentBCtoCParam(mt.parentBC, mt.lengthNotSized[0], mt.cParam_)
-            //if( mt.isPointNumberMoved_ == true ) pt.scale(PointXY(0f,0f),1f,-1f)
-            writer.write(
-                mt.getMyNumber_().toString() + ", " +           //0
-                        mt.getLengthA().toString() + ", " +        //1
-                        mt.getLengthB().toString() + ", " +        //2
-                        mt.getLengthC().toString() + ", " +        //3
-                        mt.parentNumber.toString() + ", " +   //4
-                        mt.parentBC.toString() + ", " +       //5
-                        mt.getMyName_() + ", " +                    //6
-                        pt.x + ", " +             //7
-                        pt.y + ", " +             //8
-                        mt.isPointNumberMoved_ + ", " +             //9
-                        mt.color_ + ", " +                          //10
-                        mt.dimSideAlignA_ + ", " +                  //11
-                        mt.dimSideAlignB_ + ", " +                  //12
-                        mt.dimSideAlignC_ + ", " +                  //13
-                        mt.myDimAlignA_ + ", " +                       //14
-                        mt.myDimAlignB_ + ", " +                       //15
-                        mt.myDimAlignC_ + ", " +                       //16
-                        cp.side + ", " +                       //17
-                        cp.type + ", " +                       //18
-                        cp.lcr + ", " +                               //19
-                        mt.isChangeDimAlignB_ + ", " +                //20
-                        mt.isChangeDimAlignC_ + ", " +                //21
-                        mt.angleInGlobal_ + ", " +              //22
-                        mt.pointCA_.x + ", " +                  //23
-                        mt.pointCA_.y + ", " +                  //24
-                        mt.angleInLocal_               //25
-            )
-            writer.newLine()
+            // 三角形リストのデータをCSVファイルに書き込み
+            for (index in 1..myTriangleList.size()) {
+                val mt: Triangle = myTriangleList.getMemberByIndex(index)
+                val pt: PointXY = mt.pointNumber_
+                val cp = parentBCtoCParam(mt.parentBC, mt.lengthNotSized[0], mt.cParam_)
+
+                writer.write("${mt.getMyNumber_()},${mt.getLengthA()},${mt.getLengthB()},${mt.getLengthC()},${mt.parentNumber},${mt.parentBC},${mt.getMyName_()},${pt.x},${pt.y},${mt.isPointNumberMoved_},${mt.color_},${mt.dimSideAlignA_},${mt.dimSideAlignB_},${mt.dimSideAlignC_},${mt.myDimAlignA_},${mt.myDimAlignB_},${mt.myDimAlignC_},${cp.side},${cp.type},${cp.lcr},${mt.isChangeDimAlignB_},${mt.isChangeDimAlignC_},${mt.angleInGlobal_},${mt.pointCA_.x},${mt.pointCA_.y},${mt.angleInLocal_}")
+                writer.newLine()
+            }
+
+            // その他の情報をCSVファイルに書き込み
+            writer.apply {
+                write("ListAngle, ${myTriangleList.angle}")
+                newLine()
+                write("ListScale, ${myTriangleList.scale}")
+                newLine()
+                write("TextSize, ${my_view.ts_}")
+                newLine()
+            }
+
+            // 減算リストのデータをCSVファイルに書き込み
+            for (index in 1..myDeductionList.size()) {
+                val dd: Deduction = myDeductionList.get(index)
+                val pointAtRealscale = dd.point.scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
+                val pointFlagAtRealscale = dd.pointFlag.scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
+
+                writer.write("Deduction,${dd.num},${dd.name},${dd.lengthX},${dd.lengthY},${dd.parentNum},${dd.type},${dd.angle},${pointAtRealscale.x},${pointAtRealscale.y},${pointFlagAtRealscale.x},${pointFlagAtRealscale.y},${dd.shapeAngle}")
+                writer.newLine()
+            }
+
+            // すべての書き込みが成功したらtrueを返す
+            true
+        } catch (e: Exception) {
+            // 例外が発生した場合はエラーをログに記録し、falseを返す
+            e.printStackTrace()
+            false
+        } finally {
+            // BufferedWriterを安全にクローズ
+            try {
+                writer.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
         }
-
-        writer.write("ListAngle, " + myTriangleList.angle)
-        writer.newLine()
-        writer.write("ListScale, " + myTriangleList.scale)
-        writer.newLine()
-        writer.write("TextSize, " + my_view.ts_)
-        writer.newLine()
-
-        for(index in 1 .. myDeductionList.size()){
-            val dd: Deduction = myDeductionList.get(index)
-            val pointAtRealscale = dd.point.scale(
-                PointXY(
-                    0f,
-                    0f
-                ), 1 / mScale, -1 / mScale)
-            val pointFlagAtRealscale = dd.pointFlag.scale(
-                PointXY(
-                    0f,
-                    0f
-                ), 1 / mScale, -1 / mScale)
-            dd.scale(PointXY(0f, 0f), 1f, -1f)
-            writer.write(
-                "Deduction, " +              //0
-                        dd.num.toString() + ", " +         //1
-                        dd.name + ", " +                   //2
-                        dd.lengthX.toString() + ", " +     //3
-                        dd.lengthY.toString() + ", " +     //4
-                        dd.parentNum.toString() + ", " +   //5
-                        dd.type + ", " +        //6
-                        dd.angle.toString() + ", " +       //7
-                        pointAtRealscale.x.toString() + ", " +     //8
-                        pointAtRealscale.y.toString() + ", " +     //9
-                        pointFlagAtRealscale.x.toString() + ", " + //10
-                        pointFlagAtRealscale.y.toString() + ", " + //11
-                        dd.shapeAngle.toString()        //12
-            )
-            writer.newLine()
-            dd.scale(PointXY(0f, 0f), 1f, -1f)
-        }
-        writer.close()
     }
 
-    private fun saveCSVtoPrivate(filename: String = "privateTriList.csv" ){
+    val PrivateCSVFileName = "privateTrilist.csv"
+
+    private fun saveCSVtoPrivate(filename: String = PrivateCSVFileName): Boolean{
+        if( isCSVsavedToPrivate ) return true //既に保存済み
         try {
             setTitles()
 
             val writer = BufferedWriter(
                 OutputStreamWriter(openFileOutput(filename, MODE_PRIVATE), "Shift-JIS"))
+
             saveCSV(writer)
-            Log.d("FileLoader", "save CSV to Private is:"  + myTriangleList )
+            // 結果をログに出力
+            logFilePreview(PrivateCSVFileName, "saveCSVtoPrivate")
+
+
+            return true
         } catch (e: IOException) {
             e.printStackTrace()
+            return false
         }
 
         // 広告の再表示
@@ -2753,31 +2786,6 @@ class MainActivity : AppCompatActivity(),
 
     }
 
-    private fun resumeCSV() {
-        StringBuilder()
-        try {
-            val reader = openFileAsBufferedReader("privateTriList.csv")
-
-            val parseResult = reader?.let { parseCSV(it) }  // parseCSVの結果を一時変数に格納
-            if (parseResult == false) createNew()  // 結果がfalseの場合はcreateNewを呼び出す
-
-            // parseCSVの結果をログに出力
-            Log.d("FileLoader", "parseCSV result: $parseResult")
-
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-    }
-
-    fun openFileAsBufferedReader( fileName: String, encoding: String = "Shift-JIS", context: Context = this ): BufferedReader? {
-        return try {
-            val inputStream = context.openFileInput(fileName)  // 'context'は現在のContextオブジェクト
-            BufferedReader(InputStreamReader(inputStream, encoding))
-        } catch (e: IOException) {
-            e.printStackTrace()
-            null
-        }
-    }
 
     private fun openDocumentPicker() {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
@@ -2799,6 +2807,16 @@ class MainActivity : AppCompatActivity(),
         }
 
         loadContent.launch( intent )
+    }
+
+    fun openFileAsBufferedReader( fileName: String, encoding: String = "Shift-JIS", context: Context = this ): BufferedReader? {
+        return try {
+            val inputStream = context.openFileInput(fileName)  // 'context'は現在のContextオブジェクト
+            BufferedReader(InputStreamReader(inputStream, encoding))
+        } catch (e: IOException) {
+            e.printStackTrace()
+            null
+        }
     }
 
     private fun parseCSV(reader: BufferedReader) :Boolean{
@@ -3085,6 +3103,35 @@ class MainActivity : AppCompatActivity(),
         flipDeductionMode()
         //printDebugConsole()
         return true
+    }
+
+    private fun resumeCSV() {
+        StringBuilder()
+        try {
+            val reader = openFileAsBufferedReader(PrivateCSVFileName)
+
+            val parseResult = reader?.let { parseCSV(it) }  // parseCSVの結果を一時変数に格納
+            if (parseResult == false) createNew()  // 結果がfalseの場合はcreateNewを呼び出す
+
+            // 結果をログに出力
+            logFilePreview(PrivateCSVFileName, "resumeCSV")
+
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+    }
+
+    fun Context.logFilePreview(filePath: String, callerMethodName: String = "UnknownCaller") {
+        val file = File(this.filesDir, filePath)
+        if (!file.exists() || !BuildConfig.DEBUG ) {
+            Log.d("FileLoader", "$callerMethodName: File not found: $filePath")
+            return
+        }
+
+        file.bufferedReader( charset("Shift_JIS") ).useLines { lines ->
+            val logContent = lines.take(10).joinToString(separator = "\n")
+            Log.d("FileLoader", "$callerMethodName: Preview of $filePath:\n$logContent")
+        }
     }
 
     //endregion

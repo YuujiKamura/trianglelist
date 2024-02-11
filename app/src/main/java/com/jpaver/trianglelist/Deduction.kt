@@ -251,6 +251,8 @@ class Deduction(var num: Int = 0,
 
         distanceInPCA = tri.pointCA_.lengthTo( point )
 
+        pointFlag = tri.pointMiddleOuterUnconnecterdSide(pointFlag, 0.5f)
+
         return true
     }
 }

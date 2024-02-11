@@ -857,6 +857,11 @@ public class TriangleList extends EditList implements Cloneable {
         return (float)(Math.round( listByColor.getArea() * 100.0 ) * 0.01 );
     }
 
+    public String getInfo() {
+        String angle = String.valueOf(getAngle());
+        String area = String.valueOf(getArea());
+        return "Trilist- num:" + trilist_.size() + " angle:" + angle + " area:" + area;
+    }
 
     public void addOutlinePoint(PointXY pt, String str, ArrayList<PointXY> olp, Triangle node){
         if( node != null && notHave(pt, olp)){
