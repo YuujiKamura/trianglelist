@@ -1,9 +1,6 @@
 package com.jpaver.trianglelist
 
 import android.util.Log
-import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.jpaver.trianglelist.util.EditTextViewLine
-import com.jpaver.trianglelist.util.EditorTable
 import com.jpaver.trianglelist.util.Params
 
 class MainViewModel {
@@ -13,13 +10,13 @@ class MainViewModel {
     var myDeductionList = DeductionList()
     private var trilistUndo = TriangleList()
 
-    private var myEditor: EditorTable = EditorTable()
-    private var dParams: Params = Params("", "", 0, 0f, 0f, 0f, 0, 0,
-        PointXY(0f, 0f)
-    )
+    //private var myEditor: EditorTable = EditorTable()
+    //private var dParams: Params = Params("", "", 0, 0f, 0f, 0f, 0, 0,
+     //   PointXY(0f, 0f)
+    //)
 
-    private lateinit var myELFirst: EditTextViewLine
-    private lateinit var myELSecond: EditTextViewLine
+    //private lateinit var myELFirst: EditTextViewLine
+    //private lateinit var myELSecond: EditTextViewLine
 
     fun setMember( dedMode: Boolean, triList: TriangleList, dedList: DeductionList){
         deductionMode = dedMode
@@ -32,66 +29,6 @@ class MainViewModel {
         else myTriangleList
     }
 
-    fun fabReplace(params: Params = dParams, useit: Boolean = false, strTop: Triple<String,String,String> ){
-        //val editor = myEditor
-        val dedmode = deductionMode
-        val editlist = getList(deductionMode)
-
-        var readedFirst  = Params()
-        var readedSecond = Params()
-        myEditor.readLineTo(readedFirst, myELFirst)
-        myEditor.readLineTo(readedSecond, myELSecond)
-        if(useit){
-            readedFirst = params
-            readedSecond = params
-        }
-
-        var usedDedPoint = params.pt.clone()
-
-        //var isSucceed = false
-
-        if(!dedmode) {
-
-            if( strTop.second == "" ) resetTrianglesBy(readedSecond)
-            else
-                if(strTop.third == "" && !useit) return
-                else  addTriangleBy(readedFirst)
-
-        } else { // if in deduction mode
-            //if (validDeduction(params) == false) return
-
-/*
-            usedDedPoint = if( strTop.first == "" ) {
-                resetDeductionsBy(readedSecond)
-                my_view.myDeductionList.get(readedSecond.n).point
-            } else{
-                addDeductionBy(readedFirst)
-                my_view.myDeductionList.get(readedFirst.n).point
-            }
-            findViewById<EditText>(R.id.editName1).requestFocus()*/
-        }
-/*
-        editorClear(editlist, editlist.getCurrent())
-        my_view.setTriangleList(myTriangleList, mScale)
-        my_view.setDeductionList(myDeductionList, mScale)
-        printDebugConsole()
-        autoSaveCSV()
-        setTitles()
-        if(!dedmode) my_view.resetView(my_view.toLastTapTriangle())
-        if(dedmode) my_view.resetView(usedDedPoint.scale(
-            PointXY(
-                0f,
-                0f
-            ), 1f, -1f))//resetViewToTP()
-
-        my_view.myTriangleList.isDoubleTap_ = false
-        my_view.myTriangleList.lastTapSide_ = 0
-*/
-    }
-
-    private fun setFabColor(fab: FloatingActionButton, colorIndex: Int ){
-        //fab.backgroundTintList = getColorStateList( colorIndex )
-    }
 
     private fun trilistSaving( from: TriangleList ){
         trilistUndo = from.clone()

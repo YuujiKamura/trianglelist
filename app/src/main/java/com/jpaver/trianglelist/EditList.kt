@@ -10,18 +10,18 @@ open class EditList :Cloneable {
     open var basepoint = PointXY(0f, 0f)
 
     public override fun clone() :Any { return super.clone() }
-    open fun getCurrent() :Int { return 0 }
-    open fun setCurrent(i: Int) {}
-    open fun addCurrent(i: Int) :Int { return 0 }
-    open fun getParams(i: Int) : Params { return Params( )
+    open fun retrieveCurrent() :Int { return 0 }
+    //open fun setCurrent(i: Int) {}
+    open fun addCurrent(num: Int) :Int { return 0 }
+    open fun getParams(num: Int) : Params { return Params( )
     }
-    open fun remove(i: Int) {}
+    open fun remove(num: Int) {}
 
     open fun reverse(): EditList{ return this }
     open fun size() :Int { return 0 }
-    open fun get(number: Int) : EditObject {
+    open fun get(num: Int) : EditObject {
         //if( list_.size > number ) return null
-        return list[number - 1]!!
+        return list[num - 1]!!
     }
     open fun getArea(): Float { return 0f }
 }

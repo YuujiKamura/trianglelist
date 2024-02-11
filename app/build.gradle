@@ -9,8 +9,8 @@ android {
         applicationId "com.jpaver.myapplication"
         minSdkVersion 26
         targetSdkVersion 34
-        versionCode 1305
-        versionName "7.04"
+        versionCode 1306
+        versionName "7.05"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -29,9 +29,7 @@ android {
     }
 
     sourceSets {
-        dev {
-            java.srcDirs = ['src/full/java']
-        }
+
         free {
             java.srcDirs = ['src/free/java']
         }
@@ -48,7 +46,7 @@ android {
             resConfigs 'jp', 'xxhdpi'
 
             // The following configuration limits the "dev" flavor to using
-            // English stringresources and xxhdpi screen-density resources.
+            // English string-resources and xxhdpi screen-density resources.
             dimension "mode"
             applicationId "com.jpaver.myapplication"
         }
@@ -80,7 +78,7 @@ android {
         jvmTarget = "11"
     }
     androidResources {
-        noCompress 'pdf'
+        //noCompress 'pdf'
     }
     namespace 'com.jpaver.trianglelist'
     buildFeatures {

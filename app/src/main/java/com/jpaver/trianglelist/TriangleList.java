@@ -350,9 +350,9 @@ public class TriangleList extends EditList implements Cloneable {
     }
 
     @Override
-    public int getCurrent(){return current;}
+    public int retrieveCurrent(){return current;}
 
-    @Override
+
     public void setCurrent(int c){current = c;}
 
     public boolean validTriangle(Triangle tri){

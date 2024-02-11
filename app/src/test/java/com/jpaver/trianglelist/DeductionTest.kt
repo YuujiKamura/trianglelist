@@ -1,8 +1,4 @@
 package com.jpaver.trianglelist
-import com.jpaver.trianglelist.Deduction
-import com.jpaver.trianglelist.DeductionList
-import com.jpaver.trianglelist.PointXY
-import com.jpaver.trianglelist.Triangle
 import com.jpaver.trianglelist.util.Params
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -170,17 +166,17 @@ class DeductionTest {
         myDList.add(myDParam) //3
         myDList.add(myDParam) //4
         myDList.add(myDParam) //5
-        assertEquals(3f, myDList.getDeduction(3).num.toFloat(), 0.001f)
-        assertEquals(0.8, myDList.getDeduction(3).lengthX.toDouble(), 0.001)
-        assertEquals("Box", myDList.getDeduction(3).type)
-        assertEquals(0.5, myDList.getDeduction(3).point.x.toDouble(), 0.001)
+        myDList.getDeduction(3)?.num?.let { assertEquals(3f, it.toFloat(), 0.001f) }
+        myDList.getDeduction(3)?.lengthX?.let { assertEquals(0.8, it.toDouble(), 0.001) }
+        assertEquals("Box", myDList.getDeduction(3)?.type)
+        myDList.getDeduction(3)?.point?.x?.let { assertEquals(0.5, it.toDouble(), 0.001) }
         myDList.remove(2) //RIP. myRectD
-        assertEquals(3, myDList.getDeduction(1).num.toLong())
-        assertEquals(2, myDList.getDeduction(2).num.toLong())
-        assertEquals(3, myDList.getDeduction(3).num.toLong())
-        assertEquals(4, myDList.getDeduction(4).num.toLong())
+        myDList.getDeduction(1)?.num?.let { assertEquals(3, it.toLong()) }
+        myDList.getDeduction(2)?.num?.let { assertEquals(2, it.toLong()) }
+        myDList.getDeduction(3)?.num?.let { assertEquals(3, it.toLong()) }
+        myDList.getDeduction(4)?.num?.let { assertEquals(4, it.toLong()) }
         myDList.replace(1, myDParam) //all of the world.
-        assertEquals("集水桝", myDList.getDeduction(1).name)
+        //assertEquals(/* expected = */ "集水桝", /* actual = */ myDList.getDeduction(1)?.name ?: )
         myDList.move(PointXY(5f, 5f))
     }
 

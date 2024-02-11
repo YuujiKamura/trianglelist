@@ -54,7 +54,7 @@ class EditorTable {
     fun scroll(movement: Int, myList: EditList, secondly: EditTextViewLine, thirdly: EditTextViewLine){
         val max: Int = myList.size()
         val min = 1
-        var current: Int = myList.getCurrent()
+        var current: Int = myList.retrieveCurrent()
         Keys(secondly.n.keyListener, secondly.name.keyListener, secondly.a.keyListener, secondly.b.keyListener, secondly.c.keyListener, secondly.pn.keyListener)
         Keys(thirdly.n.keyListener, thirdly.name.keyListener, thirdly.a.keyListener, thirdly.b.keyListener, thirdly.c.keyListener, thirdly.pn.keyListener)
         //keys = setKeyListener(keys, thirdly)

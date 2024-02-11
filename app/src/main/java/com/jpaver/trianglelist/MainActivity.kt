@@ -1063,7 +1063,7 @@ class MainActivity : AppCompatActivity(),
 
 
     private fun flipDeductionMode() {
-        myDeductionList.setCurrent(myDeductionList.size())
+        myDeductionList.current = myDeductionList.size()
         myTriangleList.setCurrent(myTriangleList.size())
         //printDebugConsole()
         colorMovementFabs()
@@ -1168,7 +1168,7 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun editorResetBy(elist: EditList){
-        val currentNum = elist.getCurrent()
+        val currentNum = elist.retrieveCurrent()
         val eo = elist.get(currentNum)
         val eob = elist.get(currentNum - 1)
 
@@ -1512,7 +1512,7 @@ class MainActivity : AppCompatActivity(),
             try{
                 if(!deductionMode) my_view.resetViewToLastTapTriangle()
                 else if( myDeductionList.size() > 0 ){
-                    val currentIndex = my_view.myDeductionList.getCurrent()
+                    val currentIndex = my_view.myDeductionList.current
                     my_view.resetView(
                         my_view.myDeductionList.get(currentIndex).point.scale(
                             PointXY(
@@ -1532,8 +1532,8 @@ class MainActivity : AppCompatActivity(),
 
             if(!deductionMode) moveTrilist()
             else if( myDeductionList.size() > 0 ){
-                my_view.myDeductionList.setCurrent(myDeductionList.getCurrent())
-                val currentIndex = my_view.myDeductionList.getCurrent()
+                my_view.myDeductionList.current = myDeductionList.current
+                val currentIndex = my_view.myDeductionList.current
                 my_view.resetView(
                     my_view.myDeductionList.get(currentIndex).point.scale(
                         PointXY(
@@ -1554,8 +1554,8 @@ class MainActivity : AppCompatActivity(),
 
             if(!deductionMode) moveTrilist()
             else if( myDeductionList.size() > 0 ){
-                my_view.myDeductionList.setCurrent(myDeductionList.getCurrent())
-                val currentIndex = my_view.myDeductionList.getCurrent()
+                my_view.myDeductionList.current = myDeductionList.current
+                val currentIndex = my_view.myDeductionList.current
                 my_view.resetView(
                     my_view.myDeductionList.get(currentIndex).point.scale(
                         PointXY(
@@ -1774,15 +1774,15 @@ class MainActivity : AppCompatActivity(),
 
 
     private fun moveTrilist(){
-        my_view.getTriangleList().setCurrent(myTriangleList.getCurrent())
-        my_view.myTriangleList.lastTapNumber_ = myTriangleList.getCurrent()
-        myTriangleList.lastTapNumber_ = myTriangleList.getCurrent()
+        my_view.getTriangleList().setCurrent(myTriangleList.retrieveCurrent())
+        my_view.myTriangleList.lastTapNumber_ = myTriangleList.retrieveCurrent()
+        myTriangleList.lastTapNumber_ = myTriangleList.retrieveCurrent()
         my_view.resetViewToLastTapTriangle()
     }
 
     private fun colorMovementFabs() : Int{
     val max: Int = getList(deductionMode).size()
-    val current: Int = getList(deductionMode).getCurrent()
+    val current: Int = getList(deductionMode).retrieveCurrent()
     val min = 1
     var movable = 0
     //fab_zoomin.setBackgroundTintList(getColorStateList(R.color.colorSky))
@@ -1808,48 +1808,91 @@ class MainActivity : AppCompatActivity(),
 
     return movable
 }
+    // Params インスタンスの中身をログに出力する関数
+    private fun logParams(params: Params, tag: String = "ParamsLog") {
+        val paramsContents = with(params) {
+            """
+        |name: $name
+        |type: $type
+        |n: $n
+        |a: $a
+        |b: $b
+        |c: $c
+        |pn: $pn
+        |pl: $pl
+        |pt: (${pt.x}, ${pt.y})
+        |pts: (${pts.x}, ${pts.y})
+        """.trimMargin()
+        }
+        Log.d(tag, paramsContents)
+    }
 
     private fun addDeductionBy(params: Params) : Boolean {
+        if (!validDeduction(params)) {
+            Log.d( "Deduction", "invalid parameters" )
+            logParams(params, "add Dedution")
+            return false
+        }
+
+        // 所属する三角形の判定処理
+        myDeductionList.add( processDeduction(params) )
+        my_view.setDeductionList(myDeductionList, mScale)
+        lastParams = params
+        return true
+
+    }
+
+
+    private fun processDeduction(params: Params): Params {
         params.pt = my_view.getTapPoint()
         params.pts = params.pt //PointXY(0f, 0f)
-        params.pn = my_view.myTriangleList.isCollide(dParams.pt.scale(
-            PointXY(
-                1f,
-                -1f
-            )
-        ))
 
         //形状の自動判定
         if( params.b > 0f ) params.type = "Box"
         else params.type = "Circle"
 
-        if (validDeduction(params)) {
-            // 所属する三角形の判定処理
-            if( params.pt != PointXY(0f, 0f)) {
-                params.pn = my_view.myTriangleList.isCollide(params.pt.scale(
+        // 所属する三角形の判定処理
+        if (params.pt != PointXY(0f, 0f)) {
+            params.pn = my_view.myTriangleList.isCollide(
+                params.pt.scale(
                     PointXY(
                         1f,
                         -1f
                     )
-                ))
+                )
+            )
 
-                if( params.pn != 0 ) {
-                    my_view.myTriangleList.dedmapping(myDeductionList, -1)
-                    Log.d( "DeductionList", "ptri dedcount" + my_view.myTriangleList.get(params.pn).dedcount )
-                    Log.d( "DeductionList", "params.pts" + params.pts.x + ", " + params.pts.y )
+            if (params.pn != 0) {
+                my_view.myTriangleList.dedmapping(myDeductionList, -1)
+                Log.d(
+                    "Deduction",
+                    "ptri dedcount" + my_view.myTriangleList.get(params.pn).dedcount
+                )
 
-                    val trilistinview = my_view.myTriangleList
-                    val ptri = trilistinview.get(params.pn)
-                    params.pts = ptri.hataage(params.pt, 30f, -1f, params.n.toFloat() )
-                }
+                val trilistinview = my_view.myTriangleList
+                val parentTriangle = trilistinview.get(params.pn)
+                Log.d("Deduction", "parentTriangle:" + parentTriangle.getInfo() )
+                params.pts = parentTriangle.pointMiddleOuterUnconnecterdSide(params.pts, 0.5f)
+                //params.pts = ptri.hataage(params.pt, 30f, -1f, params.n.toFloat() )
+                Log.d("Deduction", "params.pts" + params.pts.x + ", " + params.pts.y)
             }
 
-            myDeductionList.add(params)
-            my_view.setDeductionList(myDeductionList, mScale)
-            lastParams = params
-            return true
         }
-        else return false
+        return params
+    }
+
+    private fun resetDeductionsBy(params: Params) : Boolean {
+        if (!validDeduction(params)) {
+            Log.d( "Deduction", "invalid parameters" )
+            logParams(params, "reset Dedution")
+            return false
+        }
+
+        //myTriangleList.current = params.pn
+
+        // 所属する三角形の判定処理
+        myDeductionList.replace(params.n, processDeduction(params) )
+        return true
     }
 
     private fun setFabColor(fab: FloatingActionButton, colorIndex: Int ){
@@ -1903,40 +1946,7 @@ class MainActivity : AppCompatActivity(),
         else false
     }
 
-    private fun resetDeductionsBy(params: Params) : Boolean {
-        //myEditor.ReadLineTo(prms, myELSecond)
-        params.pt = my_view.getTapPoint()
-        params.pts = myDeductionList.get(params.n).pointFlag
 
-        myTriangleList.current = params.pn
-
-        if(validDeduction(params)) {
-            // 所属する三角形の判定処理
-            if( params.pt != PointXY(0f, 0f)) {
-                params.pn = my_view.myTriangleList.isCollide(params.pt.scale(
-                    PointXY(
-                        1f,
-                        -1f
-                    )
-                ))
-
-                if( params.pn != 0 ) {
-                    my_view.myTriangleList.dedmapping(myDeductionList, -1)
-                    Log.d( "DeductionList", "ptri dedcount" + my_view.myTriangleList.get(params.pn).dedcount )
-                    Log.d( "DeductionList", "params.pts" + params.pts.x + ", " + params.pts.y )
-
-                    val ptri = my_view.myTriangleList.get(params.pn)
-                    params.pts = ptri.hataage(params.pt, 30f, -1f, params.n.toFloat() )
-                    myTriangleList.lastTapNumber_ = params.pn
-                }
-
-            }
-
-            myDeductionList.replace(params.n, params)
-            return true
-        }
-        else return false
-    }
 //endregion
 
 
@@ -2021,14 +2031,15 @@ class MainActivity : AppCompatActivity(),
         if(deductionMode){
 
             my_view.myDeductionList.setScale(my_view.myScale)
-            my_view.myDeductionList.getTapIndex(my_view.pressedInModel)
+            val lasttap = my_view.myDeductionList.getTapIndex(my_view.pressedInModel)
+            Log.d("Deduction", "lasttap:"+lasttap )
 
             if ( my_view.myDeductionList.lastTapIndex_ > -1 ) {
                 val tapIndex = my_view.myDeductionList.lastTapIndex_+1
                 if( -1 < tapIndex ) {
                     //Toast.makeText(this, "deduction tap", Toast.LENGTH_SHORT).show()
                     myEditor.scroll(
-                            tapIndex - myDeductionList.getCurrent(),
+                            tapIndex - myDeductionList.current,
                             getList(deductionMode), myELSecond, myELThird
                     )
                     //my_view.resetView( my_view.myDeductionList.get( tapIndex ).point.scale( PointXY(1f,-1f ) ) )
@@ -2042,14 +2053,14 @@ class MainActivity : AppCompatActivity(),
                         0f,
                         0f
                     ), 1f, -1f),
-                0.8f / zoomsize
+                0.4f / zoomsize
             )
-            if ( trilistV.lastTapNumber_ != 0 ) {
+            if ( trilistV.lastTapNumber_ != 0 )
                 if( trilistV.lastTapSide_ == 3 ) my_view.resetViewToLastTapTriangle()
-            }
+
 
         }
-        else {
+        else { // edit triangle
             updateElStrings()
             my_view.setWatchedStrings(elsa1,elsb1,elsc1,elsa2,elsb2,elsc2)
 

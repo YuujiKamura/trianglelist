@@ -694,7 +694,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         }
 
         if( myTriangleList.lastTapNumber_ < 1 ) myTriangleList.lastTapNumber_ = myTriangleList.size()
-        val shadowParent = myTriangleList.get(number = myTriangleList.lastTapNumber_ )
+        val shadowParent = myTriangleList.get(myTriangleList.lastTapNumber_ )
         val shadowTapSide = myTriangleList.lastTapSide_
 
         //番号選択されてるときは以下略。

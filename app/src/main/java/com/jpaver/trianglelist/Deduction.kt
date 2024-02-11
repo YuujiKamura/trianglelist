@@ -60,9 +60,7 @@ class Deduction(var num: Int = 0,
     var infoStr: String
     var typestring: String
     var typenum: Int
-
-    private var distanceInPCA = 0f
-
+    var tri: Triangle?  = null
 
     init{
 
@@ -80,6 +78,8 @@ class Deduction(var num: Int = 0,
             prt = PointXY(0f, 0f)
             prb = PointXY(0f, 0f)
         }
+
+        tri?.let { isCollide(it) } //旗上げ処理
 
         infoStr = getInfo()
     }
@@ -248,8 +248,6 @@ class Deduction(var num: Int = 0,
 
     fun isCollide( tri: Triangle): Boolean{
         if(!tri.isCollide( point )) return false
-
-        distanceInPCA = tri.pointCA_.lengthTo( point )
 
         pointFlag = tri.pointMiddleOuterUnconnecterdSide(pointFlag, 0.5f)
 
