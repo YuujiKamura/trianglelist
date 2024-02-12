@@ -1764,6 +1764,8 @@ class MainActivity : AppCompatActivity(),
 
         my_view.myTriangleList.isDoubleTap_ = false
         my_view.myTriangleList.lastTapSide_ = 0
+
+        logListCurrent()
         /*if( BuildConfig.BUILD_TYPE == "debug" ) Toast.makeText(
                 this,
                 isSucceed.toString(),
@@ -1771,7 +1773,10 @@ class MainActivity : AppCompatActivity(),
         ).show()*/
     }
 
-
+    private fun logListCurrent(){
+        Log.d("UI -","my_view.trilist.current:"+my_view.myTriangleList.current)
+        Log.d("UI -","mainAct.trilist.current:"+myTriangleList.current)
+    }
 
     private fun moveTrilist(){
         my_view.getTriangleList().setCurrent(myTriangleList.retrieveCurrent())
@@ -1872,7 +1877,7 @@ class MainActivity : AppCompatActivity(),
                 val trilistinview = my_view.myTriangleList
                 val parentTriangle = trilistinview.get(params.pn)
                 Log.d("Deduction", "parentTriangle:" + parentTriangle.getInfo() )
-                params.pts = parentTriangle.pointMiddleOuterUnconnecterdSide(params.pts, 0.5f)
+                params.pts = parentTriangle.pointMiddleOuterUnconnecterdSide(params.pt, 0.5f)
                 //params.pts = ptri.hataage(params.pt, 30f, -1f, params.n.toFloat() )
                 Log.d("Deduction", "params.pts" + params.pts.x + ", " + params.pts.y)
             }

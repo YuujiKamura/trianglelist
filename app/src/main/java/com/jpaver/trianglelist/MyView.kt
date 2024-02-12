@@ -456,7 +456,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     fun getTriangleList() : TriangleList { return myTriangleList }
 
     fun setDeductionList(dedlist: DeductionList, scale: Float){
-        dedlist.lastTapIndex_ = myDeductionList.lastTapIndex_ //逆に状態をコピー
+        dedlist.lastTapIndex_ = myDeductionList.lastTapIndex_ //逆に状態をコピー?
         myDeductionList = dedlist.clone()
         myDeductionList.setScale( scale )
 
