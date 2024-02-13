@@ -34,7 +34,7 @@
     <string name = "editor_syozoku">tilheyr</string>
     <string name = "editor_form">lögun</string>
     <string name = "editor_koujyo"> frádráttur </string>
-    <string name = "credit"> ※ Þessi teikning var búin til með snjallsímaforritinu "Triangle List". </string>
+    <string name = "credit">http://trianglelist.home.blog</string>
 
     <string name = "rosen1"> leið 1 </string>
     <string name = "savecurrent"> Viltu vista núverandi mynd? </string>
@@ -43,7 +43,7 @@
     <string name = "inputdnum"> Þú getur slegið inn teikninúmerið </string>
     <string name = "inputaname"> Þú getur slegið inn nafn verktaka (getur verið autt) </string>
     <string name = "space"> Línubrot með bilum. </string>
-    <string name = "inputtnum"> Þú getur slegið inn upphafsnúmer þríhyrningsins </string>
+    <string name = "hintInputTriNumber"> Þú getur slegið inn upphafsnúmer þríhyrningsins </string>
 
 
     <!-- Strengir notaðir fyrir brot til siglingar -->
@@ -84,5 +84,7 @@
         <item> CF </item>
     </string-array>
     <string name="action_save_sfc" translatable="false">"SFC framleiðsla "</string>
-    <string name="action_usage" translatable="false">Hjálp</string>
+    <string name="action_usage" translatable="false">Leiðbeiningar bæklingur</string>
+    <string name="action_privacy">Friðhelgisstefna</string>
+    <string name="action_save_xlsx">"Xlsx framleiðsla "</string>
 </resources>

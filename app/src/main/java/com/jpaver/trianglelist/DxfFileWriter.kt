@@ -1,11 +1,9 @@
 package com.jpaver.trianglelist
 
-import android.os.Build
 import android.util.Log
-import androidx.annotation.RequiresApi
 import java.io.BufferedWriter
 
-class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
+class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
     override var trilist_ = trilist
     //override lateinit var dedlist_: DeductionList// = deductionList
 
@@ -27,13 +25,12 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
 
     private var entityHandle = 100
 
-    override var cWhite_ = 7
-    override var cBlue_ = 5
+    override var iWhite_ = 7
+    override var iBlue_ = 5
     override var cRed_ = 1
 
     var activeLayer = "0"
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun save(){
 
         writeHeader()
@@ -47,7 +44,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
 
     }
 
-    fun alignVByVector(num: Int, p1: PointXY, p2: PointXY ): Int{
+    fun alignVByVector(num: Int, p1: PointXY, p2: PointXY): Int{
         // 垂直方向の文字位置合わせタイプ(省略可能、既定 = 0): 整数コード(ビットコードではありません):
         // 0 = 基準線、1 = 下、2 = 中央、3 = 上
         // ベクトルの方向でB,Cを表現するなら
@@ -57,17 +54,16 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         // ただし、Triangleで外(1)を指定しているときは、そちらを優先したい。
         // 正の時は上３が外、負の時は下１が外。
         val isVectorRight = p1.vectorTo(p2).side()
-        if( num == 1 ){
-            if(  isVectorRight >= 0 ) return 1
-            if(  isVectorRight <  0 ) return 3
+
+        // 'num == 1' の場合のみ特別な処理を行い、それ以外は基本的なルールに従う
+        if (num == 1) {
+            // 'isVectorRight >= 0' の場合、1 を返し、そうでなければ 3 を返す
+            return if (isVectorRight >= 0) 1 else 3
         }
 
-        // 基本は内側。正の時は下1が内、負の時は上3が内。
-        if(  isVectorRight >= 0 ) return 3
-        if(  isVectorRight <  0 ) return 1
+        // 'num != 1' の場合、'isVectorRight >= 0' であれば 3 を、そうでなければ 1 を返す
+        return if (isVectorRight >= 0) 3 else 1
 
-
-        return num
     }
 
     override fun writeTriangle(tri: Triangle){
@@ -81,19 +77,19 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
 
         //if( tri.myAngle_ > 90 ) dimA = 1
         //if( tri.myAngle_ > 270 ) dimA = 3
-        val dimA = alignVByVector(tri.myDimAlignA_, pca, pab)
-        val dimB = alignVByVector(tri.myDimAlignB_, pab, pbc)//flip(tri.myDimAlignB_, tri.dimAngleB_ )
-        val dimC = alignVByVector(tri.myDimAlignC_, pbc, pca)//flip(tri.myDimAlignC_, tri.dimAngleC_ )
+        val tateAlignDimA = alignVByVector(tri.myDimAlignA_, pca, pab)
+        val tateAlignDimB = alignVByVector(tri.myDimAlignB_, pab, pbc)//flip(tri.myDimAlignB_, tri.dimAngleB_ )
+        val tateAlignDImC = alignVByVector(tri.myDimAlignC_, pbc, pca)//flip(tri.myDimAlignC_, tri.dimAngleC_ )
 
-        var la = tri.lengthAforce_.formattedString(2)
-        var lb = tri.lengthBforce_.formattedString(2)
-        var lc = tri.lengthCforce_.formattedString(2)
+        var nagasaA = tri.lengthAforce_.formattedString(2)
+        var nagasaB = tri.lengthBforce_.formattedString(2)
+        var nagasaC = tri.lengthCforce_.formattedString(2)
 
 
         if(isDebug){
-            la += "-$dimA"
-            lb += "-$dimB"
-            lc += "-$dimC"
+            nagasaA += "-$tateAlignDimA"
+            nagasaB += "-$tateAlignDimB"
+            nagasaC += "-$tateAlignDImC"
         }
 
         // TriLines
@@ -103,9 +99,18 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
 
         // DimTexts
         if( tri.getMyNumber_() == 1 || tri.parentBC > 2)
-            writeTextDimension(dimA, la, tri.dimPointA_, pab.calcDimAngle(pca))
-        writeTextDimension(dimB, lb, tri.dimPointB_, pbc.calcDimAngle(pab))
-        writeTextDimension(dimC, lc, tri.dimPointC_, pca.calcDimAngle(pbc))
+            writeTextDimension(tateAlignDimA, nagasaA, tri.dimPointA_, pab.calcDimAngle(pca))
+        writeTextDimension(tateAlignDimB, nagasaB, tri.dimPointB_, pbc.calcDimAngle(pab))
+        writeTextDimension(tateAlignDImC, nagasaC, tri.dimPointC_, pca.calcDimAngle(pbc))
+
+        // DimTextの旗上げ
+        val tPathA = tri.pathA_
+        val tPathB = tri.pathB_
+        val tPathC = tri.pathC_
+        if(tPathA.alignSide > 2) writeLine( tPathA.pointA, tPathA.pointB, 7)
+        if(tPathB.alignSide > 2) writeLine( tPathB.pointA, tPathB.pointB, 7)
+        if(tPathC.alignSide > 2) writeLine( tPathC.pointA, tPathC.pointB, 7)
+
 
         // 番号
         val pn = tri.pointNumberAutoAligned_
@@ -254,6 +259,8 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
                 $activeLayer
                 100
                 AcDbLine
+                370
+                13
                 10
                 $ax
                 20
@@ -293,6 +300,8 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
             $activeLayer
             62
             $color
+            370
+            13
             100
             AcDbCircle
             10
@@ -318,7 +327,7 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         writeLine( p1, p2, 1)
     }
 
-    override fun writeDeduction( ded: Deduction ){
+    override fun writeDeduction( ded: Deduction){
 
         //val ded = dedlist_.get( dednumber )
         val textSize = textscale_
@@ -362,7 +371,6 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         writeLine( ded.plb, ded.prb, color)
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun writeEntities(){
 
         // 最初に書く
@@ -378,12 +386,25 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         val myDXFDedList = dedlist_.clone()
 
         // Ｙ軸方向反転、かつビュースケールで割り戻して大きさをtriListと揃える。
-        myDXFDedList.scale(PointXY(0f,0f),1/ viewscale_,-1/ viewscale_)
+        myDXFDedList.scale(PointXY(0f, 0f),1/ viewscale_,-1/ viewscale_)
 
-        val center = PointXY(21f*printscale_, 14.85f*printscale_)
+        val center = PointXY(
+            21f * printscale_,
+            14.85f * printscale_
+        )
         val tricenter = myDXFTriList.center
-        myDXFDedList.move(PointXY(center.x-tricenter.x,center.y-tricenter.y))
-        myDXFTriList.move(PointXY(center.x - tricenter.x, center.y - tricenter.y))
+        myDXFDedList.move(
+            PointXY(
+                center.x - tricenter.x,
+                center.y - tricenter.y
+            )
+        )
+        myDXFTriList.move(
+            PointXY(
+                center.x - tricenter.x,
+                center.y - tricenter.y
+            )
+        )
 
         var trilistNumbered = myDXFTriList.numbered( startTriNumber_ )
         if(isReverse_) {
@@ -403,33 +424,43 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
         val sixtytwo = arrayOf( 254, 254, 51, 254, 7)
         val color = arrayOf( RED, ORANGE, YELLOW, GREEN, BLUE )
 
-        val spritByColors = myDXFTriList.spritByColors()
-        for( index in 0 until spritByColors.size ){
+        val sprit = true
 
-            val outlineLists = spritByColors[index].outlineList_ //myDXFTriList.outlineList() //ArrayList<PointXY>()
+        if( sprit == true ){
+            val spritByColors = myDXFTriList.spritByColors()
+            for( index in 0 until spritByColors.size ){
 
-            for( index2 in 0 until outlineLists.size){
+                val outlineLists = spritByColors[index].outlineList_ //myDXFTriList.outlineList() //ArrayList<PointXY>()
 
-                if( outlineLists[index2].size > 0 ){
-                    writeDXFTriHatch(writer, outlineLists[index2], color[index], sixtytwo[index] )
-                    //writeDXFTriOutlines( writer, outlineLists[index2] )
+                for( index2 in 0 until outlineLists.size){
+
+                    if( outlineLists[index2].size > 0 ){
+                        writeDXFTriHatch(writer, outlineLists[index2], color[index], sixtytwo[index] )
+                        //writeDXFTriOutlines( writer, outlineLists[index2] )
+                    }
                 }
             }
-        }
 
-        for (index in 1 .. myDXFTriList.size()) {
-            writeTriangle(trilistNumbered.get(index))
-        }
+            for (index in 1 .. myDXFTriList.size()) {
+                writeTriangle(trilistNumbered.get(index))
+            }
 
-        for( index in 0 until spritByColors.size ){
+            for( index in 0 until spritByColors.size ){
 
-            val outlineLists = spritByColors[index].outlineList_ //myDXFTriList.outlineList() //ArrayList<PointXY>()
+                val outlineLists = spritByColors[index].outlineList_ //myDXFTriList.outlineList() //ArrayList<PointXY>()
 
-            for( index2 in 0 until outlineLists.size){
+                for( index2 in 0 until outlineLists.size){
 
-                if( outlineLists[index2].size > 0 ){
-                    writeDXFTriOutlines( writer, outlineLists[index2] )
+                    if( outlineLists[index2].size > 0 ){
+                        writeDXFTriOutlines( writer, outlineLists[index2] )
+                    }
                 }
+            }
+
+        }
+        else{
+            for (index in 1 .. myDXFTriList.size()) {
+                writeTriangle(trilistNumbered.get(index))
             }
         }
 
@@ -557,6 +588,8 @@ class DxfFileWriter( trilist: TriangleList ): DrawingFileWriter() {
             C-COL-COL1
             100
             AcDbPolyline
+            370
+            13
             90
             ${array.size}
             70

@@ -1,4 +1,4 @@
-package com.jpaver.trianglelist;
+package com.jpaver.trianglelist.util;
 
 import android.content.Context;
 import android.view.GestureDetector;

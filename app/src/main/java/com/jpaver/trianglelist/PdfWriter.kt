@@ -3,10 +3,11 @@ package com.jpaver.trianglelist
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
+import com.jpaver.trianglelist.util.TitleParamStr
 import java.io.OutputStream
 
 
-class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWriter() {
+class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWriter() {
     private val triangleList_ = triangleList
     lateinit var deductionList_: DeductionList
 
@@ -51,7 +52,7 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
     val pdfPageList = ArrayList<PdfDocument.Page>()
     lateinit var currentCanvas_: Canvas// = page_.canvas
     // トランスレート位置の保存
-    var viewPointer_ = PointXY(0f,0f)
+    var viewPointer_ = PointXY(0f, 0f)
 
     init{
         // 最初のページを作る。環境依存がありユニットテストできないので外す
@@ -86,7 +87,7 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
         viewPointer_.add(x,y) // rewrite viewPointer but..
     }
 
-    fun translateCenter(canvas: Canvas) {
+    fun translateCenter() {
         currentCanvas_.translate(sizeX_/2f,sizeY_/2f )
         viewPointer_.add( sizeX_/2f,sizeY_/2f )
     }
@@ -113,12 +114,11 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
     }
 
     fun writeAllCalcSheets() {
-        var triNumCounter = 0
         triangleList_. counter = 0
         deductionList_.counter = 0
 
         val maxinpage = 40
-        var pageCount = ( triangleList_.size().toDouble() / maxinpage )
+        val pageCount = ( triangleList_.size().toDouble() / maxinpage )
 //        if( pageCount < 0.1 ) pageCount *= 10
   //      if( pageCount < 0.4 ) pageCount *= 2
         //if( pageCount > 1 ) pageCount = 2f
@@ -128,7 +128,7 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
         for( i in 0 until pci ){
             startNewPage( p2sizeX_.toInt(), p2sizeY_.toInt(), currentPageIndex_ )
 
-            triNumCounter = writeAreaCalcSheet( triNumCounter ) // 面積計算書の描画
+            writeAreaCalcSheet() // 面積計算書の描画
 
             //現在のPageの編集を終了する。
             pdfDoc_.finishPage( pdfPageList[currentPageIndex_] )
@@ -163,7 +163,7 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
         return scale
     }
 
-    fun writeAreaCalcSheet( triNumCounter: Int ) : Int{
+    fun writeAreaCalcSheet(): Int{
         val scaleWeight = 2f
         val scaleHeight = 15f
 
@@ -173,34 +173,60 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
         currentCanvas_.drawText(rosenname_, p2sizeX_/2, 10f+(16f*scale2_)+(scaleHeight*scale2_), setPaint(7,5f*scale2_,1))
 
         // 外枠
-        writeRect( PointXY(p2sizeX_/2, p2sizeY_/2), p2sizeX_-(20*scale2_), p2sizeY_-(20*scale2_), 1f,7)
+        writeRect(
+            PointXY(
+                p2sizeX_ / 2,
+                p2sizeY_ / 2
+            ), p2sizeX_-(20*scale2_), p2sizeY_-(20*scale2_), 1f,7)
 
         // 面積合計
         var allArea = triangleList_.getArea()
 
-        var kei = rStr_.mSyoukei_ +" (1)"
-        if(deductionList_.size() == 0) kei = rStr_.mGoukei_
+        //var kei = rStr_.mSyoukei_ +" (1)"
+        //if(deductionList_.size() == 0) kei = rStr_.mGoukei_
 
 
 
         // 左側
         // Triangles
 
-        val TNC = writeEntities( triangleList_,  30f+(scaleWeight*scale2_), titleTri_, rStr_.mSyoukei_+" (1)", 7, triNumCounter )
+        val TNC = writeEntities(
+            triangleList_,
+            30f+(scaleWeight*scale2_),
+            titleTri_,
+            rStr_.mSyoukei_+" (1)",
+            7
+        )
 
         // 右側
         // Deductions
         if(deductionList_.size() > 0) {
-            writeEntities( deductionList_, 130f+(scaleWeight*scale2_),  titleDed_, rStr_.mSyoukei_+" (2)", 1, triNumCounter )
+            writeEntities(
+                deductionList_,
+                130f+(scaleWeight*scale2_),
+                titleDed_,
+                rStr_.mSyoukei_+" (2)",
+                1
+            )
             allArea -= deductionList_.getArea()
-            writeText( rStr_.mGoukei_ + " (1) - (2) ${allArea.formattedString(2)} m^2", PointXY(198f+(scale2_*scaleWeight),65f+(deductionList_.size()*7f)), scale2_, 7, 5f*scale2_, 2 )
+            writeText( rStr_.mGoukei_ + " (1) - (2) ${allArea.formattedString(2)} m^2",
+                PointXY(
+                    198f + (scale2_ * scaleWeight),
+                    65f + (deductionList_.size() * 7f)
+                ), scale2_, 7, 5f*scale2_, 2 )
 
         }
 
         return TNC
     }
 
-    fun writeEntities(list: EditList, xStart_: Float, sTitle : TitleParamStr, syoukei: String, color: Int, triNumCounter: Int ): Int {
+    private fun writeEntities(
+        list: EditList,
+        xStart_: Float,
+        sTitle: TitleParamStr,
+        syoukei: String,
+        color: Int
+    ): Int {
         if( list.counter >= list.size() ) return list.size()
 
         //s1: String, s2: String, s3: String, s4: String, s5: String, s6: String,
@@ -208,7 +234,7 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
         val s2 = sTitle.a
         val s3 = sTitle.b
         var s4 = sTitle.c
-        if( list is DeductionList ) s4 = sTitle.pl
+        if( list is DeductionList) s4 = sTitle.pl
 
         val s5 = sTitle.type
         val s6 = syoukei
@@ -225,7 +251,7 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
         val xar = xc + xPitch
 
         val maxinpage = 40
-        var writeBegin = list.counter
+        val writeBegin = list.counter
         var writeEnd   = list.counter + maxinpage
 
         if( list.size()  <  writeEnd ) writeEnd = list.size()
@@ -233,27 +259,36 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
         val listArea = list.getArea()
 
         // ヘッダーテーブル
-        writeText( s1, PointXY( xStart, yStart ), scale2_, color, ts*scale2_, 2 )
-        writeText( s2, PointXY( xa,     yStart ), scale2_, color, ts*scale2_, 2 )
-        writeText( s3, PointXY( xb,     yStart ), scale2_, color, ts*scale2_, 2 )
-        writeText( s4, PointXY( xc,     yStart ), scale2_, color, ts*scale2_, 2 )
-        writeText( s5, PointXY( xar,    yStart ), scale2_, color, ts*scale2_, 2 )
+        writeText( s1,
+            PointXY(xStart, yStart), scale2_, color, ts*scale2_, 2 )
+        writeText( s2,
+            PointXY(xa, yStart), scale2_, color, ts*scale2_, 2 )
+        writeText( s3,
+            PointXY(xb, yStart), scale2_, color, ts*scale2_, 2 )
+        writeText( s4,
+            PointXY(xc, yStart), scale2_, color, ts*scale2_, 2 )
+        writeText( s5,
+            PointXY(xar, yStart), scale2_, color, ts*scale2_, 2 )
 
         var ti = 0
         // エンティティ
         for( i in writeBegin until writeEnd ) {
-            writeEntity ( yStart + yHeadSpacer, list.counter, ti, xStart, list.get(i+1), color)
+            writeEntity (yStart + yHeadSpacer, ti, xStart, list.get(i+1), color)
             list.counter += 1
             ti += 1
         }
 
         // 小計
-        if( list.counter == list.size() ) writeText( s6+"   ${listArea} m^2", PointXY( xar,yStart + yHeadSpacer + ( ti*yPitch ) ), scale2_, color, ts*scale2_, 2 )
+        if( list.counter == list.size() ) writeText( s6+"   ${listArea} m^2",
+            PointXY(
+                xar,
+                yStart + yHeadSpacer + (ti * yPitch)
+            ), scale2_, color, ts*scale2_, 2 )
 
         return list.counter
     }
 
-    fun writeEntity(yStart: Float, index: Int, indexInPage: Int, xStart_: Float, entity: EditObject, color: Int){
+    fun writeEntity(yStart: Float, indexInPage: Int, xStart_: Float, entity: EditObject, color: Int){
         val ts = 5f
         val xPitch = 17f
         val yPitch = 7f
@@ -281,18 +316,24 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
 
         val area = entity.getArea().formattedString(2)
 
-        writeText( n, PointXY(xStart,yOffset), scale2_, color, ts*scale2_, 2 )
-        writeText( a, PointXY(xa,yOffset), scale2_, color, ts*scale2_, 2 )
-        if(entity is Deduction && tp.type == "Box") writeText( b, PointXY(xb,yOffset), scale2_, color, ts*scale2_, 2 )
-        if(entity !is Deduction ) writeText( b, PointXY(xb,yOffset), scale2_, color, ts*scale2_, 2 )
-        writeText( c, PointXY(xc,yOffset), scale2_, color, ts*scale2_, 2 )
-        writeText( area, PointXY(xar,yOffset), scale2_, color, ts*scale2_, 2 )
+        writeText( n,
+            PointXY(xStart, yOffset), scale2_, color, ts*scale2_, 2 )
+        writeText( a,
+            PointXY(xa, yOffset), scale2_, color, ts*scale2_, 2 )
+        if(entity is Deduction && tp.type == "Box") writeText( b,
+            PointXY(xb, yOffset), scale2_, color, ts*scale2_, 2 )
+        if(entity !is Deduction) writeText( b,
+            PointXY(xb, yOffset), scale2_, color, ts*scale2_, 2 )
+        writeText( c,
+            PointXY(xc, yOffset), scale2_, color, ts*scale2_, 2 )
+        writeText( area,
+            PointXY(xar, yOffset), scale2_, color, ts*scale2_, 2 )
 
     }
 
 
 
-    fun drawOverlayWhite(canvas: Canvas, frameX: Float, frameY: Float, lt: PointXY, rb: PointXY, yohaku: Float){
+    fun drawOverlayWhite(canvas: Canvas, yohaku: Float){
         val white = Paint()
         white.setARGB(255,255,255,255)
         white.style = Paint.Style.FILL
@@ -311,8 +352,8 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
 
     }
 
-    fun writeRuler(canvas: Canvas){
-        val centerX = sizeX_ / 2
+    fun writeRuler() {
+        sizeX_ / 2
         val centerY = sizeY_ / 2
         val ruler = 1190f/42f/printScale_
         val rulerTen = 1190f/4.2f/printScale_
@@ -325,15 +366,35 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
         //writeText( "DrawingScale "+drawingScale_.toString(), PointXY(100f,centerY+70f ), 1f, 7, 14f, 1 )
 
         for( i in 0 until fortytwo.toInt() ){
-            var ifloat = i.toFloat()*ruler
-            writeLine( PointXY( rulerstart+ifloat, rulerY ), PointXY(rulerstart+ifloat,rulerY+5f),1f,rulercolor)
+            val ifloat = i.toFloat()*ruler
+            writeLine(
+                PointXY(
+                    rulerstart + ifloat,
+                    rulerY
+                ),
+                PointXY(
+                    rulerstart + ifloat,
+                    rulerY + 5f
+                ),1f,rulercolor)
         }
 
         for( i in 0 until ten.toInt() ){
-            var ifloat = i.toFloat()*rulerTen
-            var istr = (i*10).toString()
-            writeLine( PointXY( rulerstart+ifloat, rulerY ), PointXY(rulerstart+ifloat,rulerY+10f),1f,rulercolor)
-            writeText( istr, PointXY(rulerstart+ifloat,rulerY+20f), 1f, rulercolor, 7f, 1 )
+            val ifloat = i.toFloat()*rulerTen
+            val istr = (i*10).toString()
+            writeLine(
+                PointXY(
+                    rulerstart + ifloat,
+                    rulerY
+                ),
+                PointXY(
+                    rulerstart + ifloat,
+                    rulerY + 10f
+                ),1f,rulercolor)
+            writeText( istr,
+                PointXY(
+                    rulerstart + ifloat,
+                    rulerY + 20f
+                ), 1f, rulercolor, 7f, 1 )
         }
     }
 
@@ -356,22 +417,21 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
         val tt = uw-5f // テキスト開始位置x
         val ht = 110f // タイトル枠の高さ
         val hp = 20f // 仕切り横線のピッチ
-        val lt = PointXY(xr-sw, yb-ht)
-        val lb = PointXY(xr-sw, yb)
-        val rt = PointXY(xr, yb-ht)
-        val rb = PointXY(xr, yb)
-        val ut = PointXY(xr-uw, yb-ht)
-        val ub = PointXY(xr-uw, yb)
-        val ft = 320f
-        val credit = rStr_.tCredit_
+        val lt = PointXY(xr - sw, yb - ht)
+        val lb = PointXY(xr - sw, yb)
+        val rt = PointXY(xr, yb - ht)
+        PointXY(xr, yb)
+        val ut = PointXY(xr - uw, yb - ht)
+        val ub = PointXY(xr - uw, yb)
+        rStr_.tCredit_
         val centerX = sizeX_ / 2
-        val centerY = sizeY_ / 2
+        sizeY_ / 2
         val kt = (sw-uw)/2f+uw
         val ofs = 3f
         val st: Float = printScale_/drawingScale_*100f
 
         // 枠外を白抜きするための塗りつぶし
-        drawOverlayWhite(canvas, frameX, frameY, lt, rb, yohaku)
+        drawOverlayWhite(canvas, yohaku)
 
         // Frame
         writeRect(  getCenter(), frameX, frameY, 1f, 7)
@@ -380,15 +440,27 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
         writeLine( lt, lb, 1f,7)
         writeLine( ut, ub, 1f,7)
         //uchi
-        writeLine( PointXY(xr-uw2, yb-40f), PointXY(xr-uw2, yb-20f),1f,7)
-        writeLine( PointXY(xr-uw3, yb-40f), PointXY(xr-uw3, yb-20f),1f,7)
+        writeLine(
+            PointXY(xr - uw2, yb - 40f),
+            PointXY(xr - uw2, yb - 20f),1f,7)
+        writeLine(
+            PointXY(xr - uw3, yb - 40f),
+            PointXY(xr - uw3, yb - 20f),1f,7)
 
         //yoko
         writeLine( lt, rt, 1f,7)
-        writeLine( PointXY(xr-sw, yb-(hp*1)), PointXY(xr, yb-(hp*1)) ,1f,7)
-        writeLine( PointXY(xr-sw, yb-(hp*2)), PointXY(xr, yb-(hp*2)) ,1f,7)
-        writeLine( PointXY(xr-sw, yb-(hp*3)), PointXY(xr, yb-(hp*3)) ,1f,7)
-        writeLine( PointXY(xr-sw, yb-(hp*4)), PointXY(xr, yb-(hp*4)) ,1f,7)
+        writeLine(
+            PointXY(xr - sw, yb - (hp * 1)),
+            PointXY(xr, yb - (hp * 1)),1f,7)
+        writeLine(
+            PointXY(xr - sw, yb - (hp * 2)),
+            PointXY(xr, yb - (hp * 2)),1f,7)
+        writeLine(
+            PointXY(xr - sw, yb - (hp * 3)),
+            PointXY(xr, yb - (hp * 3)),1f,7)
+        writeLine(
+            PointXY(xr - sw, yb - (hp * 4)),
+            PointXY(xr, yb - (hp * 4)),1f,7)
 
         //writeRuler(canvas)
 /*
@@ -416,49 +488,94 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
 */
 
         // titleline
-        writeLine( PointXY(centerX-50f,52f), PointXY(centerX+50f,52f),1f,7)
-        writeLine( PointXY(centerX-50f,50f), PointXY(centerX+50f,50f),1f,7)
-        writeText( rStr_.tTitle_, PointXY(centerX,45f), 1f, 7, 16f, 1 )
-        writeText( rosenname_ + " A=" + ( triangleList_.getArea() - deductionList_.getArea() ).toString() + "m^2", PointXY(centerX,70f), 1f, 7, 16f, 1 )
+        writeLine(
+            PointXY(centerX - 50f, 52f),
+            PointXY(centerX + 50f, 52f),1f,7)
+        writeLine(
+            PointXY(centerX - 50f, 50f),
+            PointXY(centerX + 50f, 50f),1f,7)
+        writeText( rStr_.tTitle_,
+            PointXY(centerX, 45f), 1f, 7, 16f, 1 )
+        writeText( rosenname_ + " A=" + ( triangleList_.getArea() - deductionList_.getArea() ).toString() + "m^2",
+            PointXY(centerX, 70f), 1f, 7, 16f, 1 )
 
-        writeText( rStr_.tCname_, PointXY(xr-kt, yb-95f+ofs ), 1f, 7, 8f, 1 )
-        writeText( rStr_.tDtype_, PointXY(xr-kt, yb-70f+ofs ), 1f, 7, 8f, 1 )
-        writeText( rStr_.tDname_, PointXY(xr-kt, yb-50f+ofs), 1f, 7, 8f, 1 )
-        writeText( rStr_.tScale_, PointXY(xr-kt, yb-30f+ofs), 1f, 7, 8f, 1 )
-        writeText( rStr_.tNum_, PointXY(xr-75, yb-30f+ofs), 1f, 7, 8f, 1 )
-        writeText( rStr_.tAname_, PointXY(xr-kt, yb-10f+ofs), 1f, 7, 8f, 1 )
-        writeText( rStr_.tCredit_, PointXY(50f, yb+10f), 1f, 7, 7f, 0 )
+        writeText( rStr_.tCname_,
+            PointXY(xr - kt, yb - 95f + ofs), 1f, 7, 8f, 1 )
+        writeText( rStr_.tDtype_,
+            PointXY(xr - kt, yb - 70f + ofs), 1f, 7, 8f, 1 )
+        writeText( rStr_.tDname_,
+            PointXY(xr - kt, yb - 50f + ofs), 1f, 7, 8f, 1 )
+        writeText( rStr_.tScale_,
+            PointXY(xr - kt, yb - 30f + ofs), 1f, 7, 8f, 1 )
+        writeText( rStr_.tNum_,
+            PointXY(xr - 75, yb - 30f + ofs), 1f, 7, 8f, 1 )
+        writeText( rStr_.tAname_,
+            PointXY(xr - kt, yb - 10f + ofs), 1f, 7, 8f, 1 )
+        writeText( rStr_.tCredit_,
+            PointXY(50f, yb + 10f), 1f, 7, 7f, 0 )
 
-
-        if( koujiname_.length > 20 ) {
+/*
+        if( koujiname_.length > 17 ) {
             if( koujiname_.contains(" ") ){
                 val array = koujiname_.split(' ')
-                writeText(array[0], PointXY(xr - tt, yb - 100f), 1f, 7, 8f, 0)
-                writeText(array[1], PointXY(xr - tt, yb - 85f), 1f, 7, 8f, 0)
+                writeText(array[0],
+                    PointXY(xr - tt, yb - 100f), 1f, 7, 8f, 0)
+                writeText(array[1],
+                    PointXY(xr - tt, yb - 85f), 1f, 7, 8f, 0)
             }
             else{
-                val array1 = koujiname_.substring(0, 20)
-                val array2 = koujiname_.substring(20, koujiname_.length)
-                writeText(array1, PointXY(xr - tt, yb - 100f), 1f, 7, 8f, 0)
-                writeText(array2, PointXY(xr - tt, yb - 85f), 1f, 7, 8f, 0)
+                val array1 = koujiname_.substring(0, 17)
+                val array2 = koujiname_.substring(17, koujiname_.length)
+                writeText(array1,
+                    PointXY(xr - tt, yb - 100f), 1f, 7, 8f, 0)
+                writeText(array2,
+                    PointXY(xr - tt, yb - 85f), 1f, 7, 8f, 0)
             }
         }
         else {
-            writeText(koujiname_, PointXY(xr-tt, yb-95f+ofs ), 1f, 7, 8f, 0 )
+
         }
+  */
         //}
         //else writeText(koujiname_, PointXY(xr-tt, yb-95f+ofs ), 1f, 7, 8f, 0 )
+        drawTextWithLineBreak(koujiname_, xr, yb, tt)
 
-        writeText(rStr_.tTitle_, PointXY(xr-tt, yb-70f+ofs ), 1f, 7, 8f, 0 )
-        writeText(rosenname_, PointXY(xr-tt, yb-50f+ofs ), 1f, 7, 8f, 0 )
+        writeText(rStr_.tTitle_,
+            PointXY(xr - tt, yb - 70f + ofs), 1f, 7, 8f, 0 )
+        writeText(rosenname_,
+            PointXY(xr - tt, yb - 50f + ofs), 1f, 7, 8f, 0 )
         val ust = (uw-uw2)/2+uw2
         val usst = uw3/2
-        writeText("1/${st.toInt()} (A3)", PointXY(xr-ust, yb-30f+ofs ), 1f, 7, 8f, 1 )
-        writeText( zumennum_, PointXY(xr-usst, yb-30f+ofs ), 1f, 7, 8f, 1 )
-        writeText( gyousyaname_, PointXY(xr-tt, yb-10f+ofs), 1f, 7, 8f, 0 )
+        writeText("1/${st.toInt()} (A3)",
+            PointXY(xr - ust, yb - 30f + ofs), 1f, 7, 8f, 1 )
+        writeText( zumennum_,
+            PointXY(xr - usst, yb - 30f + ofs), 1f, 7, 8f, 1 )
+        writeText( gyousyaname_,
+            PointXY(xr - tt, yb - 10f + ofs), 1f, 7, 8f, 0 )
 
         currentCanvas_.translate(sizeX_/2f,sizeY_/2f)
         //  translateCenter()
+    }
+
+    // 定数定義
+    private val MAX_LENGTH = 17
+    private val FIRST_LINE_OFFSET = -100f
+    private val SECOND_LINE_OFFSET = -85f
+    private val SINGLE_LINE_OFFSET = -95f
+    private fun drawTextWithLineBreak(text: String, xr: Float, yb: Float, tt: Float) {
+        if (text.length > MAX_LENGTH) {
+            splitAndDrawText(text, xr, yb, tt)
+        } else {
+            writeText(text, PointXY(xr - tt, yb + SINGLE_LINE_OFFSET), 1f, 7, 8f, 0)
+        }
+    }
+
+    private fun splitAndDrawText(text: String, xr: Float, yb: Float, tt: Float) {
+        val splitText = if (text.contains(" ")) text.split(' ', limit = 2) else listOf(text.take(MAX_LENGTH), text.drop(MAX_LENGTH))
+        writeText( splitText[0], PointXY(xr - tt, yb + FIRST_LINE_OFFSET), 1f, 7, 8f, 0)
+        if (splitText.size > 1) {
+            writeText( splitText[1], PointXY(xr - tt, yb + SECOND_LINE_OFFSET), 1f, 7, 8f, 0)
+        }
     }
 
     fun writeRect(point: PointXY, sizeX: Float, sizeY: Float, scale: Float, color: Int){
@@ -480,7 +597,7 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
 
     override fun writeText(str: String, point: PointXY, scale: Float, color: Int, size: Float, align: Int){
 
-        val paint = this.setPaint(color, size, align)
+        this.setPaint(color, size, align)
         currentCanvas_.drawText(str, point.x*scale, point.y*scale ,setPaint(color, size, align))
 /*
         if(align <= 1) {
@@ -501,8 +618,8 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
 */
     }
 
-    fun getCenter(): PointXY{
-        return PointXY(sizeX_/2f, sizeY_/2f)
+    fun getCenter(): PointXY {
+        return PointXY(sizeX_ / 2f, sizeY_ / 2f)
     }
 
     fun setPaint(color: Int, size: Float, align: Int): Paint {
@@ -518,12 +635,6 @@ class PdfWriter(printScale: Float, triangleList: TriangleList ) : DrawingFileWri
         if( color == 2 ) paint.setARGB(255,100,100,255)
         if( color == 3 ) paint.setARGB(255,100,255,100)
         if( color == 7 ) paint.setARGB(255,0,0,0)
-        return paint
-    }
-
-    fun getPaintFromColor(color: Int): Paint {
-        val paint = Paint()
-        paint.setARGB(255,255,255,255)
         return paint
     }
 

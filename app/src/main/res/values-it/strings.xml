@@ -34,7 +34,7 @@
     <string name = "editor_syozoku">appart</string>
     <string name = "editor_form">forma</string>
     <string name = "editor_koujyo"> deduzione </string>
-    <string name = "credit"> ※ Questo disegno è stato creato utilizzando l\'applicazione per smartphone "Triangle List". </string>
+    <string name = "credit">http://trianglelist.home.blog</string>
 
     <string name = "rosen1"> route 1 </string>
     <string name = "savecurrent"> Vuoi salvare l\'immagine corrente? </string>
@@ -43,7 +43,7 @@
     <string name = "inputdnum"> Puoi inserire il numero del disegno </string>
     <string name = "inputaname"> Puoi inserire il nome del contraente (può essere vuoto) </string>
     <string name = "space"> Interruzioni di riga con spazi. </string>
-    <string name = "inputtnum"> Puoi inserire il numero iniziale del triangolo </string>
+    <string name = "hintInputTriNumber"> Puoi inserire il numero iniziale del triangolo </string>
 
 
     <!-- Stringhe usate per i frammenti per la navigazione -->
@@ -84,5 +84,7 @@
         <item> CF </item>
     </string-array>
     <string name="action_save_sfc" translatable="false">" Output SFC"</string>
-    <string name="action_usage" translatable="false">Aiuto</string>
+    <string name="action_usage" translatable="false">manuale di istruzioni</string>
+    <string name="action_privacy">politica sulla riservatezza</string>
+    <string name="action_save_xlsx">" Output Xlsx"</string>
 </resources>

@@ -1,16 +1,16 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-android-extensions'
+//apply plugin: 'kotlin-android-extensions'
 
 android {
-    compileSdkVersion 32
+    compileSdkVersion 34
 
     defaultConfig {
         applicationId "com.jpaver.myapplication"
-        minSdkVersion 23
-        targetSdkVersion 32
-        versionCode 1272
-        versionName "6.25"
+        minSdkVersion 26
+        targetSdkVersion 34
+        versionCode 1306
+        versionName "7.05"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -22,14 +22,35 @@ android {
 //            AdID "ca-app-pub-6982449551349060/9421491034"
         }
         debug{
+            ext.enableCrashlytics = false
+            ext.alwaysUpdateBuildId = false
   //          AdID "ca-app-pub-3940256099942544/6300978111"
         }
     }
 
+    sourceSets {
+
+        free {
+            java.srcDirs = ['src/free/java']
+        }
+        full {
+            java.srcDirs = ['src/full/java']
+        }
+
+    }
 
     flavorDimensions "mode"
 
     productFlavors {
+        dev {
+            resConfigs 'jp', 'xxhdpi'
+
+            // The following configuration limits the "dev" flavor to using
+            // English string-resources and xxhdpi screen-density resources.
+            dimension "mode"
+            applicationId "com.jpaver.myapplication"
+        }
+
         free {
             // Assigns this product flavor to the "mode" flavor dimension.
             dimension "mode"
@@ -57,30 +78,34 @@ android {
         jvmTarget = "11"
     }
     androidResources {
-        noCompress 'pdf'
+        //noCompress 'pdf'
     }
     namespace 'com.jpaver.trianglelist'
+    buildFeatures {
+        buildConfig true
+    }
 
 }
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${kotlin_version}"
-    implementation 'androidx.appcompat:appcompat:1.4.1'
-    implementation 'androidx.activity:activity-ktx:1.5.0-alpha03'
-    implementation 'androidx.core:core-ktx:1.7.0'
-    implementation 'com.google.android.material:material:1.5.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.3'
-    implementation 'androidx.navigation:navigation-fragment-ktx:2.4.1'
-    implementation 'androidx.navigation:navigation-ui-ktx:2.4.1'
-    implementation 'com.google.android.gms:play-services-ads:20.6.0'
-    implementation 'androidx.preference:preference-ktx:1.2.0'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.activity:activity-ktx:1.9.0-alpha03'
+    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.navigation:navigation-fragment-ktx:2.7.7'
+    implementation 'androidx.navigation:navigation-ui-ktx:2.7.7'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'com.google.android.gms:play-services-ads:22.6.0'
+    implementation 'androidx.preference:preference-ktx:1.2.1'
     implementation 'com.google.android.play:core-ktx:1.8.1'
     testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.4-alpha04'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.0-alpha04'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.0-alpha03'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.0-alpha03'
     implementation fileTree(dir: 'libs', include: ['*.aar', '*.jar'], exclude: [])
     testImplementation 'org.powermock:powermock-module-junit4:2.0.9'
     testImplementation 'org.powermock:powermock-api-mockito:1.7.4'
     testImplementation 'org.robolectric:robolectric:4.7.3'
-    androidTestImplementation 'androidx.test:rules:1.4.0'
+    androidTestImplementation 'androidx.test:rules:1.5.0'
+    implementation 'org.apache.poi:poi-ooxml:5.2.3'
 }

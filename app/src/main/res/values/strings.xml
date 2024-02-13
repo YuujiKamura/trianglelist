@@ -1,25 +1,25 @@
 <resources>
-    <string name="app_name" translatable="false">Triangle List</string>
-    <string name="action_settings" translatable="false">設定</string>
-    <string name="action_new" translatable="false">新規作成</string>
-    <string name="action_save_csv" translatable="false">CSVを保存</string>
-    <string name="action_load_csv" translatable="false">CSVを読込</string>
-    <string name="action_save_dxf" translatable="false">DXF出力</string>
-    <string name="action_save_sfc" translatable="false">SFC出力</string>
-    <string name="action_save_pdf" translatable="false">PDF出力</string>
-    <string name="action_send_mail" translatable="false">メールを送信</string>
+    <string name="app_name">Triangle List</string>
+    <string name="action_settings">設定</string>
+    <string name="action_new">新規作成</string>
+    <string name="action_save_csv">CSVを保存</string>
+    <string name="action_load_csv">CSVを読込</string>
+    <string name="action_save_dxf">DXF出力</string>
+    <string name="action_save_sfc">SFC出力</string>
+    <string name="action_save_pdf">PDF出力</string>
+    <string name="action_send_mail">メールを送信</string>
     <string name="action_usage" translatable="false">取扱説明書</string>
 
-    <string name="tenkai_title" translatable="false">面 積 展 開 図</string>
-    <string name="tenkai_koujimei" translatable="false">工 事 名</string>
-    <string name="tenkai_zumenmei" translatable="false">図 面 名</string>
-    <string name="tenkai_rosenmei" translatable="false">路 線 名</string>
-    <string name="tenkai_syukusyaku" translatable="false">縮    尺</string>
-    <string name="tenkai_zuban" translatable="false">図面番号</string>
-    <string name="tenkai_sakuseibi" translatable="false">作　成　日</string>
+    <string name="tenkai_title">面 積 展 開 図</string>
+    <string name="tenkai_koujimei">工 事 名</string>
+    <string name="tenkai_zumenmei">図 面 名</string>
+    <string name="tenkai_rosenmei">路 線 名</string>
+    <string name="tenkai_syukusyaku">縮    尺</string>
+    <string name="tenkai_zuban">図面番号</string>
+    <string name="tenkai_sakuseibi">作　成　日</string>
 
-    <string name="tenkai_nengappi" translatable="false">　　　年　　月　　日</string>
-    <string name="tenkai_sekousya" translatable="false">施 工 者</string>
+    <string name="tenkai_nengappi">　　　年　　月　　日</string>
+    <string name="tenkai_sekousya">施 工 者</string>
     <string name="menseki">面積</string>
     <string name="menseki_title">面 積 計 算 書</string>
     <string name="menseki_koujimei">工事名：</string>
@@ -36,7 +36,7 @@
     <string name="editor_syozoku">所属</string>
     <string name="editor_form">形状</string>
     <string name="editor_koujyo">控除</string>
-    <string name="credit">※ この図面はスマートフォンアプリ 「Triangle List」 を使用して作成されました。</string>
+    <string name="credit">http://trianglelist.home.blog</string>
 
     <string name="rosen1">路線1</string>
     <string name="savecurrent">現在の図形を保存しますか？</string>
@@ -45,7 +45,7 @@
     <string name="inputdnum">図面番号を入力できます</string>
     <string name="inputaname">施工者名を入力できます（空白可）</string>
     <string name="space">半角スペースで改行します。</string>
-    <string name="inputtnum">三角形の開始番号を入力できます</string>
+    <string name="hintInputTriNumber">三角形の開始番号を入力できます</string>
 
 
     <!-- Strings used for fragments for navigation -->
@@ -86,4 +86,6 @@
         <item>BF</item>
         <item>CF</item>
     </string-array>
+    <string name="action_privacy">個人情報保護方針</string>
+    <string name="action_save_xlsx">Xlsx出力</string>
 </resources>

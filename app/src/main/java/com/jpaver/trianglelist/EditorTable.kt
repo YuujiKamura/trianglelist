@@ -1,9 +1,11 @@
-package com.jpaver.trianglelist
+package com.jpaver.trianglelist.util
 
 import android.text.method.KeyListener
 import android.widget.EditText
 import android.widget.Spinner
 import android.widget.TextView
+import com.jpaver.trianglelist.EditList
+import com.jpaver.trianglelist.PointXY
 
 data class DeductionParams(var num: Int, var name: String, var lengthX: Float, var lengthY: Float, var parentNum: Int, var type: String, var angle: Float, var point: PointXY)
 
@@ -24,8 +26,15 @@ data class Params(var name: String = "",
                   var c: Float = 0f,
                   var pn: Int = 0,
                   var pl: Int = 0,
-                  var pt: PointXY = PointXY(0f, 0f),
-                  var pts: PointXY = PointXY(0f, 0f))//,
+                  var pt: PointXY = PointXY(
+                      0f,
+                      0f
+                  ),
+                  var pts: PointXY = PointXY(
+                      0f,
+                      0f
+                  )
+)//,
 //                  var an: Float = 0f)
 
 class EditorTable {
@@ -45,7 +54,7 @@ class EditorTable {
     fun scroll(movement: Int, myList: EditList, secondly: EditTextViewLine, thirdly: EditTextViewLine){
         val max: Int = myList.size()
         val min = 1
-        var current: Int = myList.getCurrent()
+        var current: Int = myList.retrieveCurrent()
         Keys(secondly.n.keyListener, secondly.name.keyListener, secondly.a.keyListener, secondly.b.keyListener, secondly.c.keyListener, secondly.pn.keyListener)
         Keys(thirdly.n.keyListener, thirdly.name.keyListener, thirdly.a.keyListener, thirdly.b.keyListener, thirdly.c.keyListener, thirdly.pn.keyListener)
         //keys = setKeyListener(keys, thirdly)
@@ -55,7 +64,11 @@ class EditorTable {
             current = myList.addCurrent(movement)
             lineRewrite(myList.getParams(current), secondly)
             if(current == 1) {
-                lineRewrite(Params("","",0,0f,0f,0f,0,0, PointXY(0f,0f),PointXY(0f,0f)), thirdly)
+                lineRewrite(
+                    Params("","",0,0f,0f,0f,0,0,
+                    PointXY(0f, 0f),
+                    PointXY(0f, 0f)
+                ), thirdly)
                 //setLineEditable(false, thirdly, thirdly)
             }
             else {
@@ -65,6 +78,13 @@ class EditorTable {
         }
 }
 
+    fun Float?.formattedString(fractionDigits:Int): String{
+        // nullの場合は空文字
+        if(this == null) return ""
+        val format = "%.${fractionDigits}f"
+        return format.format(this)
+    }
+
     fun lineRewrite(prm: Params, line: EditTextViewLine){
 
 //        if(prm.n == 0)  line.n.setText("")
@@ -73,17 +93,22 @@ class EditorTable {
         line.name.setText(prm.name)
 
         if(prm.a == 0f) line.a.setText("")
-        else            line.a.setText(prm.a.toString())
+        else            line.a.setText(prm.a.formattedString(2))
         if(prm.b == 0f) line.b.setText("")
-        else            line.b.setText(prm.b.toString())
+        else            line.b.setText(prm.b.formattedString(2))
         if(prm.c == 0f) line.c.setText("")
-        else            line.c.setText(prm.c.toString())
+        else            line.c.setText(prm.c.formattedString(2))
         if( prm.pn == 0 || prm.pn == -1 ) line.pn.setText("")
         else            line.pn.setText(prm.pn.toString())
          line.pl.setSelection(prm.pl)
     }
 
-    fun readLineTo(prm: Params, line: EditTextViewLine) :Params {
+    fun toFloatIgnoreDot(str: String ): Float {
+        if( str == "." ) return 0f
+        return str.toFloat()
+    }
+
+    fun readLineTo(prm: Params, line: EditTextViewLine) : Params {
 
         var sa: String = line.a.text.toString()
         var sb: String = line.b.text.toString()
@@ -101,9 +126,9 @@ class EditorTable {
         prm.pn = spn.toInt()
 
         prm.name = line.name.text.toString()
-        prm.a = sa.toFloat()
-        prm.b = sb.toFloat()
-        prm.c = sc.toFloat()
+        prm.a = toFloatIgnoreDot(sa)
+        prm.b = toFloatIgnoreDot(sb)
+        prm.c = toFloatIgnoreDot(sc)
         prm.pl = line.pl.selectedItemPosition
         prm.type = line.pl.selectedItem.toString()
 

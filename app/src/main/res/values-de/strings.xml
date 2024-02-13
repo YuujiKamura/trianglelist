@@ -34,7 +34,7 @@
     <string name = "editor_syozoku">Zugehör</string>
     <string name = "editor_form">Form</string>
     <string name = "editor_koujyo">Abzug</string>
-    <string name = "credit"> ※ Diese Zeichnung wurde mit der Smartphone-Anwendung "Triangle List" erstellt. </string>
+    <string name = "credit">http://trianglelist.home.blog</string>
 
     <string name = "rosen1"> Route 1 </string>
     <string name = "savecurrent"> Möchten Sie das aktuelle Bild speichern? </string>
@@ -43,7 +43,7 @@
     <string name = "inputdnum"> Sie können die Zeichnungsnummer </string> eingeben
     <string name = "inputaname"> Sie können den Namen des Auftragnehmers eingeben (kann leer sein) </string>
     <string name = "space"> Zeilenumbrüche mit Leerzeichen. </string>
-    <string name = "inputtnum"> Sie können die Startnummer des Dreiecks </string> eingeben
+    <string name = "hintInputTriNumber"> Sie können die Startnummer des Dreiecks </string> eingeben
 
 
     <!-- Zeichenfolgen für Fragmente zur Navigation -->
@@ -84,4 +84,7 @@
         <item> CF </item>
     </string-array>
     <string name="action_save_sfc" translatable="false">"SFC-Ausgabe "</string>
+    <string name="action_privacy">Datenschutz-Bestimmungen</string>
+    <string name="action_save_xlsx">" Xlsx-Ausgabe "</string>
+    <string name="action_usage" translatable="false">Bedienungsanleitung</string>
 </resources>

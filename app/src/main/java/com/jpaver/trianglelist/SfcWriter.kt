@@ -4,7 +4,7 @@ import java.io.BufferedOutputStream
 import java.nio.charset.Charset
 import java.util.*
 
-class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: BufferedOutputStream, filename: String, startnum: Int ): DrawingFileWriter() {
+class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: BufferedOutputStream, filename: String, startnum: Int ): DrawingFileWriter() {
 
     override var trilist_: TriangleList = trilist.clone().numbered( setStartNumber( startnum ) )
     override var dedlist_: DeductionList = dedlist.clone()
@@ -84,15 +84,28 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
         // printscale
         printscale_ = trilist_.getPrintScale(1f)
 
-        trilist_.scale( PointXY(0f,0f), unitscale_ )
-        dedlist_.scale( PointXY(0f,0f), unitscale_/viewscale_, -unitscale_/viewscale_ )
+        trilist_.scale(PointXY(0f, 0f), unitscale_ )
+        dedlist_.scale(PointXY(0f, 0f), unitscale_/viewscale_, -unitscale_/viewscale_ )
         // アプリの画面に合わせて拡大されているのを戻し、Y軸も反転
 
         //シートの中心へ動かす
-        val center = PointXY(21000f*printscale_, 14850f*printscale_ )
+        val center = PointXY(
+            21000f * printscale_,
+            14850f * printscale_
+        )
         val tricenter = trilist_.center
-        dedlist_.move(PointXY(center.x-tricenter.x,center.y-tricenter.y))
-        trilist_.move(PointXY(center.x-tricenter.x,center.y-tricenter.y))
+        dedlist_.move(
+            PointXY(
+                center.x - tricenter.x,
+                center.y - tricenter.y
+            )
+        )
+        trilist_.move(
+            PointXY(
+                center.x - tricenter.x,
+                center.y - tricenter.y
+            )
+        )
 
         // 開始番号指定
         var trilistNumbered = trilist_.numbered( startTriNumber_ )
@@ -117,12 +130,12 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
         if( isReverse_ == true ) {
             trilistNumbered = trilistNumbered.reverse()
         }
-        trilistNumbered.scale( PointXY(0f,0f), 1/unitscale_ )
+        trilistNumbered.scale(PointXY(0f, 0f), 1/unitscale_ )
         writeCalcSheet(1000f, textscale_/unitscale_, trilistNumbered, dedlist_ )
 
     }
 
-    override fun writeDeduction( ded: Deduction ){
+    override fun writeDeduction( ded: Deduction){
 
         //val ded = dedlist_.get( dednumber )
         //val textsize: Float = textscale_
@@ -176,7 +189,7 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
         //writeLine(writer_, p1, p2, 1)
     }
 
-    fun writeDedRect( color: Int, ded: Deduction ){
+    fun writeDedRect( color: Int, ded: Deduction){
         ded.shapeAngle = -ded.shapeAngle // 逆回転
         ded.setBox( 1000f )
         writeLine(ded.plt, ded.plb, color)
@@ -185,7 +198,7 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
         writeLine(ded.plb, ded.prb, color)
     }
 
-    fun alignVByVector(num: Int, p1: PointXY, p2: PointXY ): Int{
+    fun alignVByVector(num: Int, p1: PointXY, p2: PointXY): Int{
         // 垂直方向の文字位置合わせタイプ(省略可能、既定 = 0): 整数コード(ビットコードではありません):
         // 0 = 基準線、2 = 下、5 = 中央、8 = 上
         // ベクトルの方向でB,Cを表現するなら
@@ -208,7 +221,7 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
         return num
     }
 
-    override fun writeTriangle( tri: Triangle ){
+    override fun writeTriangle( tri: Triangle){
         val ts = textscale_
         //val tri = trilist_.get( trinumber )
         val pca = tri.pointCA_
@@ -271,13 +284,13 @@ class SfcWriter( trilist: TriangleList, dedlist: DeductionList, outputStream: Bu
 
     }
 
-    override fun writeCircle(point: PointXY, radius: Float, color: Int, scale: Float){
-        adas( "circle_feature('1','${color}','1','1','${point.x}','${point.y}','${radius}')" )
+    override fun writeCircle(point: PointXY, size: Float, color: Int, scale: Float){
+        adas( "circle_feature('1','${color}','1','1','${point.x}','${point.y}','${size}')" )
         //レイヤ、２番目がプリセット色指定(８が白、４が青、２が赤)、続いて、線種、線幅、座標XYと、半径
     }
 
-    override fun writeLine( point1: PointXY, point2: PointXY, color: Int, scale: Float ){
-        adas("line_feature('1','${color}','1','1','${point1.x}','${point1.y}','${point2.x}','${point2.y}')" )
+    override fun writeLine(p1: PointXY, p2: PointXY, color: Int, scale: Float ){
+        adas("line_feature('1','${color}','1','1','${p1.x}','${p1.y}','${p2.x}','${p2.y}')" )
         //レイヤ、色、線種、線幅、始点ＸＹ、終点ＸＹ SXF*/
     }
 

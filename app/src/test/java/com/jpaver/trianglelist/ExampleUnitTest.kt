@@ -12,7 +12,7 @@ class ExampleUnitTest {
 
     @Test
     fun testPolymorph(){
-        val baseClass = BaseClass()
+        BaseClass()
         val extendedClass = ExtendedClass()
 
         assertEquals( 2, extendedClass.doAnything() )

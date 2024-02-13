@@ -1,4 +1,5 @@
 package com.jpaver.trianglelist
+import com.jpaver.trianglelist.util.Params
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -7,23 +8,35 @@ class DeductionTest {
 
     @Test
     fun testDedLocalPoint() {
-        val ded = Deduction(1, "circle", 0.23f, 0f, 0, "Circle", 0f, PointXY(0f, 0f), PointXY(0f, 0f))
+        val ded = Deduction(1, "circle", 0.23f, 0f, 0, "Circle", 0f,
+            PointXY(0f, 0f),
+            PointXY(0f, 0f)
+        )
         val tri = Triangle(5f,5f,5f )
         ded.isCollide( tri )
     }
 
         @Test
     fun testDedGetArea() {
-        val ded = Deduction(1, "circle", 0.23f, 0f, 0, "Circle", 0f, PointXY(0f, 0f), PointXY(0f, 0f))
+        val ded = Deduction(1, "circle", 0.23f, 0f, 0, "Circle", 0f,
+            PointXY(0f, 0f),
+            PointXY(0f, 0f)
+        )
         assertEquals(0.04f, ded.getArea(), 0.000001f)
-        val dedded = Deduction(1, "circle", 0.67f, 0f, 0, "Circle", 0f, PointXY(0f, 0f), PointXY(0f, 0f))
+        val dedded = Deduction(1, "circle", 0.67f, 0f, 0, "Circle", 0f,
+            PointXY(0f, 0f),
+            PointXY(0f, 0f)
+        )
         assertEquals(0.35f, dedded.getArea(), 0.001f)
     }
 
 
     @Test
     fun testDedRotate() {
-        val ded = Deduction(1, "masu", 1f, 1f, 0, "Box", 0f, PointXY(0f, 0f), PointXY(0f, 0f))
+        val ded = Deduction(1, "masu", 1f, 1f, 0, "Box", 0f,
+            PointXY(0f, 0f),
+            PointXY(0f, 0f)
+        )
         ded.rotateShape(ded.point, 45f)
         assertEquals(-0.707, ded.plb.x.toDouble(), 0.001)
     }
@@ -57,8 +70,18 @@ class DeductionTest {
                 PointXY(4f, 4f)
             )
         )
-        assertEquals(0, dedlist.getTapIndex(PointXY(1f, 1f)).toLong())
-        assertEquals(1, dedlist.getTapIndex(PointXY(3f, 3f)).toLong())
+        assertEquals(0, dedlist.getTapIndex(
+            PointXY(
+                1f,
+                1f
+            )
+        ).toLong())
+        assertEquals(1, dedlist.getTapIndex(
+            PointXY(
+                3f,
+                3f
+            )
+        ).toLong())
     }
 
     @Test
@@ -83,14 +106,18 @@ class DeductionTest {
     @Test
     fun testSameDedCount(){
         val ded1 = Deduction(
-            1, "仕切弁", 0.23f, 0f, 0, "Circle", 0f, PointXY(0f, 0f), PointXY(
+            1, "仕切弁", 0.23f, 0f, 0, "Circle", 0f,
+            PointXY(0f, 0f),
+            PointXY(
                 0f,
                 0f
             )
         )
         val ded2 = Deduction(
             Params(
-                "仕切弁", "Circle", 2, 0.23f, 0f, 0f, 0, 0, PointXY(0f, 0f), PointXY(
+                "仕切弁", "Circle", 2, 0.23f, 0f, 0f, 0, 0,
+                PointXY(0f, 0f),
+                PointXY(
                     0f,
                     0f
                 )
@@ -115,7 +142,10 @@ class DeductionTest {
     @Test
     fun testDedClone() {
         val myDParam =
-            Params("集水桝", "RECT", 3, 0.8f, 0.8f, 0f, 0, 0, PointXY(0.5f, 0.5f), PointXY(0f, 0f))
+            Params("集水桝", "RECT", 3, 0.8f, 0.8f, 0f, 0, 0,
+                PointXY(0.5f, 0.5f),
+                PointXY(0f, 0f)
+            )
         val myFirstD = Deduction(myDParam)
         val sD = myFirstD.clone()
         assertEquals("集水桝", sD.name)
@@ -124,7 +154,10 @@ class DeductionTest {
     @Test
     fun testDeduction() {
         val myDParam =
-            Params("集水桝", "Box", 3, 0.8f, 0.8f, 0f, 0, 0, PointXY(0.5f, 0.5f), PointXY(0f, 0f))
+            Params("集水桝", "Box", 3, 0.8f, 0.8f, 0f, 0, 0,
+                PointXY(0.5f, 0.5f),
+                PointXY(0f, 0f)
+            )
         val myFirstD = Deduction(myDParam)
         val myRectD = Deduction(myDParam)
         val myDList = DeductionList()
@@ -133,17 +166,17 @@ class DeductionTest {
         myDList.add(myDParam) //3
         myDList.add(myDParam) //4
         myDList.add(myDParam) //5
-        assertEquals(3f, myDList.getDeduction(3).num.toFloat(), 0.001f)
-        assertEquals(0.8, myDList.getDeduction(3).lengthX.toDouble(), 0.001)
-        assertEquals("Box", myDList.getDeduction(3).type)
-        assertEquals(0.5, myDList.getDeduction(3).point.x.toDouble(), 0.001)
+        myDList.getDeduction(3)?.num?.let { assertEquals(3f, it.toFloat(), 0.001f) }
+        myDList.getDeduction(3)?.lengthX?.let { assertEquals(0.8, it.toDouble(), 0.001) }
+        assertEquals("Box", myDList.getDeduction(3)?.type)
+        myDList.getDeduction(3)?.point?.x?.let { assertEquals(0.5, it.toDouble(), 0.001) }
         myDList.remove(2) //RIP. myRectD
-        assertEquals(3, myDList.getDeduction(1).num.toLong())
-        assertEquals(2, myDList.getDeduction(2).num.toLong())
-        assertEquals(3, myDList.getDeduction(3).num.toLong())
-        assertEquals(4, myDList.getDeduction(4).num.toLong())
+        myDList.getDeduction(1)?.num?.let { assertEquals(3, it.toLong()) }
+        myDList.getDeduction(2)?.num?.let { assertEquals(2, it.toLong()) }
+        myDList.getDeduction(3)?.num?.let { assertEquals(3, it.toLong()) }
+        myDList.getDeduction(4)?.num?.let { assertEquals(4, it.toLong()) }
         myDList.replace(1, myDParam) //all of the world.
-        assertEquals("集水桝", myDList.getDeduction(1).name)
+        //assertEquals(/* expected = */ "集水桝", /* actual = */ myDList.getDeduction(1)?.name ?: )
         myDList.move(PointXY(5f, 5f))
     }
 

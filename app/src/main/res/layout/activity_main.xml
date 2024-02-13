@@ -5,9 +5,11 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity">
+
     <RelativeLayout
         android:layout_width="fill_parent"
         android:layout_height="fill_parent" >
+
         <com.google.android.material.appbar.AppBarLayout
             android:id="@+id/toolbarLayout"
             android:layout_width="match_parent"
@@ -25,7 +27,6 @@
         </com.google.android.material.appbar.AppBarLayout>
 
         <include layout="@layout/content_main" />
-
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_rot_l"
@@ -95,21 +96,6 @@
             android:contentDescription="list to down"/>
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_fillcolor"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top|start"
-            android:layout_marginStart="16dp"
-            android:layout_alignTop="@id/fab_down"
-            android:layout_marginTop="50dp"
-            android:visibility="visible"
-            app:fabSize="mini"
-            app:layout_constraintTop_toBottomOf="@id/fab_down"
-            app:srcCompat="@drawable/fillcolor"
-            android:contentDescription="fill color"/>
-
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_testbasic"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -123,16 +109,44 @@
             android:contentDescription="test run basic senario" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_fillcolor"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|start"
+            android:layout_marginStart="16dp"
+            android:layout_alignTop="@id/fab_down"
+            android:layout_marginTop="50dp"
+            android:visibility="invisible"
+            app:fabSize="mini"
+            app:layout_constraintTop_toBottomOf="@id/fab_down"
+            app:srcCompat="@drawable/fillcolor"
+            android:contentDescription="fill color"/>
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_xlsx"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|start"
+            android:layout_marginStart="16dp"
+            android:layout_alignTop="@id/fab_down"
+            android:layout_marginTop="50dp"
+            android:visibility="visible"
+            app:fabSize="mini"
+            app:layout_constraintTop_toBottomOf="@id/fab_down"
+            app:srcCompat="@drawable/xlsx"
+            android:contentDescription="show xlsx"/>
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_texplus"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="top|start"
             android:layout_marginStart="16dp"
-            android:layout_alignTop="@id/fab_fillcolor"
+            android:layout_alignTop="@id/fab_xlsx"
             android:layout_marginTop="60dp"
             android:visibility="visible"
             app:fabSize="mini"
-            app:layout_constraintTop_toBottomOf="@id/fab_fillcolor"
+            app:layout_constraintTop_toBottomOf="@id/fab_xlsx"
             app:srcCompat="@drawable/texplus"
             android:contentDescription="increase text size"/>
 
@@ -257,6 +271,7 @@
             android:layout_marginEnd="16dp"
             app:backgroundTint="@color/colorAccent"
             app:fabSize="mini"
+            android:visibility="visible"
             app:layout_constraintTop_toBottomOf="@+id/fab_replace"
             app:srcCompat="@android:drawable/ic_menu_revert"
             android:contentDescription="undo"/>
@@ -354,7 +369,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignRight="@id/toolbarLayout"
-            android:visibility="invisible"
+            android:visibility="visible"
             android:layout_gravity="top|end"
             android:layout_marginTop="50dp"
             android:layout_marginEnd="16dp"
@@ -376,17 +391,5 @@
             android:maxHeight="300dp"
             android:visibility="invisible" />
 
-        <com.google.android.gms.ads.AdView
-        xmlns:ads="http://schemas.android.com/apk/res-auto"
-        android:id="@+id/adView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_alignParentBottom="true"
-        ads:adSize="BANNER"
-        ads:adUnitId="ca-app-pub-6982449551349060/9421491034"
-        android:descendantFocusability="beforeDescendants"
-        android:focusableInTouchMode="true">
-    </com.google.android.gms.ads.AdView>
     </RelativeLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -1,5 +1,5 @@
-package com.jpaver.trianglelist
-
+package com.jpaver.trianglelist.util
+/*
 import android.content.Context
 import android.widget.EditText
 import android.widget.TextView
@@ -121,7 +121,7 @@ class fabController(
         my_view.setDeductionList(dedlist, mScale)
         //AutoSaveCSV()
         //setTitles()
-        if( dedmode == false ) my_view.resetView(my_view.lstp())
+        if( dedmode == false ) my_view.resetView(my_view.toLastTapTriangle())
         if( dedmode == true  ) my_view.resetView(usedDedPoint.scale(PointXY(0f, 0f), 1f, -1f))//resetViewToTP()
 
         my_view.myTriangleList.isDoubleTap_ = false
@@ -210,3 +210,6 @@ class fabController(
     }
 
 }
+
+
+ */
