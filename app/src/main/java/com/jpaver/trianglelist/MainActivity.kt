@@ -1774,8 +1774,8 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun logListCurrent(){
-        Log.d("UI -","my_view.trilist.current:"+my_view.myTriangleList.current)
-        Log.d("UI -","mainAct.trilist.current:"+myTriangleList.current)
+        Log.d("ui","my_view.trilist.current:"+my_view.myTriangleList.current)
+        Log.d("ui","mainAct.trilist.current:"+myTriangleList.current)
     }
 
     private fun moveTrilist(){
