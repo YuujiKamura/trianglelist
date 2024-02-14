@@ -14,8 +14,8 @@ import org.junit.Test
 class TriListTest {
 
     fun printTriangle( t: Triangle){
-        System.out.printf( "Triangle %s, isfloating %s, isColored %s, address %s, nodeTA %s, pbc %s, color %s, point %s, %s, %s, %s, %s, %s%n", t.myNumber_, t.isFloating_, t.isColored_, t, t.nodeTriangleA_, t.parentBC_, t.color_, t.pointCA_.x, t.pointCA_.y, t.pointAB_.x, t.pointAB_.y, t.pointBC_.x, t.pointBC_.y )
-        //System.out.println( "" )
+        System.out.printf( "Triangle %s, isfloating %s, isColored %s, pbc %s, color %s, point %s, %s, %s, %s, %s, %s%n", t.myNumber_, t.isFloating_, t.isColored_, t.parentBC_, t.color_, t.pointCA_.x, t.pointCA_.y, t.pointAB_.x, t.pointAB_.y, t.pointBC_.x, t.pointBC_.y )
+        System.out.printf( t.toString() )
     }
 
     fun printTriList( tl: TriangleList){
@@ -181,6 +181,7 @@ class TriListTest {
 
         trilist.reverse()
         assertEquals(trilist.get(3), trilist.get(1).nodeTriangleC_)
+        printTriList(trilist)
 
     }
 
@@ -199,6 +200,7 @@ class TriListTest {
 
         trilist.remove(3)
         assertEquals(null, trilist.get(2).nodeTriangleC_)
+        printTriList(trilist)
     }
 
     @Test

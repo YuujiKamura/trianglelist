@@ -7,6 +7,8 @@ import java.util.Arrays;
 
 import static java.lang.Math.toRadians;
 
+import androidx.annotation.NonNull;
+
 import com.jpaver.trianglelist.util.Params;
 
 public class Triangle extends EditObject implements Cloneable {
@@ -14,6 +16,30 @@ public class Triangle extends EditObject implements Cloneable {
     float[] length = new float[3];
     float[] lengthNotSized = new float[3];
     PointXY[] point = new PointXY[3];
+
+
+    // 各辺に接続されている Triangle オブジェクトの識別子を返す
+    @NonNull
+    @Override
+    public String toString() {
+        Triangle[] connectedTriangles = new Triangle[3]; // 各辺に接続された Triangle オブジェクトを保持する配列
+        connectedTriangles[0] = nodeTriangleA_;
+        connectedTriangles[1] = nodeTriangleB_;
+        connectedTriangles[2] = nodeTriangleC_;
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Triangle:").append(myNumber_).append(", ").append(System.identityHashCode(this)).append(", connected to: ");
+        for (int i = 0; i < connectedTriangles.length; i++) {
+            if (connectedTriangles[i] != null) {
+                sb.append(System.identityHashCode(connectedTriangles[i]));
+                if (i < connectedTriangles.length - 1) {
+                    sb.append(" and ");
+                }
+            }
+        }
+        sb.append("%n");
+        return sb.toString();
+    }
 
     float getLengthA_(){ return length[0]; }
     float getLengthB_(){ return length[1]; }
