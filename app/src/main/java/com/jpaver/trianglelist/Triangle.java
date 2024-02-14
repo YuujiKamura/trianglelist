@@ -1373,12 +1373,16 @@ public class Triangle extends EditObject implements Cloneable {
         return this.pointUnconnectedSide(ref).crossOffset(ref, -Coefficient*scale_ );
     }
 
+    public float getAverageLength(){
+        return (getLengthA_()+getLengthB_()+getLengthC_())*0.33f;
+    }
+
     public PointXY pointUnconnectedSide( PointXY ref){
-        float Coefficient = -0.1f;
+        float Coefficient = -0.4f;
         PointXY midPointB = pointAB_.calcMidPoint(pointBC_);
         PointXY midPointC = pointBC_.calcMidPoint(point[0]);
-        if(!isChildB_) return ref.offset( midPointB, ref.lengthTo( midPointB )*Coefficient);
-        if(!isChildC_) return ref.offset( midPointC, ref.lengthTo( midPointC )*Coefficient);
+        if( nodeTriangleB_ == null ) return ref.offset( midPointB, getAverageLength()*Coefficient);
+        if( nodeTriangleC_ == null ) return ref.offset( midPointC, -getAverageLength()*Coefficient);
         else return ref;
     }
     public float getAngle() { return this.angleInGlobal_; }
