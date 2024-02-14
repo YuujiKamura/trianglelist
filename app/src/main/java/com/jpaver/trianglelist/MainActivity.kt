@@ -1722,7 +1722,7 @@ class MainActivity : AppCompatActivity(),
     fun fabReplace(params: Params = dParams, useit: Boolean = false ){
         //val editor = myEditor
         trilistSaving(myTriangleList)
-        val dedmode = deductionMode
+        val dedMode = deductionMode
 
         var readedFirst  = Params()
         var readedSecond = Params()
@@ -1736,23 +1736,21 @@ class MainActivity : AppCompatActivity(),
         val strTopB = findViewById<TextView>(R.id.editLengthB1).text.toString()
         val strTopC = findViewById<TextView>(R.id.editLengthC1).text.toString()
 
-        if(!dedmode) {
-
-            if( strTopB == "" ) resetTrianglesBy(readedSecond)
-            else
-                if(strTopC == "" && !useit) return
-                else  addTriangleBy(readedFirst)
-
+        if (!dedMode) {
+            if (strTopB == "") {
+                resetTrianglesBy(readedSecond)
+            } else if (strTopC == "" && !useit) {
+                return
+            } else {
+                addTriangleBy(readedFirst)
+            }
         } else { // if in deduction mode
-            //if (validDeduction(params) == false) return
-
-
-            if( strTopA == "" ) {
+            if (strTopA == "") {
                 resetDeductionsBy(readedSecond)
-                my_view.myDeductionList.get(readedSecond.n).point
-            } else{
+                my_view.myDeductionList[readedSecond.n].point
+            } else {
                 addDeductionBy(readedFirst)
-                my_view.myDeductionList.get(readedFirst.n).point
+                my_view.myDeductionList[readedFirst.n].point
             }
             findViewById<EditText>(R.id.editName1).requestFocus()
         }
@@ -1773,10 +1771,6 @@ class MainActivity : AppCompatActivity(),
         ).show()*/
     }
 
-    private fun logListCurrent(){
-        Log.d("ui","my_view.trilist.current:"+my_view.myTriangleList.current)
-        Log.d("ui","mainAct.trilist.current:"+myTriangleList.current)
-    }
 
     private fun moveTrilist(){
         my_view.getTriangleList().setCurrent(myTriangleList.retrieveCurrent())
@@ -2060,8 +2054,10 @@ class MainActivity : AppCompatActivity(),
                     ), 1f, -1f),
                 0.4f / zoomsize
             )
-            if ( trilistV.lastTapNumber_ != 0 )
+            if ( trilistV.lastTapNumber_ != 0 ){
+                handleTriangleTap(trilistV, myEditor, myTriangleList)
                 if( trilistV.lastTapSide_ == 3 ) my_view.resetViewToLastTapTriangle()
+            }
 
 
         }
@@ -2092,7 +2088,7 @@ class MainActivity : AppCompatActivity(),
 
             // タップされた三角形がある場合の処理を行う
             if (trilistV.lastTapNumber_ != 0) {
-                handleTriangleTap(trilistV, myEditor, myTriangleList) // タップされた三角形の基本処理を行う
+                handleTriangleTap(trilistV, myEditor, myTriangleList, true ) // タップされた三角形の基本処理を行う
                 setTriangleDetails(myTriangleList) // タップされた三角形の詳細設定を行う
                 setEditTextContent(myTriangleList) // EditTextに三角形情報をセットする
 
@@ -2107,12 +2103,12 @@ class MainActivity : AppCompatActivity(),
         }
 
         Log.d("SetTarget", "Tap Triangle is : " + my_view.myTriangleList.lastTapNumber_ + ", side is :" + my_view.myTriangleList.lastTapSide_ )
-
+        logListCurrent()
     }
 
     // タップされた三角形に関連する基本処理を行う関数
-    fun handleTriangleTap(trilistV: TriangleList, myEditor: EditorTable, myTriangleList: TriangleList ) {
-        myEditor.scroll(trilistV.lastTapNumber_ - trilistV.current, myTriangleList, myELSecond, myELThird) // スクロールしてタップされた三角形を表示
+    fun handleTriangleTap(trilistV: TriangleList, myEditor: EditorTable, myTriangleList: TriangleList, isEditorScroll: Boolean = false ) {
+        if( isEditorScroll ) myEditor.scroll(trilistV.lastTapNumber_ - trilistV.current, myTriangleList, myELSecond, myELThird) // スクロールしてタップされた三角形を表示
         trilistV.current = trilistV.lastTapNumber_ // 現在の三角形を更新
         myTriangleList.setCurrent(my_view.myTriangleList.lastTapNumber_) // myTriangleListの現在の三角形を更新
         myTriangleList.lastTapNumber_ = my_view.myTriangleList.lastTapNumber_ // 最後にタップされた三角形の番号を更新
@@ -3152,6 +3148,16 @@ class MainActivity : AppCompatActivity(),
 
     //endregion
 
+    // region logs
+    private fun logListCurrent(tag: String="ui", callerName: String = "unknown"){
+        Log.d(tag,callerName+" my_view.trilist.current:"+my_view.myTriangleList.current)
+        Log.d(tag,callerName+" my_view.trilist.lastTapNumber:"+my_view.myTriangleList.lastTapNumber_)
+        Log.d(tag,callerName+" mainActivity.trilist.current:"+myTriangleList.current)
+        Log.d(tag,callerName+" mainActivity.trilist.lastTapNumber:"+myTriangleList.lastTapNumber_)
+        Log.d(tag,callerName+" mainActivity.dedlist.current:"+myDeductionList.current)
+        Log.d(tag,callerName+" mainActivity.dedlist.lastTapIndex_:"+myDeductionList.lastTapIndex_)
+    }
 
+    //endregion
 
 } // end of class
