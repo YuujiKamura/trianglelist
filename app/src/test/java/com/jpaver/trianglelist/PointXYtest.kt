@@ -26,15 +26,27 @@ class PointXYtest {
     }
 
     @Test
-    fun testReflectedPoint() {
+    fun testMirroredPoint() {
         val p = PointXY(1f, 2f) // ミラーする点
         val lineStart = PointXY(0f, 0f) // 直線の始点
         val lineEnd = PointXY(2f, 2f) // 直線の終点
 
+        val mirroredPoint = p.mirroredPoint(lineStart, lineEnd)
+
+        assertEquals(2f, mirroredPoint.x, 0.001f) // 期待されるx座標は2
+        assertEquals(1f, mirroredPoint.y, 0.001f) // 期待されるy座標は1
+    }
+
+    @Test
+    fun testReflectedPoint() {
+        val p = PointXY(1f, 2f) // ミラーする点
+        val lineStart = PointXY(0f, 0f) // 直線の始点
+        val lineEnd = PointXY(2.5f, 5f) // 直線の終点
+
         val reflectedPoint = p.reflectedPoint(lineStart, lineEnd)
 
-        assertEquals(2f, reflectedPoint.x, 0.001f)
-        assertEquals(1f, reflectedPoint.y, 0.001f)
+        assertEquals(1f, reflectedPoint.x, 0.001f)
+        assertEquals(2f, reflectedPoint.y, 0.001f)
     }
 
     @Test

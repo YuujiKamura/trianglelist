@@ -1379,8 +1379,8 @@ public class Triangle extends EditObject implements Cloneable {
 
     public PointXY pointUnconnectedSide( PointXY ref){
         float Coefficient = -0.4f;
-        if( nodeTriangleB_ == null ) return ref.reflectedPoint(pointAB_,pointBC_).scale(1f,-1f);//.scale(Coefficient);//offset( midPointB, getAverageLength()*Coefficient);
-        if( nodeTriangleC_ == null ) return ref.reflectedPoint(pointBC_,point[0]).scale(1f,-1f);//offset( midPointC, -getAverageLength()*Coefficient);
+        if( nodeTriangleB_ == null ) return ref.mirroredPoint(pointAB_,pointBC_).scale(1f,-1f);//.scale(Coefficient);//offset( midPointB, getAverageLength()*Coefficient);
+        if( nodeTriangleC_ == null ) return ref.mirroredPoint(pointBC_,point[0]).scale(1f,-1f);//offset( midPointC, -getAverageLength()*Coefficient);
         else return ref;
     }
     public float getAngle() { return this.angleInGlobal_; }
