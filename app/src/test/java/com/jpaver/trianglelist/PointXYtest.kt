@@ -26,6 +26,18 @@ class PointXYtest {
     }
 
     @Test
+    fun testReflectedPoint() {
+        val p = PointXY(1f, 2f) // ミラーする点
+        val lineStart = PointXY(0f, 0f) // 直線の始点
+        val lineEnd = PointXY(2f, 2f) // 直線の終点
+
+        val reflectedPoint = p.reflectedPoint(lineStart, lineEnd)
+
+        assertEquals(2f, reflectedPoint.x, 0.001f)
+        assertEquals(1f, reflectedPoint.y, 0.001f)
+    }
+
+    @Test
     fun testTrimming(){
 
         val trimline = ArrayList<PointXY>()

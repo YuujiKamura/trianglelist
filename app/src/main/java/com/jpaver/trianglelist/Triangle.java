@@ -1370,7 +1370,7 @@ public class Triangle extends EditObject implements Cloneable {
     }
 
     public PointXY pointMiddleOuterUnconnecterdSide( PointXY ref, float Coefficient ){
-        return this.pointUnconnectedSide(ref).crossOffset(ref, -Coefficient*scale_ );
+        return this.pointUnconnectedSide(ref);//.crossOffset(ref, -Coefficient*scale_ );
     }
 
     public float getAverageLength(){
@@ -1379,10 +1379,8 @@ public class Triangle extends EditObject implements Cloneable {
 
     public PointXY pointUnconnectedSide( PointXY ref){
         float Coefficient = -0.4f;
-        PointXY midPointB = pointAB_.calcMidPoint(pointBC_);
-        PointXY midPointC = pointBC_.calcMidPoint(point[0]);
-        if( nodeTriangleB_ == null ) return ref.offset( midPointB, getAverageLength()*Coefficient);
-        if( nodeTriangleC_ == null ) return ref.offset( midPointC, -getAverageLength()*Coefficient);
+        if( nodeTriangleB_ == null ) return ref.reflectedPoint(pointAB_,pointBC_).scale(1f,-1f);//.scale(Coefficient);//offset( midPointB, getAverageLength()*Coefficient);
+        if( nodeTriangleC_ == null ) return ref.reflectedPoint(pointBC_,point[0]).scale(1f,-1f);//offset( midPointC, -getAverageLength()*Coefficient);
         else return ref;
     }
     public float getAngle() { return this.angleInGlobal_; }

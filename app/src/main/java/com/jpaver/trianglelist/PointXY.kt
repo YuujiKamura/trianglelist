@@ -28,6 +28,26 @@ class PointXY : Cloneable {
         return this
     }
 
+    fun reflectedPoint(lineStart: PointXY, lineEnd: PointXY): PointXY {
+        val dx = lineEnd.x - lineStart.x
+        val dy = lineEnd.y - lineStart.y
+
+        // 直線の傾きとy切片を計算
+        val m = dy / dx
+        val b = lineStart.y - m * lineStart.x
+
+        // 点pから直線に下ろした垂線の足のx座標を計算
+        val xh = (m * y + x - m * b) / (m * m + 1)
+        // 垂線の足のy座標を計算
+        val yh = m * xh + b
+
+        // 反射点を計算
+        val xp = 2 * xh - x
+        val yp = 2 * yh - y
+
+        return PointXY(xp, yp)
+    }
+
     fun flip(p2: PointXY): PointXY {
         val p3 = PointXY(p2.x, p2.y)
         p2[x] = y
