@@ -60,7 +60,7 @@ class PointXY : Cloneable {
         return PointXY(scaledX, scaledY)
     }
 
-    fun mirroredAndScaledPoint(lineStart: PointXY, lineEnd: PointXY, scaleX: Float, scaleY: Float): PointXY {
+    fun mirroredAndScaledPoint(lineStart: PointXY, lineEnd: PointXY, scaleX: Float = 1f, scaleY: Float = 1f ): PointXY {
         validateInputs(lineStart, lineEnd, scaleX, scaleY)
         val mirroredPoint = calculateMirroredPoint(lineStart, lineEnd)
         return scalePoint(mirroredPoint, this, scaleX, scaleY)
