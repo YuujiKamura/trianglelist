@@ -36,21 +36,24 @@ class PointXY : Cloneable {
             throw IllegalArgumentException("Line start and end points cannot be the same.")
         }
     }
+    override fun toString(): String {
+        return "PointXY(x=$x, y=$y)"
+    }
 
     private fun calculateMirroredPoint(lineStart: PointXY, lineEnd: PointXY): PointXY {
         val dx = lineEnd.x - lineStart.x
         val dy = lineEnd.y - lineStart.y
 
-        if (dx == 0f) { // 垂直な直線
-            return PointXY(x, 2 * lineStart.y - y)
+        return if (dx == 0f) { // 垂直な直線
+            PointXY(x, 2 * lineStart.y - y)
         } else if (dy == 0f) { // 水平な直線
-            return PointXY(2 * lineStart.x - x, y)
+            PointXY(2 * lineStart.x - x, y)
         } else { // 一般のケース
             val a = dy / dx
             val b = lineStart.y - a * lineStart.x
             val xh = (x + a * y - a * b) / (1 + a * a)
             val yh = (a * x + a * a * y + b) / (1 + a * a)
-            return PointXY(2 * xh - x, 2 * yh - y)
+            PointXY(2 * xh - x, 2 * yh - y)
         }
     }
 
