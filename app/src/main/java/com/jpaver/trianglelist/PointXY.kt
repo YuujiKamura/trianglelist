@@ -48,6 +48,28 @@ class PointXY : Cloneable {
         return PointXY(xp, yp)
     }
 
+    fun mirroredAndScaledPoint(lineStart: PointXY, lineEnd: PointXY, scaleX: Float, scaleY: Float): PointXY {
+        // ミラーリングされた点を計算
+        val dx = lineEnd.x - lineStart.x
+        val dy = lineEnd.y - lineStart.y
+        val a = dy / dx
+        val b = lineStart.y - a * lineStart.x
+
+        // 点Pから直線への垂線の交点を計算
+        val xh = (x + a * y - a * b) / (1 + a * a)
+        val yh = (a * x + a * a * y + b) / (1 + a * a)
+
+        // ミラーリングされた点
+        val xm = 2 * xh - x
+        val ym = 2 * yh - y
+
+        // 原点からの距離に基づいてスケーリング
+        val scaledX = (xm - x) * scaleX + x
+        val scaledY = (ym - y) * scaleY + y
+
+        return PointXY(scaledX, scaledY)
+    }
+
     fun mirroredPoint(lineStart: PointXY, lineEnd: PointXY): PointXY {
         val dx = lineEnd.x - lineStart.x
         val dy = lineEnd.y - lineStart.y
