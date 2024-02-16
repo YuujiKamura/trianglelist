@@ -8,14 +8,14 @@ class PointXYtest {
 
 
     private fun assertPointXYEquals(expected: PointXY, actual: PointXY, delta: Double = 0.001 ) {
-        System.out.printf( "PointXY actual x: %s, y: %s, expected x: %s, y: %s", expected.x, expected.y, actual.x, actual.y)
+        System.out.printf( "PointXY actual x: %s, y: %s, expected x: %s, y: %s %n", expected.x, expected.y, actual.x, actual.y)
         assertEquals(expected.y.toDouble(), actual.y.toDouble(), delta )
         assertEquals(expected.x.toDouble(), actual.x.toDouble(), delta )
 
     }
 
     @Test
-    fun testOriginalPoint() {
+    fun testMirrorOriginalPoint() {
         val p = PointXY(1f, 2f)
         val lineStart = PointXY(0f, 0f)
         val lineEnd = PointXY(2f, 2f)
@@ -24,6 +24,34 @@ class PointXYtest {
 
         val actualPoint = p.mirroredAndScaledPoint(lineStart, lineEnd, scaleX, scaleY)
         val expectedPoint = PointXY(2f, 1f)
+
+        assertPointXYEquals(expectedPoint, actualPoint, 0.001)
+    }
+
+    @Test
+    fun testMirrorScaleUp() {
+        val p = PointXY(1f, 2f)
+        val lineStart = PointXY(0f, 0f)
+        val lineEnd = PointXY(2f, 2f)
+        val scaleX = 2f
+        val scaleY = 2f
+
+        val actualPoint = p.mirroredAndScaledPoint(lineStart, lineEnd, scaleX, scaleY)
+        val expectedPoint = PointXY(3f, 0f)
+
+        assertPointXYEquals(expectedPoint, actualPoint, 0.001)
+    }
+
+    @Test
+    fun testMirrorScaleDown() {
+        val p = PointXY(1f, 2f)
+        val lineStart = PointXY(0f, 0f)
+        val lineEnd = PointXY(2f, 2f)
+        val scaleX = 0.5f
+        val scaleY = 0.5f
+
+        val actualPoint = p.mirroredAndScaledPoint(lineStart, lineEnd, scaleX, scaleY)
+        val expectedPoint = PointXY(1.5f, 1.5f)
 
         assertPointXYEquals(expectedPoint, actualPoint, 0.001)
     }
@@ -45,30 +73,6 @@ class PointXYtest {
 
         Assert.assertEquals( -2.0, vec1[1].minus(vec1[0]).outerProduct( vec2[1].minus(vec2[0]) ), 0.0001 )
 
-    }
-
-    @Test
-    fun testMirroredPoint() {
-        val p = PointXY(1f, 2f) // ミラーする点
-        val lineStart = PointXY(0f, 0f) // 直線の始点
-        val lineEnd = PointXY(2f, 2f) // 直線の終点
-
-        val mirroredPoint = p.mirroredPoint(lineStart, lineEnd)
-
-        assertEquals(2f, mirroredPoint.x, 0.001f) // 期待されるx座標は2
-        assertEquals(1f, mirroredPoint.y, 0.001f) // 期待されるy座標は1
-    }
-
-    @Test
-    fun testReflectedPoint() {
-        val p = PointXY(1f, 2f) // ミラーする点
-        val lineStart = PointXY(0f, 0f) // 直線の始点
-        val lineEnd = PointXY(2.5f, 5f) // 直線の終点
-
-        val reflectedPoint = p.reflectedPoint(lineStart, lineEnd)
-
-        assertEquals(1f, reflectedPoint.x, 0.001f)
-        assertEquals(2f, reflectedPoint.y, 0.001f)
     }
 
     @Test

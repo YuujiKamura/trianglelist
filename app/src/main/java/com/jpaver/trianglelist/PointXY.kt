@@ -28,74 +28,42 @@ class PointXY : Cloneable {
         return this
     }
 
-    fun reflectedPoint(lineStart: PointXY, lineEnd: PointXY): PointXY {
-        val dx = lineEnd.x - lineStart.x
-        val dy = lineEnd.y - lineStart.y
-
-        // 直線の傾きとy切片を計算
-        val m = dy / dx
-        val b = lineStart.y - m * lineStart.x
-
-        // 点pから直線に下ろした垂線の足のx座標を計算
-        val xh = (m * y + x - m * b) / (m * m + 1)
-        // 垂線の足のy座標を計算
-        val yh = m * xh + b
-
-        // 反射点を計算
-        val xp = 2 * xh - x
-        val yp = 2 * yh - y
-
-        return PointXY(xp, yp)
+    private fun validateInputs(lineStart: PointXY, lineEnd: PointXY, scaleX: Float, scaleY: Float) {
+        if (scaleX.isNaN() || scaleX.isInfinite() || scaleY.isNaN() || scaleY.isInfinite()) {
+            throw IllegalArgumentException("Scaling factors must be valid numbers.")
+        }
+        if (lineStart.x == lineEnd.x && lineStart.y == lineEnd.y) {
+            throw IllegalArgumentException("Line start and end points cannot be the same.")
+        }
     }
 
-    fun mirroredAndScaledPoint(lineStart: PointXY, lineEnd: PointXY, scaleX: Float, scaleY: Float): PointXY {
-        // ミラーリングされた点を計算
+    private fun calculateMirroredPoint(lineStart: PointXY, lineEnd: PointXY): PointXY {
         val dx = lineEnd.x - lineStart.x
         val dy = lineEnd.y - lineStart.y
-        val a = dy / dx
-        val b = lineStart.y - a * lineStart.x
 
-        // 点Pから直線への垂線の交点を計算
-        val xh = (x + a * y - a * b) / (1 + a * a)
-        val yh = (a * x + a * a * y + b) / (1 + a * a)
+        if (dx == 0f) { // 垂直な直線
+            return PointXY(x, 2 * lineStart.y - y)
+        } else if (dy == 0f) { // 水平な直線
+            return PointXY(2 * lineStart.x - x, y)
+        } else { // 一般のケース
+            val a = dy / dx
+            val b = lineStart.y - a * lineStart.x
+            val xh = (x + a * y - a * b) / (1 + a * a)
+            val yh = (a * x + a * a * y + b) / (1 + a * a)
+            return PointXY(2 * xh - x, 2 * yh - y)
+        }
+    }
 
-        // ミラーリングされた点
-        val xm = 2 * xh - x
-        val ym = 2 * yh - y
-
-        // 原点からの距離に基づいてスケーリング
-        val scaledX = (xm - x) * scaleX + x
-        val scaledY = (ym - y) * scaleY + y
-
+    private fun scalePoint(point: PointXY, origin: PointXY, scaleX: Float, scaleY: Float): PointXY {
+        val scaledX = (point.x - origin.x) * scaleX + origin.x
+        val scaledY = (point.y - origin.y) * scaleY + origin.y
         return PointXY(scaledX, scaledY)
     }
 
-    fun mirroredPoint(lineStart: PointXY, lineEnd: PointXY): PointXY {
-        val dx = lineEnd.x - lineStart.x
-        val dy = lineEnd.y - lineStart.y
-
-        // 直線の傾きとy切片を計算（dxが0の場合は垂直な直線を考慮）
-        val m = if (dx != 0f) dy / dx else Float.POSITIVE_INFINITY
-        val b = lineStart.y - m * lineStart.x
-
-        val xh: Float
-        val yh: Float
-
-        if (m.isInfinite()) {
-            // 直線が垂直な場合
-            xh = lineStart.x
-            yh = y
-        } else {
-            // 点pから直線に下ろした垂線の足の座標を計算
-            xh = (m * y + x - m * b) / (m * m + 1)
-            yh = m * xh + b
-        }
-
-        // ミラーリングされた点を計算
-        val xm = 2 * xh - x
-        val ym = 2 * yh - y
-
-        return PointXY(xm, ym)
+    fun mirroredAndScaledPoint(lineStart: PointXY, lineEnd: PointXY, scaleX: Float, scaleY: Float): PointXY {
+        validateInputs(lineStart, lineEnd, scaleX, scaleY)
+        val mirroredPoint = calculateMirroredPoint(lineStart, lineEnd)
+        return scalePoint(mirroredPoint, this, scaleX, scaleY)
     }
 
     fun flip(p2: PointXY): PointXY {
