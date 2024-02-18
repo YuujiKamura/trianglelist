@@ -309,6 +309,8 @@ public class TriangleList extends EditList implements Cloneable {
     }
 
     public void setDimPathTextSize(float ts ){
+        setDimsUnconnectedSideToOuter();
+
         for (int i = 0; i < trilist_.size(); i++ ) {
             trilist_.get(i).setDimPath(ts);
         }
@@ -330,6 +332,20 @@ public class TriangleList extends EditList implements Cloneable {
             trilist_.get(i).pointNumber_ = trilist_.get(i).pointNumber_.rotate(getBasepoint(), angle);
         }
 
+        setDimsUnconnectedSideToOuter();
+    }
+
+    public void setDimsUnconnectedSideToOuter(){
+        for (int i = 0; i < trilist_.size(); i++ ) {
+            Triangle target = trilist_.get(i);
+            if( target.nodeTriangleA_ == null ) target.myDimAlignA_ = 1;
+            if( target.nodeTriangleB_ == null )
+                 target.myDimAlignB_ = 1;
+            else target.myDimAlignB_ = 3;
+            if( target.nodeTriangleC_ == null )
+                 target.myDimAlignC_ = 1;
+            else target.myDimAlignC_ = 3;
+        }
     }
 
     public void recoverState(PointXY bp) {

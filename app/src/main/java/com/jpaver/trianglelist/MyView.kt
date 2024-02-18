@@ -977,6 +977,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         textSpacer_ = ts_ * 0.2f
         myTriangleList.setDimPathTextSize( ts_ )
 
+
         invalidate()
         Log.d( "CadView", "TextSize changed to:" + ts_ )
     }

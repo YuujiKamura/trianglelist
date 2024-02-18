@@ -1338,16 +1338,16 @@ public class Triangle extends EditObject implements Cloneable {
         dimAngleC_ = getAngleMmCA();
     }
 
-    public int calcDimAlignByInnerAngleOf(int ABC){    // 夾角の、1:外 　3:内
-        // ABC == 0 の場合の特定の条件で 1 を返す
-        if (ABC == 0 && (parentBC_ == 9 || parentBC_ == 10 || parentBC_ > 2 ||
+    public int calcDimAlignByInnerAngleOf(int side){    // 夾角の、1:外 　3:内
+        // side == 0 の場合の特定の条件で 1 を返す
+        if (side == 0 && (parentBC_ == 9 || parentBC_ == 10 || parentBC_ > 2 ||
                 nodeTriangleB_ != null || nodeTriangleC_ != null)) {
             return 1;
         }
 
-        // ABC == 1 または ABC == 2 の場合、それぞれ nodeTriangleB_ と nodeTriangleC_ が null でなければ 1 を返す
-        if ((ABC == 1 && nodeTriangleB_ != null) ||
-                (ABC == 2 && nodeTriangleC_ != null)) {
+        // side == 1 または side == 2 の場合、それぞれ nodeTriangleB_ と nodeTriangleC_ が null でなければ 1 を返す
+        if ((side == 1 && nodeTriangleB_ != null) ||
+                (side == 2 && nodeTriangleC_ != null)) {
             return 1;
         }
 
