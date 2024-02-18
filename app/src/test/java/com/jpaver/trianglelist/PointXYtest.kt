@@ -8,7 +8,7 @@ class PointXYtest {
 
 
     private fun assertPointXYEquals(expected: PointXY, actual: PointXY, delta: Double = 0.001 ) {
-        System.out.printf( "PointXY actual x: %s, y: %s, expected x: %s, y: %s %n", expected.x, expected.y, actual.x, actual.y)
+        System.out.printf( "PointXY expected x: %s, y: %s, actual x: %s, y: %s %n", expected.x, expected.y, actual.x, actual.y)
         assertEquals(expected.y.toDouble(), actual.y.toDouble(), delta )
         assertEquals(expected.x.toDouble(), actual.x.toDouble(), delta )
 
@@ -19,39 +19,9 @@ class PointXYtest {
         val p = PointXY(1f, 2f)
         val lineStart = PointXY(0f, 0f)
         val lineEnd = PointXY(2f, 2f)
-        val scaleX = 1f
-        val scaleY = 1f
 
-        val actualPoint = p.mirroredAndScaledPoint(lineStart, lineEnd, scaleX, scaleY)
+        val actualPoint = p.mirror(lineStart, lineEnd )
         val expectedPoint = PointXY(2f, 1f)
-
-        assertPointXYEquals(expectedPoint, actualPoint, 0.001)
-    }
-
-    @Test
-    fun testMirrorScaleUp() {
-        val p = PointXY(1f, 2f)
-        val lineStart = PointXY(0f, 0f)
-        val lineEnd = PointXY(2f, 2f)
-        val scaleX = 2f
-        val scaleY = 2f
-
-        val actualPoint = p.mirroredAndScaledPoint(lineStart, lineEnd, scaleX, scaleY)
-        val expectedPoint = PointXY(3f, 0f)
-
-        assertPointXYEquals(expectedPoint, actualPoint, 0.001)
-    }
-
-    @Test
-    fun testMirrorScaleDown() {
-        val p = PointXY(1f, 2f)
-        val lineStart = PointXY(0f, 0f)
-        val lineEnd = PointXY(2f, 2f)
-        val scaleX = 0.5f
-        val scaleY = 0.5f
-
-        val actualPoint = p.mirroredAndScaledPoint(lineStart, lineEnd, scaleX, scaleY)
-        val expectedPoint = PointXY(1.5f, 1.5f)
 
         assertPointXYEquals(expectedPoint, actualPoint, 0.001)
     }

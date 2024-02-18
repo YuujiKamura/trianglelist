@@ -37,7 +37,7 @@ public class Triangle extends EditObject implements Cloneable {
                 }
             }
         }
-        sb.append("%n");
+        sb.append(" pointCA:").append(point[0]).append(" pointAB:").append(pointAB_).append(" pointBC:").append(pointBC_);
         return sb.toString();
     }
 
@@ -1373,15 +1373,13 @@ public class Triangle extends EditObject implements Cloneable {
         return this.pointUnconnectedSide(ref);//.crossOffset(ref, -Coefficient*scale_ );
     }
 
-    public float getAverageLength(){
+    /*public float getAverageLength(){
         return (getLengthA_()+getLengthB_()+getLengthC_())*0.33f;
-    }
+    }*/
 
     public PointXY pointUnconnectedSide( PointXY ref){
-        float onebyscale = 1/scale_;
-        float Coefficient = 1.1f;//*onebyscale;
-        if( nodeTriangleB_ == null ) return ref.mirroredAndScaledPoint(pointAB_, pointBC_,Coefficient,-Coefficient );
-        if( nodeTriangleC_ == null ) return ref.mirroredAndScaledPoint(pointBC_, point[0],Coefficient,-Coefficient );
+        if( nodeTriangleB_ == null ) return ref.mirror(pointAB_, pointBC_, -1f ).scale(1f, -1f);
+        if( nodeTriangleC_ == null ) return ref.mirror(pointBC_, point[0], -1f ).scale(1f,-1f);
         return ref;
     }
 

@@ -249,8 +249,12 @@ class Deduction(var num: Int = 0,
     fun isCollide( tri: Triangle): Boolean{
         if(!tri.isCollide( point )) return false
 
-        pointFlag = tri.pointMiddleOuterUnconnecterdSide(pointFlag, 0.5f)
+        pointFlag = tri.pointUnconnectedSide( point )
 
         return true
+    }
+
+    override fun toString(): String {
+        return "Deduction $num $name $point $pointFlag $typestring $infoStr"
     }
 }

@@ -28,10 +28,7 @@ class PointXY : Cloneable {
         return this
     }
 
-    private fun validateInputs(lineStart: PointXY, lineEnd: PointXY, scaleX: Float, scaleY: Float) {
-        if (scaleX.isNaN() || scaleX.isInfinite() || scaleY.isNaN() || scaleY.isInfinite()) {
-            throw IllegalArgumentException("Scaling factors must be valid numbers.")
-        }
+    private fun validateInputs(lineStart: PointXY, lineEnd: PointXY ) {
         if (lineStart.x == lineEnd.x && lineStart.y == lineEnd.y) {
             throw IllegalArgumentException("Line start and end points cannot be the same.")
         }
@@ -40,33 +37,9 @@ class PointXY : Cloneable {
         return "PointXY(x=$x, y=$y)"
     }
 
-    private fun calculateMirroredPoint(lineStart: PointXY, lineEnd: PointXY): PointXY {
-        val dx = lineEnd.x - lineStart.x
-        val dy = lineEnd.y - lineStart.y
-
-        return if (dx == 0f) { // 垂直な直線
-            PointXY(x, 2 * lineStart.y - y)
-        } else if (dy == 0f) { // 水平な直線
-            PointXY(2 * lineStart.x - x, y)
-        } else { // 一般のケース
-            val a = dy / dx
-            val b = lineStart.y - a * lineStart.x
-            val xh = (x + a * y - a * b) / (1 + a * a)
-            val yh = (a * x + a * a * y + b) / (1 + a * a)
-            PointXY(2 * xh - x, 2 * yh - y)
-        }
-    }
-
-    private fun scalePoint(point: PointXY, origin: PointXY, scaleX: Float, scaleY: Float): PointXY {
-        val scaledX = (point.x - origin.x) * scaleX + origin.x
-        val scaledY = (point.y - origin.y) * scaleY + origin.y
-        return PointXY(scaledX, scaledY)
-    }
-
-    fun mirroredAndScaledPoint(lineStart: PointXY, lineEnd: PointXY, scaleX: Float = 1f, scaleY: Float = 1f ): PointXY {
-        validateInputs(lineStart, lineEnd, scaleX, scaleY)
-        val mirroredPoint = calculateMirroredPoint(lineStart, lineEnd)
-        return scalePoint(mirroredPoint, this, scaleX, scaleY)
+    fun mirror(lineStart: PointXY, lineEnd: PointXY, clockwise: Float = -1f ): PointXY {
+        validateInputs( lineStart, lineEnd )
+        return this.rotate(lineStart, this.calcAngle(lineStart, lineEnd) * 2f * clockwise )
     }
 
     fun flip(p2: PointXY): PointXY {

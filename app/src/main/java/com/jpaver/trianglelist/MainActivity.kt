@@ -1837,6 +1837,8 @@ class MainActivity : AppCompatActivity(),
         myDeductionList.add( processDeduction(params) )
         my_view.setDeductionList(myDeductionList, mScale)
         lastParams = params
+
+        logFabController()
         return true
 
     }
@@ -1871,10 +1873,11 @@ class MainActivity : AppCompatActivity(),
                 val trilistinview = my_view.myTriangleList
                 val parentTriangle = trilistinview.get(params.pn)
                 Log.d("Deduction", "parentTriangle:" + parentTriangle.getInfo() )
-                params.pts = parentTriangle.pointMiddleOuterUnconnecterdSide(params.pt, 0.5f)
+                params.pts = parentTriangle.pointUnconnectedSide(params.pt)
                 //params.pts = ptri.hataage(params.pt, 30f, -1f, params.n.toFloat() )
                 Log.d("Deduction", "params.pts" + params.pts.x + ", " + params.pts.y)
             }
+
 
         }
         return params
@@ -1891,6 +1894,7 @@ class MainActivity : AppCompatActivity(),
 
         // 所属する三角形の判定処理
         myDeductionList.replace(params.n, processDeduction(params) )
+        logFabController()
         return true
     }
 
@@ -3156,6 +3160,11 @@ class MainActivity : AppCompatActivity(),
         Log.d(tag,callerName+" mainActivity.trilist.lastTapNumber:"+myTriangleList.lastTapNumber_)
         Log.d(tag,callerName+" mainActivity.dedlist.current:"+myDeductionList.current)
         Log.d(tag,callerName+" mainActivity.dedlist.lastTapIndex_:"+myDeductionList.lastTapIndex_)
+    }
+
+    private fun logFabController(tag: String="ui fab", callerName: String = "unknown" ){
+        Log.d(tag,"mainActivity ${myDeductionList.get(myDeductionList.size())}")
+        Log.d(tag,"mainActivity ${my_view.myTriangleList.get(myTriangleList.size())}")
     }
 
     //endregion
