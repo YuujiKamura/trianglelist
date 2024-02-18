@@ -1722,7 +1722,7 @@ class MainActivity : AppCompatActivity(),
                 ), 1 / mScale, -1 / mScale)
             if( tp.lengthTo(tri.pointCenter_) < 10f ){ // あまり遠い時はスルー
                 tri.pointNumber_ = tp
-                tri.isPointNumberMoved_ = true
+                tri.isPointNumberMovedByUser_ = true
                 my_view.setTriangleList(myTriangleList, mScale, false)
             }
         }
@@ -2771,7 +2771,7 @@ class MainActivity : AppCompatActivity(),
                 val pt: PointXY = mt.pointNumber_
                 val cp = parentBCtoCParam(mt.parentBC, mt.lengthNotSized[0], mt.cParam_)
 
-                writer.write("${mt.getMyNumber_()},${mt.getLengthA()},${mt.getLengthB()},${mt.getLengthC()},${mt.parentNumber},${mt.parentBC},${mt.getMyName_()},${pt.x},${pt.y},${mt.isPointNumberMoved_},${mt.color_},${mt.dimSideAlignA_},${mt.dimSideAlignB_},${mt.dimSideAlignC_},${mt.myDimAlignA_},${mt.myDimAlignB_},${mt.myDimAlignC_},${cp.side},${cp.type},${cp.lcr},${mt.isChangeDimAlignB_},${mt.isChangeDimAlignC_},${mt.angleInGlobal_},${mt.pointCA_.x},${mt.pointCA_.y},${mt.angleInLocal_}")
+                writer.write("${mt.getMyNumber_()},${mt.getLengthA()},${mt.getLengthB()},${mt.getLengthC()},${mt.parentNumber},${mt.parentBC},${mt.getMyName_()},${pt.x},${pt.y},${mt.isPointNumberMovedByUser_},${mt.color_},${mt.dimSideAlignA_},${mt.dimSideAlignB_},${mt.dimSideAlignC_},${mt.myDimAlignA_},${mt.myDimAlignB_},${mt.myDimAlignC_},${cp.side},${cp.type},${cp.lcr},${mt.isChangeDimAlignB_},${mt.isChangeDimAlignC_},${mt.angleInGlobal_},${mt.pointCA_.x},${mt.pointCA_.y},${mt.angleInLocal_}")
                 writer.newLine()
             }
 
@@ -2944,7 +2944,7 @@ class MainActivity : AppCompatActivity(),
 
         mt.setMyName_(chunks[6]!!.toString())
         //pointNumber
-        if(chunks[9]!! == "true") mt.setPointNumberMoved_(
+        if(chunks[9]!! == "true") mt.setPointNumberMovedByUser_(
             PointXY(
                 chunks[7]!!.toFloat(),
                 chunks[8]!!.toFloat()
@@ -3104,7 +3104,7 @@ class MainActivity : AppCompatActivity(),
             mT.setMyName_(chunks[6])
             if( trilist.size() > 1 ) trilist.get(trilist.size() - 1).childSide_ = chunks[5].toInt()
 
-            if(chunks[9] == "true") mT.setPointNumberMoved_(
+            if(chunks[9] == "true") mT.setPointNumberMovedByUser_(
                 PointXY(
                     chunks[7].toFloat(),
                     chunks[8].toFloat()

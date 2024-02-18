@@ -61,7 +61,7 @@ public class Triangle extends EditObject implements Cloneable {
     
     PointXY pointCenter_ = new PointXY(0f, 0f);
     PointXY pointNumber_ = new PointXY(0f, 0f);
-    boolean isPointNumberMoved_ = false;
+    boolean isPointNumberMovedByUser_ = false;
 
     PointXY dimPointA_ = new PointXY(0f, 0f);
     PointXY dimPointB_ = new PointXY(0f, 0f);
@@ -186,7 +186,7 @@ public class Triangle extends EditObject implements Cloneable {
             b.pointBC_ = this.pointBC_.clone();
             b.pointCenter_ = this.pointCenter_.clone();
             b.pointNumber_ = this.pointNumber_.clone();
-            b.isPointNumberMoved_ = this.isPointNumberMoved_;
+            b.isPointNumberMovedByUser_ = this.isPointNumberMovedByUser_;
             b.myBP_.setLeft(myBP_.getLeft());
             b.myBP_.setTop(myBP_.getTop());
             b.myBP_.setRight(myBP_.getRight());
@@ -1328,7 +1328,7 @@ public class Triangle extends EditObject implements Cloneable {
     }
 
     private void finalizeCalculations() {
-        if (!isPointNumberMoved_) {
+        if (!isPointNumberMovedByUser_) {
             autoAlignPointNumber();
         }
         setMyBound();
@@ -1397,9 +1397,9 @@ public class Triangle extends EditObject implements Cloneable {
 
 // region pointNumber
 
-    public void setPointNumberMoved_(PointXY p){
+    public void setPointNumberMovedByUser_(PointXY p){
         this.pointNumber_ = p;
-        isPointNumberMoved_ = true;
+        isPointNumberMovedByUser_ = true;
     }
 
     public PointXY weightedMidpoint( float bias) {
@@ -1428,9 +1428,9 @@ public class Triangle extends EditObject implements Cloneable {
 
 
     private PointXY autoAlignPointNumber() {
-        if( isPointNumberMoved_ == false ){
+        if( isPointNumberMovedByUser_ == false ){
             if( getArea() <= 3f && ( getLengthAforce_() < 1.5f || getLengthBforce_() < 1.5f || getLengthCforce_() < 1.5f ) ) {
-                //isPointNumberMoved_ = true; //移動済みに変える
+                //isPointNumberMoved_ = true; //移動済みに変える,なくても平気？手動で移動させたときのみ？
                 return pointNumber_ = pointUnconnectedSide( pointCenter_, 1f, 1f, new PointXY(0f,0f) ).crossOffset(pointCenter_, getLengthScaledNotConnected()*1f );
             }
             else return pointNumber_ = weightedMidpoint(25f);
@@ -1439,8 +1439,8 @@ public class Triangle extends EditObject implements Cloneable {
     }
 
     public boolean isPointNumberMoved(){
-        if( pointNumber_ != pointCenter_ ) return isPointNumberMoved_ = true;
-        else return isPointNumberMoved_ = false;
+        if( pointNumber_ != pointCenter_ ) return isPointNumberMovedByUser_ = true;
+        else return isPointNumberMovedByUser_ = false;
     }
 
 //endregion
