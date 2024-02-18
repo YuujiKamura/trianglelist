@@ -815,11 +815,6 @@ public class Triangle extends EditObject implements Cloneable {
         return this.clone();
     }
 
-    public void setPointNumberMoved_(PointXY p){
-        this.pointNumber_ = p;
-        isPointNumberMoved_ = true;
-    }
-
 
     public void setDimPath( float ts ){
         if( point[0] == null || pointAB_ == null || pointBC_ == null ) return;
@@ -1402,6 +1397,11 @@ public class Triangle extends EditObject implements Cloneable {
 
 // region pointNumber
 
+    public void setPointNumberMoved_(PointXY p){
+        this.pointNumber_ = p;
+        isPointNumberMoved_ = true;
+    }
+
     public PointXY weightedMidpoint( float bias) {
 
         // 角度が大きいほど重みを大きくするための調整
@@ -1428,22 +1428,27 @@ public class Triangle extends EditObject implements Cloneable {
 
 
     private PointXY autoAlignPointNumber() {
-        if(!isPointNumberMoved_ ){
-            if( getArea() <= 5f ) {
-                isPointNumberMoved_ = true; //移動済みに変える
-                return pointNumber_ = pointUnconnectedSide( pointCenter_, 1f, 1f).crossOffset(pointCenter_, getLengthScaledNotConnected()*1f );
+        if( isPointNumberMoved_ == false ){
+            if( getArea() <= 3f && ( getLengthAforce_() < 1.5f || getLengthBforce_() < 1.5f || getLengthCforce_() < 1.5f ) ) {
+                //isPointNumberMoved_ = true; //移動済みに変える
+                return pointNumber_ = pointUnconnectedSide( pointCenter_, 1f, 1f, new PointXY(0f,0f) ).crossOffset(pointCenter_, getLengthScaledNotConnected()*1f );
             }
             else return pointNumber_ = weightedMidpoint(25f);
         }
         return pointNumber_; //手動で移動されている場合
     }
 
+    public boolean isPointNumberMoved(){
+        if( pointNumber_ != pointCenter_ ) return isPointNumberMoved_ = true;
+        else return isPointNumberMoved_ = false;
+    }
+
 //endregion
 
 
-    public PointXY pointUnconnectedSide(PointXY ref, float scaleX, float scaleY){
-        if( nodeTriangleB_ == null ) return ref.mirroredAndScaledPoint(pointBC_, pointAB_, scaleX,scaleY);
-        if( nodeTriangleC_ == null ) return ref.mirroredAndScaledPoint(point[0], pointBC_, scaleX,scaleY);
+    public PointXY pointUnconnectedSide(PointXY ref, float scaleX, float scaleY, PointXY scaleOrigin){
+        if( nodeTriangleB_ == null ) return ref.mirroredAndScaledPoint(pointBC_, pointAB_, scaleX,scaleY, scaleOrigin);
+        if( nodeTriangleC_ == null ) return ref.mirroredAndScaledPoint(point[0], pointBC_, scaleX,scaleY, scaleOrigin);
         return ref;
     }
 

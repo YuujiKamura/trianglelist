@@ -245,7 +245,7 @@ class MainActivity : AppCompatActivity(),
     lateinit var elsa2 : String
     lateinit var elsb2 : String
     lateinit var elsc2 : String
-
+//endregion
 
 
 //region Parameters
@@ -1903,7 +1903,12 @@ class MainActivity : AppCompatActivity(),
                 Log.d("Deduction", "parent:" + parent.toString() )
                 //ビュー空間からモデル空間にする際にY軸を反転する。そこからビュー空間に戻すためにさらにもう一度Y軸反転をかけている。
                 //これいらないのでは・・Deductionの管理をビュー空間ベースからモデル空間にすれば
-                params.ptF = parent.pointUnconnectedSide(params.pt.scale(1f,-1f), 1f, -1f)
+                params.ptF = parent.pointUnconnectedSide(
+                    params.pt.scale(1f,-1f),
+                    1f,
+                    -1f,
+                    PointXY(0f, 0f)
+                )
                 Log.d("Deduction", "params.point:  " + params.pt.x + ", " + params.pt.y)
                 Log.d("Deduction", "params.pointF: " + params.ptF.x + ", " + params.ptF.y)
             }
@@ -2938,6 +2943,7 @@ class MainActivity : AppCompatActivity(),
 
 
         mt.setMyName_(chunks[6]!!.toString())
+        //pointNumber
         if(chunks[9]!! == "true") mt.setPointNumberMoved_(
             PointXY(
                 chunks[7]!!.toFloat(),

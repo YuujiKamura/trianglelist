@@ -336,7 +336,7 @@ public class TriangleList extends EditList implements Cloneable {
         setBasepoint(bp.clone());
         for (int i = 0; i < trilist_.size(); i++ ) {
             trilist_.get(i).rotate(getBasepoint(), myAngle-180, false);
-
+            if( trilist_.get(i).isPointNumberMoved() == false ) trilist_.get(i).pointNumber_ = trilist_.get(i).pointNumber_.rotate(getBasepoint(), myAngle-180 );
         }
     }
 

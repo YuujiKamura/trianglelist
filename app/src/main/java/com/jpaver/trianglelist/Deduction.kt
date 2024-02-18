@@ -249,7 +249,7 @@ class Deduction(var num: Int = 0,
     fun isCollide( tri: Triangle): Boolean{
         if(!tri.isCollide( point )) return false
 
-        pointFlag = tri.pointUnconnectedSide(point, 1f, 1f)
+        pointFlag = tri.pointUnconnectedSide(point, 1f, 1f, PointXY(0f, 0f))
 
         return true
     }
