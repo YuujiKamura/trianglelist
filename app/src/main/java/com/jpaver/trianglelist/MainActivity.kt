@@ -245,12 +245,12 @@ class MainActivity : AppCompatActivity(),
     lateinit var elsa2 : String
     lateinit var elsb2 : String
     lateinit var elsc2 : String
-    //endregion
-
 
 
 
 //region Parameters
+    var isCSVsavedToPrivate = false
+
     private lateinit var myELFirst: EditTextViewLine
     private lateinit var myELSecond: EditTextViewLine
     private lateinit var myELThird: EditTextViewLine
@@ -297,7 +297,7 @@ class MainActivity : AppCompatActivity(),
     private var trilistUndo: TriangleList = TriangleList()
 
 
-    private var deductionMode: Boolean = false
+    var deductionMode: Boolean = false
     private var mIsCreateNew: Boolean = false
     private val onetohandred = 11.9f
     private val experience = 4f
@@ -519,9 +519,38 @@ class MainActivity : AppCompatActivity(),
     }
 //endregion
 
+    //region AppUpdate
+    private fun checkAppUpdate(): Boolean {
+        try {
+            val pInfo = packageManager.getPackageInfo(packageName, 0)
+            val currentVersion = pInfo.versionName
+            val prefs = getSharedPreferences("prefs", Context.MODE_PRIVATE)
+            val lastVersion = prefs.getString("lastVersion", "")
 
+            return currentVersion != lastVersion
+        } catch (e: PackageManager.NameNotFoundException) {
+            e.printStackTrace()
+        }
+        return false
+    }
+    private fun showNewFeaturesDialog() {
+        val versionName = BuildConfig.VERSION_NAME // アプリのバージョン名を取得
+
+        AlertDialog.Builder(this)
+            .setTitle("ver. $versionName") // タイトルにバージョン名を含める
+            .setMessage("新機能の説明をここに記述します。")
+            .setPositiveButton("OK") { dialog, which ->
+                // ダイアログが閉じられた時の処理をここに記述する
+                //recordAppVersion() // 新しいバージョンを記録
+            }
+            .create().show()
+    }
+
+
+    //endregion
 
     //region ActivityLifeCycle
+
     override fun onCreate(savedInstanceState: Bundle?) {
         Log.d("MainActivityLifeCycle", "onCreate")
 
@@ -729,7 +758,6 @@ class MainActivity : AppCompatActivity(),
 
     }
 
-    var isCSVsavedToPrivate = false
 
     override fun onPause(){
         super.onPause()
@@ -1671,7 +1699,7 @@ class MainActivity : AppCompatActivity(),
 
         if(deductionMode){
             val d = myDeductionList.get(dParams.n)
-            dParams.pts = my_view.getTapPoint()
+            dParams.ptF = my_view.getTapPoint()
             dParams.pt = d.point
             //var ded = myDeductionList.get(dParams_.n)
             my_view.getTapPoint().scale(
@@ -1820,7 +1848,7 @@ class MainActivity : AppCompatActivity(),
         |pn: $pn
         |pl: $pl
         |pt: (${pt.x}, ${pt.y})
-        |pts: (${pts.x}, ${pts.y})
+        |pts: (${ptF.x}, ${ptF.y})
         """.trimMargin()
         }
         Log.d(tag, paramsContents)
@@ -1846,7 +1874,7 @@ class MainActivity : AppCompatActivity(),
 
     private fun processDeduction(params: Params): Params {
         params.pt = my_view.getTapPoint()
-        params.pts = params.pt //PointXY(0f, 0f)
+        params.ptF = params.pt //PointXY(0f, 0f)
 
         //形状の自動判定
         if( params.b > 0f ) params.type = "Box"
@@ -1871,11 +1899,13 @@ class MainActivity : AppCompatActivity(),
                 )
 
                 val trilistinview = my_view.myTriangleList
-                val parentTriangle = trilistinview.get(params.pn)
-                Log.d("Deduction", "parentTriangle:" + parentTriangle.getInfo() )
-                params.pts = parentTriangle.pointUnconnectedSide(params.pt)
-                //params.pts = ptri.hataage(params.pt, 30f, -1f, params.n.toFloat() )
-                Log.d("Deduction", "params.pts" + params.pts.x + ", " + params.pts.y)
+                val parent = trilistinview.get(params.pn)
+                Log.d("Deduction", "parent:" + parent.toString() )
+                //ビュー空間からモデル空間にする際にY軸を反転する。そこからビュー空間に戻すためにさらにもう一度Y軸反転をかけている。
+                //これいらないのでは・・Deductionの管理をビュー空間ベースからモデル空間にすれば
+                params.ptF = parent.pointUnconnectedSide(params.pt.scale(1f,-1f), 1f, -1f)
+                Log.d("Deduction", "params.point:  " + params.pt.x + ", " + params.pt.y)
+                Log.d("Deduction", "params.pointF: " + params.ptF.x + ", " + params.ptF.y)
             }
 
 

@@ -541,7 +541,7 @@ public class TriangleList extends EditList implements Cloneable {
 
     public boolean resetTriangles(int cNum, Triangle curtri){
         if(curtri == null)  return false;
-        if(!curtri.validTriangle()) return false;
+        if(!curtri.isValid()) return false;
 
         //ノードの配列として定義した方がすっきりまとまる気がする。
         //親方向に走査するなら0、自身の接続方向がCなら２、二つの引数を渡して、総当たりに全方向走査する

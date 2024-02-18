@@ -80,10 +80,10 @@ public class TriangleTest {
     @Test
     public void testValid(){
         Triangle t = new Triangle(5f, 5f, 5f );
-        assertTrue(t.validTriangle());
+        assertTrue(t.isValid());
 
         Triangle t2 = new Triangle(5f, 5f, 15f );
-        assertFalse(t2.validTriangle());
+        assertFalse(t2.isValid());
 
     }
 
@@ -310,14 +310,14 @@ public class TriangleTest {
         Triangle myTriF5 = new Triangle(4.0f, 1.0f, 5.0f, new PointXY(0f,0f), 180.0f);
 
 
-        assertTrue(myTriT.validTriangle());
-        assertTrue(myTriT2.validTriangle());
+        assertTrue(myTriT.isValid());
+        assertTrue(myTriT2.isValid());
 
-        assertFalse(myTriF.validTriangle());
-        assertFalse(myTriF2.validTriangle());
-        assertFalse(myTriF3.validTriangle());
-        assertFalse(myTriF4.validTriangle());
-        assertFalse(myTriF5.validTriangle());
+        assertFalse(myTriF.isValid());
+        assertFalse(myTriF2.isValid());
+        assertFalse(myTriF3.isValid());
+        assertFalse(myTriF4.isValid());
+        assertFalse(myTriF5.isValid());
 
         TriangleList myList = new TriangleList();
         assertTrue(myList.add(myTriT, true));

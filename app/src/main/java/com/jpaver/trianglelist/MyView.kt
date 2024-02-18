@@ -309,7 +309,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         p2: Float,
         p3: Float
     ): Boolean {
-        if( ( p3 * p3 ) > 10000000f ) (context as MainActivity).fabReplace()
+        if( ( p3 * p3 ) > 10000000f && !(context as MainActivity).deductionMode ) (context as MainActivity).fabReplace()
         return true
     }
 
@@ -664,15 +664,15 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         if(tPathB.alignSide > 2) canvas.drawPath(makePath(tPathB), paintLine)
         if(tPathC.alignSide > 2) canvas.drawPath(makePath(tPathC), paintLine)
 
+        // 番号
+        drawTriangleNumber(canvas, tri, paintDim, paintB)
+
         // 寸法
         if(tri.getMyNumber_() == 1 || tri.parentBC > 2 || tri.cParam_.type != 0 || tri.myNumber_ == myTriangleList.lastTapNumber_ )
             drawDigits( canvas, la, makePath(tPathA), tPathA.offsetH, tPathA.offsetV, paintDim, margin )
         drawDigits( canvas, lb, makePath(tPathB), tPathB.offsetH, tPathB.offsetV, paintDim, margin )
         drawDigits( canvas, lc, makePath(tPathC), tPathC.offsetH, tPathC.offsetV, paintDim, margin )
         paintDim.color = savedDimColor
-
-        // 番号
-        drawTriangleNumber(canvas, tri, paintDim, paintB)
 
         // 測点
         if(tri.getMyName_() != ""){
@@ -893,9 +893,9 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         if( tri.isCollide(tri.pointNumber_) == false ){
             val pc = tri.pointCenter_
             val pn = tri.pointNumber_
-            val pcOffsetToN = pc.offset(pn, circleSize * 0.5f )
+            val pcOffsetToN = pc.offset(pn, circleSize * 1.2f )
             val pnOffsetToC = pn.offset(pc, circleSize * 1.1f )
-            val arrowTail = pcOffsetToN.offset(pn, pcOffsetToN.lengthTo(pnOffsetToC) * 0.7f).rotate(pcOffsetToN, 5f)
+            val arrowTail = pcOffsetToN.offset(pn, pcOffsetToN.lengthTo(pnOffsetToC) * 0.7f).rotate(pcOffsetToN, 10f)
             canvas.drawLine(
                 pcOffsetToN.x,
                 -pcOffsetToN.y,
