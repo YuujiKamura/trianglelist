@@ -3104,6 +3104,7 @@ class MainActivity : AppCompatActivity(),
             mT.setMyName_(chunks[6])
             if( trilist.size() > 1 ) trilist.get(trilist.size() - 1).childSide_ = chunks[5].toInt()
 
+            // 番号円　pointNumber
             if(chunks[9] == "true") mT.setPointNumberMovedByUser_(
                 PointXY(
                     chunks[7].toFloat(),

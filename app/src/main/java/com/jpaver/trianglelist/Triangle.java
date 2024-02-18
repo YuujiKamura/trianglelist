@@ -1427,15 +1427,19 @@ public class Triangle extends EditObject implements Cloneable {
     }
 
 
-    private PointXY autoAlignPointNumber() {
-        if( isPointNumberMovedByUser_ == false ){
+    // parseCSVのTriangleList.recoverStateで、自動配置された旗揚げは一緒に回転させてやる必要があるため、ここでフラグをtrueにすると凄いことになる。
+    // csv保存されたpointNumberはビューの座標で保存されるため、回転に追随させる必要がなく、自動回転されたものと扱いを分けている。
+    // ということは、ここで自動配置されたものをフラグを立てない状態で保存して、また読み込んだ時にまずくなりそうだったが、またここに来て再計算されるのでOkだった
+    private void autoAlignPointNumber() {
+        if(!isPointNumberMovedByUser_){
             if( getArea() <= 3f && ( getLengthAforce_() < 1.5f || getLengthBforce_() < 1.5f || getLengthCforce_() < 1.5f ) ) {
                 //isPointNumberMoved_ = true; //移動済みに変える,なくても平気？手動で移動させたときのみ？
-                return pointNumber_ = pointUnconnectedSide( pointCenter_, 1f, 1f, new PointXY(0f,0f) ).crossOffset(pointCenter_, getLengthScaledNotConnected()*1f );
+                pointNumber_ = pointUnconnectedSide(pointCenter_, 1f, 1f, new PointXY(0f, 0f)).crossOffset(pointCenter_, getLengthScaledNotConnected() * 1f);
             }
-            else return pointNumber_ = weightedMidpoint(25f);
+            else {
+                pointNumber_ = weightedMidpoint(25f);
+            }
         }
-        return pointNumber_; //手動で移動されている場合
     }
 
     public boolean isPointNumberMoved(){
