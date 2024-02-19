@@ -1092,7 +1092,7 @@ class MainActivity : AppCompatActivity(),
 
     private fun flipDeductionMode() {
         myDeductionList.current = myDeductionList.size()
-        myTriangleList.setCurrent(myTriangleList.size())
+        myTriangleList.changeSelectedNumber(myTriangleList.size())
         //printDebugConsole()
         colorMovementFabs()
 
@@ -1462,7 +1462,7 @@ class MainActivity : AppCompatActivity(),
 
         setCommonFabListener(fab_fillcolor) {
             if(!deductionMode){
-                myTriangleList.get(my_view.myTriangleList.current)
+                myTriangleList.get(my_view.myTriangleList.selectedNumber)
 
 
                 colorindex ++
@@ -1470,9 +1470,9 @@ class MainActivity : AppCompatActivity(),
                 bindingMain.fabFillcolor.backgroundTintList = getColorStateList(resColors[colorindex])
 
                 //dParams_ = myEditor.ReadLine(dParams_, myELSecond)
-                myTriangleList.get(my_view.myTriangleList.current).color_ = colorindex
+                myTriangleList.get(my_view.myTriangleList.selectedNumber).color_ = colorindex
 
-                my_view.setFillColor(colorindex, myTriangleList.current)
+                my_view.setFillColor(colorindex, myTriangleList.selectedNumber)
             }
         }
 
@@ -1801,7 +1801,7 @@ class MainActivity : AppCompatActivity(),
 
 
     private fun moveTrilist(){
-        my_view.getTriangleList().setCurrent(myTriangleList.retrieveCurrent())
+        my_view.getTriangleList().changeSelectedNumber(myTriangleList.retrieveCurrent())
         my_view.myTriangleList.lastTapNumber_ = myTriangleList.retrieveCurrent()
         myTriangleList.lastTapNumber_ = myTriangleList.retrieveCurrent()
         my_view.resetViewToLastTapTriangle()
@@ -2147,9 +2147,9 @@ class MainActivity : AppCompatActivity(),
 
     // タップされた三角形に関連する基本処理を行う関数
     fun handleTriangleTap(trilistV: TriangleList, myEditor: EditorTable, myTriangleList: TriangleList, isEditorScroll: Boolean = false ) {
-        if( isEditorScroll ) myEditor.scroll(trilistV.lastTapNumber_ - trilistV.current, myTriangleList, myELSecond, myELThird) // スクロールしてタップされた三角形を表示
-        trilistV.current = trilistV.lastTapNumber_ // 現在の三角形を更新
-        myTriangleList.setCurrent(my_view.myTriangleList.lastTapNumber_) // myTriangleListの現在の三角形を更新
+        if( isEditorScroll ) myEditor.scroll(trilistV.lastTapNumber_ - trilistV.selectedNumber, myTriangleList, myELSecond, myELThird) // スクロールしてタップされた三角形を表示
+        trilistV.selectedNumber = trilistV.lastTapNumber_ // 現在の三角形を更新
+        myTriangleList.changeSelectedNumber(my_view.myTriangleList.lastTapNumber_) // myTriangleListの現在の三角形を更新
         myTriangleList.lastTapNumber_ = my_view.myTriangleList.lastTapNumber_ // 最後にタップされた三角形の番号を更新
         myTriangleList.lastTapSide_ = my_view.myTriangleList.lastTapSide_ // 最後にタップされた三角形の辺を更新
     }
@@ -3191,9 +3191,9 @@ class MainActivity : AppCompatActivity(),
 
     // region logs
     private fun logListCurrent(tag: String="ui", callerName: String = "unknown"){
-        Log.d(tag,callerName+" my_view.trilist.current:"+my_view.myTriangleList.current)
+        Log.d(tag,callerName+" my_view.trilist.current:"+my_view.myTriangleList.selectedNumber)
         Log.d(tag,callerName+" my_view.trilist.lastTapNumber:"+my_view.myTriangleList.lastTapNumber_)
-        Log.d(tag,callerName+" mainActivity.trilist.current:"+myTriangleList.current)
+        Log.d(tag,callerName+" mainActivity.trilist.current:"+myTriangleList.selectedNumber)
         Log.d(tag,callerName+" mainActivity.trilist.lastTapNumber:"+myTriangleList.lastTapNumber_)
         Log.d(tag,callerName+" mainActivity.dedlist.current:"+myDeductionList.current)
         Log.d(tag,callerName+" mainActivity.dedlist.lastTapIndex_:"+myDeductionList.lastTapIndex_)

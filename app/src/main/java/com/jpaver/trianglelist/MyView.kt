@@ -707,7 +707,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
             val spab = shadowTri_.pointAB_
             val spbc = shadowTri_.pointBC_
 
-            shadowTri_.setScale( myTriangleList.myScale )
+            shadowTri_.setScale( myTriangleList.scale)
             canvas.drawPath( makeTriangleFillPath( shadowTri_ ), paintGray )
             //        drawTriLines( canvas, shadowTri, paintGray )
             canvas.drawTextOnPath( "B " + watchedB1_, makePath( spbc,  spab ), 0f, 0f, paintYellow )
@@ -1037,7 +1037,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         val hYohaku = 75f
         val hkaishi = 5f
         var zukeinohaba: Float
-        val halfAreaH = printAreaH*0.5f*myTriangleList.myScale
+        val halfAreaH = printAreaH*0.5f*myTriangleList.scale
 
         // canvasの動きを追跡する
         val printPoint = PointXY(0f, 0f)
@@ -1052,7 +1052,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
             val numleftList = myTriangleList.getSokutenList( 0, 4 )
             numleftList.add(0, Triangle(5f, 5f, 5f) )
 
-            if( myTriangleList.myAngle < 0 && numberList.size > 1 ){
+            if( myTriangleList.angle < 0 && numberList.size > 1 ){
                 Collections.reverse( numberList )
                 Collections.reverse( numleftList )
             }
