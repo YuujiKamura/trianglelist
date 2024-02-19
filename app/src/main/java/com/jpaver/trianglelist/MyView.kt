@@ -30,6 +30,8 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     View(context, attrs),
     GestureDetector.OnGestureListener {
 
+// region parameters
+
     lateinit var rotateGestureDetector: RotateGestureDetector
     lateinit var scaleGestureDetector: ScaleGestureDetector
     lateinit var mDetector: GestureDetectorCompat
@@ -143,6 +145,84 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
     var shadowTri_ = Triangle( 0f, 0f, 0f )
 
+    fun setFillColor(colorindex: Int, index: Int){
+        myTriangleList.get(index).color_ = colorindex
+
+        paintFill.color = darkColors_.get(colorindex)
+        colorindex_ = colorindex
+        invalidate()
+    }
+
+    private fun initParams(){
+        Log.d("MyViewLifeCycle", "initParams")
+        val niigogo = 255
+
+        paintFill.strokeWidth = 0.1f
+        paintFill.color = darkColors_.get(colorindex_)//Color.argb(255, 128, 50, 75)
+//        paintFill.setARGB(255, 255, 200, 230)
+        paintFill.style = Paint.Style.FILL
+
+        paintGray.strokeWidth = 0.1f
+        paintGray.color = Gray_
+        paintGray.style = Paint.Style.FILL
+        paintGray.textSize = ts_
+        paintGray.textAlign = Paint.Align.CENTER
+
+        paintTri.strokeWidth = 1f
+        paintTri.color = Color.argb(255, 255, 255, 255)
+        paintTri.style = Paint.Style.STROKE
+        paintTri.isAntiAlias = true
+
+        paintTexL.color = Color.argb(255, niigogo, niigogo, niigogo)
+        //paintText1.textAlign = Paint.Align.CENTER
+        paintTexL.textAlign = Paint.Align.CENTER
+        paintTexL.style = Paint.Style.FILL_AND_STROKE
+        //paintText1.letterSpacing = 0.2f
+        paintTexL.textSize = ts_
+
+        paintTexDbg.color = Color.argb(255, 100, 100, 100)
+        paintTexDbg.textAlign = Paint.Align.LEFT
+        paintTexDbg.style = Paint.Style.FILL_AND_STROKE
+        paintTexDbg.letterSpacing = 0.1f
+        paintTexDbg.textSize = ts_
+
+        paintTexM.color = Color.argb(255, niigogo, niigogo, niigogo)
+        paintTexM.textAlign = Paint.Align.CENTER
+        paintTexM.style = Paint.Style.FILL_AND_STROKE
+        //paintTexM.letterSpacing = 0.1f
+        paintTexM.textSize = ts_ + 1f
+
+        paintTexS.color = Color.argb(255, niigogo, niigogo, niigogo)
+        paintTexS.textAlign = Paint.Align.CENTER
+        paintTexS.style = Paint.Style.FILL
+        //paintText4.letterSpacing = 0.1f
+        paintTexS.textSize = ts_
+        //paintTexS.set
+
+        paintYellow.strokeWidth = 5f
+        paintYellow.color = Color.argb(50, 255, 255, 0)
+        paintYellow.textAlign = Paint.Align.CENTER
+        paintYellow.textSize = ts_*1.2f
+
+        paintRed.strokeWidth = 2f
+        paintRed.color = Color.argb(255, 255, 0, 0)
+        paintRed.style = Paint.Style.FILL
+        paintRed.textSize = ts_
+        paintRed.letterSpacing = 0.1f
+
+        paintBlue.strokeWidth = 2f
+        paintBlue.color = Color.argb(255, 100, 150, 255)
+        paintBlue.style = Paint.Style.STROKE
+        paintBlue.letterSpacing = 0.1f
+        paintBlue.textAlign = Paint.Align.CENTER
+        paintBlue.textSize = ts_
+
+    }
+
+// endregion
+
+// region lifecycle
+
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
 
@@ -198,7 +278,8 @@ class MyView(context: Context?, attrs: AttributeSet?) :
                 return true
             }
 
-            override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
+
+        override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
                 Log.d("MyViewLifeCycle", "onScaleBegin")
                 //resetPointToZero()
                 distance_start = detector.eventTime.toFloat()
@@ -217,11 +298,25 @@ class MyView(context: Context?, attrs: AttributeSet?) :
             override fun onScaleEnd(detector: ScaleGestureDetector) {
 
             }
+
+            fun zoom(zoomstep: Float){
+                zoomSize += zoomstep
+                if(zoomSize<=0.1f) zoomSize = 0.1f
+                if(zoomSize>=5) zoomSize = 5f
+
+                resetPressedInModel(
+                    PointXY(
+                        mFocusX,
+                        mFocusY
+                    )
+                )
+            }
+
         })
 
         Log.d("MyViewLifeCycle", "OnAttachedToWindow Process Done.")
 
-    }
+    } // end onAttachedToWindow
 
     fun setScreenSize() {
         screen_width = this.width
@@ -236,26 +331,55 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         Log.d("MyViewLifeCycle", "SetScreenSize.")
     }
 
+// endregion
 
+
+// region onDraw
     override fun onDraw(canvas: Canvas) {
-        Log.d("MyViewLifeCycle", "onDraw.")
+    Log.d("MyViewLifeCycle", "onDraw.")
 
-        transViewPoint()
-        scaleCenter.set( (mFocusX - baseInView.x), (mFocusY - baseInView.y) )
-        canvas.translate(baseInView.x, baseInView.y) // baseInViewはview座標系の中央を標準としていて、そこからスクロールによって移動した数値になる。
-        canvas.scale(zoomSize, zoomSize)//, mFocusX, mFocusY )//, scaleCenter.x, scaleCenter.y )//この位置に来ることでscaleの中心がbaseInViewに依存する。
-        canvas.translate(-centerInModel.x, centerInModel.y)
+    transViewPoint()
+    scaleCenter.set( (mFocusX - baseInView.x), (mFocusY - baseInView.y) )
+    canvas.translate(baseInView.x, baseInView.y) // baseInViewはview座標系の中央を標準としていて、そこからスクロールによって移動した数値になる。
+    canvas.scale(zoomSize, zoomSize)//, mFocusX, mFocusY )//, scaleCenter.x, scaleCenter.y )//この位置に来ることでscaleの中心がbaseInViewに依存する。
+    canvas.translate(-centerInModel.x, centerInModel.y)
 
-        logModelViewPoints()
+    logModelViewPoints()
 
-        // 背景
-        val zero = 0
-        canvas.drawColor(Color.argb(255, zero, zero, zero))
-        myCanvas = canvas
+    // 背景
+    val zero = 0
+    canvas.drawColor(Color.argb(255, zero, zero, zero))
+    myCanvas = canvas
 
-        drawEntities(canvas, paintTri, paintTexS, paintRed, darkColors_, myTriangleList, myDeductionList )
-        drawCrossLines(canvas, pressedInModel, paintRed )
-        //drawCrossLines(canvas, centerInModel.scale( PointXY(1f, -1f) ), paintBlue )
+    drawEntities(canvas, paintTri, paintTexS, paintRed, darkColors_, myTriangleList, myDeductionList )
+    drawCrossLines(canvas, pressedInModel, paintRed )
+    //drawCrossLines(canvas, centerInModel.scale( PointXY(1f, -1f) ), paintBlue )
+    }
+
+// endregion
+
+// region screen onTouchEvent
+
+    fun move( event: MotionEvent ){
+        pressedInView.set(event.x, event.y)
+        moveVector.set(
+            pressedInView.x - lastCPoint.x,
+            pressedInView.y - lastCPoint.y
+        )
+        baseInView.set(
+            movePoint.x + moveVector.x,
+            movePoint.y + moveVector.y
+        )
+    }
+
+    fun resetPressedInModel(pressedInView: PointXY){
+        movePoint.set(baseInView.x, baseInView.y)
+        pressedInModel = pressedInView.convertToLocal(
+            baseInView,
+            centerInModel,
+            zoomSize,
+        )
+
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -336,7 +460,9 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         }
 
     }
+// endregion
 
+// region logs
     fun logModelViewPoints(){
         Log.d("ModelView", "     movePoint:" + movePoint.x + ", " + movePoint.y )
         Log.d("ModelView", "    moveVector:" + moveVector.x + ", " + moveVector.y )
@@ -350,103 +476,10 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         Log.d("ModelView", "        mFocus:" + mFocusX + ", " + mFocusY  )
 
     }
+//endregion
 
-    fun setFillColor(colorindex: Int, index: Int){
-        myTriangleList.get(index).color_ = colorindex
 
-        paintFill.color = darkColors_.get(colorindex)
-        colorindex_ = colorindex
-        invalidate()
-    }
-
-    private fun initParams(){
-        Log.d("MyViewLifeCycle", "initParams")
-        val niigogo = 255
-
-        paintFill.strokeWidth = 0.1f
-        paintFill.color = darkColors_.get(colorindex_)//Color.argb(255, 128, 50, 75)
-//        paintFill.setARGB(255, 255, 200, 230)
-        paintFill.style = Paint.Style.FILL
-
-        paintGray.strokeWidth = 0.1f
-        paintGray.color = Gray_
-        paintGray.style = Paint.Style.FILL
-        paintGray.textSize = ts_
-        paintGray.textAlign = Paint.Align.CENTER
-
-        paintTri.strokeWidth = 1f
-        paintTri.color = Color.argb(255, 255, 255, 255)
-        paintTri.style = Paint.Style.STROKE
-        paintTri.isAntiAlias = true
-
-        paintTexL.color = Color.argb(255, niigogo, niigogo, niigogo)
-        //paintText1.textAlign = Paint.Align.CENTER
-        paintTexL.textAlign = Paint.Align.CENTER
-        paintTexL.style = Paint.Style.FILL_AND_STROKE
-        //paintText1.letterSpacing = 0.2f
-        paintTexL.textSize = ts_
-
-        paintTexDbg.color = Color.argb(255, 100, 100, 100)
-        paintTexDbg.textAlign = Paint.Align.LEFT
-        paintTexDbg.style = Paint.Style.FILL_AND_STROKE
-        paintTexDbg.letterSpacing = 0.1f
-        paintTexDbg.textSize = ts_
-
-        paintTexM.color = Color.argb(255, niigogo, niigogo, niigogo)
-        paintTexM.textAlign = Paint.Align.CENTER
-        paintTexM.style = Paint.Style.FILL_AND_STROKE
-        //paintTexM.letterSpacing = 0.1f
-        paintTexM.textSize = ts_ + 1f
-
-        paintTexS.color = Color.argb(255, niigogo, niigogo, niigogo)
-        paintTexS.textAlign = Paint.Align.CENTER
-        paintTexS.style = Paint.Style.FILL
-        //paintText4.letterSpacing = 0.1f
-        paintTexS.textSize = ts_
-        //paintTexS.set
-
-        paintYellow.strokeWidth = 5f
-        paintYellow.color = Color.argb(50, 255, 255, 0)
-        paintYellow.textAlign = Paint.Align.CENTER
-        paintYellow.textSize = ts_*1.2f
-
-        paintRed.strokeWidth = 2f
-        paintRed.color = Color.argb(255, 255, 0, 0)
-        paintRed.style = Paint.Style.FILL
-        paintRed.textSize = ts_
-        paintRed.letterSpacing = 0.1f
-
-        paintBlue.strokeWidth = 2f
-        paintBlue.color = Color.argb(255, 100, 150, 255)
-        paintBlue.style = Paint.Style.STROKE
-        paintBlue.letterSpacing = 0.1f
-        paintBlue.textAlign = Paint.Align.CENTER
-        paintBlue.textSize = ts_
-
-    }
-
-    fun move( event: MotionEvent ){
-        pressedInView.set(event.x, event.y)
-        moveVector.set(
-            pressedInView.x - lastCPoint.x,
-            pressedInView.y - lastCPoint.y
-        )
-        baseInView.set(
-            movePoint.x + moveVector.x,
-            movePoint.y + moveVector.y
-        )
-    }
-
-    fun resetPressedInModel(pressedInView: PointXY){
-        movePoint.set(baseInView.x, baseInView.y)
-        pressedInModel = pressedInView.convertToLocal(
-            baseInView,
-            centerInModel,
-            zoomSize,
-        )
-
-    }
-
+// region setter and getter
     fun setParentSide(pn: Int, ps: Int){
         parentNum = pn
         parentSide = ps
@@ -495,18 +528,10 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         return pressedInModel.clone()
     }
 
-    fun zoom(zoomstep: Float){
-        zoomSize += zoomstep
-        if(zoomSize<=0.1f) zoomSize = 0.1f
-        if(zoomSize>=5) zoomSize = 5f
+// endregion
 
-        resetPressedInModel(
-            PointXY(
-                mFocusX,
-                mFocusY
-            )
-        )
-    }
+
+// region resetview
 
     fun setCenterInModelToLastTappedTriNumber() {
         centerInModel.set(myTriangleList.getMemberByIndex(lstn()).pointNumber_)
@@ -560,6 +585,10 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         }
     }
 
+// endregion
+
+
+// region drawEntities
     fun drawEntities(canvas: Canvas, paintTri: Paint, paintTex: Paint, paintRed: Paint, colors: Array<Int>, myTriangleList: TriangleList, myDeductionList: DeductionList) {
 
         Log.d( "myView", "drawEntities: " + myTriangleList.size() )
@@ -981,6 +1010,8 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         invalidate()
         Log.d( "CadView", "TextSize changed to:" + ts_ )
     }
+
+//endregion
 
     fun drawPDF(
         writer: PdfWriter,

@@ -432,11 +432,13 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
 
                 val outlineLists = spritByColors[index].outlineList_ //myDXFTriList.outlineList() //ArrayList<PointXY>()
 
-                for( index2 in 0 until outlineLists.size){
+                if (outlineLists != null) {
+                    for( index2 in 0 until outlineLists.size){
 
-                    if( outlineLists[index2].size > 0 ){
-                        writeDXFTriHatch(writer, outlineLists[index2], color[index], sixtytwo[index] )
-                        //writeDXFTriOutlines( writer, outlineLists[index2] )
+                        if( outlineLists[index2].size > 0 ){
+                            writeDXFTriHatch(writer, outlineLists[index2], color[index], sixtytwo[index] )
+                            //writeDXFTriOutlines( writer, outlineLists[index2] )
+                        }
                     }
                 }
             }
@@ -449,10 +451,12 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
 
                 val outlineLists = spritByColors[index].outlineList_ //myDXFTriList.outlineList() //ArrayList<PointXY>()
 
-                for( index2 in 0 until outlineLists.size){
+                if (outlineLists != null) {
+                    for( index2 in 0 until outlineLists.size){
 
-                    if( outlineLists[index2].size > 0 ){
-                        writeDXFTriOutlines( writer, outlineLists[index2] )
+                        if( outlineLists[index2].size > 0 ){
+                            writeDXFTriOutlines( writer, outlineLists[index2] )
+                        }
                     }
                 }
             }
