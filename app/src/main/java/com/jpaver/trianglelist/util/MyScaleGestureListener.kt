@@ -1,55 +1,47 @@
 package com.jpaver.trianglelist.util
 
-import android.content.Context
-import android.util.Log
 import android.view.ScaleGestureDetector
-import com.jpaver.trianglelist.PointXY
 
-class MyScaleGestureListener(private val context: Context) : ScaleGestureDetector.OnScaleGestureListener {
+interface ScaleGestureCallback {
+    fun onZoomChange(zoomStep: Float, focusX: Float, focusY: Float)
+    fun onScaleBegin() {
+        // デフォルト実装は空で、必要に応じてオーバーライドできます。
+    }
+    fun onScaleEnd() {
+        // デフォルト実装は空で、必要に応じてオーバーライドできます。
+    }
+}
 
-    private var mFocusX: Float = 0f
-    private var mFocusY: Float = 0f
-    private var time_start: Long = 0
-    private var distance_start: Float = 0f
-    private var time_elapsed: Long = 0
-    private var time_current: Long = 0
-    private var distance_current = 0f
-    private var flg_pinch_out: Boolean? = null
-    private var flg_pinch_in: Boolean? = null
-    private var screen_width = 0
-    private var screen_height = 0
-    var zoomSize: Float = 1.0f
-    var isScale = false
-    //画面の対角線の長さ
-    private var screen_diagonal = 0
+class MyScaleGestureListener(private val callback: ScaleGestureCallback) : ScaleGestureDetector.OnScaleGestureListener {
+    private var timeStart: Long = 0
+    private var distanceStart: Float = 0f
 
     override fun onScale(detector: ScaleGestureDetector): Boolean {
-        mFocusX = detector.focusX
-        mFocusY = detector.focusY
+        val focusX = detector.focusX
+        val focusY = detector.focusY
 
-        time_current = detector.eventTime
-        time_elapsed = time_current - time_start
+        val timeCurrent = detector.eventTime
+        val timeElapsed = timeCurrent - timeStart
 
-        if (time_elapsed >= 0.5) {
-            distance_current = detector.currentSpan
+        if (timeElapsed >= 10) {  // 単位がミリ秒なので、0.5秒は500ミリ秒になります
+            val distanceCurrent = detector.currentSpan
 
-            if (distance_start == 0f) {
-                distance_start = distance_current
+            if (distanceStart == 0f) {
+                distanceStart = distanceCurrent
             }
 
-            flg_pinch_out = distance_current - distance_start > 5
-            flg_pinch_in = distance_start - distance_current > 5
+            val zoomStep = if (distanceCurrent - distanceStart > 5) {
+                (distanceCurrent - distanceStart) * 0.005f
+            } else if (distanceStart - distanceCurrent > 5) {
+                -(distanceStart - distanceCurrent) * 0.005f
+            } else {
+                0f
+            }
 
-            if (flg_pinch_out!!) {
-                zoom((distance_current - distance_start) * 0.005f)
-
-                time_start = time_current
-                distance_start = distance_current
-            } else if (flg_pinch_in!!) {
-                zoom(-(distance_start - distance_current) * 0.005f)
-
-                time_start = time_current
-                distance_start = distance_current
+            if (zoomStep != 0f) {
+                callback.onZoomChange(zoomStep, focusX, focusY)
+                timeStart = timeCurrent
+                distanceStart = distanceCurrent
             }
         }
 
@@ -57,30 +49,13 @@ class MyScaleGestureListener(private val context: Context) : ScaleGestureDetecto
     }
 
     override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
-        Log.d("MyViewLifeCycle", "onScaleBegin")
-        //resetPointToZero()
-        distance_start = detector.eventTime.toFloat()
-        if (distance_start > screen_diagonal) {
-            distance_start = 0f
-        }
-        time_start = detector.eventTime
-
-        //resetPressedInModel( PointXY( detector.focusX, detector.focusY ) )
-        //(context as MainActivity).setTargetEditText()
-
-        isScale = true
+        callback.onScaleBegin()
+        distanceStart = 0f
+        timeStart = detector.eventTime
         return true
     }
 
     override fun onScaleEnd(detector: ScaleGestureDetector) {
-
+        callback.onScaleEnd()
     }
-
-    fun zoom(zoomstep: Float){
-        zoomSize += zoomstep
-        if(zoomSize<=0.1f) zoomSize = 0.1f
-        if(zoomSize>=5) zoomSize = 5f
-
-    }
-
 }

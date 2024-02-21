@@ -12,10 +12,11 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.MotionEvent.ACTION_UP
 import android.view.ScaleGestureDetector
-import android.view.ScaleGestureDetector.OnScaleGestureListener
 import android.view.View
 import androidx.core.view.GestureDetectorCompat
+import com.jpaver.trianglelist.util.MyScaleGestureListener
 import com.jpaver.trianglelist.util.RotateGestureDetector
+import com.jpaver.trianglelist.util.ScaleGestureCallback
 import java.util.*
 import kotlin.math.roundToInt
 
@@ -28,20 +29,15 @@ fun Float?.formattedString(fractionDigits: Int): String{
 
 class MyView(context: Context?, attrs: AttributeSet?) :
     View(context, attrs),
-    GestureDetector.OnGestureListener {
+    GestureDetector.OnGestureListener,
+    ScaleGestureCallback {
 
 // region parameters
 
     lateinit var rotateGestureDetector: RotateGestureDetector
     lateinit var scaleGestureDetector: ScaleGestureDetector
     lateinit var mDetector: GestureDetectorCompat
-    private var time_elapsed: Long = 0
-    private var time_start: Long = 0
-    private var time_current: Long = 0
-    private var distance_current = 0f
-    private var distance_start = 0f
-    private var flg_pinch_out: Boolean? = null
-    private var flg_pinch_in: Boolean? = null
+
     private var screen_width = 0
     private var screen_height = 0
 
@@ -125,7 +121,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
     lateinit var myCanvas: Canvas
 
-    var ts_ = 30f
+    var textSize = 30f
 
     var watchedA1_ = ""
     var watchedB1_ = ""
@@ -165,7 +161,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         paintGray.strokeWidth = 0.1f
         paintGray.color = Gray_
         paintGray.style = Paint.Style.FILL
-        paintGray.textSize = ts_
+        paintGray.textSize = textSize
         paintGray.textAlign = Paint.Align.CENTER
 
         paintTri.strokeWidth = 1f
@@ -178,36 +174,36 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         paintTexL.textAlign = Paint.Align.CENTER
         paintTexL.style = Paint.Style.FILL_AND_STROKE
         //paintText1.letterSpacing = 0.2f
-        paintTexL.textSize = ts_
+        paintTexL.textSize = textSize
 
         paintTexDbg.color = Color.argb(255, 100, 100, 100)
         paintTexDbg.textAlign = Paint.Align.LEFT
         paintTexDbg.style = Paint.Style.FILL_AND_STROKE
         paintTexDbg.letterSpacing = 0.1f
-        paintTexDbg.textSize = ts_
+        paintTexDbg.textSize = textSize
 
         paintTexM.color = Color.argb(255, niigogo, niigogo, niigogo)
         paintTexM.textAlign = Paint.Align.CENTER
         paintTexM.style = Paint.Style.FILL_AND_STROKE
         //paintTexM.letterSpacing = 0.1f
-        paintTexM.textSize = ts_ + 1f
+        paintTexM.textSize = textSize + 1f
 
         paintTexS.color = Color.argb(255, niigogo, niigogo, niigogo)
         paintTexS.textAlign = Paint.Align.CENTER
         paintTexS.style = Paint.Style.FILL
         //paintText4.letterSpacing = 0.1f
-        paintTexS.textSize = ts_
+        paintTexS.textSize = textSize
         //paintTexS.set
 
         paintYellow.strokeWidth = 5f
         paintYellow.color = Color.argb(50, 255, 255, 0)
         paintYellow.textAlign = Paint.Align.CENTER
-        paintYellow.textSize = ts_*1.2f
+        paintYellow.textSize = textSize*1.2f
 
         paintRed.strokeWidth = 2f
         paintRed.color = Color.argb(255, 255, 0, 0)
         paintRed.style = Paint.Style.FILL
-        paintRed.textSize = ts_
+        paintRed.textSize = textSize
         paintRed.letterSpacing = 0.1f
 
         paintBlue.strokeWidth = 2f
@@ -215,13 +211,16 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         paintBlue.style = Paint.Style.STROKE
         paintBlue.letterSpacing = 0.1f
         paintBlue.textAlign = Paint.Align.CENTER
-        paintBlue.textSize = ts_
+        paintBlue.textSize = textSize
 
     }
 
 // endregion
 
 // region lifecycle
+    fun setupGestureDetector() {
+        scaleGestureDetector = ScaleGestureDetector(context, MyScaleGestureListener(this))
+    }
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
@@ -240,79 +239,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
         setScreenSize()
 
-        scaleGestureDetector = ScaleGestureDetector(context, object : OnScaleGestureListener {
-
-            override fun onScale(detector: ScaleGestureDetector): Boolean {
-
-
-                mFocusX = detector.focusX
-                mFocusY = detector.focusY
-
-                time_current = detector.eventTime
-                time_elapsed = time_current - time_start
-
-                if (time_elapsed >= 0.5) {
-                    distance_current = detector.currentSpan
-
-                    if (distance_start == 0f) {
-                        distance_start = distance_current
-                    }
-
-                    flg_pinch_out = distance_current - distance_start > 5
-                    flg_pinch_in  = distance_start - distance_current > 5
-
-                    if (flg_pinch_out!!) {
-                        zoom( ( distance_current - distance_start ) * 0.005f )
-
-                        time_start = time_current
-                        distance_start = distance_current
-                    } else if (flg_pinch_in!!) {
-                        zoom(-(distance_start - distance_current) * 0.005f)
-
-                        time_start = time_current
-                        distance_start = distance_current
-                    }
-
-                }
-
-                return true
-            }
-
-
-        override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
-                Log.d("MyViewLifeCycle", "onScaleBegin")
-                //resetPointToZero()
-                distance_start = detector.eventTime.toFloat()
-                if (distance_start > screen_diagonal) {
-                    distance_start = 0f
-                }
-                time_start = detector.eventTime
-
-                //resetPressedInModel( PointXY( detector.focusX, detector.focusY ) )
-                //(context as MainActivity).setTargetEditText()
-
-                isScale = true
-                return true
-            }
-
-            override fun onScaleEnd(detector: ScaleGestureDetector) {
-
-            }
-
-            fun zoom(zoomstep: Float){
-                zoomSize += zoomstep
-                if(zoomSize<=0.1f) zoomSize = 0.1f
-                if(zoomSize>=5) zoomSize = 5f
-
-                resetPressedInModel(
-                    PointXY(
-                        mFocusX,
-                        mFocusY
-                    )
-                )
-            }
-
-        })
+        setupGestureDetector()
 
         Log.d("MyViewLifeCycle", "OnAttachedToWindow Process Done.")
 
@@ -359,6 +286,27 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 // endregion
 
 // region screen onTouchEvent
+    override fun onZoomChange(zoomStep: Float, focusX: Float, focusY: Float) {
+        Log.d("ZoomDebug", "Zoom Step: $zoomStep")
+        zoomSize = adjustZoomSize(zoomStep)  // zoomSize を更新
+        mFocusX = focusX
+        mFocusY = focusY
+
+        resetPressedInModel(
+            PointXY(
+                focusX,
+                focusY
+            )
+        )
+
+    }
+
+    fun adjustZoomSize(zoomStep: Float): Float {
+        var newZoomSize = zoomSize + zoomStep
+        newZoomSize = newZoomSize.coerceIn(0.1f, 5f) // 0.1f と 5f の間に制限する
+        return newZoomSize
+    }
+
 
     fun move( event: MotionEvent ){
         pressedInView.set(event.x, event.y)
@@ -714,7 +662,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
     fun drawShadowTriangle( canvas: Canvas, myTriangleList: TriangleList){
         if( isPrintPDF_ == true ){
-            Log.d( "myVIew", "drawShadowTriangle - isPrintPDF:" + isPrintPDF_ )
+            Log.d( "myVIew", "drawShadowTriangle - isPrintPDF:")
             return
         }
         if( myTriangleList.lastTapSide_ < 1 || myTriangleList.isDoubleTap_ == false ) {
@@ -831,7 +779,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     fun drawBlinkLine( canvas: Canvas, myTriangleList: TriangleList){
         if( myTriangleList.lastTapNumber_ < 1 || myTriangleList.lastTapSide_ < 0 || isPrintPDF_ == true ) return
 
-        Log.d( "myView", "drawBrinkLine - isPrintPDF: " + isPrintPDF_ )
+        Log.d( "myView", "drawBrinkLine")
         paintYellow.color = Color.argb(alpha, 255, 255, 0)
 
         val tri = myTriangleList.get( myTriangleList.lastTapNumber_ )
@@ -989,29 +937,42 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         return myy
     }
 
+    fun adjustTextSize(ts: Float): Float = when {
+        ts <= 5f -> 8f
+        ts >= 30f -> 30f
+        else -> ts
+    }
+
     fun setAllTextSize(ts: Float){
-        if( ts <= 5f ) ts_ = 8f
-        else if( ts >= 30f ) ts_ = 30f
-        else ts_ = ts
 
-        paintTexS.textSize = ts_
-        paintBlue.textSize = ts_
-        paintBlue.strokeWidth = ts_ * 0.1f
-        paintRed.textSize = ts_
-        paintRed.strokeWidth = ts_ * 0.1f
-        paintYellow.strokeWidth = ts_ * 0.2f
-        paintYellow.textSize = ts_
+        textSize = adjustTextSize( ts )
 
-        paintTexM.textSize = ts_
-        textSpacer_ = ts_ * 0.2f
-        myTriangleList.setDimPathTextSize( ts_ )
+        paintTexS.textSize = textSize
+        paintBlue.textSize = textSize
+        paintBlue.strokeWidth = textSize * 0.1f
+        paintRed.textSize = textSize
+        paintRed.strokeWidth = textSize * 0.1f
+        paintYellow.strokeWidth = textSize * 0.2f
+        paintYellow.textSize = textSize
+
+        paintTexM.textSize = textSize
+        textSpacer_ = textSize * 0.2f
+        myTriangleList.setDimPathTextSize( textSize )
 
 
         invalidate()
-        Log.d( "CadView", "TextSize changed to:" + ts_ )
+        Log.d( "CadView", "TextSize changed to:" + textSize )
     }
 
 //endregion
+
+
+    fun adjustTextSpacer(printScale: Float): Float = when {
+        printScale > 5.0 -> 0.2f
+        printScale > 3.0 -> 0.5f
+        else -> 2f
+    }
+
 
     fun drawPDF(
         writer: PdfWriter,
@@ -1031,9 +992,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         val printScale = myTriangleList.getPrintScale(myScale)
 
         // テキストスペーサー
-        if( printScale > 3.0 ) textSpacer_ = 0.5f
-        if( printScale > 5.0 ) textSpacer_ = 0.2f
-        else textSpacer_ = 2f
+        textSpacer_ = adjustTextSpacer(printScale)
 
         // 用紙の単位にリストの大きさを合わせる
         //
@@ -1163,7 +1122,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         myDeductionList.setScale(myScale)
         //isAreaOff_ = true
         isPrintPDF_ = false
-        this.paintBlue.textSize = ts_
+        this.paintBlue.textSize = textSize
         this.paintBlue.strokeWidth = 2f
         //this.paintFill.color = darkColors_.get(colorindex_)
         textSpacer_ = 5f
