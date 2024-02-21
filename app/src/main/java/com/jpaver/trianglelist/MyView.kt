@@ -967,10 +967,20 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 //endregion
 
 
+    /**
+     * `printScale` の値に基づいて適切なテキストスペーサーの値を調整します。
+     *
+     * - `printScale` が 5.0 を超える場合、テキスト間のスペースは最小限になります (0.2f)。
+     * - `printScale` が 3.0 を超えて 5.0 以下の場合、中間のスペースを使用します (0.5f)。
+     * - それ以外の場合 (3.0 以下)、最大のスペースを使用します (2f)。
+     *
+     * @param printScale プリントスケールの現在値。
+     * @return 調整されたテキストスペーサーの値。
+     */
     fun adjustTextSpacer(printScale: Float): Float = when {
-        printScale > 5.0 -> 0.2f
-        printScale > 3.0 -> 0.5f
-        else -> 2f
+        printScale > 5.0 -> 0.2f  // スケールが大きい場合はスペーサーを小さくする
+        printScale > 3.0 -> 0.5f  // 中間のスケールには中間のスペーサーを使用
+        else -> 2f  // 小さいスケールには大きなスペーサーを使用
     }
 
 

@@ -1477,16 +1477,16 @@ class MainActivity : AppCompatActivity(),
         }
 
         setCommonFabListener(fab_texplus) {
-            my_view.ts_ += 5f
-            my_view.setAllTextSize(my_view.ts_)
+            my_view.textSize += 5f
+            my_view.setAllTextSize(my_view.textSize)
 
 //            my_view.paintTexS.textSize = my_view.ts_
             my_view.invalidate()
         }
 
         setCommonFabListener(fab_texminus) {
-            my_view.ts_ -= 5f
-            my_view.setAllTextSize(my_view.ts_)
+            my_view.textSize -= 5f
+            my_view.setAllTextSize(my_view.textSize)
 
             my_view.invalidate()
         }
@@ -2123,7 +2123,7 @@ class MainActivity : AppCompatActivity(),
 
 
             // view　の　trilistのlastTapとcurrentをずらして editorTableを移動させる
-            trilistV.getTap(lpp, my_view.ts_ * 0.02f / zoomsize )
+            trilistV.getTap(lpp, my_view.textSize * 0.02f / zoomsize )
 
             // タップされた三角形がある場合の処理を行う
             if (trilistV.lastTapNumber_ != 0) {
@@ -2601,7 +2601,7 @@ class MainActivity : AppCompatActivity(),
         writer.rStr_ = rStr
         writer.titleTri_ = titleTriStr
         writer.titleDed_ = titleDedStr
-        writer.textscale_ = my_view.ts_ * 0.016f //25*0.014f=0.35f, 25/0.02f=0.5f
+        writer.textscale_ = my_view.textSize * 0.016f //25*0.014f=0.35f, 25/0.02f=0.5f
 
         writer.writer = bWriter
         writer.drawingLength = myTriangleList.measureMostLongLine()
@@ -2623,7 +2623,7 @@ class MainActivity : AppCompatActivity(),
         val writer = SfcWriter(myTriangleList, myDeductionList, out, filename, drawingStartNumber)
         writer.setNames(koujiname, rosenname, gyousyaname, zumennum)
         writer.rStr_ = rStr
-        writer.textscale_ = my_view.ts_ * 20f //25*14f=350f, 25/20f=500f
+        writer.textscale_ = my_view.textSize * 20f //25*14f=350f, 25/20f=500f
         writer.titleTri_ = titleTriStr
         writer.titleDed_ = titleDedStr
 
@@ -2643,7 +2643,7 @@ class MainActivity : AppCompatActivity(),
         writer.out_ = out
         writer.deductionList_ = myDeductionList
 
-        writer.textscale_ = my_view.ts_ * 0.5f / writer.printScale_ //25*0.4f=10f, 25/0.3f=7.5f
+        writer.textscale_ = my_view.textSize * 0.5f / writer.printScale_ //25*0.4f=10f, 25/0.3f=7.5f
         writer.initPaints()
         writer.titleTri_ = titleTriStr
         writer.titleDed_ = titleDedStr
@@ -2781,7 +2781,7 @@ class MainActivity : AppCompatActivity(),
                 newLine()
                 write("ListScale, ${myTriangleList.scale}")
                 newLine()
-                write("TextSize, ${my_view.ts_}")
+                write("TextSize, ${my_view.textSize}")
                 newLine()
             }
 
