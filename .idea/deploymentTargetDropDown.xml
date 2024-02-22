@@ -5,6 +5,12 @@
       <entry key="MainActivityTest">
         <State />
       </entry>
+      <entry key="MainActivityTest2">
+        <State />
+      </entry>
+      <entry key="app">
+        <State />
+      </entry>
     </value>
   </component>
 </project>

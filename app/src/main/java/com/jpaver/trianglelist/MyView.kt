@@ -336,6 +336,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         when( event.pointerCount ){
             1 -> {
                 mDetector.onTouchEvent(event)
+                setPressEvent(event.x, event.y)
                 invalidate()
             }
             2 -> {
