@@ -357,13 +357,11 @@ class MyView(context: Context, attrs: AttributeSet?) :
                 }
             }
             2 -> {
-                if(!isViewScroll) {
                     isViewScale = true
                     this.scaleGestureDetector.onTouchEvent(event)
                     this.rotateGestureDetector.onTouchEvent(event)
                     setPressEvent(mFocusX, mFocusY)
                     invalidate()
-                }
             }
 
         }
