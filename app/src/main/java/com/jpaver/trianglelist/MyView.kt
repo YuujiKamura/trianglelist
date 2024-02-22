@@ -109,7 +109,9 @@ class MyView(context: Context, attrs: AttributeSet?) :
     var zoomSize: Float = 1.0f
     var mFocusX = 0f
     var mFocusY = 0f
-    var isScale = false
+    var isViewScale = false
+    var isViewScroll = false
+    var touchCounter = 0
 
     var parentNum: Int = 0
     var parentSide: Int = 0
@@ -344,22 +346,32 @@ class MyView(context: Context, attrs: AttributeSet?) :
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
 
-        when( event.pointerCount ){
+        touchCounter = event.pointerCount
+        when( touchCounter ){
             1 -> {
-                mDetector.onTouchEvent(event)
-                setPressEvent(event.x, event.y)
-                invalidate()
+                if(!isViewScale){
+                    isViewScroll = true
+                    mDetector.onTouchEvent(event)
+                    setPressEvent(event.x, event.y)
+                    invalidate()
+                }
             }
             2 -> {
-                this.scaleGestureDetector.onTouchEvent(event)
-                this.rotateGestureDetector.onTouchEvent(event)
-                setPressEvent(mFocusX, mFocusY)
-                invalidate()
+                if(!isViewScroll) {
+                    isViewScale = true
+                    this.scaleGestureDetector.onTouchEvent(event)
+                    this.rotateGestureDetector.onTouchEvent(event)
+                    setPressEvent(mFocusX, mFocusY)
+                    invalidate()
+                }
             }
 
         }
 
-        if( event.action == ACTION_UP ) isScale = false
+        if( event.action == ACTION_UP ) {
+            isViewScale = false
+            isViewScroll = false
+        }
 
         return true
 
@@ -379,7 +391,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         distanceX: Float,
         distanceY: Float
     ): Boolean {
-        if( isScale == true ) return false
+        if( isViewScale == true ) return false
         move(p1)
 
         moveVector.set(0f, 0f)
@@ -424,6 +436,9 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
 // region logs
     fun logModelViewPoints(){
+        Log.d("ModelView", "  touchCounter: $touchCounter" )
+        Log.d("ModelView", "  isViewScroll: $isViewScroll" )
+        Log.d("ModelView", "   isViewScale: $isViewScale" )
         Log.d("ModelView", "     movePoint:" + movePoint.x + ", " + movePoint.y )
         Log.d("ModelView", "    moveVector:" + moveVector.x + ", " + moveVector.y )
         Log.d("ModelView", "    baseInView:" + baseInView.x + ", " + baseInView.y )
