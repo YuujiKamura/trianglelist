@@ -3,12 +3,12 @@ apply plugin: 'kotlin-android'
 //apply plugin: 'kotlin-android-extensions'
 
 android {
-    compileSdkVersion 34
+    compileSdk 34
 
     defaultConfig {
         applicationId "com.jpaver.myapplication"
-        minSdkVersion 26
-        targetSdkVersion 34
+        minSdk 26
+        targetSdk 34
         versionCode 1306
         versionName "7.05"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -42,7 +42,7 @@ android {
     flavorDimensions "mode"
 
     productFlavors {
-        dev {
+        create("dev") {
             resConfigs 'jp', 'xxhdpi'
 
             // The following configuration limits the "dev" flavor to using
@@ -51,14 +51,14 @@ android {
             applicationId "com.jpaver.myapplication"
         }
 
-        free {
+        create("free") {
             // Assigns this product flavor to the "mode" flavor dimension.
             dimension "mode"
             applicationId "com.jpaver.myapplication"
         }
 
 
-        full {
+        create("full") {
             dimension "mode"
             applicationId "com.paver.myapplication"
         }
@@ -71,11 +71,11 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = "17"
     }
     androidResources {
         //noCompress 'pdf'
@@ -90,7 +90,7 @@ android {
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${kotlin_version}"
     implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'androidx.activity:activity-ktx:1.9.0-alpha03'
+    implementation 'androidx.activity:activity-ktx:1.8.2'
     implementation 'androidx.core:core-ktx:1.12.0'
     implementation 'androidx.navigation:navigation-fragment-ktx:2.7.7'
     implementation 'androidx.navigation:navigation-ui-ktx:2.7.7'
@@ -100,12 +100,13 @@ dependencies {
     implementation 'androidx.preference:preference-ktx:1.2.1'
     implementation 'com.google.android.play:core-ktx:1.8.1'
     testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.2.0-alpha03'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.0-alpha03'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
     implementation fileTree(dir: 'libs', include: ['*.aar', '*.jar'], exclude: [])
     testImplementation 'org.powermock:powermock-module-junit4:2.0.9'
     testImplementation 'org.powermock:powermock-api-mockito:1.7.4'
-    testImplementation 'org.robolectric:robolectric:4.7.3'
+    testImplementation 'org.robolectric:robolectric:4.11.1'
     androidTestImplementation 'androidx.test:rules:1.5.0'
-    implementation 'org.apache.poi:poi-ooxml:5.2.3'
+    implementation 'org.apache.poi:poi-ooxml:5.2.5'
+    androidTestImplementation project(':app')
 }
