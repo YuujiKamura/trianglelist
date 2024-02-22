@@ -279,10 +279,9 @@ class MyView(context: Context, attrs: AttributeSet?) :
     Log.d("MyViewLifeCycle", "onDraw.")
 
     transViewPoint()
-    scaleCenterInView.set( (mFocusX - baseInView.x), (mFocusY - baseInView.y) )
     canvas.translate(baseInView.x, baseInView.y) // baseInViewはview座標系の中央を標準としていて、そこからスクロールによって移動した数値になる。
     canvas.scale(zoomSize, zoomSize)//, mFocusX, mFocusY )//, scaleCenter.x, scaleCenter.y )//この位置に来ることでscaleの中心がbaseInViewに依存する。
-    canvas.translate(-centerInModel.x, centerInModel.y)
+    canvas.translate(-pressedInModel.x, -pressedInModel.y)
 
     logModelViewPoints()
 
@@ -361,6 +360,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
                     this.scaleGestureDetector.onTouchEvent(event)
                     this.rotateGestureDetector.onTouchEvent(event)
                     setPressEvent(mFocusX, mFocusY)
+
                     invalidate()
             }
 
@@ -421,6 +421,8 @@ class MyView(context: Context, attrs: AttributeSet?) :
         pressedInView.set(x, y)
         lastCPoint.set(x, y)
         resetPressedInModel(pressedInView)
+        scaleCenterInView.set( (x - baseInView.x), (y - baseInView.y) )
+
     }
 
     override fun onLongPress(event: MotionEvent) {
