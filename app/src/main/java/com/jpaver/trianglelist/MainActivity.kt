@@ -251,8 +251,6 @@ class MainActivity : AppCompatActivity(),
 
 
 //region Parameters
-    var isViewAttached = false
-
     private lateinit var myELFirst: EditTextViewLine
     private lateinit var myELSecond: EditTextViewLine
     private lateinit var myELThird: EditTextViewLine
@@ -387,6 +385,17 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
+    private fun showEncodingSelectionDialog(uri: Uri, onFileLoaded: (BufferedReader) -> Unit) {
+        val encodings = arrayOf("UTF-8", "Shift-JIS")
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Select Encoding")
+            .setItems(encodings) { _, which ->
+                val selectedEncoding = encodings[which]
+                loadFileWithEncoding(uri, selectedEncoding, onFileLoaded)
+            }
+        builder.create().show()
+    }
+
     private fun loadFileWithEncoding(uri: Uri, encoding: String = "Shift-JIS", onFileLoaded: (BufferedReader) -> Unit) {
         try {
             contentResolver.openInputStream(uri)?.use { inputStream ->
@@ -398,6 +407,7 @@ class MainActivity : AppCompatActivity(),
             // エラーハンドリング
         }
     }
+
 
     // endregion
 
@@ -713,7 +723,6 @@ class MainActivity : AppCompatActivity(),
             }
         })
 
-        isViewAttached = true
         Log.d("MainActivity", "OnAttachedToWindow Process Done.")
 
         adShowInterStitial()
@@ -721,11 +730,6 @@ class MainActivity : AppCompatActivity(),
     }
 
     var isCSVsavedToPrivate = false
-
-    override fun onDetachedFromWindow() {
-        super.onDetachedFromWindow()
-        isViewAttached = false
-    }
 
     override fun onPause(){
         super.onPause()
@@ -741,7 +745,6 @@ class MainActivity : AppCompatActivity(),
 
     override fun onResume() {
         super.onResume()
-        isViewAttached = true
         Log.d("MainActivityLifeCycle", "OnResume")
         adMobDisable()
 

@@ -30,7 +30,7 @@ data class Params(var name: String = "",
                       0f,
                       0f
                   ),
-                  var pts: PointXY = PointXY(
+                  var ptF: PointXY = PointXY(
                       0f,
                       0f
                   )

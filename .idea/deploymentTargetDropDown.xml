@@ -2,9 +2,12 @@
 <project version="4">
   <component name="deploymentTargetDropDown">
     <value>
+<<<<<<< HEAD
       <entry key="MainActivityTest">
         <State />
       </entry>
+=======
+>>>>>>> origin/main
       <entry key="app">
         <State />
       </entry>

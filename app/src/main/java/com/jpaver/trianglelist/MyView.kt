@@ -12,10 +12,11 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.MotionEvent.ACTION_UP
 import android.view.ScaleGestureDetector
-import android.view.ScaleGestureDetector.OnScaleGestureListener
 import android.view.View
 import androidx.core.view.GestureDetectorCompat
+import com.jpaver.trianglelist.util.MyScaleGestureListener
 import com.jpaver.trianglelist.util.RotateGestureDetector
+import com.jpaver.trianglelist.util.ScaleGestureCallback
 import java.util.*
 import kotlin.math.roundToInt
 
@@ -28,18 +29,15 @@ fun Float?.formattedString(fractionDigits: Int): String{
 
 class MyView(context: Context?, attrs: AttributeSet?) :
     View(context, attrs),
-    GestureDetector.OnGestureListener {
+    GestureDetector.OnGestureListener,
+    ScaleGestureCallback {
+
+// region parameters
 
     lateinit var rotateGestureDetector: RotateGestureDetector
     lateinit var scaleGestureDetector: ScaleGestureDetector
     lateinit var mDetector: GestureDetectorCompat
-    private var time_elapsed: Long = 0
-    private var time_start: Long = 0
-    private var time_current: Long = 0
-    private var distance_current = 0f
-    private var distance_start = 0f
-    private var flg_pinch_out: Boolean? = null
-    private var flg_pinch_in: Boolean? = null
+
     private var screen_width = 0
     private var screen_height = 0
 
@@ -123,7 +121,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
     lateinit var myCanvas: Canvas
 
-    var ts_ = 30f
+    var textSize = 30f
 
     var watchedA1_ = ""
     var watchedB1_ = ""
@@ -143,6 +141,87 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
     var shadowTri_ = Triangle( 0f, 0f, 0f )
 
+    fun setFillColor(colorindex: Int, index: Int){
+        myTriangleList.get(index).color_ = colorindex
+
+        paintFill.color = darkColors_.get(colorindex)
+        colorindex_ = colorindex
+        invalidate()
+    }
+
+    private fun initParams(){
+        Log.d("MyViewLifeCycle", "initParams")
+        val niigogo = 255
+
+        paintFill.strokeWidth = 0.1f
+        paintFill.color = darkColors_.get(colorindex_)//Color.argb(255, 128, 50, 75)
+//        paintFill.setARGB(255, 255, 200, 230)
+        paintFill.style = Paint.Style.FILL
+
+        paintGray.strokeWidth = 0.1f
+        paintGray.color = Gray_
+        paintGray.style = Paint.Style.FILL
+        paintGray.textSize = textSize
+        paintGray.textAlign = Paint.Align.CENTER
+
+        paintTri.strokeWidth = 1f
+        paintTri.color = Color.argb(255, 255, 255, 255)
+        paintTri.style = Paint.Style.STROKE
+        paintTri.isAntiAlias = true
+
+        paintTexL.color = Color.argb(255, niigogo, niigogo, niigogo)
+        //paintText1.textAlign = Paint.Align.CENTER
+        paintTexL.textAlign = Paint.Align.CENTER
+        paintTexL.style = Paint.Style.FILL_AND_STROKE
+        //paintText1.letterSpacing = 0.2f
+        paintTexL.textSize = textSize
+
+        paintTexDbg.color = Color.argb(255, 100, 100, 100)
+        paintTexDbg.textAlign = Paint.Align.LEFT
+        paintTexDbg.style = Paint.Style.FILL_AND_STROKE
+        paintTexDbg.letterSpacing = 0.1f
+        paintTexDbg.textSize = textSize
+
+        paintTexM.color = Color.argb(255, niigogo, niigogo, niigogo)
+        paintTexM.textAlign = Paint.Align.CENTER
+        paintTexM.style = Paint.Style.FILL_AND_STROKE
+        //paintTexM.letterSpacing = 0.1f
+        paintTexM.textSize = textSize + 1f
+
+        paintTexS.color = Color.argb(255, niigogo, niigogo, niigogo)
+        paintTexS.textAlign = Paint.Align.CENTER
+        paintTexS.style = Paint.Style.FILL
+        //paintText4.letterSpacing = 0.1f
+        paintTexS.textSize = textSize
+        //paintTexS.set
+
+        paintYellow.strokeWidth = 5f
+        paintYellow.color = Color.argb(50, 255, 255, 0)
+        paintYellow.textAlign = Paint.Align.CENTER
+        paintYellow.textSize = textSize*1.2f
+
+        paintRed.strokeWidth = 2f
+        paintRed.color = Color.argb(255, 255, 0, 0)
+        paintRed.style = Paint.Style.FILL
+        paintRed.textSize = textSize
+        paintRed.letterSpacing = 0.1f
+
+        paintBlue.strokeWidth = 2f
+        paintBlue.color = Color.argb(255, 100, 150, 255)
+        paintBlue.style = Paint.Style.STROKE
+        paintBlue.letterSpacing = 0.1f
+        paintBlue.textAlign = Paint.Align.CENTER
+        paintBlue.textSize = textSize
+
+    }
+
+// endregion
+
+// region lifecycle
+    fun setupGestureDetector() {
+        scaleGestureDetector = ScaleGestureDetector(context, MyScaleGestureListener(this))
+    }
+
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
 
@@ -160,68 +239,11 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
         setScreenSize()
 
-        scaleGestureDetector = ScaleGestureDetector(context, object : OnScaleGestureListener {
-
-            override fun onScale(detector: ScaleGestureDetector): Boolean {
-
-
-                mFocusX = detector.focusX
-                mFocusY = detector.focusY
-
-                time_current = detector.eventTime
-                time_elapsed = time_current - time_start
-
-                if (time_elapsed >= 0.5) {
-                    distance_current = detector.currentSpan
-
-                    if (distance_start == 0f) {
-                        distance_start = distance_current
-                    }
-
-                    flg_pinch_out = distance_current - distance_start > 5
-                    flg_pinch_in  = distance_start - distance_current > 5
-
-                    if (flg_pinch_out!!) {
-                        zoom( ( distance_current - distance_start ) * 0.005f )
-
-                        time_start = time_current
-                        distance_start = distance_current
-                    } else if (flg_pinch_in!!) {
-                        zoom(-(distance_start - distance_current) * 0.005f)
-
-                        time_start = time_current
-                        distance_start = distance_current
-                    }
-
-                }
-
-                return true
-            }
-
-            override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
-                Log.d("MyViewLifeCycle", "onScaleBegin")
-                //resetPointToZero()
-                distance_start = detector.eventTime.toFloat()
-                if (distance_start > screen_diagonal) {
-                    distance_start = 0f
-                }
-                time_start = detector.eventTime
-
-                //resetPressedInModel( PointXY( detector.focusX, detector.focusY ) )
-                //(context as MainActivity).setTargetEditText()
-
-                isScale = true
-                return true
-            }
-
-            override fun onScaleEnd(detector: ScaleGestureDetector) {
-
-            }
-        })
+        setupGestureDetector()
 
         Log.d("MyViewLifeCycle", "OnAttachedToWindow Process Done.")
 
-    }
+    } // end onAttachedToWindow
 
     fun setScreenSize() {
         screen_width = this.width
@@ -236,26 +258,76 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         Log.d("MyViewLifeCycle", "SetScreenSize.")
     }
 
+// endregion
 
+
+// region onDraw
     override fun onDraw(canvas: Canvas) {
-        Log.d("MyViewLifeCycle", "onDraw.")
+    Log.d("MyViewLifeCycle", "onDraw.")
 
-        transViewPoint()
-        scaleCenter.set( (mFocusX - baseInView.x), (mFocusY - baseInView.y) )
-        canvas.translate(baseInView.x, baseInView.y) // baseInViewはview座標系の中央を標準としていて、そこからスクロールによって移動した数値になる。
-        canvas.scale(zoomSize, zoomSize)//, mFocusX, mFocusY )//, scaleCenter.x, scaleCenter.y )//この位置に来ることでscaleの中心がbaseInViewに依存する。
-        canvas.translate(-centerInModel.x, centerInModel.y)
+    transViewPoint()
+    scaleCenter.set( (mFocusX - baseInView.x), (mFocusY - baseInView.y) )
+    canvas.translate(baseInView.x, baseInView.y) // baseInViewはview座標系の中央を標準としていて、そこからスクロールによって移動した数値になる。
+    canvas.scale(zoomSize, zoomSize)//, mFocusX, mFocusY )//, scaleCenter.x, scaleCenter.y )//この位置に来ることでscaleの中心がbaseInViewに依存する。
+    canvas.translate(-centerInModel.x, centerInModel.y)
 
-        logModelViewPoints()
+    logModelViewPoints()
 
-        // 背景
-        val zero = 0
-        canvas.drawColor(Color.argb(255, zero, zero, zero))
-        myCanvas = canvas
+    // 背景
+    val zero = 0
+    canvas.drawColor(Color.argb(255, zero, zero, zero))
+    myCanvas = canvas
 
-        drawEntities(canvas, paintTri, paintTexS, paintRed, darkColors_, myTriangleList, myDeductionList )
-        drawCrossLines(canvas, pressedInModel, paintRed )
-        //drawCrossLines(canvas, centerInModel.scale( PointXY(1f, -1f) ), paintBlue )
+    drawEntities(canvas, paintTri, paintTexS, paintRed, darkColors_, myTriangleList, myDeductionList )
+    drawCrossLines(canvas, pressedInModel, paintRed )
+    //drawCrossLines(canvas, centerInModel.scale( PointXY(1f, -1f) ), paintBlue )
+    }
+
+// endregion
+
+// region screen onTouchEvent
+    override fun onZoomChange(zoomStep: Float, focusX: Float, focusY: Float) {
+        Log.d("ZoomDebug", "Zoom Step: $zoomStep")
+        zoomSize = adjustZoomSize(zoomStep)  // zoomSize を更新
+        mFocusX = focusX
+        mFocusY = focusY
+
+        resetPressedInModel(
+            PointXY(
+                focusX,
+                focusY
+            )
+        )
+
+    }
+
+    fun adjustZoomSize(zoomStep: Float): Float {
+        var newZoomSize = zoomSize + zoomStep
+        newZoomSize = newZoomSize.coerceIn(0.1f, 5f) // 0.1f と 5f の間に制限する
+        return newZoomSize
+    }
+
+
+    fun move( event: MotionEvent ){
+        pressedInView.set(event.x, event.y)
+        moveVector.set(
+            pressedInView.x - lastCPoint.x,
+            pressedInView.y - lastCPoint.y
+        )
+        baseInView.set(
+            movePoint.x + moveVector.x,
+            movePoint.y + moveVector.y
+        )
+    }
+
+    fun resetPressedInModel(pressedInView: PointXY){
+        movePoint.set(baseInView.x, baseInView.y)
+        pressedInModel = pressedInView.convertToLocal(
+            baseInView,
+            centerInModel,
+            zoomSize,
+        )
+
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -309,7 +381,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         p2: Float,
         p3: Float
     ): Boolean {
-        if( ( p3 * p3 ) > 10000000f ) (context as MainActivity).fabReplace()
+        if( ( p3 * p3 ) > 10000000f && !(context as MainActivity).deductionMode ) (context as MainActivity).fabReplace()
         return true
     }
 
@@ -336,7 +408,9 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         }
 
     }
+// endregion
 
+// region logs
     fun logModelViewPoints(){
         Log.d("ModelView", "     movePoint:" + movePoint.x + ", " + movePoint.y )
         Log.d("ModelView", "    moveVector:" + moveVector.x + ", " + moveVector.y )
@@ -350,103 +424,10 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         Log.d("ModelView", "        mFocus:" + mFocusX + ", " + mFocusY  )
 
     }
+//endregion
 
-    fun setFillColor(colorindex: Int, index: Int){
-        myTriangleList.get(index).color_ = colorindex
 
-        paintFill.color = darkColors_.get(colorindex)
-        colorindex_ = colorindex
-        invalidate()
-    }
-
-    private fun initParams(){
-        Log.d("MyViewLifeCycle", "initParams")
-        val niigogo = 255
-
-        paintFill.strokeWidth = 0.1f
-        paintFill.color = darkColors_.get(colorindex_)//Color.argb(255, 128, 50, 75)
-//        paintFill.setARGB(255, 255, 200, 230)
-        paintFill.style = Paint.Style.FILL
-
-        paintGray.strokeWidth = 0.1f
-        paintGray.color = Gray_
-        paintGray.style = Paint.Style.FILL
-        paintGray.textSize = ts_
-        paintGray.textAlign = Paint.Align.CENTER
-
-        paintTri.strokeWidth = 1f
-        paintTri.color = Color.argb(255, 255, 255, 255)
-        paintTri.style = Paint.Style.STROKE
-        paintTri.isAntiAlias = true
-
-        paintTexL.color = Color.argb(255, niigogo, niigogo, niigogo)
-        //paintText1.textAlign = Paint.Align.CENTER
-        paintTexL.textAlign = Paint.Align.CENTER
-        paintTexL.style = Paint.Style.FILL_AND_STROKE
-        //paintText1.letterSpacing = 0.2f
-        paintTexL.textSize = ts_
-
-        paintTexDbg.color = Color.argb(255, 100, 100, 100)
-        paintTexDbg.textAlign = Paint.Align.LEFT
-        paintTexDbg.style = Paint.Style.FILL_AND_STROKE
-        paintTexDbg.letterSpacing = 0.1f
-        paintTexDbg.textSize = ts_
-
-        paintTexM.color = Color.argb(255, niigogo, niigogo, niigogo)
-        paintTexM.textAlign = Paint.Align.CENTER
-        paintTexM.style = Paint.Style.FILL_AND_STROKE
-        //paintTexM.letterSpacing = 0.1f
-        paintTexM.textSize = ts_ + 1f
-
-        paintTexS.color = Color.argb(255, niigogo, niigogo, niigogo)
-        paintTexS.textAlign = Paint.Align.CENTER
-        paintTexS.style = Paint.Style.FILL
-        //paintText4.letterSpacing = 0.1f
-        paintTexS.textSize = ts_
-        //paintTexS.set
-
-        paintYellow.strokeWidth = 5f
-        paintYellow.color = Color.argb(50, 255, 255, 0)
-        paintYellow.textAlign = Paint.Align.CENTER
-        paintYellow.textSize = ts_*1.2f
-
-        paintRed.strokeWidth = 2f
-        paintRed.color = Color.argb(255, 255, 0, 0)
-        paintRed.style = Paint.Style.FILL
-        paintRed.textSize = ts_
-        paintRed.letterSpacing = 0.1f
-
-        paintBlue.strokeWidth = 2f
-        paintBlue.color = Color.argb(255, 100, 150, 255)
-        paintBlue.style = Paint.Style.STROKE
-        paintBlue.letterSpacing = 0.1f
-        paintBlue.textAlign = Paint.Align.CENTER
-        paintBlue.textSize = ts_
-
-    }
-
-    fun move( event: MotionEvent ){
-        pressedInView.set(event.x, event.y)
-        moveVector.set(
-            pressedInView.x - lastCPoint.x,
-            pressedInView.y - lastCPoint.y
-        )
-        baseInView.set(
-            movePoint.x + moveVector.x,
-            movePoint.y + moveVector.y
-        )
-    }
-
-    fun resetPressedInModel(pressedInView: PointXY){
-        movePoint.set(baseInView.x, baseInView.y)
-        pressedInModel = pressedInView.convertToLocal(
-            baseInView,
-            centerInModel,
-            zoomSize,
-        )
-
-    }
-
+// region setter and getter
     fun setParentSide(pn: Int, ps: Int){
         parentNum = pn
         parentSide = ps
@@ -495,18 +476,10 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         return pressedInModel.clone()
     }
 
-    fun zoom(zoomstep: Float){
-        zoomSize += zoomstep
-        if(zoomSize<=0.1f) zoomSize = 0.1f
-        if(zoomSize>=5) zoomSize = 5f
+// endregion
 
-        resetPressedInModel(
-            PointXY(
-                mFocusX,
-                mFocusY
-            )
-        )
-    }
+
+// region resetview
 
     fun setCenterInModelToLastTappedTriNumber() {
         centerInModel.set(myTriangleList.getMemberByIndex(lstn()).pointNumber_)
@@ -560,6 +533,10 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         }
     }
 
+// endregion
+
+
+// region drawEntities
     fun drawEntities(canvas: Canvas, paintTri: Paint, paintTex: Paint, paintRed: Paint, colors: Array<Int>, myTriangleList: TriangleList, myDeductionList: DeductionList) {
 
         Log.d( "myView", "drawEntities: " + myTriangleList.size() )
@@ -664,15 +641,15 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         if(tPathB.alignSide > 2) canvas.drawPath(makePath(tPathB), paintLine)
         if(tPathC.alignSide > 2) canvas.drawPath(makePath(tPathC), paintLine)
 
+        // 番号
+        drawTriangleNumber(canvas, tri, paintDim, paintB)
+
         // 寸法
         if(tri.getMyNumber_() == 1 || tri.parentBC > 2 || tri.cParam_.type != 0 || tri.myNumber_ == myTriangleList.lastTapNumber_ )
             drawDigits( canvas, la, makePath(tPathA), tPathA.offsetH, tPathA.offsetV, paintDim, margin )
         drawDigits( canvas, lb, makePath(tPathB), tPathB.offsetH, tPathB.offsetV, paintDim, margin )
         drawDigits( canvas, lc, makePath(tPathC), tPathC.offsetH, tPathC.offsetV, paintDim, margin )
         paintDim.color = savedDimColor
-
-        // 番号
-        drawTriangleNumber(canvas, tri, paintDim, paintB)
 
         // 測点
         if(tri.getMyName_() != ""){
@@ -685,7 +662,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
 
     fun drawShadowTriangle( canvas: Canvas, myTriangleList: TriangleList){
         if( isPrintPDF_ == true ){
-            Log.d( "myVIew", "drawShadowTriangle - isPrintPDF:" + isPrintPDF_ )
+            Log.d( "myVIew", "drawShadowTriangle - isPrintPDF:")
             return
         }
         if( myTriangleList.lastTapSide_ < 1 || myTriangleList.isDoubleTap_ == false ) {
@@ -707,7 +684,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
             val spab = shadowTri_.pointAB_
             val spbc = shadowTri_.pointBC_
 
-            shadowTri_.setScale( myTriangleList.myScale )
+            shadowTri_.setScale( myTriangleList.scale)
             canvas.drawPath( makeTriangleFillPath( shadowTri_ ), paintGray )
             //        drawTriLines( canvas, shadowTri, paintGray )
             canvas.drawTextOnPath( "B " + watchedB1_, makePath( spbc,  spab ), 0f, 0f, paintYellow )
@@ -802,7 +779,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     fun drawBlinkLine( canvas: Canvas, myTriangleList: TriangleList){
         if( myTriangleList.lastTapNumber_ < 1 || myTriangleList.lastTapSide_ < 0 || isPrintPDF_ == true ) return
 
-        Log.d( "myView", "drawBrinkLine - isPrintPDF: " + isPrintPDF_ )
+        Log.d( "myView", "drawBrinkLine")
         paintYellow.color = Color.argb(alpha, 255, 255, 0)
 
         val tri = myTriangleList.get( myTriangleList.lastTapNumber_ )
@@ -893,9 +870,9 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         if( tri.isCollide(tri.pointNumber_) == false ){
             val pc = tri.pointCenter_
             val pn = tri.pointNumber_
-            val pcOffsetToN = pc.offset(pn, circleSize * 0.5f )
+            val pcOffsetToN = pc.offset(pn, circleSize * 1.2f )
             val pnOffsetToC = pn.offset(pc, circleSize * 1.1f )
-            val arrowTail = pcOffsetToN.offset(pn, pcOffsetToN.lengthTo(pnOffsetToC) * 0.7f).rotate(pcOffsetToN, 5f)
+            val arrowTail = pcOffsetToN.offset(pn, pcOffsetToN.lengthTo(pnOffsetToC) * 0.7f).rotate(pcOffsetToN, 10f)
             canvas.drawLine(
                 pcOffsetToN.x,
                 -pcOffsetToN.y,
@@ -960,26 +937,52 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         return myy
     }
 
+    fun adjustTextSize(ts: Float): Float = when {
+        ts <= 5f -> 8f
+        ts >= 30f -> 30f
+        else -> ts
+    }
+
     fun setAllTextSize(ts: Float){
-        if( ts <= 5f ) ts_ = 8f
-        else if( ts >= 30f ) ts_ = 30f
-        else ts_ = ts
 
-        paintTexS.textSize = ts_
-        paintBlue.textSize = ts_
-        paintBlue.strokeWidth = ts_ * 0.1f
-        paintRed.textSize = ts_
-        paintRed.strokeWidth = ts_ * 0.1f
-        paintYellow.strokeWidth = ts_ * 0.2f
-        paintYellow.textSize = ts_
+        textSize = adjustTextSize( ts )
 
-        paintTexM.textSize = ts_
-        textSpacer_ = ts_ * 0.2f
-        myTriangleList.setDimPathTextSize( ts_ )
+        paintTexS.textSize = textSize
+        paintBlue.textSize = textSize
+        paintBlue.strokeWidth = textSize * 0.1f
+        paintRed.textSize = textSize
+        paintRed.strokeWidth = textSize * 0.1f
+        paintYellow.strokeWidth = textSize * 0.2f
+        paintYellow.textSize = textSize
+
+        paintTexM.textSize = textSize
+        textSpacer_ = textSize * 0.2f
+        myTriangleList.setDimPathTextSize( textSize )
+
 
         invalidate()
-        Log.d( "CadView", "TextSize changed to:" + ts_ )
+        Log.d( "CadView", "TextSize changed to:" + textSize )
     }
+
+//endregion
+
+
+    /**
+     * `printScale` の値に基づいて適切なテキストスペーサーの値を調整します。
+     *
+     * - `printScale` が 5.0 を超える場合、テキスト間のスペースは最小限になります (0.2f)。
+     * - `printScale` が 3.0 を超えて 5.0 以下の場合、中間のスペースを使用します (0.5f)。
+     * - それ以外の場合 (3.0 以下)、最大のスペースを使用します (2f)。
+     *
+     * @param printScale プリントスケールの現在値。
+     * @return 調整されたテキストスペーサーの値。
+     */
+    fun adjustTextSpacer(printScale: Float): Float = when {
+        printScale > 5.0 -> 0.2f  // スケールが大きい場合はスペーサーを小さくする
+        printScale > 3.0 -> 0.5f  // 中間のスケールには中間のスペーサーを使用
+        else -> 2f  // 小さいスケールには大きなスペーサーを使用
+    }
+
 
     fun drawPDF(
         writer: PdfWriter,
@@ -999,9 +1002,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         val printScale = myTriangleList.getPrintScale(myScale)
 
         // テキストスペーサー
-        if( printScale > 3.0 ) textSpacer_ = 0.5f
-        if( printScale > 5.0 ) textSpacer_ = 0.2f
-        else textSpacer_ = 2f
+        textSpacer_ = adjustTextSpacer(printScale)
 
         // 用紙の単位にリストの大きさを合わせる
         //
@@ -1036,7 +1037,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         val hYohaku = 75f
         val hkaishi = 5f
         var zukeinohaba: Float
-        val halfAreaH = printAreaH*0.5f*myTriangleList.myScale
+        val halfAreaH = printAreaH*0.5f*myTriangleList.scale
 
         // canvasの動きを追跡する
         val printPoint = PointXY(0f, 0f)
@@ -1051,7 +1052,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
             val numleftList = myTriangleList.getSokutenList( 0, 4 )
             numleftList.add(0, Triangle(5f, 5f, 5f) )
 
-            if( myTriangleList.myAngle < 0 && numberList.size > 1 ){
+            if( myTriangleList.angle < 0 && numberList.size > 1 ){
                 Collections.reverse( numberList )
                 Collections.reverse( numleftList )
             }
@@ -1131,7 +1132,7 @@ class MyView(context: Context?, attrs: AttributeSet?) :
         myDeductionList.setScale(myScale)
         //isAreaOff_ = true
         isPrintPDF_ = false
-        this.paintBlue.textSize = ts_
+        this.paintBlue.textSize = textSize
         this.paintBlue.strokeWidth = 2f
         //this.paintFill.color = darkColors_.get(colorindex_)
         textSpacer_ = 5f

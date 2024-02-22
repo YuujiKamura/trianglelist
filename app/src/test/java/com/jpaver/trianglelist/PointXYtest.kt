@@ -6,6 +6,26 @@ import org.junit.Test
 
 class PointXYtest {
 
+
+    private fun assertPointXYEquals(expected: PointXY, actual: PointXY, delta: Double = 0.001 ) {
+        System.out.printf( "PointXY expected x: %s, y: %s, actual x: %s, y: %s %n", expected.x, expected.y, actual.x, actual.y)
+        assertEquals(expected.y.toDouble(), actual.y.toDouble(), delta )
+        assertEquals(expected.x.toDouble(), actual.x.toDouble(), delta )
+
+    }
+
+    @Test
+    fun testMirrorOriginalPoint() {
+        val p = PointXY(1f, 2f)
+        val lineStart = PointXY(0f, 0f)
+        val lineEnd = PointXY(2f, 2f)
+
+        val actualPoint = p.mirror(lineStart, lineEnd )
+        val expectedPoint = PointXY(2f, 1f)
+
+        assertPointXYEquals(expectedPoint, actualPoint, 0.001)
+    }
+
     @Test
     fun testCrossProduct(){
         val vec1 = arrayOf(

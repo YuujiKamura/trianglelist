@@ -47,7 +47,7 @@ class Deduction(var num: Int = 0,
         type = dp.type,
         angle = 0f,
         point =  dp.pt ,
-        pointFlag = dp.pts
+        pointFlag = dp.ptF
 
     )
 
@@ -79,7 +79,7 @@ class Deduction(var num: Int = 0,
             prb = PointXY(0f, 0f)
         }
 
-        tri?.let { isCollide(it) } //旗上げ処理
+        //tri?.let { isCollide(it) } //旗上げ処理
 
         infoStr = getInfo()
     }
@@ -140,7 +140,7 @@ class Deduction(var num: Int = 0,
         type = dp.type
         angle = 0f
         if( dp.pt.x != 0f && dp.pt.y != 0f ) point =  dp.pt
-        pointFlag =  dp.pts
+        pointFlag =  dp.ptF
         infoStr = getInfo()
     }
 
@@ -249,8 +249,12 @@ class Deduction(var num: Int = 0,
     fun isCollide( tri: Triangle): Boolean{
         if(!tri.isCollide( point )) return false
 
-        pointFlag = tri.pointMiddleOuterUnconnecterdSide(pointFlag, 0.5f)
+        pointFlag = tri.pointUnconnectedSide(point, 1f, 1f, PointXY(0f, 0f))
 
         return true
+    }
+
+    override fun toString(): String {
+        return "Deduction $num $name $point $pointFlag $typestring $infoStr"
     }
 }

@@ -12,7 +12,7 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
     lateinit var deductionList_: DeductionList
 
 
-    val drawingScale_ = triangleList.myScale
+    val drawingScale_ = triangleList.scale
     var printScale_ = printScale// 2.0f
     override var textscale_ = triangleList_.getPrintTextScale( 1f, "pdf")
 

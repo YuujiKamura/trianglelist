@@ -28,6 +28,59 @@ class PointXY : Cloneable {
         return this
     }
 
+    private fun validateInputs(lineStart: PointXY, lineEnd: PointXY, scaleX: Float=1f, scaleY: Float=1f ) {
+        if (scaleX.isNaN() || scaleX.isInfinite() || scaleY.isNaN() || scaleY.isInfinite()) {
+            throw IllegalArgumentException("Scaling factors must be valid numbers.")
+        }
+        if (lineStart.x == lineEnd.x && lineStart.y == lineEnd.y) {
+            throw IllegalArgumentException("Line start and end points cannot be the same.")
+        }
+    }
+    override fun toString(): String {
+        return "(x=$x, y=$y)"
+    }
+
+    fun mirroredAndScaledPoint(lineStart: PointXY, lineEnd: PointXY, scaleX: Float, scaleY: Float, scaleOrigin: PointXY = PointXY(0f,0f) ): PointXY {
+
+        return mirroredPoint(lineStart, lineEnd).scale(scaleOrigin, scaleX,scaleY)
+    }
+
+
+
+    private fun mirroredPoint(lineStart: PointXY, lineEnd: PointXY): PointXY {
+        // 直線の傾き（m）とy切片（b）を計算
+        val dx = lineEnd.x - lineStart.x
+        val dy = lineEnd.y - lineStart.y
+        val m = if (dx != 0f) dy / dx else Float.POSITIVE_INFINITY // 垂直な直線の場合、傾きは無限大
+        val b = lineStart.y - m * lineStart.x
+
+        val xh: Float
+        val yh: Float
+
+        if (m.isInfinite()) {
+            // 直線が垂直の場合、垂線の足のx座標は直線のx座標と同じで、y座標は元の点のy座標
+            xh = lineStart.x
+            yh = y
+        } else {
+            // 垂直でない直線の場合、垂線の足の座標（xh, yh）を計算
+            xh = (m * y + x - m * b) / (m * m + 1)
+            yh = m * xh + b
+        }
+
+        // 元の点から垂線の足までの距離を2倍にして、ミラーリングされた点を計算
+        val xm = 2 * xh - x
+        val ym = 2 * yh - y
+
+        // ミラーリングされた点を返す
+        return PointXY(xm, ym)
+    }
+
+
+    fun mirror(lineStart: PointXY, lineEnd: PointXY, clockwise: Float = -1f ): PointXY {
+        validateInputs( lineStart, lineEnd )
+        return this.rotate(lineStart, this.calcAngle(lineStart, lineEnd) * 2f * clockwise )
+    }
+
     fun flip(p2: PointXY): PointXY {
         val p3 = PointXY(p2.x, p2.y)
         p2[x] = y
@@ -201,7 +254,16 @@ class PointXY : Cloneable {
     }
 
     fun scale(a: PointXY, sx: Float, sy: Float): PointXY {
-        return PointXY(x * sx + a.x, y * sy + a.y)
+        // 基準点aからの相対座標を計算
+        val relativeX = x - a.x
+        val relativeY = y - a.y
+
+        // 相対座標にスケーリング係数を適用
+        val scaledX = relativeX * sx
+        val scaledY = relativeY * sy
+
+        // スケーリングされた相対座標を基準点aの座標に加えて、新しい座標を計算
+        return PointXY(scaledX + a.x, scaledY + a.y)
     }
 
     fun nearBy(target: PointXY, range: Float): Boolean {

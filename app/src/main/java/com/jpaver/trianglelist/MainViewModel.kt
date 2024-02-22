@@ -106,10 +106,15 @@ class MainViewModel {
     }
 
     fun fabDimSide( WorH: String, refreshMethod:()->Unit ){
-        if(deductionMode || myTriangleList.lastTapNumber_ < 1 ) return
+        Log.d("fabDimSide", "fabDimSide 1")
+        if(deductionMode || myTriangleList.lastTapNumber_ < 1 ){
+            Log.d("fabDimSide", "fabDimSide 2")
+            return
+        }
 
+        Log.d("fabDimSide", "fabDimSide 3")
         val triAndDimside = isConnectedOrNot()
-
+        Log.d("fabDimSide", "fabDimSide 4")
         when (WorH){
             "W" -> triAndDimside.first.rotateDimSideAlign(triAndDimside.second)
             "H" -> triAndDimside.first.flipDimAlignH(triAndDimside.second)
@@ -119,6 +124,7 @@ class MainViewModel {
     }
 
     fun isConnectedOrNot(): Pair<Triangle,Int> {
+        Log.d("fabDimSide", "isConnectedOrNot")
         val dimside = myTriangleList.lastTapSide_
         val trinum  = myTriangleList.lastTapNumber_
         val tri = myTriangleList.get(trinum)
