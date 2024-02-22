@@ -102,7 +102,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
     var transOnce: Boolean = true
     var pressedInModel: PointXY =
         PointXY(0f, 0f)
-    var scaleCenter: PointXY =
+    var scaleCenterInView: PointXY =
         PointXY(0f, 0f)
 
 
@@ -279,7 +279,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
     Log.d("MyViewLifeCycle", "onDraw.")
 
     transViewPoint()
-    scaleCenter.set( (mFocusX - baseInView.x), (mFocusY - baseInView.y) )
+    scaleCenterInView.set( (mFocusX - baseInView.x), (mFocusY - baseInView.y) )
     canvas.translate(baseInView.x, baseInView.y) // baseInViewはview座標系の中央を標準としていて、そこからスクロールによって移動した数値になる。
     canvas.scale(zoomSize, zoomSize)//, mFocusX, mFocusY )//, scaleCenter.x, scaleCenter.y )//この位置に来ることでscaleの中心がbaseInViewに依存する。
     canvas.translate(-centerInModel.x, centerInModel.y)
@@ -441,12 +441,12 @@ class MyView(context: Context, attrs: AttributeSet?) :
         Log.d("ModelView", "    moveVector:" + moveVector.x + ", " + moveVector.y )
         Log.d("ModelView", "    baseInView:" + baseInView.x + ", " + baseInView.y )
         Log.d("ModelView", "  centerInView:" + centerInView.x + ", " + centerInView.y )
-        Log.d("ModelView", " pressedInView:" + pressedInView.x + ", " + pressedInView.y )
         Log.d("ModelView", " centerInModel:" + centerInModel.x + ", " + centerInModel.y )
-        Log.d("ModelView", "pressedInModel:" + pressedInModel.x + ", " + pressedInModel.y )
-        Log.d("ModelView", "   scaleCenter:" + scaleCenter.x + ", " + scaleCenter.y )
-        Log.d("ModelView", "      zoomSize:" + zoomSize )
+        Log.d("ModelView", " pressedInView:" + pressedInView.x + ", " + pressedInView.y )
         Log.d("ModelView", "        mFocus:" + mFocusX + ", " + mFocusY  )
+        Log.d("ModelView", "pressedInModel:" + pressedInModel.x + ", " + pressedInModel.y )
+        Log.d("ModelView", "scaleCenterInView:" + scaleCenterInView.x + ", " + scaleCenterInView.y )
+        Log.d("ModelView", "      zoomSize:" + zoomSize )
 
     }
 //endregion
