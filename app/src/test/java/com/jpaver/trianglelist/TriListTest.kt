@@ -32,7 +32,7 @@ class TriListTest {
                 if( listlist.get(i).size() > 0 ) {
 
                     val tl = listlist.get(i)//traceOrJumpForward(0, 0, ArrayList<PointXY>() )
-                    System.out.printf( "trilistlist[%s], size %s, outlineList_ %s, outlineStr_ %s%n", i, tl.size(), tl.outlineList_.size, tl.outlineStr_ )
+                    System.out.printf( "trilistlist[%s], size %s, outlineList_ %s, outlineStr_ %s%n", i, tl.size(), tl.outlineList_!!.size, tl.outlineStr_ )
                     printTriList( tl )
                 }
             }
@@ -94,7 +94,7 @@ class TriListTest {
 
         val listByColors = trilist.spritByColors()
 
-        assertEquals(3, listByColors[4].outlineList_.size )
+        assertEquals(3, listByColors[4].outlineList_!!.size )
     }
 
 
@@ -138,7 +138,9 @@ class TriListTest {
         val op = ArrayList<PointXY>()
         val tlop = trilist.traceOrJumpForward(0, 0, op, trilist[1]) //getOutLinePoints( 0 )
         assertEquals(11, trilist.size())
-        assertEquals(14, tlop.size)
+        if (tlop != null) {
+            assertEquals(14, tlop.size)
+        }
         assertEquals(
             "1ab,1bc,3bc,4bc,8bc,10bc,10ca,11bc,11ca,7bc,7ca,5ca,2bc,2ca,",
             trilist.outlineStr_

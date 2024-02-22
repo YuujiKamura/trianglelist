@@ -27,7 +27,7 @@ fun Float?.formattedString(fractionDigits: Int): String{
     return format.format(this)
 }
 
-class MyView(context: Context?, attrs: AttributeSet?) :
+class MyView(context: Context, attrs: AttributeSet?) :
     View(context, attrs),
     GestureDetector.OnGestureListener,
     ScaleGestureCallback {
@@ -129,6 +129,17 @@ class MyView(context: Context?, attrs: AttributeSet?) :
     var watchedA2_ = ""
     var watchedB2_ = ""
     var watchedC2_ = ""
+
+    var pointerCount = 0
+        private set
+
+    fun setPointerCountForTest(count: Int) {
+        pointerCount = count
+    }
+
+    fun getPointerCountForTest(): Int {
+        return pointerCount
+    }
 
     fun setWatchedStrings(sa1:String,sb1:String,sc1:String,sa2:String,sb2:String,sc2:String ){
         watchedA1_ = sa1
