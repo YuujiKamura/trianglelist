@@ -109,8 +109,8 @@ class MyView(context: Context, attrs: AttributeSet?) :
     var zoomSize: Float = 1.0f
     var mFocusX = 0f
     var mFocusY = 0f
-    var isViewScale = false
-    var isViewScroll = false
+    var isViewScaling = false
+    var isViewScrolling = false
     var touchCounter = 0
 
     var parentNum: Int = 0
@@ -280,10 +280,11 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
     transViewPoint()
     canvas.translate(baseInView.x, baseInView.y) // baseInViewはview座標系の中央を標準としていて、そこからスクロールによって移動した数値になる。
-    canvas.scale(zoomSize, zoomSize)//, mFocusX, mFocusY )//, scaleCenter.x, scaleCenter.y )//この位置に来ることでscaleの中心がbaseInViewに依存する。
-    canvas.translate(-pressedInModel.x, -pressedInModel.y)
+    canvas.scale(zoomSize, zoomSize )//, mFocusX, mFocusY )//, scaleCenter.x, scaleCenter.y )//この位置に来ることでscaleの中心がbaseInViewに依存する。
+    canvas.translate(-centerInModel.x, centerInModel.y)
 
     logModelViewPoints()
+    drawModelViewPoints(canvas)
 
     // 背景
     val zero = 0
@@ -342,24 +343,30 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
     }
 
+    private var isScaleBegin = false
+
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
 
         touchCounter = event.pointerCount
         when( touchCounter ){
             1 -> {
-                if(!isViewScale){
-                    isViewScroll = true
+                if(!isViewScaling){
+                    isViewScrolling = true
                     mDetector.onTouchEvent(event)
                     setPressEvent(event.x, event.y)
                     invalidate()
                 }
             }
             2 -> {
-                    isViewScale = true
                     this.scaleGestureDetector.onTouchEvent(event)
                     this.rotateGestureDetector.onTouchEvent(event)
-                    setPressEvent(mFocusX, mFocusY)
+
+                    if (!isScaleBegin) {
+                        isViewScaling = true
+                        isScaleBegin = true  // スケールが開始されたことを示す
+                        setPressEvent(mFocusX, mFocusY)
+                    }
 
                     invalidate()
             }
@@ -367,8 +374,9 @@ class MyView(context: Context, attrs: AttributeSet?) :
         }
 
         if( event.action == ACTION_UP ) {
-            isViewScale = false
-            isViewScroll = false
+            isScaleBegin = false
+            isViewScaling = false
+            isViewScrolling = false
         }
 
         return true
@@ -389,7 +397,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         distanceX: Float,
         distanceY: Float
     ): Boolean {
-        if( isViewScale == true ) return false
+        if( isViewScaling == true ) return false
         move(p1)
 
         moveVector.set(0f, 0f)
@@ -437,8 +445,8 @@ class MyView(context: Context, attrs: AttributeSet?) :
 // region logs
     fun logModelViewPoints(){
         Log.d("ModelView", "  touchCounter: $touchCounter" )
-        Log.d("ModelView", "  isViewScroll: $isViewScroll" )
-        Log.d("ModelView", "   isViewScale: $isViewScale" )
+        Log.d("ModelView", "  isViewScroll: $isViewScrolling" )
+        Log.d("ModelView", "   isViewScale: $isViewScaling" )
         Log.d("ModelView", "     movePoint:" + movePoint.x + ", " + movePoint.y )
         Log.d("ModelView", "    moveVector:" + moveVector.x + ", " + moveVector.y )
         Log.d("ModelView", "    baseInView:" + baseInView.x + ", " + baseInView.y )
@@ -450,7 +458,24 @@ class MyView(context: Context, attrs: AttributeSet?) :
         Log.d("ModelView", "scaleCenterInView:" + scaleCenterInView.x + ", " + scaleCenterInView.y )
         Log.d("ModelView", "      zoomSize:" + zoomSize )
 
+
     }
+
+    fun drawModelViewPoints(canvas: Canvas, paint: Paint = paintTexDbg ){
+        drawPointInfo(canvas, "baseInView",baseInView, paint)
+        drawPointInfo(canvas, "pressedInView", pressedInView, paint)
+        drawPointInfo(canvas, "centerInView", centerInView, paint)
+        drawPointInfo(canvas, "scaleCenterInView", scaleCenterInView, paint)
+        drawPointInfo(canvas, "centerInModel", centerInModel, paint)
+        drawPointInfo(canvas, "pressedInModel", pressedInModel, paint)
+
+    }
+    fun drawPointInfo(canvas: Canvas, name: String = "",point: PointXY, paint: Paint = paintTexS ){
+        canvas.drawText("$name : $point.x $point.y", point.x, point.y, paint)
+    }
+
+
+
 //endregion
 
 
