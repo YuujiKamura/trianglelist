@@ -280,11 +280,9 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
     onceTransViewToLastTapTriangle()
     canvas.translate(baseInView.x, baseInView.y) // baseInViewはview座標系の中央を標準としていて、そこからスクロールによって移動した数値になる。
-    canvas.scale(zoomSize, zoomSize, pressedInModel.x, pressedInModel.y )//, mFocusX, mFocusY )//, scaleCenter.x, scaleCenter.y )//この位置に来ることでscaleの中心がbaseInViewに依存する。
+    canvas.scale(zoomSize, zoomSize )//, mFocusX, mFocusY )//, scaleCenter.x, scaleCenter.y )//この位置に来ることでscaleの中心がbaseInViewに依存する。
+    //canvas.translate(-pressedInModel.x, pressedInModel.y)//どこで更新されているのか追跡
     canvas.translate(-centerInModel.x, centerInModel.y)
-
-    logModelViewPoints()
-
 
     // 背景の塗りつぶし（黒）
     val zero = 0
@@ -294,6 +292,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
     drawEntities(canvas, paintTri, paintTexS, paintRed, darkColors_, myTriangleList, myDeductionList )
     drawCrossLines(canvas, pressedInModel, paintRed )
 
+    logModelViewPoints()
     drawModelViewPoints(canvas)
     }
 
