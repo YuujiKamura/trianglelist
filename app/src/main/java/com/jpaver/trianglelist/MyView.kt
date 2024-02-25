@@ -300,21 +300,6 @@ class MyView(context: Context, attrs: AttributeSet?) :
 // endregion
 
 // region screen onTouchEvent
-    override fun onZoomChange(zoomStep: Float, focusX: Float, focusY: Float) {
-        Log.d("ZoomDebug", "Zoom Step: $zoomStep")
-        zoomSize = adjustZoomSize(zoomStep)  // zoomSize を更新
-
-        mFocusX = focusX
-        mFocusY = focusY
-
-        resetPressedInModel(
-            PointXY(
-                focusX,
-                focusY
-            )
-        )
-
-    }
 
     fun adjustZoomSize(zoomStep: Float): Float {
         var newZoomSize = zoomSize + zoomStep
@@ -381,13 +366,21 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
     }
 
+    override fun onZoomChange(zoomStep: Float, focusX: Float, focusY: Float) {
+        Log.d("ZoomDebug", "Zoom Step: $zoomStep")
+        zoomSize = adjustZoomSize(zoomStep)  // zoomSize を更新
 
-    override fun onDown(event: MotionEvent): Boolean {
+        mFocusX = focusX
+        mFocusY = focusY
 
-        setPressEvent(event.x, event.y)
-        return true
+        resetPressedInModel(
+            PointXY(
+                focusX,
+                focusY
+            )
+        )
+
     }
-
 
     override fun onScroll(
         p0: MotionEvent?,
@@ -397,16 +390,24 @@ class MyView(context: Context, attrs: AttributeSet?) :
     ): Boolean {
         if( isViewScaling == true ) return false
 
-        viewScroll(p1)
+        pressedInView.set(p1.x, p1.y)
+        moveVector = pressedInView.addminus( lastCPoint )
+        baseInView = translatePoint.add( moveVector )
+        moveVector.set(0f, 0f)
 
         return true
     }
 
-    fun viewScroll(event: MotionEvent ){
-        pressedInView.set(event.x, event.y)
-        moveVector = pressedInView.addminus( lastCPoint )
-        baseInView = translatePoint.add( moveVector )
-        moveVector.set(0f, 0f)
+    override fun onDown(event: MotionEvent): Boolean {
+
+        setPressEvent(event.x, event.y)
+        return true
+    }
+
+    override fun onSingleTapUp(e: MotionEvent): Boolean {
+        (context as MainActivity).setTargetEditText(zoomSize*0.5f)
+        return true
+
     }
 
     override fun onFling(
@@ -420,12 +421,6 @@ class MyView(context: Context, attrs: AttributeSet?) :
     }
 
     override fun onShowPress(e: MotionEvent) {
-
-    }
-
-    override fun onSingleTapUp(e: MotionEvent): Boolean {
-        (context as MainActivity).setTargetEditText(zoomSize*0.5f)
-        return true
 
     }
 
