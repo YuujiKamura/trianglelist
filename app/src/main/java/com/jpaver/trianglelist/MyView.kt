@@ -189,7 +189,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         //paintText1.letterSpacing = 0.2f
         paintTexL.textSize = textSize
 
-        paintTexDbg.color = Color.argb(255, 100, 100, 100)
+        paintTexDbg.color = Color.argb(255, 100, 255, 100)
         paintTexDbg.textAlign = Paint.Align.LEFT
         paintTexDbg.style = Paint.Style.FILL_AND_STROKE
         paintTexDbg.letterSpacing = 0.1f
@@ -280,20 +280,21 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
     transViewPoint()
     canvas.translate(baseInView.x, baseInView.y) // baseInViewはview座標系の中央を標準としていて、そこからスクロールによって移動した数値になる。
-    canvas.scale(zoomSize, zoomSize )//, mFocusX, mFocusY )//, scaleCenter.x, scaleCenter.y )//この位置に来ることでscaleの中心がbaseInViewに依存する。
+    canvas.scale(zoomSize, zoomSize, pressedInModel.x, pressedInModel.y )//, mFocusX, mFocusY )//, scaleCenter.x, scaleCenter.y )//この位置に来ることでscaleの中心がbaseInViewに依存する。
     canvas.translate(-centerInModel.x, centerInModel.y)
 
     logModelViewPoints()
-    drawModelViewPoints(canvas)
 
-    // 背景
+
+    // 背景の塗りつぶし（黒）
     val zero = 0
     canvas.drawColor(Color.argb(255, zero, zero, zero))
     myCanvas = canvas
 
     drawEntities(canvas, paintTri, paintTexS, paintRed, darkColors_, myTriangleList, myDeductionList )
     drawCrossLines(canvas, pressedInModel, paintRed )
-    //drawCrossLines(canvas, centerInModel.scale( PointXY(1f, -1f) ), paintBlue )
+
+    drawModelViewPoints(canvas)
     }
 
 // endregion
@@ -302,6 +303,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
     override fun onZoomChange(zoomStep: Float, focusX: Float, focusY: Float) {
         Log.d("ZoomDebug", "Zoom Step: $zoomStep")
         zoomSize = adjustZoomSize(zoomStep)  // zoomSize を更新
+
         mFocusX = focusX
         mFocusY = focusY
 
@@ -321,25 +323,21 @@ class MyView(context: Context, attrs: AttributeSet?) :
     }
 
 
-    fun move( event: MotionEvent ){
-        pressedInView.set(event.x, event.y)
-        moveVector.set(
-            pressedInView.x - lastCPoint.x,
-            pressedInView.y - lastCPoint.y
-        )
-        baseInView.set(
-            movePoint.x + moveVector.x,
-            movePoint.y + moveVector.y
-        )
-    }
-
     fun resetPressedInModel(pressedInView: PointXY){
         movePoint.set(baseInView.x, baseInView.y)
-        pressedInModel = pressedInView.convertToLocal(
+        pressedInModel = pressedInView.convertPointFromViewToModel(
             baseInView,
             centerInModel,
             zoomSize,
         )
+
+    }
+
+    fun setPressEvent(x: Float, y: Float){
+        pressedInView.set(x, y)
+        lastCPoint.set(x, y)
+        resetPressedInModel(pressedInView)
+        scaleCenterInView.set( (x - baseInView.x), (y - baseInView.y) )
 
     }
 
@@ -405,6 +403,18 @@ class MyView(context: Context, attrs: AttributeSet?) :
         return true
     }
 
+    fun move( event: MotionEvent ){
+        pressedInView.set(event.x, event.y)
+        moveVector.set(
+            pressedInView.x - lastCPoint.x,
+            pressedInView.y - lastCPoint.y
+        )
+        baseInView.set(
+            movePoint.x + moveVector.x,
+            movePoint.y + moveVector.y
+        )
+    }
+
     override fun onFling(
         p0: MotionEvent?,
         p1: MotionEvent,
@@ -422,14 +432,6 @@ class MyView(context: Context, attrs: AttributeSet?) :
     override fun onSingleTapUp(e: MotionEvent): Boolean {
         (context as MainActivity).setTargetEditText(zoomSize*0.5f)
         return true
-
-    }
-
-    fun setPressEvent(x: Float, y: Float){
-        pressedInView.set(x, y)
-        lastCPoint.set(x, y)
-        resetPressedInModel(pressedInView)
-        scaleCenterInView.set( (x - baseInView.x), (y - baseInView.y) )
 
     }
 
@@ -462,16 +464,20 @@ class MyView(context: Context, attrs: AttributeSet?) :
     }
 
     fun drawModelViewPoints(canvas: Canvas, paint: Paint = paintTexDbg ){
-        drawPointInfo(canvas, "baseInView",baseInView, paint)
-        drawPointInfo(canvas, "pressedInView", pressedInView, paint)
-        drawPointInfo(canvas, "centerInView", centerInView, paint)
-        drawPointInfo(canvas, "scaleCenterInView", scaleCenterInView, paint)
-        drawPointInfo(canvas, "centerInModel", centerInModel, paint)
+        drawPointInfo(canvas, "centerInModel", centerInModel.scale(1f,-1f), paint)
         drawPointInfo(canvas, "pressedInModel", pressedInModel, paint)
 
+        drawPointInfo(canvas, "baseInView",baseInView, paint, baseInView.scale(-1f,-1f) )
+        //drawPointInfo(canvas, "pressedInView", pressedInView, paint)
+        //drawPointInfo(canvas, "centerInView", centerInView, paint)
+        //drawPointInfo(canvas, "scaleCenterInView", scaleCenterInView, paint)
+
+
     }
-    fun drawPointInfo(canvas: Canvas, name: String = "",point: PointXY, paint: Paint = paintTexS ){
-        canvas.drawText("$name : $point.x $point.y", point.x, point.y, paint)
+    fun drawPointInfo(canvas: Canvas, name: String = "",point: PointXY, paint: Paint = paintTexS, translate: PointXY = PointXY(0f,0f) ){
+        canvas.drawText("$name ", point.x+translate.x, point.y+translate.y, paint)
+        canvas.drawText("${point.x.formattedString(1)} ${point.y.formattedString(1)}", point.x+translate.x, point.y+translate.y+30f, paint)
+        drawCrossLines(canvas, point.plus(translate), paint )
     }
 
 
@@ -821,9 +827,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
                 point.x, point.y - 20f,
                 point.x, point.y + 20f, paint
             )
-            //Log.d( "myView", "drawLocalPressPoint: " + point.x + " " + point.y )
-            // draw pdf の時だけ使う
-            //if( BuildConfig.BUILD_TYPE == "debug" ) canvas.drawText( point.x.toString() + " " + point.y.toString(), point.x+10f, point.y+10f, paintRed)
+
         }
 
     }

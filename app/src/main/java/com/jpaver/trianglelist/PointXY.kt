@@ -134,16 +134,14 @@ class PointXY : Cloneable {
         y = sp.y
     }
 
-    fun convertToLocal(
+    fun convertPointFromViewToModel(
         baseInView: PointXY,
         centerInModel: PointXY,
         zoom: Float
     ): PointXY {
         val inLocal = clone()
-        inLocal.addminus(baseInView)
-            .scale(PointXY(0f, 0f), 1 / zoom) // // 左上起点座標を自身(pressedInView)から引く
+        inLocal.addminus(baseInView).scale(PointXY(0f, 0f), 1 / zoom) // // 左上起点座標を自身(pressedInView)から引く
         inLocal.add(centerInModel.scale(1f, -1f))
-        //inLocal.scale( baseInView.add(centerInModel.scale(1f,-1f)), 1/zoom);
         return inLocal
     }
 
