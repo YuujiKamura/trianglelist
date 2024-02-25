@@ -88,7 +88,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         PointXY(0f, 0f)
     var moveVector: PointXY =
         PointXY(0f, 0f)
-    var movePoint: PointXY =
+    var translatePoint: PointXY =
         PointXY(0f, 0f)
 
     var viewSize: PointXY =
@@ -324,7 +324,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
 
     fun resetPressedInModel(pressedInView: PointXY){
-        movePoint.set(baseInView.x, baseInView.y)
+        translatePoint = baseInView //why this?
         pressedInModel = pressedInView.convertPointFromViewToModel(
             baseInView,
             centerInModel,
@@ -396,23 +396,17 @@ class MyView(context: Context, attrs: AttributeSet?) :
         distanceY: Float
     ): Boolean {
         if( isViewScaling == true ) return false
-        move(p1)
 
-        moveVector.set(0f, 0f)
+        viewScroll(p1)
 
         return true
     }
 
-    fun move( event: MotionEvent ){
+    fun viewScroll(event: MotionEvent ){
         pressedInView.set(event.x, event.y)
-        moveVector.set(
-            pressedInView.x - lastCPoint.x,
-            pressedInView.y - lastCPoint.y
-        )
-        baseInView.set(
-            movePoint.x + moveVector.x,
-            movePoint.y + moveVector.y
-        )
+        moveVector = pressedInView.addminus( lastCPoint )
+        baseInView = translatePoint.add( moveVector )
+        moveVector.set(0f, 0f)
     }
 
     override fun onFling(
@@ -449,7 +443,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         Log.d("ModelView", "  touchCounter: $touchCounter" )
         Log.d("ModelView", "  isViewScroll: $isViewScrolling" )
         Log.d("ModelView", "   isViewScale: $isViewScaling" )
-        Log.d("ModelView", "     movePoint:" + movePoint.x + ", " + movePoint.y )
+        Log.d("ModelView", "     movePoint:" + translatePoint.x + ", " + translatePoint.y )
         Log.d("ModelView", "    moveVector:" + moveVector.x + ", " + moveVector.y )
         Log.d("ModelView", "    baseInView:" + baseInView.x + ", " + baseInView.y )
         Log.d("ModelView", "  centerInView:" + centerInView.x + ", " + centerInView.y )
@@ -560,7 +554,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
     }
 
     fun resetPointToZero(){
-        movePoint.set(0f, 0f)
+        translatePoint.set(0f, 0f)
         moveVector.set(0f, 0f)
         pressedInView.set(0f, 0f)
         lastCPoint.set(0f, 0f)
