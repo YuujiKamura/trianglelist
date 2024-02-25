@@ -308,23 +308,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
     }
 
 
-    fun resetPressedInModel(pressedInView: PointXY){
-        translatePoint = baseInView //why this?
-        pressedInModel = pressedInView.convertPointFromViewToModel(
-            baseInView,
-            centerInModel,
-            zoomSize,
-        )
 
-    }
-
-    fun setPressEvent(x: Float, y: Float){
-        pressedInView.set(x, y)
-        lastCPoint.set(x, y)
-        resetPressedInModel(pressedInView)
-        scaleCenterInView.set( (x - baseInView.x), (y - baseInView.y) )
-
-    }
 
     private var isScaleBegin = false
 
@@ -370,8 +354,10 @@ class MyView(context: Context, attrs: AttributeSet?) :
         Log.d("ZoomDebug", "Zoom Step: $zoomStep")
         zoomSize = adjustZoomSize(zoomStep)  // zoomSize を更新
 
-        mFocusX = focusX
-        mFocusY = focusY
+        if(!isScaleBegin){ //focus変更をスケール初回だけに限定する
+            mFocusX = focusX
+            mFocusY = focusY
+        }
 
         resetPressedInModel(
             PointXY(
@@ -379,6 +365,24 @@ class MyView(context: Context, attrs: AttributeSet?) :
                 focusY
             )
         )
+
+    }
+
+    fun resetPressedInModel(pressedInView: PointXY){
+        translatePoint = baseInView //why this?
+        pressedInModel = pressedInView.convertPointFromViewToModel(
+            baseInView,
+            centerInModel,
+            zoomSize, //ズームレベルによってなぜか位置が動いている
+        )
+
+    }
+
+    fun setPressEvent(x: Float, y: Float){
+        pressedInView.set(x, y)
+        lastCPoint.set(x, y)
+        resetPressedInModel(pressedInView)
+        scaleCenterInView.set( (x - baseInView.x), (y - baseInView.y) )
 
     }
 
