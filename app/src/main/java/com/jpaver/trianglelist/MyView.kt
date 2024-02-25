@@ -278,7 +278,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
     override fun onDraw(canvas: Canvas) {
     Log.d("MyViewLifeCycle", "onDraw.")
 
-    transViewPoint()
+    onceTransViewToLastTapTriangle()
     canvas.translate(baseInView.x, baseInView.y) // baseInViewはview座標系の中央を標準としていて、そこからスクロールによって移動した数値になる。
     canvas.scale(zoomSize, zoomSize, pressedInModel.x, pressedInModel.y )//, mFocusX, mFocusY )//, scaleCenter.x, scaleCenter.y )//この位置に来ることでscaleの中心がbaseInViewに依存する。
     canvas.translate(-centerInModel.x, centerInModel.y)
@@ -370,7 +370,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
     fun pressedInViewToModel(pressedInView: PointXY){
         translatePoint = baseInView //why this?
-        pressedInModel = pressedInView.convertPointFromViewToModel(
+        pressedInModel = pressedInView.translateAndScale(
             baseInView,
             centerInModel,
             zoomSize, //ズームレベルによってなぜか位置が動いている
@@ -540,7 +540,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         centerInModel = pt.clone()
         //drawPoint = pt.clone()
         resetPointToZero()
-        viewReset()
+        viewResettoCenter()
         invalidate()
     }
 
@@ -548,7 +548,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         centerInModel = toLastTapTriangle()
         //drawPoint = toLastTapTriangle()
         resetPointToZero()
-        viewReset()
+        viewResettoCenter()
         invalidate()
     }
 
@@ -560,7 +560,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         pressedInModel.set(0f, 0f)
     }
 
-    fun viewReset(){
+    fun viewResettoCenter(){
         viewSize.set( this.width.toFloat(), this.height.toFloat())
         centerInView.set( viewSize.x * 0.5f, viewSize.y * 0.25f )
         baseInView.set( centerInView.x, centerInView.y )
@@ -576,7 +576,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         return lstn
     }
 
-    fun transViewPoint(){
+    fun onceTransViewToLastTapTriangle(){
         if(transOnce == true) {
             //setCenterInModelToLastTappedTriNumber() // 同じこと2回やってる
             resetViewToLastTapTriangle()

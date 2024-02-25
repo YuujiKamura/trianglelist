@@ -134,7 +134,7 @@ class PointXY : Cloneable {
         y = sp.y
     }
 
-    fun convertPointFromViewToModel(
+    fun translateAndScale(
         baseInView: PointXY,
         centerInModel: PointXY,
         zoom: Float
