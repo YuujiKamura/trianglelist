@@ -359,7 +359,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
             mFocusY = focusY
         }
 
-        resetPressedInModel(
+        pressedInViewToModel(
             PointXY(
                 focusX,
                 focusY
@@ -368,7 +368,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
     }
 
-    fun resetPressedInModel(pressedInView: PointXY){
+    fun pressedInViewToModel(pressedInView: PointXY){
         translatePoint = baseInView //why this?
         pressedInModel = pressedInView.convertPointFromViewToModel(
             baseInView,
@@ -381,7 +381,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
     fun setPressEvent(x: Float, y: Float){
         pressedInView.set(x, y)
         lastCPoint.set(x, y)
-        resetPressedInModel(pressedInView)
+        pressedInViewToModel(pressedInView)
         scaleCenterInView.set( (x - baseInView.x), (y - baseInView.y) )
 
     }
