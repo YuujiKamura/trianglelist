@@ -5,8 +5,8 @@ import com.jpaver.trianglelist.PointXY
 
 class ViewTranslateManager() {
 
-    var centerInModel = PointXY(0f, 0f)
     var baseInView = PointXY(0f, 0f)
+    var centerInModel = PointXY(0f, 0f)
     var pressedInModel = PointXY(0f, 0f)
     var zoomSize: Float = 1.0f
 
