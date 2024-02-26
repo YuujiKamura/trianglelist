@@ -17,6 +17,7 @@ import androidx.core.view.GestureDetectorCompat
 import com.jpaver.trianglelist.util.MyScaleGestureListener
 import com.jpaver.trianglelist.util.RotateGestureDetector
 import com.jpaver.trianglelist.util.ScaleGestureCallback
+import com.jpaver.trianglelist.util.ViewTranslateManager
 import java.util.*
 import kotlin.math.roundToInt
 
@@ -120,8 +121,6 @@ class MyView(context: Context, attrs: AttributeSet?) :
     var isDebug_ = false
     var isPrintPDF_ = false
     var isAreaOff_ = true
-
-    lateinit var myCanvas: Canvas
 
     var textSize = 30f
 
@@ -275,19 +274,19 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
 
 // region onDraw
+    val viewTranslateManager = ViewTranslateManager()
+
     override fun onDraw(canvas: Canvas) {
     Log.d("MyViewLifeCycle", "onDraw.")
 
     onceTransViewToLastTapTriangle()
-    canvas.translate(baseInView.x, baseInView.y) // baseInViewはview座標系の中央を標準としていて、そこからスクロールによって移動した数値になる。
-    canvas.scale(zoomSize, zoomSize )//, mFocusX, mFocusY )//, scaleCenter.x, scaleCenter.y )//この位置に来ることでscaleの中心がbaseInViewに依存する。
-    //canvas.translate(-pressedInModel.x, pressedInModel.y)//どこで更新されているのか追跡
-    canvas.translate(-centerInModel.x, centerInModel.y)
+    viewTranslateManager.setParameters(baseInView,zoomSize,centerInModel,pressedInModel)
+    viewTranslateManager.screenTranslate(canvas)
 
     // 背景の塗りつぶし（黒）
     val zero = 0
     canvas.drawColor(Color.argb(255, zero, zero, zero))
-    myCanvas = canvas
+
 
     drawEntities(canvas, paintTri, paintTexS, paintRed, darkColors_, myTriangleList, myDeductionList )
     drawCrossLines(canvas, pressedInModel, paintRed )
@@ -305,9 +304,6 @@ class MyView(context: Context, attrs: AttributeSet?) :
         newZoomSize = newZoomSize.coerceIn(0.1f, 5f) // 0.1f と 5f の間に制限する
         return newZoomSize
     }
-
-
-
 
     private var isScaleBegin = false
 
