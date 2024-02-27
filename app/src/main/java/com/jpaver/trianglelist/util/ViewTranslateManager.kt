@@ -8,6 +8,7 @@ class ViewTranslateManager() {
     var baseInView = PointXY(0f, 0f)
     var centerInModel = PointXY(0f, 0f)
     var pressedInModel = PointXY(0f, 0f)
+
     var zoomSize: Float = 1.0f
 
     fun screenTranslate( canvas: Canvas ){
@@ -22,6 +23,14 @@ class ViewTranslateManager() {
         zoomSize = _zoomSize
         centerInModel = _centerInModel
         pressedInModel = _pressedInModel
+    }
+
+    fun pressedInViewToModel(pressedInView: PointXY): PointXY{
+        return pressedInView.translateAndScale(
+            baseInView,
+            centerInModel,
+            zoomSize, //ズームレベルによってなぜか位置が動いている
+        )
     }
 
 }

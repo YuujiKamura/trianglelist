@@ -103,9 +103,6 @@ class MyView(context: Context, attrs: AttributeSet?) :
     var transOnce: Boolean = true
     var pressedInModel: PointXY =
         PointXY(0f, 0f)
-    var scaleCenterInView: PointXY =
-        PointXY(0f, 0f)
-
 
     var zoomSize: Float = 1.0f
     var mFocusX = 0f
@@ -365,19 +362,14 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
     fun pressedInViewToModel(pressedInView: PointXY){
         translatePoint = baseInView //why this?
-        pressedInModel = pressedInView.translateAndScale(
-            baseInView,
-            centerInModel,
-            zoomSize, //ズームレベルによってなぜか位置が動いている
-        )
-
+        viewTranslateManager.setParameters( baseInView, zoomSize, centerInModel, pressedInModel )
+        pressedInModel = viewTranslateManager.pressedInViewToModel(pressedInView)
     }
 
     fun setPressEvent(x: Float, y: Float){
         pressedInView.set(x, y)
         lastCPoint.set(x, y)
         pressedInViewToModel(pressedInView)
-        scaleCenterInView.set( (x - baseInView.x), (y - baseInView.y) )
 
     }
 
@@ -445,7 +437,6 @@ class MyView(context: Context, attrs: AttributeSet?) :
         Log.d("ModelView", " pressedInView:" + pressedInView.x + ", " + pressedInView.y )
         Log.d("ModelView", "        mFocus:" + mFocusX + ", " + mFocusY  )
         Log.d("ModelView", "pressedInModel:" + pressedInModel.x + ", " + pressedInModel.y )
-        Log.d("ModelView", "scaleCenterInView:" + scaleCenterInView.x + ", " + scaleCenterInView.y )
         Log.d("ModelView", "      zoomSize:" + zoomSize )
 
 
