@@ -1,6 +1,7 @@
 package com.jpaver.trianglelist.util
 
 import android.graphics.Canvas
+import android.graphics.Point
 import com.jpaver.trianglelist.PointXY
 
 class ViewTranslateManager() {
@@ -32,5 +33,12 @@ class ViewTranslateManager() {
             zoomSize, //ズームレベルによってなぜか位置が動いている
         )
     }
+
+}
+
+class SynchronizedPoint(){
+    var pModel = PointXY(0f,0f)
+    var pView  = PointXY(0f,0f)
+    var viewSize: Float = 1.0f
 
 }

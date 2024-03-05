@@ -526,17 +526,18 @@ class MyView(context: Context, attrs: AttributeSet?) :
         centerInModel = pt.clone()
         //drawPoint = pt.clone()
         resetPointToZero()
-        viewResettoCenter()
+        viewResetToCenter()
         invalidate()
     }
 
     fun resetViewToLastTapTriangle(){
-        centerInModel = toLastTapTriangle()
-        //drawPoint = toLastTapTriangle()
-        resetPointToZero()
-        viewResettoCenter()
-        invalidate()
+        resetView( toLastTapTriangle() )
     }
+
+    fun resetViewToCurrentDeduction(){
+        resetView( myDeductionList.get(myDeductionList.current).point.scale( PointXY(1f, -1f) ) )
+    }
+
 
     fun resetPointToZero(){
         translatePoint.set(0f, 0f)
@@ -546,7 +547,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         pressedInModel.set(0f, 0f)
     }
 
-    fun viewResettoCenter(){
+    fun viewResetToCenter(){
         viewSize.set( this.width.toFloat(), this.height.toFloat())
         centerInView.set( viewSize.x * 0.5f, viewSize.y * 0.25f )
         baseInView.set( centerInView.x, centerInView.y )
