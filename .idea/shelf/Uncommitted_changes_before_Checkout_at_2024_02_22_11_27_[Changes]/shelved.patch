@@ -1,0 +1,248 @@
+Index: gradle.properties
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+># Project-wide Gradle settings.\r\n# IDE (e.g. Android Studio) users:\r\n# Gradle settings configured through the IDE *will override*\r\n# any settings specified in this file.\r\n# For more details on how to configure your build environment visit\r\n# http://www.gradle.org/docs/current/userguide/build_environment.html\r\n# Specifies the JVM arguments used for the daemon process.\r\n# The setting is particularly useful for tweaking memory settings.\r\norg.gradle.java.home=C\\:/Program Files/Android/Android Studio/jbr\r\norg.gradle.jvmargs=-Xmx1536m\r\norg.gradle.cathing=true\r\norg.gradle.configureondemand=true\r\norg.gradle.parallel=true\r\n# When configured, Gradle will run in incubating parallel mode.\r\n# This option should only be used with decoupled projects. More details, visit\r\n# http://www.gradle.org/docs/current/userguide/multi_project_builds.html#sec:decoupled_projects\r\n# org.gradle.parallel=true\r\n# AndroidX package structure to make it clearer which packages are bundled with the\r\n# Android operating system, and which are packaged with your app's APK\r\n# https://developer.android.com/topic/libraries/support-library/androidx-rn\r\nandroid.useAndroidX=true\r\n# Automatically convert third-party libraries to use AndroidX\r\nandroid.enableJetifier=true\r\n# Kotlin code style for this project: \"official\" or \"obsolete\":\r\nkotlin.code.style=official\r\nandroid.suppressUnsupportedCompileSdk=34\r\nandroid.enableR8.fullMode=true\r\norg.gradle.unsafe.configuration-cache=true\r\nandroid.nonTransitiveRClass=true\r\nandroid.nonFinalResIds=false
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>ISO-8859-1
+===================================================================
+diff --git a/gradle.properties b/gradle.properties
+--- a/gradle.properties	
++++ b/gradle.properties	
+@@ -11,6 +11,7 @@
+ org.gradle.cathing=true
+ org.gradle.configureondemand=true
+ org.gradle.parallel=true
++
+ # When configured, Gradle will run in incubating parallel mode.
+ # This option should only be used with decoupled projects. More details, visit
+ # http://www.gradle.org/docs/current/userguide/multi_project_builds.html#sec:decoupled_projects
+@@ -27,4 +28,4 @@
+ android.enableR8.fullMode=true
+ org.gradle.unsafe.configuration-cache=true
+ android.nonTransitiveRClass=true
+-android.nonFinalResIds=false
+\ No newline at end of file
++android.nonFinalResIds=true
+\ No newline at end of file
+Index: .idea/codeStyles/codeStyleConfig.xml
+===================================================================
+diff --git a/.idea/codeStyles/codeStyleConfig.xml b/.idea/codeStyles/codeStyleConfig.xml
+new file mode 100644
+--- /dev/null	
++++ b/.idea/codeStyles/codeStyleConfig.xml	
+@@ -0,0 +1,5 @@
++<component name="ProjectCodeStyleConfiguration">
++  <state>
++    <option name="USE_PER_PROJECT_SETTINGS" value="true" />
++  </state>
++</component>
+\ No newline at end of file
+Index: .idea/appInsightsSettings.xml
+===================================================================
+diff --git a/.idea/appInsightsSettings.xml b/.idea/appInsightsSettings.xml
+new file mode 100644
+--- /dev/null	
++++ b/.idea/appInsightsSettings.xml	
+@@ -0,0 +1,45 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="AppInsightsSettings">
++    <option name="tabSettings">
++      <map>
++        <entry key="Android Vitals">
++          <value>
++            <InsightsFilterSettings>
++              <option name="connection">
++                <ConnectionSetting>
++                  <option name="appId" value="com.jpaver.myapplication" />
++                </ConnectionSetting>
++              </option>
++              <option name="failureTypes">
++                <list>
++                  <option value="FATAL" />
++                </list>
++              </option>
++              <option name="signal" value="SIGNAL_UNSPECIFIED" />
++              <option name="timeIntervalDays" value="SIXTY_DAYS" />
++              <option name="visibilityType" value="ALL" />
++            </InsightsFilterSettings>
++          </value>
++        </entry>
++        <entry key="Firebase Crashlytics">
++          <value>
++            <InsightsFilterSettings>
++              <option name="connection">
++                <ConnectionSetting>
++                  <option name="appId" value="PLACEHOLDER" />
++                  <option name="mobileSdkAppId" value="" />
++                  <option name="projectId" value="" />
++                  <option name="projectNumber" value="" />
++                </ConnectionSetting>
++              </option>
++              <option name="signal" value="SIGNAL_UNSPECIFIED" />
++              <option name="timeIntervalDays" value="THIRTY_DAYS" />
++              <option name="visibilityType" value="ALL" />
++            </InsightsFilterSettings>
++          </value>
++        </entry>
++      </map>
++    </option>
++  </component>
++</project>
+\ No newline at end of file
+Index: .idea/codeStyles/Project.xml
+===================================================================
+diff --git a/.idea/codeStyles/Project.xml b/.idea/codeStyles/Project.xml
+new file mode 100644
+--- /dev/null	
++++ b/.idea/codeStyles/Project.xml	
+@@ -0,0 +1,123 @@
++<component name="ProjectCodeStyleConfiguration">
++  <code_scheme name="Project" version="173">
++    <JetCodeStyleSettings>
++      <option name="CODE_STYLE_DEFAULTS" value="KOTLIN_OFFICIAL" />
++    </JetCodeStyleSettings>
++    <codeStyleSettings language="XML">
++      <option name="FORCE_REARRANGE_MODE" value="1" />
++      <indentOptions>
++        <option name="CONTINUATION_INDENT_SIZE" value="4" />
++      </indentOptions>
++      <arrangement>
++        <rules>
++          <section>
++            <rule>
++              <match>
++                <AND>
++                  <NAME>xmlns:android</NAME>
++                  <XML_ATTRIBUTE />
++                  <XML_NAMESPACE>^$</XML_NAMESPACE>
++                </AND>
++              </match>
++            </rule>
++          </section>
++          <section>
++            <rule>
++              <match>
++                <AND>
++                  <NAME>xmlns:.*</NAME>
++                  <XML_ATTRIBUTE />
++                  <XML_NAMESPACE>^$</XML_NAMESPACE>
++                </AND>
++              </match>
++              <order>BY_NAME</order>
++            </rule>
++          </section>
++          <section>
++            <rule>
++              <match>
++                <AND>
++                  <NAME>.*:id</NAME>
++                  <XML_ATTRIBUTE />
++                  <XML_NAMESPACE>http://schemas.android.com/apk/res/android</XML_NAMESPACE>
++                </AND>
++              </match>
++            </rule>
++          </section>
++          <section>
++            <rule>
++              <match>
++                <AND>
++                  <NAME>.*:name</NAME>
++                  <XML_ATTRIBUTE />
++                  <XML_NAMESPACE>http://schemas.android.com/apk/res/android</XML_NAMESPACE>
++                </AND>
++              </match>
++            </rule>
++          </section>
++          <section>
++            <rule>
++              <match>
++                <AND>
++                  <NAME>name</NAME>
++                  <XML_ATTRIBUTE />
++                  <XML_NAMESPACE>^$</XML_NAMESPACE>
++                </AND>
++              </match>
++            </rule>
++          </section>
++          <section>
++            <rule>
++              <match>
++                <AND>
++                  <NAME>style</NAME>
++                  <XML_ATTRIBUTE />
++                  <XML_NAMESPACE>^$</XML_NAMESPACE>
++                </AND>
++              </match>
++            </rule>
++          </section>
++          <section>
++            <rule>
++              <match>
++                <AND>
++                  <NAME>.*</NAME>
++                  <XML_ATTRIBUTE />
++                  <XML_NAMESPACE>^$</XML_NAMESPACE>
++                </AND>
++              </match>
++              <order>BY_NAME</order>
++            </rule>
++          </section>
++          <section>
++            <rule>
++              <match>
++                <AND>
++                  <NAME>.*</NAME>
++                  <XML_ATTRIBUTE />
++                  <XML_NAMESPACE>http://schemas.android.com/apk/res/android</XML_NAMESPACE>
++                </AND>
++              </match>
++              <order>ANDROID_ATTRIBUTE_ORDER</order>
++            </rule>
++          </section>
++          <section>
++            <rule>
++              <match>
++                <AND>
++                  <NAME>.*</NAME>
++                  <XML_ATTRIBUTE />
++                  <XML_NAMESPACE>.*</XML_NAMESPACE>
++                </AND>
++              </match>
++              <order>BY_NAME</order>
++            </rule>
++          </section>
++        </rules>
++      </arrangement>
++    </codeStyleSettings>
++    <codeStyleSettings language="kotlin">
++      <option name="CODE_STYLE_DEFAULTS" value="KOTLIN_OFFICIAL" />
++    </codeStyleSettings>
++  </code_scheme>
++</component>
+\ No newline at end of file
+Index: .idea/deploymentTargetDropDown.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"deploymentTargetDropDown\">\r\n    <value>\r\n      <entry key=\"app\">\r\n        <State />\r\n      </entry>\r\n    </value>\r\n  </component>\r\n</project>
+===================================================================
+diff --git a/.idea/deploymentTargetDropDown.xml b/.idea/deploymentTargetDropDown.xml
+--- a/.idea/deploymentTargetDropDown.xml	
++++ b/.idea/deploymentTargetDropDown.xml	
+@@ -2,7 +2,16 @@
+ <project version="4">
+   <component name="deploymentTargetDropDown">
+     <value>
++      <entry key="MainActivityTest">
++        <State />
++      </entry>
+       <entry key="app">
++        <State />
++      </entry>
++      <entry key="onFragmentReady()">
++        <State />
++      </entry>
++      <entry key="testViewAttachment()">
+         <State />
+       </entry>
+     </value>
