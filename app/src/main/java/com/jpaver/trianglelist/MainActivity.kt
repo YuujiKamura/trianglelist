@@ -2837,9 +2837,11 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
+    private fun showToast(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+    }
+
     private fun parseCSV(reader: BufferedReader) :Boolean{
-//        myDeductionMode = true
-//        setDeductionMode(myDeductionMode)
 
         val str: StringBuilder = StringBuilder()
         var line: String? = reader.readLine()
@@ -2847,42 +2849,18 @@ class MainActivity : AppCompatActivity(),
         var chunks: List<String?> = line.split(",").map { it.trim() }
 
         if(chunks[0]!! != "koujiname"){
-            Toast.makeText(this, "It's not supported file.", Toast.LENGTH_LONG).show()
+            showToast( "It's not supported file." )
             return false
         }
 
-        if(chunks[0]!! == "koujiname") {
-            koujiname= chunks[1]!!.toString()
-            line = reader.readLine()
-            chunks = line?.split(",")!!.map { it.trim() }
-        }
-        if(chunks[0]!! == "rosenname") {
-            rosenname = chunks[1]!!.toString()
-            findViewById<EditText>(R.id.rosenname).setText(rosenname)
-            line = reader.readLine()
-            chunks = line?.split(",")!!.map { it.trim() }
-        }
-        if(chunks[0]!! == "gyousyaname") {
-            gyousyaname= chunks[1]!!.toString()
-            line = reader.readLine()
-            chunks = line?.split(",")!!.map { it.trim() }
-        }
-        if(chunks[0]!! == "zumennum") {
-            zumennum= chunks[1]!!.toString()
-            line = reader.readLine()
-            chunks = line?.split(",")!!.map { it.trim() }
-        }
+        val pair = readheaderLine(chunks, line, reader)
+        chunks = pair.first
+        line = pair.second
 
         val trilist = TriangleList()
 
         val pointfirst = PointXY(0f, 0f)
         val anglefirst = 180f
-        //if( chunks.size > 22 ) {
-        //if( chunks[22]!!.toFloat() != 180f ){
-        //pointfirst = PointXY( -chunks[23]!!.toFloat(), -chunks[24]!!.toFloat() )
-        //anglefirst = chunks[22]!!.toFloat() - 180f
-        //}
-        //}
 
         trilist.add(
             Triangle(
@@ -2894,20 +2872,8 @@ class MainActivity : AppCompatActivity(),
             ),
             true
         )
-        /*
-        trilist.add(
-            Triangle(
-                    chunks[1]!!.toFloat(),
-                    chunks[2]!!.toFloat(),
-                    chunks[3]!!.toFloat(),
-                    pointfirst,
-                    anglefirst
-            ),
-            true
-        )*/
 
         val mt = trilist.getMemberByIndex(trilist.size())
-
 
         mt.setMyName_(chunks[6]!!.toString())
         //pointNumber
@@ -3123,6 +3089,37 @@ class MainActivity : AppCompatActivity(),
         flipDeductionMode()
         //printDebugConsole()
         return true
+    }
+
+    private fun readheaderLine(
+        chunks: List<String?>,
+        line: String?,
+        reader: BufferedReader
+    ): Pair<List<String?>, String?> {
+        var chunks1 = chunks
+        var line1 = line
+        if (chunks1[0]!! == "koujiname") {
+            koujiname = chunks1[1]!!.toString()
+            line1 = reader.readLine()
+            chunks1 = line1?.split(",")!!.map { it.trim() }
+        }
+        if (chunks1[0]!! == "rosenname") {
+            rosenname = chunks1[1]!!.toString()
+            findViewById<EditText>(R.id.rosenname).setText(rosenname)
+            line1 = reader.readLine()
+            chunks1 = line1?.split(",")!!.map { it.trim() }
+        }
+        if (chunks1[0]!! == "gyousyaname") {
+            gyousyaname = chunks1[1]!!.toString()
+            line1 = reader.readLine()
+            chunks1 = line1?.split(",")!!.map { it.trim() }
+        }
+        if (chunks1[0]!! == "zumennum") {
+            zumennum = chunks1[1]!!.toString()
+            line1 = reader.readLine()
+            chunks1 = line1?.split(",")!!.map { it.trim() }
+        }
+        return Pair(chunks1, line1)
     }
 
     private fun resumeCSV() {
