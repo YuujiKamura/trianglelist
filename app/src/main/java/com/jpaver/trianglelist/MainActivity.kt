@@ -1506,17 +1506,8 @@ class MainActivity : AppCompatActivity(),
 
             try{
                 if(!deductionMode) my_view.resetViewToLastTapTriangle()
-                else if( myDeductionList.size() > 0 ){
-                    val currentIndex = my_view.myDeductionList.current
-                    my_view.resetView(
-                        my_view.myDeductionList.get(currentIndex).point.scale(
-                            PointXY(
-                                1f,
-                                -1f
-                            )
-                        )
-                    )
-                }
+                else if( myDeductionList.size() > 0 )  my_view.resetViewToCurrentDeduction()
+
             } catch ( e: NullPointerException ){
                 Toast.makeText(this, "List is NUll.", Toast.LENGTH_LONG).show()
             }
@@ -1528,15 +1519,7 @@ class MainActivity : AppCompatActivity(),
             if(!deductionMode) moveTrilist()
             else if( myDeductionList.size() > 0 ){
                 my_view.myDeductionList.current = myDeductionList.current
-                val currentIndex = my_view.myDeductionList.current
-                my_view.resetView(
-                    my_view.myDeductionList.get(currentIndex).point.scale(
-                        PointXY(
-                            1f,
-                            -1f
-                        )
-                    )
-                )
+                my_view.resetViewToCurrentDeduction()
             }
 
             colorMovementFabs()
@@ -1550,15 +1533,7 @@ class MainActivity : AppCompatActivity(),
             if(!deductionMode) moveTrilist()
             else if( myDeductionList.size() > 0 ){
                 my_view.myDeductionList.current = myDeductionList.current
-                val currentIndex = my_view.myDeductionList.current
-                my_view.resetView(
-                    my_view.myDeductionList.get(currentIndex).point.scale(
-                        PointXY(
-                            1f,
-                            -1f
-                        )
-                    )
-                )
+                my_view.resetViewToCurrentDeduction()
             }
 
             colorMovementFabs()
