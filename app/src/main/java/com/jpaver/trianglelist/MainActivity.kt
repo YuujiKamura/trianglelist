@@ -2816,6 +2816,22 @@ class MainActivity : AppCompatActivity(),
         Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
 
+    /**
+     * Triangle オブジェクトをリストに追加します。
+     */
+    private fun addTriangle(trilist: TriangleList, chunks: List<String?>, point: PointXY, angle: Float) {
+        trilist.add(
+            Triangle(
+                chunks.getOrNull(1)?.toFloatOrNull() ?: 0f,
+                chunks.getOrNull(2)?.toFloatOrNull() ?: 0f,
+                chunks.getOrNull(3)?.toFloatOrNull() ?: 0f,
+                point,
+                angle
+            ),
+            true
+        )
+    }
+
     private fun parseCSV(reader: BufferedReader) :Boolean{
 
         val str: StringBuilder = StringBuilder()
@@ -2837,16 +2853,8 @@ class MainActivity : AppCompatActivity(),
         val pointfirst = PointXY(0f, 0f)
         val anglefirst = 180f
 
-        trilist.add(
-            Triangle(
-                chunks.getOrNull(1)?.toFloatOrNull() ?: 0f,
-                chunks.getOrNull(2)?.toFloatOrNull() ?: 0f,
-                chunks.getOrNull(3)?.toFloatOrNull() ?: 0f,
-                pointfirst,
-                anglefirst
-            ),
-            true
-        )
+        addTriangle(trilist, chunks, pointfirst, anglefirst)
+
 
         val mt = trilist.getMemberByIndex(trilist.size())
 
@@ -2940,16 +2948,9 @@ class MainActivity : AppCompatActivity(),
                         angle = chunks[22].toFloat()
                     }
 
-                    trilist.add(
-                        Triangle(
-                            chunks[1].toFloat(),
-                            chunks[2].toFloat(),
-                            chunks[3].toFloat(),
-                            pt,
-                            angle - 180f
-                        ),
-                        true
-                    )
+
+                    addTriangle(trilist, chunks, pt, angle - 180f)
+
                 }
                 else {
 

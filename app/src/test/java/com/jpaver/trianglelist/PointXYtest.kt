@@ -20,7 +20,7 @@ class PointXYtest {
         val lineStart = PointXY(0f, 0f)
         val lineEnd = PointXY(2f, 2f)
 
-        val actualPoint = p.mirror(lineStart, lineEnd )
+        val actualPoint = p.mirror(lineStart, lineEnd,1f )
         val expectedPoint = PointXY(2f, 1f)
 
         assertPointXYEquals(expectedPoint, actualPoint, 0.001)
@@ -62,7 +62,7 @@ class PointXYtest {
     @Test
     fun testViewToModel(){
         val pressedInView = PointXY(1f, 0f)
-        val pressedInModel = pressedInView.convertToLocal(
+        val pressedInModel = pressedInView.translateAndScale(
             PointXY(
                 0f,
                 0f
