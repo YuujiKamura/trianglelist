@@ -1,6 +1,6 @@
 package com.jpaver.trianglelist
 
-import AdInitializerImpl
+
 import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
@@ -55,6 +55,7 @@ import com.jpaver.trianglelist.databinding.ActivityMainBinding
 import com.jpaver.trianglelist.filemanager.XlsxWriter
 import com.jpaver.trianglelist.fragment.MyDialogFragment
 import com.jpaver.trianglelist.util.AdInitializer
+import com.jpaver.trianglelist.util.AdInitializerFactory
 import com.jpaver.trianglelist.util.AdManager
 import com.jpaver.trianglelist.util.EditTextViewLine
 import com.jpaver.trianglelist.util.EditorTable
@@ -407,7 +408,7 @@ class MainActivity : AppCompatActivity(),
     private lateinit var mAdView : AdView
     val adManager = AdManager()
     private var mInterstitialAd: InterstitialAd? = null
-    val adInitializer: AdInitializer = AdInitializerImpl()
+    val adInitializer: AdInitializer = AdInitializerFactory.create()
     private fun adMobInit() {
 
         adInitializer.initialize()

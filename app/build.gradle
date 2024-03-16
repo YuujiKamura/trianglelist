@@ -20,6 +20,7 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
 //            AdID "ca-app-pub-6982449551349060/9421491034"
+
         }
         debug{
             ext.enableCrashlytics = false
@@ -32,6 +33,7 @@ android {
 
         free {
             java.srcDirs = ['src/free/java']
+
         }
         full {
             java.srcDirs = ['src/full/java']
@@ -96,7 +98,7 @@ dependencies {
     implementation 'androidx.navigation:navigation-ui-ktx:2.7.7'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'com.google.android.material:material:1.11.0'
-    implementation 'com.google.android.gms:play-services-ads:22.6.0'
+    implementation 'com.google.android.gms:play-services-ads:23.0.0'
     implementation 'androidx.preference:preference-ktx:1.2.1'
     implementation 'com.google.android.play:core-ktx:1.8.1'
     implementation 'junit:junit:4.13.2'
