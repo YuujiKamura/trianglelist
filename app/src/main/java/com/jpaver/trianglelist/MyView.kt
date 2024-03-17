@@ -289,7 +289,8 @@ class MyView(context: Context, attrs: AttributeSet?) :
     drawCrossLines(canvas, pressedInModel, paintRed )
 
     logModelViewPoints()
-    drawModelViewPoints(canvas)
+    //drawModelViewPoints(canvas)
+
     }
 
 // endregion
