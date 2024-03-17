@@ -240,7 +240,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
         rotateGestureDetector = RotateGestureDetector(object : RotateGestureDetector.SimpleOnRotateGestureDetector() {
             override fun onRotate(degrees: Float, focusX: Float, focusY: Float): Boolean {
-                (context as MainActivity).fabRotate(-degrees * 3, false)
+                (context as MainActivity).fabRotate(-degrees * 3, false, false)
 
                 return true
             }

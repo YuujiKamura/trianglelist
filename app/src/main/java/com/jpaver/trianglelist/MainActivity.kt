@@ -1677,10 +1677,10 @@ class MainActivity : AppCompatActivity(),
         my_view.invalidate()
     }
 
-    fun fabRotate(degrees: Float, bSeparateFreeMode: Boolean){
+    fun fabRotate(degrees: Float, bSeparateFreeMode: Boolean, bRotateDedBox: Boolean = true ){
         if(!deductionMode) {
             myTriangleList.rotate(PointXY(0f, 0f), degrees, myTriangleList.lastTapNumber_, bSeparateFreeMode )
-            myDeductionList.rotate(PointXY(0f, 0f), -degrees )
+            if( bRotateDedBox ) myDeductionList.rotate(PointXY(0f, 0f), -degrees )
             my_view.setTriangleList(myTriangleList, mScale)
             my_view.setDeductionList(myDeductionList, mScale)
             my_view.invalidate()//resetViewToLSTP()
