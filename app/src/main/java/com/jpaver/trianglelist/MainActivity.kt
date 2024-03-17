@@ -647,13 +647,17 @@ class MainActivity : AppCompatActivity(),
             ), getString(titleDed.pl)
         )
 
-        val filepath = this.filesDir.absolutePath + "/" + "privateTriList.csv"
+        val filepath = this.filesDir.absolutePath + "/" + PrivateCSVFileName
         val file = File(filepath)
         if(file.exists()) {
             resumeCSV()
 
         }
-        else createNew()
+        else{
+            createNew()
+            showToast("The PrivateCSV file does not exist.")
+        }
+
         loadEditTable()
         colorMovementFabs()
         //fab.setBackgroundTintList(getColorStateList(R.color.colorLime))
@@ -2396,6 +2400,7 @@ class MainActivity : AppCompatActivity(),
 
     private fun deletePrivateFiles(fileNames: List<String>) {
         fileNames.forEach { fileName ->
+            if ( fileName == PrivateCSVFileName ) return@forEach //CSV skip
             deletePrivateFile(fileName)
         }
     }
@@ -2767,7 +2772,7 @@ class MainActivity : AppCompatActivity(),
             saveCSV(writer)
             // 結果をログに出力
             logFilePreview(PrivateCSVFileName, "saveCSVtoPrivate")
-
+            showToast("saveCSVToPrivate: success")
 
             return true
         } catch (e: IOException) {
@@ -3109,6 +3114,7 @@ class MainActivity : AppCompatActivity(),
 
             // 結果をログに出力
             logFilePreview(PrivateCSVFileName, "resumeCSV")
+            showToast("resumeCSV: success")
 
         } catch (e: IOException) {
             e.printStackTrace()
