@@ -266,7 +266,7 @@ class TriangleList : EditList, Cloneable {
     }
 
     fun setDimPathTextSize(ts: Float) {
-        setDimsUnconnectedSideToOuter()
+
         for (i in trilist_.indices) {
             trilist_[i].setDimPath(ts)
         }
@@ -285,16 +285,13 @@ class TriangleList : EditList, Cloneable {
             trilist_[i].rotate(trilist_[startindex].point[0], angle, false)
             trilist_[i].pointNumber_ = trilist_[i].pointNumber_.rotate(basepoint, angle)
         }
-        setDimsUnconnectedSideToOuter()
     }
 
-    fun setDimsUnconnectedSideToOuter() {
-        for (i in trilist_.indices) {
-            val target = trilist_[i]
-            if (target.nodeTriangleA_ == null) target.myDimAlignA_ = 1
-            if (target.nodeTriangleB_ == null) target.myDimAlignB_ = 1 else target.myDimAlignB_ = 3
-            if (target.nodeTriangleC_ == null) target.myDimAlignC_ = 1 else target.myDimAlignC_ = 3
-        }
+    fun setDimsUnconnectedSideToOuter(target: Triangle?) {
+        if(target == null ) return
+        if (target.nodeTriangleA_ == null) target.myDimAlignA_ = 1 else target.myDimAlignA_ = 3
+        if (target.nodeTriangleB_ == null) target.myDimAlignB_ = 1 else target.myDimAlignB_ = 3
+        if (target.nodeTriangleC_ == null) target.myDimAlignC_ = 1 else target.myDimAlignC_ = 3
     }
 
     fun recoverState(bp: PointXY) {
@@ -340,8 +337,6 @@ class TriangleList : EditList, Cloneable {
     fun add(nextTriangle: Triangle, numbering: Boolean): Boolean {
         if (!validTriangle(nextTriangle)) return false
 
-        //trilistStored_ = (ArrayList<Triangle>) trilist_.clone();
-
         // 番号を受け取る
         if (numbering) nextTriangle.myNumber_ = trilist_.size + 1
         val pbc = nextTriangle.parentBC_
@@ -353,8 +348,6 @@ class TriangleList : EditList, Cloneable {
                 insertAndSlide(nextTriangle)
             } else {
                 trilist_.add(nextTriangle) // add by arraylist
-                // 自身の番号が付く
-                //nextTriangle.setNumber(myTriList.size());
             }
 
             // 親に告知する
@@ -362,9 +355,12 @@ class TriangleList : EditList, Cloneable {
         } else {
             trilist_.add(nextTriangle) // add by arraylist
         }
+
+        setDimsUnconnectedSideToOuter(nextTriangle)
+        setDimsUnconnectedSideToOuter(nextTriangle.nodeTriangleA_)
+
         selectedNumber = nextTriangle.myNumber_
-        //lastTapNum_ = 0;
-        //lastTapSide_ = -1;
+
         return true
     }
 
@@ -535,17 +531,17 @@ class TriangleList : EditList, Cloneable {
 
     fun resetMyChild(newParent: Triangle?) {
         //myTriList.get(2).reset(newParent, 1);
-        var newParent = newParent ?: return
+        var parent = newParent ?: return
 
         // 新しい親の次から
-        for (i in newParent.myNumber_ until trilist_.size) {
+        for (i in parent.myNumber_ until trilist_.size) {
             // 連番と派生接続で分岐。
-            if (trilist_[i].parentNumber_ == newParent.myNumber_) {
+            if (trilist_[i].parentNumber_ == parent.myNumber_) {
                 // ひとつ前の三角形の子接続を書き換える？
-                if (i + 1 < trilist_.size) newParent.childSide_ = trilist_[i + 1].parentBC_
-                if (trilist_[i].resetByParent(newParent, trilist_[i].parentBC_)) return
+                if (i + 1 < trilist_.size) parent.childSide_ = trilist_[i + 1].parentBC_
+                if (trilist_[i].resetByParent(parent, trilist_[i].parentBC_)) return
                 // 自身が次の親になる
-                newParent = trilist_[i]
+                parent = trilist_[i]
             } else { //連番でないとき
                 //親を番号で参照する
                 if (trilist_[i].resetByParent(
@@ -560,18 +556,12 @@ class TriangleList : EditList, Cloneable {
     }
 
     fun replace(number: Int, pnum: Int): Boolean {
-        if (trilist_[number - 1] == null) return false
         val me = trilist_[number - 1]
         val pr = trilist_[pnum - 1]
         me.setOn(pr, me.parentBC_, me.length[0], me.length[1], me.length[2])
         return true
     }
 
-    fun validTriangle(prm: Params): Boolean {
-        return if (prm.a <= 0.0f || prm.b <= 0.0f || prm.c <= 0.0f) false else !(prm.a + prm.b <= prm.c) &&
-                !(prm.b + prm.c <= prm.a) &&
-                !(prm.c + prm.a <= prm.b)
-    }
 
     // オブジェクトポインタを返す。
     fun getMemberByIndex(number: Int): Triangle {
@@ -580,8 +570,8 @@ class TriangleList : EditList, Cloneable {
     }
 
     // by number start 1, not index start 0.
-    override operator fun get(number: Int): Triangle {
-        return getMemberByIndex(number)
+    override operator fun get(num: Int): Triangle {
+        return getMemberByIndex(num)
     }
 
     fun spritByColors(): ArrayList<TriangleList> {
@@ -594,14 +584,12 @@ class TriangleList : EditList, Cloneable {
         for (colorindex in 4 downTo -1 + 1) {
             val listByColor = listByColors[colorindex]
             for (i in trilist_.indices) {
-                if (trilist_[i] != null) {
-                    val t = trilist_[i].clone()
-                    if (t.color_ == colorindex) listByColor.add(
-                        t,
-                        false
-                    ) // 番号変更なしで追加する deep or shallow
-                    t.isColored
-                }
+                val t = trilist_[i].clone()
+                if (t.color_ == colorindex) listByColor.add(
+                    t,
+                    false
+                ) // 番号変更なしで追加する deep or shallow
+                t.isColored
             }
             if (listByColor.trilist_.size > 0) listByColor.outlineList()
         }
