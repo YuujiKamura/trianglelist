@@ -290,8 +290,8 @@ class TriangleList : EditList, Cloneable {
     fun setDimsUnconnectedSideToOuter(target: Triangle?) {
         if(target == null ) return
         if (target.nodeTriangleA_ == null) target.myDimAlignA_ = 1 else target.myDimAlignA_ = 3
-        if (target.nodeTriangleB_ == null) target.myDimAlignB_ = 1 else target.myDimAlignB_ = 3
-        if (target.nodeTriangleC_ == null) target.myDimAlignC_ = 1 else target.myDimAlignC_ = 3
+        if (target.nodeTriangleB_ == null) target.myDimAlignB_ = 1 else if (target.nodeTriangleB_.parentBC > 2 ) target.myDimAlignB_ = 3
+        if (target.nodeTriangleC_ == null) target.myDimAlignC_ = 1 else if (target.nodeTriangleC_.parentBC > 2 ) target.myDimAlignC_ = 3
     }
 
     fun recoverState(bp: PointXY) {
@@ -812,11 +812,11 @@ class TriangleList : EditList, Cloneable {
         traceOrNot(node, node.nodeTriangleC_, origin, olp)
 
         // 折り返し
-        traceOrJumpBackward(startindex, origin, olp, node)
+        traceOrJumpBackward(origin, olp, node)
         return olp
     }
 
-    fun traceOrJumpBackward(startindex: Int, origin: Int, olp: ArrayList<PointXY>, node: Triangle) {
+    fun traceOrJumpBackward(origin: Int, olp: ArrayList<PointXY>, node: Triangle) {
 
         // 派生（ふたつとも接続）していたらそっちに伸びる、フロート接続だったり、すでに持っている点を見つけたらスルー
         branchOrNot(node, origin, olp)
@@ -839,7 +839,6 @@ class TriangleList : EditList, Cloneable {
         // 0まで戻る。同じ色でない時はリターン
         if (node.myNumber_ <= node.parentNumber_) return
         if (node.nodeTriangleA_ != null && !node.isColored && !node.isFloating) traceOrJumpBackward(
-            node.parentNumber_ - 1,
             origin,
             olp,
             node.nodeTriangleA_
