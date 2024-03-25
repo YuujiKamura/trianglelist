@@ -3,14 +3,22 @@ package com.jpaver.trianglelist
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
-import com.jpaver.trianglelist.util.TitleParamStr
+import com.jpaver.trianglelist.util.Utils
 import java.io.OutputStream
 
 
 class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWriter() {
+
+    //region parameters
+
+    // 定数定義
+    private val MAX_LENGTH = 17
+    private val FIRST_LINE_OFFSET = -100f
+    private val SECOND_LINE_OFFSET = -85f
+    private val SINGLE_LINE_OFFSET = -95f
+
     private val triangleList_ = triangleList
     lateinit var deductionList_: DeductionList
-
 
     val drawingScale_ = triangleList.scale
     var printScale_ = printScale// 2.0f
@@ -23,27 +31,14 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
     override var sizeX_ = 1190f * kaizoudo_// * scale_ //420f * scale_
     override var sizeY_ = 842f * kaizoudo_// * scale_ //297f * scale_
 
-    val scale2_ = 2.5f//printScale_
-    var p2sizeX_ = 595f * kaizoudo_// * scale2_ //210f * scale2_
-    var p2sizeY_ = 842f * kaizoudo_// * scale2_ //297f * scale2_
-
     var isRulerOff_ = true
 
-    val paintTexM_: Paint = Paint()
-    val paintTexL_: Paint = Paint()
     val paintRed_: Paint = Paint()
-    val paintBlue_: Paint = Paint()
 
     val paintTri_: Paint = Paint()
     var paintTexS_: Paint = Paint()
-    var paintFill: Paint = Paint()
-
 
     val pdfDoc_: PdfDocument = PdfDocument()
-
-    //val builder_: PdfDocument.PageInfo.Builder = PdfDocument.PageInfo.Builder(sizeX_.toInt(), sizeY_.toInt(), currentPageIndex_)
-    //val pageInfo_: PdfDocument.PageInfo = builder_.create()
-    //val page_: PdfDocument.Page = pdfDoc_.startPage(pageInfo_)
 
     lateinit var out_: OutputStream
     var currentPageIndex_ = 0
@@ -81,7 +76,9 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
         paintRed_.strokeWidth = 0.05f
 
     }
+//endregion parameters
 
+//region canvas translate and text scaling
     fun translate( canvas: Canvas, x: Float, y: Float ){
         canvas.translate(x,y)
         viewPointer_.add(x,y) // rewrite viewPointer but..
@@ -90,52 +87,6 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
     fun translateCenter() {
         currentCanvas_.translate(sizeX_/2f,sizeY_/2f )
         viewPointer_.add( sizeX_/2f,sizeY_/2f )
-    }
-
-    fun startNewPage(sizeX: Int, sizeY: Int, pageIndex: Int){
-        pdfBuilderList.add( PdfDocument.PageInfo.Builder( sizeX, sizeY, pageIndex ) )
-        // wrong pageNum will bad.
-        pdfPageInfList.add( pdfBuilderList[pageIndex].create() )
-        pdfPageList.add( pdfDoc_.startPage( pdfPageInfList[pageIndex] ) )
-        currentCanvas_ = pdfPageList[pageIndex].canvas
-        pdfPageList[pageIndex].canvas.density = 600
-    }
-
-    fun closeCurrentPage(){
-        //現在のPageの編集を終了する。
-        pdfDoc_.finishPage( pdfPageList[currentPageIndex_] )
-
-    }
-
-    fun closeDocAndStream(){
-        pdfDoc_.writeTo(out_)
-        pdfDoc_.close()
-        out_.close() //MUST.. without write done.
-    }
-
-    fun writeAllCalcSheets() {
-        triangleList_. counter = 0
-        deductionList_.counter = 0
-
-        val maxinpage = 40
-        val pageCount = ( triangleList_.size().toDouble() / maxinpage )
-//        if( pageCount < 0.1 ) pageCount *= 10
-  //      if( pageCount < 0.4 ) pageCount *= 2
-        //if( pageCount > 1 ) pageCount = 2f
-
-        val pci = Math.ceil(pageCount).toInt()
-
-        for( i in 0 until pci ){
-            startNewPage( p2sizeX_.toInt(), p2sizeY_.toInt(), currentPageIndex_ )
-
-            writeAreaCalcSheet() // 面積計算書の描画
-
-            //現在のPageの編集を終了する。
-            pdfDoc_.finishPage( pdfPageList[currentPageIndex_] )
-
-            //次のページを作る
-            currentPageIndex_ += 1 // curindex = + 1 // is dead.
-        }
     }
 
     fun setScale(drawingLength: PointXY) :Float{
@@ -162,175 +113,30 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
         }
         return scale
     }
+//endregion canvas trans and textscaling
 
-    fun writeAreaCalcSheet(): Int{
-        val scaleWeight = 2f
-        val scaleHeight = 15f
-
-        // ヘッダー描画
-        currentCanvas_.drawText(rStr_.mTitle_, p2sizeX_/2, 10f+(scaleHeight*scale2_), setPaint(7,8f*scale2_,1))
-        currentCanvas_.drawText(rStr_.mCname_ + koujiname_, p2sizeX_/2, 10f+(8f*scale2_)+(scaleHeight*scale2_), setPaint(7,4.5f*scale2_,1))
-        currentCanvas_.drawText(rosenname_, p2sizeX_/2, 10f+(16f*scale2_)+(scaleHeight*scale2_), setPaint(7,5f*scale2_,1))
-
-        // 外枠
-        writeRect(
-            PointXY(
-                p2sizeX_ / 2,
-                p2sizeY_ / 2
-            ), p2sizeX_-(20*scale2_), p2sizeY_-(20*scale2_), 1f,7)
-
-        // 面積合計
-        var allArea = triangleList_.getArea()
-
-        //var kei = rStr_.mSyoukei_ +" (1)"
-        //if(deductionList_.size() == 0) kei = rStr_.mGoukei_
-
-
-
-        // 左側
-        // Triangles
-
-        val TNC = writeEntities(
-            triangleList_,
-            30f+(scaleWeight*scale2_),
-            titleTri_,
-            rStr_.mSyoukei_+" (1)",
-            7
-        )
-
-        // 右側
-        // Deductions
-        if(deductionList_.size() > 0) {
-            writeEntities(
-                deductionList_,
-                130f+(scaleWeight*scale2_),
-                titleDed_,
-                rStr_.mSyoukei_+" (2)",
-                1
-            )
-            allArea -= deductionList_.getArea()
-            writeText( rStr_.mGoukei_ + " (1) - (2) ${allArea.formattedString(2)} m^2",
-                PointXY(
-                    198f + (scale2_ * scaleWeight),
-                    65f + (deductionList_.size() * 7f)
-                ), scale2_, 7, 5f*scale2_, 2 )
-
-        }
-
-        return TNC
+//region page management
+    fun startNewPage(sizeX: Int, sizeY: Int, pageIndex: Int){
+        pdfBuilderList.add( PdfDocument.PageInfo.Builder( sizeX, sizeY, pageIndex ) )
+        // wrong pageNum will bad.
+        pdfPageInfList.add( pdfBuilderList[pageIndex].create() )
+        pdfPageList.add( pdfDoc_.startPage( pdfPageInfList[pageIndex] ) )
+        currentCanvas_ = pdfPageList[pageIndex].canvas
+        pdfPageList[pageIndex].canvas.density = 600
     }
 
-    private fun writeEntities(
-        list: EditList,
-        xStart_: Float,
-        sTitle: TitleParamStr,
-        syoukei: String,
-        color: Int
-    ): Int {
-        if( list.counter >= list.size() ) return list.size()
-
-        //s1: String, s2: String, s3: String, s4: String, s5: String, s6: String,
-        val s1 = sTitle.n
-        val s2 = sTitle.a
-        val s3 = sTitle.b
-        var s4 = sTitle.c
-        if( list is DeductionList) s4 = sTitle.pl
-
-        val s5 = sTitle.type
-        val s6 = syoukei
-        val ts = 5f
-        val ySpacer = 2f
-        val xStart = xStart_
-        val yStart = 45f
-        val yHeadSpacer = 7.5f
-        val xPitch = 17f
-        val yPitch = ts + ySpacer
-        val xa = xStart + xPitch
-        val xb = xa + xPitch
-        val xc = xb + xPitch
-        val xar = xc + xPitch
-
-        val maxinpage = 40
-        val writeBegin = list.counter
-        var writeEnd   = list.counter + maxinpage
-
-        if( list.size()  <  writeEnd ) writeEnd = list.size()
-
-        val listArea = list.getArea()
-
-        // ヘッダーテーブル
-        writeText( s1,
-            PointXY(xStart, yStart), scale2_, color, ts*scale2_, 2 )
-        writeText( s2,
-            PointXY(xa, yStart), scale2_, color, ts*scale2_, 2 )
-        writeText( s3,
-            PointXY(xb, yStart), scale2_, color, ts*scale2_, 2 )
-        writeText( s4,
-            PointXY(xc, yStart), scale2_, color, ts*scale2_, 2 )
-        writeText( s5,
-            PointXY(xar, yStart), scale2_, color, ts*scale2_, 2 )
-
-        var ti = 0
-        // エンティティ
-        for( i in writeBegin until writeEnd ) {
-            writeEntity (yStart + yHeadSpacer, ti, xStart, list.get(i+1), color)
-            list.counter += 1
-            ti += 1
-        }
-
-        // 小計
-        if( list.counter == list.size() ) writeText( s6+"   ${listArea} m^2",
-            PointXY(
-                xar,
-                yStart + yHeadSpacer + (ti * yPitch)
-            ), scale2_, color, ts*scale2_, 2 )
-
-        return list.counter
-    }
-
-    fun writeEntity(yStart: Float, indexInPage: Int, xStart_: Float, entity: EditObject, color: Int){
-        val ts = 5f
-        val xPitch = 17f
-        val yPitch = 7f
-        val xStart = xStart_
-        val xa = xStart + xPitch
-        val xb = xa + xPitch
-        val xc = xb + xPitch
-        val xar = xc + xPitch
-
-        val yOffset = ( yStart + yPitch * indexInPage )
-
-        val tp = entity.getParams()
-        var n = tp.n.toString()
-        if(entity is Deduction) {
-            n = tp.name
-            if( entity.sameDedcount > 1 ) n += "("+entity.sameDedcount+")"
-        }
-        val a = tp.a.formattedString(2)
-        val b = tp.b.formattedString(2)
-        var c = tp.c.formattedString(2)
-        if(entity is Deduction) {
-            if( tp.type == "Box" ) c = "長方形"
-            if( tp.type == "Circle" ) c = "円"
-        }
-
-        val area = entity.getArea().formattedString(2)
-
-        writeText( n,
-            PointXY(xStart, yOffset), scale2_, color, ts*scale2_, 2 )
-        writeText( a,
-            PointXY(xa, yOffset), scale2_, color, ts*scale2_, 2 )
-        if(entity is Deduction && tp.type == "Box") writeText( b,
-            PointXY(xb, yOffset), scale2_, color, ts*scale2_, 2 )
-        if(entity !is Deduction) writeText( b,
-            PointXY(xb, yOffset), scale2_, color, ts*scale2_, 2 )
-        writeText( c,
-            PointXY(xc, yOffset), scale2_, color, ts*scale2_, 2 )
-        writeText( area,
-            PointXY(xar, yOffset), scale2_, color, ts*scale2_, 2 )
+    fun closeCurrentPage(){
+        //現在のPageの編集を終了する。
+        pdfDoc_.finishPage( pdfPageList[currentPageIndex_] )
 
     }
 
+    fun closeDocAndStream(){
+        pdfDoc_.writeTo(out_)
+        pdfDoc_.close()
+        out_.close() //MUST.. without write done.
+    }
+//endregion page management
 
 
     fun drawOverlayWhite(canvas: Canvas, yohaku: Float){
@@ -350,52 +156,6 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
         canvas.drawRect(0f, 0f, sizeX_,  yohaku, white)
         canvas.drawRect(0f, sizeY_-yohaku, sizeX_,  sizeY_, white)
 
-    }
-
-    fun writeRuler() {
-        sizeX_ / 2
-        val centerY = sizeY_ / 2
-        val ruler = 1190f/42f/printScale_
-        val rulerTen = 1190f/4.2f/printScale_
-        val fortytwo = 42f * printScale_
-        val ten = fortytwo/10f+1f
-        val rulerstart = 0f//45f
-        val rulerY = centerY + 200f
-        val rulercolor = 3
-        //writeText( "PrintScale "+printScale_.toString(), PointXY(100f,centerY+50f ), 1f, 7, 14f, 1 )
-        //writeText( "DrawingScale "+drawingScale_.toString(), PointXY(100f,centerY+70f ), 1f, 7, 14f, 1 )
-
-        for( i in 0 until fortytwo.toInt() ){
-            val ifloat = i.toFloat()*ruler
-            writeLine(
-                PointXY(
-                    rulerstart + ifloat,
-                    rulerY
-                ),
-                PointXY(
-                    rulerstart + ifloat,
-                    rulerY + 5f
-                ),1f,rulercolor)
-        }
-
-        for( i in 0 until ten.toInt() ){
-            val ifloat = i.toFloat()*rulerTen
-            val istr = (i*10).toString()
-            writeLine(
-                PointXY(
-                    rulerstart + ifloat,
-                    rulerY
-                ),
-                PointXY(
-                    rulerstart + ifloat,
-                    rulerY + 10f
-                ),1f,rulercolor)
-            writeText( istr,
-                PointXY(
-                    rulerstart + ifloat,
-                    rulerY + 20f
-                ), 1f, rulercolor, 7f, 1 )
-        }
     }
 
     fun writeTitleFrame(canvas: Canvas){
@@ -496,7 +256,7 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
             PointXY(centerX + 50f, 50f),1f,7)
         writeText( rStr_.tTitle_,
             PointXY(centerX, 45f), 1f, 7, 16f, 1 )
-        writeText( rosenname_ + " A=" + ( triangleList_.getArea() - deductionList_.getArea() ).toString() + "m^2",
+        writeText( rosenname_ + " A=" + Utils.formattedString( triangleList_.getArea() - deductionList_.getArea() ) + "m^2",
             PointXY(centerX, 70f), 1f, 7, 16f, 1 )
 
         writeText( rStr_.tCname_,
@@ -557,12 +317,9 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
         //  translateCenter()
     }
 
-    // 定数定義
-    private val MAX_LENGTH = 17
-    private val FIRST_LINE_OFFSET = -100f
-    private val SECOND_LINE_OFFSET = -85f
-    private val SINGLE_LINE_OFFSET = -95f
-    private fun drawTextWithLineBreak(text: String, xr: Float, yb: Float, tt: Float) {
+
+
+    private fun drawTextWithLineBreak(text: String, xr: Float, yb: Float, tt: Float = 150.0f ) {
         if (text.length > MAX_LENGTH) {
             splitAndDrawText(text, xr, yb, tt)
         } else {

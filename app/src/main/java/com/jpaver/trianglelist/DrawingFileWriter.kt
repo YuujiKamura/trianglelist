@@ -4,6 +4,7 @@ import com.jpaver.trianglelist.util.TitleParamStr
 import java.time.LocalDate
 
 open class DrawingFileWriter {
+    //region parameter
     open lateinit var trilist_: TriangleList
     open lateinit var dedlist_: DeductionList
     lateinit var titleTri_ : TitleParamStr
@@ -31,7 +32,7 @@ open class DrawingFileWriter {
     open var iBlue_  = 4
     open var cRed_   = 2
 
-
+//endregion parameter
 
     fun setNames(kn: String, rn: String, gn: String, zn: String){
         koujiname_ = kn
@@ -114,10 +115,13 @@ open class DrawingFileWriter {
 
     open fun writeTextAndLine(st: String, p1: PointXY, p2: PointXY, textsize: Float, scale: Float) {}
 
-    fun writeOuterFrameAndTitle( scale: Float = 1f, textsize: Float ){
+    fun writeOuterFrame(scale: Float = 1f){
         // 外枠描画
         writeRect(PointXY(21f, 14.85f, scale), 40f * scale, 27f * scale,  iWhite_, scale)
 
+    }
+
+    fun writeTopTitle(scale: Float = 1f, textsize: Float ){
         // 上のタイトル
         writeText(rStr_.tTitle_,
             PointXY(21f, 27.1f, scale),  iWhite_, textsize, 1, 1, 0f, scale)
@@ -130,12 +134,15 @@ open class DrawingFileWriter {
         writeLine(
             PointXY(19f, 26.9f, scale),
             PointXY(23f, 26.9f, scale), iWhite_, scale)
+
     }
 
     open fun writeDrawingFrame(scale: Float = 1f, textsize: Float){
 
         val frameTextSize = textsize * scale
-        writeOuterFrameAndTitle( scale , frameTextSize * 1.6f )
+
+        //外枠と上部のタイトル
+        writeOuterFrame(scale)
 
         //右下のタイトル枠
         writeLine(

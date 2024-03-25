@@ -443,17 +443,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
     }
 
-    fun drawModelViewPoints(canvas: Canvas, paint: Paint = paintTexDbg ){
-        drawPointInfo(canvas, "centerInModel", centerInModel.scale(1f,-1f), paint)
-        drawPointInfo(canvas, "pressedInModel", pressedInModel, paint)
 
-        drawPointInfo(canvas, "baseInView",baseInView, paint, baseInView.scale(-1f,-1f) )
-        //drawPointInfo(canvas, "pressedInView", pressedInView, paint)
-        //drawPointInfo(canvas, "centerInView", centerInView, paint)
-        //drawPointInfo(canvas, "scaleCenterInView", scaleCenterInView, paint)
-
-
-    }
     fun drawPointInfo(canvas: Canvas, name: String = "",point: PointXY, paint: Paint = paintTexS, translate: PointXY = PointXY(0f,0f) ){
         canvas.drawText("$name ", point.x+translate.x, point.y+translate.y, paint)
         canvas.drawText("${point.x.formattedString(1)} ${point.y.formattedString(1)}", point.x+translate.x, point.y+translate.y+30f, paint)
@@ -512,6 +502,22 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
     fun getTapPoint() : PointXY {
         return pressedInModel.clone()
+    }
+
+    /**
+     * `printScale` の値に基づいて適切なテキストスペーサーの値を調整します。
+     *
+     * - `printScale` が 5.0 を超える場合、テキスト間のスペースは最小限になります (0.2f)。
+     * - `printScale` が 3.0 を超えて 5.0 以下の場合、中間のスペースを使用します (0.5f)。
+     * - それ以外の場合 (3.0 以下)、最大のスペースを使用します (2f)。
+     *
+     * @param printScale プリントスケールの現在値。
+     * @return 調整されたテキストスペーサーの値。
+     */
+    fun adjustTextSpacer(printScale: Float): Float = when {
+        printScale > 5.0 -> 0.2f  // スケールが大きい場合はスペーサーを小さくする
+        printScale > 3.0 -> 0.5f  // 中間のスケールには中間のスペーサーを使用
+        else -> 2f  // 小さいスケールには大きなスペーサーを使用
     }
 
 // endregion
@@ -1004,22 +1010,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 //endregion
 
 
-    /**
-     * `printScale` の値に基づいて適切なテキストスペーサーの値を調整します。
-     *
-     * - `printScale` が 5.0 を超える場合、テキスト間のスペースは最小限になります (0.2f)。
-     * - `printScale` が 3.0 を超えて 5.0 以下の場合、中間のスペースを使用します (0.5f)。
-     * - それ以外の場合 (3.0 以下)、最大のスペースを使用します (2f)。
-     *
-     * @param printScale プリントスケールの現在値。
-     * @return 調整されたテキストスペーサーの値。
-     */
-    fun adjustTextSpacer(printScale: Float): Float = when {
-        printScale > 5.0 -> 0.2f  // スケールが大きい場合はスペーサーを小さくする
-        printScale > 3.0 -> 0.5f  // 中間のスケールには中間のスペーサーを使用
-        else -> 2f  // 小さいスケールには大きなスペーサーを使用
-    }
-
+//region drawPdf
 
     fun drawPDF(
         writer: PdfWriter,
@@ -1177,7 +1168,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         return printPoint
     }
 
-
+//endregion
 
 }
 

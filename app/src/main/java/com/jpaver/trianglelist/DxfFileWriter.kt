@@ -4,6 +4,7 @@ import android.util.Log
 import java.io.BufferedWriter
 
 class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
+    //region parameters
     override var trilist_ = trilist
     //override lateinit var dedlist_: DeductionList// = deductionList
 
@@ -30,6 +31,8 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
     override var cRed_ = 1
 
     var activeLayer = "0"
+
+    //endregion parameters
 
     override fun save(){
 
@@ -476,6 +479,7 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
         unitscale_ *= printscale_
         activeLayer = "C-TTL-FRAM"
         writeDrawingFrame(textsize = 0.25f)
+        writeTopTitle(textsize = 0.25f)
         unitscale_ = 1000f
 
         if(isReverse_) {
