@@ -9,7 +9,7 @@ class FileUtilTest {
 
     private val testDirectoryName = "testFiles"
     private val fileName = "testFile.txt"
-    private val testContent = "Hello, BufferedWriter in User Home Test!"
+    private val testContent = "Hello, BufferedWriter in User Home Test!!"
     private val testPath = "$testDirectoryName${File.separator}$fileName"
     private val userHome = System.getProperty("user.home")
     private val testFile = File(userHome, testPath)
