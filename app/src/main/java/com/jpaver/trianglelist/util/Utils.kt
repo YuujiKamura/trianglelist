@@ -18,9 +18,9 @@ object FileUtil {
         writeContentToFile(content, filePath)
     }
 
-    private fun constructFilePathInUserHome(relativePath: String): String {
-        val userHome = System.getProperty("user.home")
-        return Paths.get(userHome, relativePath).toString()
+    private fun constructFilePathInUserHome(andRelativePath: String): String {
+        val userHomeDirectory = System.getProperty("user.home")
+        return Paths.get(userHomeDirectory, andRelativePath).toString()
     }
 
     private fun ensureParentDirectoryExists(filePath: String) {
