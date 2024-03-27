@@ -307,8 +307,8 @@ class TriangleList : EditList, Cloneable {
         return trilist_.size
     }
 
-    override fun addCurrent(i: Int): Int {
-        selectedNumber = selectedNumber + i
+    override fun addCurrent(num: Int): Int {
+        selectedNumber = selectedNumber + num
         return selectedNumber
     }
 
@@ -417,21 +417,25 @@ class TriangleList : EditList, Cloneable {
         }
     }
 
-    override fun remove(number: Int) {
+    override fun remove(num: Int) {
         //number = lastTapNum_;
 
         //１番目以下は消せないことにする。
-        if (number <= 1) return
-        trilist_[number - 1].nodeTriangleA_.removeNode(trilist_[number - 1]) //removeTheirNode();
-        trilist_.removeAt(number - 1)
+        if (num <= 1) return
+        val i = num -1
+        val target = trilist_[i]
+        target.nodeTriangleA_.removeNode(target) //removeTheirNode();
+        trilist_.removeAt(i)
 
         //ひとつ前の三角形を基準にして
-        val parentTriangle = trilist_[number - 2]
+        val parentTriangle = target.nodeTriangleA_//trilist_[number - 2]
+        if( parentTriangle == null )
+            return
         //次以降の三角形の親番号を全部書き換える
         rewriteAllNodeFrom(parentTriangle, -1)
         resetTriangles(parentTriangle.myNumber_, parentTriangle)
-        selectedNumber = number - 1
-        lastTapNumber_ = number - 1
+        selectedNumber = num - 1
+        lastTapNumber_ = num - 1
         lastTapSide_ = -1
 
         //this.cloneByScale(basepoint, myScale);
@@ -495,7 +499,7 @@ class TriangleList : EditList, Cloneable {
             curtri.nodeTriangleA_ = parent //再リンクしないと位置と角度が連動しない。
             val curPareNum = trilist_[cNum - 1].parentNumber_
             // 自分の親番号と、親の三角形の番号が一致したとき？
-            if (cNum > 1 && curPareNum == parent.myNumber_) { //trilist_.get(curPareNum-1)
+            if ( curPareNum == parent.myNumber_) { //trilist_.get(curPareNum-1)
                 parent.resetByChild(curtri)
             }
         }
@@ -639,7 +643,7 @@ class TriangleList : EditList, Cloneable {
         return true
     }
 
-    fun traceOrNot(t: Triangle?, node: Triangle?, origin: Int, olp: ArrayList<PointXY>) {
+    fun traceOrNot(node: Triangle?, origin: Int, olp: ArrayList<PointXY>) {
         if (node != null && !node.isFloating && !node.isColored) traceOrJumpForward(
             node.myNumber_ - 1,
             origin,
@@ -724,8 +728,8 @@ class TriangleList : EditList, Cloneable {
         return trilist_
     }
 
-    override fun getParams(i: Int): Params {
-        if (i > trilist_.size) return Params(
+    override fun getParams(num: Int): Params {
+        if (num > trilist_.size) return Params(
             "",
             "",
             0,
@@ -737,7 +741,7 @@ class TriangleList : EditList, Cloneable {
             PointXY(0f, 0f),
             PointXY(0f, 0f)
         )
-        val t = trilist_[i - 1]
+        val t = trilist_[num - 1]
         return Params(
             t.getMyName_(),
             "",
@@ -760,30 +764,6 @@ class TriangleList : EditList, Cloneable {
         return (Math.round(area * 100.0) * 0.01).toFloat()
     }
 
-    fun getAreaI(number: Int): Float {
-        var area = 0f
-        for (i in 0 until number) {
-            area += trilist_[i].getArea()
-        }
-        return (Math.round(area * 100.0) * 0.01).toFloat()
-    }
-
-    fun getAreaC(number: Int): Float {
-        if (number < 1) return 0f
-        val index = number - 1
-        val clr = trilist_[index].color_
-        val listByColor = spritByColors()[clr]
-        System.out.printf("listbycolor[%s], size %s%n", clr, listByColor.size())
-        return (Math.round(listByColor.getArea() * 100.0) * 0.01).toFloat()
-    }
-
-    val info: String
-        get() {
-            val angle = angle.toString()
-            val area = getArea().toString()
-            return "Trilist- num:" + trilist_.size + " angle:" + angle + " area:" + area
-        }
-
     fun addOutlinePoint(pt: PointXY, str: String, olp: ArrayList<PointXY>, node: Triangle?) {
         if (node != null && notHave(pt, olp)) {
             olp.add(pt)
@@ -803,13 +783,13 @@ class TriangleList : EditList, Cloneable {
         addOutlinePoint(node.pointAB_, "ab,", olp, node)
 
         // 再起呼び出しで派生方向に右手伝いにのびていく
-        traceOrNot(node, node.nodeTriangleB_, origin, olp)
+        traceOrNot(node.nodeTriangleB_, origin, olp)
 
         // BC点を取る。すでにあったらキャンセル
         addOutlinePoint(node.pointBC_, "bc,", olp, node)
 
         // 再起呼び出しで派生方向に右手伝いにのびていく
-        traceOrNot(node, node.nodeTriangleC_, origin, olp)
+        traceOrNot(node.nodeTriangleC_, origin, olp)
 
         // 折り返し
         traceOrJumpBackward(origin, olp, node)

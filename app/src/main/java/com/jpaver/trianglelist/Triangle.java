@@ -202,7 +202,7 @@ public class Triangle extends EditObject implements Cloneable {
             b.isFloating_ = this.isFloating_;
             b.isColored_ = this.isColored_;
         }catch (Exception e){
-            e.printStackTrace();
+            //e.printStackTrace();
         }
         assert b != null;
         return b;
@@ -274,13 +274,6 @@ public class Triangle extends EditObject implements Cloneable {
     public PointXY getPointNumberAutoAligned_() {
         return pointNumber_;//autoAlignPointNumber();
     }
-    public float[] getUnScaledLength(){
-        lengthNotSized[0] = length[0]/scale_;
-        lengthNotSized[1] = length[1]/scale_;
-        lengthNotSized[2] = length[2]/scale_;
-
-        return new float[]{ length[0]/scale_, length[1]/scale_, length[2]/scale_ };
-    }
 
     public PointXY getPointByCParam(ConnParam cparam, Triangle prnt ) {
         if( prnt == null ) return new PointXY( 0f, 0f );
@@ -303,14 +296,12 @@ public class Triangle extends EditObject implements Cloneable {
     public PointXY getParentPointByType(int pbc, int pct, int lcr){
         if( nodeTriangleA_ == null ) return new PointXY(0f,0f);
 
-        switch (pct){
-            default:
-                return nodeTriangleA_.getPointBySide(pbc);
-            case 1:
-                return getParentPointByLCR( pbc, lcr );
-            case 2:
-                return getParentPointByLCR( pbc, lcr ).crossOffset(nodeTriangleA_.getPointByBackSide(pbc), -1.0f);
-        }
+        return switch (pct) {
+            default -> nodeTriangleA_.getPointBySide(pbc);
+            case 1 -> getParentPointByLCR(pbc, lcr);
+            case 2 ->
+                    getParentPointByLCR(pbc, lcr).crossOffset(nodeTriangleA_.getPointByBackSide(pbc), -1.0f);
+        };
 
     }
 
@@ -343,28 +334,24 @@ public class Triangle extends EditObject implements Cloneable {
     }
 
     public Triangle getNode( int pbc ){
-        switch ( pbc ){
-            case 0:
-                return nodeTriangleA_;
-            case 1:
-                return nodeTriangleB_;
-            case 2:
-                return nodeTriangleC_;
-            case -1:
-                return this;
-        }
-        return null;
+        return switch (pbc) {
+            case 0 -> nodeTriangleA_;
+            case 1 -> nodeTriangleB_;
+            case 2 -> nodeTriangleC_;
+            case -1 -> this;
+            default -> null;
+        };
     }
 
     public PointXY getParentOffsetPointBySide(int pbc){
         if( nodeTriangleA_ == null ) return new PointXY(0f,0f);
-        switch(pbc){
-            case 1:
-                return nodeTriangleA_.pointAB_.offset(nodeTriangleA_.pointBC_, nodeTriangleA_.getLengthB() * 0.5f + length[0] * 0.5f );
-            case 2:
-                return nodeTriangleA_.pointBC_.offset(nodeTriangleA_.point[0], nodeTriangleA_.getLengthC() * 0.5f + length[0] * 0.5f );
-        }
-        return nodeTriangleA_.getPointBySide(pbc);
+        return switch (pbc) {
+            case 1 ->
+                    nodeTriangleA_.pointAB_.offset(nodeTriangleA_.pointBC_, nodeTriangleA_.getLengthB() * 0.5f + length[0] * 0.5f);
+            case 2 ->
+                    nodeTriangleA_.pointBC_.offset(nodeTriangleA_.point[0], nodeTriangleA_.getLengthC() * 0.5f + length[0] * 0.5f);
+            default -> nodeTriangleA_.getPointBySide(pbc);
+        };
     }
 
     @NotNull
@@ -517,9 +504,6 @@ public class Triangle extends EditObject implements Cloneable {
         else return 0;
     }
 
-    public String getInfo(){
-        return "triangle name:"+getMyName_()+" num:"+getMyNumber_()+" node0:"+getNode(0)+" node1:"+getNode(1)+" node2:"+getNode(2);
-    }
     public float getAngle() { return this.angleInGlobal_; }
     public float getAngleAB() { return this.angleInnerAB_; }
     public float getAngleBC() { return this.angleInnerBC_; }
@@ -770,18 +754,6 @@ public class Triangle extends EditObject implements Cloneable {
         return this.clone();
     }
 
-    public void setOn(Triangle myParent, int pbc){
-
-        this.setOn(myParent, pbc, this.length[1], this.length[2]);
-
-    }
-
-    public void setOn(Triangle myParent, Params dP){
-        setOn(myParent,dP.getPl(),dP.getA(),dP.getB(),dP.getC());
-        myName_ = dP.getName();
-
-    }
-
     Triangle setOn(Triangle parent, ConnParam cParam, float B, float C) {
         //myNumber_ = parent.myNumber_ + 1;
         //parentBC_ = cParam.getSide();
@@ -907,28 +879,6 @@ public class Triangle extends EditObject implements Cloneable {
         dimPointC_ = pathC_.getPointD();//dimSideRotation( dimSideAlignC_, pointBC_.calcMidPoint(point[0]), point[0], pointBC_);
     }
 
-    public PointXY dimSideRotation(int side, PointXY dimPoint, PointXY pointLeft, PointXY pointRight) {
-
-        float centerKaranoNagasa = dimPoint.lengthTo( pointRight ) * 0.3f;
-        float centerKaraSotonoNagasa = dimPoint.lengthTo( pointRight ) + 2.5f;
-
-        switch( side ){
-            default:
-                return dimPoint;
-            case 0:
-                return dimPoint;
-            case 1:
-                return dimPoint.offset(pointLeft, centerKaranoNagasa);
-            case 2:
-                return dimPoint.offset(pointRight, centerKaranoNagasa);
-            case 3:
-                return dimPoint.offset(pointLeft, centerKaraSotonoNagasa);
-            case 4:
-                return dimPoint.offset(pointRight, centerKaraSotonoNagasa);
-
-        }
-
-    }
     public void setNode( Triangle node, int side ){
         if( node == null ) return;
         if( side > 2 ) side = getParentSide();
@@ -1434,7 +1384,7 @@ public class Triangle extends EditObject implements Cloneable {
         if(!isPointNumberMovedByUser_){
             if( getArea() <= 3f && ( getLengthAforce_() < 1.5f || getLengthBforce_() < 1.5f || getLengthCforce_() < 1.5f ) ) {
                 //isPointNumberMoved_ = true; //移動済みに変える,なくても平気？手動で移動させたときのみ？
-                pointNumber_ = pointUnconnectedSide(pointCenter_, 1f, 1f, new PointXY(0f, 0f)).crossOffset(pointCenter_, getLengthScaledNotConnected() * 1f);
+                pointNumber_ = pointUnconnectedSide(pointCenter_, 1f, 1f, new PointXY(0f, 0f)).crossOffset(pointCenter_, getLengthScaledNotConnected());
             }
             else {
                 pointNumber_ = weightedMidpoint(25f);
@@ -1447,16 +1397,16 @@ public class Triangle extends EditObject implements Cloneable {
         else return isPointNumberMovedByUser_ = false;
     }
 
-//endregion
 
 
     public PointXY pointUnconnectedSide(PointXY ref, float scaleX, float scaleY, PointXY scaleOrigin){
         if( nodeTriangleB_ == null ) return ref.mirroredAndScaledPoint(pointBC_, pointAB_, scaleX,scaleY, scaleOrigin);
         if( nodeTriangleC_ == null ) return ref.mirroredAndScaledPoint(point[0], pointBC_, scaleX,scaleY, scaleOrigin);
-        return ref;
+        return weightedMidpoint(-35f);
     }
 
 
+//endregion pointNumber
 
     public void move(PointXY to){
         pointAB_.add(to);
@@ -1679,8 +1629,8 @@ public class Triangle extends EditObject implements Cloneable {
         return Y;
     }
 
-    public boolean trimming( ArrayList<PointXY> trimline){
-        return isCollide( pathA_, trimline );
+    public boolean trimming(){
+        return isCollide();
     }
 
     //region isBoolean
@@ -1726,7 +1676,7 @@ public class Triangle extends EditObject implements Cloneable {
         return isColored_;
     }
 
-    public boolean isCollide( PathAndOffset path, ArrayList<PointXY> trimline ){
+    public boolean isCollide( ){
         return true;
     }
 
