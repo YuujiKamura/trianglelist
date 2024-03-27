@@ -29,6 +29,7 @@ object FileUtil {
         file.parentFile?.mkdirs()
     }
 
+    //stringの塊をfileに書ける、という、バッファのその都度感をなかったことにする簡潔な関数
     private fun writeContentToFile(content: String, filePath: String) {
         BufferedWriter(FileWriter(filePath)).use { writer ->
             writer.write(content)
