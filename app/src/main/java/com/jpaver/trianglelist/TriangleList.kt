@@ -428,9 +428,7 @@ class TriangleList : EditList, Cloneable {
         trilist_.removeAt(i)
 
         //ひとつ前の三角形を基準にして
-        val parentTriangle = target.nodeTriangleA_//trilist_[number - 2]
-        if( parentTriangle == null )
-            return
+        val parentTriangle = trilist_[target.parentNumber_-1]//trilist_[number - 2]
         //次以降の三角形の親番号を全部書き換える
         rewriteAllNodeFrom(parentTriangle, -1)
         resetTriangles(parentTriangle.myNumber_, parentTriangle)
@@ -482,7 +480,7 @@ class TriangleList : EditList, Cloneable {
         return true
     }
 
-    fun resetTriangles(cNum: Int, curtri: Triangle?): Boolean {
+    fun resetTriangles(number: Int, curtri: Triangle?): Boolean {
         if (curtri == null) return false
         if (!curtri.isValid) return false
 
@@ -490,14 +488,14 @@ class TriangleList : EditList, Cloneable {
         //親方向に走査するなら0、自身の接続方向がCなら２、二つの引数を渡して、総当たりに全方向走査する
 
         //trilistStored_ = (ArrayList<Triangle>) trilist_.clone();
-        curtri.myNumber_ = cNum //useless?
+        curtri.myNumber_ = number //useless?
 
         // 親がいるときは、子接続を書き換える
-        if (curtri.parentNumber_ > 0 && cNum - 2 >= 0) {
+        if (curtri.parentNumber_ > 0 && number - 2 >= 0) {
             val parent = trilist_[curtri.parentNumber_ - 1]
             parent.childSide_ = curtri.parentBC_
             curtri.nodeTriangleA_ = parent //再リンクしないと位置と角度が連動しない。
-            val curPareNum = trilist_[cNum - 1].parentNumber_
+            val curPareNum = trilist_[number - 1].parentNumber_
             // 自分の親番号と、親の三角形の番号が一致したとき？
             if ( curPareNum == parent.myNumber_) { //trilist_.get(curPareNum-1)
                 parent.resetByChild(curtri)
@@ -505,19 +503,19 @@ class TriangleList : EditList, Cloneable {
         }
 
         // 自身の書き換え
-        val me = trilist_[cNum - 1]
+        val me = trilist_[number - 1]
         //me.setNode( trilist_.get( ));
 
 
         // 浮いてる場合、さらに自己番が最後でない場合、一個前の三角形の位置と角度を自分の変化にあわせて動かしたい。
-        if (curtri.parentNumber_ <= 0 && trilist_.size != cNum && notHave(curtri.nodeTriangleA_)) {
-            curtri.resetByChild(trilist_[cNum])
+        if (curtri.parentNumber_ <= 0 && trilist_.size != number && notHave(curtri.nodeTriangleA_)) {
+            curtri.resetByChild(trilist_[number])
         }
         me.reset(curtri) // ここがへん！ 親は自身の基準角度に基づいて形状変更をするので、それにあわせてもう一回呼んでいる。
 
 
         // 子をすべて書き換える
-        if (trilist_.size > 1 && cNum < trilist_.size && curtri.hasChild()) resetMyChild(trilist_[cNum - 1])
+        if (trilist_.size > 1 && number < trilist_.size && curtri.hasChild()) resetMyChild(trilist_[number - 1])
 
         //lastTapNum_ = 0;
         //lastTapSide_ = -1;
@@ -525,7 +523,9 @@ class TriangleList : EditList, Cloneable {
     }
 
     //　ターゲットポインターがリストの中にいたらtrue
-    fun notHave(target: Triangle): Boolean {
+    fun notHave(target: Triangle?): Boolean {
+        if( target == null ) return false
+
         for (i in trilist_.indices) {
             if (trilist_[i] === target) return true
         }
@@ -539,21 +539,22 @@ class TriangleList : EditList, Cloneable {
 
         // 新しい親の次から
         for (i in parent.myNumber_ until trilist_.size) {
+            val target = trilist_[i]
+
             // 連番と派生接続で分岐。
-            if (trilist_[i].parentNumber_ == parent.myNumber_) {
+            if (target.parentNumber_ == parent.myNumber_) {
                 // ひとつ前の三角形の子接続を書き換える？
                 if (i + 1 < trilist_.size) parent.childSide_ = trilist_[i + 1].parentBC_
-                if (trilist_[i].resetByParent(parent, trilist_[i].parentBC_)) return
+                if (target.resetByParent(parent, target.parentBC_)) return
                 // 自身が次の親になる
-                parent = trilist_[i]
+                parent = target
             } else { //連番でないとき
                 //親を番号で参照する
-                if (trilist_[i].resetByParent(
-                        trilist_[trilist_[i].parentNumber_ - 1],
-                        trilist_[i].parentBC_
-                    )
-                ) return
-                trilist_[trilist_[i].parentNumber_ - 1].childSide_ = trilist_[i].parentBC_
+                //if( target.parentNumber_ < 1 ) continue
+                val recent_parent = trilist_[target.parentNumber_ - 1]
+
+                if (target.resetByParent(recent_parent, target.parentBC_)) return
+                trilist_[target.parentNumber_ - 1].childSide_ = target.parentBC_
             }
             //else myTriList.get(i).reload();
         }
