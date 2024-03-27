@@ -9,6 +9,7 @@ class FileUtilTest {
 
     private val testDirectoryName = "testFiles"
     private val fileName = "testFile.txt"
+    private val fileNameDxf = "testFile.dxf"
     private val testContent = "Hello, BufferedWriter in User Home Test!!"
     private val testPath = "$testDirectoryName${File.separator}$fileName"
     private val userHome = System.getProperty("user.home")
@@ -28,6 +29,13 @@ class FileUtilTest {
         // ファイルが正しく作成され、内容が期待通りか確認
         assertTrue("File was not created.", testFile.exists())
         assertTrue("Content does not match.", testFile.readText() == testContent)
+    }
+
+    @Test
+    fun testDxfWriterToUserHome() {
+        // テスト内容をユーザーのホームディレクトリに書き出し
+        FileUtil.writeToUserHome(testContent, "$testDirectoryName${File.separator}$fileNameDxf")
+
     }
 
     @After
