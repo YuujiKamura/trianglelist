@@ -421,7 +421,7 @@ class TriangleList : EditList, Cloneable {
         //number = lastTapNum_;
 
         //１番目以下は消せないことにする。
-        if (num <= 1) return
+        if (num <= 1 || num > trilist_.size ) return
         val i = num -1
         val target = trilist_[i]
         target.nodeTriangleA_.removeNode(target) //removeTheirNode();
@@ -550,7 +550,7 @@ class TriangleList : EditList, Cloneable {
                 parent = target
             } else { //連番でないとき
                 //親を番号で参照する
-                //if( target.parentNumber_ < 1 ) continue
+                if( target.parentNumber_ < 1 ) return
                 val recent_parent = trilist_[target.parentNumber_ - 1]
 
                 if (target.resetByParent(recent_parent, target.parentBC_)) return

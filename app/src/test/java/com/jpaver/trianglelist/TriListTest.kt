@@ -192,8 +192,8 @@ class TriListTest {
         val trilist = TriangleList()
         trilist.add(Triangle(5f, 8f, 5f), true)
         trilist.add(1, 1, 8f, 8f)
-        trilist.add(1, 2, 5f, 5f)
         trilist.add(2, 2, 5f, 5f)
+        trilist.add(1, 2, 5f, 5f)
 
         //trilist.remove( 2 )
         //assertEquals( 5f, trilist.get(1).nodeTriangleB_.lengthB_ )
