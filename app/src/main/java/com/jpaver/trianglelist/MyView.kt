@@ -21,6 +21,7 @@ import com.jpaver.trianglelist.util.ViewTranslateManager
 import java.util.*
 import kotlin.math.roundToInt
 
+// region utilities why this?
 fun Float?.formattedString(fractionDigits: Int): String{
     // nullの場合は空文字
     if(this == null) return ""
@@ -36,6 +37,8 @@ fun Float?.formattedString(fractionDigits: Int): String{
 fun spaced_by(number: Int): String{
     return " ".repeat( 2 - number )
 }
+
+//endregion utilities exist!
 
 class MyView(context: Context, attrs: AttributeSet?) :
     View(context, attrs),
@@ -983,7 +986,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
     fun adjustTextSize(ts: Float): Float = when {
         ts <= 5f -> 8f
-        ts >= 30f -> 30f
+        ts >= 80f -> 80f
         else -> ts
     }
 
