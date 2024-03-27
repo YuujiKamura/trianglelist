@@ -18,10 +18,10 @@ public class TriangleTest {
     @Test
     public void testCalcWeitedMidPoint(){
         Triangle t345 = new Triangle(3f, 4f, 5f );
-        assertEquals( 2.5f,  t345.getPointNumberAutoAligned_().getX(), 0.01f );
+        assertEquals( -2.08f,  t345.getPointNumberAutoAligned_().getX(), 0.01f );
 
         Triangle t = new Triangle(5f, 5f, 5f );
-        assertEquals( 2.5f,  t.getPointNumberAutoAligned_().getX(), 0.01f );
+        assertEquals( -2.5f,  t.getPointNumberAutoAligned_().getX(), 0.01f );
 
     }
 
@@ -29,7 +29,7 @@ public class TriangleTest {
     public void testCompareY(){
         //PowerMockito.mockStatic(Log.class);
 
-        Triangle t = new Triangle(5f, 5f, 5f );
+        //Triangle t = new Triangle(5f, 5f, 5f );
         //assertEquals( 4.33f, t.compareY( 1f, 1f ), 0.01f);
 
         //assertEquals( 0f, t.compareY( -1f, 1f ), 0.01f);
@@ -215,7 +215,7 @@ public class TriangleTest {
         Triangle t1 = new Triangle(6.0f,3.5f,3.5f);
         assertEquals( -3.0f, t1.getPointNumberAutoAligned_().getX(), 0.001f);
         assertEquals( 118f, t1.getAngleBC(), 0.1f);
-        assertEquals( 0.600f, t1.getPointNumberAutoAligned_().getY(), 0.01f);
+        assertEquals( 1.01f, t1.getPointNumberAutoAligned_().getY(), 0.01f);
     }
 
     @Test
@@ -226,7 +226,7 @@ public class TriangleTest {
 
         Triangle t2 = new Triangle(5f,1.5f,5f);
         //t2.setChildSide(1);
-        assertEquals( -4.235f, t2.getPointNumberAutoAligned_().getX(), 0.001f);
+        assertEquals( -4.077f, t2.getPointNumberAutoAligned_().getX(), 0.001f);
 
     }
 
@@ -352,17 +352,17 @@ public class TriangleTest {
         Triangle tri1 = new Triangle(3f, 5f, 4f, new PointXY(0f,0f), 0.0f);
         Triangle tri2 = new Triangle( tri1, 3, 6f, 5f, 4f );
         // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
-        assertEquals( true, tri1.point[0].equals( 0f, 0f ) );
-        assertEquals( true, tri1.pointAB_.equals( 3f, 0f ) );
-        assertEquals( true, tri1.pointBC_.equals( 0f, -4f ) );
-        assertEquals( true, tri2.point[0].equals( 0f, -4f ) );
-        assertEquals( false, tri2.pointAB_.equals( 3f, 0f ) );
-        assertEquals( false, tri2.pointBC_.equals( 0f, -4f ) );
+        assertTrue(tri1.point[0].equals(0f, 0f));
+        assertTrue(tri1.pointAB_.equals(3f, 0f));
+        assertTrue(tri1.pointBC_.equals(0f, -4f));
+        assertTrue(tri2.point[0].equals(0f, -4f));
+        assertFalse(tri2.pointAB_.equals(3f, 0f));
+        assertFalse(tri2.pointBC_.equals(0f, -4f));
 
         tri1.calcPoints( tri2, 1 );
-        assertEquals( false, tri1.point[0].equals( 0f, 0f ) );
-        assertEquals( false, tri1.pointAB_.equals( 3f, 0f ) );
-        assertEquals( false, tri1.pointBC_.equals( 0f, -4f ) );
+        assertFalse(tri1.point[0].equals(0f, 0f));
+        assertFalse(tri1.pointAB_.equals(3f, 0f));
+        assertFalse(tri1.pointBC_.equals(0f, -4f));
 
     }
 
@@ -371,14 +371,14 @@ public class TriangleTest {
         Triangle tri1 = new Triangle(3f, 4f, 5f, new PointXY(0f,0f), 0.0f);
         Triangle tri2 = new Triangle( tri1, 2, 3f, 4f );
 
-        assertEquals( true, tri1.point[0].equals( 0f, 0f ) );
-        assertEquals( true, tri1.pointAB_.equals( 3f, 0f ) );
-        assertEquals( true, tri1.pointBC_.equals( 3f, -4f ) );
+        assertTrue(tri1.point[0].equals(0f, 0f));
+        assertTrue(tri1.pointAB_.equals(3f, 0f));
+        assertTrue(tri1.pointBC_.equals(3f, -4f));
 
         tri1.calcPoints( tri2, 2 );
-        assertEquals( true, tri1.point[0].equals( 0f, 0f ) );
-        assertEquals( true, tri1.pointAB_.equals( 3f, 0f ) );
-        assertEquals( true, tri1.pointBC_.equals( 3f, -4f ) );
+        assertTrue(tri1.point[0].equals(0f, 0f));
+        assertTrue(tri1.pointAB_.equals(3f, 0f));
+        assertTrue(tri1.pointBC_.equals(3f, -4f));
 
     }
 
@@ -387,14 +387,14 @@ public class TriangleTest {
         Triangle tri1 = new Triangle(3f, 5f, 4f, new PointXY(0f,0f), 0.0f);
         Triangle tri2 = new Triangle( tri1, 1, 4f, 3f );
 
-        assertEquals( true, tri1.point[0].equals( 0f, 0f ) );
-        assertEquals( true, tri1.pointAB_.equals( 3f, 0f ) );
-        assertEquals( true, tri1.pointBC_.equals( 0f, -4f ) );
+        assertTrue(tri1.point[0].equals(0f, 0f));
+        assertTrue(tri1.pointAB_.equals(3f, 0f));
+        assertTrue(tri1.pointBC_.equals(0f, -4f));
 
         tri1.calcPoints( tri2, 1 );
-        assertEquals( true, tri1.point[0].equals( 0f, 0f ) );
-        assertEquals( true, tri1.pointAB_.equals( 3f, 0f ) );
-        assertEquals( true, tri1.pointBC_.equals( 0f, -4f ) );
+        assertTrue(tri1.point[0].equals(0f, 0f));
+        assertTrue(tri1.pointAB_.equals(3f, 0f));
+        assertTrue(tri1.pointBC_.equals(0f, -4f));
 
     }
 

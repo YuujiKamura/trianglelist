@@ -1,16 +1,17 @@
 package com.jpaver.trianglelist
 
-import junit.framework.Assert.assertEquals
+
+import junit.framework.TestCase.assertEquals
 import org.junit.Assert
 import org.junit.Test
 
 class PointXYtest {
 
 
-    private fun assertPointXYEquals(expected: PointXY, actual: PointXY, delta: Double = 0.001 ) {
+    private fun assertPointXYEquals(expected: PointXY, actual: PointXY) {
         System.out.printf( "PointXY expected x: %s, y: %s, actual x: %s, y: %s %n", expected.x, expected.y, actual.x, actual.y)
-        assertEquals(expected.y.toDouble(), actual.y.toDouble(), delta )
-        assertEquals(expected.x.toDouble(), actual.x.toDouble(), delta )
+        assertEquals(expected.y.toDouble(), actual.y.toDouble(), 0.001 )
+        assertEquals(expected.x.toDouble(), actual.x.toDouble(), 0.001 )
 
     }
 
@@ -23,7 +24,7 @@ class PointXYtest {
         val actualPoint = p.mirror(lineStart, lineEnd,1f )
         val expectedPoint = PointXY(2f, 1f)
 
-        assertPointXYEquals(expectedPoint, actualPoint, 0.001)
+        assertPointXYEquals(expectedPoint, actualPoint)
     }
 
     @Test
@@ -55,7 +56,7 @@ class PointXYtest {
         val tri = Triangle(5f,5f,5f,
             PointXY(-0.5f, -0.5f), 0f )
 
-        Assert.assertEquals( true, tri.trimming(trimline) )
+        Assert.assertEquals( true, tri.trimming() )
 
     }
 

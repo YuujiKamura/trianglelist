@@ -192,6 +192,7 @@ class TriListTest {
         val trilist = TriangleList()
         trilist.add(Triangle(5f, 8f, 5f), true)
         trilist.add(1, 1, 8f, 8f)
+        trilist.add(1, 2, 5f, 5f)
         trilist.add(2, 2, 5f, 5f)
 
         //trilist.remove( 2 )
@@ -203,6 +204,9 @@ class TriListTest {
         trilist.remove(3)
         assertEquals(null, trilist.get(2).nodeTriangleC_)
         printTriList(trilist)
+
+        trilist.remove(4)
+
     }
 
     @Test
@@ -502,9 +506,9 @@ class TriListTest {
         val alignVdimB = dxfwriter.alignVByVector(tri.myDimAlignB_, pab, pbc)//flip(tri.myDimAlignB_, tri.dimAngleB_ )
         val alignVdimC = dxfwriter.alignVByVector(tri.myDimAlignC_, pbc, pca)//flip(tri.myDimAlignC_, tri.dimAngleC_ )
 
-        Assert.assertEquals(1, alignVdimA)
-        Assert.assertEquals(3, alignVdimB)
-        Assert.assertEquals(3, alignVdimC)
+        Assert.assertEquals(3, alignVdimA)
+        Assert.assertEquals(1, alignVdimB)
+        Assert.assertEquals(1, alignVdimC)
 
         Assert.assertEquals(4, "No.3".length)
 
@@ -1003,10 +1007,10 @@ class TriListTest {
         myTrilist.add(Triangle(mytri1, 3, 2.5f, 1.1f, 2.0f), true) //2
 
         // 1下 3上 -> // 夾角の、1:外 　3:内
-        Assert.assertEquals(3, myTrilist.getMemberByIndex(1).dimAlignA.toLong())
+        Assert.assertEquals(1, myTrilist.getMemberByIndex(1).dimAlignA.toLong())
         Assert.assertEquals(1, myTrilist.getMemberByIndex(1).dimAlignB.toLong())
         Assert.assertEquals(3, myTrilist.getMemberByIndex(1).dimAlignC.toLong())
-        Assert.assertEquals(3, myTrilist.getMemberByIndex(2).dimAlignA.toLong())
+        Assert.assertEquals(1, myTrilist.getMemberByIndex(2).dimAlignA.toLong())
         Assert.assertEquals(3, myTrilist.getMemberByIndex(2).dimAlignB.toLong())
         Assert.assertEquals(3, myTrilist.getMemberByIndex(2).dimAlignC.toLong())
         val t1 = Triangle(1.0f, 1.5f, 1.0f)

@@ -974,18 +974,19 @@ public class Triangle extends EditObject implements Cloneable {
     }
 
     // reset by parent.
-    public boolean resetByParent(Triangle prnt, int pbc){
-        Triangle triIsValid = null;
-        float parentLength = prnt.getLengthByIndex(pbc);
+    public boolean resetByParent(Triangle parent, int pbc){
+        if(parent == null) return false;
 
-        //if(pbc == 1 ) triIsValid = set(prnt, pbc, length[0], parentLength, );
+        Triangle triIsValid = null;
+        float parentLength = parent.getLengthByIndex(pbc);
+
         if(pbc <= 2 ){
             if( !isValidLengthes( parentLength, length[1], length[2] ) ){
                 return true;
             }
-            else triIsValid = setOn(prnt, pbc, parentLength, length[1], length[2] );
+            else triIsValid = setOn(parent, pbc, parentLength, length[1], length[2] );
         }
-        if(pbc >  2 ) triIsValid = setOn(prnt, pbc, length[0], length[1], length[2]);
+        if(pbc >  2 ) triIsValid = setOn(parent, pbc, length[0], length[1], length[2]);
 
         return triIsValid == null;
     }
