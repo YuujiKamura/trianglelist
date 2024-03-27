@@ -24,8 +24,17 @@ import kotlin.math.roundToInt
 fun Float?.formattedString(fractionDigits: Int): String{
     // nullの場合は空文字
     if(this == null) return ""
-    val format = "%.${fractionDigits}f"
-    return format.format(this)
+
+    // 小数点以下の末尾ゼロに基づいてfractionDigitsを調整
+    val smart_fractionDigits = if ((this * 100).toInt() % 10 == 0) 1 else fractionDigits
+
+    val format = "%.${smart_fractionDigits}f"
+    val spaced_format = spaced_by(smart_fractionDigits) + format.format(this)
+    return spaced_format
+}
+
+fun spaced_by(number: Int): String{
+    return " ".repeat( 2 - number )
 }
 
 class MyView(context: Context, attrs: AttributeSet?) :
@@ -442,14 +451,6 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
 
     }
-
-
-    fun drawPointInfo(canvas: Canvas, name: String = "",point: PointXY, paint: Paint = paintTexS, translate: PointXY = PointXY(0f,0f) ){
-        canvas.drawText("$name ", point.x+translate.x, point.y+translate.y, paint)
-        canvas.drawText("${point.x.formattedString(1)} ${point.y.formattedString(1)}", point.x+translate.x, point.y+translate.y+30f, paint)
-        drawCrossLines(canvas, point.plus(translate), paint )
-    }
-
 
 
 //endregion
