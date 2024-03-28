@@ -20,10 +20,14 @@ class DeductionList internal constructor() : EditList(), Cloneable {
         }
     }
 
-    fun scale(basepoint: PointXY?, s: Float) {
-        for (i in dedlist_.indices) {
-            dedlist_[i].scale(basepoint!!, s, s)
-        }
+    // 汎用的な処理を行う高階関数
+    fun <T> doSomething(list: List<T>, action: (T) -> Unit) {
+        list.forEach(action)
+    }
+
+    // scale関数はdoSomethingを使って定義
+    fun scale(basepoint: PointXY, s: Float) {
+        doSomething(dedlist_) { it.scale(basepoint, s, s) }
     }
 
     fun move(to: PointXY?) {
@@ -64,19 +68,9 @@ class DeductionList internal constructor() : EditList(), Cloneable {
     }
 
     override fun getArea(): Float {
-        var area = 0f
-        for (i in dedlist_.indices) {
-            if (dedlist_[i].parentNum != 0) area += dedlist_[i].getArea()
-        }
-        return area //(float)(Math.round( area * 100.0) / 100.0); //roundByUnderTwo(area);
-    }
-
-    fun getAreaN(number: Int): Float {
-        var area = 0f
-        for (i in dedlist_.indices) {
-            if (dedlist_[i].parentNum != 0 && dedlist_[i].parentNum <= number) area += dedlist_[i].getArea()
-        }
-        return (Math.round(area * 100.0) / 100.0).toFloat() //roundByUnderTwo(area);
+        return dedlist_.filter { it.parentNum != 0 }
+            .map { it.getArea() }
+            .sum()
     }
 
     override fun addCurrent(num: Int): Int {
