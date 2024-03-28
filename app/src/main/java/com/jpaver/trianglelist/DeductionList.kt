@@ -68,9 +68,8 @@ class DeductionList internal constructor() : EditList(), Cloneable {
     }
 
     override fun getArea(): Float {
-        return dedlist_.filter { it.parentNum != 0 }
-            .map { it.getArea() }
-            .sum()
+        return dedlist_.filter { it.overlap_to != 0 }
+            .map { it.getArea() }.sum()
     }
 
     override fun addCurrent(num: Int): Int {
