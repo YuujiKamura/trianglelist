@@ -14,7 +14,7 @@ class Deduction(var num: Int = 0,
                 var name: String = "",
                 var lengthX: Float = 0f,
                 var lengthY: Float = 0f,
-                var parentNum: Int = 0,
+                var overlap_to: Int = 0,
                 var type: String = "",
                 var angle: Float = 0f,
                 var point: PointXY = PointXY(
@@ -32,7 +32,7 @@ class Deduction(var num: Int = 0,
         name = ddp.name,
         lengthX = ddp.lengthX,
         lengthY = ddp.lengthY,
-        parentNum = ddp.parentNum,
+        overlap_to = ddp.parentNum,
         type = ddp.type,
         angle = ddp.angle,
         point =  ddp.point
@@ -43,7 +43,7 @@ class Deduction(var num: Int = 0,
         name = dp.name,
         lengthX = dp.a,
         lengthY = dp.b,
-        parentNum = dp.pn,
+        overlap_to = dp.pn,
         type = dp.type,
         angle = 0f,
         point =  dp.pt ,
@@ -112,7 +112,7 @@ class Deduction(var num: Int = 0,
             b.name = name
             b.lengthX = lengthX
             b.lengthY = lengthY
-            b.parentNum = parentNum
+            b.overlap_to = overlap_to
             b.type = type
             b.angle = angle
             b.point = point
@@ -136,7 +136,7 @@ class Deduction(var num: Int = 0,
         name = dp.name
         lengthX = dp.a
         lengthY = dp.b
-        parentNum = dp.pn
+        overlap_to = dp.pn
         type = dp.type
         angle = 0f
         if( dp.pt.x != 0f && dp.pt.y != 0f ) point =  dp.pt
@@ -243,7 +243,7 @@ class Deduction(var num: Int = 0,
 
     override fun getParams() : Params {
 
-        return Params(name, type, num, lengthX, lengthY,0f, parentNum, typeToInt(type), point, pointFlag)
+        return Params(name, type, num, lengthX, lengthY,0f, overlap_to, typeToInt(type), point, pointFlag)
     }
 
     fun isCollide( tri: Triangle): Boolean{

@@ -169,8 +169,8 @@ class TriListTest {
         ) )
 
         trilist.dedmapping(dedlist, -1)
-        assertEquals( 1, dedlist[1].parentNum )
-        assertEquals( 2, dedlist[2].parentNum )
+        assertEquals( 1, dedlist[1].overlap_to )
+        assertEquals( 2, dedlist[2].overlap_to )
 
     }
 

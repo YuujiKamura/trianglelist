@@ -676,7 +676,7 @@ class TriangleList : EditList, Cloneable {
                     trilist_[ii].isCollide(dedlist[i + 1].point.scale(PointXY(1f, axisY.toFloat())))
                 if (isCol) {
                     trilist_[ii].dedcount++
-                    dedlist[i + 1].parentNum = trilist_[ii].myNumber_
+                    dedlist[i + 1].overlap_to = trilist_[ii].myNumber_
                 }
             }
         }
