@@ -894,14 +894,26 @@ class MyView(context: Context, attrs: AttributeSet?) :
         paint1: Paint,
         paint2: Paint
     ){
-        val mn: String = tri.getMyNumber_().toString()
         val pnX = tri.pointNumberAutoAligned_.x
         val pnY = -tri.pointNumberAutoAligned_.y
         val pnpY = getPaintCenterY(pnY, paint1)
-        val circleSize = paint2.textSize *0.8f
         val areaoffsetY = paint2.textSize *1.3f
         paint2.style = Paint.Style.STROKE
 
+
+        val str_number: String = tri.getMyNumber_().toString()
+        val digitCount = str_number.length // 数字の桁数
+
+        // 基本のテキストサイズ
+        val baseCircleSize = paint2.textSize * 0.6f
+
+        // 桁数に応じてサイズを調整
+        val circleSize = when (digitCount) {
+            1 -> baseCircleSize
+            2 -> baseCircleSize * 1.2f // 2桁の場合、基本サイズの1.2倍
+            3 -> baseCircleSize * 1.4f // 3桁の場合、基本サイズの1.4倍
+            else -> baseCircleSize * 1.6f // 4桁以上の場合、基本サイズの1.6倍
+        }
 
         var area =""
         if(isAreaOff_ == false ) area = tri.getArea().formattedString(1 )+"m^2"
@@ -909,7 +921,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
 
         canvas.drawCircle(pnX, pnY, circleSize, paint2)
-        canvas.drawText(mn, pnX, pnpY, paint1)
+        canvas.drawText(str_number, pnX, pnpY, paint1)
         paint2.style = Paint.Style.FILL
         canvas.drawText(area, pnX, pnpY - areaoffsetY, paint2)
 
@@ -917,7 +929,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         if( tri.isCollide(tri.pointNumber_) == false ){
             val pc = tri.pointCenter_
             val pn = tri.pointNumber_
-            val pcOffsetToN = pc.offset(pn, circleSize * 1.2f )
+            val pcOffsetToN = pc//.offset(pn, circleSize * 1.2f )
             val pnOffsetToC = pn.offset(pc, circleSize * 1.1f )
             val arrowTail = pcOffsetToN.offset(pn, pcOffsetToN.lengthTo(pnOffsetToC) * 0.7f).rotate(pcOffsetToN, 10f)
             canvas.drawLine(

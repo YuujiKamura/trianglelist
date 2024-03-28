@@ -1680,15 +1680,17 @@ class MainActivity : AppCompatActivity(),
     fun fabRotate(degrees: Float, bSeparateFreeMode: Boolean, bRotateDedBox: Boolean = true ){
         if(!deductionMode) {
             myTriangleList.rotate(PointXY(0f, 0f), degrees, myTriangleList.lastTapNumber_, bSeparateFreeMode )
-            if( bRotateDedBox ) myDeductionList.rotate(PointXY(0f, 0f), -degrees )
+            myDeductionList.rotate(PointXY(0f, 0f), -degrees )
             my_view.setTriangleList(myTriangleList, mScale)
             my_view.setDeductionList(myDeductionList, mScale)
             my_view.invalidate()//resetViewToLSTP()
         }
         // ded rotate
         else {
-            val vdltip = my_view.myDeductionList.lastTapIndex_+1
-            myDeductionList.get(vdltip).rotateShape(myDeductionList.get(vdltip).point, -degrees )
+            if( !bRotateDedBox ) return
+            val current_deduction_number = my_view.myDeductionList.lastTapIndex_+1
+            val current_deduction = myDeductionList.get(current_deduction_number)
+            current_deduction.rotateShape( current_deduction.point, -degrees )
             my_view.setDeductionList(myDeductionList, mScale)
             my_view.invalidate()
         }
