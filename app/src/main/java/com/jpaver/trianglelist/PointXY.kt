@@ -282,6 +282,19 @@ class PointXY : Cloneable {
         return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y)
     }
 
+    // isCollideメソッドはlengthToを使用して距離を計算
+    fun isCollide(target: PointXY, nearby: Float): Boolean {
+        return this.lengthTo(target) <= nearby
+    }
+
+    fun isCollide(targets: List<PointXY>, nearby: Float): Boolean {
+        return targets.any{ it.lengthTo(this) <= nearby }
+    }
+
+    fun distancesTo(targets: List<PointXY>): List<Float> {
+        return targets.map { this.lengthTo(it) }
+    }
+
     fun isCollide(tri: Triangle): Boolean {
         return isCollide(tri.pointAB_, tri.pointBC_, tri.point[0]) //Inside Triangle
     }
