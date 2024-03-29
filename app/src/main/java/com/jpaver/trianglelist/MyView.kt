@@ -530,7 +530,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 // region resetview
 
     fun setCenterInModelToLastTappedTriNumber() {
-        centerInModel.set(myTriangleList.getMemberByIndex(lstn()).pointNumber_)
+        centerInModel.set(myTriangleList.getMemberByIndex(lstn()).pointNumberAutoAligned_)
     }
 
     fun resetView( pt: PointXY){
@@ -565,7 +565,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
     }
 
     fun toLastTapTriangle(): PointXY {
-        return myTriangleList.getMemberByIndex(lstn()).pointNumber_
+        return myTriangleList.getMemberByIndex(lstn()).pointNumberAutoAligned_
     }
 
     fun lstn(): Int{
@@ -648,10 +648,10 @@ class MyView(context: Context, attrs: AttributeSet?) :
         var lb = tri.slb_
         var lc = tri.slc_
 
-        tPathA.textSpacer = textSpacer_
-        tPathB.textSpacer = textSpacer_
-        tPathC.textSpacer = textSpacer_
-        tPathS.textSpacer = textSpacer_
+        tPathA!!.textSpacer = textSpacer_
+        tPathB!!.textSpacer = textSpacer_
+        tPathC!!.textSpacer = textSpacer_
+        tPathS!!.textSpacer = textSpacer_
 
         val margin = paintDim.textSize*0.52f
         val savedDimColor = paintDim.color
@@ -694,15 +694,15 @@ class MyView(context: Context, attrs: AttributeSet?) :
         drawTriangleNumber(canvas, tri, paintDim, paintB)
 
         // 寸法
-        if(tri.getMyNumber_() == 1 || tri.parentBC > 2 || tri.cParam_.type != 0 || tri.myNumber_ == myTriangleList.lastTapNumber_ )
+        if(tri.myNumber_ == 1 || tri.parentBC > 2 || tri.cParam_.type != 0 || tri.myNumber_ == myTriangleList.lastTapNumber_ )
             drawDigits( canvas, la, makePath(tPathA), tPathA.offsetH, tPathA.offsetV, paintDim, margin )
         drawDigits( canvas, lb, makePath(tPathB), tPathB.offsetH, tPathB.offsetV, paintDim, margin )
         drawDigits( canvas, lc, makePath(tPathC), tPathC.offsetH, tPathC.offsetV, paintDim, margin )
         paintDim.color = savedDimColor
 
         // 測点
-        if(tri.getMyName_() != ""){
-            canvas.drawTextOnPath(tri.getMyName_(), makePath(tPathS), 0f, -2f, paintSok)
+        if(tri.myName_() != ""){
+            canvas.drawTextOnPath(tri.myName_(), makePath(tPathS), 0f, -2f, paintSok)
             canvas.drawPath(makePath(tPathS), paintLine)
         }
         Log.d( "myView", "drawTriangle: " + tri.myNumber_ )
@@ -901,7 +901,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         paint2.style = Paint.Style.STROKE
 
 
-        val str_number: String = tri.getMyNumber_().toString()
+        val str_number: String = tri.myNumber_.toString()
         val digitCount = str_number.length // 数字の桁数
 
         // 基本のテキストサイズ
@@ -917,7 +917,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
         var area =""
         if(isAreaOff_ == false ) area = tri.getArea().formattedString(1 )+"m^2"
-        if(isDebug_ == true) area = "cp:"+tri.cParam_.type.toString() + "-"+ tri.cParam_.lcr.toString() +" pbc:"+ tri.parentBC_.toString() +" Num:"+ tri.myNumber_ +"-"+ tri.parentNumber_ +" lTS"+ tri.lastTapSide_
+        if(isDebug_ == true) area = "cp:"+tri.cParam_.type.toString() + "-"+ tri.cParam_.lcr.toString() +" pbc:"+ tri.parentBC.toString() +" Num:"+ tri.myNumber_ +"-"+ tri.parentNumber +" lTS"+ tri.lastTapSide_
 
 
         canvas.drawCircle(pnX, pnY, circleSize, paint2)
@@ -926,9 +926,9 @@ class MyView(context: Context, attrs: AttributeSet?) :
         canvas.drawText(area, pnX, pnpY - areaoffsetY, paint2)
 
         //引き出し矢印線の描画
-        if( tri.isCollide(tri.pointNumber_) == false ){
+        if( tri.isCollide(tri.pointNumberAutoAligned_) == false ){
             val pc = tri.pointCenter_
-            val pn = tri.pointNumber_
+            val pn = tri.pointNumberAutoAligned_
             val pcOffsetToN = pc//.offset(pn, circleSize * 1.2f )
             val pnOffsetToC = pn.offset(pc, circleSize * 1.1f )
             val arrowTail = pcOffsetToN.offset(pn, pcOffsetToN.lengthTo(pnOffsetToC) * 0.7f).rotate(pcOffsetToN, 10f)
@@ -1090,7 +1090,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
         // 描画処理
         Log.d( "myView", "drawPDF - isPrintPDF: " + isPrintPDF_ )
-        if( separateCount > 1 && numberList.size > 1 && myTriangleList.get(0).angleInGlobal_ > 45f && myTriangleList.get(0).angleInGlobal_ < 135f  ){
+        if( separateCount > 1 && numberList.size > 1 && myTriangleList.get(0).angle > 45f && myTriangleList.get(0).angle < 135f  ){
 
             //測点を持つ三角形のリスト
             val numleftList = myTriangleList.getSokutenList( 0, 4 )

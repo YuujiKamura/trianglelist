@@ -239,7 +239,7 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
         writeLine(pbc, pca, 8)
 
         // DimTexts
-        if(tri.getMyNumber_()==1 || tri.parentBC > 2)
+        if(tri.myNumber_ ==1 || tri.parentBC > 2)
             writeText(la, tri.dimPointA_, 8, ts, dimA, pab.calcDimAngle(pca), 1f)
         writeText(lb, tri.dimPointB_, 8, ts, dimB, pbc.calcDimAngle(pab), 1f)
         writeText(lc, tri.dimPointC_, 8, ts, dimC, pca.calcDimAngle(pbc), 1f)
@@ -249,10 +249,10 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
         val pc = tri.pointCenter_
         // 本体
         writeCircle(pn, circleSize, 4, 1f)
-        writeText(tri.getMyNumber_().toString(), tri.pointNumberAutoAligned_, 4, ts, 5, 0f, 1f)
+        writeText(tri.myNumber_.toString(), tri.pointNumberAutoAligned_, 4, ts, 5, 0f, 1f)
 
         //引き出し矢印線の描画
-        if( tri.isCollide(tri.pointNumber_) == false ){
+        if( tri.isCollide(tri.pointNumberAutoAligned_) == false ){
             val pcOffsetToN = pc.offset(pn, circleSize)
             val pnOffsetToC = pn.offset(pc, circleSize)
             val arrowTail = pcOffsetToN.offset(pn, pcOffsetToN.lengthTo(pnOffsetToC) * 0.7f).rotate(pcOffsetToN, 5f)
