@@ -100,7 +100,7 @@ class PointXYtest {
         val tri = Triangle(5f,5f,5f,
             PointXY(-0.5f, -0.5f), 0f )
 
-        Assert.assertEquals( true, tri.trimming() )
+        Assert.assertEquals( false, tri.isCollide )
 
     }
 

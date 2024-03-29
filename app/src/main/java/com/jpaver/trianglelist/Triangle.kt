@@ -35,7 +35,6 @@ class Triangle : EditObject, Cloneable {
     var valid_ = false
     var length = FloatArray(3)
     var lengthNotSized = FloatArray(3)
-    var point = arrayOf(PointXY(0f,0f),PointXY(0f,0f),PointXY(0f,0f))
     var scale_ = 1f
     var angle = 180f
     var angleInLocal_ = 0f
@@ -44,19 +43,22 @@ class Triangle : EditObject, Cloneable {
     var slb_ = ""
     var slc_ = ""
 
-    // PointXY point[0] = new PointXY(0f, 0f); // base point by calc
+    var point = arrayOf(PointXY(0f,0f),PointXY(0f,0f),PointXY(0f,0f))
+        private set
     var pointAB_: PointXY = PointXY(0f, 0f)
+        private set
     var pointBC_: PointXY = PointXY(0f, 0f)
+        private set
     var pointCenter_ = PointXY(0f, 0f)//autoAlignPointNumber();
+        private set
+    var pointName_ = PointXY(0f, 0f)
+        private set
 
-    //endregion
-    //region getter
     var pointNumberAutoAligned_ = PointXY(0f, 0f)
     var isPointNumberMovedByUser_ = false
     var dimPointA_ = PointXY(0f, 0f)
     var dimPointB_ = PointXY(0f, 0f)
     var dimPointC_ = PointXY(0f, 0f)
-    var pointName_ = PointXY(0f, 0f)
     var nameAlign_ = 0
     var nameSideAlign_ = 0
     protected var myTheta_ = 0.0
@@ -97,6 +99,8 @@ class Triangle : EditObject, Cloneable {
     var nodeTriangleA_: Triangle? = null
     var nodeTriangleB_: Triangle? = null
     var nodeTriangleC_: Triangle? = null
+    var parent: Triangle? = nodeTriangleA_
+
     var isChildB_ = false
     var isChildC_ = false
     var isFloating_ = false
@@ -124,8 +128,8 @@ class Triangle : EditObject, Cloneable {
         return PointXY(pointBC_)
     }
 
-
     //endregion
+
     //region constructor
     // set argument methods
     private fun initBasicArguments(A: Float, B: Float, C: Float, pCA: PointXY?, angle: Float) {
@@ -273,7 +277,8 @@ class Triangle : EditObject, Cloneable {
     }
 
     fun getParentPointByType(pbc: Int, pct: Int, lcr: Int): PointXY {
-        return if (nodeTriangleA_ == null) PointXY(0f, 0f) else when (pct) {
+        return if (nodeTriangleA_ == null) PointXY(0f, 0f)
+        else when (pct) {
             1 -> getParentPointByLCR(pbc, lcr)
             2 -> getParentPointByLCR(pbc, lcr).crossOffset(
                 nodeTriangleA_!!.getPointByBackSide(pbc)!!,
@@ -416,8 +421,6 @@ class Triangle : EditObject, Cloneable {
         return PointXY(pointCenter_)
     }
 
-    var parent: Triangle? = null
-        get() = nodeTriangleA_?.clone()
 
 
     fun collision(): Boolean {
@@ -467,7 +470,7 @@ class Triangle : EditObject, Cloneable {
 
     fun getPointBySide(i: Int): PointXY? {
         if (getSideByIndex(i) == "B") return pointBC_()
-        return if (getSideByIndex(i) == "C") pointCA_ else null
+        return if (getSideByIndex(i) == "C") point[0] else null
     }
 
     fun getAngleBySide(i: Int): Float {
@@ -504,7 +507,7 @@ class Triangle : EditObject, Cloneable {
         }
 
     //endregion
-    //endregion
+
     //region setter
     fun resetNode(prms: Params, parent: Triangle?, doneObjectList: ArrayList<Triangle>) {
 
@@ -1012,6 +1015,8 @@ class Triangle : EditObject, Cloneable {
     }
 
     //endregion
+
+    //region node and boundaries
     fun removeNode(target: Triangle) {
         if (nodeTriangleA_ === target) nodeTriangleA_ = null
         if (nodeTriangleB_ === target) nodeTriangleB_ = null
@@ -1029,37 +1034,7 @@ class Triangle : EditObject, Cloneable {
         return newB
     }
 
-    fun autoSetDimAlign(): Int { // 1:下 3:上
-        myDimAlignA_ = calcDimAlignByInnerAngleOf(0)
-        myDimAlignB_ = calcDimAlignByInnerAngleOf(1)
-        myDimAlignC_ = calcDimAlignByInnerAngleOf(2)
-
-        /*
-        if(  getAngle() <= 90 || getAngle() >= 270 ) { // 基線の角度が90°～270°の間
-            myDimAlign = 3;
-            myDimAlignA = 3;
-        } else { // それ以外(90°以下～270°の間)
-            myDimAlign = 1;
-            myDimAlignA = 1;
-            myDimAlignB = 1;
-            myDimAlignC = 1;
-        }
-
-        //AB
-        if( getAngleMpAB() <= 90 || getAngle() >= 270 ) { // 基線+ABの角度が90°～270°の間
-            myDimAlignB = 3;
-        } else {
-            myDimAlignB = 1;
-        }
-
-        if( getAngleMmCA() <= 90 || getAngle() >= 270 ) { // 基線-CAの角度が90°～270°の間
-            myDimAlignC = 3;
-        } else {
-            myDimAlignC = 1;
-        }
-*/setDimPath(dimH_)
-        return myDimAlign_
-    }
+    //endregion node and boundaries
 
     //region calculater
     fun calculateInternalAngle(p1: PointXY?, p2: PointXY?, p3: PointXY?): Double {
@@ -1195,7 +1170,42 @@ class Triangle : EditObject, Cloneable {
         // 上記のいずれの条件にも当てはまらない場合は 3 を返す
     }
 
-    //endregion
+    //endregion calcurator
+
+    //region dimAlign
+
+    fun autoSetDimAlign(): Int { // 1:下 3:上
+        myDimAlignA_ = calcDimAlignByInnerAngleOf(0)
+        myDimAlignB_ = calcDimAlignByInnerAngleOf(1)
+        myDimAlignC_ = calcDimAlignByInnerAngleOf(2)
+
+        /*
+        if(  getAngle() <= 90 || getAngle() >= 270 ) { // 基線の角度が90°～270°の間
+            myDimAlign = 3;
+            myDimAlignA = 3;
+        } else { // それ以外(90°以下～270°の間)
+            myDimAlign = 1;
+            myDimAlignA = 1;
+            myDimAlignB = 1;
+            myDimAlignC = 1;
+        }
+
+        //AB
+        if( getAngleMpAB() <= 90 || getAngle() >= 270 ) { // 基線+ABの角度が90°～270°の間
+            myDimAlignB = 3;
+        } else {
+            myDimAlignB = 1;
+        }
+
+        if( getAngleMmCA() <= 90 || getAngle() >= 270 ) { // 基線-CAの角度が90°～270°の間
+            myDimAlignC = 3;
+        } else {
+            myDimAlignC = 1;
+        }
+*/
+        setDimPath(dimH_)
+        return myDimAlign_
+    }
     fun flipOneToThree(num: Int): Int {
         if (num == 1) return 3
         return if (num == 3) 1 else num
@@ -1231,7 +1241,38 @@ class Triangle : EditObject, Cloneable {
         setDimPath(dimH_)
     }
 
+    //endregion dimalign
+
     // region pointNumber
+    fun hataage(p: PointXY, offset: Float, axisY: Float, number: Float): PointXY {
+        val distanceFromCenter = p.y - pointCenter_.y * axisY
+        var direction = 1f
+        if (distanceFromCenter < 0) direction = -1f
+        val hataage = p.clone()
+        val compareY = compareY(direction, axisY)
+        hataage[p.x] = p.y + (compareY - p.y) + offset * direction * (dedcount * number)
+
+        //Log.d("Triangle Deduction", "p.getY: " + p.getY() + " , pointCenterY: " + pointCenter_.getY()+ " , axisY: " + axisY );
+        //Log.d("Triangle Deduction", "DistanceFromCenter: " + distanceFromCenter + " , direction: " + direction );
+        //Log.d("Triangle Deduction", "compareY: " + compareY + " , hataage.y: " + hataage.getY() );
+        return hataage
+    }
+    fun compareY(direction: Float, axisY: Float): Float {
+        val pCAy = point[0].y * axisY
+        val pABy = pointAB_.y * axisY
+        val pBCy = pointBC_.y * axisY
+        //Log.d("Triangle Deduction", "pCAy: " + pCAy + " , pABy: " + pABy + " , pBCy: " + pBCy );
+        var Y = pCAy
+        if (direction == -1f) {
+            if (Y > pABy) Y = pABy
+            if (Y > pBCy) Y = pBCy
+        } else if (direction == 1f) {
+            if (Y <= pABy) Y = pABy
+            if (Y <= pBCy) Y = pBCy
+        }
+        return Y
+    }
+
     fun setPointNumberMovedByUser_(p: PointXY) {
         pointNumberAutoAligned_ = p
         isPointNumberMovedByUser_ = true
@@ -1278,8 +1319,8 @@ class Triangle : EditObject, Cloneable {
 
     val isPointNumberMoved: Boolean
         get() = if (pointNumberAutoAligned_ != pointCenter_) true.also {
-            isPointNumberMovedByUser_ = it
-        } else false.also { isPointNumberMovedByUser_ = it }
+            isPointNumberMovedByUser_ = true
+        } else false.also { isPointNumberMovedByUser_ = false }
 
     fun pointUnconnectedSide(
         ref: PointXY,
@@ -1304,6 +1345,8 @@ class Triangle : EditObject, Cloneable {
     }
 
     //endregion pointNumber
+
+    //region translate and scale
     fun move(to: PointXY) {
         pointAB_.add(to)
         pointBC_.add(to)
@@ -1335,6 +1378,8 @@ class Triangle : EditObject, Cloneable {
         length[2] *= scale
         calcPoints(point[0], angle)
     }
+
+    // endregion translate and scale
 
     //region rotater
     // 自分の次の番号がくっついている辺を調べてA辺にする。
@@ -1456,39 +1501,6 @@ class Triangle : EditObject, Cloneable {
     }
 
     //endregion
-    fun hataage(p: PointXY, offset: Float, axisY: Float, number: Float): PointXY {
-        val distanceFromCenter = p.y - pointCenter_.y * axisY
-        var direction = 1f
-        if (distanceFromCenter < 0) direction = -1f
-        val hataage = p.clone()
-        val compareY = compareY(direction, axisY)
-        hataage[p.x] = p.y + (compareY - p.y) + offset * direction * (dedcount * number)
-
-        //Log.d("Triangle Deduction", "p.getY: " + p.getY() + " , pointCenterY: " + pointCenter_.getY()+ " , axisY: " + axisY );
-        //Log.d("Triangle Deduction", "DistanceFromCenter: " + distanceFromCenter + " , direction: " + direction );
-        //Log.d("Triangle Deduction", "compareY: " + compareY + " , hataage.y: " + hataage.getY() );
-        return hataage
-    }
-
-    fun compareY(direction: Float, axisY: Float): Float {
-        val pCAy = point[0].y * axisY
-        val pABy = pointAB_.y * axisY
-        val pBCy = pointBC_.y * axisY
-        //Log.d("Triangle Deduction", "pCAy: " + pCAy + " , pABy: " + pABy + " , pBCy: " + pBCy );
-        var Y = pCAy
-        if (direction == -1f) {
-            if (Y > pABy) Y = pABy
-            if (Y > pBCy) Y = pBCy
-        } else if (direction == 1f) {
-            if (Y <= pABy) Y = pABy
-            if (Y <= pBCy) Y = pBCy
-        }
-        return Y
-    }
-
-    fun trimming(): Boolean {
-        return isCollide
-    }
 
     //region isBoolean
     fun alreadyHaveChild(pbc: Int): Boolean {
@@ -1516,9 +1528,6 @@ class Triangle : EditObject, Cloneable {
             length[2]
         )
 
-    //!((this.length[0] + this.length[1]) <= this.length[2]) &&
-    //      !((this.length[1] + this.length[2]) <= this.length[0]) &&
-    //    !((this.length[2] + this.length[0]) <= this.length[1]);
     fun isValidLengthes(A: Float, B: Float, C: Float): Boolean {
         return !(A + B <= C) && !(B + C <= A) && !(C + A <= B)
     }
@@ -1533,13 +1542,13 @@ class Triangle : EditObject, Cloneable {
             isColored_ = nodeTriangleA_ != null && color_ != nodeTriangleA_!!.color_
             return isColored_
         }
-    val isCollide: Boolean
-        get() = true
+    val isCollide: Boolean = false
 
     fun isCollide(p: PointXY): Boolean {
         return p.isCollide(pointAB_, pointBC_, point[0])
-    } //endregion
+    }
 
+//endregion　isIt
 
 
 }
