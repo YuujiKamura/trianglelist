@@ -62,9 +62,9 @@ class TriangleTest {
     @Test
     fun testValid() {
         val t = Triangle(5f, 5f, 5f)
-        Assert.assertTrue(t.isValid())
+        Assert.assertTrue(t.isValid)
         val t2 = Triangle(5f, 5f, 15f)
-        Assert.assertFalse(t2.isValid())
+        Assert.assertFalse(t2.isValid)
     }
 
     @Test
@@ -75,8 +75,8 @@ class TriangleTest {
         val two = Triangle(one, connection, 6f, 6f)
 
         // 内容の一致
-        Assert.assertEquals(one.myNumber_.toLong(), two.nodeTriangleA_.myNumber_.toLong())
-        Assert.assertEquals(one.nodeTriangleB_.myNumber_.toLong(), two.myNumber_.toLong())
+        Assert.assertEquals(one.myNumber_.toLong(), two.nodeTriangleA_!!.myNumber_.toLong())
+        Assert.assertEquals(one.nodeTriangleB_!!.myNumber_.toLong(), two.myNumber_.toLong())
 
         // オブジェクトポインタの一致。
         Assert.assertEquals(one, two.nodeTriangleA_)
@@ -96,8 +96,8 @@ class TriangleTest {
             Triangle(one, Params("", "", 2, 5f, 5f, 5f, 1, 1, PointXY(0f, 0f), PointXY(0f, 0f)))
 
         // 内容の一致
-        Assert.assertEquals(one.myNumber_.toLong(), two.nodeTriangleA_.myNumber_.toLong())
-        Assert.assertEquals(one.nodeTriangleB_.myNumber_.toLong(), two.myNumber_.toLong())
+        Assert.assertEquals(one.myNumber_.toLong(), two.nodeTriangleA_!!.myNumber_.toLong())
+        Assert.assertEquals(one.nodeTriangleB_!!.myNumber_.toLong(), two.myNumber_.toLong())
 
         // オブジェクトポインタの一致。
         Assert.assertEquals(one, two.nodeTriangleA_)
@@ -115,8 +115,8 @@ class TriangleTest {
         val two = Triangle(one, 1, 5f, 5f)
 
         // 内容の一致
-        Assert.assertEquals(one.myNumber_.toLong(), two.nodeTriangleA_.myNumber_.toLong())
-        Assert.assertEquals(one.nodeTriangleB_.myNumber_.toLong(), two.myNumber_.toLong())
+        Assert.assertEquals(one.myNumber_.toLong(), two.nodeTriangleA_!!.myNumber_.toLong())
+        Assert.assertEquals(one.nodeTriangleB_!!.myNumber_.toLong(), two.myNumber_.toLong())
 
         // オブジェクトポインタの一致。
         Assert.assertEquals(one, two.nodeTriangleA_)
@@ -209,9 +209,9 @@ class TriangleTest {
     @Test
     fun testTriBounds() {
         val myT = Triangle(3f, 4f, 5f)
-        Assert.assertEquals(4f, myT.getMyBP_().top, 0.001f)
+        Assert.assertEquals(4f, myT.myBP_.top, 0.001f)
         myT.move(PointXY(5f, 5f))
-        Assert.assertEquals(9f, myT.getMyBP_().top, 0.001f)
+        Assert.assertEquals(9f, myT.myBP_.top, 0.001f)
         val myDParam =
             Params("集水桝", "Box", 3, 0.8f, 0.8f, 0f, 0, 0, PointXY(0.5f, 0.5f), PointXY(0f, 0f))
         val myD = Deduction(myDParam)
@@ -235,10 +235,10 @@ class TriangleTest {
     @Test
     fun testCalcAngleOfLength() {
         val mytri = Triangle(3.0f, 4.0f, 5.0f, PointXY(0f, 0f), 180.0f)
-        Assert.assertEquals(0.0, mytri.point[0].calcDimAngle(mytri.getPointAB_()).toDouble(), 0.001)
+        Assert.assertEquals(0.0, mytri.point[0].calcDimAngle(mytri.pointAB_()).toDouble(), 0.001)
         Assert.assertEquals(
             -1.5,
-            mytri.point[0].calcMidPoint(mytri.getPointAB_()).x.toDouble(),
+            mytri.point[0].calcMidPoint(mytri.pointAB_()).x.toDouble(),
             0.01
         )
     }
@@ -255,8 +255,8 @@ class TriangleTest {
         val myTriangle = Triangle(3.0f, 4.0f, 5.0f, myXY0, 180.0f)
         Assert.assertEquals(myTriangle.point[0].x.toDouble(), myXY0.x.toDouble(), 0.001)
         Assert.assertEquals(myTriangle.point[0].y.toDouble(), myXY0.y.toDouble(), 0.001)
-        Assert.assertEquals(myTriangle.getPointAB_().x.toDouble(), -3.0, 0.001)
-        Assert.assertEquals(myTriangle.getPointAB_().y.toDouble(), -0.0, 0.001)
+        Assert.assertEquals(myTriangle.pointAB_().x.toDouble(), -3.0, 0.001)
+        Assert.assertEquals(myTriangle.pointAB_().y.toDouble(), -0.0, 0.001)
     }
 
     @Test
@@ -268,13 +268,13 @@ class TriangleTest {
         val myTriF3 = Triangle(1.0f, 4.0f, 5.0f, PointXY(0f, 0f), 180.0f)
         val myTriF4 = Triangle(4.0f, 5.0f, 1.0f, PointXY(0f, 0f), 180.0f)
         val myTriF5 = Triangle(4.0f, 1.0f, 5.0f, PointXY(0f, 0f), 180.0f)
-        Assert.assertTrue(myTriT.isValid())
-        Assert.assertTrue(myTriT2.isValid())
-        Assert.assertFalse(myTriF.isValid())
-        Assert.assertFalse(myTriF2.isValid())
-        Assert.assertFalse(myTriF3.isValid())
-        Assert.assertFalse(myTriF4.isValid())
-        Assert.assertFalse(myTriF5.isValid())
+        Assert.assertTrue(myTriT.isValid)
+        Assert.assertTrue(myTriT2.isValid)
+        Assert.assertFalse(myTriF.isValid)
+        Assert.assertFalse(myTriF2.isValid)
+        Assert.assertFalse(myTriF3.isValid)
+        Assert.assertFalse(myTriF4.isValid)
+        Assert.assertFalse(myTriF5.isValid)
         val myList = TriangleList()
         Assert.assertTrue(myList.add(myTriT, true))
         //assertTrue(myList.add(myTriT2));
@@ -290,15 +290,15 @@ class TriangleTest {
 
         // atan2( y, x );
         val theta = atan2(
-            (pCA.y - myTriangle.getPointAB_().y).toDouble(),
-            (pCA.x - myTriangle.getPointAB_().x).toDouble()
+            (pCA.y - myTriangle.pointAB_().y).toDouble(),
+            (pCA.x - myTriangle.pointAB_().x).toDouble()
         )
         val alpha = acos(
             myTriangle.lengthA.pow(2.0f) + myTriangle.lengthB.pow(2.0f) - myTriangle.lengthC.pow(2.0f)
         )
-        Assert.assertEquals((pCA.x - myTriangle.getPointAB_().x).toDouble(), 3.0, 0.005)
-        Assert.assertEquals((pCA.y - myTriangle.getPointAB_().y).toDouble(), 0.0, 0.005)
-        Assert.assertEquals(myTriangle.getPointAB_().x.toDouble(), -3.0, 0.005)
+        Assert.assertEquals((pCA.x - myTriangle.pointAB_().x).toDouble(), 3.0, 0.005)
+        Assert.assertEquals((pCA.y - myTriangle.pointAB_().y).toDouble(), 0.0, 0.005)
+        Assert.assertEquals(myTriangle.pointAB_().x.toDouble(), -3.0, 0.005)
         Assert.assertEquals(theta, 0.0, 0.005)
         Assert.assertEquals(alpha, 1.570796f, 0.005f)
     }
@@ -350,10 +350,10 @@ class TriangleTest {
     fun testCalcPoint() {
         val myXY0 = PointXY(0.0f, 0.0f)
         val myTriangle = Triangle(3.0f, 4.0f, 5.0f, myXY0, 90.0f)
-        Assert.assertEquals(myTriangle.getPointAB_().x.toDouble(), 0.0, 0.001)
-        Assert.assertEquals(myTriangle.getPointAB_().y.toDouble(), 3.0, 0.001)
-        Assert.assertEquals(myTriangle.getPointBC_().x.toDouble(), 4.0, 0.001)
-        Assert.assertEquals(myTriangle.getPointBC_().y.toDouble(), 3.0, 0.001)
+        Assert.assertEquals(myTriangle.pointAB_().x.toDouble(), 0.0, 0.001)
+        Assert.assertEquals(myTriangle.pointAB_().y.toDouble(), 3.0, 0.001)
+        Assert.assertEquals(myTriangle.pointBC_().x.toDouble(), 4.0, 0.001)
+        Assert.assertEquals(myTriangle.pointBC_().y.toDouble(), 3.0, 0.001)
         Assert.assertEquals(myTriangle.angleCA.toDouble(), 53.130, 0.001)
         Assert.assertEquals(myTriangle.angleAB.toDouble(), 90.000, 0.001)
         Assert.assertEquals(myTriangle.angleBC.toDouble(), 36.869, 0.001)

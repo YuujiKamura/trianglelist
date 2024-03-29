@@ -1668,7 +1668,7 @@ class MainActivity : AppCompatActivity(),
                     0f
                 ), 1 / mScale, -1 / mScale)
             if( tp.lengthTo(tri.pointCenter_) < 10f ){ // あまり遠い時はスルー
-                tri.pointNumber_ = tp
+                tri.pointNumberAutoAligned_ = tp
                 tri.isPointNumberMovedByUser_ = true
                 my_view.setTriangleList(myTriangleList, mScale, false)
             }
@@ -1968,7 +1968,7 @@ class MainActivity : AppCompatActivity(),
                     ), myELFirst
             )
 
-            my_view.setParentSide(t.getMyNumber_(), i)
+            my_view.setParentSide(t.myNumber_, i)
 
             if(my_view.myTriangleList.lastTapSide_ != -1){
                 my_view.myTriangleList.isDoubleTap_ = true
@@ -2718,10 +2718,10 @@ class MainActivity : AppCompatActivity(),
             // 三角形リストのデータをCSVファイルに書き込み
             for (index in 1..myTriangleList.size()) {
                 val mt: Triangle = myTriangleList.getMemberByIndex(index)
-                val pt: PointXY = mt.pointNumber_
+                val pt: PointXY = mt.pointNumberAutoAligned_
                 val cp = parentBCtoCParam(mt.parentBC, mt.lengthNotSized[0], mt.cParam_)
 
-                writer.write("${mt.getMyNumber_()},${mt.getLengthA()},${mt.getLengthB()},${mt.getLengthC()},${mt.parentNumber},${mt.parentBC},${mt.getMyName_()},${pt.x},${pt.y},${mt.isPointNumberMovedByUser_},${mt.color_},${mt.dimSideAlignA_},${mt.dimSideAlignB_},${mt.dimSideAlignC_},${mt.myDimAlignA_},${mt.myDimAlignB_},${mt.myDimAlignC_},${cp.side},${cp.type},${cp.lcr},${mt.isChangeDimAlignB_},${mt.isChangeDimAlignC_},${mt.angleInGlobal_},${mt.pointCA_.x},${mt.pointCA_.y},${mt.angleInLocal_}")
+                writer.write("${mt.myNumber_},${mt.getLengthA()},${mt.getLengthB()},${mt.getLengthC()},${mt.parentNumber},${mt.parentBC},${mt.myName_()},${pt.x},${pt.y},${mt.isPointNumberMovedByUser_},${mt.color_},${mt.dimSideAlignA_},${mt.dimSideAlignB_},${mt.dimSideAlignC_},${mt.myDimAlignA_},${mt.myDimAlignB_},${mt.myDimAlignC_},${cp.side},${cp.type},${cp.lcr},${mt.isChangeDimAlignB_},${mt.isChangeDimAlignC_},${mt.angle},${mt.pointCA_.x},${mt.pointCA_.y},${mt.angleInLocal_}")
                 writer.newLine()
             }
 
@@ -2979,7 +2979,7 @@ class MainActivity : AppCompatActivity(),
                     )
 
                 }
-                trilist.getMemberByIndex(trilist.size()).parentBC_ = chunks[5].toInt()
+                trilist.getMemberByIndex(trilist.size()).parentBC = chunks[5].toInt()
             }
             else{
 
@@ -3007,7 +3007,7 @@ class MainActivity : AppCompatActivity(),
                 )
 
                 val mT = trilist.getMemberByIndex(trilist.size())
-                mT.parentBC_ = chunks[5].toInt()
+                mT.parentBC = chunks[5].toInt()
                 /*
                 if( chunks.size > 25 && mT.parentBC_ >= 9 ) mT.rotate(
                     mT.pointCA_,

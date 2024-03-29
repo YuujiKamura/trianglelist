@@ -101,7 +101,7 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
         writeLine( pbc, pca, 7)
 
         // DimTexts
-        if( tri.getMyNumber_() == 1 || tri.parentBC > 2)
+        if( tri.myNumber_ == 1 || tri.parentBC > 2)
             writeTextDimension(tateAlignDimA, nagasaA, tri.dimPointA_, pab.calcDimAngle(pca))
         writeTextDimension(tateAlignDimB, nagasaB, tri.dimPointB_, pbc.calcDimAngle(pab))
         writeTextDimension(tateAlignDImC, nagasaC, tri.dimPointC_, pca.calcDimAngle(pbc))
@@ -110,9 +110,9 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
         val tPathA = tri.pathA_
         val tPathB = tri.pathB_
         val tPathC = tri.pathC_
-        if(tPathA.alignSide > 2) writeLine( tPathA.pointA, tPathA.pointB, 7)
-        if(tPathB.alignSide > 2) writeLine( tPathB.pointA, tPathB.pointB, 7)
-        if(tPathC.alignSide > 2) writeLine( tPathC.pointA, tPathC.pointB, 7)
+        if(tPathA!!.alignSide > 2) writeLine( tPathA.pointA, tPathA.pointB, 7)
+        if(tPathB!!.alignSide > 2) writeLine( tPathB.pointA, tPathB.pointB, 7)
+        if(tPathC!!.alignSide > 2) writeLine( tPathC.pointA, tPathC.pointB, 7)
 
 
         // 番号
@@ -124,7 +124,7 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
         writeTextNumber(tri)
 
         //引き出し矢印線の描画
-        if(!tri.isCollide(tri.pointNumber_)){
+        if(!tri.isCollide(tri.pointNumberAutoAligned_)){
             val pcOffsetToN = pc.offset(pn, circleSize * 0.5f )
             val pnOffsetToC = pn.offset(pc, circleSize * 1.2f )
             val arrowTail = pcOffsetToN.offset(pn, pcOffsetToN.lengthTo(pnOffsetToC) * 0.7f).rotate(pcOffsetToN, 5f)
@@ -135,9 +135,9 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
 
 
         // 測点
-        if(tri.getMyName_() != "") {
+        if(tri.myName_() != "") {
             writeText(
-                tri.getMyName_(),
+                tri.myName_(),
                 pab.offset(pca, -1.25f),
                 5,
                 textSize2,
@@ -146,7 +146,7 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
                 pab.calcSokAngle( pca, numvector ),
                 1f
             )
-            writeLine( pab.offset(pca, -tri.getMyName_().length*0.5f), pab.offset(pca, -0.25f), 5)
+            writeLine( pab.offset(pca, -tri.myName_().length*0.5f), pab.offset(pca, -0.25f), 5)
         }
     }
 
@@ -156,7 +156,7 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
 
     private fun writeTextNumber(tri: Triangle){
         writeText(
-            tri.getMyNumber_().toString(),
+            tri.myNumber_.toString(),
             tri.pointNumberAutoAligned_,
             5,
             textscale_,
