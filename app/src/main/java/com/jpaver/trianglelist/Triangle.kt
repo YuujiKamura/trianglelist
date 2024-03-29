@@ -288,10 +288,10 @@ class Triangle : EditObject, Cloneable {
             else -> {
                 nodeTriangleA_!!.getPointBySide(pbc)
                 getParentPointByLCR(pbc, lcr)
-                getParentPointByLCR(pbc, lcr).crossOffset(
-                    nodeTriangleA_!!.getPointByBackSide(pbc)!!,
-                    -1.0f
-                )
+                //getParentPointByLCR(pbc, lcr).crossOffset(
+                //    nodeTriangleA_!!.getPointByBackSide(pbc)!!,
+                //    -1.0f
+                //)
             }
         }
     }
@@ -645,6 +645,7 @@ class Triangle : EditObject, Cloneable {
                 angle = parent.angleMpAB
             }
             2 -> { // C
+                point[0] = getParentPointByType(cParam_)
                 parentBC = 2
                 angle = parent.angleMmCA
             }

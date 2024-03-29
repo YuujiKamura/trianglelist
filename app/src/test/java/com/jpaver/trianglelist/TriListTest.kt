@@ -713,7 +713,7 @@ class TriListTest {
         //tri2.setConnectionType( 1, 1, 1, 4f);
         Assert.assertEquals(-5f, tri2.nodeTriangleA_!!.pointAB_.x, 0.0001f)
         Assert.assertEquals(-2.75f, tri2.getParentPointByLCR(1, 1).x, 0.0001f)
-        Assert.assertEquals(-2.5f, tri2.getParentPointByType(1, 0, 1).x, 0.0001f)
+        Assert.assertEquals(-2.75f, tri2.getParentPointByType(1, 0, 1).x, 0.0001f)
         Assert.assertEquals(-2.75f, tri2.getParentPointByType(1, 1, 1).x, 0.0001f)
         Assert.assertEquals(-3.6160f, tri2.getParentPointByType(1, 2, 1).x, 0.0001f)
         Assert.assertEquals(4.3971f, tri2.getParentPointByType(1, 2, 1).y, 0.0001f)
