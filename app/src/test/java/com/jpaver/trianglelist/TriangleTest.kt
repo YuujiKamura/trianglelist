@@ -1,416 +1,361 @@
-package com.jpaver.trianglelist;
+package com.jpaver.trianglelist
 
-
-import org.junit.Test;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import com.jpaver.trianglelist.util.Params;
+import com.jpaver.trianglelist.util.Params
+import org.hamcrest.CoreMatchers
+import org.hamcrest.MatcherAssert
+import org.junit.Assert
+import org.junit.Test
+import kotlin.math.acos
+import kotlin.math.atan2
+import kotlin.math.pow
 
 //@RunWith(PowerMockRunner.class)
 //@PrepareForTest(Log.class)
-public class TriangleTest {
-
+class TriangleTest {
     @Test
-    public void testCalcWeitedMidPoint(){
-        Triangle t345 = new Triangle(3f, 4f, 5f );
-        assertEquals( -2.08f,  t345.getPointNumberAutoAligned_().getX(), 0.01f );
-
-        Triangle t = new Triangle(5f, 5f, 5f );
-        assertEquals( -2.5f,  t.getPointNumberAutoAligned_().getX(), 0.01f );
-
+    fun testCalcWeitedMidPoint() {
+        val t345 = Triangle(3f, 4f, 5f)
+        Assert.assertEquals(-2.08f, t345.pointNumberAutoAligned_.x, 0.01f)
+        val t = Triangle(5f, 5f, 5f)
+        Assert.assertEquals(-2.5f, t.pointNumberAutoAligned_.x, 0.01f)
     }
 
     @Test
-    public void testCompareY(){
+    fun testCompareY() {
         //PowerMockito.mockStatic(Log.class);
 
         //Triangle t = new Triangle(5f, 5f, 5f );
         //assertEquals( 4.33f, t.compareY( 1f, 1f ), 0.01f);
 
         //assertEquals( 0f, t.compareY( -1f, 1f ), 0.01f);
-
-
     }
 
     @Test
-    public void testDistanceHataage(){
+    fun testDistanceHataage() {
         //PowerMockito.mockStatic(Log.class);
-
-        Triangle t = new Triangle(5f, 5f, 5f );
-        Triangle t2 = new Triangle(t,1, 5f, 5f );
-        Triangle t3 = new Triangle(t2,2, 5f, 5f );
-
-        PointXY p = t.hataage( new PointXY(-2.5f, 2f ), 0f, 1f, 1f);
-        assertEquals( 4.33f,  p.getY(), 0.01f );
-
-        p = t.hataage( new PointXY(2.5f, 3f ), 0f, 1f, 1f);
-        assertEquals( 4.33f,  p.getY(), 0.01f );
-
-        p = t.hataage( new PointXY(2.5f, 3f ), 1f, 1f, 1f);
-        assertEquals( 4.33f,  p.getY(), 0.01f );
-
-        p = t.hataage( new PointXY(2.5f, 1f ), 1f, 1f, 1f);
-        assertEquals( 0f,  p.getY(), 0.01f );
-
-
-        PointXY p2 = t2.hataage( new PointXY(2.5f, 1f ), 1f, 1f, 1f);
-        assertEquals( 0f,  p2.getY(), 0.01f );
-
-        PointXY p3 = t3.hataage( new PointXY(2.5f, 5f ), 1f, 1f, 1f);
-        assertEquals( 4.33f,  p3.getY(), 0.01f );
-
+        val t = Triangle(5f, 5f, 5f)
+        val t2 = Triangle(t, 1, 5f, 5f)
+        val t3 = Triangle(t2, 2, 5f, 5f)
+        var p = t.hataage(PointXY(-2.5f, 2f), 0f, 1f, 1f)
+        Assert.assertEquals(4.33f, p.y, 0.01f)
+        p = t.hataage(PointXY(2.5f, 3f), 0f, 1f, 1f)
+        Assert.assertEquals(4.33f, p.y, 0.01f)
+        p = t.hataage(PointXY(2.5f, 3f), 1f, 1f, 1f)
+        Assert.assertEquals(4.33f, p.y, 0.01f)
+        p = t.hataage(PointXY(2.5f, 1f), 1f, 1f, 1f)
+        Assert.assertEquals(0f, p.y, 0.01f)
+        val p2 = t2.hataage(PointXY(2.5f, 1f), 1f, 1f, 1f)
+        Assert.assertEquals(0f, p2.y, 0.01f)
+        val p3 = t3.hataage(PointXY(2.5f, 5f), 1f, 1f, 1f)
+        Assert.assertEquals(4.33f, p3.y, 0.01f)
     }
 
     @Test
-    public void testResetNodeChain(){
-        Triangle t = new Triangle(5f, 5f, 5f );
+    fun testResetNodeChain() {
+        val t = Triangle(5f, 5f, 5f)
 
         //t2.set( t, 1, 6f, 6f,6f, true );
-
-        assertEquals(5f, t.getLengthB(), 0.001f );
+        Assert.assertEquals(5f, t.lengthB, 0.001f)
         //assertEquals(6f, t3.lengthA_, 0.001f );
-
     }
 
     @Test
-    public void testValid(){
-        Triangle t = new Triangle(5f, 5f, 5f );
-        assertTrue(t.isValid());
-
-        Triangle t2 = new Triangle(5f, 5f, 15f );
-        assertFalse(t2.isValid());
-
+    fun testValid() {
+        val t = Triangle(5f, 5f, 5f)
+        Assert.assertTrue(t.isValid())
+        val t2 = Triangle(5f, 5f, 15f)
+        Assert.assertFalse(t2.isValid())
     }
 
     @Test
-    public void testSetPointersFromCParams() {
-        Triangle one = new Triangle( new Params( "", "", 1, 5f, 5f, 5f, -1, -1, new PointXY( 0f, 0f), new PointXY( 0f, 0f) ), 0f );
-        ConnParam connection = new ConnParam( 1, 0, 0, 5f );
-        Triangle two = new Triangle( one, connection, 6f, 6f );
+    fun testSetPointersFromCParams() {
+        val one =
+            Triangle(Params("", "", 1, 5f, 5f, 5f, -1, -1, PointXY(0f, 0f), PointXY(0f, 0f)), 0f)
+        val connection = ConnParam(1, 0, 0, 5f)
+        val two = Triangle(one, connection, 6f, 6f)
 
         // 内容の一致
-        assertEquals( one.myNumber_, two.nodeTriangleA_.myNumber_ );
-        assertEquals( one.nodeTriangleB_.myNumber_, two.myNumber_ );
+        Assert.assertEquals(one.myNumber_.toLong(), two.nodeTriangleA_.myNumber_.toLong())
+        Assert.assertEquals(one.nodeTriangleB_.myNumber_.toLong(), two.myNumber_.toLong())
 
         // オブジェクトポインタの一致。
-        assertEquals( one, two.nodeTriangleA_ );
-        assertEquals( one.nodeTriangleB_, two );
-
-        two.setOn( one, 2, 5f, 5f);
+        Assert.assertEquals(one, two.nodeTriangleA_)
+        Assert.assertEquals(one.nodeTriangleB_, two)
+        two.setOn(one, 2, 5f, 5f)
 
         // オブジェクトポインタの一致。
-        assertEquals( one, two.nodeTriangleA_ );
-        assertEquals( one.nodeTriangleC_, two );
-
+        Assert.assertEquals(one, two.nodeTriangleA_)
+        Assert.assertEquals(one.nodeTriangleC_, two)
     }
 
     @Test
-    public void testSetPointersFromParams() {
-        Triangle one = new Triangle( new Params( "", "", 1, 5f, 5f, 5f, -1, -1, new PointXY( 0f, 0f), new PointXY( 0f, 0f) ), 0f );
-        Triangle two = new Triangle( one, new Params( "", "", 2, 5f, 5f, 5f, 1, 1, new PointXY( 0f, 0f), new PointXY( 0f, 0f) ) );
+    fun testSetPointersFromParams() {
+        val one =
+            Triangle(Params("", "", 1, 5f, 5f, 5f, -1, -1, PointXY(0f, 0f), PointXY(0f, 0f)), 0f)
+        val two =
+            Triangle(one, Params("", "", 2, 5f, 5f, 5f, 1, 1, PointXY(0f, 0f), PointXY(0f, 0f)))
 
         // 内容の一致
-        assertEquals( one.myNumber_, two.nodeTriangleA_.myNumber_ );
-        assertEquals( one.nodeTriangleB_.myNumber_, two.myNumber_ );
+        Assert.assertEquals(one.myNumber_.toLong(), two.nodeTriangleA_.myNumber_.toLong())
+        Assert.assertEquals(one.nodeTriangleB_.myNumber_.toLong(), two.myNumber_.toLong())
 
         // オブジェクトポインタの一致。
-        assertEquals( one, two.nodeTriangleA_ );
-        assertEquals( one.nodeTriangleB_, two );
-
-        two.setOn( one, 2, 5f, 5f);
+        Assert.assertEquals(one, two.nodeTriangleA_)
+        Assert.assertEquals(one.nodeTriangleB_, two)
+        two.setOn(one, 2, 5f, 5f)
 
         // オブジェクトポインタの一致。
-        assertEquals( one, two.nodeTriangleA_ );
-        assertEquals( one.nodeTriangleC_, two );
-
+        Assert.assertEquals(one, two.nodeTriangleA_)
+        Assert.assertEquals(one.nodeTriangleC_, two)
     }
 
     @Test
-    public void testSetObjectPointers(){
-        Triangle one = new Triangle( 5f, 5f,5f, new PointXY(0f,0f), 0f);
-        Triangle two = new Triangle( one, 1, 5f, 5f );
+    fun testSetObjectPointers() {
+        val one = Triangle(5f, 5f, 5f, PointXY(0f, 0f), 0f)
+        val two = Triangle(one, 1, 5f, 5f)
 
         // 内容の一致
-        assertEquals( one.myNumber_, two.nodeTriangleA_.myNumber_ );
-        assertEquals( one.nodeTriangleB_.myNumber_, two.myNumber_ );
+        Assert.assertEquals(one.myNumber_.toLong(), two.nodeTriangleA_.myNumber_.toLong())
+        Assert.assertEquals(one.nodeTriangleB_.myNumber_.toLong(), two.myNumber_.toLong())
 
         // オブジェクトポインタの一致。
-        assertEquals( one, two.nodeTriangleA_ );
-        assertEquals( one.nodeTriangleB_, two );
-
-        two.setOn( one, 2, 5f, 5f);
+        Assert.assertEquals(one, two.nodeTriangleA_)
+        Assert.assertEquals(one.nodeTriangleB_, two)
+        two.setOn(one, 2, 5f, 5f)
 
         // オブジェクトポインタの一致。
-        assertEquals( one, two.nodeTriangleA_ );
-        assertEquals( one.nodeTriangleC_, two );
-
+        Assert.assertEquals(one, two.nodeTriangleA_)
+        Assert.assertEquals(one.nodeTriangleC_, two)
     }
 
     @Test
-    public void testGetArea(){
-        Triangle t = new Triangle(5.71f,9.1f,6.59f);
-        assertEquals(18.74f, t.getArea(), 0.01f);
+    fun testGetArea() {
+        val t = Triangle(5.71f, 9.1f, 6.59f)
+        Assert.assertEquals(18.74f, t.getArea(), 0.01f)
     }
 
     @Test
-    public void testSideEffectInBasicTypes(){
-        Triangle t = new Triangle(5f,5f,5f);
-        int me = 0;
-        me = t.rotateZeroToThree( me );
+    fun testSideEffectInBasicTypes() {
+        val t = Triangle(5f, 5f, 5f)
+        var me = 0
+        me = t.rotateZeroToThree(me)
         // こうやって代入しない限り、meは渡された時点でクローンに代わり、副作用っぽく変化したりしない。
         // オブジェクトは違う。引数として生で渡された時、ポインタとして渡されるので、副作用が起きる。
         // t.sideEffectGo( object.clone ) とかすれば予防できる。
-
-        assertEquals(1, me);
+        Assert.assertEquals(1, me.toLong())
     }
 
     @Test
-    public void testCalcDimAngle() {
-        Triangle tri = new Triangle(5, 5, 5);
-        float angle = tri.point[0].calcAngle(tri.pointAB_,tri.pointBC_);
-        assertEquals( -120f, angle, 0.0001f);
-        assertEquals( -120f, tri.pointBC_.calcAngle(tri.point[0],tri.pointAB_), 0.0001f);
-        assertEquals( -120f, tri.pointAB_.calcAngle(tri.pointBC_,tri.point[0]), 0.0001f);
-}
-
-    @Test
-    public void testDimSideAlign(){
-        Triangle tri1 = new Triangle(3f,4f,5f);
-
-        tri1.rotateDimSideAlign(0);
-        assertEquals(1, tri1.dimSideAlignA_);
-
-        tri1.setDimPoint();
-        assertEquals( -2.325f, tri1.dimPointA_.getX(), 0.001f);
-
-        PointXY dim = new PointXY(-1.5f,0f);
-        PointXY offsetLeft = new PointXY(-3f,0f);
-        PointXY offsetRight = new PointXY(0f,0f);
-
-        float haba = dim.lengthTo(offsetLeft) *0.5f;
-        assertEquals( 0.75f, haba, 0.001f);
-        haba = dim.lengthTo(offsetRight) *0.5f;
-        assertEquals( 0.75f, haba, 0.001f);
-
-        dim = dim.offset(offsetLeft, haba);
-        assertEquals( -2.25f, dim.getX(), 0.001f);
-
-        tri1.rotateDimSideAlign(0);
-        tri1.setDimPoint();
-        assertEquals( -0.67f, tri1.dimPointA_.getX(), 0.01f);
-
-        tri1.flipDimAlignH(0);
-        assertEquals( 1, tri1.myDimAlignA_);
-        tri1.flipDimAlignH(0);
-        assertEquals( 3, tri1.myDimAlignA_);
+    fun testCalcDimAngle() {
+        val tri = Triangle(5f, 5f, 5f)
+        val angle = tri.point[0].calcAngle(tri.pointAB_, tri.pointBC_)
+        Assert.assertEquals(-120f, angle, 0.0001f)
+        Assert.assertEquals(-120f, tri.pointBC_.calcAngle(tri.point[0], tri.pointAB_), 0.0001f)
+        Assert.assertEquals(-120f, tri.pointAB_.calcAngle(tri.pointBC_, tri.point[0]), 0.0001f)
     }
 
     @Test
-    public void testAutoAlignPointNumber2(){
-        Triangle t1 = new Triangle(6.0f,3.5f,3.5f);
-        assertEquals( -3.0f, t1.getPointNumberAutoAligned_().getX(), 0.001f);
-        assertEquals( 118f, t1.getAngleBC(), 0.1f);
-        assertEquals( 1.01f, t1.getPointNumberAutoAligned_().getY(), 0.01f);
+    fun testDimSideAlign() {
+        val tri1 = Triangle(3f, 4f, 5f)
+        tri1.rotateDimSideAlign(0)
+        Assert.assertEquals(1, tri1.dimSideAlignA_.toLong())
+        tri1.setDimPoint()
+        Assert.assertEquals(-2.325f, tri1.dimPointA_.x, 0.001f)
+        var dim = PointXY(-1.5f, 0f)
+        val offsetLeft = PointXY(-3f, 0f)
+        val offsetRight = PointXY(0f, 0f)
+        var haba = dim.lengthTo(offsetLeft) * 0.5f
+        Assert.assertEquals(0.75f, haba, 0.001f)
+        haba = dim.lengthTo(offsetRight) * 0.5f
+        Assert.assertEquals(0.75f, haba, 0.001f)
+        dim = dim.offset(offsetLeft, haba)
+        Assert.assertEquals(-2.25f, dim.x, 0.001f)
+        tri1.rotateDimSideAlign(0)
+        tri1.setDimPoint()
+        Assert.assertEquals(-0.67f, tri1.dimPointA_.x, 0.01f)
+        tri1.flipDimAlignH(0)
+        Assert.assertEquals(1, tri1.myDimAlignA_.toLong())
+        tri1.flipDimAlignH(0)
+        Assert.assertEquals(3, tri1.myDimAlignA_.toLong())
     }
 
     @Test
-    public void testAutoAlignPointNumber(){
-        Triangle t1 = new Triangle(5,5,5);
-        assertEquals( -2.5, t1.getPointNumberAutoAligned_().getX(), 0.001);
-        assertEquals(  1.4433, t1.getPointNumberAutoAligned_().getY(), 0.001);
+    fun testAutoAlignPointNumber2() {
+        val t1 = Triangle(6.0f, 3.5f, 3.5f)
+        Assert.assertEquals(-3.0f, t1.pointNumberAutoAligned_.x, 0.001f)
+        Assert.assertEquals(118f, t1.angleBC, 0.1f)
+        Assert.assertEquals(1.01f, t1.pointNumberAutoAligned_.y, 0.01f)
+    }
 
-        Triangle t2 = new Triangle(5f,1.5f,5f);
+    @Test
+    fun testAutoAlignPointNumber() {
+        val t1 = Triangle(5f, 5f, 5f)
+        Assert.assertEquals(-2.5, t1.pointNumberAutoAligned_.x.toDouble(), 0.001)
+        Assert.assertEquals(1.4433, t1.pointNumberAutoAligned_.y.toDouble(), 0.001)
+        val t2 = Triangle(5f, 1.5f, 5f)
         //t2.setChildSide(1);
-        assertEquals( -4.077f, t2.getPointNumberAutoAligned_().getX(), 0.001f);
-
+        Assert.assertEquals(-4.077f, t2.pointNumberAutoAligned_.x, 0.001f)
     }
 
     @Test
-    public void testConnection(){
-        Triangle t1 = new Triangle(3,4,5);
-
-        Triangle t2 = new Triangle(t1,7,3,5,4); // connection 7 is set to B-Center
-        assertEquals( 3.5f, t2.point[0].getY(), 0.001);
-
-        Triangle t3 = new Triangle(t2,8,3,4,5); // connection 8 is set to C-Center
-        assertEquals( -6.5f, t3.pointAB_.getX(), 0.001);
-
+    fun testConnection() {
+        val t1 = Triangle(3f, 4f, 5f)
+        val t2 = Triangle(t1, 7, 3f, 5f, 4f) // connection 7 is set to B-Center
+        Assert.assertEquals(3.5, t2.point[0].y.toDouble(), 0.001)
+        val t3 = Triangle(t2, 8, 3f, 4f, 5f) // connection 8 is set to C-Center
+        Assert.assertEquals(-6.5, t3.pointAB_.x.toDouble(), 0.001)
     }
 
     @Test
-    public void testTriBounds(){
-        Triangle myT = new Triangle(3,4,5);
-        assertEquals(4f, myT.getMyBP_().getTop(), 0.001f);
-
-        myT.move(new PointXY(5f,5f));
-        assertEquals(9f, myT.getMyBP_().getTop(), 0.001f);
-
-        Params myDParam = new Params( "集水桝", "Box",3,0.8f, 0.8f, 0f,0, 0, new PointXY(0.5f, 0.5f), new PointXY(0f,0f));
-        Deduction myD = new Deduction(myDParam);
-
-        myD.move(new PointXY(5f,5f));
-        assertEquals(5.5f, myD.getPoint().getX(), 0.001f);
-
+    fun testTriBounds() {
+        val myT = Triangle(3f, 4f, 5f)
+        Assert.assertEquals(4f, myT.getMyBP_().top, 0.001f)
+        myT.move(PointXY(5f, 5f))
+        Assert.assertEquals(9f, myT.getMyBP_().top, 0.001f)
+        val myDParam =
+            Params("集水桝", "Box", 3, 0.8f, 0.8f, 0f, 0, 0, PointXY(0.5f, 0.5f), PointXY(0f, 0f))
+        val myD = Deduction(myDParam)
+        myD.move(PointXY(5f, 5f))
+        Assert.assertEquals(5.5f, myD.point.x, 0.001f)
     }
 
     @Test
-    public void testDimPathAndOffset(){
-        Triangle t1 = new Triangle(3,4,5);
+    fun testDimPathAndOffset() {
+        val t1 = Triangle(3f, 4f, 5f)
 
         // 1下 3上 -> // 夾角の、1:外 　3:内
-        assertEquals(3, t1.myDimAlignA_ );//getPath(0).getAlign_());
-        assertEquals(3, t1.myDimAlignB_ );// t1.getPath(1).getAlign_());
-        assertEquals(3, t1.myDimAlignC_ );// t1.getPath(2).getAlign_());
-        assertEquals(3, t1.myDimAlignA_ );//getPath(0).getAlign_());
-        assertEquals(3, t1.myDimAlignB_ );// t1.getPath(1).getAlign_());
-        assertEquals(3, t1.myDimAlignC_ );// t1.getPath(2).getAlign_());
+        Assert.assertEquals(3, t1.myDimAlignA_.toLong()) //getPath(0).getAlign_());
+        Assert.assertEquals(3, t1.myDimAlignB_.toLong()) // t1.getPath(1).getAlign_());
+        Assert.assertEquals(3, t1.myDimAlignC_.toLong()) // t1.getPath(2).getAlign_());
+        Assert.assertEquals(3, t1.myDimAlignA_.toLong()) //getPath(0).getAlign_());
+        Assert.assertEquals(3, t1.myDimAlignB_.toLong()) // t1.getPath(1).getAlign_());
+        Assert.assertEquals(3, t1.myDimAlignC_.toLong()) // t1.getPath(2).getAlign_());
     }
 
     @Test
-    public void testCalcAngleOfLength(){
-        Triangle mytri = new Triangle(3.0f, 4.0f, 5.0f, new PointXY(0,0), 180.0f);
-
-        assertEquals(0f, mytri.point[0].calcDimAngle(mytri.getPointAB_()), 0.001);
-        assertEquals(-1.5, mytri.point[0].calcMidPoint(mytri.getPointAB_()).getX(), 0.01f);
-
+    fun testCalcAngleOfLength() {
+        val mytri = Triangle(3.0f, 4.0f, 5.0f, PointXY(0f, 0f), 180.0f)
+        Assert.assertEquals(0.0, mytri.point[0].calcDimAngle(mytri.getPointAB_()).toDouble(), 0.001)
+        Assert.assertEquals(
+            -1.5,
+            mytri.point[0].calcMidPoint(mytri.getPointAB_()).x.toDouble(),
+            0.01
+        )
     }
 
     @Test
-    public void testSuccess() {
-        Triangle mytri1 = new Triangle(3.0f, 4.0f, 5.0f, new PointXY(0,0), 180.0f);
-        assertThat(mytri1, is(mytri1));
+    fun testSuccess() {
+        val mytri1 = Triangle(3.0f, 4.0f, 5.0f, PointXY(0f, 0f), 180.0f)
+        MatcherAssert.assertThat(mytri1, CoreMatchers.`is`(mytri1))
     }
 
     @Test
-    public void testTrianglePoint(){
-        PointXY myXY0 = new PointXY(0.0f, 0.0f);
-        Triangle myTriangle = new Triangle(3.0f, 4.0f, 5.0f, myXY0, 180.0f);
-        assertEquals(myTriangle.point[0].getX(), myXY0.getX(), 0.001);
-        assertEquals(myTriangle.point[0].getY(), myXY0.getY(), 0.001);
-
-        assertEquals(myTriangle.getPointAB_().getX(), -3.0, 0.001);
-        assertEquals(myTriangle.getPointAB_().getY(), -0.0, 0.001);
-
+    fun testTrianglePoint() {
+        val myXY0 = PointXY(0.0f, 0.0f)
+        val myTriangle = Triangle(3.0f, 4.0f, 5.0f, myXY0, 180.0f)
+        Assert.assertEquals(myTriangle.point[0].x.toDouble(), myXY0.x.toDouble(), 0.001)
+        Assert.assertEquals(myTriangle.point[0].y.toDouble(), myXY0.y.toDouble(), 0.001)
+        Assert.assertEquals(myTriangle.getPointAB_().x.toDouble(), -3.0, 0.001)
+        Assert.assertEquals(myTriangle.getPointAB_().y.toDouble(), -0.0, 0.001)
     }
 
     @Test
-    public void testInvalidTriangle(){
-        Triangle myTriT = new Triangle(3.0f, 4.0f, 5.0f, new PointXY(0f,0f), 180.0f);
-        Triangle myTriT2 = new Triangle(1.111f, 4.0f, 5.0f, new PointXY(0f,0f), 180.0f);
-
-        Triangle myTriF = new Triangle(0.0f, 4.0f, 5.0f, new PointXY(0f,0f), 180.0f);
-        Triangle myTriF2 = new Triangle(0.999f, 4.0f, 5.0f, new PointXY(0f,0f), 180.0f);
-        Triangle myTriF3 = new Triangle(1.0f, 4.0f, 5.0f, new PointXY(0f,0f), 180.0f);
-        Triangle myTriF4 = new Triangle(4.0f, 5.0f, 1.0f, new PointXY(0f,0f), 180.0f);
-        Triangle myTriF5 = new Triangle(4.0f, 1.0f, 5.0f, new PointXY(0f,0f), 180.0f);
-
-
-        assertTrue(myTriT.isValid());
-        assertTrue(myTriT2.isValid());
-
-        assertFalse(myTriF.isValid());
-        assertFalse(myTriF2.isValid());
-        assertFalse(myTriF3.isValid());
-        assertFalse(myTriF4.isValid());
-        assertFalse(myTriF5.isValid());
-
-        TriangleList myList = new TriangleList();
-        assertTrue(myList.add(myTriT, true));
+    fun testInvalidTriangle() {
+        val myTriT = Triangle(3.0f, 4.0f, 5.0f, PointXY(0f, 0f), 180.0f)
+        val myTriT2 = Triangle(1.111f, 4.0f, 5.0f, PointXY(0f, 0f), 180.0f)
+        val myTriF = Triangle(0.0f, 4.0f, 5.0f, PointXY(0f, 0f), 180.0f)
+        val myTriF2 = Triangle(0.999f, 4.0f, 5.0f, PointXY(0f, 0f), 180.0f)
+        val myTriF3 = Triangle(1.0f, 4.0f, 5.0f, PointXY(0f, 0f), 180.0f)
+        val myTriF4 = Triangle(4.0f, 5.0f, 1.0f, PointXY(0f, 0f), 180.0f)
+        val myTriF5 = Triangle(4.0f, 1.0f, 5.0f, PointXY(0f, 0f), 180.0f)
+        Assert.assertTrue(myTriT.isValid())
+        Assert.assertTrue(myTriT2.isValid())
+        Assert.assertFalse(myTriF.isValid())
+        Assert.assertFalse(myTriF2.isValid())
+        Assert.assertFalse(myTriF3.isValid())
+        Assert.assertFalse(myTriF4.isValid())
+        Assert.assertFalse(myTriF5.isValid())
+        val myList = TriangleList()
+        Assert.assertTrue(myList.add(myTriT, true))
         //assertTrue(myList.add(myTriT2));
-        assertFalse(myList.add(myTriF, true));
-        assertFalse(myList.add(myTriF2, true));
-        assertFalse(myList.add(myTriF3, true));
-
+        Assert.assertFalse(myList.add(myTriF, true))
+        Assert.assertFalse(myList.add(myTriF2, true))
+        Assert.assertFalse(myList.add(myTriF3, true))
     }
 
     @Test
-    public void testCalcThetaAlpha(){
-        PointXY pCA = new PointXY(0.0f, 0.0f);
-        Triangle myTriangle = new Triangle(3.0f, 4.0f, 5.0f, pCA, 180.0f);
+    fun testCalcThetaAlpha() {
+        val pCA = PointXY(0.0f, 0.0f)
+        val myTriangle = Triangle(3.0f, 4.0f, 5.0f, pCA, 180.0f)
 
         // atan2( y, x );
-        double theta = Math.atan2(pCA.getY()-myTriangle.getPointAB_().getY(), pCA.getX()-myTriangle.getPointAB_().getX());
-        double alpha = Math.acos(Math.pow(myTriangle.getLengthA(),2)+Math.pow(myTriangle.getLengthB(),2)-Math.pow(myTriangle.getLengthC(),2));
-
-        assertEquals( pCA.getX()-myTriangle.getPointAB_().getX(), 3.0, 0.005);
-        assertEquals( pCA.getY()-myTriangle.getPointAB_().getY(), 0.0, 0.005);
-
-
-        assertEquals(myTriangle.getPointAB_().getX(), -3.0, 0.005);
-        assertEquals(theta, 0.0, 0.005);
-        assertEquals(alpha, 1.570796, 0.005);
-
+        val theta = atan2(
+            (pCA.y - myTriangle.getPointAB_().y).toDouble(),
+            (pCA.x - myTriangle.getPointAB_().x).toDouble()
+        )
+        val alpha = acos(
+            myTriangle.lengthA.pow(2.0f) + myTriangle.lengthB.pow(2.0f) - myTriangle.lengthC.pow(2.0f)
+        )
+        Assert.assertEquals((pCA.x - myTriangle.getPointAB_().x).toDouble(), 3.0, 0.005)
+        Assert.assertEquals((pCA.y - myTriangle.getPointAB_().y).toDouble(), 0.0, 0.005)
+        Assert.assertEquals(myTriangle.getPointAB_().x.toDouble(), -3.0, 0.005)
+        Assert.assertEquals(theta, 0.0, 0.005)
+        Assert.assertEquals(alpha, 1.570796f, 0.005f)
     }
 
     @Test
-    public void testNewCalcPointB_CParam(){
-        Triangle tri1 = new Triangle(3f, 5f, 4f, new PointXY(0f,0f), 0.0f);
-        Triangle tri2 = new Triangle( tri1, 3, 6f, 5f, 4f );
+    fun testNewCalcPointB_CParam() {
+        val tri1 = Triangle(3f, 5f, 4f, PointXY(0f, 0f), 0.0f)
+        val tri2 = Triangle(tri1, 3, 6f, 5f, 4f)
         // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
-        assertTrue(tri1.point[0].equals(0f, 0f));
-        assertTrue(tri1.pointAB_.equals(3f, 0f));
-        assertTrue(tri1.pointBC_.equals(0f, -4f));
-        assertTrue(tri2.point[0].equals(0f, -4f));
-        assertFalse(tri2.pointAB_.equals(3f, 0f));
-        assertFalse(tri2.pointBC_.equals(0f, -4f));
-
-        tri1.calcPoints( tri2, 1 );
-        assertFalse(tri1.point[0].equals(0f, 0f));
-        assertFalse(tri1.pointAB_.equals(3f, 0f));
-        assertFalse(tri1.pointBC_.equals(0f, -4f));
-
+        Assert.assertTrue(tri1.point[0].equals(0f, 0f))
+        Assert.assertTrue(tri1.pointAB_.equals(3f, 0f))
+        Assert.assertTrue(tri1.pointBC_.equals(0f, -4f))
+        Assert.assertTrue(tri2.point[0].equals(0f, -4f))
+        Assert.assertFalse(tri2.pointAB_.equals(3f, 0f))
+        Assert.assertFalse(tri2.pointBC_.equals(0f, -4f))
+        tri1.calcPoints(tri2, 1)
+        Assert.assertFalse(tri1.point[0].equals(0f, 0f))
+        Assert.assertFalse(tri1.pointAB_.equals(3f, 0f))
+        Assert.assertFalse(tri1.pointBC_.equals(0f, -4f))
     }
 
     @Test
-    public void testNewCalcPointC(){
-        Triangle tri1 = new Triangle(3f, 4f, 5f, new PointXY(0f,0f), 0.0f);
-        Triangle tri2 = new Triangle( tri1, 2, 3f, 4f );
-
-        assertTrue(tri1.point[0].equals(0f, 0f));
-        assertTrue(tri1.pointAB_.equals(3f, 0f));
-        assertTrue(tri1.pointBC_.equals(3f, -4f));
-
-        tri1.calcPoints( tri2, 2 );
-        assertTrue(tri1.point[0].equals(0f, 0f));
-        assertTrue(tri1.pointAB_.equals(3f, 0f));
-        assertTrue(tri1.pointBC_.equals(3f, -4f));
-
+    fun testNewCalcPointC() {
+        val tri1 = Triangle(3f, 4f, 5f, PointXY(0f, 0f), 0.0f)
+        val tri2 = Triangle(tri1, 2, 3f, 4f)
+        Assert.assertTrue(tri1.point[0].equals(0f, 0f))
+        Assert.assertTrue(tri1.pointAB_.equals(3f, 0f))
+        Assert.assertTrue(tri1.pointBC_.equals(3f, -4f))
+        tri1.calcPoints(tri2, 2)
+        Assert.assertTrue(tri1.point[0].equals(0f, 0f))
+        Assert.assertTrue(tri1.pointAB_.equals(3f, 0f))
+        Assert.assertTrue(tri1.pointBC_.equals(3f, -4f))
     }
 
     @Test
-    public void testNewCalcPointB(){
-        Triangle tri1 = new Triangle(3f, 5f, 4f, new PointXY(0f,0f), 0.0f);
-        Triangle tri2 = new Triangle( tri1, 1, 4f, 3f );
-
-        assertTrue(tri1.point[0].equals(0f, 0f));
-        assertTrue(tri1.pointAB_.equals(3f, 0f));
-        assertTrue(tri1.pointBC_.equals(0f, -4f));
-
-        tri1.calcPoints( tri2, 1 );
-        assertTrue(tri1.point[0].equals(0f, 0f));
-        assertTrue(tri1.pointAB_.equals(3f, 0f));
-        assertTrue(tri1.pointBC_.equals(0f, -4f));
-
+    fun testNewCalcPointB() {
+        val tri1 = Triangle(3f, 5f, 4f, PointXY(0f, 0f), 0.0f)
+        val tri2 = Triangle(tri1, 1, 4f, 3f)
+        Assert.assertTrue(tri1.point[0].equals(0f, 0f))
+        Assert.assertTrue(tri1.pointAB_.equals(3f, 0f))
+        Assert.assertTrue(tri1.pointBC_.equals(0f, -4f))
+        tri1.calcPoints(tri2, 1)
+        Assert.assertTrue(tri1.point[0].equals(0f, 0f))
+        Assert.assertTrue(tri1.pointAB_.equals(3f, 0f))
+        Assert.assertTrue(tri1.pointBC_.equals(0f, -4f))
     }
 
     @Test
-    public void testCalcPoint(){
-        PointXY myXY0 = new PointXY(0.0f, 0.0f);
-        Triangle myTriangle = new Triangle(3.0f, 4.0f, 5.0f, myXY0, 90.0f);
-
-        assertEquals(myTriangle.getPointAB_().getX(), 0.0, 0.001);
-        assertEquals(myTriangle.getPointAB_().getY(), 3.0, 0.001);
-        assertEquals(myTriangle.getPointBC_().getX(), 4.0, 0.001);
-        assertEquals(myTriangle.getPointBC_().getY(), 3.0, 0.001);
-
-        assertEquals(myTriangle.getAngleCA(), 53.130, 0.001);
-        assertEquals(myTriangle.getAngleAB(), 90.000, 0.001);
-        assertEquals(myTriangle.getAngleBC(), 36.869, 0.001);
-
+    fun testCalcPoint() {
+        val myXY0 = PointXY(0.0f, 0.0f)
+        val myTriangle = Triangle(3.0f, 4.0f, 5.0f, myXY0, 90.0f)
+        Assert.assertEquals(myTriangle.getPointAB_().x.toDouble(), 0.0, 0.001)
+        Assert.assertEquals(myTriangle.getPointAB_().y.toDouble(), 3.0, 0.001)
+        Assert.assertEquals(myTriangle.getPointBC_().x.toDouble(), 4.0, 0.001)
+        Assert.assertEquals(myTriangle.getPointBC_().y.toDouble(), 3.0, 0.001)
+        Assert.assertEquals(myTriangle.angleCA.toDouble(), 53.130, 0.001)
+        Assert.assertEquals(myTriangle.angleAB.toDouble(), 90.000, 0.001)
+        Assert.assertEquals(myTriangle.angleBC.toDouble(), 36.869, 0.001)
     }
 }
