@@ -14,15 +14,15 @@ import org.junit.Test
 class TriListTest {
 
     fun printTriangle( t: Triangle){
-        System.out.printf( "Triangle %s, isfloating %s, isColored %s, pbc %s, color %s, point %s, %s, %s, %s, %s, %s%n", t.myNumber_, t.isFloating_, t.isColored_, t.parentBC, t.color_, t.pointCA_.x, t.pointCA_.y, t.pointAB_.x, t.pointAB_.y, t.pointBC_.x, t.pointBC_.y )
         System.out.printf( t.toString() )
     }
 
     fun printTriList( tl: TriangleList){
-        System.out.printf( "TriangleList size %s%n", tl.size() )
+        System.out.printf( "TriangleList size ${tl.size()}%n" )
         for( i in 0 until tl.size() ){
             printTriangle( tl[i+1] )
         }
+        System.out.printf( "%n" )
     }
 
     private fun printTriListList(listlist: java.util.ArrayList<TriangleList>?) {
@@ -252,6 +252,7 @@ class TriListTest {
     }
 
     @Test
+
     fun testResetFromParamCase3() {
         val trilist = TriangleList()
         trilist.add(Triangle(5f, 5f, 5f), true)
@@ -259,28 +260,28 @@ class TriListTest {
         trilist.add(2, 2, 5f, 5f)
 
         //tri1△
-        assertEquals(4.330f, trilist.get(1).pointBC_.y, 0.001f)
+        assertEquals(4.330f, trilist.get(1).pointBC.y, 0.001f)
         assertEquals(0.000f, trilist.get(1).pointCA_.y, 0.001f)
         //tri2▽ △
         assertEquals(4.330f, trilist.get(2).pointCA_.y, 0.001f)
-        assertEquals(0.000f, trilist.get(2).pointAB_.y, 0.001f)
+        assertEquals(0.000f, trilist.get(2).pointAB.y, 0.001f)
 
         //　ケース３：二重断面中、7:BC、trilist.get(1)：△、(2)：▽△
         trilist.resetFromParam(Params("", "", 2, 6f, 6f, 6f, 1, 7))
         assertEquals(4.763f, trilist.get(2).pointCA_.y, 0.001f)
-        assertEquals(-0.433f, trilist.get(2).pointAB_.y, 0.001f)
+        assertEquals(-0.433f, trilist.get(2).pointAB.y, 0.001f)
 
         //　ケース３：二重断面右、3:BR、trilist.get(1)：△、(2)：▽△
         trilist.resetFromParam(Params("", "", 2, 6f, 6f, 6f, 1, 3))
         assertEquals(4.330f, trilist.get(2).pointCA_.y, 0.001f)
-        assertEquals(-0.866f, trilist.get(2).pointAB_.y, 0.001f)
+        assertEquals(-0.866f, trilist.get(2).pointAB.y, 0.001f)
 
         //　ケース３：二重断面左、4:BL、trilist.get(1)：△、(2)：▽△
         trilist.resetFromParam(Params("", "", 2, 6f, 6f, 6f, 1, 4))
         assertEquals(5.196f, trilist.get(2).pointCA_.y, 0.001f)
-        assertEquals(0.000f, trilist.get(2).pointAB_.y, 0.001f)
+        assertEquals(0.000f, trilist.get(2).pointAB.y, 0.001f)
 
-
+        printTriList(trilist)
     }
 
     @Test
@@ -310,7 +311,7 @@ class TriListTest {
         // ケース１：親番号の書き換え
         trilist.resetFromParam(Params("", "", 3, 5f, 6f, 6f, 1, 2))
         assertEquals(1, trilist.get(3).parentNumber)
-        assertEquals(3, trilist.get(3).myNumber_)
+        assertEquals(3, trilist.get(3).myNumber)
 
     }
 
@@ -390,11 +391,11 @@ class TriListTest {
         tritree.add(3, 2, 5f, 5f, 5f)
         tritree.add(2, 2, 5f, 5f, 5f)
 
-        assertEquals(5f, tritree.get(5).pointBC_.x, 0.001f)
+        assertEquals(5f, tritree.get(5).pointBC.x, 0.001f)
 
         val revtree = tritree.reverse()
 
-        assertEquals(5f, revtree.get(1).pointAB_.x, 0.001f)
+        assertEquals(5f, revtree.get(1).pointAB.x, 0.001f)
 
     }
 
@@ -409,11 +410,11 @@ class TriListTest {
         tritree.add(2, 1, 5f, 5f, 5f)
         tritree.add(2, 2, 5f, 5f, 5f)
 
-        assertEquals(5f, tritree.get(4).pointBC_.x, 0.001f)
+        assertEquals(5f, tritree.get(4).pointBC.x, 0.001f)
 
         val revtree = tritree.reverse()
 
-        assertEquals(5f, revtree.get(1).pointAB_.x, 0.001f)
+        assertEquals(5f, revtree.get(1).pointAB.x, 0.001f)
 
     }
 
@@ -429,22 +430,22 @@ class TriListTest {
 
         // test trilist get(n) is returned number, not index
         // wrapped arraylist get(i). ex, trilist.trilist_.get(i) is required index, not number.
-        assertEquals(1, triList.get(0).myNumber_) // ほんとはおかしいけどスルー
-        assertEquals(1, triList.get(1).myNumber_)
-        assertEquals(2, triList.get(2).myNumber_)
+        assertEquals(1, triList.get(0).myNumber) // ほんとはおかしいけどスルー
+        assertEquals(1, triList.get(1).myNumber)
+        assertEquals(2, triList.get(2).myNumber)
 
         // reverseの動作
         // ・1番から順に、次の三角形の親番号と接続辺を元に、自身の接続を書き換える。
         // ・3辺の順序を右回りか左回りにひとつスライドさせる。
         // ・逆順にソートする
         val triList2 = triList.reverse()
-        assertEquals(1, triList2.get(1).myNumber_)
+        assertEquals(1, triList2.get(1).myNumber)
         assertEquals(0, triList2.get(1).parentNumber)
         assertEquals(-1, triList2.get(2).parentNumber)
 
 
         val triList3 = triList.numbered(5)
-        assertEquals(5, triList3.get(1).myNumber_)
+        assertEquals(5, triList3.get(1).myNumber)
 
     }
 
@@ -500,8 +501,8 @@ class TriListTest {
         val dxfwriter = DxfFileWriter(trilist)
         val tri = trilist.get(1)
         val pca = tri.pointCA_
-        val pab = tri.pointAB_
-        val pbc = tri.pointBC_
+        val pab = tri.pointAB
+        val pbc = tri.pointBC
         val alignVdimA = dxfwriter.alignVByVector(tri.myDimAlignA_, pca, pab)
         val alignVdimB = dxfwriter.alignVByVector(tri.myDimAlignB_, pab, pbc)//flip(tri.myDimAlignB_, tri.dimAngleB_ )
         val alignVdimC = dxfwriter.alignVByVector(tri.myDimAlignC_, pbc, pca)//flip(tri.myDimAlignC_, tri.dimAngleC_ )
@@ -589,8 +590,8 @@ class TriListTest {
 
         Assert.assertEquals(true, trilist.get(1).alreadyHaveChild(2))
         Assert.assertEquals(false, trilist.get(1).alreadyHaveChild(1))
-        Assert.assertEquals(2.5, trilist.get(2).pointBC_.x.toDouble(), 0.001)
-        Assert.assertEquals(3.473, trilist.get(3).pointBC_.x.toDouble(), 0.001)
+        Assert.assertEquals(2.5, trilist.get(2).pointBC.x.toDouble(), 0.001)
+        Assert.assertEquals(3.473, trilist.get(3).pointBC.x.toDouble(), 0.001)
     }
 
     @Test
@@ -671,7 +672,7 @@ class TriListTest {
         val tri2 = Triangle(tri1, 9, 3f, 4f, 5f)// 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
 
         // test float connection
-        Assert.assertEquals(-3f, tri1.pointAB_.x, 0.0001f)
+        Assert.assertEquals(-3f, tri1.pointAB.x, 0.0001f)
 
         Assert.assertEquals(-4f, tri2.pointCA_.x, 0.0001f)
 
@@ -711,7 +712,7 @@ class TriListTest {
         val tri2 = Triangle(tri1, 3, 4f, 5f, 5f)
 
         //tri2.setConnectionType( 1, 1, 1, 4f);
-        Assert.assertEquals(-5f, tri2.nodeTriangleA_!!.pointAB_.x, 0.0001f)
+        Assert.assertEquals(-5f, tri2.nodeTriangleA_!!.pointAB.x, 0.0001f)
         Assert.assertEquals(-2.75f, tri2.getParentPointByLCR(1, 1).x, 0.0001f)
         Assert.assertEquals(-2.75f, tri2.getParentPointByType(1, 0, 1).x, 0.0001f)
         Assert.assertEquals(-2.75f, tri2.getParentPointByType(1, 1, 1).x, 0.0001f)
@@ -731,7 +732,7 @@ class TriListTest {
         Assert.assertEquals(3.8971f, trilist[2].rotateLCR().y, 0.001f)
         trilist.scale(PointXY(0f, 0f), 2f)
         Assert.assertEquals(6.928f, trilist[2].rotateLCR().y, 0.001f)
-        Assert.assertEquals(8.046f, trilist[2].pointBC_.y, 0.001f)
+        Assert.assertEquals(8.046f, trilist[2].pointBC.y, 0.001f)
     }
 
     @Test
@@ -845,7 +846,7 @@ class TriListTest {
         val trilist = TriangleList(tri)
         val tri2 = Triangle(tri, 2, 3f, 4f)
         trilist.add(tri2, true)
-        Assert.assertEquals(4f, tri2.pointBC_.y, 0.001f)
+        Assert.assertEquals(4f, tri2.pointBC.y, 0.001f)
         Assert.assertEquals(2, trilist.isCollide(
             PointXY(
                 -1f,
@@ -868,16 +869,16 @@ class TriListTest {
             PointXY(0f, 0f), 180.0f)
         val t2 = mytri1.clone()
         mytri1.setNumber(10)
-        Assert.assertEquals(10, mytri1.myNumber_.toLong())
-        Assert.assertEquals(1, t2.myNumber_.toLong())
+        Assert.assertEquals(10, mytri1.myNumber.toLong())
+        Assert.assertEquals(1, t2.myNumber.toLong())
         val myTrilist = TriangleList(mytri1)
         myTrilist.add(Triangle(mytri1, 2, 5.0f, 5.0f), true)
         val myTrilist2 = myTrilist.clone()
 
 //        mytri1.setNumber(55);
         myTrilist.getMemberByIndex(2).setNumber(100)
-        Assert.assertEquals(100, myTrilist.getMemberByIndex(2).myNumber_.toLong())
-        Assert.assertEquals(2, myTrilist2.getMemberByIndex(2).myNumber_.toLong())
+        Assert.assertEquals(100, myTrilist.getMemberByIndex(2).myNumber.toLong())
+        Assert.assertEquals(2, myTrilist2.getMemberByIndex(2).myNumber.toLong())
     }
 
     @Test
@@ -899,8 +900,8 @@ class TriListTest {
 
         printTriangle( t2 )
 
-        Assert.assertEquals(3f, t1.pointBC_.y, 0.001f)
-        Assert.assertEquals(7f, t2.pointBC_.y, 0.001f)
+        Assert.assertEquals(3f, t1.pointBC.y, 0.001f)
+        Assert.assertEquals(7f, t2.pointBC.y, 0.001f)
 
         trilist.resetTriangles(1, Triangle(3.0f, 4.0f, 5.0f,
             PointXY(0f, 0f), 180.0f) )
@@ -908,8 +909,8 @@ class TriListTest {
 
         printTriangle( t2 )
 
-        Assert.assertEquals(4f, trilist.get(1).pointBC_.y, 0.001f)
-        Assert.assertEquals(7f, t2.pointBC_.y, 0.001f)
+        Assert.assertEquals(4f, trilist.get(1).pointBC.y, 0.001f)
+        Assert.assertEquals(7f, t2.pointBC.y, 0.001f)
 
 
     }
@@ -963,12 +964,12 @@ class TriListTest {
 
         // 新しい三角形を作って渡すと連動しないので、ポインタを取得してリセットする。
         trilist.resetTriangles(2, trilist.get(2).setOn(trilist.get(1), 2, 5f, 5f))
-        assertEquals(trilist.get(2).pointAB_.x, trilist.get(1).pointBC_.x, 0.001f)
-        assertEquals(trilist.get(2).pointAB_.y, trilist.get(1).pointBC_.y, 0.001f)
+        assertEquals(trilist.get(2).pointAB.x, trilist.get(1).pointBC.x, 0.001f)
+        assertEquals(trilist.get(2).pointAB.y, trilist.get(1).pointBC.y, 0.001f)
 
         trilist.resetFromParam(Params("", "", 2, 2.5f, 5f, 5f, 1, 2))
-        assertEquals(trilist.get(2).pointAB_.x, trilist.get(1).pointBC_.x, 0.001f)
-        assertEquals(trilist.get(2).pointAB_.y, trilist.get(1).pointBC_.y, 0.001f)
+        assertEquals(trilist.get(2).pointAB.x, trilist.get(1).pointBC.x, 0.001f)
+        assertEquals(trilist.get(2).pointAB.y, trilist.get(1).pointBC.y, 0.001f)
 
     }
     @Test
@@ -983,7 +984,7 @@ class TriListTest {
         Assert.assertEquals(2.0f, myTrilist.getMemberByIndex(1).getLengthB(), 0.001f)
         Assert.assertEquals(3.0f, myTrilist.getMemberByIndex(1).getLengthA(), 0.001f)
         Assert.assertEquals(4.0f, myTrilist.getMemberByIndex(3).getLengthA(), 0.001f)
-        Assert.assertEquals(1, myTrilist.getMemberByIndex(1).myNumber_.toLong())
+        Assert.assertEquals(1, myTrilist.getMemberByIndex(1).myNumber.toLong())
         Assert.assertEquals(3, myTrilist.size().toLong())
 
 
@@ -1030,7 +1031,7 @@ class TriListTest {
         Assert.assertEquals(5.0, myTrilist.getMemberByIndex(4).getLengthA().toDouble(), 0.001)
 
         myTrilist.resetTriangles(1, Triangle(myTrilist.getMemberByIndex(1), 2, 5.0f, 5.0f))
-        Assert.assertEquals(2.0, myTrilist.getMemberByIndex(2).myNumber_.toDouble(), 0.001)
+        Assert.assertEquals(2.0, myTrilist.getMemberByIndex(2).myNumber.toDouble(), 0.001)
         Assert.assertEquals(3.0, myTrilist.getMemberByIndex(3).getLengthA().toDouble(), 0.001)
     }
 }

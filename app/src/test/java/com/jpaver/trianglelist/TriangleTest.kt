@@ -90,8 +90,8 @@ class TriangleTest {
         val two = Triangle(one, connection, 6f, 6f)
 
         // 内容の一致
-        Assert.assertEquals(one.myNumber_.toLong(), two.nodeTriangleA_!!.myNumber_.toLong())
-        Assert.assertEquals(one.nodeTriangleB_!!.myNumber_.toLong(), two.myNumber_.toLong())
+        Assert.assertEquals(one.myNumber.toLong(), two.nodeTriangleA_!!.myNumber.toLong())
+        Assert.assertEquals(one.nodeTriangleB_!!.myNumber.toLong(), two.myNumber.toLong())
 
         // オブジェクトポインタの一致。
         Assert.assertEquals(one, two.nodeTriangleA_)
@@ -111,8 +111,8 @@ class TriangleTest {
             Triangle(one, Params("", "", 2, 5f, 5f, 5f, 1, 1, PointXY(0f, 0f), PointXY(0f, 0f)))
 
         // 内容の一致
-        Assert.assertEquals(one.myNumber_.toLong(), two.nodeTriangleA_!!.myNumber_.toLong())
-        Assert.assertEquals(one.nodeTriangleB_!!.myNumber_.toLong(), two.myNumber_.toLong())
+        Assert.assertEquals(one.myNumber.toLong(), two.nodeTriangleA_!!.myNumber.toLong())
+        Assert.assertEquals(one.nodeTriangleB_!!.myNumber.toLong(), two.myNumber.toLong())
 
         // オブジェクトポインタの一致。
         Assert.assertEquals(one, two.nodeTriangleA_)
@@ -130,8 +130,8 @@ class TriangleTest {
         val two = Triangle(one, 1, 5f, 5f)
 
         // 内容の一致
-        Assert.assertEquals(one.myNumber_.toLong(), two.nodeTriangleA_!!.myNumber_.toLong())
-        Assert.assertEquals(one.nodeTriangleB_!!.myNumber_.toLong(), two.myNumber_.toLong())
+        Assert.assertEquals(one.myNumber.toLong(), two.nodeTriangleA_!!.myNumber.toLong())
+        Assert.assertEquals(one.nodeTriangleB_!!.myNumber.toLong(), two.myNumber.toLong())
 
         // オブジェクトポインタの一致。
         Assert.assertEquals(one, two.nodeTriangleA_)
@@ -163,10 +163,10 @@ class TriangleTest {
     @Test
     fun testCalcDimAngle() {
         val tri = Triangle(5f, 5f, 5f)
-        val angle = tri.point[0].calcAngle(tri.pointAB_, tri.pointBC_)
+        val angle = tri.point[0].calcAngle(tri.pointAB, tri.pointBC)
         Assert.assertEquals(-120f, angle, 0.0001f)
-        Assert.assertEquals(-120f, tri.pointBC_.calcAngle(tri.point[0], tri.pointAB_), 0.0001f)
-        Assert.assertEquals(-120f, tri.pointAB_.calcAngle(tri.pointBC_, tri.point[0]), 0.0001f)
+        Assert.assertEquals(-120f, tri.pointBC.calcAngle(tri.point[0], tri.pointAB), 0.0001f)
+        Assert.assertEquals(-120f, tri.pointAB.calcAngle(tri.pointBC, tri.point[0]), 0.0001f)
     }
 
     @Test
@@ -218,7 +218,7 @@ class TriangleTest {
         val t2 = Triangle(t1, 7, 3f, 5f, 4f) // connection 7 is set to B-Center
         Assert.assertEquals(3.5, t2.point[0].y.toDouble(), 0.001)
         val t3 = Triangle(t2, 8, 3f, 4f, 5f) // connection 8 is set to C-Center
-        Assert.assertEquals(-6.5, t3.pointAB_.x.toDouble(), 0.001)
+        Assert.assertEquals(-6.5, t3.pointAB.x.toDouble(), 0.001)
     }
 
     @Test
@@ -324,15 +324,15 @@ class TriangleTest {
         val tri2 = Triangle(tri1, 3, 6f, 5f, 4f)
         // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
         Assert.assertTrue(tri1.point[0].equals(0f, 0f))
-        Assert.assertTrue(tri1.pointAB_.equals(3f, 0f))
-        Assert.assertTrue(tri1.pointBC_.equals(0f, -4f))
+        Assert.assertTrue(tri1.pointAB.equals(3f, 0f))
+        Assert.assertTrue(tri1.pointBC.equals(0f, -4f))
         Assert.assertTrue(tri2.point[0].equals(0f, -4f))
-        Assert.assertFalse(tri2.pointAB_.equals(3f, 0f))
-        Assert.assertFalse(tri2.pointBC_.equals(0f, -4f))
+        Assert.assertFalse(tri2.pointAB.equals(3f, 0f))
+        Assert.assertFalse(tri2.pointBC.equals(0f, -4f))
         tri1.calcPoints(tri2, 1)
         Assert.assertFalse(tri1.point[0].equals(0f, 0f))
-        Assert.assertFalse(tri1.pointAB_.equals(3f, 0f))
-        Assert.assertFalse(tri1.pointBC_.equals(0f, -4f))
+        Assert.assertFalse(tri1.pointAB.equals(3f, 0f))
+        Assert.assertFalse(tri1.pointBC.equals(0f, -4f))
     }
 
     @Test
@@ -340,12 +340,12 @@ class TriangleTest {
         val tri1 = Triangle(3f, 4f, 5f, PointXY(0f, 0f), 0.0f)
         val tri2 = Triangle(tri1, 2, 3f, 4f)
         Assert.assertTrue(tri1.point[0].equals(0f, 0f))
-        Assert.assertTrue(tri1.pointAB_.equals(3f, 0f))
-        Assert.assertTrue(tri1.pointBC_.equals(3f, -4f))
+        Assert.assertTrue(tri1.pointAB.equals(3f, 0f))
+        Assert.assertTrue(tri1.pointBC.equals(3f, -4f))
         tri1.calcPoints(tri2, 2)
         Assert.assertTrue(tri1.point[0].equals(0f, 0f))
-        Assert.assertTrue(tri1.pointAB_.equals(3f, 0f))
-        Assert.assertTrue(tri1.pointBC_.equals(3f, -4f))
+        Assert.assertTrue(tri1.pointAB.equals(3f, 0f))
+        Assert.assertTrue(tri1.pointBC.equals(3f, -4f))
     }
 
     @Test
@@ -353,12 +353,12 @@ class TriangleTest {
         val tri1 = Triangle(3f, 5f, 4f, PointXY(0f, 0f), 0.0f)
         val tri2 = Triangle(tri1, 1, 4f, 3f)
         Assert.assertTrue(tri1.point[0].equals(0f, 0f))
-        Assert.assertTrue(tri1.pointAB_.equals(3f, 0f))
-        Assert.assertTrue(tri1.pointBC_.equals(0f, -4f))
+        Assert.assertTrue(tri1.pointAB.equals(3f, 0f))
+        Assert.assertTrue(tri1.pointBC.equals(0f, -4f))
         tri1.calcPoints(tri2, 1)
         Assert.assertTrue(tri1.point[0].equals(0f, 0f))
-        Assert.assertTrue(tri1.pointAB_.equals(3f, 0f))
-        Assert.assertTrue(tri1.pointBC_.equals(0f, -4f))
+        Assert.assertTrue(tri1.pointAB.equals(3f, 0f))
+        Assert.assertTrue(tri1.pointBC.equals(0f, -4f))
     }
 
     @Test

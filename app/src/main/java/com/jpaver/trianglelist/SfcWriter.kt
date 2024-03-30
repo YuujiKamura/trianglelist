@@ -2,7 +2,6 @@ package com.jpaver.trianglelist
 
 import java.io.BufferedOutputStream
 import java.nio.charset.Charset
-import java.util.*
 
 class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: BufferedOutputStream, filename: String, startnum: Int ): DrawingFileWriter() {
 
@@ -19,16 +18,7 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
     override var centerX_ = sizeX_ * 0.5f
     override var centerY_ = sizeY_ * 0.5f
     val charset = Charset.forName("SJIS")
-    val tsxhalf_ = 0.5f*textscale_
     var circleSize = textscale_ * 0.8f
-
-    fun compare(byteArray: ByteArray ): Boolean{
-        return Arrays.equals( byteArray, strPool_.toByteArray() )
-    }
-
-    fun crcn(){
-        strPool_ +="\r\n"
-    }
 
     fun apnd(str: String ){
         strPool_ += "${str}\r\n"
@@ -142,7 +132,7 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
         val infoStrLength = ded.infoStr.length*textscale_*0.7f
         val point = ded.point
         val pointFlag = ded.pointFlag
-        var textOffsetX = 0f
+        val textOffsetX = 0f
         //if( ded.type == "Box" ) textOffsetX = -500f
 
         if(point.x <= pointFlag.x) {  //ptFlag is RIGHT from pt
@@ -210,27 +200,25 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
         val isVectorRight = p1.vectorTo(p2).side()
         if( num == 1 ){
             if(  isVectorRight >= 0 ) return 2
-            if(  isVectorRight <  0 ) return 8
+            return 8
         }
 
         // 基本は内側。正の時は下2が内、負の時は上8が内。
         if(  isVectorRight >= 0 ) return 8
-        if(  isVectorRight <  0 ) return 2
+        return 2
 
-
-        return num
     }
 
     override fun writeTriangle( tri: Triangle){
         val ts = textscale_
         //val tri = trilist_.get( trinumber )
         val pca = tri.pointCA_
-        val pab = tri.pointAB_
-        val pbc = tri.pointBC_
-        var la = tri.lengthAforce_.formattedString(2)
-        var lb = tri.lengthBforce_.formattedString(2)
-        var lc = tri.lengthCforce_.formattedString(2)
-        var dimA = alignVByVector(tri.myDimAlignA_, pca, pab)
+        val pab = tri.pointAB
+        val pbc = tri.pointBC
+        val la = tri.lengthAforce_.formattedString(2)
+        val lb = tri.lengthBforce_.formattedString(2)
+        val lc = tri.lengthCforce_.formattedString(2)
+        val dimA = alignVByVector(tri.myDimAlignA_, pca, pab)
         val dimB = alignVByVector(tri.myDimAlignB_, pab, pbc)//flip(tri.myDimAlignB_, tri.dimAngleB_ )
         val dimC = alignVByVector(tri.myDimAlignC_, pbc, pca)//flip(tri.myDimAlignC_, tri.dimAngleC_ )
 
@@ -239,7 +227,7 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
         writeLine(pbc, pca, 8)
 
         // DimTexts
-        if(tri.myNumber_ ==1 || tri.parentBC > 2)
+        if(tri.myNumber ==1 || tri.parentBC > 2)
             writeText(la, tri.dimPointA_, 8, ts, dimA, pab.calcDimAngle(pca), 1f)
         writeText(lb, tri.dimPointB_, 8, ts, dimB, pbc.calcDimAngle(pab), 1f)
         writeText(lc, tri.dimPointC_, 8, ts, dimC, pca.calcDimAngle(pbc), 1f)
@@ -249,7 +237,7 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
         val pc = tri.pointCenter_
         // 本体
         writeCircle(pn, circleSize, 4, 1f)
-        writeText(tri.myNumber_.toString(), tri.pointNumberAutoAligned_, 4, ts, 5, 0f, 1f)
+        writeText(tri.myNumber.toString(), tri.pointNumberAutoAligned_, 4, ts, 5, 0f, 1f)
 
         //引き出し矢印線の描画
         if( tri.isCollide(tri.pointNumberAutoAligned_) == false ){
@@ -311,11 +299,11 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
         angle: Float,
         scale: Float
     ) {
-        var aH = alignH - 1
+        val aH = alignH - 1
         var aV = alignV
         if( alignV == 1 ) aV = - 3
         if( alignV == 2 ) aV = 0
-        var aligntenkey = 5 + aH + aV
+        val aligntenkey = 5 + aH + aV
 
         writeText(text, point, color, textsize, aligntenkey, angle, 1f)
 

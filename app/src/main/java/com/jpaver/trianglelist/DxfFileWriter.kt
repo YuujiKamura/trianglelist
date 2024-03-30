@@ -72,8 +72,8 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
     override fun writeTriangle(tri: Triangle){
         // arrange
         val pca = tri.pointCA_
-        val pab = tri.pointAB_
-        val pbc = tri.pointBC_
+        val pab = tri.pointAB
+        val pbc = tri.pointBC
 
         val textSize: Float = textscale_
         val textSize2: Float = textscale_
@@ -101,7 +101,7 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
         writeLine( pbc, pca, 7)
 
         // DimTexts
-        if( tri.myNumber_ == 1 || tri.parentBC > 2)
+        if( tri.myNumber == 1 || tri.parentBC > 2)
             writeTextDimension(tateAlignDimA, nagasaA, tri.dimPointA_, pab.calcDimAngle(pca))
         writeTextDimension(tateAlignDimB, nagasaB, tri.dimPointB_, pbc.calcDimAngle(pab))
         writeTextDimension(tateAlignDImC, nagasaC, tri.dimPointC_, pca.calcDimAngle(pbc))
@@ -156,7 +156,7 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
 
     private fun writeTextNumber(tri: Triangle){
         writeText(
-            tri.myNumber_.toString(),
+            tri.myNumber.toString(),
             tri.pointNumberAutoAligned_,
             5,
             textscale_,
