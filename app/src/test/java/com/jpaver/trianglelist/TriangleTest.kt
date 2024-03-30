@@ -1,6 +1,7 @@
 package com.jpaver.trianglelist
 
 import com.jpaver.trianglelist.util.Params
+import junit.framework.TestCase.assertSame
 import org.hamcrest.CoreMatchers
 import org.hamcrest.MatcherAssert
 import org.junit.Assert
@@ -18,6 +19,20 @@ class TriangleTest {
         Assert.assertEquals(-2.08f, t345.pointNumberAutoAligned_.x, 0.01f)
         val t = Triangle(5f, 5f, 5f)
         Assert.assertEquals(-2.5f, t.pointNumberAutoAligned_.x, 0.01f)
+    }
+
+    @Test
+    fun testSameObjectPropaties(){
+        val triangleA = Triangle() // Triangleのインスタンスを作成
+        val triangleB = Triangle()
+        triangleB.nodeTriangleA_ = triangleA
+
+        // オブジェクトのハッシュコードを表示
+        println("triangleA のハッシュコード: ${triangleA.hashCode()}")
+        println("triangleB.nodeTriangleA のハッシュコード: ${triangleB.nodeTriangleA_.hashCode()}")
+
+        // `nodeTriangleA_` と `parent` が同じオブジェクトを参照しているかテスト
+        assertSame( "BのnodeTriangleA と A は異なるオブジェクトを参照しています。", triangleB.nodeTriangleA_, triangleA )
     }
 
     @Test
