@@ -296,11 +296,7 @@ class PointXY : Cloneable {
     }
 
     fun isCollide(tri: Triangle): Boolean {
-        return isCollide(tri.pointAB_, tri.pointBC_, tri.point[0]) //Inside Triangle
-    }
-
-    fun isCollide(tri: TriangleK): Boolean {
-        return isCollide(tri.point[1], tri.point[2], tri.point[0]) //Inside Triangle
+        return isCollide(tri.pointAB, tri.pointBC, tri.point[0]) //Inside Triangle
     }
 
     fun subtract(point: PointXY): PointXY {

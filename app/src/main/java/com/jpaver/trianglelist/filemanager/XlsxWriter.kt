@@ -110,7 +110,7 @@ class XlsxWriter() {
                 rowBody.createCell(4),
                 rowBody.createCell(5)
             )
-            cells[0].setCellValue( list.get(i+1).myNumber_.toDouble() )
+            cells[0].setCellValue( list.get(i+1).myNumber.toDouble() )
             cells[1].setCellValue( lenAround )
             cells[2].setCellValue( lenBround )
             cells[3].setCellValue( lenCround )

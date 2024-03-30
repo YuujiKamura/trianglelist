@@ -1,13 +1,12 @@
 package com.jpaver.trianglelist
 
-import com.jpaver.trianglelist.PointXY
 import org.junit.Test
 
 class RectangleTest {
 
     @Test
     fun testCalcPoint() {
-        val p0 = PointXY(0.0f, 0.0f)
+        //val p0 = PointXY(0.0f, 0.0f)
         //val rectangle = Rectangle( 3.0f, 4.0f, 5.0f, p0, 90.0f, 0 )
         /*Assert.assertEquals(rectangle.point[1].x, 0.0f, 0.001)
         Assert.assertEquals(rectangle.point[1].y, 3.0f, 0.001)
