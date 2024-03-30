@@ -57,6 +57,13 @@ class Triangle : EditObject, Cloneable {
     var dimPointA_ = PointXY(0f, 0f)
     var dimPointB_ = PointXY(0f, 0f)
     var dimPointC_ = PointXY(0f, 0f)
+    // 三角形の頂点をMapにまとめる
+    var point_dim: MutableMap<Int, PointXY> = mutableMapOf(
+        0 to dimPointA_,
+        1 to dimPointB_,
+        2 to dimPointC_
+    )
+
     var nameAlign_ = 0
     var nameSideAlign_ = 0
     protected var myTheta_ = 0.0
@@ -162,7 +169,7 @@ class Triangle : EditObject, Cloneable {
             b.myNumber = myNumber
             b.parentBC = parentBC
             b.parentNumber = parentNumber
-            b.dimPointA_ = dimPointA_
+            //b.dimPointA_ = dimPointA_
             b.myDimAlignA_ = myDimAlignA_
             b.myDimAlignB_ = myDimAlignB_
             b.myDimAlignC_ = myDimAlignC_
@@ -170,6 +177,7 @@ class Triangle : EditObject, Cloneable {
             b.dimSideAlignB_ = dimSideAlignB_
             b.dimSideAlignC_ = dimSideAlignC_
             //b.point = point.clone()
+            b.point_dim = point_dim.mapValues { (_, value) -> value.clone() } as MutableMap<Int, PointXY>
             b.point[0] = point[0].clone()
             b.pointAB = pointAB.clone()
             b.pointBC = pointBC.clone()
