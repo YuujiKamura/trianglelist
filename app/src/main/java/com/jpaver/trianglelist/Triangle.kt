@@ -96,10 +96,9 @@ class Triangle : EditObject, Cloneable {
     var pathC_: PathAndOffset? = null // = PathAndOffset();
     var pathS_: PathAndOffset? = null // = PathAndOffset();
     var dimH_ = 0f
-    var nodeTriangleA_: Triangle? = null
     var nodeTriangleB_: Triangle? = null
     var nodeTriangleC_: Triangle? = null
-    var parent: Triangle? = nodeTriangleA_
+    var nodeTriangleA_: Triangle? = null
 
     var isChildB_ = false
     var isChildC_ = false
@@ -288,6 +287,7 @@ class Triangle : EditObject, Cloneable {
             else -> {
                 nodeTriangleA_!!.getPointBySide(pbc)
                 getParentPointByLCR(pbc, lcr)
+
                 //getParentPointByLCR(pbc, lcr).crossOffset(
                 //    nodeTriangleA_!!.getPointByBackSide(pbc)!!,
                 //    -1.0f
