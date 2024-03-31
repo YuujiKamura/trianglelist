@@ -145,7 +145,7 @@ class XlsxWriter() {
                 rowBody.createCell(4),
                 rowBody.createCell(5)
             )
-            cells[0].setCellValue( element.getNumNameCount() )
+            cells[0].setCellValue( element.get_number_name_samecount() )
             cells[1].setCellValue( lenXround )
             cells[2].setCellValue( lenYround )
             cells[3].setCellValue( element.typestring )

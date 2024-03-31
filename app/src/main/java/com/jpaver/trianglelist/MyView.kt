@@ -751,7 +751,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         var infoStrLength: Float = str.length * paint.textSize * 0.85f
 
         // boxの時は短くする
-        if(ded.type=="Box") infoStrLength = infoStrLength*0.75f
+        if(ded.type=="Box") infoStrLength = infoStrLength*0.85f
 
         if( isDebug_ == true ){
             val strD = ded.point.x.toString() + " " + ded.point.y.toString()

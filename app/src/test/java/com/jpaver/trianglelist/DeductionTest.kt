@@ -5,6 +5,31 @@ import org.junit.Test
 
 class DeductionTest {
 
+    @Test
+    fun testDedListClone(){
+        val dedlist = DeductionList()
+        dedlist.add( setup_deduction(1) )
+        dedlist.add( setup_deduction(2) )
+
+        val dedlist2 = dedlist.clone()
+
+        compare( dedlist, dedlist2)
+
+    }
+
+    fun setup_deduction(num:Int): Deduction{
+        return Deduction(
+            num,
+            "仕切弁",
+            0.23f,
+            0f,
+            0,
+            "Circle",
+            0f,
+            PointXY(3f, 3f),
+            PointXY(4f, 4f)
+        )
+    }
 
     @Test
     fun testDedLocalPoint() {
@@ -127,9 +152,8 @@ class DeductionTest {
 
         dedlist.add(ded1)
         dedlist.add(ded2)
-        dedlist.add(ded2)
-        assertEquals(3, ded2.sameDedcount)
-        assertEquals("2.仕切弁(3) φ230", ded2.getInfo())
+        assertEquals(1, dedlist.get(2).sameDedcount )
+        assertEquals("2.仕切弁(2) φ230", dedlist.get(2).getInfo() )
 
     }
 

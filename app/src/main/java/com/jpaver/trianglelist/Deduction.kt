@@ -125,6 +125,7 @@ class Deduction(var num: Int = 0,
             b.prb = prb
             b.shapeAngle = shapeAngle
             b.sameDedcount = sameDedcount
+            b.infoStr = infoStr
 
         } catch (e: Exception) {
             e.printStackTrace()
@@ -154,7 +155,8 @@ class Deduction(var num: Int = 0,
     }
 
     fun getInfo(): String{
-        var str = getNumNameCount()
+        var str = get_number_name_samecount()
+
         if(type == "Circle") {
             val faif: Float = lengthX * 1000
             val fai: Int = faif.toInt()
@@ -166,10 +168,16 @@ class Deduction(var num: Int = 0,
         return str
     }
 
-    fun getNumNameCount(): String {
+    fun get_number_name_samecount(): String {
         var str = "$num.$name"
-        if (sameDedcount > 1) str += "(${sameDedcount})"
+        if (sameDedcount > 0) str += "(${sameDedcount+1})"
+
         return str
+    }
+
+    fun setInfo(same_count: Int){
+        sameDedcount = same_count
+        infoStr = getInfo()
     }
 
     fun setNumAndInfo( num_: Int ){
@@ -237,8 +245,8 @@ class Deduction(var num: Int = 0,
     }
 
 
-    fun verify( dp: Params): Boolean{
-        if( name == dp.name && lengthX == dp.a && lengthY == dp.b) return true
+    fun verify( deduction: Deduction): Boolean{
+        if( name == deduction.name && lengthX == deduction.lengthX && lengthY == deduction.lengthY) return true
         return false
     }
 
