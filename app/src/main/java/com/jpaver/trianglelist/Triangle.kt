@@ -25,6 +25,7 @@ class Triangle : EditObject, Cloneable {
         }
         sb.append("connection parameters to0 side${cParam_.side} type${cParam_.type} lcr${cParam_.lcr} \n")
         sb.append("points:${point[0]} ${pointAB} ${pointBC} \n")
+        sb.append("pointDim:${dimpoint[0]} ${dimpoint[1]} ${dimpoint[2]} \n\n")
         sb.append("length:${lengthA_} ${lengthB_} ${lengthC_} \n\n")
         return sb.toString()
     }
@@ -54,15 +55,9 @@ class Triangle : EditObject, Cloneable {
 
     var pointNumberAutoAligned_ = PointXY(0f, 0f)
     var isPointNumberMovedByUser_ = false
-    var dimPointA_ = PointXY(0f, 0f)
-    var dimPointB_ = PointXY(0f, 0f)
-    var dimPointC_ = PointXY(0f, 0f)
-    // 三角形の頂点をMapにまとめる
-    var point_dim: MutableMap<Int, PointXY> = mutableMapOf(
-        0 to dimPointA_,
-        1 to dimPointB_,
-        2 to dimPointC_
-    )
+
+    // 固定長配列の初期化
+    var dimpoint: Array<PointXY> = Array(3) { PointXY(0f, 0f) } // すべての要素を PointXY(0f, 0f) で初期化
 
     var nameAlign_ = 0
     var nameSideAlign_ = 0
@@ -159,6 +154,12 @@ class Triangle : EditObject, Cloneable {
         //myDimAlignC = 0;
     }
 
+    fun cloneArray(from: Array<PointXY>): Array<PointXY> {
+        return Array(from.size) { index ->
+            from[index].clone() // PointXYのcloneメソッドを使用
+        }
+    }
+
     public override fun clone(): Triangle {
         val b = Triangle()
         try {
@@ -169,7 +170,7 @@ class Triangle : EditObject, Cloneable {
             b.myNumber = myNumber
             b.parentBC = parentBC
             b.parentNumber = parentNumber
-            //b.dimPointA_ = dimPointA_
+            b.dimpoint = cloneArray(dimpoint) // 代入だと参照になるので要素ごとにクローン
             b.myDimAlignA_ = myDimAlignA_
             b.myDimAlignB_ = myDimAlignB_
             b.myDimAlignC_ = myDimAlignC_
@@ -177,7 +178,6 @@ class Triangle : EditObject, Cloneable {
             b.dimSideAlignB_ = dimSideAlignB_
             b.dimSideAlignC_ = dimSideAlignC_
             //b.point = point.clone()
-            b.point_dim = point_dim.mapValues { (_, value) -> value.clone() } as MutableMap<Int, PointXY>
             b.point[0] = point[0].clone()
             b.pointAB = pointAB.clone()
             b.pointBC = pointBC.clone()
@@ -376,9 +376,9 @@ class Triangle : EditObject, Cloneable {
         setDimPoint()
         val range = rangeRadius * scale_
         if (tapP.nearBy(pointName_, range)) return 4.also { lastTapSide_ = it }
-        if (tapP.nearBy(dimPointA_, range)) return 0.also { lastTapSide_ = it }
-        if (tapP.nearBy(dimPointB_, range)) return 1.also { lastTapSide_ = it }
-        if (tapP.nearBy(dimPointC_, range)) return 2.also { lastTapSide_ = it }
+        if (tapP.nearBy(dimpoint[0], range)) return 0.also { lastTapSide_ = it }
+        if (tapP.nearBy(dimpoint[1], range)) return 1.also { lastTapSide_ = it }
+        if (tapP.nearBy(dimpoint[2], range)) return 2.also { lastTapSide_ = it }
         return if (tapP.nearBy(pointNumberAutoAligned_, range)) 3.also {
             lastTapSide_ = it
         } else -1.also {
@@ -797,11 +797,11 @@ class Triangle : EditObject, Cloneable {
     }
 
     fun setDimPoint() {
-        dimPointA_ =
+        dimpoint[0] =
             pathA_!!.pointD //dimSideRotation( dimSideAlignA_, point[0].calcMidPoint(pointAB_), pointAB_, point[0]);
-        dimPointB_ =
+        dimpoint[1] =
             pathB_!!.pointD //dimSideRotation( dimSideAlignB_, pointAB_.calcMidPoint(pointBC_), pointBC_, pointAB_);
-        dimPointC_ =
+        dimpoint[2] =
             pathC_!!.pointD //dimSideRotation( dimSideAlignC_, pointBC_.calcMidPoint(point[0]), point[0], pointBC_);
     }
 
@@ -1360,9 +1360,9 @@ class Triangle : EditObject, Cloneable {
         point[0].add(to)
         pointCenter_ = pointCenter_.plus(to)
         pointNumberAutoAligned_ = pointNumberAutoAligned_.plus(to)
-        dimPointA_.add(to)
-        dimPointB_.add(to)
-        dimPointC_.add(to)
+        dimpoint[0].add(to)
+        dimpoint[1].add(to)
+        dimpoint[2].add(to)
         myBP_.left = myBP_.left + to.x
         myBP_.right = myBP_.right + to.x
         myBP_.top = myBP_.top + to.y
@@ -1416,10 +1416,10 @@ class Triangle : EditObject, Cloneable {
             angle = angleMmCA - angleAB
             if (angle < 0) angle += 360f
             if (angle > 360) angle -= 360f
-            pp = dimPointA_.clone()
-            dimPointA_ = dimPointB_
-            dimPointB_ = dimPointC_
-            dimPointC_ = pp.clone()
+            pp = dimpoint[0].clone()
+            dimpoint[0] = dimpoint[1]
+            dimpoint[1] = dimpoint[2]
+            dimpoint[2] = pp.clone()
             pi = myDimAlignA_
             myDimAlignA_ = myDimAlignB_
             myDimAlignB_ = myDimAlignC_
@@ -1449,10 +1449,10 @@ class Triangle : EditObject, Cloneable {
             angle += angleCA + angleBC
             if (angle < 0) angle += 360f
             if (angle > 360) angle -= 360f
-            pp = dimPointA_.clone()
-            dimPointA_ = dimPointC_
-            dimPointC_ = dimPointB_
-            dimPointB_ = pp.clone()
+            pp = dimpoint[0].clone()
+            dimpoint[0] = dimpoint[2]
+            dimpoint[2] = dimpoint[1]
+            dimpoint[1] = pp.clone()
             pi = myDimAlignA_
             myDimAlignA_ = myDimAlignC_
             myDimAlignC_ = myDimAlignB_

@@ -9,10 +9,70 @@ import org.junit.Test
 import kotlin.math.acos
 import kotlin.math.atan2
 import kotlin.math.pow
+import kotlin.reflect.full.memberProperties
 
 //@RunWith(PowerMockRunner.class)
 //@PrepareForTest(Log.class)
 class TriangleTest {
+
+
+    //dimpointの相互干渉を検出するテスト
+    @Test
+    fun testDetectDimCollide(){
+        val triangle = Triangle(1f,3f,3f)
+
+        // 最初の点から他の点への距離のリストを計算
+        val distances = listup_distances(triangle)
+        val list_is_near = check_distances(distances, 1.0f)
+        println("distances: ${distances}")
+        println("distances: ${list_is_near}")
+
+    }
+
+
+    fun check_distances(distances: List<Float>, nearby: Float): List<Boolean> {
+        // 距離が1.0fより小さく、0ではない条件を満たすかどうかでBooleanリストを生成
+        return distances.map { it > 0f && it < nearby }
+    }
+
+    fun listup_distances(triangle: Triangle ): List<Float>{
+        val distances = listup_distance(triangle, 0) + listup_distance(triangle, 1) + listup_distance(triangle, 2)
+        return distances
+    }
+
+    fun listup_distance(triangle: Triangle, index_basepoint: Int): List<Float> {
+        val targets = triangle.dimpoint//.clone().drop(index_basepoint +1 )
+        return triangle.dimpoint[index_basepoint].distancesTo(targets)
+    }
+
+    //とりあえず生成したばかりの三角形にどんなふうにdimPointが入るか確認
+    @Test
+    fun testDimPoint(){
+        val triangle = Triangle(5f,5f,5f)
+        val triangle2 = triangle.clone()
+
+        println("dimpoint: ${triangle.dimpoint.joinToString(separator = ", ")}")
+        println("dimpoint2: ${triangle2.dimpoint.joinToString(separator = ", ")}")
+
+        // オブジェクトのハッシュコードが一致するか？
+        println("triangle のハッシュコード: ${triangle.dimpoint[0].hashCode()}")
+        println("triangle2 のハッシュコード: ${triangle2.dimpoint[0].hashCode()}")
+        println("triangle のハッシュコード: ${triangle.length[0].hashCode()}")
+        //triangle2.length[0] = 3.0f
+        println("triangle2 のハッシュコード: ${triangle2.length[0].hashCode()}")
+        println("triangle のハッシュコード: ${triangle.length.hashCode()}")
+        //triangle2.length[0] = 3.0f
+        println("triangle2 のハッシュコード: ${triangle2.length.hashCode()}")
+
+
+        // Triangleクラスのプロパティをリフレクションを使って取得
+        val properties = triangle::class.memberProperties
+        for (prop in properties) {
+            //println("${prop.name} = ${prop.call(triangle)}")
+        }
+    }
+
+    //三角形の形状によって番号が移動するかテスト
     @Test
     fun testCalcWeitedMidPoint() {
         val t345 = Triangle(3f, 4f, 5f)
@@ -21,28 +81,18 @@ class TriangleTest {
         Assert.assertEquals(-2.5f, t.pointNumberAutoAligned_.x, 0.01f)
     }
 
+    //ノードポインタやオブジェクトが参照を返すのはどんなときか？テスト
     @Test
     fun testSameObjectPropaties(){
-        val triangleA = Triangle() // Triangleのインスタンスを作成
+        val triangleA = Triangle()
         val triangleB = Triangle()
-        triangleB.nodeTriangleA_ = triangleA
+        triangleB.nodeTriangleA_ = triangleA // 参照インスタンス代入
 
-        // オブジェクトのハッシュコードを表示
+        // オブジェクトのハッシュコードが一致するか？
         println("triangleA のハッシュコード: ${triangleA.hashCode()}")
         println("triangleB.nodeTriangleA のハッシュコード: ${triangleB.nodeTriangleA_.hashCode()}")
 
-        // `nodeTriangleA_` と `parent` が同じオブジェクトを参照しているかテスト
         assertSame( "BのnodeTriangleA と A は異なるオブジェクトを参照しています。", triangleB.nodeTriangleA_, triangleA )
-    }
-
-    @Test
-    fun testCompareY() {
-        //PowerMockito.mockStatic(Log.class);
-
-        //Triangle t = new Triangle(5f, 5f, 5f );
-        //assertEquals( 4.33f, t.compareY( 1f, 1f ), 0.01f);
-
-        //assertEquals( 0f, t.compareY( -1f, 1f ), 0.01f);
     }
 
     @Test
@@ -175,7 +225,7 @@ class TriangleTest {
         tri1.rotateDimSideAlign(0)
         Assert.assertEquals(1, tri1.dimSideAlignA_.toLong())
         tri1.setDimPoint()
-        Assert.assertEquals(-2.325f, tri1.dimPointA_.x, 0.001f)
+        Assert.assertEquals(-2.325f, tri1.dimpoint[0].x, 0.001f)
         var dim = PointXY(-1.5f, 0f)
         val offsetLeft = PointXY(-3f, 0f)
         val offsetRight = PointXY(0f, 0f)
@@ -187,7 +237,7 @@ class TriangleTest {
         Assert.assertEquals(-2.25f, dim.x, 0.001f)
         tri1.rotateDimSideAlign(0)
         tri1.setDimPoint()
-        Assert.assertEquals(-0.67f, tri1.dimPointA_.x, 0.01f)
+        Assert.assertEquals(-0.67f, tri1.dimpoint[0].x, 0.01f)
         tri1.flipDimAlignH(0)
         Assert.assertEquals(1, tri1.myDimAlignA_.toLong())
         tri1.flipDimAlignH(0)
