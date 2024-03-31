@@ -11,6 +11,10 @@ import kotlin.math.atan2
 import kotlin.math.pow
 import kotlin.reflect.full.memberProperties
 
+fun compare(target1: Any, target2:Any ){
+    println("target1: ${target1.hashCode()}, ${target1.toString()}")
+    println("target2: ${target2.hashCode()}, ${target1.toString()}")
+}
 //@RunWith(PowerMockRunner.class)
 //@PrepareForTest(Log.class)
 class TriangleTest {
@@ -24,10 +28,7 @@ class TriangleTest {
         compare(triangle.path[0].pointD,triangle2.path[0].pointD)
     }
 
-    fun compare(target1: Any, target2:Any ){
-        println("target1: ${target1.hashCode()}, ${target1.toString()}")
-        println("target2: ${target2.hashCode()}, ${target1.toString()}")
-    }
+
 
     //dimpointの相互干渉を検出するテスト
     @Test

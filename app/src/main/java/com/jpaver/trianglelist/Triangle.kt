@@ -384,7 +384,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
     val dimAlignA: Int
-        get() = calcDimAlignByInnerAngleOf(0)
+        get() = setDimAlignByInnerAngleOf(0)
 
     /*
   if( myAngle <= 90 || getAngle() >= 270 ) {
@@ -396,7 +396,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
       else return myDimAlignA = 3;
   }*/
     val dimAlignB: Int
-        get() = calcDimAlignByInnerAngleOf(1)
+        get() = setDimAlignByInnerAngleOf(1)
 
     /*        if( getAngleMpAB() <= 450f || getAngleMpAB() >= 270f ||
                  getAngleMpAB() <= 90f || getAngleMpAB() >= -90f ) {
@@ -408,7 +408,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
          if( childSide_ == 3 || childSide_ == 4 ) return myDimAlignB = 1;
          return  myDimAlignB = 3;*/
     val dimAlignC: Int
-        get() = calcDimAlignByInnerAngleOf(2)
+        get() = setDimAlignByInnerAngleOf(2)
 
     /*
          if( getAngleMmCA() <= 450f || getAngleMmCA() >= 270f ||
@@ -1159,24 +1159,23 @@ class Triangle : EditObject, Cloneable<Triangle> {
         dimAngleC_ = angleMmCA
     }
 
-    fun calcDimAlignByInnerAngleOf(side: Int): Int {    // 夾角の、1:外 　3:内
+    //endregion calcurator
+
+    //region dimAlign
+    fun setDimAlignByInnerAngleOf(side: Int): Int {    // 夾角の、1:外 　3:内
         // side == 0 の場合の特定の条件で 1 を返す
         if (side == 0 && (parentBC == 9 || parentBC == 10 || parentBC > 2 || nodeTriangleB_ != null || nodeTriangleC_ != null)) {
             return 1
         }
 
         // side == 1 または side == 2 の場合、それぞれ nodeTriangleB_ と nodeTriangleC_ が null でなければ 1 を返す
-        return if (side == 1 && nodeTriangleB_ != null || side == 2 && nodeTriangleC_ != null
-        ) {
+        return if (side == 1 && nodeTriangleB_ != null || side == 2 && nodeTriangleC_ != null) {
             1
         } else 3
 
         // 上記のいずれの条件にも当てはまらない場合は 3 を返す
     }
 
-    //endregion calcurator
-
-    //region dimAlign
     fun check_dimpoint_distances( index_basepoint: Int, nearby: Float = 1.0f): List<Boolean> {
         val targets = this.dimpoint
         val distances = this.dimpoint[index_basepoint].distancesTo(targets)
@@ -1185,9 +1184,9 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
     fun autoSetDimAlign(): Int { // 1:下 3:上
-        myDimAlignA_ = calcDimAlignByInnerAngleOf(0)
-        myDimAlignB_ = calcDimAlignByInnerAngleOf(1)
-        myDimAlignC_ = calcDimAlignByInnerAngleOf(2)
+        myDimAlignA_ = setDimAlignByInnerAngleOf(0)
+        myDimAlignB_ = setDimAlignByInnerAngleOf(1)
+        myDimAlignC_ = setDimAlignByInnerAngleOf(2)
 
         /*
         if(  getAngle() <= 90 || getAngle() >= 270 ) { // 基線の角度が90°～270°の間
@@ -1316,11 +1315,9 @@ class Triangle : EditObject, Cloneable<Triangle> {
     private fun autoAlignPointNumber() {
         if (!isPointNumberMovedByUser_) {
             pointNumberAutoAligned_ = if (getArea() <= 3f && (lengthAforce_ < 1.5f || lengthBforce_ < 1.5f || lengthCforce_ < 1.5f)) {
-                //isPointNumberMoved_ = true; //移動済みに変える,なくても平気？手動で移動させたときのみ？
-                pointUnconnectedSide(pointCenter_, 1f, 1f, PointXY(0f, 0f)).crossOffset(
-                    pointCenter_,
-                    lengthScaledNotConnected
-                )
+                //isPointNumberMovedByUser_ = true; //移動済みに変える,なくても平気？手動で移動させたときのみ？
+                pointUnconnectedSide(pointCenter_, 1f, 1f, PointXY(0f, 0f)).crossOffset(pointCenter_, lengthScaledNotConnected)
+
             } else {
                 weightedMidpoint(25f)
             }
@@ -1340,14 +1337,14 @@ class Triangle : EditObject, Cloneable<Triangle> {
     ): PointXY {
         if (nodeTriangleB_ == null) return ref.mirroredAndScaledPoint(
             pointBC,
-            pointAB,
+            pointBC,
             scaleX,
             scaleY,
             scaleOrigin!!
         )
         return if (nodeTriangleC_ == null) ref.mirroredAndScaledPoint(
-            point[0],
-            pointBC,
+            pointAB,
+            pointAB,
             scaleX,
             scaleY,
             scaleOrigin!!
