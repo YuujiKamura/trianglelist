@@ -3,7 +3,7 @@ package com.jpaver.trianglelist
 import com.jpaver.trianglelist.util.Params
 import java.util.Optional
 
-class TriangleList : EditList, Cloneable {
+class TriangleList : EditList {
     var trilist_: ArrayList<Triangle>
     var trilistStored_: ArrayList<Triangle>
     var myCollisionList: ArrayList<Collision>? = null

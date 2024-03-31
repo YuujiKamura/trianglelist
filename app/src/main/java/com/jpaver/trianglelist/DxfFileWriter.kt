@@ -107,12 +107,12 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
         writeTextDimension(tateAlignDImC, nagasaC, tri.dimpoint[2], pca.calcDimAngle(pbc))
 
         // DimTextの旗上げ
-        val tPathA = tri.pathA_
-        val tPathB = tri.pathB_
-        val tPathC = tri.pathC_
-        if(tPathA!!.alignSide > 2) writeLine( tPathA.pointA, tPathA.pointB, 7)
-        if(tPathB!!.alignSide > 2) writeLine( tPathB.pointA, tPathB.pointB, 7)
-        if(tPathC!!.alignSide > 2) writeLine( tPathC.pointA, tPathC.pointB, 7)
+        val tPathA = tri.path[0]
+        val tPathB = tri.path[1]
+        val tPathC = tri.path[2]
+        if(tPathA.alignSide > 2) writeLine( tPathA.pointA, tPathA.pointB, 7)
+        if(tPathB.alignSide > 2) writeLine( tPathB.pointA, tPathB.pointB, 7)
+        if(tPathC.alignSide > 2) writeLine( tPathC.pointA, tPathC.pointB, 7)
 
 
         // 番号
