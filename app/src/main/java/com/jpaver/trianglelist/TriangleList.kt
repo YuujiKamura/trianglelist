@@ -277,18 +277,20 @@ class TriangleList : EditList {
         }
     }
 
-    fun rotate(bp: PointXY, angle: Float, startnumber: Int, separationFreeMode: Boolean?) {
+    fun rotate(basepoint: PointXY, angle: Float, startnumber: Int, separationFreeMode: Boolean = false, is_recover: Boolean = false ) {
+
         var startindex = startnumber - 1
 
         // 0番からすべて回転させる場合
-        if (!(startnumber > 1 && trilist_[startindex].parentBC >= 9) || !separationFreeMode!!) {
+        if (!(startnumber > 1 && trilist_[startindex].parentBC >= 9) || !separationFreeMode) {
             this.angle += angle
-            basepoint = bp.clone()
+            this.basepoint = basepoint.clone()
             startindex = 0
         }
-        for (i in startindex until trilist_.size) {
-            trilist_[i].rotate(trilist_[startindex].point[0], angle, false)
-            trilist_[i].point_number = trilist_[i].point_number.rotate(basepoint, angle)
+        // 開始インデックス以降の要素に対してのみ処理を行う
+        trilist_.drop(startindex).forEach {
+            it.rotate( basepoint, angle, is_recover )
+            it.point_number = it.point_number.rotate( basepoint, angle )
         }
     }
 
