@@ -1,13 +1,28 @@
 package com.jpaver.trianglelist
+import com.jpaver.trianglelist.util.Cloneable
+
+
 
 class PathAndOffset(
-    private val myScale: Float,
-    p1_: PointXY,
-    p2_: PointXY,
-    align: Int,
-    var alignSide: Int,
-    private var dimH: Float
-) {
+    private var myScale: Float = 1.0f,
+    p1_: PointXY = PointXY(0f,0f),
+    p2_: PointXY = PointXY(0f,0f),
+    align: Int = 1,
+    var alignSide: Int = 1,
+    private var dimH: Float = 0.05f
+) : Cloneable<PathAndOffset>{
+
+    override fun clone(): PathAndOffset {
+        val b = PathAndOffset()
+        b.myScale = myScale
+        b.pointA = pointA.clone()
+        b.pointB = pointB.clone()
+        b.pointD = pointD.clone()
+        b.offsetV = offsetV
+        b.offsetH = offsetH
+        b.textSpacer = textSpacer
+        return b
+    }
 
     var pointA: PointXY
     var pointB: PointXY

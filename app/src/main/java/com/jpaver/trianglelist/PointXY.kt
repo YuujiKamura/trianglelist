@@ -1,6 +1,8 @@
 package com.jpaver.trianglelist
+import com.jpaver.trianglelist.util.Cloneable
+import kotlin.math.acos
 
-class PointXY : Cloneable {
+class PointXY : Cloneable<PointXY> {
      var x: Float
      var y: Float
 
@@ -19,13 +21,14 @@ class PointXY : Cloneable {
         y = p.y
     }
 
-    public override fun clone(): PointXY {
+    override fun clone(): PointXY {
+        val b = PointXY(this.x,this.y)
+
         try {
-            return super.clone() as PointXY
         } catch (e: CloneNotSupportedException) {
             e.printStackTrace()
         }
-        return this
+        return b
     }
 
     private fun validateInputs(lineStart: PointXY, lineEnd: PointXY, scaleX: Float=1f, scaleY: Float=1f ) {
@@ -120,7 +123,7 @@ class PointXY : Cloneable {
     fun calcAngle(p2: PointXY, p3: PointXY): Float {
         val v1 = p2.subtract(this)
         val v2 = p2.subtract(p3)
-        val angleRadian = Math.acos(v1.innerProduct(v2) / (v1.magnitude() * v2.magnitude()))
+        val angleRadian = acos(v1.innerProduct(v2) / (v1.magnitude() * v2.magnitude()))
         val angleDegree = angleRadian * 180 / Math.PI
         return if (v1.outerProduct(v2) > 0) {
             angleDegree.toFloat() - 180
@@ -146,14 +149,14 @@ class PointXY : Cloneable {
     }
 
     fun add(a: PointXY): PointXY {
-        x = x + a.x
-        y = y + a.y
+        x += a.x
+        y += a.y
         return this
     }
 
     fun add(a: Float, b: Float): PointXY {
-        x = x + a
-        y = y + b
+        x += a
+        y += b
         return this
     }
 

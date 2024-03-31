@@ -15,6 +15,19 @@ import kotlin.reflect.full.memberProperties
 //@PrepareForTest(Log.class)
 class TriangleTest {
 
+    //PathAndOffsetはクローンしたらどうなる？
+    @Test
+    fun testClonePathAndOffset(){
+        val triangle = Triangle(1f,3f,3f)
+        val triangle2 = triangle.clone()
+
+        compare(triangle.path[0].pointD,triangle2.path[0].pointD)
+    }
+
+    fun compare(target1: Any, target2:Any ){
+        println("target1: ${target1.hashCode()}, ${target1.toString()}")
+        println("target2: ${target2.hashCode()}, ${target1.toString()}")
+    }
 
     //dimpointの相互干渉を検出するテスト
     @Test
@@ -22,7 +35,7 @@ class TriangleTest {
         val triangle = Triangle(1f,3f,3f)
 
         // 最初の点から他の点への距離のリストを計算
-        val distances = listup_distances(triangle)
+        val distances = listup_dimpoint_distances(triangle)
         val list_is_near = check_distances(distances, 1.0f)
         println("distances: ${distances}")
         println("distances: ${list_is_near}")
@@ -35,13 +48,13 @@ class TriangleTest {
         return distances.map { it > 0f && it < nearby }
     }
 
-    fun listup_distances(triangle: Triangle ): List<Float>{
-        val distances = listup_distance(triangle, 0) + listup_distance(triangle, 1) + listup_distance(triangle, 2)
+    fun listup_dimpoint_distances(triangle: Triangle ): List<Float>{
+        val distances = listup_dimpoint_distances(triangle, 0) + listup_dimpoint_distances(triangle, 1) + listup_dimpoint_distances(triangle, 2)
         return distances
     }
 
-    fun listup_distance(triangle: Triangle, index_basepoint: Int): List<Float> {
-        val targets = triangle.dimpoint//.clone().drop(index_basepoint +1 )
+    fun listup_dimpoint_distances(triangle: Triangle, index_basepoint: Int): List<Float> {
+        val targets = triangle.dimpoint
         return triangle.dimpoint[index_basepoint].distancesTo(targets)
     }
 

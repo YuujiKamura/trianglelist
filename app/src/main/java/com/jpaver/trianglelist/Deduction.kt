@@ -2,6 +2,8 @@ package com.jpaver.trianglelist
 
 import com.jpaver.trianglelist.util.DeductionParams
 import com.jpaver.trianglelist.util.Params
+import com.jpaver.trianglelist.util.Cloneable
+
 import kotlin.math.roundToInt
 
 data class ConnParam(var side: Int, var type: Int, var lcr: Int, var lenA: Float ){
@@ -25,7 +27,7 @@ class Deduction(var num: Int = 0,
                     0f,
                     0f
                 )
-) : EditObject() {
+) : EditObject(), Cloneable<Deduction> {
 
     constructor(ddp: DeductionParams) :this(
         num = ddp.num,
@@ -104,10 +106,9 @@ class Deduction(var num: Int = 0,
         ).rotate(point, shapeAngle)
     }
 
-    public override fun clone(): Deduction {
-        var b = Deduction()
+    override fun clone(): Deduction {
+        val b = Deduction()
         try {
-            b = super.clone() as Deduction
             b.num = num
             b.name = name
             b.lengthX = lengthX

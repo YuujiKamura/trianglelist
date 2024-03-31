@@ -3,7 +3,7 @@ package com.jpaver.trianglelist
 import com.jpaver.trianglelist.util.DeductionParams
 import com.jpaver.trianglelist.util.Params
 
-class DeductionList internal constructor() : EditList(), Cloneable {
+class DeductionList internal constructor() : EditList() {
     var dedlist_ = ArrayList<Deduction>()
     var current = 0
     var lastTapIndex_ = -1

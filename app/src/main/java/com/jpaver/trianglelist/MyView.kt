@@ -18,6 +18,7 @@ import com.jpaver.trianglelist.util.MyScaleGestureListener
 import com.jpaver.trianglelist.util.RotateGestureDetector
 import com.jpaver.trianglelist.util.ScaleGestureCallback
 import com.jpaver.trianglelist.util.ViewTranslateManager
+
 import java.util.*
 import kotlin.math.roundToInt
 
@@ -639,18 +640,18 @@ class MyView(context: Context, attrs: AttributeSet?) :
         tri.pointCA_
         tri.pointAB
         tri.pointBC
-        val tPathA = tri.pathA_
-        val tPathB = tri.pathB_
-        val tPathC = tri.pathC_
+        val tPathA = tri.path[0]
+        val tPathB = tri.path[1]
+        val tPathC = tri.path[2]
         val tPathS = tri.pathS_
 
         var la = tri.sla_ //String type
         var lb = tri.slb_
         var lc = tri.slc_
 
-        tPathA!!.textSpacer = textSpacer_
-        tPathB!!.textSpacer = textSpacer_
-        tPathC!!.textSpacer = textSpacer_
+        tPathA.textSpacer = textSpacer_
+        tPathB.textSpacer = textSpacer_
+        tPathC.textSpacer = textSpacer_
         tPathS!!.textSpacer = textSpacer_
 
         val margin = paintDim.textSize*0.52f

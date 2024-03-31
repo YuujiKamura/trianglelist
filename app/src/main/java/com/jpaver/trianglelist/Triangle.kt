@@ -1,6 +1,9 @@
 package com.jpaver.trianglelist
 
 import com.jpaver.trianglelist.util.Params
+import com.jpaver.trianglelist.util.Cloneable
+import com.jpaver.trianglelist.util.cloneArray
+
 import kotlin.math.acos
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -8,7 +11,7 @@ import kotlin.math.pow
 import kotlin.math.sin
 
 @Suppress("NAME_SHADOWING")
-class Triangle : EditObject, Cloneable {
+class Triangle : EditObject, Cloneable<Triangle> {
     // 各辺に接続されている Triangle オブジェクトの識別子を返す
     override fun toString(): String {
         val connectedTriangles = arrayOfNulls<Triangle>(3) // 各辺に接続された Triangle オブジェクトを保持する配列
@@ -58,7 +61,8 @@ class Triangle : EditObject, Cloneable {
 
     // 固定長配列の初期化
     var dimpoint: Array<PointXY> = Array(3) { PointXY(0f, 0f) } // すべての要素を PointXY(0f, 0f) で初期化
-
+    var path: Array<PathAndOffset> = Array(3) { PathAndOffset() }
+    
     var nameAlign_ = 0
     var nameSideAlign_ = 0
     protected var myTheta_ = 0.0
@@ -91,9 +95,6 @@ class Triangle : EditObject, Cloneable {
     var childSide_ = 0
     var myName_ = ""
     var myBP_ = Bounds(0f, 0f, 0f, 0f)
-    var pathA_: PathAndOffset? = null // = PathAndOffset();
-    var pathB_: PathAndOffset? = null // = PathAndOffset();
-    var pathC_: PathAndOffset? = null // = PathAndOffset();
     var pathS_: PathAndOffset? = null // = PathAndOffset();
     var dimH_ = 0f
     var nodeTriangleB_: Triangle? = null
@@ -154,23 +155,19 @@ class Triangle : EditObject, Cloneable {
         //myDimAlignC = 0;
     }
 
-    fun cloneArray(from: Array<PointXY>): Array<PointXY> {
-        return Array(from.size) { index ->
-            from[index].clone() // PointXYのcloneメソッドを使用
-        }
-    }
-
-    public override fun clone(): Triangle {
+    override fun clone(): Triangle {
         val b = Triangle()
         try {
             b.length = length.copyOf(length.size)
             b.lengthNotSized = lengthNotSized.copyOf(lengthNotSized.size)
+            b.dimpoint = cloneArray(dimpoint) // 代入だと参照になるので要素ごとにクローン
+            b.path = cloneArray( path )
+
             b.angle = angle
             b.myName_ = myName_
             b.myNumber = myNumber
             b.parentBC = parentBC
             b.parentNumber = parentNumber
-            b.dimpoint = cloneArray(dimpoint) // 代入だと参照になるので要素ごとにクローン
             b.myDimAlignA_ = myDimAlignA_
             b.myDimAlignB_ = myDimAlignB_
             b.myDimAlignC_ = myDimAlignC_
@@ -746,9 +743,9 @@ class Triangle : EditObject, Cloneable {
 
     fun setDimPath(ts: Float) {
         dimH_ = ts
-        pathA_ = PathAndOffset(scale_, pointAB, point[0], myDimAlignA_, dimSideAlignA_, dimH_)
-        pathB_ = PathAndOffset(scale_, pointBC, pointAB, myDimAlignB_, dimSideAlignB_, dimH_)
-        pathC_ = PathAndOffset(scale_, point[0], pointBC, myDimAlignC_, dimSideAlignC_, dimH_)
+        path[0] = PathAndOffset(scale_, pointAB, point[0], myDimAlignA_, dimSideAlignA_, dimH_)
+        path[1] = PathAndOffset(scale_, pointBC, pointAB, myDimAlignB_, dimSideAlignB_, dimH_)
+        path[2] = PathAndOffset(scale_, point[0], pointBC, myDimAlignC_, dimSideAlignC_, dimH_)
         pathS_ = PathAndOffset(scale_, pointAB, point[0], 4, 0, dimH_)
 
         //sla_ = formattedString( lengthNotSized[0], 3);
@@ -798,11 +795,11 @@ class Triangle : EditObject, Cloneable {
 
     fun setDimPoint() {
         dimpoint[0] =
-            pathA_!!.pointD //dimSideRotation( dimSideAlignA_, point[0].calcMidPoint(pointAB_), pointAB_, point[0]);
+            path[0].pointD //dimSideRotation( dimSideAlignA_, point[0].calcMidPoint(pointAB_), pointAB_, point[0]);
         dimpoint[1] =
-            pathB_!!.pointD //dimSideRotation( dimSideAlignB_, pointAB_.calcMidPoint(pointBC_), pointBC_, pointAB_);
+            path[1].pointD //dimSideRotation( dimSideAlignB_, pointAB_.calcMidPoint(pointBC_), pointBC_, pointAB_);
         dimpoint[2] =
-            pathC_!!.pointD //dimSideRotation( dimSideAlignC_, pointBC_.calcMidPoint(point[0]), point[0], pointBC_);
+            path[2].pointD //dimSideRotation( dimSideAlignC_, pointBC_.calcMidPoint(point[0]), point[0], pointBC_);
     }
 
     fun setNode(node: Triangle?, side: Int) {
@@ -1180,6 +1177,12 @@ class Triangle : EditObject, Cloneable {
     //endregion calcurator
 
     //region dimAlign
+    fun check_dimpoint_distances( index_basepoint: Int, nearby: Float = 1.0f): List<Boolean> {
+        val targets = this.dimpoint
+        val distances = this.dimpoint[index_basepoint].distancesTo(targets)
+        // 距離が1.0fより小さく、0ではない条件を満たすかどうかでBooleanリストを生成
+        return distances.map { it > 0f && it < nearby }
+    }
 
     fun autoSetDimAlign(): Int { // 1:下 3:上
         myDimAlignA_ = calcDimAlignByInnerAngleOf(0)
@@ -1367,9 +1370,9 @@ class Triangle : EditObject, Cloneable {
         myBP_.right = myBP_.right + to.x
         myBP_.top = myBP_.top + to.y
         myBP_.bottom = myBP_.bottom + to.x
-        pathA_!!.move(to)
-        pathB_!!.move(to)
-        pathC_!!.move(to)
+        path[0].move(to)
+        path[1].move(to)
+        path[2].move(to)
         pathS_!!.move(to)
     }
 
