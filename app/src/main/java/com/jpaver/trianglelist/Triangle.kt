@@ -859,11 +859,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
     fun setBasePoint(pbc: Int, pct: Int, lcr: Int): PointXY {
-        point[0] = getParentPointByType(pbc, pct, lcr)
-        connectionType_ = pct
-        connectionLCR_ = lcr
-        calcPoints(point[0], angle)
-        return point[0]
+        val cParam = ConnParam(pbc, pct, lcr, lengthA_)
+        return setBasePoint(cParam)
     }
 
     fun reset(newTri: Triangle) {
@@ -1314,6 +1311,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     // ということは、ここで自動配置されたものをフラグを立てない状態で保存して、また読み込んだ時にまずくなりそうだったが、またここに来て再計算されるのでOkだった
     private fun autoAlignPointNumber() {
         if (!isPointNumberMovedByUser_) {
+
             point_number = if (getArea() <= 3f && (lengthAforce_ < 1.5f || lengthBforce_ < 1.5f || lengthCforce_ < 1.5f)) {
                 //isPointNumberMovedByUser_ = true; //移動済みに変える,なくても平気？手動で移動させたときのみ？
                 pointUnconnectedSide(pointCenter_, 1f, 1f, PointXY(0f, 0f)).crossOffset(pointCenter_, lengthScaledNotConnected)
@@ -1493,18 +1491,14 @@ class Triangle : EditObject, Cloneable<Triangle> {
         return num
     }
 
-    fun rotate(basepoint: PointXY, addDegree: Float, recover: Boolean) {
+    fun rotate(basepoint: PointXY, addDegree: Float, recover: Boolean = false ) {
         if (parentBC < 9 && recover) return
         if (!recover) angleInLocal_ += addDegree else angleInLocal_ = addDegree
         point[0] = point[0].rotate(basepoint, addDegree)
         angle += addDegree
         calcPoints(point[0], angle)
         setDimPath(dimH_)
-        //setDimAlign();
-        //Log.d("Triangle", "num:" + myNumber_ + "pCA: " + point[0].getX() + " , " + point[0].getY() );
-        //Log.d("Triangle", "num:" + myNumber_ + "pAB: " + point[0].getX() + " , " + point[0].getY() );
-        //Log.d("Triangle", "num:" + myNumber_ + "pBC: " + point[0].getX() + " , " + point[0].getY() );
-        //Log.d("Triangle", "num:" + myNumber_ + "angleInGlobal/Local: " + angleInGlobal_ + " , " + angleInLocal_ );
+
     }
 
     //endregion
