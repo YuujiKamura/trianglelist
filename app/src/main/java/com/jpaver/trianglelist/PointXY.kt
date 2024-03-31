@@ -295,6 +295,11 @@ class PointXY : Cloneable {
         return targets.map { this.lengthTo(it) }
     }
 
+    fun distancesTo(targets: Array<PointXY>): List<Float> {
+        return targets.map { this.lengthTo(it) }
+    }
+
+
     fun isCollide(tri: Triangle): Boolean {
         return isCollide(tri.pointAB, tri.pointBC, tri.point[0]) //Inside Triangle
     }
