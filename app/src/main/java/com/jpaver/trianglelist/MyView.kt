@@ -531,7 +531,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 // region resetview
 
     fun setCenterInModelToLastTappedTriNumber() {
-        centerInModel.set(myTriangleList.getMemberByIndex(lstn()).pointNumberAutoAligned_)
+        centerInModel.set(myTriangleList.getMemberByIndex(lstn()).point_number)
     }
 
     fun resetView( pt: PointXY){
@@ -566,7 +566,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
     }
 
     fun toLastTapTriangle(): PointXY {
-        return myTriangleList.getMemberByIndex(lstn()).pointNumberAutoAligned_
+        return myTriangleList.getMemberByIndex(lstn()).point_number
     }
 
     fun lstn(): Int{
@@ -858,8 +858,8 @@ class MyView(context: Context, attrs: AttributeSet?) :
         paintYellow.style = Paint.Style.STROKE
 
         if( tri.myNumber == myTriangleList.lastTapNumber_ && isPrintPDF_ == false ) canvas.drawCircle(
-            tri.pointNumberAutoAligned_.x,
-            -tri.pointNumberAutoAligned_.y,
+            tri.point_number.x,
+            -tri.point_number.y,
             circleSize,
             paintYellow
         )
@@ -895,8 +895,8 @@ class MyView(context: Context, attrs: AttributeSet?) :
         paint1: Paint,
         paint2: Paint
     ){
-        val pnX = tri.pointNumberAutoAligned_.x
-        val pnY = -tri.pointNumberAutoAligned_.y
+        val pnX = tri.point_number.x
+        val pnY = -tri.point_number.y
         val pnpY = getPaintCenterY(pnY, paint1)
         val areaoffsetY = paint2.textSize *1.3f
         paint2.style = Paint.Style.STROKE
@@ -927,9 +927,9 @@ class MyView(context: Context, attrs: AttributeSet?) :
         canvas.drawText(area, pnX, pnpY - areaoffsetY, paint2)
 
         //引き出し矢印線の描画
-        if( tri.isCollide(tri.pointNumberAutoAligned_) == false ){
+        if( tri.isCollide(tri.point_number) == false ){
             val pc = tri.pointCenter_
-            val pn = tri.pointNumberAutoAligned_
+            val pn = tri.point_number
             val pcOffsetToN = pc//.offset(pn, circleSize * 1.2f )
             val pnOffsetToC = pn.offset(pc, circleSize * 1.1f )
             val arrowTail = pcOffsetToN.offset(pn, pcOffsetToN.lengthTo(pnOffsetToC) * 0.7f).rotate(pcOffsetToN, 10f)

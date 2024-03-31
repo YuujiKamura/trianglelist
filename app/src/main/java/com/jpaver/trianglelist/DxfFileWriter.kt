@@ -116,7 +116,7 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
 
 
         // 番号
-        val pn = tri.pointNumberAutoAligned_
+        val pn = tri.point_number
         val pc = tri.pointCenter_
         val circleSize = textSize *0.85f
         // 本体
@@ -124,7 +124,7 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
         writeTextNumber(tri)
 
         //引き出し矢印線の描画
-        if(!tri.isCollide(tri.pointNumberAutoAligned_)){
+        if(!tri.isCollide(tri.point_number)){
             val pcOffsetToN = pc.offset(pn, circleSize * 0.5f )
             val pnOffsetToC = pn.offset(pc, circleSize * 1.2f )
             val arrowTail = pcOffsetToN.offset(pn, pcOffsetToN.lengthTo(pnOffsetToC) * 0.7f).rotate(pcOffsetToN, 5f)
@@ -157,7 +157,7 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
     private fun writeTextNumber(tri: Triangle){
         writeText(
             tri.myNumber.toString(),
-            tri.pointNumberAutoAligned_,
+            tri.point_number,
             5,
             textscale_,
             1,

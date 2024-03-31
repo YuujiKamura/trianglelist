@@ -288,7 +288,7 @@ class TriangleList : EditList {
         }
         for (i in startindex until trilist_.size) {
             trilist_[i].rotate(trilist_[startindex].point[0], angle, false)
-            trilist_[i].pointNumberAutoAligned_ = trilist_[i].pointNumberAutoAligned_.rotate(basepoint, angle)
+            trilist_[i].point_number = trilist_[i].point_number.rotate(basepoint, angle)
         }
     }
 
@@ -303,8 +303,8 @@ class TriangleList : EditList {
         basepoint = bp.clone()
         for (i in trilist_.indices) {
             trilist_[i].rotate(basepoint, angle - 180, false)
-            if (trilist_[i].isPointNumberMoved == false) trilist_[i].pointNumberAutoAligned_ =
-                trilist_[i].pointNumberAutoAligned_.rotate(basepoint, angle - 180)
+            if (trilist_[i].isPointNumberMoved == false) trilist_[i].point_number =
+                trilist_[i].point_number.rotate(basepoint, angle - 180)
         }
     }
 
@@ -758,7 +758,7 @@ class TriangleList : EditList {
             t.parentNumber,
             t.parentBC,
             t.pointCenter_(),
-            t.pointNumberAutoAligned_
+            t.point_number
         )
     }
 

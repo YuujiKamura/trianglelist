@@ -56,7 +56,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     var pointName_ = PointXY(0f, 0f)
         private set
 
-    var pointNumberAutoAligned_ = PointXY(0f, 0f)
+    var point_number = PointXY(0f, 0f)
     var isPointNumberMovedByUser_ = false
 
     // 固定長配列の初期化
@@ -179,7 +179,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
             b.pointAB = pointAB.clone()
             b.pointBC = pointBC.clone()
             b.pointCenter_ = pointCenter_.clone()
-            b.pointNumberAutoAligned_ = pointNumberAutoAligned_.clone()
+            b.point_number = point_number.clone()
             b.isPointNumberMovedByUser_ = isPointNumberMovedByUser_
             b.myBP_.left = myBP_.left
             b.myBP_.top = myBP_.top
@@ -376,7 +376,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         if (tapP.nearBy(dimpoint[0], range)) return 0.also { lastTapSide_ = it }
         if (tapP.nearBy(dimpoint[1], range)) return 1.also { lastTapSide_ = it }
         if (tapP.nearBy(dimpoint[2], range)) return 2.also { lastTapSide_ = it }
-        return if (tapP.nearBy(pointNumberAutoAligned_, range)) 3.also {
+        return if (tapP.nearBy(point_number, range)) 3.also {
             lastTapSide_ = it
         } else -1.also {
             lastTapSide_ = it
@@ -1283,7 +1283,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
     fun setPointNumberMovedByUser_(p: PointXY) {
-        pointNumberAutoAligned_ = p
+        point_number = p
         isPointNumberMovedByUser_ = true
     }
 
@@ -1314,7 +1314,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     // ということは、ここで自動配置されたものをフラグを立てない状態で保存して、また読み込んだ時にまずくなりそうだったが、またここに来て再計算されるのでOkだった
     private fun autoAlignPointNumber() {
         if (!isPointNumberMovedByUser_) {
-            pointNumberAutoAligned_ = if (getArea() <= 3f && (lengthAforce_ < 1.5f || lengthBforce_ < 1.5f || lengthCforce_ < 1.5f)) {
+            point_number = if (getArea() <= 3f && (lengthAforce_ < 1.5f || lengthBforce_ < 1.5f || lengthCforce_ < 1.5f)) {
                 //isPointNumberMovedByUser_ = true; //移動済みに変える,なくても平気？手動で移動させたときのみ？
                 pointUnconnectedSide(pointCenter_, 1f, 1f, PointXY(0f, 0f)).crossOffset(pointCenter_, lengthScaledNotConnected)
 
@@ -1325,7 +1325,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
     val isPointNumberMoved: Boolean
-        get() = if (pointNumberAutoAligned_ != pointCenter_) true.also {
+        get() = if (point_number != pointCenter_) true.also {
             isPointNumberMovedByUser_ = true
         } else false.also { isPointNumberMovedByUser_ = false }
 
@@ -1359,7 +1359,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         pointBC.add(to)
         point[0].add(to)
         pointCenter_ = pointCenter_.plus(to)
-        pointNumberAutoAligned_ = pointNumberAutoAligned_.plus(to)
+        point_number = point_number.plus(to)
         dimpoint[0].add(to)
         dimpoint[1].add(to)
         dimpoint[2].add(to)
@@ -1379,7 +1379,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         //pointBC_.scale(basepoint, scale);
         point[0].scale(basepoint!!, scale)
         pointCenter_.scale(basepoint, scale)
-        pointNumberAutoAligned_.scale(basepoint, scale)
+        point_number.scale(basepoint, scale)
         length[0] *= scale
         length[1] *= scale
         length[2] *= scale
@@ -1493,10 +1493,10 @@ class Triangle : EditObject, Cloneable<Triangle> {
         return num
     }
 
-    fun rotate(basepoint: PointXY?, addDegree: Float, recover: Boolean) {
+    fun rotate(basepoint: PointXY, addDegree: Float, recover: Boolean) {
         if (parentBC < 9 && recover) return
         if (!recover) angleInLocal_ += addDegree else angleInLocal_ = addDegree
-        point[0] = point[0].rotate(basepoint!!, addDegree)
+        point[0] = point[0].rotate(basepoint, addDegree)
         angle += addDegree
         calcPoints(point[0], angle)
         setDimPath(dimH_)
