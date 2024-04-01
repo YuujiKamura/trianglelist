@@ -51,12 +51,12 @@ class Triangle : EditObject, Cloneable<Triangle> {
         private set
     var pointBC: PointXY = PointXY(0f, 0f)
         private set
-    var pointCenter_ = PointXY(0f, 0f)//autoAlignPointNumber();
+    var pointcenter = PointXY(0f, 0f)//autoAlignPointNumber();
         private set
     var pointName_ = PointXY(0f, 0f)
         private set
 
-    var point_number = PointXY(0f, 0f)
+    var pointnumber = PointXY(0f, 0f)
     var isPointNumberMovedByUser_ = false
 
     // 固定長配列の初期化
@@ -140,7 +140,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         point[0] = PointXY(pCA!!.x, pCA.y)
         pointAB = PointXY(0.0f, 0.0f)
         pointBC = PointXY(0.0f, 0.0f)
-        pointCenter_ = PointXY(0.0f, 0.0f)
+        pointcenter = PointXY(0.0f, 0.0f)
         //this.pointNumber_ = new PointXY(0.0f, 0.0f);
         this.angle = angle
         angleCA = 0f
@@ -175,8 +175,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
             b.point[0] = point[0].clone()
             b.pointAB = pointAB.clone()
             b.pointBC = pointBC.clone()
-            b.pointCenter_ = pointCenter_.clone()
-            b.point_number = point_number.clone()
+            b.pointcenter = pointcenter.clone()
+            b.pointnumber = pointnumber.clone()
             b.isPointNumberMovedByUser_ = isPointNumberMovedByUser_
             b.myBP_.left = myBP_.left
             b.myBP_.top = myBP_.top
@@ -358,7 +358,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
             parentNumber,
             parentBC,
             point[0],
-            pointCenter_
+            pointcenter
         )
     }
 
@@ -373,7 +373,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         if (tapP.nearBy(dimpoint[0], range)) return 0.also { lastTapSide_ = it }
         if (tapP.nearBy(dimpoint[1], range)) return 1.also { lastTapSide_ = it }
         if (tapP.nearBy(dimpoint[2], range)) return 2.also { lastTapSide_ = it }
-        return if (tapP.nearBy(point_number, range)) 3.also {
+        return if (tapP.nearBy(pointnumber, range)) 3.also {
             lastTapSide_ = it
         } else -1.also {
             lastTapSide_ = it
@@ -418,7 +418,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
          if( childSide_ == 5 || childSide_ == 6 ) return myDimAlignC = 1;
          return  myDimAlignC = 3;*/
     fun pointCenter_(): PointXY {
-        return PointXY(pointCenter_)
+        return PointXY(pointcenter)
     }
 
 
@@ -427,7 +427,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         return true
     }
 
-    private fun setMyBound() {
+    private fun setBoundaryBox() {
         val lb: PointXY
         lb = pointAB.min(pointBC)
         myBP_.left = lb.x
@@ -1022,7 +1022,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
     fun expandBoundaries(listBound: Bounds): Bounds {
-        setMyBound()
+        setBoundaryBox()
         val newB = Bounds(myBP_.left, myBP_.top, myBP_.right, myBP_.bottom)
         // 境界を比較し、広い方に置き換える
         if (myBP_.bottom > listBound.bottom) newB.bottom = listBound.bottom
@@ -1035,18 +1035,6 @@ class Triangle : EditObject, Cloneable<Triangle> {
     //endregion node and boundaries
 
     //region calculater
-    fun calculateInternalAngle(p1: PointXY?, p2: PointXY?, p3: PointXY?): Double {
-        val v1 = p1!!.subtract(p2!!)
-        val v2 = p3!!.subtract(p2)
-        val angleRadian = acos(v1.innerProduct(v2) / (v1.magnitude() * v2.magnitude()))
-        return angleRadian * 180 / Math.PI
-    }
-
-    fun calcMyAngles() {
-        angleAB = calculateInternalAngle(point[0], pointAB, pointBC).toFloat()
-        angleBC = calculateInternalAngle(pointAB, pointBC, point[0]).toFloat()
-        angleCA = calculateInternalAngle(pointBC, point[0], pointAB).toFloat()
-    }
 
     fun calcPoints(ref: Triangle?, refside: Int) {
         setNode(ref, refside)
@@ -1091,7 +1079,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         alpha = acos((powlist[0] + powlist[1] - powlist[2]) / (2 * llist[0] * llist[1])).toDouble()
         plist[2]!![(plist[1]!!.x + llist[1] * cos(theta + alpha)).toFloat()] =
             (plist[1]!!.y + llist[1] * sin(theta + alpha)).toFloat()
-        calcMyAngles()
+        calculateInternalAngles()
         if (refside == 1) this.angle = nodeTriangleB_!!.angle - angleCA
         if (refside == 2) this.angle = nodeTriangleC_!!.angle + angleCA
     }
@@ -1101,7 +1089,9 @@ class Triangle : EditObject, Cloneable<Triangle> {
         pointBC = calculatePointBC( basepoint )
         calculateInternalAngles()
         calculatePointCenter()
-        finalizeCalculations()
+        arrangeDims()
+        pointnumber = arrangeNumber(false)
+        setBoundaryBox()
     }
 
     private fun calculatePointBC(basepoint: PointXY): PointXY {
@@ -1122,16 +1112,28 @@ class Triangle : EditObject, Cloneable<Triangle> {
         angleCA = calculateInternalAngle(pointBC, point[0], pointAB).toFloat()
     }
 
-    private fun calculatePointCenter() {
-        pointCenter_[(pointAB.x + pointBC.x + point[0].x) / 3] =
-            (pointAB.y + pointBC.y + point[0].y) / 3
+    fun calculateInternalAngle(p1: PointXY, p2: PointXY, p3: PointXY): Double {
+        val v1 = p1.subtract(p2)
+        val v2 = p3.subtract(p2)
+        val angleRadian = acos(v1.innerProduct(v2) / (v1.magnitude() * v2.magnitude()))
+        return angleRadian * 180 / Math.PI
     }
 
-    private fun finalizeCalculations() {
-        if (!isPointNumberMovedByUser_) {
-            autoAlignPointNumber()
-        }
-        setMyBound()
+    private fun calculatePointCenter() {
+        val averageX = ( pointAB.x + pointBC.x + point[0].x ) / 3
+        val averageY = ( pointAB.y + pointBC.y + point[0].y ) / 3
+        pointcenter = PointXY( averageX, averageY )
+    }
+
+    private fun arrangeNumber(isUse: Boolean = true ): PointXY{
+        if(isPointNumberMovedByUser_) return pointnumber
+        if(!isUse) return pointcenter
+
+        autoAlignPointNumber()
+        return pointnumber
+    }
+
+    private fun arrangeDims() {
         setDimPath(dimH_)
         setDimPoint()
         dimAngleB_ = angleMpAB
@@ -1139,6 +1141,111 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
     //endregion calcurator
+
+    // region pointNumber
+    // parseCSVのTriangleList.recoverStateで、自動配置された旗揚げは一緒に回転させてやる必要があるため、ここでフラグをtrueにすると凄いことになる。
+    // csv保存されたpointNumberはビューの座標で保存されるため、回転に追随させる必要がなく、自動回転されたものと扱いを分けている。
+    // ということは、ここで自動配置されたものをフラグを立てない状態で保存して、また読み込んだ時にまずくなりそうだったが、またここに来て再計算されるのでOkだった
+    private fun autoAlignPointNumber() {
+        if (!isPointNumberMovedByUser_) {
+
+            pointnumber = if (getArea() <= 3f && (lengthAforce_ < 1.5f || lengthBforce_ < 1.5f || lengthCforce_ < 1.5f)) {
+                //isPointNumberMovedByUser_ = true; //移動済みに変える,なくても平気？手動で移動させたときのみ？
+                pointUnconnectedSide(pointcenter, 1f, 1f, PointXY(0f, 0f)).crossOffset(pointcenter, lengthScaledNotConnected)
+
+            } else {
+                weightedMidpoint(25f)
+            }
+        }
+    }
+
+
+    fun setPointNumberMovedByUser_(p: PointXY) {
+        pointnumber = p
+        isPointNumberMovedByUser_ = true
+    }
+
+    fun weightedMidpoint(bias: Float): PointXY {
+
+        // 角度が大きいほど重みを大きくするための調整
+        var weight1 = angleAB + bias // 角度が大きいほど重みが大きくなる
+        var weight2 = angleBC + bias
+        var weight3 = angleCA + bias
+
+        // 重みの合計で正規化
+        val totalWeight = weight1 + weight2 + weight3
+        weight1 /= totalWeight
+        weight2 /= totalWeight
+        weight3 /= totalWeight
+        val p1 = pointAB
+        val p2 = pointBC
+        val p3 = point[0]
+
+        // 重み付き座標の計算
+        val weightedX = p1.x * weight1 + p2.x * weight2 + p3.x * weight3
+        val weightedY = p1.y * weight1 + p2.y * weight2 + p3.y * weight3
+        return PointXY(weightedX, weightedY)
+    }
+
+    val isPointNumberMoved: Boolean
+        get() = if (pointnumber != pointcenter) true.also {
+            isPointNumberMovedByUser_ = true
+        } else false.also { isPointNumberMovedByUser_ = false }
+
+    fun pointUnconnectedSide(
+        ref: PointXY,
+        scaleX: Float,
+        scaleY: Float,
+        scaleOrigin: PointXY?
+    ): PointXY {
+        if (nodeTriangleB_ == null) return ref.mirroredAndScaledPoint(
+            pointBC,
+            pointBC,
+            scaleX,
+            scaleY,
+            scaleOrigin!!
+        )
+        return if (nodeTriangleC_ == null) ref.mirroredAndScaledPoint(
+            pointAB,
+            pointAB,
+            scaleX,
+            scaleY,
+            scaleOrigin!!
+        ) else weightedMidpoint(-35f)
+    }
+
+    //endregion pointNumber
+
+    //region old hataage method
+    fun hataage(p: PointXY, offset: Float, axisY: Float, number: Float): PointXY {
+        val distanceFromCenter = p.y - pointcenter.y * axisY
+        var direction = 1f
+        if (distanceFromCenter < 0) direction = -1f
+        val hataage = p.clone()
+        val compareY = compareY(direction, axisY)
+        hataage[p.x] = p.y + (compareY - p.y) + offset * direction * (dedcount * number)
+
+        //Log.d("Triangle Deduction", "p.getY: " + p.getY() + " , pointCenterY: " + pointCenter_.getY()+ " , axisY: " + axisY );
+        //Log.d("Triangle Deduction", "DistanceFromCenter: " + distanceFromCenter + " , direction: " + direction );
+        //Log.d("Triangle Deduction", "compareY: " + compareY + " , hataage.y: " + hataage.getY() );
+        return hataage
+    }
+    fun compareY(direction: Float, axisY: Float): Float {
+        val pCAy = point[0].y * axisY
+        val pABy = pointAB.y * axisY
+        val pBCy = pointBC.y * axisY
+        //Log.d("Triangle Deduction", "pCAy: " + pCAy + " , pABy: " + pABy + " , pBCy: " + pBCy );
+        var Y = pCAy
+        if (direction == -1f) {
+            if (Y > pABy) Y = pABy
+            if (Y > pBCy) Y = pBCy
+        } else if (direction == 1f) {
+            if (Y <= pABy) Y = pABy
+            if (Y <= pBCy) Y = pBCy
+        }
+        return Y
+    }
+    //endregion old hataage method
 
     //region dimAlign
     fun setDimAlignByInnerAngleOf(side: Int): Int {    // 夾角の、1:外 　3:内
@@ -1231,115 +1338,14 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
     //endregion dimalign
 
-    // region pointNumber
-    fun hataage(p: PointXY, offset: Float, axisY: Float, number: Float): PointXY {
-        val distanceFromCenter = p.y - pointCenter_.y * axisY
-        var direction = 1f
-        if (distanceFromCenter < 0) direction = -1f
-        val hataage = p.clone()
-        val compareY = compareY(direction, axisY)
-        hataage[p.x] = p.y + (compareY - p.y) + offset * direction * (dedcount * number)
-
-        //Log.d("Triangle Deduction", "p.getY: " + p.getY() + " , pointCenterY: " + pointCenter_.getY()+ " , axisY: " + axisY );
-        //Log.d("Triangle Deduction", "DistanceFromCenter: " + distanceFromCenter + " , direction: " + direction );
-        //Log.d("Triangle Deduction", "compareY: " + compareY + " , hataage.y: " + hataage.getY() );
-        return hataage
-    }
-    fun compareY(direction: Float, axisY: Float): Float {
-        val pCAy = point[0].y * axisY
-        val pABy = pointAB.y * axisY
-        val pBCy = pointBC.y * axisY
-        //Log.d("Triangle Deduction", "pCAy: " + pCAy + " , pABy: " + pABy + " , pBCy: " + pBCy );
-        var Y = pCAy
-        if (direction == -1f) {
-            if (Y > pABy) Y = pABy
-            if (Y > pBCy) Y = pBCy
-        } else if (direction == 1f) {
-            if (Y <= pABy) Y = pABy
-            if (Y <= pBCy) Y = pBCy
-        }
-        return Y
-    }
-
-    fun setPointNumberMovedByUser_(p: PointXY) {
-        point_number = p
-        isPointNumberMovedByUser_ = true
-    }
-
-    fun weightedMidpoint(bias: Float): PointXY {
-
-        // 角度が大きいほど重みを大きくするための調整
-        var weight1 = angleAB + bias // 角度が大きいほど重みが大きくなる
-        var weight2 = angleBC + bias
-        var weight3 = angleCA + bias
-
-        // 重みの合計で正規化
-        val totalWeight = weight1 + weight2 + weight3
-        weight1 /= totalWeight
-        weight2 /= totalWeight
-        weight3 /= totalWeight
-        val p1 = pointAB
-        val p2 = pointBC
-        val p3 = point[0]
-
-        // 重み付き座標の計算
-        val weightedX = p1.x * weight1 + p2.x * weight2 + p3.x * weight3
-        val weightedY = p1.y * weight1 + p2.y * weight2 + p3.y * weight3
-        return PointXY(weightedX, weightedY)
-    }
-
-    // parseCSVのTriangleList.recoverStateで、自動配置された旗揚げは一緒に回転させてやる必要があるため、ここでフラグをtrueにすると凄いことになる。
-    // csv保存されたpointNumberはビューの座標で保存されるため、回転に追随させる必要がなく、自動回転されたものと扱いを分けている。
-    // ということは、ここで自動配置されたものをフラグを立てない状態で保存して、また読み込んだ時にまずくなりそうだったが、またここに来て再計算されるのでOkだった
-    private fun autoAlignPointNumber() {
-        if (!isPointNumberMovedByUser_) {
-
-            point_number = if (getArea() <= 3f && (lengthAforce_ < 1.5f || lengthBforce_ < 1.5f || lengthCforce_ < 1.5f)) {
-                //isPointNumberMovedByUser_ = true; //移動済みに変える,なくても平気？手動で移動させたときのみ？
-                pointUnconnectedSide(pointCenter_, 1f, 1f, PointXY(0f, 0f)).crossOffset(pointCenter_, lengthScaledNotConnected)
-
-            } else {
-                weightedMidpoint(25f)
-            }
-        }
-    }
-
-    val isPointNumberMoved: Boolean
-        get() = if (point_number != pointCenter_) true.also {
-            isPointNumberMovedByUser_ = true
-        } else false.also { isPointNumberMovedByUser_ = false }
-
-    fun pointUnconnectedSide(
-        ref: PointXY,
-        scaleX: Float,
-        scaleY: Float,
-        scaleOrigin: PointXY?
-    ): PointXY {
-        if (nodeTriangleB_ == null) return ref.mirroredAndScaledPoint(
-            pointBC,
-            pointBC,
-            scaleX,
-            scaleY,
-            scaleOrigin!!
-        )
-        return if (nodeTriangleC_ == null) ref.mirroredAndScaledPoint(
-            pointAB,
-            pointAB,
-            scaleX,
-            scaleY,
-            scaleOrigin!!
-        ) else weightedMidpoint(-35f)
-    }
-
-    //endregion pointNumber
 
     //region translate and scale
     fun move(to: PointXY) {
         pointAB.add(to)
         pointBC.add(to)
         point[0].add(to)
-        pointCenter_ = pointCenter_.plus(to)
-        point_number = point_number.plus(to)
+        pointcenter = pointcenter.plus(to)
+        pointnumber = pointnumber.plus(to)
         dimpoint[0].add(to)
         dimpoint[1].add(to)
         dimpoint[2].add(to)
@@ -1358,8 +1364,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
         //pointAB_.scale(basepoint, scale);
         //pointBC_.scale(basepoint, scale);
         point[0].scale(basepoint!!, scale)
-        pointCenter_.scale(basepoint, scale)
-        point_number.scale(basepoint, scale)
+        pointcenter.scale(basepoint, scale)
+        pointnumber.scale(basepoint, scale)
         length[0] *= scale
         length[1] *= scale
         length[2] *= scale

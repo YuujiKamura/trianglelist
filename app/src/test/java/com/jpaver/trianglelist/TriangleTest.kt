@@ -90,9 +90,9 @@ class TriangleTest {
     @Test
     fun testCalcWeitedMidPoint() {
         val t345 = Triangle(3f, 4f, 5f)
-        Assert.assertEquals(-2.08f, t345.point_number.x, 0.01f)
+        Assert.assertEquals(-2.08f, t345.pointnumber.x, 0.01f)
         val t = Triangle(5f, 5f, 5f)
-        Assert.assertEquals(-2.5f, t.point_number.x, 0.01f)
+        Assert.assertEquals(-2.5f, t.pointnumber.x, 0.01f)
     }
 
     //ノードポインタやオブジェクトが参照を返すのはどんなときか？テスト
@@ -261,19 +261,19 @@ class TriangleTest {
     @Test
     fun testAutoAlignPointNumber2() {
         val t1 = Triangle(6.0f, 3.5f, 3.5f)
-        Assert.assertEquals(-3.0f, t1.point_number.x, 0.001f)
+        Assert.assertEquals(-3.0f, t1.pointnumber.x, 0.001f)
         Assert.assertEquals(118f, t1.angleBC, 0.1f)
-        Assert.assertEquals(1.01f, t1.point_number.y, 0.01f)
+        Assert.assertEquals(1.01f, t1.pointnumber.y, 0.01f)
     }
 
     @Test
     fun testAutoAlignPointNumber() {
         val t1 = Triangle(5f, 5f, 5f)
-        Assert.assertEquals(-2.5, t1.point_number.x.toDouble(), 0.001)
-        Assert.assertEquals(1.4433, t1.point_number.y.toDouble(), 0.001)
+        Assert.assertEquals(-2.5, t1.pointnumber.x.toDouble(), 0.001)
+        Assert.assertEquals(1.4433, t1.pointnumber.y.toDouble(), 0.001)
         val t2 = Triangle(5f, 1.5f, 5f)
         //t2.setChildSide(1);
-        Assert.assertEquals(-4.077f, t2.point_number.x, 0.001f)
+        Assert.assertEquals(-4.077f, t2.pointnumber.x, 0.001f)
     }
 
     @Test

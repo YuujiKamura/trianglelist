@@ -1667,8 +1667,8 @@ class MainActivity : AppCompatActivity(),
                     0f,
                     0f
                 ), 1 / mScale, -1 / mScale)
-            if( tp.lengthTo(tri.pointCenter_) < 10f ){ // あまり遠い時はスルー
-                tri.point_number = tp
+            if( tp.lengthTo(tri.pointcenter) < 10f ){ // あまり遠い時はスルー
+                tri.pointnumber = tp
                 tri.isPointNumberMovedByUser_ = true
                 myview.setTriangleList(myTriangleList, mScale, false)
             }
@@ -2719,7 +2719,7 @@ class MainActivity : AppCompatActivity(),
             // 三角形リストのデータをCSVファイルに書き込み
             for (index in 1..myTriangleList.size()) {
                 val mt: Triangle = myTriangleList.getMemberByIndex(index)
-                val pt: PointXY = mt.point_number
+                val pt: PointXY = mt.pointnumber
                 val cp = parentBCtoCParam(mt.parentBC, mt.lengthNotSized[0], mt.cParam_)
 
                 writer.write("${mt.myNumber},${mt.getLengthA()},${mt.getLengthB()},${mt.getLengthC()},${mt.parentNumber},${mt.parentBC},${mt.myName_()},${pt.x},${pt.y},${mt.isPointNumberMovedByUser_},${mt.color_},${mt.dimSideAlignA_},${mt.dimSideAlignB_},${mt.dimSideAlignC_},${mt.myDimAlignA_},${mt.myDimAlignB_},${mt.myDimAlignC_},${cp.side},${cp.type},${cp.lcr},${mt.isChangeDimAlignB_},${mt.isChangeDimAlignC_},${mt.angle},${mt.pointCA_.x},${mt.pointCA_.y},${mt.angleInLocal_}")
