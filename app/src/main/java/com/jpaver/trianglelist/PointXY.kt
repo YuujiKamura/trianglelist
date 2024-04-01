@@ -189,6 +189,15 @@ class PointXY : Cloneable<PointXY> {
         return PointXY(itsScaled).add(this)
     }
 
+    fun offset(distance: Float, angle: Float): PointXY {
+        return this + toVector(angle).scale(distance)
+    }
+
+    fun toVector(angle: Float): PointXY{
+        val angleInRadians = Math.toRadians(angle.toDouble())
+        return PointXY(Math.cos(angleInRadians).toFloat(), Math.sin(angleInRadians).toFloat())
+    }
+
     // 直交方向へのオフセット p2 is base line, p3 is cross vector align
     fun crossOffset(p2: PointXY, movement: Float): PointXY {
         //PointXY normalizedVector = vectorTo(p2).normalize();
