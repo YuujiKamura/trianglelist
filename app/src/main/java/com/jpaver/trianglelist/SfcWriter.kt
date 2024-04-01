@@ -233,14 +233,14 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
         writeText(lc, tri.dimpoint[2], 8, ts, dimC, pca.calcDimAngle(pbc), 1f)
 
         // 番号
-        val pn = tri.point_number
-        val pc = tri.pointCenter_
+        val pn = tri.pointnumber
+        val pc = tri.pointcenter
         // 本体
         writeCircle(pn, circleSize, 4, 1f)
-        writeText(tri.myNumber.toString(), tri.point_number, 4, ts, 5, 0f, 1f)
+        writeText(tri.myNumber.toString(), tri.pointnumber, 4, ts, 5, 0f, 1f)
 
         //引き出し矢印線の描画
-        if( tri.isCollide(tri.point_number) == false ){
+        if( tri.isCollide(tri.pointnumber) == false ){
             val pcOffsetToN = pc.offset(pn, circleSize)
             val pnOffsetToC = pn.offset(pc, circleSize)
             val arrowTail = pcOffsetToN.offset(pn, pcOffsetToN.lengthTo(pnOffsetToC) * 0.7f).rotate(pcOffsetToN, 5f)

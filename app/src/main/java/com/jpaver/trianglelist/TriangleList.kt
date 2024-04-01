@@ -290,7 +290,7 @@ class TriangleList : EditList {
         // 開始インデックス以降の要素に対してのみ処理を行う
         trilist_.drop(startindex).forEach {
             it.rotate( basepoint, angle, is_recover )
-            it.point_number = it.point_number.rotate( basepoint, angle )
+            it.pointnumber = it.pointnumber.rotate( basepoint, angle )
         }
     }
 
@@ -305,8 +305,8 @@ class TriangleList : EditList {
         basepoint = bp.clone()
         for (i in trilist_.indices) {
             trilist_[i].rotate(basepoint, angle - 180, false)
-            if (trilist_[i].isPointNumberMoved == false) trilist_[i].point_number =
-                trilist_[i].point_number.rotate(basepoint, angle - 180)
+            if (trilist_[i].isPointNumberMoved == false) trilist_[i].pointnumber =
+                trilist_[i].pointnumber.rotate(basepoint, angle - 180)
         }
     }
 
@@ -760,7 +760,7 @@ class TriangleList : EditList {
             t.parentNumber,
             t.parentBC,
             t.pointCenter_(),
-            t.point_number
+            t.pointnumber
         )
     }
 
