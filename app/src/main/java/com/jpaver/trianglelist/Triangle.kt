@@ -65,11 +65,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
     
     var nameAlign_ = 0
     var nameSideAlign_ = 0
-    protected var myTheta_ = 0.0
-    protected var myAlpha_ = 0.0
-    protected var myPowA_ = 0.0
-    protected var myPowB_ = 0.0
-    protected var myPowC_ = 0.0
+    protected var theta = 0.0
+    protected var alpha = 0.0
     var angleCA = 0f
     var angleAB = 0f
     var angleBC = 0f
@@ -223,7 +220,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
     //for first triangle.
-    internal constructor(A: Float, B: Float, C: Float, pCA: PointXY?, angle: Float) {
+    internal constructor(A: Float, B: Float, C: Float, pCA: PointXY, angle: Float) {
         setNumber(1)
         initBasicArguments(A, B, C, pCA, angle)
         calcPoints(pCA, angle)
@@ -1087,51 +1084,36 @@ class Triangle : EditObject, Cloneable<Triangle> {
             (plist[0]!!.y + llist[0] * sin(
                 Math.toRadians(angle.toDouble())
             )).toFloat()
-        myTheta_ = atan2(
+        theta = atan2(
             (plist[0]!!.y - plist[1]!!.y).toDouble(),
             (plist[0]!!.x - plist[1]!!.x).toDouble()
         )
-        myAlpha_ = acos((powlist[0] + powlist[1] - powlist[2]) / (2 * llist[0] * llist[1])).toDouble()
-        plist[2]!![(plist[1]!!.x + llist[1] * cos(myTheta_ + myAlpha_)).toFloat()] =
-            (plist[1]!!.y + llist[1] * sin(myTheta_ + myAlpha_)).toFloat()
+        alpha = acos((powlist[0] + powlist[1] - powlist[2]) / (2 * llist[0] * llist[1])).toDouble()
+        plist[2]!![(plist[1]!!.x + llist[1] * cos(theta + alpha)).toFloat()] =
+            (plist[1]!!.y + llist[1] * sin(theta + alpha)).toFloat()
         calcMyAngles()
         if (refside == 1) this.angle = nodeTriangleB_!!.angle - angleCA
         if (refside == 2) this.angle = nodeTriangleC_!!.angle + angleCA
     }
 
-    fun calcPoints(pCA: PointXY?, angle: Float) {
-        calculatePointAB(pCA, angle)
-        calculateTheta(pCA)
-        calculateSidesSquared()
-        calculateAlpha()
-        calculatePointBC()
+    fun calcPoints(basepoint: PointXY, angle: Float) {
+        pointAB = basepoint.offset(length[0], angle)
+        pointBC = calculatePointBC( basepoint )
         calculateInternalAngles()
         calculatePointCenter()
         finalizeCalculations()
     }
 
-    private fun calculatePointAB(pCA: PointXY?, angle: Float) {
-        pointAB[(pCA!!.x + length[0] * cos(Math.toRadians(angle.toDouble()))).toFloat()] =
-            (pCA.y + length[0] * sin(Math.toRadians(angle.toDouble()))).toFloat()
-    }
-
-    private fun calculateTheta(pCA: PointXY?) {
-        myTheta_ = atan2((pCA!!.y - pointAB.y).toDouble(), (pCA.x - pointAB.x).toDouble())
-    }
-
-    private fun calculateSidesSquared() {
-        myPowA_ = length[0].pow(2.0f).toDouble()
-        myPowB_ = length[1].pow(2.0f).toDouble()
-        myPowC_ = length[2].pow(2.0f).toDouble()
-    }
-
-    private fun calculateAlpha() {
-        myAlpha_ = acos((myPowA_ + myPowB_ - myPowC_) / (2 * length[0] * length[1]))
-    }
-
-    private fun calculatePointBC() {
-        pointBC[(pointAB.x + length[1] * cos(myTheta_ + myAlpha_)).toFloat()] =
-            (pointAB.y + length[1] * sin(myTheta_ + myAlpha_)).toFloat()
+    private fun calculatePointBC(basepoint: PointXY): PointXY {
+        val theta = atan2( (basepoint.y - pointAB.y).toDouble(), (basepoint.x - pointAB.x).toDouble() )
+        val powA = length[0].pow(2.0f).toDouble()
+        val powB = length[1].pow(2.0f).toDouble()
+        val powC = length[2].pow(2.0f).toDouble()
+        val alpha = acos((powA + powB - powC) / (2 * length[0] * length[1]))
+        val angle = theta + alpha
+        val offset_x = ( length[1] * cos( angle ) ).toFloat()
+        val offset_y = ( length[1] * sin( angle ) ).toFloat()
+        return pointAB.plus( offset_x, offset_y )
     }
 
     private fun calculateInternalAngles() {
