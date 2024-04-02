@@ -183,10 +183,8 @@ class PointXY : Cloneable<PointXY> {
     }
 
     fun offset(p2: PointXY, movement: Float): PointXY {
-        val vector = vectorTo(p2)
-        val normalizedVector = vector.normalize()
-        val itsScaled = normalizedVector.scale(movement)
-        return PointXY(itsScaled).add(this)
+        val offset = vectorTo(p2).normalize().scale(movement)
+        return this + offset
     }
 
     fun offset(distance: Float, angle: Float): PointXY {

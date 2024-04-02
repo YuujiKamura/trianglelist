@@ -500,11 +500,6 @@ class Triangle : EditObject, Cloneable<Triangle> {
         get() = angle - angleCA
     val angleMpAB: Float
         get() = angle + angleAB
-    val lengthScaledNotConnected: Float
-        get() {
-            if (nodeTriangleB_ == null) return lengthB_
-            return if (nodeTriangleC_ == null) lengthC_ else lengthA_
-        }
 
     //endregion
 
@@ -1090,7 +1085,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         calculateInternalAngles()
         calculatePointCenter()
         arrangeDims()
-        pointnumber = arrangeNumber(false)
+        pointnumber = arrangeNumber()
         setBoundaryBox()
     }
 
@@ -1127,10 +1122,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
     private fun arrangeNumber(isUse: Boolean = true ): PointXY{
         if(isPointNumberMovedByUser_) return pointnumber
-        if(!isUse) return pointcenter
-
-        autoAlignPointNumber()
-        return pointnumber
+        if(!isUse) return weightedMidpoint(25f)
+        return autoAlignPointNumber()
     }
 
     private fun arrangeDims() {
@@ -1140,23 +1133,18 @@ class Triangle : EditObject, Cloneable<Triangle> {
         dimAngleC_ = angleMmCA
     }
 
+
     //endregion calcurator
 
     // region pointNumber
     // parseCSVのTriangleList.recoverStateで、自動配置された旗揚げは一緒に回転させてやる必要があるため、ここでフラグをtrueにすると凄いことになる。
     // csv保存されたpointNumberはビューの座標で保存されるため、回転に追随させる必要がなく、自動回転されたものと扱いを分けている。
     // ということは、ここで自動配置されたものをフラグを立てない状態で保存して、また読み込んだ時にまずくなりそうだったが、またここに来て再計算されるのでOkだった
-    private fun autoAlignPointNumber() {
-        if (!isPointNumberMovedByUser_) {
+    private fun autoAlignPointNumber() : PointXY{
+        if (getArea() <= 3f && (lengthAforce_ < 1.5f || lengthBforce_ < 1.5f || lengthCforce_ < 1.5f))
+            return pointUnconnectedSide(pointcenter, 1f, 1f, PointXY(0f, 0f))//.crossOffset(pointcenter, lengthScaledNotConnected)
 
-            pointnumber = if (getArea() <= 3f && (lengthAforce_ < 1.5f || lengthBforce_ < 1.5f || lengthCforce_ < 1.5f)) {
-                //isPointNumberMovedByUser_ = true; //移動済みに変える,なくても平気？手動で移動させたときのみ？
-                pointUnconnectedSide(pointcenter, 1f, 1f, PointXY(0f, 0f)).crossOffset(pointcenter, lengthScaledNotConnected)
-
-            } else {
-                weightedMidpoint(25f)
-            }
-        }
+        return weightedMidpoint(25f)
     }
 
 
@@ -1262,12 +1250,12 @@ class Triangle : EditObject, Cloneable<Triangle> {
         // 上記のいずれの条件にも当てはまらない場合は 3 を返す
     }
 
-    fun check_dimpoint_distances( index_basepoint: Int, nearby: Float = 1.0f): List<Boolean> {
-        val targets = this.dimpoint
-        val distances = this.dimpoint[index_basepoint].distancesTo(targets)
+    //fun check_dimpoint_distances( index_basepoint: Int, nearby: Float = 1.0f): List<Boolean> {
+      //  val targets = this.dimpoint
+        //val distances = this.dimpoint[index_basepoint].distancesTo(targets)
         // 距離が1.0fより小さく、0ではない条件を満たすかどうかでBooleanリストを生成
-        return distances.map { it > 0f && it < nearby }
-    }
+        //return distances.map { it > 0f && it < nearby }
+    //}
 
     fun autoSetDimAlign(): Int { // 1:下 3:上
         myDimAlignA_ = setDimAlignByInnerAngleOf(0)
