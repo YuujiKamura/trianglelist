@@ -1548,14 +1548,13 @@ class MainActivity : AppCompatActivity(),
         }
 
         fab_debug.setOnClickListener {
-            //my_view.isDebug_ = !my_view.isDebug_
+            myview.isDebug_.not()
+            myview.isAreaOff_.not()
 
             if(!myview.isAreaOff_){
-                myview.isAreaOff_ = true
                 fab_debug.backgroundTintList = getColorStateList(R.color.colorAccent)
             }
             else{
-                myview.isAreaOff_ = false
                 fab_debug.backgroundTintList = getColorStateList(R.color.colorLime)
             }
 
@@ -1670,6 +1669,7 @@ class MainActivity : AppCompatActivity(),
             if( tp.lengthTo(tri.pointcenter) < 10f ){ // あまり遠い時はスルー
                 tri.pointnumber = tp
                 tri.isPointNumberMovedByUser_ = true
+                tri.isPointNumberAutoAligned = false
                 myview.setTriangleList(myTriangleList, mScale, false)
             }
         }
@@ -1740,12 +1740,7 @@ class MainActivity : AppCompatActivity(),
         myview.myTriangleList.isDoubleTap_ = false
         myview.myTriangleList.lastTapSide_ = 0
 
-        logListCurrent()
-        /*if( BuildConfig.BUILD_TYPE == "debug" ) Toast.makeText(
-                this,
-                isSucceed.toString(),
-                Toast.LENGTH_SHORT
-        ).show()*/
+        //logListCurrent()
         logFabController()
 
     }
@@ -2774,7 +2769,7 @@ class MainActivity : AppCompatActivity(),
 
             saveCSV(writer)
             // 結果をログに出力
-            logFilePreview(PrivateCSVFileName, "saveCSVtoPrivate")
+            //logFilePreview(PrivateCSVFileName, "saveCSVtoPrivate")
             showToast("saveCSVToPrivate: success")
 
             return true
@@ -3116,13 +3111,17 @@ class MainActivity : AppCompatActivity(),
             if (parseResult == false) createNew()  // 結果がfalseの場合はcreateNewを呼び出す
 
             // 結果をログに出力
-            logFilePreview(PrivateCSVFileName, "resumeCSV")
+            if(myview.isDebug_)logFilePreview(PrivateCSVFileName, "resumeCSV")
             showToast("resumeCSV: success")
 
         } catch (e: IOException) {
             e.printStackTrace()
         }
     }
+
+    //endregion
+
+    // region logs
 
     fun Context.logFilePreview(filePath: String, callerMethodName: String = "UnknownCaller") {
         val file = File(this.filesDir, filePath)
@@ -3137,9 +3136,6 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    //endregion
-
-    // region logs
     private fun logListCurrent(tag: String="ui", callerName: String = "unknown"){
         Log.d(tag,callerName+" my_view.trilist.current:"+myview.myTriangleList.selectedNumber)
         Log.d(tag,callerName+" my_view.trilist.lastTapNumber:"+myview.myTriangleList.lastTapNumber_)
@@ -3150,8 +3146,10 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun logFabController(tag: String = "ui fab"){
-        Log.d(tag,"trilist in mainActivity \n${myTriangleList.toString()}")
-        Log.d(tag,"trilist in myview \n${myview.myTriangleList.toString()}")
+        val info1 = "trilist in mainActivity \n${myTriangleList.toStrings()}"
+        val info2 = "trilist in myview \n${myview.myTriangleList.toStrings()}"
+        Log.d(tag,info1)
+        Log.d(tag,info2)
     }
 
     //endregion

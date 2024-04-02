@@ -100,7 +100,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     //endregion pointNumber
 
     // 各辺に接続されている Triangle オブジェクトの識別子を返す
-    override fun toString(): String {
+    fun toStrings(ispoints: Boolean = true, islength: Boolean = true, isnode: Boolean = true, isalign: Boolean = true ): String {
         val connectedTriangles = arrayOfNulls<Triangle>(3) // 各辺に接続された Triangle オブジェクトを保持する配列
         connectedTriangles[0] = nodeTriangleA_
         connectedTriangles[1] = nodeTriangleB_
@@ -109,14 +109,16 @@ class Triangle : EditObject, Cloneable<Triangle> {
         sb.append("Triangle ${myNumber}         hash:${System.identityHashCode(this)} valid:${isValidLengthes()}\n")
 
         for (i in connectedTriangles.indices) {
-            if (connectedTriangles[i] != null) {
+            if (connectedTriangles[i] != null && isnode ) {
                 sb.append( "connected node to${i} hash:${System.identityHashCode(connectedTriangles[i])} \n")
             }
         }
-        sb.append("connection parameters to0 side${cParam_.side} type${cParam_.type} lcr${cParam_.lcr} \n")
-        sb.append("points:${point[0]} ${pointAB} ${pointBC} \n")
-        sb.append("pointDim:${dimpoint[0]} ${dimpoint[1]} ${dimpoint[2]} \n\n")
-        sb.append("length:${lengthA_} ${lengthB_} ${lengthC_} \n\n")
+        if(isnode)   sb.append("connection parameters to0 side${cParam_.side} type${cParam_.type} lcr${cParam_.lcr} \n")
+        if(ispoints) sb.append("points:${point[0]} ${pointAB} ${pointBC} \n")
+        if(ispoints) sb.append("pointDim:${dimpoint[0]} ${dimpoint[1]} ${dimpoint[2]} \n")
+        if(islength) sb.append("length:${lengthA_} ${lengthB_} ${lengthC_} \n")
+        if(isalign) sb.append("isPointnumber_user: ${isPointNumberMovedByUser_}\n")
+        if(isalign) sb.append("isPointnumber_auto: ${isPointNumberAutoAligned}\n\n")
         return sb.toString()
     }
 
