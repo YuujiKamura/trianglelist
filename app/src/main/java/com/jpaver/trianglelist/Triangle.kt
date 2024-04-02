@@ -34,11 +34,17 @@ class Triangle : EditObject, Cloneable<Triangle> {
         if(!isUse) return weightedMidpoint(25f)
         return autoAlignPointNumber()
     }
-    
+
+    val lengthScaledNotConnected: Float
+        get() {
+            if (nodeTriangleB_ == null) return lengthB_
+            return if (nodeTriangleC_ == null) lengthC_ else lengthA_
+        }
+
     private fun autoAlignPointNumber() : PointXY{
-        if (getArea() <= 3f && (lengthAforce_ < 1.5f || lengthBforce_ < 1.5f || lengthCforce_ < 1.5f)){
+        if (getArea() <= 4f && (lengthAforce_ < 1.5f || lengthBforce_ < 1.5f || lengthCforce_ < 1.5f)){
             isPointNumberAutoAligned = true
-            return pointUnconnectedSide(pointcenter, 1f, 1f, PointXY(0f, 0f))
+            return pointUnconnectedSide(pointcenter, 1f, 1f, PointXY(0f, 0f)).crossOffset(pointcenter, lengthScaledNotConnected)
         }
 
         return weightedMidpoint(25f)
@@ -267,6 +273,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
             b.pointcenter = pointcenter.clone()
             b.pointnumber = pointnumber.clone()
             b.isPointNumberMovedByUser_ = isPointNumberMovedByUser_
+            b.isPointNumberAutoAligned = isPointNumberAutoAligned
             b.myBP_.left = myBP_.left
             b.myBP_.top = myBP_.top
             b.myBP_.right = myBP_.right

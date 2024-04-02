@@ -727,20 +727,25 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
         //番号選択されてるときは以下略。
         if( shadowTapSide != 3) {
-            //val shadowTapNum = myTriangleList.lastTapNum_
             val shadowTapLength = shadowParent.getLengthByIndexForce( shadowTapSide ) * 0.75f
             shadowTri_ = Triangle( shadowParent, myTriangleList.lastTapSide_, shadowTapLength, shadowTapLength )
-            //shadowTri.setDimPoint()
-            val spca = shadowTri_.pointCA_
-            val spab = shadowTri_.pointAB
-            val spbc = shadowTri_.pointBC
 
             shadowTri_.setScale( myTriangleList.scale)
             canvas.drawPath( makeTriangleFillPath( shadowTri_ ), paintGray )
-            //        drawTriLines( canvas, shadowTri, paintGray )
-            canvas.drawTextOnPath( "B " + watchedB1_, makePath( spbc,  spab ), 0f, 0f, paintYellow )
-            canvas.drawTextOnPath( "C " + watchedC1_, makePath( spca,  spbc ), 0f, 0f, paintYellow )
+
+            // 寸法値
+            val pathB = shadowTri_.path[1]
+            val pathC = shadowTri_.path[2]
+            val strB = "B ${watchedB1_}"
+            val strC = "C ${watchedC1_}"
+            drawDigit( canvas, strB, pathB, paintYellow )
+            drawDigit( canvas, strC, pathC, paintYellow )
         }
+    }
+
+    fun drawDigit(canvas: Canvas, str: String, path: PathAndOffset, paint: Paint ){
+        val onecharsize = paint.textSize* 0.5f
+        drawDigits( canvas, str, makePath(path), path.offsetH, path.offsetV, paint, onecharsize )
     }
 
     fun drawDeduction(canvas: Canvas, ded: Deduction, paint: Paint){
@@ -884,9 +889,9 @@ class MyView(context: Context, attrs: AttributeSet?) :
         drawLine(canvas, pbc, pca, 1f, -1f, paintLine)
     }
 
-    fun drawDigits( canvas: Canvas, str: String, path: Path, offsetH: Float, offsetV: Float, paint: Paint, margin: Float ){
-        for( index in 0 .. str.length-1 ){
-            canvas.drawTextOnPath(str.get(index).toString(), path, offsetH+((index-2)*margin), offsetV, paint )
+    fun drawDigits(canvas: Canvas, str: String, path: Path, offsetH: Float, offsetV: Float, paint: Paint, onecharsize: Float ){
+        for( index in 0..<str.length){
+            canvas.drawTextOnPath(str.get(index).toString(), path, offsetH+((index-2)*onecharsize), offsetV, paint )
         }
     }
 
@@ -919,7 +924,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
         var area =""
         if(isAreaOff_ == false ) area = tri.getArea().formattedString(1 )+"m^2"
-        if(isDebug_ == true) area = "cp:"+tri.cParam_.type.toString() + "-"+ tri.cParam_.lcr.toString() +" pbc:"+ tri.parentBC.toString() +" Num:"+ tri.myNumber +"-"+ tri.parentNumber +" lTS"+ tri.lastTapSide_
+        //if(isDebug_ == true) area = "cp:"+tri.cParam_.type.toString() + "-"+ tri.cParam_.lcr.toString() +" pbc:"+ tri.parentBC.toString() +" Num:"+ tri.myNumber +"-"+ tri.parentNumber +" lTS"+ tri.lastTapSide_
 
 
         canvas.drawCircle(pnX, pnY, circleSize, paint2)
@@ -966,13 +971,6 @@ class MyView(context: Context, attrs: AttributeSet?) :
         drawLine(canvas, dd.prt, dd.prb, 1f, 1f, paint)
     }
 
-    fun makePath(p1: PointXY, p2: PointXY): Path {
-        val path = Path()
-        path.rewind()
-        path.moveTo(p1.x, -p1.y)
-        path.lineTo(p2.x, -p2.y)
-        return path
-    }
 
     fun makePath(PA: PathAndOffset): Path {
         val path = Path()
