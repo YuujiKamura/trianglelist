@@ -14,9 +14,13 @@ import kotlin.math.sin
 class Triangle : EditObject, Cloneable<Triangle> {
 
     // region pointNumber
-    // parseCSVのTriangleList.recoverStateで、自動配置された旗揚げは一緒に回転させてやる必要があるため、ここでフラグをtrueにすると凄いことになる。
-    // csv保存されたpointNumberはビューの座標で保存されるため、回転に追随させる必要がなく、自動回転されたものと扱いを分けている。
-    // ということは、ここで自動配置されたものをフラグを立てない状態で保存して、また読み込んだ時にまずくなりそうだったが、またここに来て再計算されるのでOkだった
+
+    private fun arrangeNumber(isUse: Boolean = true ): PointXY{
+        if(isPointNumberMovedByUser_) return pointnumber
+        if(!isUse) return weightedMidpoint(25f)
+        return autoAlignPointNumber()
+    }
+    
     private fun autoAlignPointNumber() : PointXY{
         if (getArea() <= 3f && (lengthAforce_ < 1.5f || lengthBforce_ < 1.5f || lengthCforce_ < 1.5f))
             return pointUnconnectedSide(pointcenter, 1f, 1f, PointXY(0f, 0f))//.crossOffset(pointcenter, lengthScaledNotConnected)
@@ -1187,12 +1191,6 @@ class Triangle : EditObject, Cloneable<Triangle> {
         val averageX = ( pointAB.x + pointBC.x + point[0].x ) / 3
         val averageY = ( pointAB.y + pointBC.y + point[0].y ) / 3
         pointcenter = PointXY( averageX, averageY )
-    }
-
-    private fun arrangeNumber(isUse: Boolean = true ): PointXY{
-        if(isPointNumberMovedByUser_) return pointnumber
-        if(!isUse) return weightedMidpoint(25f)
-        return autoAlignPointNumber()
     }
 
     private fun arrangeDims() {
