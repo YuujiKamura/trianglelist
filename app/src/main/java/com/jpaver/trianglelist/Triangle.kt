@@ -13,6 +13,20 @@ import kotlin.math.sin
 @Suppress("NAME_SHADOWING")
 class Triangle : EditObject, Cloneable<Triangle> {
 
+    fun rotate(basepoint: PointXY, addDegree: Float, recover: Boolean = false ) {
+        if (parentBC < 9 && recover) return
+        if (!recover) angleInLocal_ += addDegree else angleInLocal_ = addDegree
+
+        //val allpoints = arrayOf(*point, *dimpoint, pointcenter, pointCA_, pointAB, pointBC)
+        //allpoints.map { it.rotate(basepoint, addDegree) }
+
+        point[0] = point[0].rotate(basepoint, addDegree)
+        angle += addDegree
+        calcPoints(point[0], angle)
+        setDimPath(dimH_)
+
+    }
+
     // region pointNumber
 
     private fun arrangeNumber(isUse: Boolean = true ): PointXY{
@@ -1468,15 +1482,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         return num
     }
 
-    fun rotate(basepoint: PointXY, addDegree: Float, recover: Boolean = false ) {
-        if (parentBC < 9 && recover) return
-        if (!recover) angleInLocal_ += addDegree else angleInLocal_ = addDegree
-        point[0] = point[0].rotate(basepoint, addDegree)
-        angle += addDegree
-        calcPoints(point[0], angle)
-        setDimPath(dimH_)
 
-    }
 
     //endregion
 
