@@ -14,7 +14,7 @@ import kotlin.math.sin
 class Triangle : EditObject, Cloneable<Triangle> {
 
     fun rotate(basepoint: PointXY, addDegree: Float, recover: Boolean = false ) {
-        if (parentBC < 9 && recover) return
+        if (parentBC < 9 && recover ) return
         if (!recover) angleInLocal_ += addDegree else angleInLocal_ = addDegree
 
         //val allpoints = arrayOf(*point, *dimpoint, pointcenter, pointCA_, pointAB, pointBC)
@@ -30,20 +30,23 @@ class Triangle : EditObject, Cloneable<Triangle> {
     // region pointNumber
 
     private fun arrangeNumber(isUse: Boolean = true ): PointXY{
-        if(isPointNumberMovedByUser_) return pointnumber
+        if(isPointNumberMovedByUser_ || isPointNumberAutoAligned ) return pointnumber
         if(!isUse) return weightedMidpoint(25f)
         return autoAlignPointNumber()
     }
     
     private fun autoAlignPointNumber() : PointXY{
-        if (getArea() <= 3f && (lengthAforce_ < 1.5f || lengthBforce_ < 1.5f || lengthCforce_ < 1.5f))
-            return pointUnconnectedSide(pointcenter, 1f, 1f, PointXY(0f, 0f))//.crossOffset(pointcenter, lengthScaledNotConnected)
+        if (getArea() <= 3f && (lengthAforce_ < 1.5f || lengthBforce_ < 1.5f || lengthCforce_ < 1.5f)){
+            isPointNumberAutoAligned = true
+            return pointUnconnectedSide(pointcenter, 1f, 1f, PointXY(0f, 0f))
+        }
 
         return weightedMidpoint(25f)
     }
 
 
     fun setPointNumberMovedByUser_(p: PointXY) {
+        if( p.lengthTo(pointcenter) < 10f ) return // あまり遠い時はスルー
         pointnumber = p
         isPointNumberMovedByUser_ = true
     }
@@ -70,10 +73,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         return PointXY(weightedX, weightedY)
     }
 
-    val isPointNumberMoved: Boolean
-        get() = if (pointnumber != pointcenter) true.also {
-            isPointNumberMovedByUser_ = true
-        } else false.also { isPointNumberMovedByUser_ = false }
+    var isPointNumberAutoAligned = false
 
     fun pointUnconnectedSide(
         ref: PointXY,
