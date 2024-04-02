@@ -287,7 +287,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
     val viewTranslateManager = ViewTranslateManager()
 
     override fun onDraw(canvas: Canvas) {
-    Log.d("MyViewLifeCycle", "onDraw.")
+    //Log.d("MyViewLifeCycle", "onDraw.")
 
     onceTransViewToLastTapTriangle()
     viewTranslateManager.setParameters(baseInView,zoomSize,centerInModel,pressedInModel)
@@ -301,7 +301,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
     drawEntities(canvas, paintTri, paintTexS, paintRed, darkColors_, myTriangleList, myDeductionList )
     drawCrossLines(canvas, pressedInModel, paintRed )
 
-    logModelViewPoints()
+    //logModelViewPoints()
     //drawModelViewPoints(canvas)
 
     }
@@ -589,9 +589,9 @@ class MyView(context: Context, attrs: AttributeSet?) :
 // region drawEntities
     fun drawEntities(canvas: Canvas, paintTri: Paint, paintTex: Paint, paintRed: Paint, colors: Array<Int>, myTriangleList: TriangleList, myDeductionList: DeductionList) {
 
-        Log.d( "myView", "drawEntities: " + myTriangleList.size() )
-        Log.d("myView", "Instance check in View: " + this )
-        Log.d( "myView", "drawEntities- paintTex " + paintTex )
+        //Log.d( "myView", "drawEntities: " + myTriangleList.size() )
+        //Log.d("myView", "Instance check in View: " + this )
+        //Log.d( "myView", "drawEntities- paintTex " + paintTex )
 
         // draw the Shadow...
         drawShadowTriangle( canvas, myTriangleList )
@@ -670,6 +670,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
         if( isPrintPDF_ == false ) {
             if (isDebug_ == true) {
+                logModelViewPoints()
                 //val name = tri.myName_ + " :" + sokt.pointA_.x + " :" + sokt.pointA_.y + " :" + sokt.pointB_.x + " :" + sokt.pointB_.y
 
                 la += " :" + tri.myDimAlignA_ + " :" + tri.dimSideAlignA_
@@ -706,7 +707,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
             canvas.drawTextOnPath(tri.myName_(), makePath(tPathS), 0f, -2f, paintSok)
             canvas.drawPath(makePath(tPathS), paintLine)
         }
-        Log.d( "myView", "drawTriangle: " + tri.myNumber )
+        //Log.d( "myView", "drawTriangle: " + tri.myNumber )
 
     }
 

@@ -40,8 +40,8 @@ class TriangleList : EditList {
     var outlineStr_ = ""
     var isDoubleTap_ = false
 
-    override fun toString(): String {
-        return trilist_.joinToString(separator = "") { it.toString() }
+    fun toStrings(): String {
+        return trilist_.joinToString(separator = "") { it.toStrings() }
     }
 
     override fun clone(): TriangleList {
