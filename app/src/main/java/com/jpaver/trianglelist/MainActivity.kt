@@ -1548,13 +1548,15 @@ class MainActivity : AppCompatActivity(),
         }
 
         fab_debug.setOnClickListener {
-            myview.isDebug_.not()
-            myview.isAreaOff_.not()
 
             if(!myview.isAreaOff_){
+                myview.isAreaOff_ = true
+                myview.isDebug_ = false
                 fab_debug.backgroundTintList = getColorStateList(R.color.colorAccent)
             }
             else{
+                myview.isAreaOff_ = false
+                myview.isDebug_ = true
                 fab_debug.backgroundTintList = getColorStateList(R.color.colorLime)
             }
 
