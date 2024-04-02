@@ -12,6 +12,75 @@ import kotlin.math.sin
 
 @Suppress("NAME_SHADOWING")
 class Triangle : EditObject, Cloneable<Triangle> {
+
+    // region pointNumber
+    // parseCSVのTriangleList.recoverStateで、自動配置された旗揚げは一緒に回転させてやる必要があるため、ここでフラグをtrueにすると凄いことになる。
+    // csv保存されたpointNumberはビューの座標で保存されるため、回転に追随させる必要がなく、自動回転されたものと扱いを分けている。
+    // ということは、ここで自動配置されたものをフラグを立てない状態で保存して、また読み込んだ時にまずくなりそうだったが、またここに来て再計算されるのでOkだった
+    private fun autoAlignPointNumber() : PointXY{
+        if (getArea() <= 3f && (lengthAforce_ < 1.5f || lengthBforce_ < 1.5f || lengthCforce_ < 1.5f))
+            return pointUnconnectedSide(pointcenter, 1f, 1f, PointXY(0f, 0f))//.crossOffset(pointcenter, lengthScaledNotConnected)
+
+        return weightedMidpoint(25f)
+    }
+
+
+    fun setPointNumberMovedByUser_(p: PointXY) {
+        pointnumber = p
+        isPointNumberMovedByUser_ = true
+    }
+
+    fun weightedMidpoint(bias: Float): PointXY {
+
+        // 角度が大きいほど重みを大きくするための調整
+        var weight1 = angleAB + bias // 角度が大きいほど重みが大きくなる
+        var weight2 = angleBC + bias
+        var weight3 = angleCA + bias
+
+        // 重みの合計で正規化
+        val totalWeight = weight1 + weight2 + weight3
+        weight1 /= totalWeight
+        weight2 /= totalWeight
+        weight3 /= totalWeight
+        val p1 = pointAB
+        val p2 = pointBC
+        val p3 = point[0]
+
+        // 重み付き座標の計算
+        val weightedX = p1.x * weight1 + p2.x * weight2 + p3.x * weight3
+        val weightedY = p1.y * weight1 + p2.y * weight2 + p3.y * weight3
+        return PointXY(weightedX, weightedY)
+    }
+
+    val isPointNumberMoved: Boolean
+        get() = if (pointnumber != pointcenter) true.also {
+            isPointNumberMovedByUser_ = true
+        } else false.also { isPointNumberMovedByUser_ = false }
+
+    fun pointUnconnectedSide(
+        ref: PointXY,
+        scaleX: Float,
+        scaleY: Float,
+        scaleOrigin: PointXY?
+    ): PointXY {
+        if (nodeTriangleB_ == null) return ref.mirroredAndScaledPoint(
+            pointBC,
+            pointBC,
+            scaleX,
+            scaleY,
+            scaleOrigin!!
+        )
+        return if (nodeTriangleC_ == null) ref.mirroredAndScaledPoint(
+            pointAB,
+            pointAB,
+            scaleX,
+            scaleY,
+            scaleOrigin!!
+        ) else weightedMidpoint(-35f)
+    }
+
+    //endregion pointNumber
+
     // 各辺に接続されている Triangle オブジェクトの識別子を返す
     override fun toString(): String {
         val connectedTriangles = arrayOfNulls<Triangle>(3) // 各辺に接続された Triangle オブジェクトを保持する配列
@@ -1136,73 +1205,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
     //endregion calcurator
 
-    // region pointNumber
-    // parseCSVのTriangleList.recoverStateで、自動配置された旗揚げは一緒に回転させてやる必要があるため、ここでフラグをtrueにすると凄いことになる。
-    // csv保存されたpointNumberはビューの座標で保存されるため、回転に追随させる必要がなく、自動回転されたものと扱いを分けている。
-    // ということは、ここで自動配置されたものをフラグを立てない状態で保存して、また読み込んだ時にまずくなりそうだったが、またここに来て再計算されるのでOkだった
-    private fun autoAlignPointNumber() : PointXY{
-        if (getArea() <= 3f && (lengthAforce_ < 1.5f || lengthBforce_ < 1.5f || lengthCforce_ < 1.5f))
-            return pointUnconnectedSide(pointcenter, 1f, 1f, PointXY(0f, 0f))//.crossOffset(pointcenter, lengthScaledNotConnected)
 
-        return weightedMidpoint(25f)
-    }
-
-
-    fun setPointNumberMovedByUser_(p: PointXY) {
-        pointnumber = p
-        isPointNumberMovedByUser_ = true
-    }
-
-    fun weightedMidpoint(bias: Float): PointXY {
-
-        // 角度が大きいほど重みを大きくするための調整
-        var weight1 = angleAB + bias // 角度が大きいほど重みが大きくなる
-        var weight2 = angleBC + bias
-        var weight3 = angleCA + bias
-
-        // 重みの合計で正規化
-        val totalWeight = weight1 + weight2 + weight3
-        weight1 /= totalWeight
-        weight2 /= totalWeight
-        weight3 /= totalWeight
-        val p1 = pointAB
-        val p2 = pointBC
-        val p3 = point[0]
-
-        // 重み付き座標の計算
-        val weightedX = p1.x * weight1 + p2.x * weight2 + p3.x * weight3
-        val weightedY = p1.y * weight1 + p2.y * weight2 + p3.y * weight3
-        return PointXY(weightedX, weightedY)
-    }
-
-    val isPointNumberMoved: Boolean
-        get() = if (pointnumber != pointcenter) true.also {
-            isPointNumberMovedByUser_ = true
-        } else false.also { isPointNumberMovedByUser_ = false }
-
-    fun pointUnconnectedSide(
-        ref: PointXY,
-        scaleX: Float,
-        scaleY: Float,
-        scaleOrigin: PointXY?
-    ): PointXY {
-        if (nodeTriangleB_ == null) return ref.mirroredAndScaledPoint(
-            pointBC,
-            pointBC,
-            scaleX,
-            scaleY,
-            scaleOrigin!!
-        )
-        return if (nodeTriangleC_ == null) ref.mirroredAndScaledPoint(
-            pointAB,
-            pointAB,
-            scaleX,
-            scaleY,
-            scaleOrigin!!
-        ) else weightedMidpoint(-35f)
-    }
-
-    //endregion pointNumber
 
     //region old hataage method
     fun hataage(p: PointXY, offset: Float, axisY: Float, number: Float): PointXY {
