@@ -4,6 +4,25 @@ import com.jpaver.trianglelist.util.Params
 import java.util.Optional
 
 class TriangleList : EditList {
+
+
+　　　　　fun rotate(basepoint: PointXY, angle: Float, startnumber: Int, separationFreeMode: Boolean = false, is_recover: Boolean = false ) {
+
+        var startindex = startnumber - 1
+
+        // 0番からすべて回転させる場合
+        if (!(startnumber > 1 && trilist_[startindex].parentBC >= 9) || !separationFreeMode) {
+            this.angle += angle
+            this.basepoint = basepoint.clone()
+            startindex = 0
+        }
+        // 開始インデックス以降の要素に対してのみ処理を行う
+        trilist_.drop(startindex).forEach {
+            it.rotate( basepoint, angle, is_recover )
+            it.pointnumber = it.pointnumber.rotate( basepoint, -angle )
+        }
+    }
+
     var trilist_: ArrayList<Triangle>
     var trilistStored_: ArrayList<Triangle>
     var myCollisionList: ArrayList<Collision>? = null
@@ -277,22 +296,7 @@ class TriangleList : EditList {
         }
     }
 
-    fun rotate(basepoint: PointXY, angle: Float, startnumber: Int, separationFreeMode: Boolean = false, is_recover: Boolean = false ) {
-
-        var startindex = startnumber - 1
-
-        // 0番からすべて回転させる場合
-        if (!(startnumber > 1 && trilist_[startindex].parentBC >= 9) || !separationFreeMode) {
-            this.angle += angle
-            this.basepoint = basepoint.clone()
-            startindex = 0
-        }
-        // 開始インデックス以降の要素に対してのみ処理を行う
-        trilist_.drop(startindex).forEach {
-            it.rotate( basepoint, angle, is_recover )
-            it.pointnumber = it.pointnumber.rotate( basepoint, angle )
-        }
-    }
+    
 
     fun setDimsUnconnectedSideToOuter(target: Triangle?) {
         if(target == null ) return
