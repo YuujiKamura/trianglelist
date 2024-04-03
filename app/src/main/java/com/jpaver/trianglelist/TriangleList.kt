@@ -310,7 +310,7 @@ class TriangleList : EditList {
         basepoint = bp.clone()
         trilist_.map {
             it.rotate(basepoint, angle - 180, false)
-            if (!it.isPointNumberMovedByUser_)
+            if (!it.flags.isMovedByUser)
                 it.pointnumber = it.pointnumber.rotate(basepoint, angle - 180)
         }
     }
