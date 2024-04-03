@@ -562,11 +562,11 @@ class TriListTest {
     fun testGetNumberList() {
         val trilist = TriangleList()
         trilist.add(Triangle(5f, 5f, 5f), true)
-        trilist.add(Triangle(trilist.trilist_[0], 2, 5f, 5f), true)
-        trilist.add(Triangle(trilist.trilist_[0], 1, 6f, 6f), true)
-        trilist.trilist_[0].name = "No.10"
-        trilist.trilist_[1].name = "No.6"
-        trilist.trilist_[2].name = "No.2"
+        trilist.add(Triangle(trilist.trilist[0], 2, 5f, 5f), true)
+        trilist.add(Triangle(trilist.trilist[0], 1, 6f, 6f), true)
+        trilist.trilist[0].name = "No.10"
+        trilist.trilist[1].name = "No.6"
+        trilist.trilist[2].name = "No.2"
 
         val numlist = trilist.getSokutenList(2, 4)
 
