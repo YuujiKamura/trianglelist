@@ -1172,13 +1172,13 @@ class Triangle : EditObject, Cloneable<Triangle> {
         if (refside == 2) this.angle = nodeTriangleC_!!.angle + angleCA
     }
 
-    fun calcPoints(basepoint: PointXY, angle: Float) {
+    fun calcPoints(basepoint: PointXY, angle: Float, isArrangeNumber: Boolean = true) {
         pointAB = basepoint.offset(length[0], angle)
         pointBC = calculatePointBC( basepoint )
         calculateInternalAngles()
         calculatePointCenter()
         arrangeDims()
-        pointnumber = arrangeNumber()
+        if(isArrangeNumber) pointnumber = arrangeNumber()
         setBoundaryBox()
     }
 
@@ -1207,10 +1207,11 @@ class Triangle : EditObject, Cloneable<Triangle> {
         return angleRadian * 180 / Math.PI
     }
 
-    private fun calculatePointCenter() {
+    private fun calculatePointCenter() :PointXY{
         val averageX = ( pointAB.x + pointBC.x + point[0].x ) / 3
         val averageY = ( pointAB.y + pointBC.y + point[0].y ) / 3
         pointcenter = PointXY( averageX, averageY )
+        return pointcenter
     }
 
     private fun arrangeDims() {
@@ -1378,7 +1379,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         length[0] *= scale
         length[1] *= scale
         length[2] *= scale
-        calcPoints(point[0], angle)
+        calcPoints( point[0], angle )
     }
 
     // endregion translate and scale
