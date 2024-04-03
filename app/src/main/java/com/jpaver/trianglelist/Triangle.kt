@@ -1,9 +1,8 @@
 package com.jpaver.trianglelist
 
-import com.jpaver.trianglelist.util.Params
 import com.jpaver.trianglelist.util.Cloneable
+import com.jpaver.trianglelist.util.Params
 import com.jpaver.trianglelist.util.cloneArray
-
 import kotlin.math.acos
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -30,7 +29,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     // region pointNumber
 
     private fun arrangeNumber(isUse: Boolean = true ): PointXY{
-        if(isPointNumberMovedByUser_ || isPointNumberAutoAligned ) return pointnumber
+        if(flags.isMovedByUser || flags.isAutoAligned ) return pointnumber
         if(!isUse) return weightedMidpoint(25f)
         return autoAlignPointNumber()
     }
@@ -45,7 +44,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
     private fun autoAlignPointNumber() : PointXY{
         if (getArea() <= 4f && (lengthAforce_ < 1.5f || lengthBforce_ < 1.5f || lengthCforce_ < 1.5f)){
-            isPointNumberAutoAligned = true
+            flags.isAutoAligned = true
             return pointUnconnectedSide(pointcenter, 1f, 1f, PointXY(0f, 0f)).offset(pointcenter, -lengthNotConnected)
         }
 
@@ -56,7 +55,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     fun setPointNumberMovedByUser_(p: PointXY) {
         if( p.lengthTo(pointcenter) < 10f ) return // あまり遠い時はスルー
         pointnumber = p
-        isPointNumberMovedByUser_ = true
+        flags.isMovedByUser = true
     }
 
     fun weightedMidpoint(bias: Float): PointXY {
@@ -80,8 +79,6 @@ class Triangle : EditObject, Cloneable<Triangle> {
         val weightedY = p1.y * weight1 + p2.y * weight2 + p3.y * weight3
         return PointXY(weightedX, weightedY)
     }
-
-    var isPointNumberAutoAligned = false
 
     fun pointUnconnectedSide(
         ref: PointXY,
@@ -125,8 +122,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
         if(ispoints) sb.append("points:${point[0]} ${pointAB} ${pointBC} \n")
         if(ispoints) sb.append("pointDim:${dimpoint[0]} ${dimpoint[1]} ${dimpoint[2]} \n")
         if(islength) sb.append("length:${lengthA_} ${lengthB_} ${lengthC_} \n")
-        if(isalign) sb.append("isPointnumber_user: ${isPointNumberMovedByUser_}\n")
-        if(isalign) sb.append("isPointnumber_auto: ${isPointNumberAutoAligned}\n\n")
+        if(isalign) sb.append("isPointnumber_user: ${flags.isMovedByUser}\n")
+        if(isalign) sb.append("isPointnumber_auto: ${flags.isAutoAligned}\n\n")
         return sb.toString()
     }
 
@@ -154,12 +151,11 @@ class Triangle : EditObject, Cloneable<Triangle> {
         private set
 
     var pointnumber = PointXY(0f, 0f)
-    var isPointNumberMovedByUser_ = false
 
     // 固定長配列の初期化
     var dimpoint: Array<PointXY> = Array(3) { PointXY(0f, 0f) } // すべての要素を PointXY(0f, 0f) で初期化
     var path: Array<PathAndOffset> = Array(3) { PathAndOffset() }
-    
+
     var nameAlign_ = 0
     var nameSideAlign_ = 0
     protected var theta = 0.0
@@ -249,19 +245,23 @@ class Triangle : EditObject, Cloneable<Triangle> {
         //myDimAlignC = 0;
     }
 
-    data class Basic(val angle:Float, val name:String, val mynumber:Int, val parentside:Int, val parentnumber:Int)
-    var basics = Basic( angle, name, mynumber, parentside, parentnumber )
+    //var isPointnumber = BooleanArray(2){false}
+
+    data class Flags( var isMovedByUser: Boolean = false, var isAutoAligned: Boolean = false )
+    var flags = Flags()
 
     override fun clone(): Triangle {
         val b = Triangle()
         try {
+            flags.isAutoAligned = true
+            b.flags = flags.copy()
+
             b.length = length.copyOf(length.size)
             b.lengthNotSized = lengthNotSized.copyOf(lengthNotSized.size)
             b.dimpoint = cloneArray(dimpoint) // 代入だと参照になるので要素ごとにクローン
             b.path = cloneArray( path )
 
-            b.basics = basics.copy()
-
+            //b.isPointnumber = isPointnumber.copyOf(isPointnumber.size)
             b.angle = angle
             b.name = name
             b.mynumber = mynumber
@@ -281,8 +281,6 @@ class Triangle : EditObject, Cloneable<Triangle> {
             b.pointcenter = pointcenter.clone()
             b.pointnumber = pointnumber.clone()
             b.cParam_ = cParam_.clone()
-            b.isPointNumberMovedByUser_ = isPointNumberMovedByUser_
-            b.isPointNumberAutoAligned = isPointNumberAutoAligned
             b.isFloating_ = isFloating_
             b.isColored_ = isColored_
             b.myBP_.left = myBP_.left
