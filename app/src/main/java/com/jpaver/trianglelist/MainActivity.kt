@@ -1892,7 +1892,7 @@ class MainActivity : AppCompatActivity(),
             parentTri,
             params
         )
-        newTri.myNumber = params.n
+        newTri.mynumber = params.n
         return newTri
     }
 
@@ -1959,14 +1959,14 @@ class MainActivity : AppCompatActivity(),
                             t.getLengthByIndex(i),
                             dParams.b,
                             dParams.c,
-                            t.myNumber,
+                            t.mynumber,
                             i,
                         PointXY(0f, 0f),
                         PointXY(0f, 0f)
                     ), myELFirst
             )
 
-            myview.setParentSide(t.myNumber, i)
+            myview.setParentSide(t.mynumber, i)
 
             if(myview.myTriangleList.lastTapSide_ != -1){
                 myview.myTriangleList.isDoubleTap_ = true
@@ -2717,9 +2717,9 @@ class MainActivity : AppCompatActivity(),
             for (index in 1..myTriangleList.size()) {
                 val mt: Triangle = myTriangleList.getMemberByIndex(index)
                 val pt: PointXY = mt.pointnumber
-                val cp = parentBCtoCParam(mt.parentBC, mt.lengthNotSized[0], mt.cParam_)
+                val cp = parentBCtoCParam(mt.parentside, mt.lengthNotSized[0], mt.cParam_)
 
-                writer.write("${mt.myNumber},${mt.getLengthA()},${mt.getLengthB()},${mt.getLengthC()},${mt.parentNumber},${mt.parentBC},${mt.myName_()},${pt.x},${pt.y},${mt.isPointNumberMovedByUser_},${mt.color_},${mt.dimSideAlignA_},${mt.dimSideAlignB_},${mt.dimSideAlignC_},${mt.myDimAlignA_},${mt.myDimAlignB_},${mt.myDimAlignC_},${cp.side},${cp.type},${cp.lcr},${mt.isChangeDimAlignB_},${mt.isChangeDimAlignC_},${mt.angle},${mt.pointCA_.x},${mt.pointCA_.y},${mt.angleInLocal_}")
+                writer.write("${mt.mynumber},${mt.getLengthA()},${mt.getLengthB()},${mt.getLengthC()},${mt.parentnumber},${mt.parentside},${mt.myName_()},${pt.x},${pt.y},${mt.isPointNumberMovedByUser_},${mt.color_},${mt.dimsideA},${mt.dimsideB},${mt.dimsideC},${mt.dimalignA},${mt.dimalignB},${mt.dimalignC},${cp.side},${cp.type},${cp.lcr},${mt.isChangeDimAlignB_},${mt.isChangeDimAlignC_},${mt.angle},${mt.pointCA_.x},${mt.pointCA_.y},${mt.angleInLocal_}")
                 writer.newLine()
             }
 
@@ -2977,7 +2977,7 @@ class MainActivity : AppCompatActivity(),
                     )
 
                 }
-                trilist.getMemberByIndex(trilist.size()).parentBC = chunks[5].toInt()
+                trilist.getMemberByIndex(trilist.size()).parentside = chunks[5].toInt()
             }
             else{
 
@@ -3005,7 +3005,7 @@ class MainActivity : AppCompatActivity(),
                 )
 
                 val mT = trilist.getMemberByIndex(trilist.size())
-                mT.parentBC = chunks[5].toInt()
+                mT.parentside = chunks[5].toInt()
                 /*
                 if( chunks.size > 25 && mT.parentBC_ >= 9 ) mT.rotate(
                     mT.pointCA_,

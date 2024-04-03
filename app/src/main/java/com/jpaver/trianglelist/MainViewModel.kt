@@ -53,10 +53,10 @@ class MainViewModel {
         val tri = myTriangleList.get(trinum)
         Log.d("TriangleList", "Triangle dim rot w : $trinum$dimside")
 
-        if( dimside == 0 && ( tri.parentBC == 1 ||  tri.parentBC == 2 ) && trinum > 1 ) {
-            val dim2  = tri.parentBC
-            val tri2 = myTriangleList.get( tri.parentNumber )
-            Log.d("TriangleList", "Triangle dim rot w : " + tri.myNumber + dimside )
+        if( dimside == 0 && ( tri.parentside == 1 ||  tri.parentside == 2 ) && trinum > 1 ) {
+            val dim2  = tri.parentside
+            val tri2 = myTriangleList.get( tri.parentnumber )
+            Log.d("TriangleList", "Triangle dim rot w : " + tri.mynumber + dimside )
             return Pair(tri2, dim2)
         }
 

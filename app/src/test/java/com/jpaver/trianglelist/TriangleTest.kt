@@ -154,8 +154,8 @@ class TriangleTest {
         val two = Triangle(one, connection, 6f, 6f)
 
         // 内容の一致
-        Assert.assertEquals(one.myNumber.toLong(), two.nodeTriangleA_!!.myNumber.toLong())
-        Assert.assertEquals(one.nodeTriangleB_!!.myNumber.toLong(), two.myNumber.toLong())
+        Assert.assertEquals(one.mynumber.toLong(), two.nodeTriangleA_!!.mynumber.toLong())
+        Assert.assertEquals(one.nodeTriangleB_!!.mynumber.toLong(), two.mynumber.toLong())
 
         // オブジェクトポインタの一致。
         Assert.assertEquals(one, two.nodeTriangleA_)
@@ -175,8 +175,8 @@ class TriangleTest {
             Triangle(one, Params("", "", 2, 5f, 5f, 5f, 1, 1, PointXY(0f, 0f), PointXY(0f, 0f)))
 
         // 内容の一致
-        Assert.assertEquals(one.myNumber.toLong(), two.nodeTriangleA_!!.myNumber.toLong())
-        Assert.assertEquals(one.nodeTriangleB_!!.myNumber.toLong(), two.myNumber.toLong())
+        Assert.assertEquals(one.mynumber.toLong(), two.nodeTriangleA_!!.mynumber.toLong())
+        Assert.assertEquals(one.nodeTriangleB_!!.mynumber.toLong(), two.mynumber.toLong())
 
         // オブジェクトポインタの一致。
         Assert.assertEquals(one, two.nodeTriangleA_)
@@ -194,8 +194,8 @@ class TriangleTest {
         val two = Triangle(one, 1, 5f, 5f)
 
         // 内容の一致
-        Assert.assertEquals(one.myNumber.toLong(), two.nodeTriangleA_!!.myNumber.toLong())
-        Assert.assertEquals(one.nodeTriangleB_!!.myNumber.toLong(), two.myNumber.toLong())
+        Assert.assertEquals(one.mynumber.toLong(), two.nodeTriangleA_!!.mynumber.toLong())
+        Assert.assertEquals(one.nodeTriangleB_!!.mynumber.toLong(), two.mynumber.toLong())
 
         // オブジェクトポインタの一致。
         Assert.assertEquals(one, two.nodeTriangleA_)
@@ -237,7 +237,7 @@ class TriangleTest {
     fun testDimSideAlign() {
         val tri1 = Triangle(3f, 4f, 5f)
         tri1.rotateDimSideAlign(0)
-        Assert.assertEquals(1, tri1.dimSideAlignA_.toLong())
+        Assert.assertEquals(1, tri1.dimsideA.toLong())
         tri1.setDimPoint()
         Assert.assertEquals(-2.325f, tri1.dimpoint[0].x, 0.001f)
         var dim = PointXY(-1.5f, 0f)
@@ -253,9 +253,9 @@ class TriangleTest {
         tri1.setDimPoint()
         Assert.assertEquals(-0.67f, tri1.dimpoint[0].x, 0.01f)
         tri1.flipDimAlignH(0)
-        Assert.assertEquals(1, tri1.myDimAlignA_.toLong())
+        Assert.assertEquals(1, tri1.dimalignA.toLong())
         tri1.flipDimAlignH(0)
-        Assert.assertEquals(3, tri1.myDimAlignA_.toLong())
+        Assert.assertEquals(3, tri1.dimalignA.toLong())
     }
 
     @Test
@@ -303,12 +303,12 @@ class TriangleTest {
         val t1 = Triangle(3f, 4f, 5f)
 
         // 1下 3上 -> // 夾角の、1:外 　3:内
-        Assert.assertEquals(3, t1.myDimAlignA_.toLong()) //getPath(0).getAlign_());
-        Assert.assertEquals(3, t1.myDimAlignB_.toLong()) // t1.getPath(1).getAlign_());
-        Assert.assertEquals(3, t1.myDimAlignC_.toLong()) // t1.getPath(2).getAlign_());
-        Assert.assertEquals(3, t1.myDimAlignA_.toLong()) //getPath(0).getAlign_());
-        Assert.assertEquals(3, t1.myDimAlignB_.toLong()) // t1.getPath(1).getAlign_());
-        Assert.assertEquals(3, t1.myDimAlignC_.toLong()) // t1.getPath(2).getAlign_());
+        Assert.assertEquals(3, t1.dimalignA.toLong()) //getPath(0).getAlign_());
+        Assert.assertEquals(3, t1.dimalignB.toLong()) // t1.getPath(1).getAlign_());
+        Assert.assertEquals(3, t1.dimalignC.toLong()) // t1.getPath(2).getAlign_());
+        Assert.assertEquals(3, t1.dimalignA.toLong()) //getPath(0).getAlign_());
+        Assert.assertEquals(3, t1.dimalignB.toLong()) // t1.getPath(1).getAlign_());
+        Assert.assertEquals(3, t1.dimalignC.toLong()) // t1.getPath(2).getAlign_());
     }
 
     @Test

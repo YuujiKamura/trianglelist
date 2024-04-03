@@ -80,9 +80,9 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
 
         //if( tri.myAngle_ > 90 ) dimA = 1
         //if( tri.myAngle_ > 270 ) dimA = 3
-        val tateAlignDimA = alignVByVector(tri.myDimAlignA_, pca, pab)
-        val tateAlignDimB = alignVByVector(tri.myDimAlignB_, pab, pbc)//flip(tri.myDimAlignB_, tri.dimAngleB_ )
-        val tateAlignDImC = alignVByVector(tri.myDimAlignC_, pbc, pca)//flip(tri.myDimAlignC_, tri.dimAngleC_ )
+        val tateAlignDimA = alignVByVector(tri.dimalignA, pca, pab)
+        val tateAlignDimB = alignVByVector(tri.dimalignB, pab, pbc)//flip(tri.myDimAlignB_, tri.dimAngleB_ )
+        val tateAlignDImC = alignVByVector(tri.dimalignC, pbc, pca)//flip(tri.myDimAlignC_, tri.dimAngleC_ )
 
         var nagasaA = tri.lengthAforce_.formattedString(2)
         var nagasaB = tri.lengthBforce_.formattedString(2)
@@ -101,7 +101,7 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
         writeLine( pbc, pca, 7)
 
         // DimTexts
-        if( tri.myNumber == 1 || tri.parentBC > 2)
+        if( tri.mynumber == 1 || tri.parentside > 2)
             writeTextDimension(tateAlignDimA, nagasaA, tri.dimpoint[0], pab.calcDimAngle(pca))
         writeTextDimension(tateAlignDimB, nagasaB, tri.dimpoint[1], pbc.calcDimAngle(pab))
         writeTextDimension(tateAlignDImC, nagasaC, tri.dimpoint[2], pca.calcDimAngle(pbc))
@@ -156,7 +156,7 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
 
     private fun writeTextNumber(tri: Triangle){
         writeText(
-            tri.myNumber.toString(),
+            tri.mynumber.toString(),
             tri.pointnumber,
             5,
             textscale_,
