@@ -34,18 +34,19 @@ class Triangle : EditObject, Cloneable<Triangle> {
         return autoAlignPointNumber()
     }
 
-    val lengthNotConnected: Float
+    /*val lengthNotConnected: Float
         get() {
             if (nodeTriangleC_ == null) return length[2]
             if (nodeTriangleB_ == null) return length[1]
 
             return length[2]
-        }
+        }*/
 
     private fun autoAlignPointNumber() : PointXY{
         if (getArea() <= 4f && (lengthAforce_ < 1.5f || lengthBforce_ < 1.5f || lengthCforce_ < 1.5f)){
+            pointnumber = pointcenter
             flags.isAutoAligned = true
-            return pointUnconnectedSide(pointcenter, 1f, 1f, PointXY(0f, 0f)).offset(pointcenter, lengthNotConnected)
+            return pointUnconnectedSide(pointcenter, 1f, 1f, PointXY(0f, 0f))//.offset(pointcenter, lengthNotConnected)
         }
 
         return weightedMidpoint(25f)
@@ -1172,7 +1173,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         if (refside == 2) this.angle = nodeTriangleC_!!.angle + angleCA
     }
 
-    fun calcPoints(basepoint: PointXY, angle: Float, isArrangeNumber: Boolean = true) {
+    fun calcPoints(basepoint: PointXY, angle: Float, isArrangeNumber: Boolean = false) {
         pointAB = basepoint.offset(length[0], angle)
         pointBC = calculatePointBC( basepoint )
         calculateInternalAngles()
@@ -1349,7 +1350,20 @@ class Triangle : EditObject, Cloneable<Triangle> {
     //endregion dimalign
 
 
-    //region translate and scale
+    //region scale and translate
+    fun scale(basepoint: PointXY, scale: Float) {
+        scale_ *= scale
+        //pointAB.scale(basepoint, scale);
+        //pointBC.scale(basepoint, scale);
+        point[0].scale(basepoint, scale)
+        pointcenter.scale(basepoint, scale)
+        pointnumber.scale(basepoint, scale)
+        length[0] *= scale
+        length[1] *= scale
+        length[2] *= scale
+        calcPoints( point[0], angle, true )
+    }
+
     fun move(to: PointXY) {
         pointAB.add(to)
         pointBC.add(to)
@@ -1369,20 +1383,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         pathS_!!.move(to)
     }
 
-    fun scale(basepoint: PointXY, scale: Float) {
-        scale_ *= scale
-        //pointAB.scale(basepoint, scale);
-        //pointBC.scale(basepoint, scale);
-        point[0].scale(basepoint, scale)
-        pointcenter.scale(basepoint, scale)
-        pointnumber.scale(basepoint, scale)
-        length[0] *= scale
-        length[1] *= scale
-        length[2] *= scale
-        calcPoints( point[0], angle )
-    }
-
-    // endregion translate and scale
+    // endregion scale and translate
 
     //region rotater
     // 自分の次の番号がくっついている辺を調べてA辺にする。
