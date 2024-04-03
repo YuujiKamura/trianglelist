@@ -28,7 +28,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
     // region pointNumber
 
-    fun arrangeNumber(isUse: Boolean = true ): PointXY{
+    fun arrangeNumber(isUse: Boolean = false ): PointXY{
         if(flags.isMovedByUser || flags.isAutoAligned ) return pointnumber
         if(!isUse) return weightedMidpoint(25f)
         return autoAlignPointNumber()
@@ -1124,6 +1124,54 @@ class Triangle : EditObject, Cloneable<Triangle> {
     //endregion node and boundaries
 
     //region calculater
+    fun calcPoints(basepoint: PointXY, angle: Float, isArrangeNumber: Boolean = false) {
+        pointAB = basepoint.offset(length[0], angle)
+        pointBC = calculatePointBC( basepoint )
+        calculateInternalAngles()
+        calculatePointCenter()
+        arrangeDims()
+        if(isArrangeNumber) pointnumber = arrangeNumber(isArrangeNumber)
+        setBoundaryBox()
+    }
+
+    private fun calculatePointBC(basepoint: PointXY): PointXY {
+        val theta = atan2( (basepoint.y - pointAB.y).toDouble(), (basepoint.x - pointAB.x).toDouble() )
+        val powA = length[0].pow(2.0f).toDouble()
+        val powB = length[1].pow(2.0f).toDouble()
+        val powC = length[2].pow(2.0f).toDouble()
+        val alpha = acos((powA + powB - powC) / (2 * length[0] * length[1]))
+        val angle = theta + alpha
+        val offset_x = ( length[1] * cos( angle ) ).toFloat()
+        val offset_y = ( length[1] * sin( angle ) ).toFloat()
+        return pointAB.plus( offset_x, offset_y )
+    }
+
+    private fun calculateInternalAngles() {
+        angleAB = calculateInternalAngle(point[0], pointAB, pointBC).toFloat()
+        angleBC = calculateInternalAngle(pointAB, pointBC, point[0]).toFloat()
+        angleCA = calculateInternalAngle(pointBC, point[0], pointAB).toFloat()
+    }
+
+    fun calculateInternalAngle(p1: PointXY, p2: PointXY, p3: PointXY): Double {
+        val v1 = p1.subtract(p2)
+        val v2 = p3.subtract(p2)
+        val angleRadian = acos(v1.innerProduct(v2) / (v1.magnitude() * v2.magnitude()))
+        return angleRadian * 180 / Math.PI
+    }
+
+    private fun calculatePointCenter() :PointXY{
+        val averageX = ( pointAB.x + pointBC.x + point[0].x ) / 3
+        val averageY = ( pointAB.y + pointBC.y + point[0].y ) / 3
+        pointcenter = PointXY( averageX, averageY )
+        return pointcenter
+    }
+
+    private fun arrangeDims() {
+        setDimPath(dimH_)
+        setDimPoint()
+        dimAngleB_ = angleMpAB
+        dimAngleC_ = angleMmCA
+    }
 
     fun calcPoints(ref: Triangle?, refside: Int) {
         setNode(ref, refside)
@@ -1172,56 +1220,6 @@ class Triangle : EditObject, Cloneable<Triangle> {
         if (refside == 1) this.angle = nodeTriangleB_!!.angle - angleCA
         if (refside == 2) this.angle = nodeTriangleC_!!.angle + angleCA
     }
-
-    fun calcPoints(basepoint: PointXY, angle: Float, isArrangeNumber: Boolean = false) {
-        pointAB = basepoint.offset(length[0], angle)
-        pointBC = calculatePointBC( basepoint )
-        calculateInternalAngles()
-        calculatePointCenter()
-        arrangeDims()
-        if(isArrangeNumber) pointnumber = arrangeNumber()
-        setBoundaryBox()
-    }
-
-    private fun calculatePointBC(basepoint: PointXY): PointXY {
-        val theta = atan2( (basepoint.y - pointAB.y).toDouble(), (basepoint.x - pointAB.x).toDouble() )
-        val powA = length[0].pow(2.0f).toDouble()
-        val powB = length[1].pow(2.0f).toDouble()
-        val powC = length[2].pow(2.0f).toDouble()
-        val alpha = acos((powA + powB - powC) / (2 * length[0] * length[1]))
-        val angle = theta + alpha
-        val offset_x = ( length[1] * cos( angle ) ).toFloat()
-        val offset_y = ( length[1] * sin( angle ) ).toFloat()
-        return pointAB.plus( offset_x, offset_y )
-    }
-
-    private fun calculateInternalAngles() {
-        angleAB = calculateInternalAngle(point[0], pointAB, pointBC).toFloat()
-        angleBC = calculateInternalAngle(pointAB, pointBC, point[0]).toFloat()
-        angleCA = calculateInternalAngle(pointBC, point[0], pointAB).toFloat()
-    }
-
-    fun calculateInternalAngle(p1: PointXY, p2: PointXY, p3: PointXY): Double {
-        val v1 = p1.subtract(p2)
-        val v2 = p3.subtract(p2)
-        val angleRadian = acos(v1.innerProduct(v2) / (v1.magnitude() * v2.magnitude()))
-        return angleRadian * 180 / Math.PI
-    }
-
-    private fun calculatePointCenter() :PointXY{
-        val averageX = ( pointAB.x + pointBC.x + point[0].x ) / 3
-        val averageY = ( pointAB.y + pointBC.y + point[0].y ) / 3
-        pointcenter = PointXY( averageX, averageY )
-        return pointcenter
-    }
-
-    private fun arrangeDims() {
-        setDimPath(dimH_)
-        setDimPoint()
-        dimAngleB_ = angleMpAB
-        dimAngleC_ = angleMmCA
-    }
-
 
     //endregion calcurator
 
