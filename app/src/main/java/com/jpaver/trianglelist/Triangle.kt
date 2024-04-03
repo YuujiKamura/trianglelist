@@ -45,12 +45,25 @@ class Triangle : EditObject, Cloneable<Triangle> {
     private fun autoAlignPointNumber() : PointXY{
         if (getArea() <= 4f && (lengthAforce_ < 1.5f || lengthBforce_ < 1.5f || lengthCforce_ < 1.5f)){
             flags.isAutoAligned = true
-            return pointUnconnectedSide(pointcenter, 1f, 1f, PointXY(0f, 0f)).offset(pointcenter, -lengthNotConnected)
+            return pointUnconnectedSide(pointcenter, 1f, 1f, PointXY(0f, 0f)).offset(pointcenter, lengthNotConnected)
         }
 
         return weightedMidpoint(25f)
     }
 
+    fun pointUnconnectedSide(
+        pointnumber: PointXY,
+        scaleX: Float,
+        scaleY: Float,
+        basepoint: PointXY
+    ): PointXY {
+        if (nodeTriangleC_ == null)
+            return pointnumber.mirroredAndScaledPoint(pointBC, point[0], scaleX, scaleY, basepoint)
+        if (nodeTriangleB_ == null)
+            return pointnumber.mirroredAndScaledPoint(pointAB, pointBC, scaleX, scaleY, basepoint)
+
+        return weightedMidpoint(-35f)
+    }
 
     fun setPointNumberMovedByUser_(p: PointXY) {
         if( p.lengthTo(pointcenter) < 10f ) return // あまり遠い時はスルー
@@ -78,28 +91,6 @@ class Triangle : EditObject, Cloneable<Triangle> {
         val weightedX = p1.x * weight1 + p2.x * weight2 + p3.x * weight3
         val weightedY = p1.y * weight1 + p2.y * weight2 + p3.y * weight3
         return PointXY(weightedX, weightedY)
-    }
-
-    fun pointUnconnectedSide(
-        ref: PointXY,
-        scaleX: Float,
-        scaleY: Float,
-        basepoint: PointXY
-    ): PointXY {
-        if (nodeTriangleB_ == null) return ref.mirroredAndScaledPoint(
-            pointBC,
-            pointBC,
-            scaleX,
-            scaleY,
-            basepoint
-        )
-        return if (nodeTriangleC_ == null) ref.mirroredAndScaledPoint(
-            pointAB,
-            pointAB,
-            scaleX,
-            scaleY,
-            basepoint
-        ) else weightedMidpoint(-35f)
     }
 
     //endregion pointNumber
