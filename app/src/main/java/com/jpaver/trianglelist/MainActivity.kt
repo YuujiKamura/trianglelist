@@ -1424,7 +1424,7 @@ class MainActivity : AppCompatActivity(),
                 myview.setTriangleList(trilistUndo, mScale)
                 myview.resetViewToLastTapTriangle()
 
-                trilistUndo.trilist_.clear()
+                trilistUndo.trilist.clear()
 
                 bindingMain.fabUndo.backgroundTintList = getColorStateList(R.color.colorPrimary)
                 editorResetBy(getList(deductionMode))
@@ -3048,15 +3048,12 @@ class MainActivity : AppCompatActivity(),
             str.append(line)
             str.append(System.getProperty("line.separator"))
         }
-        //dedlist.scale(PointXY(0f,0f),3f,3f)
         myTriangleList = trilist
         myDeductionList = dedlist
         turnToBlankTrilistUndo()
-        //trilist.scale(PointXY(0f,0f), 5f)
-        //if( anglefirst != 180f )
+
         trilist.recoverState(PointXY(0f, 0f))
-        //trilist.setChildsToAllParents()
-//        myDeductionList.scale(PointXY(0f,0f), 1f, 1f)
+
         myview.setDeductionList(dedlist, mScale)
         myview.setTriangleList(trilist, mScale)
         myview.resetViewToLastTapTriangle()

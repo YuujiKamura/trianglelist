@@ -28,7 +28,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
     // region pointNumber
 
-    private fun arrangeNumber(isUse: Boolean = true ): PointXY{
+    fun arrangeNumber(isUse: Boolean = true ): PointXY{
         if(flags.isMovedByUser || flags.isAutoAligned ) return pointnumber
         if(!isUse) return weightedMidpoint(25f)
         return autoAlignPointNumber()
@@ -36,10 +36,10 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
     val lengthNotConnected: Float
         get() {
-            if (nodeTriangleC_ == null) return lengthC_
-            if (nodeTriangleB_ == null) return lengthB_
+            if (nodeTriangleC_ == null) return length[2]
+            if (nodeTriangleB_ == null) return length[1]
 
-            return lengthC_
+            return length[2]
         }
 
     private fun autoAlignPointNumber() : PointXY{
@@ -244,7 +244,6 @@ class Triangle : EditObject, Cloneable<Triangle> {
     override fun clone(): Triangle {
         val b = Triangle()
         try {
-            flags.isAutoAligned = true
             b.flags = flags.copy()
 
             b.length = length.copyOf(length.size)
@@ -1369,11 +1368,11 @@ class Triangle : EditObject, Cloneable<Triangle> {
         pathS_!!.move(to)
     }
 
-    fun scale(basepoint: PointXY?, scale: Float) {
+    fun scale(basepoint: PointXY, scale: Float) {
         scale_ *= scale
-        //pointAB_.scale(basepoint, scale);
-        //pointBC_.scale(basepoint, scale);
-        point[0].scale(basepoint!!, scale)
+        //pointAB.scale(basepoint, scale);
+        //pointBC.scale(basepoint, scale);
+        point[0].scale(basepoint, scale)
         pointcenter.scale(basepoint, scale)
         pointnumber.scale(basepoint, scale)
         length[0] *= scale
