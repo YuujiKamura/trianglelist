@@ -938,7 +938,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
             val pn = tri.pointnumber
             val pcOffsetToN = pc//.offset(pn, circleSize * 1.2f )
             val pnOffsetToC = pn.offset(pc, circleSize * 1.1f )
-            val arrowTail = pcOffsetToN.offset(pn, pcOffsetToN.lengthTo(pnOffsetToC) * 0.7f).rotate(pcOffsetToN, 10f)
+            val arrowTail = pcOffsetToN.offset(pn, pcOffsetToN.lengthTo(pnOffsetToC) * 0.3f).rotate(pcOffsetToN, 10f)
             canvas.drawLine(
                 pcOffsetToN.x,
                 -pcOffsetToN.y,
