@@ -218,16 +218,16 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
         val la = tri.lengthAforce_.formattedString(2)
         val lb = tri.lengthBforce_.formattedString(2)
         val lc = tri.lengthCforce_.formattedString(2)
-        val dimA = alignVByVector(tri.myDimAlignA_, pca, pab)
-        val dimB = alignVByVector(tri.myDimAlignB_, pab, pbc)//flip(tri.myDimAlignB_, tri.dimAngleB_ )
-        val dimC = alignVByVector(tri.myDimAlignC_, pbc, pca)//flip(tri.myDimAlignC_, tri.dimAngleC_ )
+        val dimA = alignVByVector(tri.dimalignA, pca, pab)
+        val dimB = alignVByVector(tri.dimalignB, pab, pbc)//flip(tri.myDimAlignB_, tri.dimAngleB_ )
+        val dimC = alignVByVector(tri.dimalignC, pbc, pca)//flip(tri.myDimAlignC_, tri.dimAngleC_ )
 
         writeLine(pca, pab, 8)
         writeLine(pab, pbc, 8)
         writeLine(pbc, pca, 8)
 
         // DimTexts
-        if(tri.myNumber ==1 || tri.parentBC > 2)
+        if(tri.mynumber ==1 || tri.parentside > 2)
             writeText(la, tri.dimpoint[0], 8, ts, dimA, pab.calcDimAngle(pca), 1f)
         writeText(lb, tri.dimpoint[1], 8, ts, dimB, pbc.calcDimAngle(pab), 1f)
         writeText(lc, tri.dimpoint[2], 8, ts, dimC, pca.calcDimAngle(pbc), 1f)
@@ -237,7 +237,7 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
         val pc = tri.pointcenter
         // 本体
         writeCircle(pn, circleSize, 4, 1f)
-        writeText(tri.myNumber.toString(), tri.pointnumber, 4, ts, 5, 0f, 1f)
+        writeText(tri.mynumber.toString(), tri.pointnumber, 4, ts, 5, 0f, 1f)
 
         //引き出し矢印線の描画
         if( tri.isCollide(tri.pointnumber) == false ){
@@ -250,16 +250,16 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
         }
 
         // 測点
-        if(tri.myName_ != "") {
+        if(tri.name != "") {
             val noffset = -250f
-            val nlength = -tri.myName_.length*500f+noffset
+            val nlength = -tri.name.length*500f+noffset
             val nhalflength = nlength*0.5f+noffset
             val slv = trilist_.sokutenListVector
             var align = 2
             if( slv < 0 ) align = 8
 
             writeText(
-                tri.myName_,
+                tri.name,
                 pab.offset( pca, nhalflength ),
                 4,
                 ts,
