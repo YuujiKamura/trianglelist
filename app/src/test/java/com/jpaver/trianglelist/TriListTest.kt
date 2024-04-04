@@ -503,9 +503,9 @@ class TriListTest {
         val pca = tri.pointCA_
         val pab = tri.pointAB
         val pbc = tri.pointBC
-        val alignVdimA = dxfwriter.alignVByVector(tri.dimalignA, pca, pab)
-        val alignVdimB = dxfwriter.alignVByVector(tri.dimalignB, pab, pbc)//flip(tri.myDimAlignB_, tri.dimAngleB_ )
-        val alignVdimC = dxfwriter.alignVByVector(tri.dimalignC, pbc, pca)//flip(tri.myDimAlignC_, tri.dimAngleC_ )
+        val alignVdimA = dxfwriter.alignVByVector(tri.dimVerticalA, pca, pab)
+        val alignVdimB = dxfwriter.alignVByVector(tri.dimVerticalB, pab, pbc)//flip(tri.myDimAlignB_, tri.dimAngleB_ )
+        val alignVdimC = dxfwriter.alignVByVector(tri.dimVerticalC, pbc, pca)//flip(tri.myDimAlignC_, tri.dimAngleC_ )
 
         Assert.assertEquals(3, alignVdimA)
         Assert.assertEquals(1, alignVdimB)

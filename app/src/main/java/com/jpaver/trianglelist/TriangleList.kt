@@ -305,9 +305,9 @@ class TriangleList : EditList {
 
     fun setDimsUnconnectedSideToOuter(target: Triangle?) {
         if(target == null ) return
-        if (target.nodeTriangleA_ == null) target.dimalignA = 1 else target.dimalignA = 3
-        if (target.nodeTriangleB_ == null) target.dimalignB = 1 else if (target.nodeTriangleB_!!.parentside > 2 ) target.dimalignB = 3
-        if (target.nodeTriangleC_ == null) target.dimalignC = 1 else if (target.nodeTriangleC_!!.parentside > 2 ) target.dimalignC = 3
+        if (target.nodeTriangleA_ == null) target.dimVerticalA = 1 else target.dimVerticalA = 3
+        if (target.nodeTriangleB_ == null) target.dimVerticalB = 1 else if (target.nodeTriangleB_!!.parentside > 2 ) target.dimVerticalB = 3
+        if (target.nodeTriangleC_ == null) target.dimVerticalC = 1 else if (target.nodeTriangleC_!!.parentside > 2 ) target.dimVerticalC = 3
     }
 
     fun recoverState(bp: PointXY) {
