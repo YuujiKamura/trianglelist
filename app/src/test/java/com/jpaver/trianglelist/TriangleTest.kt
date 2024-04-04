@@ -252,9 +252,9 @@ class TriangleTest {
         tri1.rotateDimSideAlign(0)
         tri1.setDimPoint()
         Assert.assertEquals(-0.67f, tri1.dimpoint[0].x, 0.01f)
-        tri1.flipDimAlignH(0)
+        tri1.flipDimAlignVertical(0)
         Assert.assertEquals(1, tri1.dimalignA.toLong())
-        tri1.flipDimAlignH(0)
+        tri1.flipDimAlignVertical(0)
         Assert.assertEquals(3, tri1.dimalignA.toLong())
     }
 
