@@ -40,7 +40,7 @@ class MainViewModel {
         Log.d("fabDimSide", "fabDimSide 4")
         when (WorH){
             "W" -> triAndDimside.first.rotateDimSideAlign(triAndDimside.second)
-            "H" -> triAndDimside.first.flipDimAlignH(triAndDimside.second)
+            "H" -> triAndDimside.first.flipDimAlignVertical(triAndDimside.second)
         }
 
         refreshMethod()

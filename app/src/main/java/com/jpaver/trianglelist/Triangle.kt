@@ -12,19 +12,89 @@ import kotlin.math.sin
 @Suppress("NAME_SHADOWING")
 class Triangle : EditObject, Cloneable<Triangle> {
 
-    fun rotate(basepoint: PointXY, addDegree: Float, recover: Boolean = false ) {
-        if (parentside < 9 && recover ) return
-        if (!recover) angleInLocal_ += addDegree else angleInLocal_ = addDegree
-
-        //val allpoints = arrayOf(*point, *dimpoint, pointcenter, pointCA_, pointAB, pointBC)
-        //allpoints.map { it.rotate(basepoint, addDegree) }
-
-        point[0] = point[0].rotate(basepoint, addDegree)
-        angle += addDegree
-        calcPoints(point[0], angle)
-        setDimPath(dimH_)
+    //region dimAlign
+    fun setDimPath(ts: Float) {
+        dimH_ = ts
+        path[0] = PathAndOffset(scale_, pointAB, point[0], dimalignA, dimsideA, dimH_)
+        path[1] = PathAndOffset(scale_, pointBC, pointAB, dimalignB, dimsideB, dimH_)
+        path[2] = PathAndOffset(scale_, point[0], pointBC, dimalignC, dimsideC, dimH_)
+        pathS_ = PathAndOffset(scale_, pointAB, point[0], 4, 0, dimH_)
 
     }
+
+    fun autoSetDimAlign(): Int { // 1:下 3:上
+        dimalignA = autoAlignDimVertical(0)
+        dimalignB = autoAlignDimVertical(1)
+        dimalignC = autoAlignDimVertical(2)
+
+        check_dimpoint_distances(0)
+
+        setDimPath(dimH_)
+        return myDimAlign_
+    }
+
+    fun check_dimpoint_distances( index_basepoint: Int, nearby: Float = 1.0f): List<Boolean> {
+        val targets = this.dimpoint
+        val distances = this.dimpoint[index_basepoint].distancesTo(targets)
+
+        //距離が1.0fより小さく、0ではない条件を満たすかどうかでBooleanリストを生成
+        return distances.map { it > 0f && it < nearby }
+    }
+
+
+    // 呼び出す場所によって、強制になってしまう。
+    fun autoAlignDimHorisonal() {
+        // 短い時は外側？
+
+        if (lengthNotSized[2] < 1.5f || lengthNotSized[1] < 1.5f) {
+            dimalignB = 1
+            dimalignC = 1
+        }
+
+    }
+
+    //夾角の、1:外 　3:内
+    val OUTER = 1
+    val INNER = 3
+
+    val SIDEA = 0
+    val SIDEB = 1
+    val SIDEC = 2
+    fun autoAlignDimVertical(side: Int): Int {
+        // A辺 の場合、２重断面など特殊接続の時は、内側
+        if (side == SIDEA && (parentside == 9 || parentside == 10 || parentside > 2 || nodeTriangleB_ != null || nodeTriangleC_ != null))
+            return INNER
+
+        // B辺 または C辺 の場合、接続三角形が null でなければ内側に
+        if (side == SIDEB && nodeTriangleB_ != null || side == SIDEC && nodeTriangleC_ != null)
+            return INNER
+
+        // 上記のいずれの条件にも当てはまらない場合は外側
+        return OUTER
+    }
+
+    fun flipOneToThree(num: Int): Int {
+        if (num == OUTER) return INNER
+        if (num == INNER) return OUTER
+        return num
+    }
+
+    fun flipDimAlignVertical(side: Int) {
+        if (side == 0) dimalignA = flipOneToThree(dimalignA)
+        if (side == 1) {
+            dimalignB = flipOneToThree(dimalignB)
+            isChangeDimAlignB_ = true
+        }
+        if (side == 2) {
+            dimalignC = flipOneToThree(dimalignC)
+            isChangeDimAlignC_ = true
+        }
+        if (side == 4) nameAlign_ = flipOneToThree(nameAlign_)
+        setDimPath(dimH_)
+    }
+
+    //endregion dimalign
+
 
     // region pointNumber
 
@@ -343,7 +413,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     internal constructor(myParent: Triangle?, dP: Params) {
         setOn(myParent, dP.pl, dP.a, dP.b, dP.c)
         name = dP.name
-        autoSetDimSideAlign()
+        autoAlignDimHorisonal()
     }
 
     internal constructor(dP: Params, angle: Float) {
@@ -475,7 +545,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
     val dimAlignA: Int
-        get() = setDimAlignByInnerAngleOf(0)
+        get() = autoAlignDimVertical(0)
 
     /*
   if( myAngle <= 90 || getAngle() >= 270 ) {
@@ -487,7 +557,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
       else return myDimAlignA = 3;
   }*/
     val dimAlignB: Int
-        get() = setDimAlignByInnerAngleOf(1)
+        get() = autoAlignDimVertical(1)
 
     /*        if( getAngleMpAB() <= 450f || getAngleMpAB() >= 270f ||
                  getAngleMpAB() <= 90f || getAngleMpAB() >= -90f ) {
@@ -499,7 +569,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
          if( childSide_ == 3 || childSide_ == 4 ) return myDimAlignB = 1;
          return  myDimAlignB = 3;*/
     val dimAlignC: Int
-        get() = setDimAlignByInnerAngleOf(2)
+        get() = autoAlignDimVertical(2)
 
     /*
          if( getAngleMmCA() <= 450f || getAngleMmCA() >= 270f ||
@@ -826,20 +896,6 @@ class Triangle : EditObject, Cloneable<Triangle> {
         //nodeTriangleA_.setChild(this, cParam.getSide() );
         return clone()
     }
-
-    fun setDimPath(ts: Float) {
-        dimH_ = ts
-        path[0] = PathAndOffset(scale_, pointAB, point[0], dimalignA, dimsideA, dimH_)
-        path[1] = PathAndOffset(scale_, pointBC, pointAB, dimalignB, dimsideB, dimH_)
-        path[2] = PathAndOffset(scale_, point[0], pointBC, dimalignC, dimsideC, dimH_)
-        pathS_ = PathAndOffset(scale_, pointAB, point[0], 4, 0, dimH_)
-
-        //sla_ = formattedString( lengthNotSized[0], 3);
-        //slb_ = formattedString( lengthNotSized[1], 3);
-        //slc_ = formattedString( lengthNotSized[2], 3);
-    }
-
-
 
     fun setCParamFromParentBC(pbc: Int) {
         var curLCR = cParam_.lcr
@@ -1256,98 +1312,6 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
     //endregion old hataage method
 
-    //region dimAlign
-    fun setDimAlignByInnerAngleOf(side: Int): Int {    // 夾角の、1:外 　3:内
-        // side == 0 の場合の特定の条件で 1 を返す
-        if (side == 0 && (parentside == 9 || parentside == 10 || parentside > 2 || nodeTriangleB_ != null || nodeTriangleC_ != null)) {
-            return 1
-        }
-
-        // side == 1 または side == 2 の場合、それぞれ nodeTriangleB_ と nodeTriangleC_ が null でなければ 1 を返す
-        return if (side == 1 && nodeTriangleB_ != null || side == 2 && nodeTriangleC_ != null) {
-            1
-        } else 3
-
-        // 上記のいずれの条件にも当てはまらない場合は 3 を返す
-    }
-
-    //fun check_dimpoint_distances( index_basepoint: Int, nearby: Float = 1.0f): List<Boolean> {
-      //  val targets = this.dimpoint
-        //val distances = this.dimpoint[index_basepoint].distancesTo(targets)
-        // 距離が1.0fより小さく、0ではない条件を満たすかどうかでBooleanリストを生成
-        //return distances.map { it > 0f && it < nearby }
-    //}
-
-    fun autoSetDimAlign(): Int { // 1:下 3:上
-        dimalignA = setDimAlignByInnerAngleOf(0)
-        dimalignB = setDimAlignByInnerAngleOf(1)
-        dimalignC = setDimAlignByInnerAngleOf(2)
-
-        /*
-        if(  getAngle() <= 90 || getAngle() >= 270 ) { // 基線の角度が90°～270°の間
-            myDimAlign = 3;
-            myDimAlignA = 3;
-        } else { // それ以外(90°以下～270°の間)
-            myDimAlign = 1;
-            myDimAlignA = 1;
-            myDimAlignB = 1;
-            myDimAlignC = 1;
-        }
-
-        //AB
-        if( getAngleMpAB() <= 90 || getAngle() >= 270 ) { // 基線+ABの角度が90°～270°の間
-            myDimAlignB = 3;
-        } else {
-            myDimAlignB = 1;
-        }
-
-        if( getAngleMmCA() <= 90 || getAngle() >= 270 ) { // 基線-CAの角度が90°～270°の間
-            myDimAlignC = 3;
-        } else {
-            myDimAlignC = 1;
-        }
-*/
-        setDimPath(dimH_)
-        return myDimAlign_
-    }
-    fun flipOneToThree(num: Int): Int {
-        if (num == 1) return 3
-        return if (num == 3) 1 else num
-        // sonomama kaesu.
-    }
-
-    // 呼び出す場所によって、強制になってしまう。
-    fun autoSetDimSideAlign() {
-        // 短い時は外側？
-        if (lengthNotSized[2] < 1.5f || lengthNotSized[1] < 1.5f) {
-            dimalignB = 1
-            dimalignC = 1
-        }
-        // 和が短い時は寄せる
-        //if( lengthNotSized[2]+lengthNotSized[0] < 7.0f ) dimSideAlignB_ = 1;
-        //if( lengthNotSized[1]+lengthNotSized[2] < 7.0f ) dimSideAlignC_ = 2;
-        // 和が短い時は外に出す
-        //if( lengthNotSized[2]+lengthNotSized[0] < 5.0f ) dimSideAlignB_ = 4;
-        //if( lengthNotSized[1]+lengthNotSized[2] < 5.0f ) dimSideAlignC_ = 4;
-    }
-
-    fun flipDimAlignH(side: Int) {
-        if (side == 0) dimalignA = flipOneToThree(dimalignA)
-        if (side == 1) {
-            dimalignB = flipOneToThree(dimalignB)
-            isChangeDimAlignB_ = true
-        }
-        if (side == 2) {
-            dimalignC = flipOneToThree(dimalignC)
-            isChangeDimAlignC_ = true
-        }
-        if (side == 4) nameAlign_ = flipOneToThree(nameAlign_)
-        setDimPath(dimH_)
-    }
-
-    //endregion dimalign
-
-
     //region scale and translate
     fun scale(basepoint: PointXY, scale: Float) {
         scale_ *= scale
@@ -1384,6 +1348,21 @@ class Triangle : EditObject, Cloneable<Triangle> {
     // endregion scale and translate
 
     //region rotater
+    fun rotate(basepoint: PointXY, addDegree: Float, recover: Boolean = false ) {
+        if (parentside < 9 && recover ) return
+        if (!recover) angleInLocal_ += addDegree else angleInLocal_ = addDegree
+
+        //val allpoints = arrayOf(*point, *dimpoint, pointcenter, pointCA_, pointAB, pointBC)
+        //allpoints.map { it.rotate(basepoint, addDegree) }
+
+        point[0] = point[0].rotate(basepoint, addDegree)
+        angle += addDegree
+        calcPoints(point[0], angle)
+        setDimPath(dimH_)
+
+    }
+
+
     // 自分の次の番号がくっついている辺を調べてA辺にする。
     // 他の番号にあって自身の辺上に無い場合は、A辺を変更しない。
     fun rotateLengthBy(side: Int) {
@@ -1488,9 +1467,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         return num
     }
 
-
-
-    //endregion
+    //endregion rotater
 
     //region isBoolean
     fun alreadyHaveChild(pbc: Int): Boolean {
