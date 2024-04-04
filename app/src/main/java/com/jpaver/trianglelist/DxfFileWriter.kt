@@ -80,9 +80,9 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
 
         //if( tri.myAngle_ > 90 ) dimA = 1
         //if( tri.myAngle_ > 270 ) dimA = 3
-        val tateAlignDimA = alignVByVector(tri.dimalignA, pca, pab)
-        val tateAlignDimB = alignVByVector(tri.dimalignB, pab, pbc)//flip(tri.myDimAlignB_, tri.dimAngleB_ )
-        val tateAlignDImC = alignVByVector(tri.dimalignC, pbc, pca)//flip(tri.myDimAlignC_, tri.dimAngleC_ )
+        val tateAlignDimA = alignVByVector(tri.dimVerticalA, pca, pab)
+        val tateAlignDimB = alignVByVector(tri.dimVerticalB, pab, pbc)//flip(tri.myDimAlignB_, tri.dimAngleB_ )
+        val tateAlignDImC = alignVByVector(tri.dimVerticalC, pbc, pca)//flip(tri.myDimAlignC_, tri.dimAngleC_ )
 
         var nagasaA = tri.lengthAforce_.formattedString(2)
         var nagasaB = tri.lengthBforce_.formattedString(2)

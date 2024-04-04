@@ -13,23 +13,33 @@ import kotlin.math.sin
 class Triangle : EditObject, Cloneable<Triangle> {
 
     //region dimAlign
-    fun setDimPath(ts: Float) {
-        dimH_ = ts
-        path[0] = PathAndOffset(scale_, pointAB, point[0], dimalignA, dimsideA, dimH_)
-        path[1] = PathAndOffset(scale_, pointBC, pointAB, dimalignB, dimsideB, dimH_)
-        path[2] = PathAndOffset(scale_, point[0], pointBC, dimalignC, dimsideC, dimH_)
-        pathS_ = PathAndOffset(scale_, pointAB, point[0], 4, 0, dimH_)
+
+    // あらゆる場所でよばれるため、実質効いてない
+    private fun arrangeDims(isArrange: Boolean = false ) {
+        if(isArrange) autoSetDimAlign()
+        setDimPath(dimHeight)
+        setDimPoint()
+    }
+
+    fun setDimPath(ts: Float = dimHeight) {
+        dimHeight = ts
+        path[0] = PathAndOffset(scale_, pointAB, point[0], dimVerticalA, dimHorisonalA, dimHeight)
+        path[1] = PathAndOffset(scale_, pointBC, pointAB, dimVerticalB, dimHorisonalB, dimHeight)
+        path[2] = PathAndOffset(scale_, point[0], pointBC, dimVerticalC, dimHorisonalC, dimHeight)
+        pathS_ = PathAndOffset(scale_, pointAB, point[0], 4, 0, dimHeight)
 
     }
 
-    fun autoSetDimAlign(): Int { // 1:下 3:上
-        dimalignA = autoAlignDimVertical(0)
-        dimalignB = autoAlignDimVertical(1)
-        dimalignC = autoAlignDimVertical(2)
+
+    fun autoSetDimAlign(): Int {
+
+        dimVerticalA = autoDimVertical(0)
+        dimVerticalB = autoDimVertical(1)
+        dimVerticalC = autoDimVertical(2)
 
         check_dimpoint_distances(0)
 
-        setDimPath(dimH_)
+        setDimPath()
         return myDimAlign_
     }
 
@@ -42,17 +52,6 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
 
-    // 呼び出す場所によって、強制になってしまう。
-    fun autoAlignDimHorisonal() {
-        // 短い時は外側？
-
-        if (lengthNotSized[2] < 1.5f || lengthNotSized[1] < 1.5f) {
-            dimalignB = 1
-            dimalignC = 1
-        }
-
-    }
-
     //夾角の、1:外 　3:内
     val OUTER = 1
     val INNER = 3
@@ -60,7 +59,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     val SIDEA = 0
     val SIDEB = 1
     val SIDEC = 2
-    fun autoAlignDimVertical(side: Int): Int {
+    fun autoDimVertical(side: Int): Int {
         // A辺 の場合、２重断面など特殊接続の時は、内側
         if (side == SIDEA && (parentside == 9 || parentside == 10 || parentside > 2 || nodeTriangleB_ != null || nodeTriangleC_ != null))
             return INNER
@@ -80,17 +79,17 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
     fun flipDimAlignVertical(side: Int) {
-        if (side == 0) dimalignA = flipOneToThree(dimalignA)
+        if (side == 0) dimVerticalA = flipOneToThree(dimVerticalA)
         if (side == 1) {
-            dimalignB = flipOneToThree(dimalignB)
+            dimVerticalB = flipOneToThree(dimVerticalB)
             isChangeDimAlignB_ = true
         }
         if (side == 2) {
-            dimalignC = flipOneToThree(dimalignC)
+            dimVerticalC = flipOneToThree(dimVerticalC)
             isChangeDimAlignC_ = true
         }
         if (side == 4) nameAlign_ = flipOneToThree(nameAlign_)
-        setDimPath(dimH_)
+        setDimPath(dimHeight)
     }
 
     //endregion dimalign
@@ -225,8 +224,6 @@ class Triangle : EditObject, Cloneable<Triangle> {
     var angleCA = 0f
     var angleAB = 0f
     var angleBC = 0f
-    var dimAngleB_ = 0f
-    var dimAngleC_ = 0f
     var parentnumber = -1 // 0:root
     var parentside = -1 // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
     var connectionType_ = 0 // 0:sameByParent, 1:differentLength, 2:floatAndDifferent
@@ -234,21 +231,21 @@ class Triangle : EditObject, Cloneable<Triangle> {
     var cParam_ = ConnParam(0, 0, 2, 0f)
     var mynumber = 1
     var myDimAlign_ = 0
-    var dimalignA = 3
-    var dimalignB = 3
-    var dimalignC = 3
+    var dimVerticalA = 3
+    var dimVerticalB = 3
+    var dimVerticalC = 3
     var isChangeDimAlignB_ = false
     var isChangeDimAlignC_ = false
-    var dimsideA = 0
-    var dimsideB = 0
-    var dimsideC = 0
+    var dimHorisonalA = 0
+    var dimHorisonalB = 0
+    var dimHorisonalC = 0
     var lastTapSide_ = -1
     var color_ = 4
     var childSide_ = 0
     var name = ""
     var myBP_ = Bounds(0f, 0f, 0f, 0f)
     var pathS_: PathAndOffset? = null // = PathAndOffset();
-    var dimH_ = 0f
+    var dimHeight = 0f
     var nodeTriangleB_: Triangle? = null
     var nodeTriangleC_: Triangle? = null
     var nodeTriangleA_: Triangle? = null
@@ -329,12 +326,12 @@ class Triangle : EditObject, Cloneable<Triangle> {
             b.parentside = parentside
             b.parentnumber = parentnumber
 
-            b.dimalignA = dimalignA
-            b.dimalignB = dimalignB
-            b.dimalignC = dimalignC
-            b.dimsideA = dimsideA
-            b.dimsideB = dimsideB
-            b.dimsideC = dimsideC
+            b.dimVerticalA = dimVerticalA
+            b.dimVerticalB = dimVerticalB
+            b.dimVerticalC = dimVerticalC
+            b.dimHorisonalA = dimHorisonalA
+            b.dimHorisonalB = dimHorisonalB
+            b.dimHorisonalC = dimHorisonalC
             //b.point = point.clone()
             b.point[0] = point[0].clone()
             b.pointAB = pointAB.clone()
@@ -413,7 +410,6 @@ class Triangle : EditObject, Cloneable<Triangle> {
     internal constructor(myParent: Triangle?, dP: Params) {
         setOn(myParent, dP.pl, dP.a, dP.b, dP.c)
         name = dP.name
-        autoAlignDimHorisonal()
     }
 
     internal constructor(dP: Params, angle: Float) {
@@ -545,7 +541,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
     val dimAlignA: Int
-        get() = autoAlignDimVertical(0)
+        get() = autoDimVertical(0)
 
     /*
   if( myAngle <= 90 || getAngle() >= 270 ) {
@@ -557,7 +553,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
       else return myDimAlignA = 3;
   }*/
     val dimAlignB: Int
-        get() = autoAlignDimVertical(1)
+        get() = autoDimVertical(1)
 
     /*        if( getAngleMpAB() <= 450f || getAngleMpAB() >= 270f ||
                  getAngleMpAB() <= 90f || getAngleMpAB() >= -90f ) {
@@ -565,11 +561,11 @@ class Triangle : EditObject, Cloneable<Triangle> {
              if( lengthB*scale_ > 1.5f ) return myDimAlignB = 3;
              else return myDimAlignB = 1;
          }
- 
+
          if( childSide_ == 3 || childSide_ == 4 ) return myDimAlignB = 1;
          return  myDimAlignB = 3;*/
     val dimAlignC: Int
-        get() = autoAlignDimVertical(2)
+        get() = autoDimVertical(2)
 
     /*
          if( getAngleMmCA() <= 450f || getAngleMmCA() >= 270f ||
@@ -578,7 +574,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
              if( lengthC*scale_ > 1.5f ) return myDimAlignC = 3;
              else return myDimAlignC = 1;
          }
- 
+
          if( childSide_ == 5 || childSide_ == 6 ) return myDimAlignC = 1;
          return  myDimAlignC = 3;*/
     fun pointCenter_(): PointXY {
@@ -919,20 +915,20 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
     fun setDimAlignByChild() {
         if (!isChangeDimAlignB_) {
-            dimalignB = if (nodeTriangleB_ == null) 1 else 3
+            dimVerticalB = if (nodeTriangleB_ == null) 1 else 3
         }
         if (!isChangeDimAlignC_) {
-            dimalignC = if (nodeTriangleC_ == null) 1 else 3
+            dimVerticalC = if (nodeTriangleC_ == null) 1 else 3
         }
     }
 
     fun setDimAligns(sa: Int, sb: Int, sc: Int, ha: Int, hb: Int, hc: Int) {
-        dimsideA = sa
-        dimsideB = sb
-        dimsideC = sc
-        dimalignA = ha
-        dimalignB = hb
-        dimalignC = hc
+        dimHorisonalA = sa
+        dimHorisonalB = sb
+        dimHorisonalC = sc
+        dimVerticalA = ha
+        dimVerticalB = hb
+        dimVerticalC = hc
     }
 
     fun setDimPoint() {
@@ -1222,13 +1218,6 @@ class Triangle : EditObject, Cloneable<Triangle> {
         return pointcenter
     }
 
-    private fun arrangeDims() {
-        setDimPath(dimH_)
-        setDimPoint()
-        dimAngleB_ = angleMpAB
-        dimAngleC_ = angleMmCA
-    }
-
     fun calcPoints(ref: Triangle?, refside: Int) {
         setNode(ref, refside)
         val plist: Array<PointXY?>
@@ -1358,7 +1347,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         point[0] = point[0].rotate(basepoint, addDegree)
         angle += addDegree
         calcPoints(point[0], angle)
-        setDimPath(dimH_)
+        setDimPath(dimHeight)
 
     }
 
@@ -1394,14 +1383,14 @@ class Triangle : EditObject, Cloneable<Triangle> {
             dimpoint[0] = dimpoint[1]
             dimpoint[1] = dimpoint[2]
             dimpoint[2] = pp.clone()
-            pi = dimalignA
-            dimalignA = dimalignB
-            dimalignB = dimalignC
-            dimalignC = pi
-            pi = dimsideA
-            dimsideA = dimsideB
-            dimsideB = dimsideC
-            dimsideC = pi
+            pi = dimVerticalA
+            dimVerticalA = dimVerticalB
+            dimVerticalB = dimVerticalC
+            dimVerticalC = pi
+            pi = dimHorisonalA
+            dimHorisonalA = dimHorisonalB
+            dimHorisonalB = dimHorisonalC
+            dimHorisonalC = pi
         }
         if (side == 2) { // C to A
             pf = length[0]
@@ -1427,14 +1416,14 @@ class Triangle : EditObject, Cloneable<Triangle> {
             dimpoint[0] = dimpoint[2]
             dimpoint[2] = dimpoint[1]
             dimpoint[1] = pp.clone()
-            pi = dimalignA
-            dimalignA = dimalignC
-            dimalignC = dimalignB
-            dimalignB = pi
-            pi = dimsideA
-            dimsideA = dimsideC
-            dimsideC = dimsideB
-            dimsideB = pi
+            pi = dimVerticalA
+            dimVerticalA = dimVerticalC
+            dimVerticalC = dimVerticalB
+            dimVerticalB = pi
+            pi = dimHorisonalA
+            dimHorisonalA = dimHorisonalC
+            dimHorisonalC = dimHorisonalB
+            dimHorisonalB = pi
         }
     }
 
@@ -1453,11 +1442,11 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
     fun rotateDimSideAlign(side: Int) {
-        if (side == 0) dimsideA = rotateZeroToThree(dimsideA)
-        if (side == 1) dimsideB = rotateZeroToThree(dimsideB)
-        if (side == 2) dimsideC = rotateZeroToThree(dimsideC)
+        if (side == 0) dimHorisonalA = rotateZeroToThree(dimHorisonalA)
+        if (side == 1) dimHorisonalB = rotateZeroToThree(dimHorisonalB)
+        if (side == 2) dimHorisonalC = rotateZeroToThree(dimHorisonalC)
         if (side == 4) nameSideAlign_ = rotateZeroToThree(nameSideAlign_)
-        setDimPath(dimH_)
+        setDimPath(dimHeight)
     }
 
     fun rotateZeroToThree(num: Int): Int {
