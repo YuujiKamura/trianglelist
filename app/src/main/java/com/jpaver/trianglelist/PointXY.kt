@@ -45,11 +45,11 @@ class PointXY : Cloneable<PointXY> {
 
     fun mirroredAndScaledPoint(lineStart: PointXY, lineEnd: PointXY, scaleX: Float, scaleY: Float, scaleOrigin: PointXY = PointXY(0f,0f) ): PointXY {
 
-        return mirroredPoint(lineStart, lineEnd).scale(scaleOrigin, scaleX,scaleY)
+        return mirror(lineStart, lineEnd, 0.8f ).scale(scaleOrigin, scaleX,scaleY)
     }
 
 
-
+/*
     private fun mirroredPoint(lineStart: PointXY, lineEnd: PointXY): PointXY {
         // 直線の傾き（m）とy切片（b）を計算
         val dx = lineEnd.x - lineStart.x
@@ -77,7 +77,7 @@ class PointXY : Cloneable<PointXY> {
         // ミラーリングされた点を返す
         return PointXY(xm, ym)
     }
-
+*/
 
     fun mirror(lineStart: PointXY, lineEnd: PointXY, clockwise: Float = -1f ): PointXY {
         validateInputs( lineStart, lineEnd )
