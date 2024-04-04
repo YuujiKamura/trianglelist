@@ -217,7 +217,7 @@ class TriangleTest {
     fun testSideEffectInBasicTypes() {
         val t = Triangle(5f, 5f, 5f)
         var me = 0
-        me = t.rotateZeroToThree(me)
+        me = t.cycleIncrement(me)
         // こうやって代入しない限り、meは渡された時点でクローンに代わり、副作用っぽく変化したりしない。
         // オブジェクトは違う。引数として生で渡された時、ポインタとして渡されるので、副作用が起きる。
         // t.sideEffectGo( object.clone ) とかすれば予防できる。
@@ -236,8 +236,8 @@ class TriangleTest {
     @Test
     fun testDimSideAlign() {
         val tri1 = Triangle(3f, 4f, 5f)
-        tri1.rotateDimSideAlign(0)
-        Assert.assertEquals(1, tri1.dimHorisonalA.toLong())
+        tri1.incrementDimsPosition(0)
+        Assert.assertEquals(1, tri1.dimHorizontalA.toLong())
         tri1.setDimPoint()
         Assert.assertEquals(-2.325f, tri1.dimpoint[0].x, 0.001f)
         var dim = PointXY(-1.5f, 0f)
@@ -249,7 +249,7 @@ class TriangleTest {
         Assert.assertEquals(0.75f, haba, 0.001f)
         dim = dim.offset(offsetLeft, haba)
         Assert.assertEquals(-2.25f, dim.x, 0.001f)
-        tri1.rotateDimSideAlign(0)
+        tri1.incrementDimsPosition(0)
         tri1.setDimPoint()
         Assert.assertEquals(-0.67f, tri1.dimpoint[0].x, 0.01f)
         tri1.flipDimAlignVertical(0)

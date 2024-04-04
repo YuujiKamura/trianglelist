@@ -2719,7 +2719,7 @@ class MainActivity : AppCompatActivity(),
                 val pt: PointXY = mt.pointnumber
                 val cp = parentBCtoCParam(mt.parentside, mt.lengthNotSized[0], mt.cParam_)
 
-                writer.write("${mt.mynumber},${mt.getLengthA()},${mt.getLengthB()},${mt.getLengthC()},${mt.parentnumber},${mt.parentside},${mt.myName_()},${pt.x},${pt.y},${mt.flags.isMovedByUser},${mt.color_},${mt.dimHorisonalA},${mt.dimHorisonalB},${mt.dimHorisonalC},${mt.dimVerticalA},${mt.dimVerticalB},${mt.dimVerticalC},${cp.side},${cp.type},${cp.lcr},${mt.isChangeDimAlignB_},${mt.isChangeDimAlignC_},${mt.angle},${mt.pointCA_.x},${mt.pointCA_.y},${mt.angleInLocal_}")
+                writer.write("${mt.mynumber},${mt.getLengthA()},${mt.getLengthB()},${mt.getLengthC()},${mt.parentnumber},${mt.parentside},${mt.myName_()},${pt.x},${pt.y},${mt.flags.isMovedByUser},${mt.color_},${mt.dimHorizontalA},${mt.dimHorizontalB},${mt.dimHorizontalC},${mt.dimVerticalA},${mt.dimVerticalB},${mt.dimVerticalC},${cp.side},${cp.type},${cp.lcr},${mt.isChangeDimAlignB_},${mt.isChangeDimAlignC_},${mt.angle},${mt.pointCA_.x},${mt.pointCA_.y},${mt.angleInLocal_}")
                 writer.newLine()
             }
 
