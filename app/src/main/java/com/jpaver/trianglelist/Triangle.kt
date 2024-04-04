@@ -14,7 +14,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
     //region dimAlign
 
-    // あらゆる場所でよばれるため、実質効いてない
+    // あらゆる場所でよばれる
     private fun arrangeDims(isArrange: Boolean = false ) {
         if(isArrange) autoDimHorizontal(0)
         setDimPath(dimHeight)
@@ -29,8 +29,6 @@ class Triangle : EditObject, Cloneable<Triangle> {
         pathS_ = PathAndOffset(scale_, pointAB, point[0], 4, 0, dimHeight)
 
     }
-
-
 
     fun incrementDimsPosition(side: Int) {
         when (side) {
@@ -73,7 +71,6 @@ class Triangle : EditObject, Cloneable<Triangle> {
         val booleans = distances.map { it > 0f && it < nearby }
         return booleans
     }
-
 
     //夾角の、1:外 　3:内
     val OUTER = 1
@@ -128,19 +125,14 @@ class Triangle : EditObject, Cloneable<Triangle> {
         return autoAlignPointNumber()
     }
 
-    /*val lengthNotConnected: Float
-        get() {
-            if (nodeTriangleC_ == null) return length[2]
-            if (nodeTriangleB_ == null) return length[1]
 
-            return length[2]
-        }*/
 
     private fun autoAlignPointNumber() : PointXY{
         if (getArea() <= 4f && (lengthAforce_ < 1.5f || lengthBforce_ < 1.5f || lengthCforce_ < 1.5f)){
             pointnumber = pointcenter
             flags.isAutoAligned = true
-            return pointUnconnectedSide(pointcenter, 1f, 1f, PointXY(0f, 0f))//.offset(pointcenter, lengthNotConnected)
+            return pointUnconnectedSide(pointcenter, 1f, 1f, PointXY(0f, 0f))
+                //.offset(pointcenter, pointcenter.lengthTo(pointnumber)*-10f )
         }
 
         return weightedMidpoint(25f)

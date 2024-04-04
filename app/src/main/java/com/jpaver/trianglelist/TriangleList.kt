@@ -297,10 +297,10 @@ class TriangleList : EditList {
     }
 
     fun arrangeNumbers(){
-        //trilist.forEach { it.arrangeNumber() }
-        for (i in trilist.indices) {
-            trilist[i].arrangeNumber()
-        }
+        trilist.forEachIndexed() { index, triangle ->  triangle.arrangeNumber() }
+        //for (i in trilist.indices) {
+          //  trilist[i].arrangeNumber()
+        //}
     }
 
     fun setDimsUnconnectedSideToOuter(target: Triangle?) {
