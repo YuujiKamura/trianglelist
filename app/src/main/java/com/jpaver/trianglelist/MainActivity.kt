@@ -409,11 +409,12 @@ class MainActivity : AppCompatActivity(),
     val adManager = AdManager()
     private var mInterstitialAd: InterstitialAd? = null
     val adInitializer: AdInitializer = AdInitializerFactory.create()
+    val USEADMOB = false
     private fun adMobInit() {
 
         adInitializer.initialize()
 
-        if ( BuildConfig.FLAVOR != "free" ){
+        if ( !USEADMOB ){
             Log.d("AdMob", "adMobInit() cancelled.")
             return
         }
@@ -469,7 +470,7 @@ class MainActivity : AppCompatActivity(),
     private fun adMobDisable() {
         adInitializer.disableBannerAd()
 
-        if ( BuildConfig.FLAVOR != "free" ){
+        if ( !USEADMOB ){
             Log.d("AdMob", "adMobDisable() cancelled.")
             return
         }
@@ -485,7 +486,7 @@ class MainActivity : AppCompatActivity(),
     private fun adShowInterStitial() {
         adInitializer.showInterstitialAd()
 
-        if ( BuildConfig.FLAVOR != "free" ){
+        if ( !USEADMOB ){
             Log.d("AdMob", "adShowInterStitial() cancelled.")
             return
         }
@@ -1735,7 +1736,7 @@ class MainActivity : AppCompatActivity(),
         }
 
         myview.setTriangleList(myTriangleList, mScale)
-        setListAndResetView( { myview.resetView()} )
+        setListAndResetView( { whenTriDed( {myview.resetView(myview.toLastTapTriangle())}, {myview.invalidate()} ) } )
         setTitles()
 
 
@@ -1899,7 +1900,7 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun trilistAdd(params: Params, triList: TriangleList ){
-        val newTri = createNewTriangle( params, triList.getMemberByIndex(params.pn) )
+        val newTri = createNewTriangle( params, triList.getByNumber(params.pn) )
         triList.add(newTri, true)
         triList.lastTapNumber_ = triList.size()
     }
@@ -2717,11 +2718,11 @@ class MainActivity : AppCompatActivity(),
 
             // 三角形リストのデータをCSVファイルに書き込み
             for (index in 1..myTriangleList.size()) {
-                val mt: Triangle = myTriangleList.getMemberByIndex(index)
+                val mt: Triangle = myTriangleList.getByNumber(index)
                 val pt: PointXY = mt.pointnumber
-                val cp = parentBCtoCParam(mt.parentside, mt.lengthNotSized[0], mt.cParam_)
+                val cp = parentBCtoCParam(mt.connectionType, mt.lengthNotSized[0], mt.cParam_)
 
-                writer.write("${mt.mynumber},${mt.getLengthA()},${mt.getLengthB()},${mt.getLengthC()},${mt.parentnumber},${mt.parentside},${mt.myName_()},${pt.x},${pt.y},${mt.flags.isMovedByUser},${mt.color_},${mt.dimHorizontalA},${mt.dimHorizontalB},${mt.dimHorizontalC},${mt.dimVerticalA},${mt.dimVerticalB},${mt.dimVerticalC},${cp.side},${cp.type},${cp.lcr},${mt.isChangeDimAlignB_},${mt.isChangeDimAlignC_},${mt.angle},${mt.pointCA_.x},${mt.pointCA_.y},${mt.angleInLocal_}")
+                writer.write("${mt.mynumber},${mt.getLengthA()},${mt.getLengthB()},${mt.getLengthC()},${mt.parentnumber},${mt.connectionType},${mt.myName_()},${pt.x},${pt.y},${mt.flags.isMovedByUser},${mt.color_},${mt.dimHorizontalA},${mt.dimHorizontalB},${mt.dimHorizontalC},${mt.dimVerticalA},${mt.dimVerticalB},${mt.dimVerticalC},${cp.side},${cp.type},${cp.lcr},${mt.isChangeDimAlignB_},${mt.isChangeDimAlignC_},${mt.angle},${mt.pointCA_.x},${mt.pointCA_.y},${mt.angleInLocal_}")
                 writer.newLine()
             }
 
@@ -2864,7 +2865,7 @@ class MainActivity : AppCompatActivity(),
         addTriangle(trilist, chunks, pointfirst, anglefirst)
 
 
-        val mt = trilist.getMemberByIndex(trilist.size())
+        val mt = trilist.getByNumber(trilist.size())
 
         mt.setMyName_(chunks[6]!!.toString())
         //pointNumber
@@ -2962,7 +2963,7 @@ class MainActivity : AppCompatActivity(),
                 }
                 else {
 
-                    val ptri = trilist.getMemberByIndex(chunks[4].toInt())
+                    val ptri = trilist.getByNumber(chunks[4].toInt())
                     val cp = ConnParam(
                         chunks[17].toInt(),
                         chunks[18].toInt(),
@@ -2979,7 +2980,7 @@ class MainActivity : AppCompatActivity(),
                     )
 
                 }
-                trilist.getMemberByIndex(trilist.size()).parentside = chunks[5].toInt()
+                trilist.getByNumber(trilist.size()).connectionType = chunks[5].toInt()
             }
             else{
 
@@ -2994,7 +2995,7 @@ class MainActivity : AppCompatActivity(),
 
                 trilist.add(
                     Triangle(
-                        trilist.getMemberByIndex(chunks[4].toInt()), ConnParam(
+                        trilist.getByNumber(chunks[4].toInt()), ConnParam(
                             cp.side,
                             cp.type,
                             cp.lcr,
@@ -3006,8 +3007,8 @@ class MainActivity : AppCompatActivity(),
                     true
                 )
 
-                val mT = trilist.getMemberByIndex(trilist.size())
-                mT.parentside = chunks[5].toInt()
+                val mT = trilist.getByNumber(trilist.size())
+                mT.connectionType = chunks[5].toInt()
                 /*
                 if( chunks.size > 25 && mT.parentBC_ >= 9 ) mT.rotate(
                     mT.pointCA_,
@@ -3017,7 +3018,7 @@ class MainActivity : AppCompatActivity(),
                 // trilist.getTriangle(trilist.size()).setCParamFromParentBC( chunks[5]!!.toInt() )
             }
 
-            val mT = trilist.getMemberByIndex(trilist.size())
+            val mT = trilist.getByNumber(trilist.size())
             mT.setMyName_(chunks[6])
             if( trilist.size() > 1 ) trilist.get(trilist.size() - 1).childSide_ = chunks[5].toInt()
 
@@ -3050,6 +3051,7 @@ class MainActivity : AppCompatActivity(),
             str.append(line)
             str.append(System.getProperty("line.separator"))
         }
+        //trilist.lastTapNumber_ = 1
         myTriangleList = trilist
         myDeductionList = dedlist
         turnToBlankTrilistUndo()

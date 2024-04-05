@@ -155,16 +155,16 @@ class TriangleTest {
 
         // 内容の一致
         Assert.assertEquals(one.mynumber.toLong(), two.nodeTriangleA_!!.mynumber.toLong())
-        Assert.assertEquals(one.nodeTriangleB_!!.mynumber.toLong(), two.mynumber.toLong())
+        Assert.assertEquals(one.nodeTriangleB!!.mynumber.toLong(), two.mynumber.toLong())
 
         // オブジェクトポインタの一致。
         Assert.assertEquals(one, two.nodeTriangleA_)
-        Assert.assertEquals(one.nodeTriangleB_, two)
+        Assert.assertEquals(one.nodeTriangleB, two)
         two.setOn(one, 2, 5f, 5f)
 
         // オブジェクトポインタの一致。
         Assert.assertEquals(one, two.nodeTriangleA_)
-        Assert.assertEquals(one.nodeTriangleC_, two)
+        Assert.assertEquals(one.nodeTriangleC, two)
     }
 
     @Test
@@ -176,16 +176,16 @@ class TriangleTest {
 
         // 内容の一致
         Assert.assertEquals(one.mynumber.toLong(), two.nodeTriangleA_!!.mynumber.toLong())
-        Assert.assertEquals(one.nodeTriangleB_!!.mynumber.toLong(), two.mynumber.toLong())
+        Assert.assertEquals(one.nodeTriangleB!!.mynumber.toLong(), two.mynumber.toLong())
 
         // オブジェクトポインタの一致。
         Assert.assertEquals(one, two.nodeTriangleA_)
-        Assert.assertEquals(one.nodeTriangleB_, two)
+        Assert.assertEquals(one.nodeTriangleB, two)
         two.setOn(one, 2, 5f, 5f)
 
         // オブジェクトポインタの一致。
         Assert.assertEquals(one, two.nodeTriangleA_)
-        Assert.assertEquals(one.nodeTriangleC_, two)
+        Assert.assertEquals(one.nodeTriangleC, two)
     }
 
     @Test
@@ -195,16 +195,16 @@ class TriangleTest {
 
         // 内容の一致
         Assert.assertEquals(one.mynumber.toLong(), two.nodeTriangleA_!!.mynumber.toLong())
-        Assert.assertEquals(one.nodeTriangleB_!!.mynumber.toLong(), two.mynumber.toLong())
+        Assert.assertEquals(one.nodeTriangleB!!.mynumber.toLong(), two.mynumber.toLong())
 
         // オブジェクトポインタの一致。
         Assert.assertEquals(one, two.nodeTriangleA_)
-        Assert.assertEquals(one.nodeTriangleB_, two)
+        Assert.assertEquals(one.nodeTriangleB, two)
         two.setOn(one, 2, 5f, 5f)
 
         // オブジェクトポインタの一致。
         Assert.assertEquals(one, two.nodeTriangleA_)
-        Assert.assertEquals(one.nodeTriangleC_, two)
+        Assert.assertEquals(one.nodeTriangleC, two)
     }
 
     @Test
