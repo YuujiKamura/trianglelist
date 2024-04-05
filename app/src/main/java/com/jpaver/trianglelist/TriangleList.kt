@@ -24,11 +24,12 @@ class TriangleList : EditList {
         }
     }
 
+    // region parameters
     var trilist: ArrayList<Triangle>
     var trilistStored_: ArrayList<Triangle>
     var myCollisionList: ArrayList<Collision>? = null
     var outlineList_: ArrayList<ArrayList<PointXY>>? = null
-    var lastTapNumber_ = 1
+    var lastTapNumber_ = 0
     var lastTapSide_ = -1
     var lastTapCollideNum_ = 0
     var selectedNumber = 0
@@ -39,6 +40,8 @@ class TriangleList : EditList {
     var myLength = PointXY(0f, 0f)
     var outlineStr_ = ""
     var isDoubleTap_ = false
+
+    //endregion parameters
 
     fun toStrings(): String {
         return trilist.joinToString(separator = "") { it.toStrings() }
@@ -591,9 +594,14 @@ class TriangleList : EditList {
         else trilist[number - 1]
     }
 
-    fun getLastSelected(): Triangle{
+    fun getLastTriangle(): Triangle{
         if(lastTapNumber_<1) return Triangle()
         return trilist[lastTapNumber_-1]
+    }
+
+    fun getLastNumber(): Int{
+        if(lastTapNumber_<1) return 1
+        return lastTapNumber_
     }
 
     // by number start 1, not index start 0.

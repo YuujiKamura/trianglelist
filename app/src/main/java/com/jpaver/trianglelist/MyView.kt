@@ -566,13 +566,11 @@ class MyView(context: Context, attrs: AttributeSet?) :
     }
 
     fun toLastTapTriangle(): PointXY {
-        return myTriangleList.getLastSelected().pointnumber
+        return myTriangleList.getLastTriangle().pointnumber
     }
 
     fun lstn(): Int{
-        var lstn = myTriangleList.lastTapNumber_
-        if( lstn < 1 ) lstn = myTriangleList.size()
-        return lstn
+        return myTriangleList.getLastNumber()
     }
 
     fun onceTransViewToLastTapTriangle(){

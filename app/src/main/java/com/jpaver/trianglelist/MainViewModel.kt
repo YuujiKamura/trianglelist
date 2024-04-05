@@ -28,21 +28,15 @@ class MainViewModel {
     }
 
 
-    fun fabDimSide( WorH: String, refreshMethod:()->Unit ){
-        Log.d("fabDimSide", "fabDimSide 1")
+    fun fabDimArrange(WorH: String, refreshMethod:()->Unit ){
         if(deductionMode || myTriangleList.lastTapNumber_ < 1 ){
-            Log.d("fabDimSide", "fabDimSide 2")
             return
         }
-
-        Log.d("fabDimSide", "fabDimSide 3")
         val triAndDimside = isConnectedOrNot()
-        Log.d("fabDimSide", "fabDimSide 4")
         when (WorH){
             "W" -> triAndDimside.first.incrementDimsPosition(triAndDimside.second)
             "H" -> triAndDimside.first.flipDimAlignVertical(triAndDimside.second)
         }
-
         refreshMethod()
     }
 

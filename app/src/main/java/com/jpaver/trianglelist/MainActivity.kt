@@ -1363,13 +1363,13 @@ class MainActivity : AppCompatActivity(),
         setCommonFabListener(fab_dimsidew) {
 
             mainViewModel.setMember( deductionMode, myTriangleList, myDeductionList )
-            mainViewModel.fabDimSide("W", { setListAndResetView( { myview.invalidate() }, false ) } )
+            mainViewModel.fabDimArrange("W", { setListAndResetView( { myview.invalidate() }, false ) } )
 
         }
 
         setCommonFabListener(fab_dimsideh) {
             mainViewModel.setMember( deductionMode, myTriangleList, myDeductionList )
-            mainViewModel.fabDimSide("H", { setListAndResetView( { myview.invalidate() }, false ) }  )
+            mainViewModel.fabDimArrange("H", { setListAndResetView( { myview.invalidate() }, false ) }  )
 
         }
 
