@@ -5,10 +5,10 @@ import com.jpaver.trianglelist.util.Cloneable
 
 class PathAndOffset(
     private var myScale: Float = 1.0f,
-    p1_: PointXY = PointXY(0f,0f),
-    p2_: PointXY = PointXY(0f,0f),
-    align: Int = 1,
-    var alignSide: Int = 1,
+    leftP: PointXY = PointXY(0f,0f),
+    rightP: PointXY = PointXY(0f,0f),
+    alignVertical: Int = 1,
+    var alignHorizonal: Int = 1,
     private var dimH: Float = 0.05f
 ) : Cloneable<PathAndOffset>{
 
@@ -24,83 +24,81 @@ class PathAndOffset(
         return b
     }
 
-    var pointA: PointXY
-    var pointB: PointXY
-    var pointD: PointXY
+    var pointA: PointXY = PointXY(0f,0f)
+    var pointB: PointXY = PointXY(0f,0f)
+    var pointD: PointXY = PointXY(0f,0f)
     var offsetV = 0f
     var offsetH = 0f
     var textSpacer = 5f
 
     init {
-        var p1 = p1_.clone()
-        var p2 = p2_.clone()
-        val p3: PointXY
-        PointXY(0f, 0f)
-        setOffset(0, align)
+        val SOKUTENPATH = 4
+        setPointAB( leftP, rightP )
+        setVerticalOffset(0, alignVertical)
+        if(alignVertical != SOKUTENPATH ) initDimPoint(leftP,rightP, alignVertical)
+        if(alignVertical == SOKUTENPATH ) initSoktenNamePath(leftP, rightP)
+        pointD = pointA.calcMidPoint(pointB).offset(pointB, offsetH)
+    }
 
-        //val vlP2P3 = p2_.vectorTo(p3_).lengthXY()
-        //val vlP1P3 = p1_.vectorTo(p3_).lengthXY()
+    fun initDimPoint( leftP: PointXY,rightP: PointXY, alignVertical: Int ){
+        val SUKIMA = 0.3f*myScale
+        val lineLength = leftP.lengthTo(rightP)
+        val movement = SUKIMA+lineLength
+        val HABAYOSE = lineLength*0.275f
+        val HATAAGE = 2.5f*myScale
+        val CENTER = 0
+        val INRIGHT = 1
+        val INLEFT = 2
+        val OUTERRIGHT = 3
+        val OUTERLEFT =  4
 
-
-/*        if( vlP2P3 < 2.0f*myScale_ ) offsetH_ = p1_.vectorTo(p2_).lengthXY()*haba
-        if( vlP1P3 < 2.0f*myScale_ ) offsetH_ = -p1_.vectorTo(p2_).lengthXY()*haba
-        if( vlP2P3 < 1.0f*myScale_ ) offsetH_ = p1_.vectorTo(p2_).lengthXY()*haba*2
-        if( vlP1P3 < 1.0f*myScale_ ) offsetH_ = -p1_.vectorTo(p2_).lengthXY()*haba*2
-*/
-
-
-        p1.lengthTo(p2)*2f
-        //if(length_ < 2.0){
-            // 2mより短い場合はパスを広げる
-            //p1.set(p1.offset(p2, -len ))// )
-            //p2.set(p2.offset(p1, -len ))//p2.lengthTo(p1)*-1.5f )
-        //}
-        val lineLength = p1.vectorTo(p2).lengthXY()
-        // 幅寄せ
-        val haba = lineLength*0.275f
-
-        val hata = 2.5f*myScale
-        val sukima = 0.3f*myScale
-
-        if( this.alignSide == 1 ) offsetH = -haba
-        if( this.alignSide == 2 ) offsetH = haba
-        if( this.alignSide == 3 ) {
-            p1 = p1.offset(p2, -hata )
-            p2 = p2.offset(p1, sukima+lineLength)
-            offsetH = -0.15f*myScale
-        }
-        if( this.alignSide == 4 ){
-            p2 = p2.offset(p1, -hata )
-            p1 = p1.offset(p2, sukima+lineLength)
-            offsetH = 0.15f*myScale
+        when( alignHorizonal ){
+            CENTER  -> {}
+            INRIGHT -> offsetH = -HABAYOSE
+            INLEFT  -> offsetH = HABAYOSE
+            OUTERRIGHT -> initPointsOuter(-1, leftP, rightP, HATAAGE, movement )
+            OUTERLEFT  -> initPointsOuter( 1, rightP, leftP, HATAAGE, movement )
         }
 
-/*
-        if(length < 1.0f){  // 短い辺の寸法を立てる
-            p3 = p1.calcMidPoint(p2).offset(p3_, -0.3f*myScale_)
-            p4 = p3.offset(p3_, -1.3f*myScale_)
-            p1 = p3
-            p2 = p4
-        }
-*/
-
-        pointA = p1
-        pointB = p2
+        /*
+                if(length < 1.0f){  // 短い辺の寸法を立てる
+                    p3 = p1.calcMidPoint(p2).offset(p3_, -0.3f*myScale_)
+                    p4 = p3.offset(p3_, -1.3f*myScale_)
+                    p1 = p3
+                    p2 = p4
+                }
+        */
 
         // 上下逆さまにならない様に反転
-        if(p1.x >= p2.x && align != 4) flipPassAndOffset(align, p1, p2)
+        if( pointA.x >= pointB.x ) flipPassAndOffset(alignVertical, pointA, pointB )
+    }
 
-        if(align == 4){ // 線の左側、というか進行方向の左側
+    fun initPointsOuter(direction: Int, leftP:PointXY, rightP: PointXY, HATAAGE: Float, movement: Float){
+        pointA = leftP.offset(rightP, -HATAAGE )
+        pointB = rightP.offset(leftP, movement)
+        offsetH = direction*0.15f*myScale
+    }
 
-            p3 = p1.offset(p2, -3f* this.myScale)// 一時変数
-            p2 = p1.offset(p2, -0.5f* this.myScale)
-            p1 = p3
+    fun initSoktenNamePath(p1: PointXY, p2: PointXY){
 
-            setPointAB( p1, p2 )
-            if( pointA.y < pointB.y ) pointA.flip( pointB )
+        // -だと線の左側、というか進行方向の左側
+        val SIDE = alignHorizonal
+        var leftpoint = p1
+        var rightpoint = p2
+
+        when(SIDE){
+            1 -> {
+                leftpoint = p2
+                rightpoint = p1
+            }
         }
 
-        pointD = pointA.calcMidPoint(pointB).offset(pointB, offsetH)
+        val tmp = leftpoint.offset( rightpoint, -3f * this.myScale)
+        val outerright = leftpoint.offset(rightpoint, -0.5f * this.myScale)
+        val outerleft  = tmp
+
+        setPointAB( outerleft, outerright )
+        if( pointA.y < pointB.y ) pointA.flip( pointB )
     }
 
     fun move(to: PointXY){
@@ -113,26 +111,24 @@ class PathAndOffset(
         pointB = p2
     }
 
-    private fun setOffset(flipside: Int, align: Int){
+    private fun setVerticalOffset(flipside: Int, alignVertical: Int){
         val offsetUpper = -dimH * 0.2f //- textSpacer_ //* 0.7f
         val offsetLower =  dimH * 0.9f //textSpacer_ ///* 0.7f )
         //var offsetMiddle= dimH_/2
         if( flipside == 0 ) { // 夾角の、 1:内、3:外
-            if (align == 3) offsetV = offsetUpper
-            if (align == 1) offsetV = offsetLower
+            if (alignVertical == 3) offsetV = offsetUpper
+            if (alignVertical == 1) offsetV = offsetLower
         }
         if( flipside == 1 ) { // 夾角の、 1:外、3:内
-            if (align == 1) offsetV = offsetUpper
-            if (align == 3) offsetV = offsetLower
+            if (alignVertical == 1) offsetV = offsetUpper
+            if (alignVertical == 3) offsetV = offsetLower
         }
         //if(length < 1.0f) offsetV_ = offsetMiddle
     }
 
-
-
     private fun flipPassAndOffset(align: Int, p1: PointXY, p2: PointXY) {
 
-        setOffset(1, align)
+        setVerticalOffset(1, align)
         offsetH = -offsetH
 
         pointA = p2

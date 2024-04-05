@@ -110,9 +110,9 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
         val tPathA = tri.path[0]
         val tPathB = tri.path[1]
         val tPathC = tri.path[2]
-        if(tPathA.alignSide > 2) writeLine( tPathA.pointA, tPathA.pointB, 7)
-        if(tPathB.alignSide > 2) writeLine( tPathB.pointA, tPathB.pointB, 7)
-        if(tPathC.alignSide > 2) writeLine( tPathC.pointA, tPathC.pointB, 7)
+        if(tPathA.alignHorizonal > 2) writeLine( tPathA.pointA, tPathA.pointB, 7)
+        if(tPathB.alignHorizonal > 2) writeLine( tPathB.pointA, tPathB.pointB, 7)
+        if(tPathC.alignHorizonal > 2) writeLine( tPathC.pointA, tPathC.pointB, 7)
 
 
         // 番号
