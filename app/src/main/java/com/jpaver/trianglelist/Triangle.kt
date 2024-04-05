@@ -1197,7 +1197,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         pointBC = calculatePointBC( basepoint )
         calculateInternalAngles()
         calculatePointCenter()
-        arrangeDims()
+        arrangeDims(isArrangeNumber)
         if(isArrangeNumber) pointnumber = arrangeNumber(isArrangeNumber)
         setBoundaryBox()
     }

@@ -480,7 +480,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         //if( myTriangleList.size() > 0 ) trilistStored_ = myTriangleList.clone()
         myScale = setscale    // 描画倍率は外から指定する
         myTriangleList = triList.clone() as TriangleList
-        myTriangleList.scaleAndSetPath(
+        myTriangleList.attachToTheView(
             PointXY(
                 0f,
                 0f
@@ -1054,7 +1054,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         val scaleFactor = 1.19f * writer.kaizoudo_ *(2.0f/experience/printScale)// - (myScale/100)
         myScale *= scaleFactor
         // scale
-        myTriangleList.scaleAndSetPath(
+        myTriangleList.attachToTheView(
             PointXY(
                 0f,
                 0f
@@ -1167,7 +1167,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
         //scale back
         myScale /= scaleFactor
-        myTriangleList.scaleAndSetPath(
+        myTriangleList.attachToTheView(
             PointXY(
                 0f,
                 0f
