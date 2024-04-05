@@ -268,39 +268,39 @@ class TriangleList : EditList {
         //        this.cloneByScale(basepoint, myScale);
     }
 
-    /*public void cloneByScale(PointXY basepoint, float scale){
-        myTriListAtView.clear();
-        for (int i = 0; i < trilist_.size(); i++ ) {
-            myTriListAtView.add(trilist_.get(i).clone());
-            myTriListAtView.get(i).scale(basepoint, scale);
-        }
-    }*/
     fun scale(basepoint: PointXY, scale: Float) {
         this.scale *= scale
-        for (i in trilist.indices) {
-            trilist[i].scale(basepoint, scale)
+        forEach { triangle ->
+            triangle.scale(basepoint, scale)
         }
     }
 
-    fun scaleAndSetPath(basepoint: PointXY, scale: Float, ts: Float) {
+    fun attachToTheView(basepoint: PointXY, scale: Float, ts: Float) {
         this.scale *= scale
-        for (i in trilist.indices) {
-            trilist[i].scale(basepoint, scale)
-            trilist[i].setDimPath(ts)
+        forEach { triangle ->
+            triangle.scale(basepoint, scale)
+
+            //これがないと結果が変わる、なぜだろう？
+            triangle.setDimPath(ts)
         }
     }
 
     fun setDimPathTextSize(ts: Float) {
-        for (i in trilist.indices) {
-            trilist[i].setDimPath(ts)
+        forEach { triangle ->
+            triangle.setDimPath(ts)
         }
     }
 
     fun arrangeNumbers(){
-        trilist.forEachIndexed() { index, triangle ->  triangle.arrangeNumber() }
-        //for (i in trilist.indices) {
-          //  trilist[i].arrangeNumber()
-        //}
+        forEach { triangle ->
+            triangle.arrangeNumber()
+        }
+    }
+
+    fun forEach(action: (Triangle) -> Unit) {
+        trilist.forEachIndexed { _, triangle ->
+            action(triangle)
+        }
     }
 
     fun setDimsUnconnectedSideToOuter(target: Triangle?) {

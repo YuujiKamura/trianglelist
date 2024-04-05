@@ -39,7 +39,7 @@ class MainViewModel {
         val triAndDimside = isConnectedOrNot()
         Log.d("fabDimSide", "fabDimSide 4")
         when (WorH){
-            "W" -> triAndDimside.first.autoDimHorizontal(0)//incrementDimsPosition(triAndDimside.second)
+            "W" -> triAndDimside.first.incrementDimsPosition(triAndDimside.second)
             "H" -> triAndDimside.first.flipDimAlignVertical(triAndDimside.second)
         }
 
