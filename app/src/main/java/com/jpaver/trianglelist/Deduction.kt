@@ -259,6 +259,7 @@ class Deduction(var num: Int = 0,
         if(!tri.isCollide( point )) return false
 
         pointFlag = tri.pointUnconnectedSide(point, 1f, 1f, PointXY(0f, 0f))
+        shapeAngle = tri.angleUnconnectedSide()
 
         return true
     }

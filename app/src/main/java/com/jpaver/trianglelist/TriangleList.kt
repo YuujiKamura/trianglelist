@@ -686,18 +686,27 @@ class TriangleList : EditList {
     }
 
     fun dedmapping(dedlist: DeductionList, axisY: Int) {
-        for (i in trilist.indices) trilist[i].dedcount = 0f
-        for (i in 0 until dedlist.size()) {
-            for (ii in trilist.indices) {
-                val isCol =
-                    trilist[ii].isCollide(dedlist[i + 1].point.scale(PointXY(1f, axisY.toFloat())))
-                if (isCol) {
-                    trilist[ii].dedcount++
-                    dedlist[i + 1].overlap_to = trilist[ii].mynumber
-                }
+        // トライアングルリストのdedcountをリセット
+        trilist.forEach { it.dedcount = 0f }
+
+        // Deductionオブジェクトごとに処理
+        dedlist.dedlist_.forEachIndexed { index, deduction ->
+            processDeduction(deduction, axisY) // index + 1 を渡すのは、元のコードが1ベースのインデックスを想定しているため
+        }
+    }
+
+    private fun processDeduction(deduction: Deduction, axisY: Int) {
+        trilist.forEach { tri ->
+            // スケールされた点での衝突判定
+            val isCol = tri.isCollide(deduction.point.scale(PointXY(1f, axisY.toFloat())))
+            if (isCol) {
+                tri.dedcount++
+                deduction.overlap_to = tri.mynumber
+                deduction.shapeAngle = tri.angleUnconnectedSide()
             }
         }
     }
+
 
     fun getTapIndexArray(tapP: PointXY): IntArray {
         val tapIndexArray = IntArray(trilist.size)
