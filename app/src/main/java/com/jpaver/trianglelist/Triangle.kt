@@ -25,7 +25,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     //region dimAlign
 
     // あらゆる場所でよばれる
-    private fun arrangeDims(isVertical:Boolean=false, isHorizontal:Boolean=false ) {
+    private fun arrangeDims(isVertical:Boolean=false, isHorizontal:Boolean=true ) {
         if(isVertical){
             dimVerticalA = autoDimVertical(0)
             dimVerticalB = autoDimVertical(1)
@@ -78,7 +78,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         return num
     }
 
-    fun autoDimHorizontal(indexBasePoint: Int, nearby: Float = 0.5f) {
+    fun autoDimHorizontal(indexBasePoint: Int, nearby: Float = 1.0f) {
         val booleanResults = check_dimpoint_distances(indexBasePoint, nearby)
         booleanResults.forEachIndexed { index, result ->
             if (result) updateDimHorizontals(index)
@@ -86,9 +86,10 @@ class Triangle : EditObject, Cloneable<Triangle> {
         setDimPath()
     }
 
+    //つかうの難しい？
     fun updateDimHorizontals(index: Int){
-        val OUTERRIGHT = 4
-        val OUTERLEFT = 3
+        val OUTERRIGHT = 3
+        val OUTERLEFT = 4
         when (index) {
             SIDEA -> dimHorizontalA = unconnectedSide(OUTERRIGHT,OUTERLEFT)
             SIDEB -> {
@@ -120,7 +121,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     val SIDEB = 1
     val SIDEC = 2
 
-    // カスタムゲッターで呼ばれている
+    // カスタムゲッターでも、呼ばれている
     fun autoDimVertical(side: Int): Int {
         when(side){
             SIDEA -> {
@@ -140,6 +141,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         return OUTER
     }
 
+    // 外側にしたいときがある。
     fun autoDimVerticalByArea(node: Triangle?): Int{
         if(node==null) return OUTER
 
@@ -154,6 +156,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         return num
     }
 
+    // 自動処理の中で呼ばない。
     fun flipDimAlignVertical(side: Int): Int {
         if (side == 0) {
             dimVerticalA = flipOneToThree(dimVerticalA)

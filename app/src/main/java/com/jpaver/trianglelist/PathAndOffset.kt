@@ -31,8 +31,14 @@ class PathAndOffset(
     var offsetH = 0f
     var textSpacer = 5f
 
+    val CENTER = 0
+    val INRIGHT = 1
+    val INLEFT = 2
+    val OUTERRIGHT = 3
+    val OUTERLEFT =  4
+    val SIDE_SOKUTEN = 4
+
     init {
-        val SIDE_SOKUTEN = 4
         setPointAB( leftP, rightP )
         setVerticalOffset(0, alignVertical)
         if(alignVertical != SIDE_SOKUTEN ) initDimPoint(leftP,rightP, alignVertical)
@@ -41,39 +47,33 @@ class PathAndOffset(
     }
 
     fun initDimPoint( leftP: PointXY,rightP: PointXY, alignVertical: Int ){
-        val SUKIMA = 0.3f*myScale
+
         val lineLength = leftP.lengthTo(rightP)
-        val movement = SUKIMA+lineLength
         val HABAYOSE = lineLength*0.275f
-        val HATAAGE = 3*myScale
-        val CENTER = 0
-        val INRIGHT = 1
-        val INLEFT = 2
-        val OUTERRIGHT = 3
-        val OUTERLEFT =  4
 
         when( alignHorizonal ){
             CENTER  -> {}
             INRIGHT -> offsetH = -HABAYOSE
             INLEFT  -> offsetH = HABAYOSE
-            OUTERRIGHT -> initPointsOuter(-1, leftP, rightP, HATAAGE, movement )
-            OUTERLEFT  -> initPointsOuter( 1, rightP, leftP, HATAAGE, movement )
+            OUTERRIGHT -> {
+                initPointsOuter(-1, leftP, rightP, lineLength )
+            }
+            OUTERLEFT  -> {
+                initPointsOuter( 1, rightP, leftP, lineLength )
+            }
         }
-
-        /*
-                if(length < 1.0f){  // 短い辺の寸法を立てる
-                    p3 = p1.calcMidPoint(p2).offset(p3_, -0.3f*myScale_)
-                    p4 = p3.offset(p3_, -1.3f*myScale_)
-                    p1 = p3
-                    p2 = p4
-                }
-        */
 
         // 上下逆さまにならない様に反転
         if( pointA.x >= pointB.x ) flipPassAndOffset(alignVertical, pointA, pointB )
+
+        //standUpShortDim()
     }
 
-    fun initPointsOuter(direction: Int, leftP:PointXY, rightP: PointXY, HATAAGE: Float, movement: Float){
+    fun initPointsOuter(direction: Int, leftP:PointXY, rightP: PointXY, lineLength: Float){
+        val SUKIMA = 0.5f*myScale
+        val movement = SUKIMA+lineLength
+        val HATAAGE = 4*myScale
+
         pointA = leftP.offset(rightP, -HATAAGE )
         pointB = rightP.offset(leftP, movement)
         offsetH = direction*0.15f*myScale
@@ -134,5 +134,13 @@ class PathAndOffset(
         pointA = p2
         pointB = p1
     }
+
+    /*fun standUpShortDim(TO DO)
+    if(length < 1.0f){  // 短い辺の寸法を立てる
+        p3 = p1.calcMidPoint(p2).offset(p3_, -0.3f*myScale_)
+        p4 = p3.offset(p3_, -1.3f*myScale_)
+        p1 = p3
+        p2 = p4
+    }*/
 
 }
