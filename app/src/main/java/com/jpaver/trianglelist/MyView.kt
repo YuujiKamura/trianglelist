@@ -534,7 +534,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         centerInModel.set(myTriangleList.getMemberByIndex(lstn()).pointnumber)
     }
 
-    fun resetView( pt: PointXY){
+    fun resetView( pt: PointXY = pressedInModel.scale(1f,-1f) ){
         centerInModel = pt.clone()
         //drawPoint = pt.clone()
         resetPointToZero()
@@ -765,6 +765,10 @@ class MyView(context: Context, attrs: AttributeSet?) :
             canvas.drawText(strD, pointFlag.x, pointFlag.y-50f, paint)
             canvas.drawText(strDF, pointFlag.x, pointFlag.y-100f, paint)
             canvas.drawCircle(point.x, point.y, ded.lengthX / 2 * ded.myscale, paintYellow)
+
+            val strA = "angle: ${ded.shapeAngle}"
+            canvas.drawText(strA, point.x, point.y-50f, paint)
+
         }
 
         if(point.x <= pointFlag.x) {  //pointFlag is RIGHT from DedCenter

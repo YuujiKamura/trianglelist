@@ -43,9 +43,9 @@ class PointXY : Cloneable<PointXY> {
         return "(x=$x, y=$y)"
     }
 
-    fun mirroredAndScaledPoint(lineStart: PointXY, lineEnd: PointXY, scaleX: Float, scaleY: Float, scaleOrigin: PointXY = PointXY(0f,0f) ): PointXY {
+    fun mirroredAndScaledPoint(lineStart: PointXY, lineEnd: PointXY, scaleX: Float, scaleY: Float, scaleOrigin: PointXY = PointXY(0f,0f), clockwise:Float=1f ): PointXY {
 
-        return mirror(lineStart, lineEnd, 0.8f ).scale(scaleOrigin, scaleX,scaleY)
+        return mirror(lineStart, lineEnd, clockwise ).scale(scaleOrigin, scaleX,scaleY)
     }
 
 

@@ -413,7 +413,7 @@ class MainActivity : AppCompatActivity(),
 
         adInitializer.initialize()
 
-    if ( BuildConfig.FLAVOR != "free" ){
+        if ( BuildConfig.FLAVOR != "free" ){
             Log.d("AdMob", "adMobInit() cancelled.")
             return
         }
@@ -1735,7 +1735,7 @@ class MainActivity : AppCompatActivity(),
         }
 
         myview.setTriangleList(myTriangleList, mScale)
-        setListAndResetView( { whenTriDed( {myview.resetView(myview.toLastTapTriangle())}, {myview.invalidate()} ) } )
+        setListAndResetView( { myview.resetView()} )
         setTitles()
 
 
@@ -1812,6 +1812,7 @@ class MainActivity : AppCompatActivity(),
         // 所属する三角形の判定処理
         myDeductionList.add( processDeduction(params) )
         myview.setDeductionList(myDeductionList, mScale)
+        myview.myTriangleList.dedmapping(myDeductionList, -1)
         lastParams = params
 
         logFabController()
@@ -1840,7 +1841,6 @@ class MainActivity : AppCompatActivity(),
             )
 
             if (params.pn != 0) {
-                myview.myTriangleList.dedmapping(myDeductionList, -1)
                 Log.d(
                     "Deduction",
                     "ptri dedcount" + myview.myTriangleList.get(params.pn).dedcount
@@ -1855,7 +1855,8 @@ class MainActivity : AppCompatActivity(),
                     params.pt.scale(1f,-1f),
                     1f,
                     -1f,
-                    PointXY(0f, 0f)
+                    PointXY(0f, 0f),
+                    0.9f
                 )
                 Log.d("Deduction", "params.point:  " + params.pt.x + ", " + params.pt.y)
                 Log.d("Deduction", "params.pointF: " + params.ptF.x + ", " + params.ptF.y)
@@ -1877,6 +1878,7 @@ class MainActivity : AppCompatActivity(),
 
         // 所属する三角形の判定処理
         myDeductionList.replace(params.n, processDeduction(params) )
+        myview.myTriangleList.dedmapping(myDeductionList, -1)
         return true
     }
 

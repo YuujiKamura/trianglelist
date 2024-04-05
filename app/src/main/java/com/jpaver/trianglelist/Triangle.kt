@@ -142,7 +142,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         if (getArea() <= 4f && (lengthAforce_ < 1.5f || lengthBforce_ < 1.5f || lengthCforce_ < 1.5f)){
             pointnumber = pointcenter
             flags.isAutoAligned = true
-            return pointUnconnectedSide(pointcenter, 1f, 1f, PointXY(0f, 0f))
+            return pointUnconnectedSide(pointcenter, 1f, 1f, PointXY(0f, 0f), 0.8f )
                 //.offset(pointcenter, pointcenter.lengthTo(pointnumber)*-10f )
         }
 
@@ -153,14 +153,20 @@ class Triangle : EditObject, Cloneable<Triangle> {
         pointnumber: PointXY,
         scaleX: Float,
         scaleY: Float,
-        basepoint: PointXY
+        basepoint: PointXY,
+        clockwise: Float=1f
     ): PointXY {
         if (nodeTriangleC_ == null)
-            return pointnumber.mirroredAndScaledPoint(pointBC, point[0], scaleX, scaleY, basepoint)
+            return pointnumber.mirroredAndScaledPoint(pointBC, point[0], scaleX, scaleY, basepoint, clockwise)
         if (nodeTriangleB_ == null)
-            return pointnumber.mirroredAndScaledPoint(pointAB, pointBC, scaleX, scaleY, basepoint)
+            return pointnumber.mirroredAndScaledPoint(pointAB, pointBC, scaleX, scaleY, basepoint, clockwise)
 
         return weightedMidpoint(-35f)
+    }
+
+    fun angleUnconnectedSide(): Float{
+        if (nodeTriangleC_ == null) return -angleMmCA
+        return -angleMpAB
     }
 
     fun setPointNumberMovedByUser_(p: PointXY) {
