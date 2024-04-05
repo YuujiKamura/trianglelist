@@ -26,16 +26,27 @@ class Triangle : EditObject, Cloneable<Triangle> {
         path[0] = PathAndOffset(scale_, pointAB, point[0], dimVerticalA, dimHorizontalA, dimHeight)
         path[1] = PathAndOffset(scale_, pointBC, pointAB, dimVerticalB, dimHorizontalB, dimHeight)
         path[2] = PathAndOffset(scale_, point[0], pointBC, dimVerticalC, dimHorizontalC, dimHeight)
-        pathS_ = PathAndOffset(scale_, pointAB, point[0], 4, 0, dimHeight)
+        pathS_ = PathAndOffset(scale_, pointAB, point[0], 4, unconnectedSide(), dimHeight)
 
     }
 
+    fun unconnectedSide(): Int{
+        val OUTERRIGHT = 1
+        val OUTERLEFT = -1
+
+        if (nodeTriangleC_ == null) return OUTERRIGHT
+        return OUTERLEFT
+    }
+
+
+    val SIDESOK = 3
+
     fun incrementDimsPosition(side: Int) {
         when (side) {
-            0 -> dimHorizontalA = cycleIncrement(dimHorizontalA)
-            1 -> dimHorizontalB = cycleIncrement(dimHorizontalB)
-            2 -> dimHorizontalC = cycleIncrement(dimHorizontalC)
-            3 -> nameHorizontal = cycleIncrement(nameHorizontal)
+            SIDEA -> dimHorizontalA = cycleIncrement(dimHorizontalA)
+            SIDEB -> dimHorizontalB = cycleIncrement(dimHorizontalB)
+            SIDEC -> dimHorizontalC = cycleIncrement(dimHorizontalC)
+            SIDESOK -> nameHorizontal = cycleIncrement(nameHorizontal)
         }
         setDimPath(dimHeight)
     }
@@ -1197,7 +1208,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         pointBC = calculatePointBC( basepoint )
         calculateInternalAngles()
         calculatePointCenter()
-        arrangeDims(isArrangeNumber)
+        arrangeDims()
         if(isArrangeNumber) pointnumber = arrangeNumber(isArrangeNumber)
         setBoundaryBox()
     }

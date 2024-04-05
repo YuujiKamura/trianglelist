@@ -688,9 +688,9 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
         // 線
         drawTriLines( canvas, tri, paintLine )
-        if(tPathA.alignSide > 2) canvas.drawPath(makePath(tPathA), paintLine)
-        if(tPathB.alignSide > 2) canvas.drawPath(makePath(tPathB), paintLine)
-        if(tPathC.alignSide > 2) canvas.drawPath(makePath(tPathC), paintLine)
+        if(tPathA.alignHorizonal > 2) canvas.drawPath(makePath(tPathA), paintLine)
+        if(tPathB.alignHorizonal > 2) canvas.drawPath(makePath(tPathB), paintLine)
+        if(tPathC.alignHorizonal > 2) canvas.drawPath(makePath(tPathC), paintLine)
 
         // 番号
         drawTriangleNumber(canvas, tri, paintDim, paintB)
@@ -704,7 +704,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
         // 測点
         if(tri.myName_() != ""){
-            canvas.drawTextOnPath(tri.myName_(), makePath(tPathS), 0f, -2f, paintSok)
+            canvas.drawTextOnPath(tri.myName_(), makePath(tPathS), 0f, -5f, paintSok)
             canvas.drawPath(makePath(tPathS), paintLine)
         }
         //Log.d( "myView", "drawTriangle: " + tri.myNumber )
