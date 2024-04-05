@@ -32,11 +32,11 @@ class PathAndOffset(
     var textSpacer = 5f
 
     init {
-        val SOKUTENPATH = 4
+        val SIDE_SOKUTEN = 4
         setPointAB( leftP, rightP )
         setVerticalOffset(0, alignVertical)
-        if(alignVertical != SOKUTENPATH ) initDimPoint(leftP,rightP, alignVertical)
-        if(alignVertical == SOKUTENPATH ) initSoktenNamePath(leftP, rightP)
+        if(alignVertical != SIDE_SOKUTEN ) initDimPoint(leftP,rightP, alignVertical)
+        if(alignVertical == SIDE_SOKUTEN ) initSoktenNamePath(leftP, rightP)
         pointD = pointA.calcMidPoint(pointB).offset(pointB, offsetH)
     }
 
@@ -45,7 +45,7 @@ class PathAndOffset(
         val lineLength = leftP.lengthTo(rightP)
         val movement = SUKIMA+lineLength
         val HABAYOSE = lineLength*0.275f
-        val HATAAGE = 2.5f*myScale
+        val HATAAGE = 3*myScale
         val CENTER = 0
         val INRIGHT = 1
         val INLEFT = 2

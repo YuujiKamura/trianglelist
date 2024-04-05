@@ -101,7 +101,7 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
         writeLine( pbc, pca, 7)
 
         // DimTexts
-        if( tri.mynumber == 1 || tri.parentside > 2)
+        if( tri.mynumber == 1 || tri.connectionType > 2)
             writeTextDimension(tateAlignDimA, nagasaA, tri.dimpoint[0], pab.calcDimAngle(pca))
         writeTextDimension(tateAlignDimB, nagasaB, tri.dimpoint[1], pbc.calcDimAngle(pab))
         writeTextDimension(tateAlignDImC, nagasaC, tri.dimpoint[2], pca.calcDimAngle(pbc))

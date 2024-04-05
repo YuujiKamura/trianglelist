@@ -531,10 +531,10 @@ class MyView(context: Context, attrs: AttributeSet?) :
 // region resetview
 
     fun setCenterInModelToLastTappedTriNumber() {
-        centerInModel.set(myTriangleList.getMemberByIndex(lstn()).pointnumber)
+        centerInModel.set(myTriangleList.getByNumber(lstn()).pointnumber)
     }
 
-    fun resetView( pt: PointXY = pressedInModel.scale(1f,-1f) ){
+    fun resetView( pt: PointXY ){
         centerInModel = pt.clone()
         //drawPoint = pt.clone()
         resetPointToZero()
@@ -566,7 +566,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
     }
 
     fun toLastTapTriangle(): PointXY {
-        return myTriangleList.getMemberByIndex(lstn()).pointnumber
+        return myTriangleList.getLastSelected().pointnumber
     }
 
     fun lstn(): Int{
@@ -696,7 +696,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         drawTriangleNumber(canvas, tri, paintDim, paintB)
 
         // 寸法
-        if(tri.mynumber == 1 || tri.parentside > 2 || tri.cParam_.type != 0 || tri.mynumber == myTriangleList.lastTapNumber_ )
+        if(tri.mynumber == 1 || tri.connectionType > 2 || tri.cParam_.type != 0 || tri.mynumber == myTriangleList.lastTapNumber_ )
             drawDigits( canvas, la, makePath(tPathA), tPathA.offsetH, tPathA.offsetV, paintDim, margin )
         drawDigits( canvas, lb, makePath(tPathB), tPathB.offsetH, tPathB.offsetV, paintDim, margin )
         drawDigits( canvas, lc, makePath(tPathC), tPathC.offsetH, tPathC.offsetV, paintDim, margin )

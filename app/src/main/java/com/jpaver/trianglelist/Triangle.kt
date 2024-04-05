@@ -12,41 +12,61 @@ import kotlin.math.sin
 @Suppress("NAME_SHADOWING")
 class Triangle : EditObject, Cloneable<Triangle> {
 
+    fun calcPoints(basepoint: PointXY, angle: Float, isArrange: Boolean = false) {
+        pointAB = basepoint.offset(length[0], angle)
+        pointBC = calculatePointBC( basepoint )
+        calculateInternalAngles()
+        calculatePointCenter()
+        arrangeDims(isArrange)
+        if(isArrange) pointnumber = arrangeNumber(isArrange)
+        setBoundaryBox()
+    }
+
     //region dimAlign
 
     // あらゆる場所でよばれる
-    private fun arrangeDims(isArrange: Boolean = false ) {
-        if(isArrange) autoDimHorizontal(0)
+    private fun arrangeDims(isVertical:Boolean=false, isHorizontal:Boolean=false ) {
+        if(isVertical){
+            dimVerticalA = autoDimVertical(0)
+            dimVerticalB = autoDimVertical(1)
+            dimVerticalC = autoDimVertical(2)
+        }
+        if(isHorizontal) autoDimHorizontal(0)
+
         setDimPath(dimHeight)
         setDimPoint()
     }
+
+    val SIDE_SOKUTEN = 4
+    var flagDimArrangeA = Flags()
+    var flagDimArrangeB = Flags()
+    var flagDimArrangeC = Flags()
 
     fun setDimPath(ts: Float = dimHeight) {
         dimHeight = ts
         path[0] = PathAndOffset(scale_, pointAB, point[0], dimVerticalA, dimHorizontalA, dimHeight)
         path[1] = PathAndOffset(scale_, pointBC, pointAB, dimVerticalB, dimHorizontalB, dimHeight)
         path[2] = PathAndOffset(scale_, point[0], pointBC, dimVerticalC, dimHorizontalC, dimHeight)
-        pathS_ = PathAndOffset(scale_, pointAB, point[0], 4, unconnectedSide(), dimHeight)
-
+        pathS_ = PathAndOffset(scale_, pointAB, point[0], SIDE_SOKUTEN, unconnectedSide(1, -1), dimHeight)
     }
 
-    fun unconnectedSide(): Int{
-        val OUTERRIGHT = 1
-        val OUTERLEFT = -1
-
-        if (nodeTriangleC_ == null) return OUTERRIGHT
-        return OUTERLEFT
+    fun unconnectedSide(outerright: Int, outerleft: Int): Int{
+        if (nodeTriangleC == null) return outerright
+        return outerleft
     }
-
-
-    val SIDESOK = 3
 
     fun incrementDimsPosition(side: Int) {
         when (side) {
             SIDEA -> dimHorizontalA = cycleIncrement(dimHorizontalA)
-            SIDEB -> dimHorizontalB = cycleIncrement(dimHorizontalB)
-            SIDEC -> dimHorizontalC = cycleIncrement(dimHorizontalC)
-            SIDESOK -> nameHorizontal = cycleIncrement(nameHorizontal)
+            SIDEB -> {
+                dimHorizontalB = cycleIncrement(dimHorizontalB)
+                flagDimArrangeB.isMovedByUser = true
+            }
+            SIDEC -> {
+                dimHorizontalC = cycleIncrement(dimHorizontalC)
+                flagDimArrangeC.isMovedByUser = true
+            }
+            SIDE_SOKUTEN -> nameHorizontal = cycleIncrement(nameHorizontal)
         }
         setDimPath(dimHeight)
     }
@@ -58,20 +78,29 @@ class Triangle : EditObject, Cloneable<Triangle> {
         return num
     }
 
-    // checkDimpointDistancesの結果に基づいてdimHorizontalの値を更新
-    fun autoDimHorizontal(indexBasePoint: Int, nearby: Float = 1.0f) {
+    fun autoDimHorizontal(indexBasePoint: Int, nearby: Float = 0.5f) {
         val booleanResults = check_dimpoint_distances(indexBasePoint, nearby)
         booleanResults.forEachIndexed { index, result ->
-            if (result) updateDimHorizontals(index, 4)
+            if (result) updateDimHorizontals(index)
         }
         setDimPath()
     }
 
-    fun updateDimHorizontals(index: Int, to: Int){
+    fun updateDimHorizontals(index: Int){
+        val OUTERRIGHT = 4
+        val OUTERLEFT = 3
         when (index) {
-            0 -> dimHorizontalA = to
-            1 -> dimHorizontalB = to
-            2 -> dimHorizontalC = to
+            SIDEA -> dimHorizontalA = unconnectedSide(OUTERRIGHT,OUTERLEFT)
+            SIDEB -> {
+                if(!flagDimArrangeB.isMovedByUser )
+                    dimHorizontalB = unconnectedSide(OUTERRIGHT,OUTERLEFT)
+                    flagDimArrangeB.isAutoAligned = true
+            }
+            SIDEC -> {
+                if(!flagDimArrangeC.isMovedByUser )
+                    dimHorizontalC = unconnectedSide(OUTERRIGHT,OUTERLEFT)
+                    flagDimArrangeC.isAutoAligned = true
+            }
         }
     }
 
@@ -93,16 +122,30 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
     // カスタムゲッターで呼ばれている
     fun autoDimVertical(side: Int): Int {
-        // A辺 の場合、２重断面など特殊接続の時は、内側
-        if (side == SIDEA && (parentside == 9 || parentside == 10 || parentside > 2 || nodeTriangleB_ != null || nodeTriangleC_ != null))
-            return INNER
+        when(side){
+            SIDEA -> {
+                if(!flagDimArrangeA.isMovedByUser ) if(connectionType < 3) return OUTER
+                return dimVerticalA
+            }
+            SIDEB -> {
+                if(!flagDimArrangeB.isMovedByUser ) return autoDimVerticalByArea(nodeTriangleB)
+                return dimVerticalB
+            }
+            SIDEC -> {
+                if(!flagDimArrangeC.isMovedByUser ) return autoDimVerticalByArea(nodeTriangleC)
+                return dimVerticalC
+            }
+        }
 
-        // B辺 または C辺 の場合、接続三角形が null でなければ内側に
-        if (side == SIDEB && nodeTriangleB_ != null || side == SIDEC && nodeTriangleC_ != null)
-            return INNER
-
-        // 上記のいずれの条件にも当てはまらない場合は外側
         return OUTER
+    }
+
+    fun autoDimVerticalByArea(node: Triangle?): Int{
+        if(node==null) return OUTER
+
+        if(node.getArea() > this.getArea() && node.connectionType < 3 )  return OUTER
+
+        return INNER
     }
 
     fun flipOneToThree(num: Int): Int {
@@ -111,18 +154,54 @@ class Triangle : EditObject, Cloneable<Triangle> {
         return num
     }
 
-    fun flipDimAlignVertical(side: Int) {
-        if (side == 0) dimVerticalA = flipOneToThree(dimVerticalA)
+    fun flipDimAlignVertical(side: Int): Int {
+        if (side == 0) {
+            dimVerticalA = flipOneToThree(dimVerticalA)
+            flagDimArrangeA.isMovedByUser = true
+            return dimVerticalA
+        }
         if (side == 1) {
             dimVerticalB = flipOneToThree(dimVerticalB)
             isChangeDimAlignB_ = true
+            flagDimArrangeB.isMovedByUser = true
+            return dimVerticalB
         }
         if (side == 2) {
             dimVerticalC = flipOneToThree(dimVerticalC)
             isChangeDimAlignC_ = true
+            flagDimArrangeC.isMovedByUser = true
+            return dimVerticalC
         }
         if (side == 4) nameAlign_ = flipOneToThree(nameAlign_)
         setDimPath(dimHeight)
+        return nameAlign_
+    }
+
+    fun setDimAlignByChild() {
+        if (!isChangeDimAlignB_) {
+            dimVerticalB = if (nodeTriangleB == null) OUTER else INNER
+        }
+        if (!isChangeDimAlignC_) {
+            dimVerticalC = if (nodeTriangleC == null) OUTER else INNER
+        }
+    }
+
+    fun setDimAligns(sa: Int, sb: Int, sc: Int, ha: Int, hb: Int, hc: Int) {
+        dimHorizontalA = sa
+        dimHorizontalB = sb
+        dimHorizontalC = sc
+        dimVerticalA = ha
+        dimVerticalB = hb
+        dimVerticalC = hc
+    }
+
+    fun setDimPoint() {
+        dimpoint[0] =
+            path[0].pointD //dimSideRotation( dimSideAlignA_, point[0].calcMidPoint(pointAB_), pointAB_, point[0]);
+        dimpoint[1] =
+            path[1].pointD //dimSideRotation( dimSideAlignB_, pointAB_.calcMidPoint(pointBC_), pointBC_, pointAB_);
+        dimpoint[2] =
+            path[2].pointD //dimSideRotation( dimSideAlignC_, pointBC_.calcMidPoint(point[0]), point[0], pointBC_);
     }
 
     //endregion dimalign
@@ -130,12 +209,13 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
     // region pointNumber
 
+    val WEIGHT = 35f
+
     fun arrangeNumber(isUse: Boolean = false ): PointXY{
         if(flags.isMovedByUser || flags.isAutoAligned ) return pointnumber
-        if(!isUse) return weightedMidpoint(25f)
+        if(!isUse) return weightedMidpoint(WEIGHT)
         return autoAlignPointNumber()
     }
-
 
 
     private fun autoAlignPointNumber() : PointXY{
@@ -146,7 +226,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
                 //.offset(pointcenter, pointcenter.lengthTo(pointnumber)*-10f )
         }
 
-        return weightedMidpoint(25f)
+        return weightedMidpoint(WEIGHT)
     }
 
     fun pointUnconnectedSide(
@@ -156,16 +236,16 @@ class Triangle : EditObject, Cloneable<Triangle> {
         basepoint: PointXY,
         clockwise: Float=1f
     ): PointXY {
-        if (nodeTriangleC_ == null)
+        if (nodeTriangleC == null)
             return pointnumber.mirroredAndScaledPoint(pointBC, point[0], scaleX, scaleY, basepoint, clockwise)
-        if (nodeTriangleB_ == null)
+        if (nodeTriangleB == null)
             return pointnumber.mirroredAndScaledPoint(pointAB, pointBC, scaleX, scaleY, basepoint, clockwise)
 
-        return weightedMidpoint(-35f)
+        return weightedMidpoint(WEIGHT)
     }
 
     fun angleUnconnectedSide(): Float{
-        if (nodeTriangleC_ == null) return -angleMmCA
+        if (nodeTriangleC == null) return -angleMmCA
         return -angleMpAB
     }
 
@@ -203,8 +283,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
     fun toStrings(ispoints: Boolean = true, islength: Boolean = true, isnode: Boolean = true, isalign: Boolean = true ): String {
         val connectedTriangles = arrayOfNulls<Triangle>(3) // 各辺に接続された Triangle オブジェクトを保持する配列
         connectedTriangles[0] = nodeTriangleA_
-        connectedTriangles[1] = nodeTriangleB_
-        connectedTriangles[2] = nodeTriangleC_
+        connectedTriangles[1] = nodeTriangleB
+        connectedTriangles[2] = nodeTriangleC
         val sb = StringBuilder()
         sb.append("Triangle ${mynumber}         hash:${System.identityHashCode(this)} valid:${isValidLengthes()}\n")
 
@@ -259,14 +339,14 @@ class Triangle : EditObject, Cloneable<Triangle> {
     var angleAB = 0f
     var angleBC = 0f
     var parentnumber = -1 // 0:root
-    var parentside = -1 // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
+    var connectionType = -1 // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
     var connectionType_ = 0 // 0:sameByParent, 1:differentLength, 2:floatAndDifferent
     var connectionLCR_ = 2 // 0:L 1:C 2:R
     var cParam_ = ConnParam(0, 0, 2, 0f)
     var mynumber = 1
     var dimVerticalA = 3
-    var dimVerticalB = 3
-    var dimVerticalC = 3
+    var dimVerticalB = 1
+    var dimVerticalC = 1
     var isChangeDimAlignB_ = false
     var isChangeDimAlignC_ = false
     var dimHorizontalA = 0
@@ -279,8 +359,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
     var myBP_ = Bounds(0f, 0f, 0f, 0f)
     var pathS_: PathAndOffset? = null // = PathAndOffset();
     var dimHeight = 0f
-    var nodeTriangleB_: Triangle? = null
-    var nodeTriangleC_: Triangle? = null
+    var nodeTriangleB: Triangle? = null
+    var nodeTriangleC: Triangle? = null
     var nodeTriangleA_: Triangle? = null
 
     var isChildB_ = false
@@ -346,6 +426,9 @@ class Triangle : EditObject, Cloneable<Triangle> {
         val b = Triangle()
         try {
             b.flags = flags.copy()
+            b.flagDimArrangeA = flagDimArrangeA.copy()
+            b.flagDimArrangeB = flagDimArrangeB.copy()
+            b.flagDimArrangeC = flagDimArrangeC.copy()
 
             b.length = length.copyOf(length.size)
             b.lengthNotSized = lengthNotSized.copyOf(lengthNotSized.size)
@@ -356,7 +439,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
             b.angle = angle
             b.name = name
             b.mynumber = mynumber
-            b.parentside = parentside
+            b.connectionType = connectionType
             b.parentnumber = parentnumber
 
             b.dimVerticalA = dimVerticalA
@@ -379,8 +462,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
             b.myBP_.right = myBP_.right
             b.myBP_.bottom = myBP_.bottom
             b.nodeTriangleA_ = nodeTriangleA_
-            b.nodeTriangleB_ = nodeTriangleB_
-            b.nodeTriangleC_ = nodeTriangleC_
+            b.nodeTriangleB = nodeTriangleB
+            b.nodeTriangleC = nodeTriangleC
             b.childSide_ = childSide_
             b.color_ = color_
             b.connectionLCR_ = connectionLCR_
@@ -518,8 +601,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
     fun getNode(pbc: Int): Triangle {
         return when (pbc) {
             0 -> nodeTriangleA_!!
-            1 -> nodeTriangleB_!!
-            2 -> nodeTriangleC_!!
+            1 -> nodeTriangleB!!
+            2 -> nodeTriangleC!!
             -1 -> this
             else -> this
         }
@@ -549,7 +632,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
             length[1],
             length[2],
             parentnumber,
-            parentside,
+            connectionType,
             point[0],
             pointcenter
         )
@@ -679,7 +762,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
     val parentSide: Int
         get() {
-            val i = parentside
+            val i = connectionType
             if (i == 1 || i == 3 || i == 4 || i == 7 || i == 9) return 1
             return if (i == 2 || i == 5 || i == 6 || i == 8 || i == 10) 2 else 0
         }
@@ -718,11 +801,11 @@ class Triangle : EditObject, Cloneable<Triangle> {
     fun setReverseDefSide(pbc: Int, BtoC: Boolean) {
         // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
         if (!BtoC) {
-            parentside =
+            connectionType =
                 if (pbc == 3) 4 else if (pbc == 4) 3 else if (pbc == 5) 6 else if (pbc == 6) 5 else pbc
         }
         if (BtoC) {
-            parentside =
+            connectionType =
                 if (pbc == 3) 6 else if (pbc == 4) 5 else if (pbc == 5) 4 else if (pbc == 6) 3 else if (pbc == 9) 10 else if (pbc == 10) 9 else -pbc + 3
         }
     }
@@ -732,25 +815,25 @@ class Triangle : EditObject, Cloneable<Triangle> {
         if (cParam_.type == 2) return
         when (cParam_.lcr) {
             0 -> when (cParam_.side) {
-                1 -> parentside = 4
-                2 -> parentside = 6
+                1 -> connectionType = 4
+                2 -> connectionType = 6
             }
 
             1 -> when (cParam_.side) {
-                1 -> parentside = 7
-                2 -> parentside = 8
+                1 -> connectionType = 7
+                2 -> connectionType = 8
             }
 
             2 -> when (cParam_.side) {
-                1 -> parentside = 3
-                2 -> parentside = 5
+                1 -> connectionType = 3
+                2 -> connectionType = 5
             }
         }
     }
 
     fun setOn(parent: Triangle?, pbc: Int, B: Float, C: Float): Triangle {
         //myNumber_ = parent.myNumber_ + 1;
-        parentside = pbc
+        connectionType = pbc
         if (parent == null) {
             resetLength(pbc.toFloat(), B, C)
             return clone()
@@ -762,19 +845,19 @@ class Triangle : EditObject, Cloneable<Triangle> {
         //setParent(parent, A);
         when (pbc) {
             1 -> {
-                parentside = 1
+                connectionType = 1
                 length[0] = nodeTriangleA_!!.lengthNotSized[1]
                 point[0] = nodeTriangleA_!!.pointBC_()
                 angle = nodeTriangleA_!!.angleMpAB
             }
             2 -> {
-                parentside = 2
+                connectionType = 2
                 length[0] = nodeTriangleA_!!.lengthNotSized[2]
                 point[0] = nodeTriangleA_!!.pointCA_
                 angle = nodeTriangleA_!!.angleMmCA
             }
             else -> {
-                parentside = 0
+                connectionType = 0
                 length[0] = 0f
                 lengthNotSized[0] = 0f
                 point[0] = PointXY(0f, 0f)
@@ -805,7 +888,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
 */
     fun setOn(parent: Triangle?, pbc: Int, A: Float, B: Float, C: Float): Triangle? {
         //myNumber_ = parent.myNumber_ + 1;
-        parentside = pbc
+        connectionType = pbc
         if (parent == null) {
             resetLength(pbc.toFloat(), B, C)
             return clone()
@@ -829,48 +912,48 @@ class Triangle : EditObject, Cloneable<Triangle> {
         point[0] = getParentPointByType(cParam_)
         when (pbc) {
             1 -> { // B
-                parentside = 1
+                connectionType = 1
                 angle = parent.angleMpAB
             }
             2 -> { // C
                 point[0] = getParentPointByType(cParam_)
-                parentside = 2
+                connectionType = 2
                 angle = parent.angleMmCA
             }
             3 -> { // B-R
-                parentside = 3
+                connectionType = 3
                 angle = parent.angleMpAB
             }
             4 -> { //B-L
-                parentside = 4
+                connectionType = 4
                 angle = parent.angleMpAB
             }
             5 -> { //C-R
-                parentside = 5
+                connectionType = 5
                 angle = parent.angleMmCA
             }
             6 -> { //C-L
-                parentside = 6
+                connectionType = 6
                 angle = parent.angleMmCA
             }
             7 -> { //B-Center
-                parentside = 7
+                connectionType = 7
                 angle = parent.angleMpAB
             }
             8 -> { //C-Center
-                parentside = 8
+                connectionType = 8
                 angle = parent.angleMmCA
             }
             9 -> { //B-Float-R
-                parentside = 9
+                connectionType = 9
                 angle = parent.angleMpAB
             }
             10 -> { //C-Float-R
-                parentside = 10
+                connectionType = 10
                 angle = parent.angleMmCA
             }
             else -> {
-                parentside = 0
+                connectionType = 0
                 length[0] = 0f
                 lengthNotSized[0] = 0f
                 point[0] = PointXY(0f, 0f)
@@ -881,14 +964,14 @@ class Triangle : EditObject, Cloneable<Triangle> {
         initBasicArguments(length[0], B, C, point[0], angle)
         if (!isValid) return null
         calcPoints(point[0], angle)
-        if (parentside == 4) {
+        if (connectionType == 4) {
             val vector = PointXY(
                 parent.pointAB_().x - pointAB.x,
                 parent.pointAB_().y - pointAB.y
             )
             move(vector)
         }
-        if (parentside == 6) {
+        if (connectionType == 6) {
             val vector = PointXY(
                 parent.pointBC_().x - pointAB.x,
                 parent.pointBC_().y - pointAB.y
@@ -946,32 +1029,6 @@ class Triangle : EditObject, Cloneable<Triangle> {
         }
     }
 
-    fun setDimAlignByChild() {
-        if (!isChangeDimAlignB_) {
-            dimVerticalB = if (nodeTriangleB_ == null) 1 else 3
-        }
-        if (!isChangeDimAlignC_) {
-            dimVerticalC = if (nodeTriangleC_ == null) 1 else 3
-        }
-    }
-
-    fun setDimAligns(sa: Int, sb: Int, sc: Int, ha: Int, hb: Int, hc: Int) {
-        dimHorizontalA = sa
-        dimHorizontalB = sb
-        dimHorizontalC = sc
-        dimVerticalA = ha
-        dimVerticalB = hb
-        dimVerticalC = hc
-    }
-
-    fun setDimPoint() {
-        dimpoint[0] =
-            path[0].pointD //dimSideRotation( dimSideAlignA_, point[0].calcMidPoint(pointAB_), pointAB_, point[0]);
-        dimpoint[1] =
-            path[1].pointD //dimSideRotation( dimSideAlignB_, pointAB_.calcMidPoint(pointBC_), pointBC_, pointAB_);
-        dimpoint[2] =
-            path[2].pointD //dimSideRotation( dimSideAlignC_, pointBC_.calcMidPoint(point[0]), point[0], pointBC_);
-    }
 
     fun setNode(node: Triangle?, side: Int) {
         var side = side
@@ -981,19 +1038,19 @@ class Triangle : EditObject, Cloneable<Triangle> {
             -1 -> {}
             0 -> {
                 nodeTriangleA_ = node
-                if (node === nodeTriangleB_) nodeTriangleB_ = null
-                if (node === nodeTriangleC_) nodeTriangleC_ = null
+                if (node === nodeTriangleB) nodeTriangleB = null
+                if (node === nodeTriangleC) nodeTriangleC = null
             }
 
             1 -> {
-                nodeTriangleB_ = node
+                nodeTriangleB = node
                 if (node === nodeTriangleA_) nodeTriangleA_ = null
-                if (node === nodeTriangleC_) nodeTriangleC_ = null
+                if (node === nodeTriangleC) nodeTriangleC = null
             }
 
             2 -> {
-                nodeTriangleC_ = node
-                if (node === nodeTriangleB_) nodeTriangleB_ = null
+                nodeTriangleC = node
+                if (node === nodeTriangleB) nodeTriangleB = null
                 if (node === nodeTriangleA_) nodeTriangleA_ = null
             }
         }
@@ -1011,11 +1068,11 @@ class Triangle : EditObject, Cloneable<Triangle> {
     fun setChild(newchild: Triangle, cbc: Int) {
         childSide_ = cbc
         if (newchild.getPbc(cbc) == 1) {
-            nodeTriangleB_ = newchild
+            nodeTriangleB = newchild
             isChildB_ = true
         }
         if (newchild.getPbc(cbc) == 2) {
-            nodeTriangleC_ = newchild
+            nodeTriangleC = newchild
             isChildC_ = true
         }
         setDimAlignByChild()
@@ -1042,7 +1099,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
             resetLength(newTri.length[0], newTri.length[1], newTri.length[2])
         } else setOn(
             nodeTriangleA_,
-            newTri.parentside,
+            newTri.connectionType,
             newTri.length[0],
             newTri.length[1],
             newTri.length[2]
@@ -1093,21 +1150,21 @@ class Triangle : EditObject, Cloneable<Triangle> {
     fun resetByChild(myChild: Triangle) {
         setDimAlignByChild()
         if (myChild.cParam_.type != 0) return
-        val cbc = myChild.parentside
+        val cbc = myChild.connectionType
         if (cbc == 1 && !isValidLengthes(length[0], myChild.length[0], length[2])) return
         if (cbc == 2 && !isValidLengthes(length[0], length[1], myChild.length[0])) return
-        childSide_ = myChild.parentside
+        childSide_ = myChild.connectionType
         if (nodeTriangleA_ == null || parentnumber < 1) {
             if (cbc == 1) resetLength(length[0], myChild.length[0], length[2])
             if (cbc == 2) resetLength(length[0], length[1], myChild.length[0])
             return
         }
         if (cbc == 1) {
-            setOn(nodeTriangleA_, parentside, length[0], myChild.length[0], length[2])
+            setOn(nodeTriangleA_, connectionType, length[0], myChild.length[0], length[2])
             //nodeTriangleB_ = myChild;
         }
         if (cbc == 2) {
-            setOn(nodeTriangleA_, parentside, length[0], length[1], myChild.length[0])
+            setOn(nodeTriangleA_, connectionType, length[0], length[1], myChild.length[0])
             //nodeTriangleC_ = myChild;
         }
     }
@@ -1146,7 +1203,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         length[0] = prm.a
         lengthNotSized[0] = prm.a
         setCParamFromParentBC(prm.pl)
-        parentside = prm.pl
+        connectionType = prm.pl
         parentnumber = prm.pn
         if (nodeTriangleA_ == null || parentnumber < 1) resetLength(prm.a, prm.b, prm.c) else {
             setOn(nodeTriangleA_, cParam_, prm.b, prm.c)
@@ -1164,7 +1221,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     fun resetByNode(pbc: Int) {
         val node = getNode(pbc)
         var lengthConnected = getLengthByIndex(pbc)
-        if (node.parentside < 3) lengthConnected = node.length[0]
+        if (node.connectionType < 3) lengthConnected = node.length[0]
         when (pbc) {
             0 -> {}
             1 -> initBasicArguments(
@@ -1191,8 +1248,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
     //region node and boundaries
     fun removeNode(target: Triangle) {
         if (nodeTriangleA_ === target) nodeTriangleA_ = null
-        if (nodeTriangleB_ === target) nodeTriangleB_ = null
-        if (nodeTriangleC_ === target) nodeTriangleC_ = null
+        if (nodeTriangleB === target) nodeTriangleB = null
+        if (nodeTriangleC === target) nodeTriangleC = null
     }
 
     fun expandBoundaries(listBound: Bounds): Bounds {
@@ -1209,15 +1266,6 @@ class Triangle : EditObject, Cloneable<Triangle> {
     //endregion node and boundaries
 
     //region calculater
-    fun calcPoints(basepoint: PointXY, angle: Float, isArrangeNumber: Boolean = false) {
-        pointAB = basepoint.offset(length[0], angle)
-        pointBC = calculatePointBC( basepoint )
-        calculateInternalAngles()
-        calculatePointCenter()
-        arrangeDims()
-        if(isArrangeNumber) pointnumber = arrangeNumber(isArrangeNumber)
-        setBoundaryBox()
-    }
 
     private fun calculatePointBC(basepoint: PointXY): PointXY {
         val theta = atan2( (basepoint.y - pointAB.y).toDouble(), (basepoint.x - pointAB.x).toDouble() )
@@ -1266,16 +1314,16 @@ class Triangle : EditObject, Cloneable<Triangle> {
             }
 
             1 -> {
-                angle = nodeTriangleB_!!.angle + 180f //- nodeTriangleB_.angleInnerCA_;
-                plist = arrayOf(nodeTriangleB_!!.pointAB, pointBC, point[0])
+                angle = nodeTriangleB!!.angle + 180f //- nodeTriangleB_.angleInnerCA_;
+                plist = arrayOf(nodeTriangleB!!.pointAB, pointBC, point[0])
                 llist = floatArrayOf(length[1], length[2], length[0])
                 powlist = floatArrayOf(length[1].pow(2.0f), length[2].pow(2.0f), length[0].pow(2.0f))
                 pointAB = plist[0]!!
             }
 
             2 -> {
-                angle = nodeTriangleC_!!.angle + 180f //- nodeTriangleB_.angleInnerCA_;
-                plist = arrayOf(nodeTriangleC_!!.pointAB, point[0], pointAB)
+                angle = nodeTriangleC!!.angle + 180f //- nodeTriangleB_.angleInnerCA_;
+                plist = arrayOf(nodeTriangleC!!.pointAB, point[0], pointAB)
                 llist = floatArrayOf(length[2], length[0], length[1])
                 powlist = floatArrayOf(length[2].pow(2.0f), length[0].pow(2.0f), length[1].pow(2.0f))
                 pointBC = plist[0]!!
@@ -1295,8 +1343,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
         plist[2]!![(plist[1]!!.x + llist[1] * cos(theta + alpha)).toFloat()] =
             (plist[1]!!.y + llist[1] * sin(theta + alpha)).toFloat()
         calculateInternalAngles()
-        if (refside == 1) this.angle = nodeTriangleB_!!.angle - angleCA
-        if (refside == 2) this.angle = nodeTriangleC_!!.angle + angleCA
+        if (refside == 1) this.angle = nodeTriangleB!!.angle - angleCA
+        if (refside == 2) this.angle = nodeTriangleC!!.angle + angleCA
     }
 
     //endregion calcurator
@@ -1371,7 +1419,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
     //region rotater
     fun rotate(basepoint: PointXY, addDegree: Float, recover: Boolean = false ) {
-        if (parentside < 9 && recover ) return
+        if (connectionType < 9 && recover ) return
         if (!recover) angleInLocal_ += addDegree else angleInLocal_ = addDegree
 
         //val allpoints = arrayOf(*point, *dimpoint, pointcenter, pointCA_, pointAB, pointBC)
@@ -1380,7 +1428,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         point[0] = point[0].rotate(basepoint, addDegree)
         angle += addDegree
         calcPoints(point[0], angle)
-        setDimPath(dimHeight)
+        //setDimPath(dimHeight)
 
     }
 
@@ -1484,7 +1532,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
     fun hasChildIn(cbc: Int): Boolean {
-        return if ((nodeTriangleB_ != null || isChildB_) && cbc == 1) true else (nodeTriangleC_ != null || isChildC_) && cbc == 2
+        return if ((nodeTriangleB != null || isChildB_) && cbc == 1) true else (nodeTriangleC != null || isChildC_) && cbc == 2
     }
 
     fun hasConstantParent(): Boolean {
@@ -1493,7 +1541,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
     fun hasChild(): Boolean {
-        return nodeTriangleB_ != null || nodeTriangleC_ != null
+        return nodeTriangleB != null || nodeTriangleC != null
     }
 
     val isValid: Boolean
@@ -1509,7 +1557,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
     val isFloating: Boolean
         get() {
-            isFloating_ = nodeTriangleA_ != null && parentside > 8
+            isFloating_ = nodeTriangleA_ != null && connectionType > 8
             return isFloating_
         }
     val isColored: Boolean
