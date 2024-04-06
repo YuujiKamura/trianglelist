@@ -59,7 +59,7 @@ class PathAndOffset(
                 initPointsOuter(-1, leftP, rightP, lineLength )
             }
             OUTERLEFT  -> {
-                initPointsOuter( 1, rightP, leftP, lineLength )
+                initPointsOuter( 1, leftP, rightP, lineLength )
             }
         }
 

@@ -26,12 +26,12 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
     // あらゆる場所でよばれる
     private fun arrangeDims(isVertical:Boolean=false, isHorizontal:Boolean=true ) {
+        if(isHorizontal) autoDimHorizontal(0)
         if(isVertical){
             dimVerticalA = autoDimVertical(0)
             dimVerticalB = autoDimVertical(1)
             dimVerticalC = autoDimVertical(2)
         }
-        if(isHorizontal) autoDimHorizontal(0)
 
         setDimPath(dimHeight)
         setDimPoint()
@@ -92,13 +92,13 @@ class Triangle : EditObject, Cloneable<Triangle> {
         val OUTERLEFT = 4
         when (index) {
             SIDEA -> dimHorizontalA = unconnectedSide(OUTERRIGHT,OUTERLEFT)
-        SIDEC -> {
+            SIDEC -> {
                 if(!flagDimArrangeC.isMovedByUser )
                     dimHorizontalC = unconnectedSide(OUTERRIGHT,OUTERLEFT)
                     flagDimArrangeC.isAutoAligned = true
                     return
             }
-        SIDEB -> {
+            SIDEB -> {
                 if(!flagDimArrangeB.isMovedByUser )
                     dimHorizontalB = unconnectedSide(OUTERRIGHT,OUTERLEFT)
                     flagDimArrangeB.isAutoAligned = true
@@ -235,17 +235,18 @@ class Triangle : EditObject, Cloneable<Triangle> {
         return weightedMidpoint(WEIGHT)
     }
 
+    //Deductionからも呼ばれている
     fun pointUnconnectedSide(
-        pointnumber: PointXY,
+        point: PointXY,
         scaleX: Float,
         scaleY: Float,
         basepoint: PointXY,
         clockwise: Float=1f
     ): PointXY {
         if (nodeTriangleC == null)
-            return pointnumber.mirroredAndScaledPoint(pointBC, point[0], scaleX, scaleY, basepoint, clockwise)
+            return point.mirroredAndScaledPoint(pointBC, this.point[0], scaleX, scaleY, basepoint, clockwise)
         if (nodeTriangleB == null)
-            return pointnumber.mirroredAndScaledPoint(pointAB, pointBC, scaleX, scaleY, basepoint, clockwise)
+            return point.mirroredAndScaledPoint(pointAB, pointBC, scaleX, scaleY, basepoint, clockwise)
 
         return weightedMidpoint(WEIGHT)
     }
