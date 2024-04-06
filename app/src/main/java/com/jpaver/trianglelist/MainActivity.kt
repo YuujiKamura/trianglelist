@@ -1811,7 +1811,10 @@ class MainActivity : AppCompatActivity(),
         }
 
         // 所属する三角形の判定処理
-        myDeductionList.add( processDeduction(params) )
+        val ded = processDeduction(params)
+        if( ded == null ) return false
+        myDeductionList.add( ded.clone() )
+
         myview.setDeductionList(myDeductionList, mScale)
         myview.myTriangleList.dedmapping(myDeductionList, -1)
         lastParams = params
@@ -1822,50 +1825,53 @@ class MainActivity : AppCompatActivity(),
     }
 
 
-    private fun processDeduction(params: Params): Params {
+    private fun processDeduction(params: Params): Deduction?{//Params {
         params.pt = myview.getTapPoint()
-        params.ptF = params.pt //PointXY(0f, 0f)
+        if (params.pt == PointXY(0f, 0f)) return null
 
         //形状の自動判定
         if( params.b > 0f ) params.type = "Box"
         else params.type = "Circle"
 
         // 所属する三角形の判定処理
-        if (params.pt != PointXY(0f, 0f)) {
-            params.pn = myview.myTriangleList.isCollide(
-                params.pt.scale(
-                    PointXY(
-                        1f,
-                        -1f
-                    )
+        params.pn = myview.myTriangleList.isCollide(
+            params.pt.scale(
+                PointXY(
+                    1f,
+                    -1f
                 )
             )
+        )
 
-            if (params.pn != 0) {
-                Log.d(
-                    "Deduction",
-                    "ptri dedcount" + myview.myTriangleList.get(params.pn).dedcount
-                )
+        val ded = Deduction(params)
 
-                val trilistinview = myview.myTriangleList
-                val parent = trilistinview.get(params.pn)
-                Log.d("Deduction", "parent:" + parent.toString() )
-                //ビュー空間からモデル空間にする際にY軸を反転する。そこからビュー空間に戻すためにさらにもう一度Y軸反転をかけている。
-                //これいらないのでは・・Deductionの管理をビュー空間ベースからモデル空間にすれば
-                params.ptF = parent.pointUnconnectedSide(
-                    params.pt.scale(1f,-1f),
-                    1f,
-                    -1f,
-                    PointXY(0f, 0f),
-                    0.9f
-                )
-                Log.d("Deduction", "params.point:  " + params.pt.x + ", " + params.pt.y)
-                Log.d("Deduction", "params.pointF: " + params.ptF.x + ", " + params.ptF.y)
-            }
+        if (params.pn != 0) {
+            Log.d(
+                "Deduction",
+                "ptri dedcount" + myview.myTriangleList.get(params.pn).dedcount
+            )
 
+            val trilistinview = myview.myTriangleList
+            val parent = trilistinview.get(params.pn)
+            Log.d("Deduction", "parent:" + parent.toString() )
+            Log.d("Deduction", "params.point:  " + params.pt.x + ", " + params.pt.y)
+            Log.d("Deduction", "params.pointF: " + params.ptF.x + ", " + params.ptF.y)
 
+            ded.flag(parent)
+
+            //ビュー空間からモデル空間にする際にY軸を反転する。そこからビュー空間に戻すためにさらにもう一度Y軸反転をかけている。
+            //これいらないのでは・・Deductionの管理をビュー空間ベースからモデル空間にすれば
+/*                params.ptF = parent.pointUnconnectedSide(
+                params.pt.scale(1f,-1f),
+                1f,
+                -1f,
+                PointXY(0f, 0f),
+                0.9f
+            )*/
         }
-        return params
+
+        return ded
+        //return params
     }
 
     private fun resetDeductionsBy(params: Params) : Boolean {
@@ -1877,8 +1883,11 @@ class MainActivity : AppCompatActivity(),
 
         //myTriangleList.current = params.pn
 
+        val ded = processDeduction(params)
+        if( ded == null ) return false
+
         // 所属する三角形の判定処理
-        myDeductionList.replace(params.n, processDeduction(params) )
+        myDeductionList.replace(params.n, ded )
         myview.myTriangleList.dedmapping(myDeductionList, -1)
         return true
     }

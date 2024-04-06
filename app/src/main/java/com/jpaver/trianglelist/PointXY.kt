@@ -43,9 +43,9 @@ class PointXY : Cloneable<PointXY> {
         return "(x=$x, y=$y)"
     }
 
-    fun mirroredAndScaledPoint(lineStart: PointXY, lineEnd: PointXY, scaleX: Float, scaleY: Float, scaleOrigin: PointXY = PointXY(0f,0f), clockwise:Float=1f ): PointXY {
+    fun mirroredAndScaledPoint(lineStart: PointXY, lineEnd: PointXY, clockwise:Float=1f ): PointXY {
 
-        return mirror(lineStart, lineEnd, clockwise ).scale(scaleOrigin, scaleX,scaleY)
+        return mirror(lineStart, lineEnd, clockwise )
     }
 
 
@@ -81,7 +81,10 @@ class PointXY : Cloneable<PointXY> {
 
     fun mirror(lineStart: PointXY, lineEnd: PointXY, clockwise: Float = -1f ): PointXY {
         validateInputs( lineStart, lineEnd )
-        return this.rotate(lineStart, this.calcAngle(lineStart, lineEnd) * 2f * clockwise )
+        val angle = this.calcAngle(lineStart, lineEnd)
+        val angleis = angle * 2f * clockwise
+        val result = this.rotate(lineStart, angleis )
+        return result
     }
 
     fun flip(p2: PointXY): PointXY {

@@ -135,6 +135,12 @@ class DeductionList : EditList() {
         dedlist_[index - 1].setParam(dp!!)
     }
 
+    fun replace(index: Int, ded: Deduction?) {
+        if ( ded== null ) return
+        dedlist_[index - 1] = ded
+    }
+
+
     override fun reverse(): DeductionList {
         val rev = DeductionList()
         var iBackward = dedlist_.size - 1

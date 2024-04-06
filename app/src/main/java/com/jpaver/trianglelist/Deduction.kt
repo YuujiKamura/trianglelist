@@ -255,10 +255,10 @@ class Deduction(var num: Int = 0,
         return Params(name, type, num, lengthX, lengthY,0f, overlap_to, typeToInt(type), point, pointFlag)
     }
 
-    fun isCollide( tri: Triangle): Boolean{
-        if(!tri.isCollide( point )) return false
+    fun flag(tri: Triangle): Boolean{
+        //if(!tri.isCollide( point )) return false
 
-        pointFlag = tri.pointUnconnectedSide(point, 1f, 1f, PointXY(0f, 0f))
+        pointFlag = tri.pointUnconnectedSide( point.scale(1f,-1f), 1f ).scale(1f,-1f)
         shapeAngle = tri.angleUnconnectedSide()
 
         return true

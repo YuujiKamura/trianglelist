@@ -698,6 +698,14 @@ class TriangleList : EditList {
         return 0
     }
 
+    fun getCollide(tapP: PointXY): Triangle? {
+        for (i in trilist.indices) {
+            if (trilist[i].isCollide(tapP)) return trilist[i]
+        }
+        return null
+    }
+
+
     fun dedmapping(dedlist: DeductionList, axisY: Int) {
         // トライアングルリストのdedcountをリセット
         trilist.forEach { it.dedcount = 0f }
