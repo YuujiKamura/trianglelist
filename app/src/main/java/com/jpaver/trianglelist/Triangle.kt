@@ -92,16 +92,19 @@ class Triangle : EditObject, Cloneable<Triangle> {
         val OUTERLEFT = 4
         when (index) {
             SIDEA -> dimHorizontalA = unconnectedSide(OUTERRIGHT,OUTERLEFT)
-            SIDEB -> {
-                if(!flagDimArrangeB.isMovedByUser )
-                    dimHorizontalB = unconnectedSide(OUTERRIGHT,OUTERLEFT)
-                    flagDimArrangeB.isAutoAligned = true
-            }
-            SIDEC -> {
+        SIDEC -> {
                 if(!flagDimArrangeC.isMovedByUser )
                     dimHorizontalC = unconnectedSide(OUTERRIGHT,OUTERLEFT)
                     flagDimArrangeC.isAutoAligned = true
+                    return
             }
+        SIDEB -> {
+                if(!flagDimArrangeB.isMovedByUser )
+                    dimHorizontalB = unconnectedSide(OUTERRIGHT,OUTERLEFT)
+                    flagDimArrangeB.isAutoAligned = true
+                    return
+            }
+            
         }
     }
 
