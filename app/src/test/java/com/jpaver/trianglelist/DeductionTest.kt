@@ -38,7 +38,7 @@ class DeductionTest {
             PointXY(0f, 0f)
         )
         val tri = Triangle(5f,5f,5f )
-        ded.isCollide( tri )
+        ded.flag( tri )
     }
 
         @Test

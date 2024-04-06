@@ -86,10 +86,11 @@ class Triangle : EditObject, Cloneable<Triangle> {
         setDimPath()
     }
 
+    val OUTERRIGHT = 3
+    val OUTERLEFT = 4
+
     //つかうの難しい？
     fun updateDimHorizontals(index: Int){
-        val OUTERRIGHT = 3
-        val OUTERLEFT = 4
         when (index) {
             SIDEA -> dimHorizontalA = unconnectedSide(OUTERRIGHT,OUTERLEFT)
             SIDEC -> {
@@ -228,7 +229,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         if (getArea() <= 4f && (lengthAforce_ < 1.5f || lengthBforce_ < 1.5f || lengthCforce_ < 1.5f)){
             pointnumber = pointcenter
             flags.isAutoAligned = true
-            return pointUnconnectedSide(pointcenter, 1f, 1f, PointXY(0f, 0f), 0.8f )
+            return pointUnconnectedSide(pointcenter, 0.8f )
                 //.offset(pointcenter, pointcenter.lengthTo(pointnumber)*-10f )
         }
 
@@ -238,15 +239,12 @@ class Triangle : EditObject, Cloneable<Triangle> {
     //Deductionからも呼ばれている
     fun pointUnconnectedSide(
         point: PointXY,
-        scaleX: Float,
-        scaleY: Float,
-        basepoint: PointXY,
-        clockwise: Float=1f
+        clockwise: Float
     ): PointXY {
         if (nodeTriangleC == null)
-            return point.mirroredAndScaledPoint(pointBC, this.point[0], scaleX, scaleY, basepoint, clockwise)
+            return point.mirroredAndScaledPoint(this.point[0], pointBC, clockwise)
         if (nodeTriangleB == null)
-            return point.mirroredAndScaledPoint(pointAB, pointBC, scaleX, scaleY, basepoint, clockwise)
+            return point.mirroredAndScaledPoint(pointAB, pointBC, clockwise)
 
         return weightedMidpoint(WEIGHT)
     }

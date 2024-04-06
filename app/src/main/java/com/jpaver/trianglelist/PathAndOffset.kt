@@ -56,7 +56,7 @@ class PathAndOffset(
             INRIGHT -> offsetH = -HABAYOSE
             INLEFT  -> offsetH = HABAYOSE
             OUTERRIGHT -> {
-                initPointsOuter(-1, leftP, rightP, lineLength )
+                initPointsOuter(1, rightP, leftP, lineLength )
             }
             OUTERLEFT  -> {
                 initPointsOuter( 1, leftP, rightP, lineLength )
@@ -72,11 +72,12 @@ class PathAndOffset(
     fun initPointsOuter(direction: Int, leftP:PointXY, rightP: PointXY, lineLength: Float){
         val SUKIMA = 0.5f*myScale
         val movement = SUKIMA+lineLength
-        val HATAAGE = 4*myScale
+        val HATAAGE = 3*myScale
+        val HABAYOSE = -lineLength*0.05f
 
         pointA = leftP.offset(rightP, -HATAAGE )
         pointB = rightP.offset(leftP, movement)
-        offsetH = direction*0.15f*myScale
+        offsetH = HABAYOSE
     }
 
     fun initSoktenNamePath(p1: PointXY, p2: PointXY){
