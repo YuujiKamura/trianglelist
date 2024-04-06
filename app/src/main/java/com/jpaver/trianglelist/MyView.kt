@@ -1,3 +1,4 @@
+
 package com.jpaver.trianglelist
 
 import android.annotation.SuppressLint
@@ -925,7 +926,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         }
 
         var area =""
-        if(isAreaOff_ == false ) area = tri.getArea().formattedString(1 )+"m^2"
+        if(isAreaOff_ == false ) area = tri.getArea().formattedString(1 )+"m^2"+" ${tri.flags.isMovedByUser}"
         //if(isDebug_ == true) area = "cp:"+tri.cParam_.type.toString() + "-"+ tri.cParam_.lcr.toString() +" pbc:"+ tri.parentBC.toString() +" Num:"+ tri.myNumber +"-"+ tri.parentNumber +" lTS"+ tri.lastTapSide_
 
 
