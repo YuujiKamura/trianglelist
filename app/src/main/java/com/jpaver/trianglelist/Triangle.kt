@@ -38,9 +38,9 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
     val SIDE_SOKUTEN = 4
-    var flagDimArrangeA = Flags()
-    var flagDimArrangeB = Flags()
-    var flagDimArrangeC = Flags()
+    var flagDimA = Flags()
+    var flagDimB = Flags()
+    var flagDimC = Flags()
 
     fun setDimPath(ts: Float = dimHeight) {
         dimHeight = ts
@@ -72,20 +72,18 @@ class Triangle : EditObject, Cloneable<Triangle> {
         val OUTERRIGHT = 3
         val OUTERLEFT = 4
         when (targetindex) {
-            SIDEA -> dimHorizontalA = getunconnectedSide(OUTERRIGHT,OUTERLEFT)
             SIDEC -> {
-                if(!flagDimArrangeC.isMovedByUser )
+                if(!flagDimC.isMovedByUser )
                     dimHorizontalC = getunconnectedSide(OUTERRIGHT,OUTERLEFT)
-                    flagDimArrangeC.isAutoAligned = true
+                    flagDimC.isAutoAligned = true
                     return
             }
             SIDEB -> {
-                if(!flagDimArrangeB.isMovedByUser )
+                if(!flagDimB.isMovedByUser )
                     dimHorizontalB = getunconnectedSide(OUTERRIGHT,OUTERLEFT)
-                    flagDimArrangeB.isAutoAligned = true
+                    flagDimB.isAutoAligned = true
                     return
             }
-            
         }
     }
 
@@ -95,11 +93,11 @@ class Triangle : EditObject, Cloneable<Triangle> {
             SIDEA -> dimHorizontalA = cycleIncrement(dimHorizontalA)
             SIDEB -> {
                 dimHorizontalB = cycleIncrement(dimHorizontalB)
-                flagDimArrangeB.isMovedByUser = true
+                flagDimB.isMovedByUser = true
             }
             SIDEC -> {
                 dimHorizontalC = cycleIncrement(dimHorizontalC)
-                flagDimArrangeC.isMovedByUser = true
+                flagDimC.isMovedByUser = true
             }
             SIDE_SOKUTEN -> nameHorizontal = cycleIncrement(nameHorizontal)
         }
@@ -122,15 +120,15 @@ class Triangle : EditObject, Cloneable<Triangle> {
     fun autoDimVertical(side: Int): Int {
         when(side){
             SIDEA -> {
-                if(!flagDimArrangeA.isMovedByUser ) if(connectionType < 3) return OUTER
+                if(!flagDimA.isMovedByUser ) if(connectionType < 3) return OUTER
                 return dimVerticalA
             }
             SIDEB -> {
-                if(!flagDimArrangeB.isMovedByUser ) return autoDimVerticalByAreaCompare(nodeTriangleB)
+                if(!flagDimB.isMovedByUser ) return autoDimVerticalByAreaCompare(nodeTriangleB)
                 return dimVerticalB
             }
             SIDEC -> {
-                if(!flagDimArrangeC.isMovedByUser ) return autoDimVerticalByAreaCompare(nodeTriangleC)
+                if(!flagDimC.isMovedByUser ) return autoDimVerticalByAreaCompare(nodeTriangleC)
                 return dimVerticalC
             }
         }
@@ -159,17 +157,17 @@ class Triangle : EditObject, Cloneable<Triangle> {
         when (side) {
             SIDEA -> {
                 dimVerticalA = flipVertical(dimVerticalA)
-                flagDimArrangeA.isMovedByUser = true
+                flagDimA.isMovedByUser = true
             }
             SIDEB -> {
                 dimVerticalB = flipVertical(dimVerticalB)
                 isChangeDimAlignB_ = true
-                flagDimArrangeB.isMovedByUser = true
+                flagDimB.isMovedByUser = true
             }
             SIDEC -> {
                 dimVerticalC = flipVertical(dimVerticalC)
                 isChangeDimAlignC_ = true
-                flagDimArrangeC.isMovedByUser = true
+                flagDimC.isMovedByUser = true
             }
             SIDE_SOKUTEN -> {
                 nameAlign_ = flipVertical(nameAlign_)
@@ -426,9 +424,9 @@ class Triangle : EditObject, Cloneable<Triangle> {
         val b = Triangle()
         try {
             b.flags = flags.copy()
-            b.flagDimArrangeA = flagDimArrangeA.copy()
-            b.flagDimArrangeB = flagDimArrangeB.copy()
-            b.flagDimArrangeC = flagDimArrangeC.copy()
+            b.flagDimA = flagDimA.copy()
+            b.flagDimB = flagDimB.copy()
+            b.flagDimC = flagDimC.copy()
 
             b.length = length.copyOf(length.size)
             b.lengthNotSized = lengthNotSized.copyOf(lengthNotSized.size)
