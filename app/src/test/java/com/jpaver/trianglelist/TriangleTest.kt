@@ -55,8 +55,8 @@ class TriangleTest {
     }
 
     fun listup_dimpoint_distances(triangle: Triangle, index_basepoint: Int): List<Float> {
-        val targets = triangle.dimpoint
-        return triangle.dimpoint[index_basepoint].distancesTo(targets)
+        val targets = triangle.dimpoints
+        return triangle.dimpoints[index_basepoint].distancesTo(targets)
     }
 
     //とりあえず生成したばかりの三角形にどんなふうにdimPointが入るか確認
@@ -65,12 +65,12 @@ class TriangleTest {
         val triangle = Triangle(5f,5f,5f)
         val triangle2 = triangle.clone()
 
-        println("dimpoint: ${triangle.dimpoint.joinToString(separator = ", ")}")
-        println("dimpoint2: ${triangle2.dimpoint.joinToString(separator = ", ")}")
+        println("dimpoint: ${triangle.dimpoints.joinToString(separator = ", ")}")
+        println("dimpoint2: ${triangle2.dimpoints.joinToString(separator = ", ")}")
 
         // オブジェクトのハッシュコードが一致するか？
-        println("triangle のハッシュコード: ${triangle.dimpoint[0].hashCode()}")
-        println("triangle2 のハッシュコード: ${triangle2.dimpoint[0].hashCode()}")
+        println("triangle のハッシュコード: ${triangle.dimpoints[0].hashCode()}")
+        println("triangle2 のハッシュコード: ${triangle2.dimpoints[0].hashCode()}")
         println("triangle のハッシュコード: ${triangle.length[0].hashCode()}")
         //triangle2.length[0] = 3.0f
         println("triangle2 のハッシュコード: ${triangle2.length[0].hashCode()}")
@@ -236,10 +236,10 @@ class TriangleTest {
     @Test
     fun testDimSideAlign() {
         val tri1 = Triangle(3f, 4f, 5f)
-        tri1.incrementDimsPosition(0)
+        tri1.controllDimHorizontalByUser(0)
         Assert.assertEquals(1, tri1.dimHorizontalA.toLong())
         tri1.setDimPoint()
-        Assert.assertEquals(-2.325f, tri1.dimpoint[0].x, 0.001f)
+        Assert.assertEquals(-2.325f, tri1.dimpoints[0].x, 0.001f)
         var dim = PointXY(-1.5f, 0f)
         val offsetLeft = PointXY(-3f, 0f)
         val offsetRight = PointXY(0f, 0f)
@@ -249,9 +249,9 @@ class TriangleTest {
         Assert.assertEquals(0.75f, haba, 0.001f)
         dim = dim.offset(offsetLeft, haba)
         Assert.assertEquals(-2.25f, dim.x, 0.001f)
-        tri1.incrementDimsPosition(0)
+        tri1.controllDimHorizontalByUser(0)
         tri1.setDimPoint()
-        Assert.assertEquals(-0.67f, tri1.dimpoint[0].x, 0.01f)
+        Assert.assertEquals(-0.67f, tri1.dimpoints[0].x, 0.01f)
         tri1.flipDimAlignVertical(0)
         Assert.assertEquals(1, tri1.dimVerticalA.toLong())
         tri1.flipDimAlignVertical(0)
