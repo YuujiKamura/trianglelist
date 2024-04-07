@@ -527,8 +527,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
     internal constructor(dP: Params, angle: Float) {
-        setNumber(dP.n)
-        setMyName_(dP.name)
+        mynumber = dP.n
+        name = dP.name
         initBasicArguments(dP.a, dP.b, dP.c, dP.pt, angle)
         calcPoints(dP.pt, angle)
     }
@@ -1572,18 +1572,4 @@ class Triangle : EditObject, Cloneable<Triangle> {
 //endregion　isIt
 
 
-}
-
-fun Triangle.setMyName_(name: String) {
-    this.name = name
-}
-fun Triangle.getLengthA(): Float {
-    return lengthA_
-}
-
-fun Triangle.getLengthB(): Float {
-    return lengthB_
-}
-fun Triangle.getLengthC(): Float {
-    return lengthC_
 }

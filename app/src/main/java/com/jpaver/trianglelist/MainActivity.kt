@@ -2731,7 +2731,7 @@ class MainActivity : AppCompatActivity(),
                 val pt: PointXY = mt.pointnumber
                 val cp = parentBCtoCParam(mt.connectionType, mt.lengthNotSized[0], mt.cParam_)
 
-                writer.write("${mt.mynumber},${mt.getLengthA()},${mt.getLengthB()},${mt.getLengthC()},${mt.parentnumber},${mt.connectionType},${mt.myName_()},${pt.x},${pt.y},${mt.flags.isMovedByUser},${mt.color_},${mt.dimHorizontalA},${mt.dimHorizontalB},${mt.dimHorizontalC},${mt.dimVerticalA},${mt.dimVerticalB},${mt.dimVerticalC},${cp.side},${cp.type},${cp.lcr},${mt.isChangeDimAlignB_},${mt.isChangeDimAlignC_},${mt.angle},${mt.pointCA_.x},${mt.pointCA_.y},${mt.angleInLocal_}")
+                writer.write("${mt.mynumber},${mt.lengthA_},${mt.lengthB_},${mt.lengthC_},${mt.parentnumber},${mt.connectionType},${mt.myName_()},${pt.x},${pt.y},${mt.flags.isMovedByUser},${mt.color_},${mt.dimHorizontalA},${mt.dimHorizontalB},${mt.dimHorizontalC},${mt.dimVerticalA},${mt.dimVerticalB},${mt.dimVerticalC},${cp.side},${cp.type},${cp.lcr},${mt.isChangeDimAlignB_},${mt.isChangeDimAlignC_},${mt.angle},${mt.pointCA_.x},${mt.pointCA_.y},${mt.angleInLocal_}")
                 writer.newLine()
             }
 
@@ -2876,7 +2876,7 @@ class MainActivity : AppCompatActivity(),
 
         val mt = trilist.getByNumber(trilist.size())
 
-        mt.setMyName_(chunks[6]!!.toString())
+        mt.name = chunks[6]!!.toString()
         //pointNumber
         if(chunks[9]!! == "true") mt.setPointNumberMovedByUser_(
             PointXY(
@@ -3028,7 +3028,7 @@ class MainActivity : AppCompatActivity(),
             }
 
             val mT = trilist.getByNumber(trilist.size())
-            mT.setMyName_(chunks[6])
+            mT.name = chunks[6]
             if( trilist.size() > 1 ) trilist.get(trilist.size() - 1).childSide_ = chunks[5].toInt()
 
             // 番号円　pointNumber
