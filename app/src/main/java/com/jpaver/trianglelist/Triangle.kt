@@ -90,7 +90,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
 
-    fun controllDimHorizontal(side: Int) {
+    fun controlDimHorizontal(side: Int) {
         when (side) {
             SIDEA -> dimHorizontalA = cycleIncrement(dimHorizontalA)
             SIDEB -> {
@@ -146,34 +146,35 @@ class Triangle : EditObject, Cloneable<Triangle> {
         return INNER
     }
 
-    fun flipOneToThree(num: Int): Int {
-        if (num == OUTER) return INNER
-        if (num == INNER) return OUTER
-        return num
+    fun flipVertical(vside: Int): Int {
+        if (vside == OUTER) return INNER
+        if (vside == INNER) return OUTER
+        return vside
     }
 
     // 自動処理の中で呼ばない。
-    fun controllDimVertical(side: Int): Int {
-        if (side == 0) {
-            dimVerticalA = flipOneToThree(dimVerticalA)
-            flagDimArrangeA.isMovedByUser = true
-            return dimVerticalA
+    fun controlDimVertical(side: Int) {
+        when (side) {
+            SIDEA -> {
+                dimVerticalA = flipVertical(dimVerticalA)
+                flagDimArrangeA.isMovedByUser = true
+            }
+            SIDEB -> {
+                dimVerticalB = flipVertical(dimVerticalB)
+                isChangeDimAlignB_ = true
+                flagDimArrangeB.isMovedByUser = true
+            }
+            SIDEC -> {
+                dimVerticalC = flipVertical(dimVerticalC)
+                isChangeDimAlignC_ = true
+                flagDimArrangeC.isMovedByUser = true
+            }
+            SIDE_SOKUTEN -> {
+                nameAlign_ = flipVertical(nameAlign_)
+                setDimPath(dimHeight)
+            }
+            else -> throw IllegalArgumentException("Unknown side: $side")
         }
-        if (side == 1) {
-            dimVerticalB = flipOneToThree(dimVerticalB)
-            isChangeDimAlignB_ = true
-            flagDimArrangeB.isMovedByUser = true
-            return dimVerticalB
-        }
-        if (side == 2) {
-            dimVerticalC = flipOneToThree(dimVerticalC)
-            isChangeDimAlignC_ = true
-            flagDimArrangeC.isMovedByUser = true
-            return dimVerticalC
-        }
-        if (side == 4) nameAlign_ = flipOneToThree(nameAlign_)
-        setDimPath(dimHeight)
-        return nameAlign_
     }
 
     fun setDimAlignByChild() {

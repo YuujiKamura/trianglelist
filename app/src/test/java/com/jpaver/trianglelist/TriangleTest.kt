@@ -236,7 +236,7 @@ class TriangleTest {
     @Test
     fun testDimSideAlign() {
         val tri1 = Triangle(3f, 4f, 5f)
-        tri1.controllDimHorizontal(0)
+        tri1.controlDimHorizontal(0)
         Assert.assertEquals(1, tri1.dimHorizontalA.toLong())
         tri1.setDimPoint()
         Assert.assertEquals(-2.325f, tri1.dimpoints[0].x, 0.001f)
@@ -249,12 +249,12 @@ class TriangleTest {
         Assert.assertEquals(0.75f, haba, 0.001f)
         dim = dim.offset(offsetLeft, haba)
         Assert.assertEquals(-2.25f, dim.x, 0.001f)
-        tri1.controllDimHorizontal(0)
+        tri1.controlDimHorizontal(0)
         tri1.setDimPoint()
         Assert.assertEquals(-0.67f, tri1.dimpoints[0].x, 0.01f)
-        tri1.controllDimVertical(0)
+        tri1.controlDimVertical(0)
         Assert.assertEquals(1, tri1.dimVerticalA.toLong())
-        tri1.controllDimVertical(0)
+        tri1.controlDimVertical(0)
         Assert.assertEquals(3, tri1.dimVerticalA.toLong())
     }
 
