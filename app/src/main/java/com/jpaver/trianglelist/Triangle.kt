@@ -106,7 +106,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
         setDimPath(dimHeight)
     }
 
-    fun cycleIncrement(num: Int, max: Int = 4): Int = (num + 1) % (max + 1)
+    val HORIZONTAL_OPTIONMAX = 4
+    fun cycleIncrement(num: Int, max: Int = HORIZONTAL_OPTIONMAX ): Int = (num + 1) % (max + 1)
 
     //dimVertical
     //夾角の、1:外 　3:内
@@ -137,6 +138,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         return OUTER
     }
 
+    // まず接続ノードがないか、なければ外、あったら内側、ただし、
     // 特殊接続でなければ面積の大きい側に寸法値を配置する
     fun autoDimVerticalByAreaCompare(node: Triangle?): Int{
         if(node==null) return OUTER
