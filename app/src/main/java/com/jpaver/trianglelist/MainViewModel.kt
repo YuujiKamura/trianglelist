@@ -34,8 +34,8 @@ class MainViewModel {
         }
         val triAndDimside = isConnectedOrNot()
         when (WorH){
-            "W" -> triAndDimside.first.controllDimHorizontal(triAndDimside.second)
-            "H" -> triAndDimside.first.controllDimVertical(triAndDimside.second)
+            "W" -> triAndDimside.first.controlDimHorizontal(triAndDimside.second)
+            "H" -> triAndDimside.first.controlDimVertical(triAndDimside.second)
         }
         refreshMethod()
     }
