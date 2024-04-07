@@ -90,7 +90,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
 
-    fun controllDimHorizontalByUser(side: Int) {
+    fun controllDimHorizontal(side: Int) {
         when (side) {
             SIDEA -> dimHorizontalA = cycleIncrement(dimHorizontalA)
             SIDEB -> {
@@ -153,7 +153,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
     // 自動処理の中で呼ばない。
-    fun flipDimAlignVertical(side: Int): Int {
+    fun controllDimVertical(side: Int): Int {
         if (side == 0) {
             dimVerticalA = flipOneToThree(dimVerticalA)
             flagDimArrangeA.isMovedByUser = true

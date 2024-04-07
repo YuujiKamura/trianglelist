@@ -34,8 +34,8 @@ class MainViewModel {
         }
         val triAndDimside = isConnectedOrNot()
         when (WorH){
-            "W" -> triAndDimside.first.controllDimHorizontalByUser(triAndDimside.second)
-            "H" -> triAndDimside.first.flipDimAlignVertical(triAndDimside.second)
+            "W" -> triAndDimside.first.controllDimHorizontal(triAndDimside.second)
+            "H" -> triAndDimside.first.controllDimVertical(triAndDimside.second)
         }
         refreshMethod()
     }
