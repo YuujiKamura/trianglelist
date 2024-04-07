@@ -125,11 +125,11 @@ class Triangle : EditObject, Cloneable<Triangle> {
                 return dimVerticalA
             }
             SIDEB -> {
-                if(!flagDimArrangeB.isMovedByUser ) return autoDimVerticalByArea(nodeTriangleB)
+                if(!flagDimArrangeB.isMovedByUser ) return autoDimVerticalByAreaCompare(nodeTriangleB)
                 return dimVerticalB
             }
             SIDEC -> {
-                if(!flagDimArrangeC.isMovedByUser ) return autoDimVerticalByArea(nodeTriangleC)
+                if(!flagDimArrangeC.isMovedByUser ) return autoDimVerticalByAreaCompare(nodeTriangleC)
                 return dimVerticalC
             }
         }
@@ -137,8 +137,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
         return OUTER
     }
 
-    // 外側にしたいときがある。
-    fun autoDimVerticalByArea(node: Triangle?): Int{
+    // 特殊接続でなければ面積の大きい側に寸法値を配置する
+    fun autoDimVerticalByAreaCompare(node: Triangle?): Int{
         if(node==null) return OUTER
 
         if(node.getArea() > this.getArea() && node.connectionType < 3 )  return OUTER
