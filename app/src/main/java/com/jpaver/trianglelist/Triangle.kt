@@ -47,15 +47,50 @@ class Triangle : EditObject, Cloneable<Triangle> {
         path[0] = PathAndOffset(scale_, pointAB, point[0], dimVerticalA, dimHorizontalA, dimHeight)
         path[1] = PathAndOffset(scale_, pointBC, pointAB, dimVerticalB, dimHorizontalB, dimHeight)
         path[2] = PathAndOffset(scale_, point[0], pointBC, dimVerticalC, dimHorizontalC, dimHeight)
-        pathS_ = PathAndOffset(scale_, pointAB, point[0], SIDE_SOKUTEN, unconnectedSide(1, -1), dimHeight)
+        pathS_ = PathAndOffset(scale_, pointAB, point[0], SIDE_SOKUTEN, getunconnectedSide(1, -1), dimHeight)
     }
 
-    fun unconnectedSide(outerright: Int, outerleft: Int): Int{
+    fun getunconnectedSide(outerright: Int, outerleft: Int): Int{
         if (nodeTriangleC == null) return outerright
         return outerleft
     }
 
-    fun incrementDimsPosition(side: Int) {
+    fun autoDimHorizontal(selfside_index: Int ) {
+            makeflags_dim_distances(selfside_index).forEachIndexed { targetside_index, result ->
+            if ( result == true ) outerDimHorizontal(targetside_index)
+        }
+    }
+
+    val BORDERDISTANCE = 0.5f
+    val SELFDISTANCE = 0f
+    fun makeflags_dim_distances(selfside: Int ): List<Boolean> {
+        return dimpoints[selfside].distancesTo(dimpoints).map { it < BORDERDISTANCE && it > SELFDISTANCE }
+    }
+
+    //つかうの難しい？
+    fun outerDimHorizontal(targetindex: Int){
+        val OUTERRIGHT = 3
+        val OUTERLEFT = 4
+        when (targetindex) {
+            SIDEA -> dimHorizontalA = getunconnectedSide(OUTERRIGHT,OUTERLEFT)
+            SIDEC -> {
+                if(!flagDimArrangeC.isMovedByUser )
+                    dimHorizontalC = getunconnectedSide(OUTERRIGHT,OUTERLEFT)
+                    flagDimArrangeC.isAutoAligned = true
+                    return
+            }
+            SIDEB -> {
+                if(!flagDimArrangeB.isMovedByUser )
+                    dimHorizontalB = getunconnectedSide(OUTERRIGHT,OUTERLEFT)
+                    flagDimArrangeB.isAutoAligned = true
+                    return
+            }
+            
+        }
+    }
+
+
+    fun controllDimHorizontalByUser(side: Int) {
         when (side) {
             SIDEA -> dimHorizontalA = cycleIncrement(dimHorizontalA)
             SIDEB -> {
@@ -71,52 +106,9 @@ class Triangle : EditObject, Cloneable<Triangle> {
         setDimPath(dimHeight)
     }
 
-    fun cycleIncrement(num: Int, max:Int=4): Int {
-        var num = num
-        num++
-        if (num > max) num = 0
-        return num
-    }
+    fun cycleIncrement(num: Int, max: Int = 4): Int = (num + 1) % (max + 1)
 
-    fun autoDimHorizontal(indexBasePoint: Int, nearby: Float = 1.0f) {
-        val booleanResults = check_dimpoint_distances(indexBasePoint, nearby)
-        booleanResults.forEachIndexed { index, result ->
-            if (result) updateDimHorizontals(index)
-        }
-        setDimPath()
-    }
-
-    val OUTERRIGHT = 3
-    val OUTERLEFT = 4
-
-    //つかうの難しい？
-    fun updateDimHorizontals(index: Int){
-        when (index) {
-            SIDEA -> dimHorizontalA = unconnectedSide(OUTERRIGHT,OUTERLEFT)
-            SIDEC -> {
-                if(!flagDimArrangeC.isMovedByUser )
-                    dimHorizontalC = unconnectedSide(OUTERRIGHT,OUTERLEFT)
-                    flagDimArrangeC.isAutoAligned = true
-                    return
-            }
-            SIDEB -> {
-                if(!flagDimArrangeB.isMovedByUser )
-                    dimHorizontalB = unconnectedSide(OUTERRIGHT,OUTERLEFT)
-                    flagDimArrangeB.isAutoAligned = true
-                    return
-            }
-            
-        }
-    }
-
-    //距離が1.0fより小さく、0ではない条件を満たすかどうかでBooleanリストを生成
-    fun check_dimpoint_distances( index_basepoint: Int, nearby: Float = 1.0f): List<Boolean> {
-        val targets = this.dimpoint
-        val distances = this.dimpoint[index_basepoint].distancesTo(targets)
-        val booleans = distances.map { it > 0f && it < nearby }
-        return booleans
-    }
-
+    //dimVertical
     //夾角の、1:外 　3:内
     val OUTER = 1
     val INNER = 3
@@ -203,11 +195,11 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
     fun setDimPoint() {
-        dimpoint[0] =
+        dimpoints[0] =
             path[0].pointD //dimSideRotation( dimSideAlignA_, point[0].calcMidPoint(pointAB_), pointAB_, point[0]);
-        dimpoint[1] =
+        dimpoints[1] =
             path[1].pointD //dimSideRotation( dimSideAlignB_, pointAB_.calcMidPoint(pointBC_), pointBC_, pointAB_);
-        dimpoint[2] =
+        dimpoints[2] =
             path[2].pointD //dimSideRotation( dimSideAlignC_, pointBC_.calcMidPoint(point[0]), point[0], pointBC_);
     }
 
@@ -300,7 +292,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         }
         if(isnode)   sb.append("connection parameters to0 side${cParam_.side} type${cParam_.type} lcr${cParam_.lcr} \n")
         if(ispoints) sb.append("points:${point[0]} ${pointAB} ${pointBC} \n")
-        if(ispoints) sb.append("pointDim:${dimpoint[0]} ${dimpoint[1]} ${dimpoint[2]} \n")
+        if(ispoints) sb.append("pointDim:${dimpoints[0]} ${dimpoints[1]} ${dimpoints[2]} \n")
         if(islength) sb.append("length:${lengthA_} ${lengthB_} ${lengthC_} \n")
         if(isalign) sb.append("isPointnumber_user: ${flags.isMovedByUser}\n")
         if(isalign) sb.append("isPointnumber_auto: ${flags.isAutoAligned}\n\n")
@@ -333,7 +325,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     var pointnumber = PointXY(0f, 0f)
 
     // 固定長配列の初期化
-    var dimpoint: Array<PointXY> = Array(3) { PointXY(0f, 0f) } // すべての要素を PointXY(0f, 0f) で初期化
+    var dimpoints: Array<PointXY> = Array(3) { PointXY(0f, 0f) } // すべての要素を PointXY(0f, 0f) で初期化
     var path: Array<PathAndOffset> = Array(3) { PathAndOffset() }
 
     var nameAlign_ = 0
@@ -437,7 +429,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
             b.length = length.copyOf(length.size)
             b.lengthNotSized = lengthNotSized.copyOf(lengthNotSized.size)
-            b.dimpoint = cloneArray(dimpoint) // 代入だと参照になるので要素ごとにクローン
+            b.dimpoints = cloneArray(dimpoints) // 代入だと参照になるので要素ごとにクローン
             b.path = cloneArray( path )
 
             //b.isPointnumber = isPointnumber.copyOf(isPointnumber.size)
@@ -651,9 +643,9 @@ class Triangle : EditObject, Cloneable<Triangle> {
         setDimPoint()
         val range = rangeRadius * scale_
         if (tapP.nearBy(pointName_, range)) return 4.also { lastTapSide_ = it }
-        if (tapP.nearBy(dimpoint[0], range)) return 0.also { lastTapSide_ = it }
-        if (tapP.nearBy(dimpoint[1], range)) return 1.also { lastTapSide_ = it }
-        if (tapP.nearBy(dimpoint[2], range)) return 2.also { lastTapSide_ = it }
+        if (tapP.nearBy(dimpoints[0], range)) return 0.also { lastTapSide_ = it }
+        if (tapP.nearBy(dimpoints[1], range)) return 1.also { lastTapSide_ = it }
+        if (tapP.nearBy(dimpoints[2], range)) return 2.also { lastTapSide_ = it }
         return if (tapP.nearBy(pointnumber, range)) 3.also {
             lastTapSide_ = it
         } else -1.also {
@@ -1407,9 +1399,9 @@ class Triangle : EditObject, Cloneable<Triangle> {
         point[0].add(to)
         pointcenter = pointcenter.plus(to)
         pointnumber = pointnumber.plus(to)
-        dimpoint[0].add(to)
-        dimpoint[1].add(to)
-        dimpoint[2].add(to)
+        dimpoints[0].add(to)
+        dimpoints[1].add(to)
+        dimpoints[2].add(to)
         myBP_.left = myBP_.left + to.x
         myBP_.right = myBP_.right + to.x
         myBP_.top = myBP_.top + to.y
@@ -1465,10 +1457,10 @@ class Triangle : EditObject, Cloneable<Triangle> {
             angle = angleMmCA - angleAB
             if (angle < 0) angle += 360f
             if (angle > 360) angle -= 360f
-            pp = dimpoint[0].clone()
-            dimpoint[0] = dimpoint[1]
-            dimpoint[1] = dimpoint[2]
-            dimpoint[2] = pp.clone()
+            pp = dimpoints[0].clone()
+            dimpoints[0] = dimpoints[1]
+            dimpoints[1] = dimpoints[2]
+            dimpoints[2] = pp.clone()
             pi = dimVerticalA
             dimVerticalA = dimVerticalB
             dimVerticalB = dimVerticalC
@@ -1498,10 +1490,10 @@ class Triangle : EditObject, Cloneable<Triangle> {
             angle += angleCA + angleBC
             if (angle < 0) angle += 360f
             if (angle > 360) angle -= 360f
-            pp = dimpoint[0].clone()
-            dimpoint[0] = dimpoint[2]
-            dimpoint[2] = dimpoint[1]
-            dimpoint[1] = pp.clone()
+            pp = dimpoints[0].clone()
+            dimpoints[0] = dimpoints[2]
+            dimpoints[2] = dimpoints[1]
+            dimpoints[1] = pp.clone()
             pi = dimVerticalA
             dimVerticalA = dimVerticalC
             dimVerticalC = dimVerticalB

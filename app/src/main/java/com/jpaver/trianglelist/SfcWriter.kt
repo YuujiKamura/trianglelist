@@ -228,9 +228,9 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
 
         // DimTexts
         if(tri.mynumber ==1 || tri.connectionType > 2)
-            writeText(la, tri.dimpoint[0], 8, ts, dimA, pab.calcDimAngle(pca), 1f)
-        writeText(lb, tri.dimpoint[1], 8, ts, dimB, pbc.calcDimAngle(pab), 1f)
-        writeText(lc, tri.dimpoint[2], 8, ts, dimC, pca.calcDimAngle(pbc), 1f)
+            writeText(la, tri.dimpoints[0], 8, ts, dimA, pab.calcDimAngle(pca), 1f)
+        writeText(lb, tri.dimpoints[1], 8, ts, dimB, pbc.calcDimAngle(pab), 1f)
+        writeText(lc, tri.dimpoints[2], 8, ts, dimC, pca.calcDimAngle(pbc), 1f)
 
         // 番号
         val pn = tri.pointnumber

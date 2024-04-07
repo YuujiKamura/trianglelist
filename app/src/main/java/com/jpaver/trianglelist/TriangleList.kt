@@ -704,7 +704,7 @@ class TriangleList : EditList {
 
         // Deductionオブジェクトごとに処理
         dedlist.dedlist_.forEachIndexed { index, deduction ->
-            processDeduction(deduction, axisY) // index + 1 を渡すのは、元のコードが1ベースのインデックスを想定しているため
+            processDeduction(deduction, axisY)
         }
     }
 
