@@ -17,7 +17,7 @@ class PathAndOffset(
         b.scale = scale
         b.pointA = pointA.clone()
         b.pointB = pointB.clone()
-        b.pointD = pointD.clone()
+        b.dimpoint = dimpoint.clone()
         b.offsetV = offsetV
         b.offsetH = offsetH
         b.textSpacer = textSpacer
@@ -26,7 +26,7 @@ class PathAndOffset(
 
     var pointA: PointXY = PointXY(0f,0f)
     var pointB: PointXY = PointXY(0f,0f)
-    var pointD: PointXY = PointXY(0f,0f)
+    var dimpoint: PointXY = PointXY(0f,0f)
     var offsetV = 0f
     var offsetH = 0f
     var textSpacer = 5f
@@ -43,7 +43,7 @@ class PathAndOffset(
         setVerticalOffset(0, vertical)
         if(vertical != SIDE_SOKUTEN ) initDimPoint(leftP,rightP, vertical)
         if(vertical == SIDE_SOKUTEN ) initSoktenNamePath(leftP, rightP)
-        pointD = pointA.calcMidPoint(pointB).offset(pointB, offsetH)
+        dimpoint = pointA.calcMidPoint(pointB).offset(pointB, offsetH)
     }
 
     fun initDimPoint( leftP: PointXY,rightP: PointXY, alignVertical: Int ){

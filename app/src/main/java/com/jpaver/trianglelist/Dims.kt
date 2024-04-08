@@ -58,7 +58,9 @@ class Dims( val triangle: Triangle ) : Cloneable<Dims> {
     }
 
     fun makeflags_dim_distances(selfside: Int ): List<Boolean> {
-        return triangle.dimpoints[selfside].distancesTo(triangle.dimpoints).map { it < BORDERDISTANCE && it > SELFDISTANCE }
+        val dimpoint = arrayOf( triangle.dimpoint.a,triangle.dimpoint.b,triangle.dimpoint.c)
+
+        return dimpoint[selfside].distancesTo(dimpoint).map { it < BORDERDISTANCE && it > SELFDISTANCE }
     }
 
     //つかうの難しい？
@@ -86,7 +88,7 @@ class Dims( val triangle: Triangle ) : Cloneable<Dims> {
         return outerleft
     }
 
-    fun controlDimHorizontal(side: Int) {
+    fun controlHorizontal(side: Int) {
         when (side) {
             SIDEA -> horizontal.a = cycleIncrement(horizontal.a)
             SIDEB -> {
@@ -142,7 +144,7 @@ class Dims( val triangle: Triangle ) : Cloneable<Dims> {
     }
 
     // 自動処理の中で呼ばない。
-    fun controlDimVertical(side: Int) {
+    fun controlVertical(side: Int) {
         when (side) {
             SIDEA -> {
                 vertical.a = flipVertical(vertical.a)
@@ -163,7 +165,7 @@ class Dims( val triangle: Triangle ) : Cloneable<Dims> {
         }
     }
 
-    fun setDimAlignByChild() {
+    fun setAlignByChild() {
         if (!flag[1].isMovedByUser) {
             vertical.b = if (triangle.nodeTriangleB == null) OUTER else INNER
         }
@@ -172,7 +174,7 @@ class Dims( val triangle: Triangle ) : Cloneable<Dims> {
         }
     }
 
-    fun setDimAligns(sa: Int, sb: Int, sc: Int, ha: Int, hb: Int, hc: Int) {
+    fun setAligns(sa: Int, sb: Int, sc: Int, ha: Int, hb: Int, hc: Int) {
         horizontal.a = sa
         horizontal.b = sb
         horizontal.c = sc

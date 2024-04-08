@@ -948,7 +948,7 @@ class TriListTest {
             PointXY(0f, 0f), 180.0f)
         val myTrilist = TriangleList()
         myTrilist.add(mytri1, true)
-        Assert.assertEquals(3.0f, myTrilist.getByNumber(1).getLengthA(), 0.001f)
+        Assert.assertEquals(3.0f, myTrilist.getByNumber(1).lengthA, 0.001f)
         Assert.assertEquals(1, myTrilist.size().toLong())
     }
 
@@ -981,9 +981,9 @@ class TriListTest {
         myTrilist.add(Triangle(mytri1, 1, 3f, 5f), true)
         myTrilist.resetTriangles(1, mytri1.resetLength(3f, 2f, 4.5f))
         //myTrilist.getTriangle(3).reset(mytri1, 1);
-        Assert.assertEquals(2.0f, myTrilist.getByNumber(1).getLengthB(), 0.001f)
-        Assert.assertEquals(3.0f, myTrilist.getByNumber(1).getLengthA(), 0.001f)
-        Assert.assertEquals(4.0f, myTrilist.getByNumber(3).getLengthA(), 0.001f)
+        Assert.assertEquals(2.0f, myTrilist.getByNumber(1).lengthB, 0.001f)
+        Assert.assertEquals(3.0f, myTrilist.getByNumber(1).lengthA, 0.001f)
+        Assert.assertEquals(4.0f, myTrilist.getByNumber(3).lengthA, 0.001f)
         Assert.assertEquals(1, myTrilist.getByNumber(1).mynumber.toLong())
         Assert.assertEquals(3, myTrilist.size().toLong())
 
@@ -1028,10 +1028,10 @@ class TriListTest {
         myTrilist.add(Triangle(mytri1, 2, 3.0f, 4.0f), true)
         myTrilist.add(Triangle(myTrilist.getByNumber(myTrilist.size()), 1, 4.0f, 5.0f), true)
         myTrilist.add(Triangle(myTrilist.getByNumber(myTrilist.size()), 2, 3.0f, 4.0f), true)
-        Assert.assertEquals(5.0, myTrilist.getByNumber(4).getLengthA().toDouble(), 0.001)
+        Assert.assertEquals(5.0, myTrilist.getByNumber(4).lengthA.toDouble(), 0.001)
 
         myTrilist.resetTriangles(1, Triangle(myTrilist.getByNumber(1), 2, 5.0f, 5.0f))
         Assert.assertEquals(2.0, myTrilist.getByNumber(2).mynumber.toDouble(), 0.001)
-        Assert.assertEquals(3.0, myTrilist.getByNumber(3).getLengthA().toDouble(), 0.001)
+        Assert.assertEquals(3.0, myTrilist.getByNumber(3).lengthA.toDouble(), 0.001)
     }
 }
