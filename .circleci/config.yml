@@ -14,13 +14,24 @@ jobs:
     docker:
       # Specify the version you desire here
       # See: https://circleci.com/developer/images/image/cimg/base
-      - image: cimg/base:current
-
-    # Add steps to the job
-    # See: https://circleci.com/docs/jobs-steps/#steps-overview & https://circleci.com/docs/configuration-reference/#steps
+      - image: cimg/base:stable
+    environment:
+      # Javaのバージョンに応じてJAVA_HOMEを設定
+      JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
     steps:
-      # Checkout the code as the first step.
       - checkout
+      - run:
+          name: Install Java
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y openjdk-17-jdk
+            echo 'export JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64"' >> $BASH_ENV
+            source $BASH_ENV
+      - run:
+          name: Verify Java Installation
+          command: |
+            java -version
+            echo $JAVA_HOME
       - run:
           name: Set executable permission for gradlew
           command: chmod +x ./gradlew
