@@ -25,7 +25,7 @@ jobs:
           command: chmod +x ./gradlew
       - run:
           name: Run tests
-          command: ./gradlew test --tests com.jpaver.trianglelist.TriangleTest
+          command: ./gradlew :app:test --tests com.jpaver.trianglelist.TriangleTest
   build:
     docker:
       - image: cimg/base:current
