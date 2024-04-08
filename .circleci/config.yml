@@ -13,7 +13,7 @@ jobs:
     # See: https://circleci.com/docs/executor-intro/ & https://circleci.com/docs/configuration-reference/#executor-job
     docker:
       # Androidビルド用のイメージを指定
-      - image: circleci/android:api-34
+      - image: circleci/android:api-30-node
     steps:
       - checkout
       - run:
