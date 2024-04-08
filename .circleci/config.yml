@@ -25,8 +25,8 @@ jobs:
       - run:
           name: Install JDK
           command: |
-            wget https://.../jdk-17.tar.gz -O jdk-17.tar.gz
-            tar -xzf jdk-17.tar.gz -C /opt
+            wget https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.10%2B7/OpenJDK17U-debugimage_aarch64_linux_hotspot_17.0.10_7.tar.gz
+            tar -xzf OpenJDK17U-debugimage_aarch64_linux_hotspot_17.0.10_7.tar.gz -C /opt
             echo 'export JAVA_HOME=/opt/jdk-17' >> $BASH_ENV
             echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
       - run:
