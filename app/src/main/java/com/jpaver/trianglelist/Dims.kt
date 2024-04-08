@@ -58,8 +58,7 @@ class Dims( val triangle: Triangle ) : Cloneable<Dims> {
     }
 
     fun makeflags_dim_distances(selfside: Int ): List<Boolean> {
-        val dimpoint = arrayOf( triangle.dimpoint.a,triangle.dimpoint.b,triangle.dimpoint.c)
-
+        val dimpoint = triangle.dimpoint.values()
         return dimpoint[selfside].distancesTo(dimpoint).map { it < BORDERDISTANCE && it > SELFDISTANCE }
     }
 
