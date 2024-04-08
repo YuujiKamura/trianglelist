@@ -14,7 +14,7 @@ jobs:
     docker:
       # Specify the version you desire here
       # See: https://circleci.com/developer/images/image/cimg/base
-      - image: cimg/base:stable
+      - image: cimg/openjdk:17.0
     environment:
       # Javaのバージョンに応じてJAVA_HOMEを設定
       JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
