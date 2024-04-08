@@ -1,5 +1,6 @@
 package com.jpaver.trianglelist
 
+import PointNumber
 import com.jpaver.trianglelist.util.Cloneable
 import com.jpaver.trianglelist.util.Params
 import com.jpaver.trianglelist.util.cloneArray
@@ -12,15 +13,13 @@ import kotlin.math.sin
 @Suppress("NAME_SHADOWING")
 class Triangle : EditObject, Cloneable<Triangle> {
 
-    data class Flags( var isMovedByUser: Boolean = false, var isAutoAligned: Boolean = false )
-    var flag_pointnumber = Flags()
     var dim = Dims(this)
 
     override fun clone(): Triangle {
         val b = Triangle()
         try {
-            b.flag_pointnumber = flag_pointnumber.copy()
 
+            b.pointNumber = pointNumber.clone()
             b.dimpoint = dimpoint.copy()//cloneArray(dimpoints) // 代入だと参照になるので要素ごとにクローン
             b.path = cloneArray( path )
             b.dim = dim.clone()
@@ -79,10 +78,10 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
     fun setDimPath(ts: Float = dimHeight) {
         dimHeight = ts
-        path[0] = PathAndOffset(scale_, pointAB, point[0], dim.vertical.a, dim.horizontal.a, ts )
-        path[1] = PathAndOffset(scale_, pointBC, pointAB, dim.vertical.b, dim.horizontal.b, ts )
-        path[2] = PathAndOffset(scale_, point[0], pointBC,  dim.vertical.c, dim.horizontal.c, ts )
-        pathS_ = PathAndOffset(scale_, pointAB, point[0], SIDE_SOKUTEN, dim.getunconnectedSide(1, -1), ts )
+        path[0] = PathAndOffset(scaleFactror, pointAB, point[0], dim.vertical.a, dim.horizontal.a, ts )
+        path[1] = PathAndOffset(scaleFactror, pointBC, pointAB, dim.vertical.b, dim.horizontal.b, ts )
+        path[2] = PathAndOffset(scaleFactror, point[0], pointBC,  dim.vertical.c, dim.horizontal.c, ts )
+        pathS_ = PathAndOffset(scaleFactror, pointAB, point[0], SIDE_SOKUTEN, dim.getunconnectedSide(1, -1), ts )
     }
 
     fun controlDimHorizontal(side: Int) {
@@ -121,25 +120,10 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
 
     // region pointNumber
-
-    val WEIGHT = 35f
+    var pointNumber = PointNumber(this)
 
     fun arrangeNumber(isUse: Boolean = false ): PointXY{
-        if(flag_pointnumber.isMovedByUser || flag_pointnumber.isAutoAligned ) return pointnumber
-        if(!isUse) return weightedMidpoint(WEIGHT)
-        return autoAlignPointNumber()
-    }
-
-
-    private fun autoAlignPointNumber() : PointXY{
-        if (getArea() <= 4f && (lengthAforce_ < 1.5f || lengthBforce_ < 1.5f || lengthCforce_ < 1.5f)){
-            pointnumber = pointcenter
-            flag_pointnumber.isAutoAligned = true
-            return pointUnconnectedSide(pointcenter, 0.8f )
-                //.offset(pointcenter, pointcenter.lengthTo(pointnumber)*-10f )
-        }
-
-        return weightedMidpoint(WEIGHT)
+        return pointNumber.arrangeNumber(isUse)
     }
 
     //Deductionからも呼ばれている
@@ -152,7 +136,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         if (nodeTriangleB == null)
             return point.mirroredAndScaledPoint(pointAB, pointBC, clockwise)
 
-        return weightedMidpoint(WEIGHT)
+        return point
     }
 
     fun angleUnconnectedSide(): Float{
@@ -163,29 +147,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
     fun setPointNumberMovedByUser_(p: PointXY) {
         if( p.lengthTo(pointcenter) < 10f ) return // あまり遠い時はスルー
         pointnumber = p
-        flag_pointnumber.isMovedByUser = true
-    }
-
-    fun weightedMidpoint(bias: Float): PointXY {
-
-        // 角度が大きいほど重みを大きくするための調整
-        var weight1 = angleAB + bias // 角度が大きいほど重みが大きくなる
-        var weight2 = angleBC + bias
-        var weight3 = angleCA + bias
-
-        // 重みの合計で正規化
-        val totalWeight = weight1 + weight2 + weight3
-        weight1 /= totalWeight
-        weight2 /= totalWeight
-        weight3 /= totalWeight
-        val p1 = pointAB
-        val p2 = pointBC
-        val p3 = point[0]
-
-        // 重み付き座標の計算
-        val weightedX = p1.x * weight1 + p2.x * weight2 + p3.x * weight3
-        val weightedY = p1.y * weight1 + p2.y * weight2 + p3.y * weight3
-        return PointXY(weightedX, weightedY)
+        pointNumber.point = p
+        pointNumber.flag.isMovedByUser = true
     }
 
     //endregion pointNumber
@@ -208,8 +171,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
         if(ispoints) sb.append("points:${point[0]} ${pointAB} ${pointBC} \n")
         if(ispoints) sb.append("pointDim:${dimpoint.a} ${dimpoint.b} ${dimpoint.c} \n")
         if(islength) sb.append("length:${lengthA_} ${lengthB_} ${lengthC_} \n")
-        if(isalign) sb.append("isPointnumber_user: ${flag_pointnumber.isMovedByUser}\n")
-        if(isalign) sb.append("isPointnumber_auto: ${flag_pointnumber.isAutoAligned}\n\n")
+        if(isalign) sb.append("isPointnumber_user: ${pointNumber.flag.isMovedByUser}\n")
+        if(isalign) sb.append("isPointnumber_auto: ${pointNumber.flag.isAutoAligned}\n\n")
         return sb.toString()
     }
 
@@ -217,7 +180,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     var valid_ = false
     var length = FloatArray(3)
     var lengthNotSized = FloatArray(3)
-    var scale_ = 1f
+    var scaleFactror = 1f
     var angle = 180f
     var angleInLocal_ = 0f
     var dedcount = 0f
@@ -237,7 +200,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
         private set
 
     var pointnumber = PointXY(0f, 0f)
-        //get() = weightedMidpoint(WEIGHT)
+
+
 
     var path: Array<PathAndOffset> = Array(3) { PathAndOffset() }
     data class Dimpoint(var a:PointXY= PointXY(0f,0f), var b:PointXY=PointXY(0f,0f), var c:PointXY=PointXY(0f,0f), var name:PointXY=PointXY(0f,0f)){
@@ -495,7 +459,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
     fun getTapLength(tapP: PointXY, rangeRadius: Float): Int {
         setDimPoint()
-        val range = rangeRadius * scale_
+        val range = rangeRadius * scaleFactror
         if (tapP.nearBy(pointName_, range)) return 4.also { lastTapSide_ = it }
         if (tapP.nearBy(dimpoint.a, range)) return 0.also { lastTapSide_ = it }
         if (tapP.nearBy(dimpoint.b, range)) return 1.also { lastTapSide_ = it }
@@ -613,11 +577,11 @@ class Triangle : EditObject, Cloneable<Triangle> {
         doneObjectList.add(this)
     }
 
-    fun setScale(scale: Float) {
-        scale_ = scale
-        length[0] *= scale
-        length[1] *= scale
-        length[2] *= scale
+    fun setScale(scale_: Float) {
+        scaleFactror = scale_
+        length[0] *= scale_
+        length[1] *= scale_
+        length[2] *= scale_
         calcPoints(point[0], angle)
     }
 
@@ -1215,16 +1179,18 @@ class Triangle : EditObject, Cloneable<Triangle> {
     //endregion old hataage method
 
     //region scale and translate
-    fun scale(basepoint: PointXY, scale: Float) {
-        scale_ *= scale
+    fun scale(basepoint: PointXY, scale_: Float) {
+        scaleFactror *= scale_
         //pointAB.scale(basepoint, scale);
         //pointBC.scale(basepoint, scale);
-        point[0].scale(basepoint, scale)
-        pointcenter.scale(basepoint, scale)
-        pointnumber.scale(basepoint, scale)
-        length[0] *= scale
-        length[1] *= scale
-        length[2] *= scale
+        point[0].scale(basepoint, scale_)
+        pointcenter.scale(basepoint, scale_)
+        pointnumber.scale(basepoint, scale_)
+        length[0] *= scale_
+        length[1] *= scale_
+        length[2] *= scale_
+        pointNumber.triangle = this
+        pointNumber.point.scale(basepoint, scale_)
         calcPoints( point[0], angle, true )
     }
 

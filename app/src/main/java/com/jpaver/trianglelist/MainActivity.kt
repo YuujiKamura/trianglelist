@@ -1671,8 +1671,9 @@ class MainActivity : AppCompatActivity(),
                 ), 1 / mScale, -1 / mScale)
             if( tp.lengthTo(tri.pointcenter) < 10f ){ // あまり遠い時はスルー
                 tri.pointnumber = tp
-                tri.flag_pointnumber.isMovedByUser = true
-                tri.flag_pointnumber.isAutoAligned = false
+                tri.pointNumber.point = tp
+                tri.pointNumber.flag.isMovedByUser = true
+                tri.pointNumber.flag.isAutoAligned = false
                 myview.setTriangleList(myTriangleList, mScale, false)
             }
         }
@@ -2731,7 +2732,7 @@ class MainActivity : AppCompatActivity(),
                 val pointnumber: PointXY = mt.pointnumber
                 val cp = parentBCtoCParam(mt.connectionType, mt.lengthNotSized[0], mt.cParam_)
 
-                writer.write("${mt.mynumber},${mt.lengthA_},${mt.lengthB_},${mt.lengthC_},${mt.parentnumber},${mt.connectionType},${mt.name},${pointnumber.x},${pointnumber.y},${mt.flag_pointnumber.isMovedByUser},${mt.color_},${mt.dim.horizontal.a},${mt.dim.horizontal.b},${mt.dim.horizontal.c},${mt.dim.vertical.a},${mt.dim.vertical.b},${mt.dim.vertical.c},${cp.side},${cp.type},${cp.lcr},${mt.dim.flag[1].isMovedByUser},${mt.dim.flag[2].isMovedByUser},${mt.angle},${mt.pointCA_.x},${mt.pointCA_.y},${mt.angleInLocal_}")
+                writer.write("${mt.mynumber},${mt.lengthA_},${mt.lengthB_},${mt.lengthC_},${mt.parentnumber},${mt.connectionType},${mt.name},${pointnumber.x},${pointnumber.y},${mt.pointNumber.flag.isMovedByUser},${mt.color_},${mt.dim.horizontal.a},${mt.dim.horizontal.b},${mt.dim.horizontal.c},${mt.dim.vertical.a},${mt.dim.vertical.b},${mt.dim.vertical.c},${cp.side},${cp.type},${cp.lcr},${mt.dim.flag[1].isMovedByUser},${mt.dim.flag[2].isMovedByUser},${mt.angle},${mt.pointCA_.x},${mt.pointCA_.y},${mt.angleInLocal_}")
                 writer.newLine()
             }
 
