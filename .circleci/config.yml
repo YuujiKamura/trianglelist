@@ -14,11 +14,14 @@ jobs:
     docker:
       # Androidビルド用のイメージを指定
       - image: circleci/android:api-30-node
+    environment:
+      JAVA_HOME: /path/to/java-17
     steps:
       - checkout
       - run:
-          name: Verify Java Installation
+          name: Update Java Version
           command: |
+            sudo update-alternatives --set java /path/to/java-17/bin/java
             java -version
             echo $JAVA_HOME
       - run:
