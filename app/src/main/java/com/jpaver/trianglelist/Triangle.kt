@@ -240,7 +240,11 @@ class Triangle : EditObject, Cloneable<Triangle> {
         //get() = weightedMidpoint(WEIGHT)
 
     var path: Array<PathAndOffset> = Array(3) { PathAndOffset() }
-    data class Dimpoint(var a:PointXY= PointXY(0f,0f), var b:PointXY=PointXY(0f,0f), var c:PointXY=PointXY(0f,0f), var name:PointXY=PointXY(0f,0f))
+    data class Dimpoint(var a:PointXY= PointXY(0f,0f), var b:PointXY=PointXY(0f,0f), var c:PointXY=PointXY(0f,0f), var name:PointXY=PointXY(0f,0f)){
+        fun values(): Array<PointXY>{
+            return arrayOf(a,b,c)
+        }
+    }
 
     // 固定長配列の初期化
     var dimpoint = Dimpoint()//: Array<PointXY> = Array(3) { PointXY(0f, 0f) } // すべての要素を PointXY(0f, 0f) で初期化
