@@ -21,7 +21,8 @@ jobs:
       - run:
           name: Update Java Version
           command: |
-            sudo update-alternatives --set java /path/to/java-17/bin/java
+            sudo apt-get install default-jdk
+            sudo update-alternatives --config java
             java -version
             echo $JAVA_HOME
       - run:
