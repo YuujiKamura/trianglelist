@@ -23,17 +23,12 @@ jobs:
           command: |
             sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys B53DC80D13EDEF05
       - run:
-          name: Install OpenJDK 17
+          name: Install JDK
           command: |
-            sudo apt-get update
-            sudo apt-get install -y openjdk-17-jdk
-      - run:
-          name: Set JAVA_HOME and update alternatives
-          command: |
-            echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> $BASH_ENV
-            source $BASH_ENV
-            sudo update-alternatives --install /usr/bin/java java /usr/lib/jvm/java-17-openjdk-amd64/bin/java 1
-            sudo update-alternatives --set java /usr/lib/jvm/java-17-openjdk-amd64/bin/java
+            wget https://.../jdk-17.tar.gz -O jdk-17.tar.gz
+            tar -xzf jdk-17.tar.gz -C /opt
+            echo 'export JAVA_HOME=/opt/jdk-17' >> $BASH_ENV
+            echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
       - run:
           name: Verify Java Installation
           command: |
