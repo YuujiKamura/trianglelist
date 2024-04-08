@@ -12,7 +12,8 @@ jobs:
     # Specify the execution environment. You can specify an image from Docker Hub or use one of our convenience images from CircleCI's Developer Hub.
     # See: https://circleci.com/docs/executor-intro/ & https://circleci.com/docs/configuration-reference/#executor-job
     docker:
-      - image: cimg/openjdk:17.0
+      # Androidビルド用のイメージを指定
+      - image: circleci/android:api-34
     steps:
       - checkout
       - run:
