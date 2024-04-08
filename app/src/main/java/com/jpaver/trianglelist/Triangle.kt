@@ -12,42 +12,77 @@ import kotlin.math.sin
 @Suppress("NAME_SHADOWING")
 class Triangle : EditObject, Cloneable<Triangle> {
 
-    fun calcPoints(basepoint: PointXY, angle: Float, isArrange: Boolean = false) {
-        pointAB = basepoint.offset(length[0], angle)
-        pointBC = calculatePointBC( basepoint )
-        calculateInternalAngles()
-        calculatePointCenter()
-        arrangeDims(isArrange)
-        if(isArrange) pointnumber = arrangeNumber(isArrange)
-        setBoundaryBox()
+    data class Flags( var isMovedByUser: Boolean = false, var isAutoAligned: Boolean = false )
+    var flag_pointnumber = Flags()
+    var dim = Dims(this)
+
+    override fun clone(): Triangle {
+        val b = Triangle()
+        try {
+            b.flag_pointnumber = flag_pointnumber.copy()
+
+            b.dimpoints = cloneArray(dimpoints) // 代入だと参照になるので要素ごとにクローン
+            b.path = cloneArray( path )
+            b.dim = dim.clone()
+
+            b.dimVerticalA = dimVerticalA
+            b.dimVerticalB = dimVerticalB
+            b.dimVerticalC = dimVerticalC
+            b.dimHorizontalA = dimHorizontalA
+            b.dimHorizontalB = dimHorizontalB
+            b.dimHorizontalC = dimHorizontalC
+
+            b.length = length.copyOf(length.size)
+            b.lengthNotSized = lengthNotSized.copyOf(lengthNotSized.size)
+            b.angle = angle
+            b.name = name
+            b.mynumber = mynumber
+            b.connectionType = connectionType
+            b.parentnumber = parentnumber
+
+            //b.point = point.clone()
+            b.point[0] = point[0].clone()
+            b.pointAB = pointAB.clone()
+            b.pointBC = pointBC.clone()
+            b.pointcenter = pointcenter.clone()
+            b.pointnumber = pointnumber.clone()
+            b.cParam_ = cParam_.clone()
+            b.isFloating_ = isFloating_
+            b.isColored_ = isColored_
+            b.myBP_.left = myBP_.left
+            b.myBP_.top = myBP_.top
+            b.myBP_.right = myBP_.right
+            b.myBP_.bottom = myBP_.bottom
+            b.nodeTriangleA_ = nodeTriangleA_
+            b.nodeTriangleB = nodeTriangleB
+            b.nodeTriangleC = nodeTriangleC
+            b.childSide_ = childSide_
+            b.color_ = color_
+            b.connectionLCR_ = connectionLCR_
+            b.connectionType_ = connectionType_
+        } catch (e: Exception) {
+            //e.printStackTrace();
+        }
+        return b
     }
 
     //region dimAlign
 
     // あらゆる場所でよばれる
     private fun arrangeDims(isVertical:Boolean=false, isHorizontal:Boolean=true ) {
-        if(isHorizontal) autoDimHorizontal(0)
-        if(isVertical){
-            dimVerticalA = autoDimVertical(0)
-            dimVerticalB = autoDimVertical(1)
-            dimVerticalC = autoDimVertical(2)
-        }
-
-        setDimPath(dimHeight)
+        dim.arrangeDims(isVertical,isHorizontal)
+        setDimPath(dim.height)
         setDimPoint()
     }
 
     val SIDE_SOKUTEN = 4
-    var flagDimA = Flags()
-    var flagDimB = Flags()
-    var flagDimC = Flags()
 
     fun setDimPath(ts: Float = dimHeight) {
         dimHeight = ts
-        path[0] = PathAndOffset(scale_, pointAB, point[0], dimVerticalA, dimHorizontalA, dimHeight)
-        path[1] = PathAndOffset(scale_, pointBC, pointAB, dimVerticalB, dimHorizontalB, dimHeight)
-        path[2] = PathAndOffset(scale_, point[0], pointBC, dimVerticalC, dimHorizontalC, dimHeight)
-        pathS_ = PathAndOffset(scale_, pointAB, point[0], SIDE_SOKUTEN, getunconnectedSide(1, -1), dimHeight)
+        path[0] = PathAndOffset(scale_, pointAB, point[0], dim.vertical.a, dim.horizontal.a, ts )
+        path[1] = PathAndOffset(scale_, pointBC, pointAB, dim.vertical.b, dim.horizontal.b, ts )
+        path[2] = PathAndOffset(scale_, point[0], pointBC,  dim.vertical.c, dim.horizontal.c, ts )
+        pathS_ = PathAndOffset(scale_, pointAB, point[0], SIDE_SOKUTEN, getunconnectedSide(1, -1), ts )
     }
 
     fun getunconnectedSide(outerright: Int, outerleft: Int): Int{
@@ -55,153 +90,40 @@ class Triangle : EditObject, Cloneable<Triangle> {
         return outerleft
     }
 
-    fun autoDimHorizontal(selfside_index: Int ) {
-            makeflags_dim_distances(selfside_index).forEachIndexed { targetside_index, result ->
-            if ( result == true ) outerDimHorizontal(targetside_index)
-        }
-    }
-
-    val BORDERDISTANCE = 0.5f
-    val SELFDISTANCE = 0f
-    fun makeflags_dim_distances(selfside: Int ): List<Boolean> {
-        return dimpoints[selfside].distancesTo(dimpoints).map { it < BORDERDISTANCE && it > SELFDISTANCE }
-    }
-
-    //つかうの難しい？
-    fun outerDimHorizontal(targetindex: Int){
-        val OUTERRIGHT = 3
-        val OUTERLEFT = 4
-        when (targetindex) {
-            SIDEC -> {
-                if(!flagDimC.isMovedByUser )
-                    dimHorizontalC = getunconnectedSide(OUTERRIGHT,OUTERLEFT)
-                    flagDimC.isAutoAligned = true
-                    return
-            }
-            SIDEB -> {
-                if(!flagDimB.isMovedByUser )
-                    dimHorizontalB = getunconnectedSide(OUTERRIGHT,OUTERLEFT)
-                    flagDimB.isAutoAligned = true
-                    return
-            }
-        }
-    }
-
 
     fun controlDimHorizontal(side: Int) {
-        when (side) {
-            SIDEA -> dimHorizontalA = cycleIncrement(dimHorizontalA)
-            SIDEB -> {
-                dimHorizontalB = cycleIncrement(dimHorizontalB)
-                flagDimB.isMovedByUser = true
-            }
-            SIDEC -> {
-                dimHorizontalC = cycleIncrement(dimHorizontalC)
-                flagDimC.isMovedByUser = true
-            }
-            SIDE_SOKUTEN -> nameHorizontal = cycleIncrement(nameHorizontal)
-        }
-        setDimPath(dimHeight)
+        dim.controlDimHorizontal(side)
+        setDimPath()
+        setDimPoint()
     }
 
     val HORIZONTAL_OPTIONMAX = 4
     fun cycleIncrement(num: Int, max: Int = HORIZONTAL_OPTIONMAX ): Int = (num + 1) % (max + 1)
 
     //dimVertical
-    //夾角の、1:外 　3:内
-    val OUTER = 1
-    val INNER = 3
-
-    val SIDEA = 0
-    val SIDEB = 1
-    val SIDEC = 2
-
-    // カスタムゲッターでも、呼ばれている
-    fun autoDimVertical(side: Int): Int {
-        when(side){
-            SIDEA -> {
-                if(!flagDimA.isMovedByUser ) if(connectionType < 3) return OUTER
-                return dimVerticalA
-            }
-            SIDEB -> {
-                if(!flagDimB.isMovedByUser ) return autoDimVerticalByAreaCompare(nodeTriangleB)
-                return dimVerticalB
-            }
-            SIDEC -> {
-                if(!flagDimC.isMovedByUser ) return autoDimVerticalByAreaCompare(nodeTriangleC)
-                return dimVerticalC
-            }
-        }
-
-        return OUTER
-    }
-
-    // まず接続ノードがないか、なければ外、あったら内側、ただし、
-    // 特殊接続でなければ面積の大きい側に寸法値を配置する
-    fun autoDimVerticalByAreaCompare(node: Triangle?): Int{
-        if(node==null) return OUTER
-
-        if(node.getArea() > this.getArea() && node.connectionType < 3 )  return OUTER
-
-        return INNER
-    }
-
-    fun flipVertical(vside: Int): Int {
-        if (vside == OUTER) return INNER
-        if (vside == INNER) return OUTER
-        return vside
-    }
 
     // 自動処理の中で呼ばない。
     fun controlDimVertical(side: Int) {
-        when (side) {
-            SIDEA -> {
-                dimVerticalA = flipVertical(dimVerticalA)
-                flagDimA.isMovedByUser = true
-            }
-            SIDEB -> {
-                dimVerticalB = flipVertical(dimVerticalB)
-                isChangeDimAlignB_ = true
-                flagDimB.isMovedByUser = true
-            }
-            SIDEC -> {
-                dimVerticalC = flipVertical(dimVerticalC)
-                isChangeDimAlignC_ = true
-                flagDimC.isMovedByUser = true
-            }
-            SIDE_SOKUTEN -> {
-                nameAlign_ = flipVertical(nameAlign_)
-                setDimPath(dimHeight)
-            }
-            else -> throw IllegalArgumentException("Unknown side: $side")
-        }
+        dim.controlDimVertical(side)
+        setDimPath()
+        setDimPoint()
     }
 
     fun setDimAlignByChild() {
-        if (!isChangeDimAlignB_) {
-            dimVerticalB = if (nodeTriangleB == null) OUTER else INNER
-        }
-        if (!isChangeDimAlignC_) {
-            dimVerticalC = if (nodeTriangleC == null) OUTER else INNER
-        }
+        dim.setDimAlignByChild()
     }
 
     fun setDimAligns(sa: Int, sb: Int, sc: Int, ha: Int, hb: Int, hc: Int) {
-        dimHorizontalA = sa
-        dimHorizontalB = sb
-        dimHorizontalC = sc
-        dimVerticalA = ha
-        dimVerticalB = hb
-        dimVerticalC = hc
+        dim.setDimAligns(sa,sb,sc,ha,hb,hc)
     }
 
     fun setDimPoint() {
         dimpoints[0] =
-            path[0].pointD //dimSideRotation( dimSideAlignA_, point[0].calcMidPoint(pointAB_), pointAB_, point[0]);
+            path[0].pointD
         dimpoints[1] =
-            path[1].pointD //dimSideRotation( dimSideAlignB_, pointAB_.calcMidPoint(pointBC_), pointBC_, pointAB_);
+            path[1].pointD
         dimpoints[2] =
-            path[2].pointD //dimSideRotation( dimSideAlignC_, pointBC_.calcMidPoint(point[0]), point[0], pointBC_);
+            path[2].pointD
     }
 
     //endregion dimalign
@@ -212,7 +134,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     val WEIGHT = 35f
 
     fun arrangeNumber(isUse: Boolean = false ): PointXY{
-        if(flags.isMovedByUser || flags.isAutoAligned ) return pointnumber
+        if(flag_pointnumber.isMovedByUser || flag_pointnumber.isAutoAligned ) return pointnumber
         if(!isUse) return weightedMidpoint(WEIGHT)
         return autoAlignPointNumber()
     }
@@ -221,7 +143,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     private fun autoAlignPointNumber() : PointXY{
         if (getArea() <= 4f && (lengthAforce_ < 1.5f || lengthBforce_ < 1.5f || lengthCforce_ < 1.5f)){
             pointnumber = pointcenter
-            flags.isAutoAligned = true
+            flag_pointnumber.isAutoAligned = true
             return pointUnconnectedSide(pointcenter, 0.8f )
                 //.offset(pointcenter, pointcenter.lengthTo(pointnumber)*-10f )
         }
@@ -250,7 +172,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     fun setPointNumberMovedByUser_(p: PointXY) {
         if( p.lengthTo(pointcenter) < 10f ) return // あまり遠い時はスルー
         pointnumber = p
-        flags.isMovedByUser = true
+        flag_pointnumber.isMovedByUser = true
     }
 
     fun weightedMidpoint(bias: Float): PointXY {
@@ -295,8 +217,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
         if(ispoints) sb.append("points:${point[0]} ${pointAB} ${pointBC} \n")
         if(ispoints) sb.append("pointDim:${dimpoints[0]} ${dimpoints[1]} ${dimpoints[2]} \n")
         if(islength) sb.append("length:${lengthA_} ${lengthB_} ${lengthC_} \n")
-        if(isalign) sb.append("isPointnumber_user: ${flags.isMovedByUser}\n")
-        if(isalign) sb.append("isPointnumber_auto: ${flags.isAutoAligned}\n\n")
+        if(isalign) sb.append("isPointnumber_user: ${flag_pointnumber.isMovedByUser}\n")
+        if(isalign) sb.append("isPointnumber_auto: ${flag_pointnumber.isAutoAligned}\n\n")
         return sb.toString()
     }
 
@@ -415,75 +337,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
         //myDimAlignC = 0;
     }
 
-    //var isPointnumber = BooleanArray(2){false}
-
-    data class Flags( var isMovedByUser: Boolean = false, var isAutoAligned: Boolean = false )
-    var flags = Flags()
-
-    override fun clone(): Triangle {
-        val b = Triangle()
-        try {
-            b.flags = flags.copy()
-            b.flagDimA = flagDimA.copy()
-            b.flagDimB = flagDimB.copy()
-            b.flagDimC = flagDimC.copy()
-
-            b.length = length.copyOf(length.size)
-            b.lengthNotSized = lengthNotSized.copyOf(lengthNotSized.size)
-            b.dimpoints = cloneArray(dimpoints) // 代入だと参照になるので要素ごとにクローン
-            b.path = cloneArray( path )
-
-            //b.isPointnumber = isPointnumber.copyOf(isPointnumber.size)
-            b.angle = angle
-            b.name = name
-            b.mynumber = mynumber
-            b.connectionType = connectionType
-            b.parentnumber = parentnumber
-
-            b.dimVerticalA = dimVerticalA
-            b.dimVerticalB = dimVerticalB
-            b.dimVerticalC = dimVerticalC
-            b.dimHorizontalA = dimHorizontalA
-            b.dimHorizontalB = dimHorizontalB
-            b.dimHorizontalC = dimHorizontalC
-            //b.point = point.clone()
-            b.point[0] = point[0].clone()
-            b.pointAB = pointAB.clone()
-            b.pointBC = pointBC.clone()
-            b.pointcenter = pointcenter.clone()
-            b.pointnumber = pointnumber.clone()
-            b.cParam_ = cParam_.clone()
-            b.isFloating_ = isFloating_
-            b.isColored_ = isColored_
-            b.myBP_.left = myBP_.left
-            b.myBP_.top = myBP_.top
-            b.myBP_.right = myBP_.right
-            b.myBP_.bottom = myBP_.bottom
-            b.nodeTriangleA_ = nodeTriangleA_
-            b.nodeTriangleB = nodeTriangleB
-            b.nodeTriangleC = nodeTriangleC
-            b.childSide_ = childSide_
-            b.color_ = color_
-            b.connectionLCR_ = connectionLCR_
-            b.connectionType_ = connectionType_
-        } catch (e: Exception) {
-            //e.printStackTrace();
-        }
-        return b
-    }
-
     internal constructor()
 
-    /*
-    Triangle(int A, int B, int C){
-        setNumber(1);
-        pointCA = new PointXY(0f,0f);
-        myAngle = 180f;
-        initBasicArguments(A, B, C, pointCA, myAngle);
-        calcPoints(pointCA, myAngle);
-        myDimAlign = setDimAlign();
-    }
-*/
     internal constructor(A: Float, B: Float, C: Float) {
         setNumber(1)
         point[0] = PointXY(0f, 0f)
@@ -655,46 +510,18 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
     val dimAlignA: Int
-        get() = autoDimVertical(0)
+        get() = dim.autoDimVertical(0)
 
-    /*
-  if( myAngle <= 90 || getAngle() >= 270 ) {
-      if( lengthA*scale_ > 1.5f ) return myDimAlignA = 3;
-      else return myDimAlignA = 1;
-  }
-  else {
-      if( lengthA*scale_ > 1.5f ) return myDimAlignA = 1;
-      else return myDimAlignA = 3;
-  }*/
     val dimAlignB: Int
-        get() = autoDimVertical(1)
+        get() = dim.autoDimVertical(1)
 
-    /*        if( getAngleMpAB() <= 450f || getAngleMpAB() >= 270f ||
-                 getAngleMpAB() <= 90f || getAngleMpAB() >= -90f ) {
-             if( childSide_ == 3 || childSide_ == 4 ) return myDimAlignB = 3;
-             if( lengthB*scale_ > 1.5f ) return myDimAlignB = 3;
-             else return myDimAlignB = 1;
-         }
-
-         if( childSide_ == 3 || childSide_ == 4 ) return myDimAlignB = 1;
-         return  myDimAlignB = 3;*/
     val dimAlignC: Int
-        get() = autoDimVertical(2)
+        get() = dim.autoDimVertical(2)
 
-    /*
-         if( getAngleMmCA() <= 450f || getAngleMmCA() >= 270f ||
-                 getAngleMmCA() <= 90f || getAngleMmCA() >= -90f ) {
-             if( childSide_ == 5 || childSide_ == 6 ) return myDimAlignC = 3;
-             if( lengthC*scale_ > 1.5f ) return myDimAlignC = 3;
-             else return myDimAlignC = 1;
-         }
 
-         if( childSide_ == 5 || childSide_ == 6 ) return myDimAlignC = 1;
-         return  myDimAlignC = 3;*/
     fun pointCenter_(): PointXY {
         return PointXY(pointcenter)
     }
-
 
 
     fun collision(): Boolean {
@@ -1264,6 +1091,15 @@ class Triangle : EditObject, Cloneable<Triangle> {
     //endregion node and boundaries
 
     //region calculater
+    fun calcPoints(basepoint: PointXY, angle: Float, isArrange: Boolean = false) {
+        pointAB = basepoint.offset(length[0], angle)
+        pointBC = calculatePointBC( basepoint )
+        calculateInternalAngles()
+        calculatePointCenter()
+        arrangeDims(isArrange)
+        if(isArrange) pointnumber = arrangeNumber(isArrange)
+        setBoundaryBox()
+    }
 
     private fun calculatePointBC(basepoint: PointXY): PointXY {
         val theta = atan2( (basepoint.y - pointAB.y).toDouble(), (basepoint.x - pointAB.x).toDouble() )

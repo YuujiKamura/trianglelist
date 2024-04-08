@@ -1671,8 +1671,8 @@ class MainActivity : AppCompatActivity(),
                 ), 1 / mScale, -1 / mScale)
             if( tp.lengthTo(tri.pointcenter) < 10f ){ // あまり遠い時はスルー
                 tri.pointnumber = tp
-                tri.flags.isMovedByUser = true
-                tri.flags.isAutoAligned = false
+                tri.flag_pointnumber.isMovedByUser = true
+                tri.flag_pointnumber.isAutoAligned = false
                 myview.setTriangleList(myTriangleList, mScale, false)
             }
         }
@@ -2728,10 +2728,10 @@ class MainActivity : AppCompatActivity(),
             // 三角形リストのデータをCSVファイルに書き込み
             for (index in 1..myTriangleList.size()) {
                 val mt: Triangle = myTriangleList.getByNumber(index)
-                val pt: PointXY = mt.pointnumber
+                val pointnumber: PointXY = mt.pointnumber
                 val cp = parentBCtoCParam(mt.connectionType, mt.lengthNotSized[0], mt.cParam_)
 
-                writer.write("${mt.mynumber},${mt.lengthA_},${mt.lengthB_},${mt.lengthC_},${mt.parentnumber},${mt.connectionType},${mt.myName_()},${pt.x},${pt.y},${mt.flags.isMovedByUser},${mt.color_},${mt.dimHorizontalA},${mt.dimHorizontalB},${mt.dimHorizontalC},${mt.dimVerticalA},${mt.dimVerticalB},${mt.dimVerticalC},${cp.side},${cp.type},${cp.lcr},${mt.isChangeDimAlignB_},${mt.isChangeDimAlignC_},${mt.angle},${mt.pointCA_.x},${mt.pointCA_.y},${mt.angleInLocal_}")
+                writer.write("${mt.mynumber},${mt.lengthA_},${mt.lengthB_},${mt.lengthC_},${mt.parentnumber},${mt.connectionType},${mt.name},${pointnumber.x},${pointnumber.y},${mt.flag_pointnumber.isMovedByUser},${mt.color_},${mt.dim.horizontal.a},${mt.dim.horizontal.b},${mt.dim.horizontal.c},${mt.dim.vertical.a},${mt.dim.vertical.b},${mt.dim.vertical.c},${cp.side},${cp.type},${cp.lcr},${mt.dim.flag[1].isMovedByUser},${mt.dim.flag[2].isMovedByUser},${mt.angle},${mt.pointCA_.x},${mt.pointCA_.y},${mt.angleInLocal_}")
                 writer.newLine()
             }
 
@@ -2895,8 +2895,8 @@ class MainActivity : AppCompatActivity(),
             )
         }
         if( chunks.size > 20 ) {
-            mt.isChangeDimAlignB_ = chunks[20]!!.toBoolean()
-            mt.isChangeDimAlignC_ = chunks[21]!!.toBoolean()
+            mt.dim.flag[1].isMovedByUser = chunks[20]!!.toBoolean()
+            mt.dim.flag[2].isMovedByUser = chunks[21]!!.toBoolean()
         }
 
         if( chunks.size > 17 ) {

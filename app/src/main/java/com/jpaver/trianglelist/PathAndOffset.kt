@@ -4,17 +4,17 @@ import com.jpaver.trianglelist.util.Cloneable
 
 
 class PathAndOffset(
-    private var myScale: Float = 1.0f,
+    private var scale: Float = 1.0f,
     leftP: PointXY = PointXY(0f,0f),
     rightP: PointXY = PointXY(0f,0f),
-    alignVertical: Int = 1,
-    var alignHorizonal: Int = 1,
-    private var dimH: Float = 0.05f
+    vertical: Int = 1,
+    var horizontal: Int = 0,
+    private var dimheight: Float = 0.05f
 ) : Cloneable<PathAndOffset>{
 
     override fun clone(): PathAndOffset {
         val b = PathAndOffset()
-        b.myScale = myScale
+        b.scale = scale
         b.pointA = pointA.clone()
         b.pointB = pointB.clone()
         b.pointD = pointD.clone()
@@ -40,9 +40,9 @@ class PathAndOffset(
 
     init {
         setPointAB( leftP, rightP )
-        setVerticalOffset(0, alignVertical)
-        if(alignVertical != SIDE_SOKUTEN ) initDimPoint(leftP,rightP, alignVertical)
-        if(alignVertical == SIDE_SOKUTEN ) initSoktenNamePath(leftP, rightP)
+        setVerticalOffset(0, vertical)
+        if(vertical != SIDE_SOKUTEN ) initDimPoint(leftP,rightP, vertical)
+        if(vertical == SIDE_SOKUTEN ) initSoktenNamePath(leftP, rightP)
         pointD = pointA.calcMidPoint(pointB).offset(pointB, offsetH)
     }
 
@@ -51,7 +51,7 @@ class PathAndOffset(
         val lineLength = leftP.lengthTo(rightP)
         val HABAYOSE = lineLength*0.275f
 
-        when( alignHorizonal ){
+        when( horizontal ){
             CENTER  -> {}
             INRIGHT -> offsetH = -HABAYOSE
             INLEFT  -> offsetH = HABAYOSE
@@ -70,9 +70,9 @@ class PathAndOffset(
     }
 
     fun initPointsOuter(leftP: PointXY, rightP: PointXY, lineLength: Float){
-        val SUKIMA = 0.5f*myScale
+        val SUKIMA = 0.5f*scale
         val movement = SUKIMA+lineLength
-        val HATAAGE = 3*myScale
+        val HATAAGE = 3*scale
         val HABAYOSE = -lineLength*0.05f
 
         pointA = leftP.offset(rightP, -HATAAGE )
@@ -83,7 +83,7 @@ class PathAndOffset(
     fun initSoktenNamePath(p1: PointXY, p2: PointXY){
 
         // -だと線の左側、というか進行方向の左側
-        val SIDE = alignHorizonal
+        val SIDE = horizontal
         var leftpoint = p1
         var rightpoint = p2
 
@@ -94,8 +94,8 @@ class PathAndOffset(
             }
         }
 
-        val tmp = leftpoint.offset( rightpoint, -3f * this.myScale)
-        val outerright = leftpoint.offset(rightpoint, -0.5f * this.myScale)
+        val tmp = leftpoint.offset( rightpoint, -3f * this.scale)
+        val outerright = leftpoint.offset(rightpoint, -0.5f * this.scale)
         val outerleft  = tmp
 
         setPointAB( outerleft, outerright )
@@ -113,8 +113,8 @@ class PathAndOffset(
     }
 
     private fun setVerticalOffset(flipside: Int, alignVertical: Int){
-        val offsetUpper = -dimH * 0.2f //- textSpacer_ //* 0.7f
-        val offsetLower =  dimH * 0.9f //textSpacer_ ///* 0.7f )
+        val offsetUpper = -dimheight * 0.2f //- textSpacer_ //* 0.7f
+        val offsetLower =  dimheight * 0.9f //textSpacer_ ///* 0.7f )
         //var offsetMiddle= dimH_/2
         if( flipside == 0 ) { // 夾角の、 1:内、3:外
             if (alignVertical == 3) offsetV = offsetUpper

@@ -687,9 +687,9 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
         // 線
         drawTriLines( canvas, tri, paintLine )
-        if(tPathA.alignHorizonal > 2) canvas.drawPath(makePath(tPathA), paintLine)
-        if(tPathB.alignHorizonal > 2) canvas.drawPath(makePath(tPathB), paintLine)
-        if(tPathC.alignHorizonal > 2) canvas.drawPath(makePath(tPathC), paintLine)
+        if(tPathA.horizontal > 2) canvas.drawPath(makePath(tPathA), paintLine)
+        if(tPathB.horizontal > 2) canvas.drawPath(makePath(tPathB), paintLine)
+        if(tPathC.horizontal > 2) canvas.drawPath(makePath(tPathC), paintLine)
 
         // 番号
         drawTriangleNumber(canvas, tri, paintDim, paintB)
@@ -926,7 +926,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         }
 
         var area =""
-        if(isAreaOff_ == false ) area = tri.getArea().formattedString(1 )+"m^2"+" ${tri.flags.isMovedByUser}"
+        if(isAreaOff_ == false ) area = tri.getArea().formattedString(1 )+"m^2"+" ${tri.flag_pointnumber.isMovedByUser}"
         //if(isDebug_ == true) area = "cp:"+tri.cParam_.type.toString() + "-"+ tri.cParam_.lcr.toString() +" pbc:"+ tri.parentBC.toString() +" Num:"+ tri.myNumber +"-"+ tri.parentNumber +" lTS"+ tri.lastTapSide_
 
 
