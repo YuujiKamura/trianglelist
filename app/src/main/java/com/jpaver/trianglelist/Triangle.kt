@@ -241,7 +241,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
     var path: Array<PathAndOffset> = Array(3) { PathAndOffset() }
     data class Dimpoint(var a:PointXY= PointXY(0f,0f), var b:PointXY=PointXY(0f,0f), var c:PointXY=PointXY(0f,0f), var name:PointXY=PointXY(0f,0f)){
-        fun values(): Array<PointXY>{
+        fun toArray(): Array<PointXY>{
             return arrayOf(a,b,c)
         }
     }
