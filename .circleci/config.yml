@@ -19,12 +19,22 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Update Java Version
+          name: Install OpenJDK 17
           command: |
-            sudo apt-get install default-jdk
-            sudo update-alternatives --config java
-            java -version
+            sudo apt-get update
+            sudo apt-get install -y openjdk-17-jdk
+      - run:
+          name: Set JAVA_HOME and update alternatives
+          command: |
+            echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> $BASH_ENV
+            source $BASH_ENV
+            sudo update-alternatives --install /usr/bin/java java /usr/lib/jvm/java-17-openjdk-amd64/bin/java 1
+            sudo update-alternatives --set java /usr/lib/jvm/java-17-openjdk-amd64/bin/java
+      - run:
+          name: Verify Java Installation
+          command: |
             echo $JAVA_HOME
+            java -version
       - run:
           name: Set executable permission for gradlew
           command: chmod +x ./gradlew
