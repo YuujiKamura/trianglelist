@@ -1095,8 +1095,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         calculateInternalAngles()
         calculatePointCenter()
         arrangeDims(isArrange)
-        pointnumber = if(isArrange) arrangeNumber(isArrange)
-                        else weightedMidpoint(WEIGHT)
+        pointnumber = arrangeNumber(isArrange)
         setBoundaryBox()
     }
 
