@@ -12,21 +12,9 @@ jobs:
     # Specify the execution environment. You can specify an image from Docker Hub or use one of our convenience images from CircleCI's Developer Hub.
     # See: https://circleci.com/docs/executor-intro/ & https://circleci.com/docs/configuration-reference/#executor-job
     docker:
-      # Specify the version you desire here
-      # See: https://circleci.com/developer/images/image/cimg/base
       - image: cimg/openjdk:17.0
-    environment:
-      # Javaのバージョンに応じてJAVA_HOMEを設定
-      JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
     steps:
       - checkout
-      - run:
-          name: Install Java
-          command: |
-            sudo apt-get update
-            sudo apt-get install -y openjdk-17-jdk
-            echo 'export JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64"' >> $BASH_ENV
-            source $BASH_ENV
       - run:
           name: Verify Java Installation
           command: |
