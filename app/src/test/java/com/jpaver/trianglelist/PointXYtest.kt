@@ -11,7 +11,6 @@ class PointXYtest {
     fun testDistancesTo() {
         val centerPoint = PointXY(0f, 0f) // 中心点
         val nearby = 5f // 判定距離
-        val failedTests = mutableListOf<TestResult>()
 
         // テスト用のポイントとラベルのリスト
         val testCases = listOf(

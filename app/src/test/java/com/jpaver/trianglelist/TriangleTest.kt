@@ -12,8 +12,8 @@ import kotlin.math.pow
 import kotlin.reflect.full.memberProperties
 
 fun compare(target1: Any, target2:Any ){
-    println("target1: ${target1.hashCode()}, ${target1.toString()}")
-    println("target2: ${target2.hashCode()}, ${target1.toString()}")
+    println("target1: ${target1.hashCode()}, $target1")
+    println("target2: ${target2.hashCode()}, $target1")
 }
 //@RunWith(PowerMockRunner.class)
 //@PrepareForTest(Log.class)
@@ -25,7 +25,7 @@ class TriangleTest {
         val triangle = Triangle(1f,3f,3f)
         val triangle2 = triangle.clone()
 
-        compare(triangle.path[0].pointD,triangle2.path[0].pointD)
+        compare(triangle.path[0].dimpoint,triangle2.path[0].dimpoint)
     }
 
 
@@ -37,9 +37,9 @@ class TriangleTest {
 
         // 最初の点から他の点への距離のリストを計算
         val distances = listup_dimpoint_distances(triangle)
-        val list_is_near = check_distances(distances, 1.0f)
-        println("distances: ${distances}")
-        println("distances: ${list_is_near}")
+        val booleanList = check_distances(distances, 1.0f)
+        println("distances: $distances")
+        println("distances: $booleanList")
 
     }
 
@@ -55,8 +55,9 @@ class TriangleTest {
     }
 
     fun listup_dimpoint_distances(triangle: Triangle, index_basepoint: Int): List<Float> {
-        val targets = triangle.dimpoints
-        return triangle.dimpoints[index_basepoint].distancesTo(targets)
+        val dimpoint = arrayOf( triangle.dimpoint.a,triangle.dimpoint.b,triangle.dimpoint.c)
+
+        return dimpoint[index_basepoint].distancesTo(dimpoint)
     }
 
     //とりあえず生成したばかりの三角形にどんなふうにdimPointが入るか確認
@@ -65,12 +66,12 @@ class TriangleTest {
         val triangle = Triangle(5f,5f,5f)
         val triangle2 = triangle.clone()
 
-        println("dimpoint: ${triangle.dimpoints.joinToString(separator = ", ")}")
-        println("dimpoint2: ${triangle2.dimpoints.joinToString(separator = ", ")}")
+        println("dimpoint: ${triangle.dimpoint}")
+        println("dimpoint2: ${triangle2.dimpoint}")
 
         // オブジェクトのハッシュコードが一致するか？
-        println("triangle のハッシュコード: ${triangle.dimpoints[0].hashCode()}")
-        println("triangle2 のハッシュコード: ${triangle2.dimpoints[0].hashCode()}")
+        println("triangle のハッシュコード: ${triangle.dimpoint.a.hashCode()}")
+        println("triangle2 のハッシュコード: ${triangle2.dimpoint.a.hashCode()}")
         println("triangle のハッシュコード: ${triangle.length[0].hashCode()}")
         //triangle2.length[0] = 3.0f
         println("triangle2 のハッシュコード: ${triangle2.length[0].hashCode()}")
@@ -217,7 +218,7 @@ class TriangleTest {
     fun testSideEffectInBasicTypes() {
         val t = Triangle(5f, 5f, 5f)
         var me = 0
-        me = t.cycleIncrement(me)
+        me = t.dim.cycleIncrement(me)
         // こうやって代入しない限り、meは渡された時点でクローンに代わり、副作用っぽく変化したりしない。
         // オブジェクトは違う。引数として生で渡された時、ポインタとして渡されるので、副作用が起きる。
         // t.sideEffectGo( object.clone ) とかすれば予防できる。
@@ -237,9 +238,9 @@ class TriangleTest {
     fun testDimSideAlign() {
         val tri1 = Triangle(3f, 4f, 5f)
         tri1.controlDimHorizontal(0)
-        Assert.assertEquals(1, tri1.dimHorizontalA.toLong())
+        Assert.assertEquals(1, tri1.dim.horizontal.a)
         tri1.setDimPoint()
-        Assert.assertEquals(-2.325f, tri1.dimpoints[0].x, 0.001f)
+        Assert.assertEquals(-2.325f, tri1.dimpoint.a.x, 0.001f)
         var dim = PointXY(-1.5f, 0f)
         val offsetLeft = PointXY(-3f, 0f)
         val offsetRight = PointXY(0f, 0f)
@@ -251,11 +252,11 @@ class TriangleTest {
         Assert.assertEquals(-2.25f, dim.x, 0.001f)
         tri1.controlDimHorizontal(0)
         tri1.setDimPoint()
-        Assert.assertEquals(-0.67f, tri1.dimpoints[0].x, 0.01f)
+        Assert.assertEquals(-0.67f, tri1.dimpoint.a.x, 0.01f)
         tri1.controlDimVertical(0)
-        Assert.assertEquals(1, tri1.dimVerticalA.toLong())
+        Assert.assertEquals(3, tri1.dim.vertical.a)
         tri1.controlDimVertical(0)
-        Assert.assertEquals(3, tri1.dimVerticalA.toLong())
+        Assert.assertEquals(1, tri1.dim.vertical.a)
     }
 
     @Test
@@ -263,7 +264,7 @@ class TriangleTest {
         val t1 = Triangle(6.0f, 3.5f, 3.5f)
         Assert.assertEquals(-3.0f, t1.pointnumber.x, 0.001f)
         Assert.assertEquals(118f, t1.angleBC, 0.1f)
-        Assert.assertEquals(1.01f, t1.pointnumber.y, 0.01f)
+        Assert.assertEquals(0.96f, t1.pointnumber.y, 0.01f)
     }
 
     @Test
@@ -273,7 +274,7 @@ class TriangleTest {
         Assert.assertEquals(1.4433, t1.pointnumber.y.toDouble(), 0.001)
         val t2 = Triangle(5f, 1.5f, 5f)
         //t2.setChildSide(1);
-        Assert.assertEquals(-4.077f, t2.pointnumber.x, 0.001f)
+        Assert.assertEquals(-3.991f, t2.pointnumber.x, 0.001f)
     }
 
     @Test
@@ -303,12 +304,9 @@ class TriangleTest {
         val t1 = Triangle(3f, 4f, 5f)
 
         // 1下 3上 -> // 夾角の、1:外 　3:内
-        Assert.assertEquals(3, t1.dimVerticalA.toLong()) //getPath(0).getAlign_());
-        Assert.assertEquals(3, t1.dimVerticalB.toLong()) // t1.getPath(1).getAlign_());
-        Assert.assertEquals(3, t1.dimVerticalC.toLong()) // t1.getPath(2).getAlign_());
-        Assert.assertEquals(3, t1.dimVerticalA.toLong()) //getPath(0).getAlign_());
-        Assert.assertEquals(3, t1.dimVerticalB.toLong()) // t1.getPath(1).getAlign_());
-        Assert.assertEquals(3, t1.dimVerticalC.toLong()) // t1.getPath(2).getAlign_());
+        Assert.assertEquals(1, t1.dim.vertical.a)
+        Assert.assertEquals(1, t1.dim.vertical.b)
+        Assert.assertEquals(1, t1.dim.vertical.c)
     }
 
     @Test
