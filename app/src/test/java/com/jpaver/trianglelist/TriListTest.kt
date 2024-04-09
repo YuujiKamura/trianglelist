@@ -876,9 +876,9 @@ class TriListTest {
         val myTrilist2 = myTrilist.clone()
 
 //        mytri1.setNumber(55);
-        myTrilist.getByNumber(2).setNumber(100)
-        Assert.assertEquals(100, myTrilist.getByNumber(2).mynumber.toLong())
-        Assert.assertEquals(2, myTrilist2.getByNumber(2).mynumber.toLong())
+        myTrilist.getBy(2).setNumber(100)
+        Assert.assertEquals(100, myTrilist.getBy(2).mynumber.toLong())
+        Assert.assertEquals(2, myTrilist2.getBy(2).mynumber.toLong())
     }
 
     @Test
@@ -939,7 +939,7 @@ class TriListTest {
         val myTrilist = TriangleList(mytri1)
         myTrilist.add(Triangle(mytri1, 2, 3.0f, 4.0f), true)
         myTrilist.setScale(PointXY(0f, 0f), 5f)
-        Assert.assertEquals(4f, myTrilist.getByNumber(1).pointBC_().y, 0.001f)
+        Assert.assertEquals(4f, myTrilist.getBy(1).pointBC_().y, 0.001f)
     }
 
     @Test
@@ -948,7 +948,7 @@ class TriListTest {
             PointXY(0f, 0f), 180.0f)
         val myTrilist = TriangleList()
         myTrilist.add(mytri1, true)
-        Assert.assertEquals(3.0f, myTrilist.getByNumber(1).lengthA, 0.001f)
+        Assert.assertEquals(3.0f, myTrilist.getBy(1).lengthA, 0.001f)
         Assert.assertEquals(1, myTrilist.size().toLong())
     }
 
@@ -981,10 +981,10 @@ class TriListTest {
         myTrilist.add(Triangle(mytri1, 1, 3f, 5f), true)
         myTrilist.resetTriangles(1, mytri1.resetLength(3f, 2f, 4.5f))
         //myTrilist.getTriangle(3).reset(mytri1, 1);
-        Assert.assertEquals(2.0f, myTrilist.getByNumber(1).lengthB, 0.001f)
-        Assert.assertEquals(3.0f, myTrilist.getByNumber(1).lengthA, 0.001f)
-        Assert.assertEquals(4.0f, myTrilist.getByNumber(3).lengthA, 0.001f)
-        Assert.assertEquals(1, myTrilist.getByNumber(1).mynumber.toLong())
+        Assert.assertEquals(2.0f, myTrilist.getBy(1).lengthB, 0.001f)
+        Assert.assertEquals(3.0f, myTrilist.getBy(1).lengthA, 0.001f)
+        Assert.assertEquals(4.0f, myTrilist.getBy(3).lengthA, 0.001f)
+        Assert.assertEquals(1, myTrilist.getBy(1).mynumber.toLong())
         Assert.assertEquals(3, myTrilist.size().toLong())
 
 
@@ -996,7 +996,7 @@ class TriListTest {
     fun testTriangleArea() {
         val mytrilist = TriangleList(Triangle(3.0f, 4.0f, 5.0f,
             PointXY(0f, 0f), 180.0f))
-        mytrilist.add(Triangle(mytrilist.getByNumber(1), 2, 3f, 4f), true)
+        mytrilist.add(Triangle(mytrilist.getBy(1), 2, 3f, 4f), true)
         Assert.assertEquals(12f, mytrilist.getArea(), 0.01f)
     }
 
@@ -1008,16 +1008,16 @@ class TriListTest {
         myTrilist.add(Triangle(mytri1, 3, 2.5f, 1.1f, 2.0f), true) //2
 
         // 1下 3上 -> // 夾角の、1:外 　3:内
-        Assert.assertEquals(1, myTrilist.getByNumber(1).dimAlignA.toLong())
-        Assert.assertEquals(1, myTrilist.getByNumber(1).dimAlignB.toLong())
-        Assert.assertEquals(3, myTrilist.getByNumber(1).dimAlignC.toLong())
-        Assert.assertEquals(1, myTrilist.getByNumber(2).dimAlignA.toLong())
-        Assert.assertEquals(3, myTrilist.getByNumber(2).dimAlignB.toLong())
-        Assert.assertEquals(3, myTrilist.getByNumber(2).dimAlignC.toLong())
+        Assert.assertEquals(1, myTrilist.getBy(1).dim.vertical.a)
+        Assert.assertEquals(1, myTrilist.getBy(1).dim.vertical.b)
+        Assert.assertEquals(1, myTrilist.getBy(1).dim.vertical.c)
+        Assert.assertEquals(1, myTrilist.getBy(2).dim.vertical.a)
+        Assert.assertEquals(1, myTrilist.getBy(2).dim.vertical.b)
+        Assert.assertEquals(1, myTrilist.getBy(2).dim.vertical.c)
         val t1 = Triangle(1.0f, 1.5f, 1.0f)
-        Assert.assertEquals(3, t1.dimAlignA.toLong())
-        Assert.assertEquals(3, t1.dimAlignB.toLong())
-        Assert.assertEquals(3, t1.dimAlignC.toLong())
+        Assert.assertEquals(1, t1.dim.vertical.a)
+        Assert.assertEquals(1, t1.dim.vertical.b)
+        Assert.assertEquals(1, t1.dim.vertical.c)
     }
 
     @Test
@@ -1026,12 +1026,12 @@ class TriListTest {
             PointXY(0f, 0f), 180.0f)
         val myTrilist = TriangleList(mytri1)
         myTrilist.add(Triangle(mytri1, 2, 3.0f, 4.0f), true)
-        myTrilist.add(Triangle(myTrilist.getByNumber(myTrilist.size()), 1, 4.0f, 5.0f), true)
-        myTrilist.add(Triangle(myTrilist.getByNumber(myTrilist.size()), 2, 3.0f, 4.0f), true)
-        Assert.assertEquals(5.0, myTrilist.getByNumber(4).lengthA.toDouble(), 0.001)
+        myTrilist.add(Triangle(myTrilist.getBy(myTrilist.size()), 1, 4.0f, 5.0f), true)
+        myTrilist.add(Triangle(myTrilist.getBy(myTrilist.size()), 2, 3.0f, 4.0f), true)
+        Assert.assertEquals(5.0, myTrilist.getBy(4).lengthA.toDouble(), 0.001)
 
-        myTrilist.resetTriangles(1, Triangle(myTrilist.getByNumber(1), 2, 5.0f, 5.0f))
-        Assert.assertEquals(2.0, myTrilist.getByNumber(2).mynumber.toDouble(), 0.001)
-        Assert.assertEquals(3.0, myTrilist.getByNumber(3).lengthA.toDouble(), 0.001)
+        myTrilist.resetTriangles(1, Triangle(myTrilist.getBy(1), 2, 5.0f, 5.0f))
+        Assert.assertEquals(2.0, myTrilist.getBy(2).mynumber.toDouble(), 0.001)
+        Assert.assertEquals(3.0, myTrilist.getBy(3).lengthA.toDouble(), 0.001)
     }
 }

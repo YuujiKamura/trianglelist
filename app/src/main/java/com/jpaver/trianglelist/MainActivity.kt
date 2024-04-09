@@ -1910,7 +1910,7 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun trilistAdd(params: Params, triList: TriangleList ){
-        val newTri = createNewTriangle( params, triList.getByNumber(params.pn) )
+        val newTri = createNewTriangle( params, triList.getBy(params.pn) )
         triList.add(newTri, true)
         triList.lastTapNumber_ = triList.size()
     }
@@ -2728,7 +2728,7 @@ class MainActivity : AppCompatActivity(),
 
             // 三角形リストのデータをCSVファイルに書き込み
             for (index in 1..myTriangleList.size()) {
-                val mt: Triangle = myTriangleList.getByNumber(index)
+                val mt: Triangle = myTriangleList.getBy(index)
                 val pointnumber: PointXY = mt.pointnumber
                 val cp = parentBCtoCParam(mt.connectionType, mt.lengthNotSized[0], mt.cParam_)
 
@@ -2875,7 +2875,7 @@ class MainActivity : AppCompatActivity(),
         addTriangle(trilist, chunks, pointfirst, anglefirst)
 
 
-        val mt = trilist.getByNumber(trilist.size())
+        val mt = trilist.getBy(trilist.size())
 
         mt.name = chunks[6]!!.toString()
         //pointNumber
@@ -2973,7 +2973,7 @@ class MainActivity : AppCompatActivity(),
                 }
                 else {
 
-                    val ptri = trilist.getByNumber(chunks[4].toInt())
+                    val ptri = trilist.getBy(chunks[4].toInt())
                     val cp = ConnParam(
                         chunks[17].toInt(),
                         chunks[18].toInt(),
@@ -2990,7 +2990,7 @@ class MainActivity : AppCompatActivity(),
                     )
 
                 }
-                trilist.getByNumber(trilist.size()).connectionType = chunks[5].toInt()
+                trilist.getBy(trilist.size()).connectionType = chunks[5].toInt()
             }
             else{
 
@@ -3005,7 +3005,7 @@ class MainActivity : AppCompatActivity(),
 
                 trilist.add(
                     Triangle(
-                        trilist.getByNumber(chunks[4].toInt()), ConnParam(
+                        trilist.getBy(chunks[4].toInt()), ConnParam(
                             cp.side,
                             cp.type,
                             cp.lcr,
@@ -3017,7 +3017,7 @@ class MainActivity : AppCompatActivity(),
                     true
                 )
 
-                val mT = trilist.getByNumber(trilist.size())
+                val mT = trilist.getBy(trilist.size())
                 mT.connectionType = chunks[5].toInt()
                 /*
                 if( chunks.size > 25 && mT.parentBC_ >= 9 ) mT.rotate(
@@ -3028,7 +3028,7 @@ class MainActivity : AppCompatActivity(),
                 // trilist.getTriangle(trilist.size()).setCParamFromParentBC( chunks[5]!!.toInt() )
             }
 
-            val mT = trilist.getByNumber(trilist.size())
+            val mT = trilist.getBy(trilist.size())
             mT.name = chunks[6]
             if( trilist.size() > 1 ) trilist.get(trilist.size() - 1).childSide_ = chunks[5].toInt()
 
