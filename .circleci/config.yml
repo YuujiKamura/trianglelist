@@ -14,7 +14,7 @@ jobs:
     docker:
       # Androidビルド用のイメージを指定
       - image: circleci/android:api-30-node
-    parallelism: 4
+    parallelism: 2
     environment:
       JAVA_HOME: /path/to/java-17
     steps:
