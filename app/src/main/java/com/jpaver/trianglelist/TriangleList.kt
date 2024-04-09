@@ -703,7 +703,7 @@ class TriangleList : EditList {
         trilist.forEach { it.dedcount = 0f }
 
         // Deductionオブジェクトごとに処理
-        dedlist.dedlist_.forEachIndexed { index, deduction ->
+        dedlist.dedlist_.forEachIndexed { _, deduction ->
             processDeduction(deduction, axisY)
         }
     }
