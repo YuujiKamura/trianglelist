@@ -532,7 +532,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 // region resetview
 
     fun setCenterInModelToLastTappedTriNumber() {
-        centerInModel.set(myTriangleList.getByNumber(lstn()).pointnumber)
+        centerInModel.set(myTriangleList.getBy(lstn()).pointnumber)
     }
 
     fun resetView( pt: PointXY ){

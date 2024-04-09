@@ -362,7 +362,7 @@ class TriangleList : EditList {
         if (numbering) nextTriangle.mynumber = trilist.size + 1
         val pbc = nextTriangle.connectionType
         if (nextTriangle.parentnumber > 0) {
-            val parent = getByNumber(nextTriangle.parentnumber)
+            val parent = getBy(nextTriangle.parentnumber)
             if (parent.alreadyHaveChild(pbc)) {
                 // すでに親の接続辺上に子供がいたら、挿入処理
                 //nextTriangle.myNumber_ = nextTriangle.parentNumber_ +1;
@@ -418,7 +418,7 @@ class TriangleList : EditList {
 
     fun insertAndSlide(nextTriangle: Triangle) {
         trilist.add(nextTriangle.mynumber - 1, nextTriangle)
-        getByNumber(nextTriangle.parentnumber).setChild(nextTriangle, nextTriangle.connectionType)
+        getBy(nextTriangle.parentnumber).setChild(nextTriangle, nextTriangle.connectionType)
 
         //次以降の三角形の親番号を全部書き換える、ただし連続しない親で、かつ自分より若い親の場合はそのままにする。
         rewriteAllNodeFrom(nextTriangle, +1)
@@ -589,7 +589,7 @@ class TriangleList : EditList {
 
 
     // オブジェクトポインタを返す。
-    fun getByNumber(number: Int): Triangle {
+    fun getBy(number: Int): Triangle {
         return if (number < 1 || number > trilist.size) Triangle() //under 0 is empty. cant hook null. can hook lenA is not 0.
         else trilist[number - 1]
     }
@@ -606,7 +606,7 @@ class TriangleList : EditList {
 
     // by number start 1, not index start 0.
     override operator fun get(num: Int): Triangle {
-        return getByNumber(num)
+        return getBy(num)
     }
 
     fun spritByColors(): ArrayList<TriangleList> {
