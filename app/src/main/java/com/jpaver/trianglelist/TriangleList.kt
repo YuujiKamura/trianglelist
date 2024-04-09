@@ -438,8 +438,9 @@ class TriangleList : EditList {
     override fun remove(num: Int) {
         //number = lastTapNum_;
 
-        //１番目以下は消せないことにする。
-        if (num <= 1 || num > trilist.size ) return
+        //トップ以外は消せないことにする?
+        if (num != trilist.size) return
+        //if (num <= 1 || num > trilist.size ) return
         val i = num -1
         val target = trilist[i]
         target.nodeTriangleA_!!.removeNode(target) //removeTheirNode();
