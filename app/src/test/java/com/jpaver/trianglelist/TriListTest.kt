@@ -1008,16 +1008,16 @@ class TriListTest {
         myTrilist.add(Triangle(mytri1, 3, 2.5f, 1.1f, 2.0f), true) //2
 
         // 1下 3上 -> // 夾角の、1:外 　3:内
-        Assert.assertEquals(1, myTrilist.getByNumber(1).dimAlignA.toLong())
-        Assert.assertEquals(1, myTrilist.getByNumber(1).dimAlignB.toLong())
-        Assert.assertEquals(3, myTrilist.getByNumber(1).dimAlignC.toLong())
-        Assert.assertEquals(1, myTrilist.getByNumber(2).dimAlignA.toLong())
-        Assert.assertEquals(3, myTrilist.getByNumber(2).dimAlignB.toLong())
-        Assert.assertEquals(3, myTrilist.getByNumber(2).dimAlignC.toLong())
+        Assert.assertEquals(1, myTrilist.getByNumber(1).dim.vertical.a)
+        Assert.assertEquals(1, myTrilist.getByNumber(1).dim.vertical.b)
+        Assert.assertEquals(1, myTrilist.getByNumber(1).dim.vertical.c)
+        Assert.assertEquals(1, myTrilist.getByNumber(2).dim.vertical.a)
+        Assert.assertEquals(1, myTrilist.getByNumber(2).dim.vertical.b)
+        Assert.assertEquals(1, myTrilist.getByNumber(2).dim.vertical.c)
         val t1 = Triangle(1.0f, 1.5f, 1.0f)
-        Assert.assertEquals(3, t1.dimAlignA.toLong())
-        Assert.assertEquals(3, t1.dimAlignB.toLong())
-        Assert.assertEquals(3, t1.dimAlignC.toLong())
+        Assert.assertEquals(1, t1.dim.vertical.a)
+        Assert.assertEquals(1, t1.dim.vertical.b)
+        Assert.assertEquals(1, t1.dim.vertical.c)
     }
 
     @Test
