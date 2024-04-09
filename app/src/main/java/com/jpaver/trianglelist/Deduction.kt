@@ -2,6 +2,8 @@ package com.jpaver.trianglelist
 
 import com.jpaver.trianglelist.util.DeductionParams
 import com.jpaver.trianglelist.util.Params
+import com.jpaver.trianglelist.util.Cloneable
+
 import kotlin.math.roundToInt
 
 data class ConnParam(var side: Int, var type: Int, var lcr: Int, var lenA: Float ){
@@ -25,7 +27,7 @@ class Deduction(var num: Int = 0,
                     0f,
                     0f
                 )
-) : EditObject() {
+) : EditObject(), Cloneable<Deduction> {
 
     constructor(ddp: DeductionParams) :this(
         num = ddp.num,
@@ -104,10 +106,9 @@ class Deduction(var num: Int = 0,
         ).rotate(point, shapeAngle)
     }
 
-    public override fun clone(): Deduction {
-        var b = Deduction()
+    override fun clone(): Deduction {
+        val b = Deduction()
         try {
-            b = super.clone() as Deduction
             b.num = num
             b.name = name
             b.lengthX = lengthX
@@ -124,6 +125,7 @@ class Deduction(var num: Int = 0,
             b.prb = prb
             b.shapeAngle = shapeAngle
             b.sameDedcount = sameDedcount
+            b.infoStr = infoStr
 
         } catch (e: Exception) {
             e.printStackTrace()
@@ -153,7 +155,8 @@ class Deduction(var num: Int = 0,
     }
 
     fun getInfo(): String{
-        var str = getNumNameCount()
+        var str = get_number_name_samecount()
+
         if(type == "Circle") {
             val faif: Float = lengthX * 1000
             val fai: Int = faif.toInt()
@@ -165,10 +168,16 @@ class Deduction(var num: Int = 0,
         return str
     }
 
-    fun getNumNameCount(): String {
+    fun get_number_name_samecount(): String {
         var str = "$num.$name"
-        if (sameDedcount > 1) str += "(${sameDedcount})"
+        if (sameDedcount > 0) str += "(${sameDedcount+1})"
+
         return str
+    }
+
+    fun setInfo(same_count: Int){
+        sameDedcount = same_count
+        infoStr = getInfo()
     }
 
     fun setNumAndInfo( num_: Int ){
@@ -236,8 +245,8 @@ class Deduction(var num: Int = 0,
     }
 
 
-    fun verify( dp: Params): Boolean{
-        if( name == dp.name && lengthX == dp.a && lengthY == dp.b) return true
+    fun verify( deduction: Deduction): Boolean{
+        if( name == deduction.name && lengthX == deduction.lengthX && lengthY == deduction.lengthY) return true
         return false
     }
 
@@ -246,10 +255,11 @@ class Deduction(var num: Int = 0,
         return Params(name, type, num, lengthX, lengthY,0f, overlap_to, typeToInt(type), point, pointFlag)
     }
 
-    fun isCollide( tri: Triangle): Boolean{
-        if(!tri.isCollide( point )) return false
+    fun flag(tri: Triangle): Boolean{
+        //if(!tri.isCollide( point )) return false
 
-        pointFlag = tri.pointUnconnectedSide(point, 1f, 1f, PointXY(0f, 0f))
+        pointFlag = tri.pointUnconnectedSide( point.scale(1f,-1f), 1f ).scale(1f,-1f)
+        shapeAngle = tri.angleUnconnectedSide()
 
         return true
     }
