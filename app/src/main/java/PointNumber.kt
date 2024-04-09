@@ -42,12 +42,13 @@ class PointNumber( var triangle: Triangle ): Cloneable {
         return weightedMidpoint(WEIGHT)
     }
 
-    val FLAG_LENGTH_B = triangle.lengthB_*0.8f
-    val FLAG_LENGTH_C = triangle.lengthA_*0.8f
     //pointNumberだけ使う
     fun pointUnconnectedSide(
         point: PointXY
     ): PointXY {
+        //外側に出すと実行時エラーになる
+        val FLAG_LENGTH_B = triangle.lengthB*0.8f
+        val FLAG_LENGTH_C = triangle.lengthA*0.8f
         val angle_ = arrayOf( triangle.angleCA, triangle.angleAB, triangle.angleBC )
         val point_ = arrayOf( triangle.point[0], triangle.pointAB, triangle.pointBC )
 
