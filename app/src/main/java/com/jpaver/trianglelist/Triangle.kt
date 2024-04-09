@@ -1,6 +1,5 @@
 package com.jpaver.trianglelist
 
-import PointNumber
 import com.jpaver.trianglelist.util.Cloneable
 import com.jpaver.trianglelist.util.Params
 import com.jpaver.trianglelist.util.cloneArray
@@ -22,6 +21,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
             b.pointNumber = pointNumber.clone()
             b.dimpoint = dimpoint.copy()//cloneArray(dimpoints) // 代入だと参照になるので要素ごとにクローン
             b.path = cloneArray( path )
+            b.pathSokuten = pathSokuten.clone()
             b.dim = dim.clone()
 
             b.dimVerticalA = dimVerticalA
@@ -81,7 +81,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         path[0] = PathAndOffset(scaleFactror, pointAB, point[0], dim.vertical.a, dim.horizontal.a, ts )
         path[1] = PathAndOffset(scaleFactror, pointBC, pointAB, dim.vertical.b, dim.horizontal.b, ts )
         path[2] = PathAndOffset(scaleFactror, point[0], pointBC,  dim.vertical.c, dim.horizontal.c, ts )
-        pathS_ = PathAndOffset(scaleFactror, pointAB, point[0], SIDE_SOKUTEN, dim.getunconnectedSide(1, -1), ts )
+        pathSokuten = PathAndOffset(scaleFactror, pointAB, point[0], SIDE_SOKUTEN, dim.getunconnectedSide(1, -1), ts )
     }
 
     fun controlDimHorizontal(side: Int) {
@@ -239,7 +239,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     var childSide_ = 0
     var name = ""
     var myBP_ = Bounds(0f, 0f, 0f, 0f)
-    var pathS_: PathAndOffset? = null // = PathAndOffset();
+    var pathSokuten: PathAndOffset = PathAndOffset()
     var dimHeight = 0f
     var nodeTriangleB: Triangle? = null
     var nodeTriangleC: Triangle? = null
@@ -468,15 +468,6 @@ class Triangle : EditObject, Cloneable<Triangle> {
             lastTapSide_ = it
         }
     }
-
-    val dimAlignA: Int
-        get() = dim.autoDimVertical(0)
-
-    val dimAlignB: Int
-        get() = dim.autoDimVertical(1)
-
-    val dimAlignC: Int
-        get() = dim.autoDimVertical(2)
 
 
     fun pointCenter_(): PointXY {
@@ -1208,7 +1199,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         path[0].move(to)
         path[1].move(to)
         path[2].move(to)
-        pathS_!!.move(to)
+        pathSokuten.move(to)
     }
 
     // endregion scale and translate
