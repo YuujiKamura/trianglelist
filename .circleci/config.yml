@@ -14,6 +14,7 @@ jobs:
     docker:
       # Androidビルド用のイメージを指定
       - image: circleci/android:api-30-node
+    parallelism: 4
     environment:
       JAVA_HOME: /path/to/java-17
     steps:
@@ -42,8 +43,10 @@ jobs:
           name: Set executable permission for gradlew
           command: chmod +x ./gradlew
       - run:
-          name: Run tests
-          command: ./gradlew :app:test -stacktrace
+          name: Run tests in parallel
+          command: |
+            TEST_FILES=$(find ./app/src/test/java/com/jpaver -name "*Test*.kt" | circleci tests split --split-by=timings)
+            ./gradlew test --tests $TEST_FILES
       - save_cache:
           key: gradle-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}
           paths:
