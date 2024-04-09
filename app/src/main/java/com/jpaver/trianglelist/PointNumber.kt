@@ -1,5 +1,4 @@
-import com.jpaver.trianglelist.PointXY
-import com.jpaver.trianglelist.Triangle
+package com.jpaver.trianglelist
 
 class PointNumber( var triangle: Triangle ): Cloneable {
     data class Flags( var isMovedByUser: Boolean = false, var isAutoAligned: Boolean = false )

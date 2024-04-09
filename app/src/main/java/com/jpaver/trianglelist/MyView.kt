@@ -642,7 +642,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         val tPathA = tri.path[0]
         val tPathB = tri.path[1]
         val tPathC = tri.path[2]
-        val tPathS = tri.pathS_
+        val tPathS = tri.pathSokuten
 
         var la = tri.sla_ //String type
         var lb = tri.slb_
@@ -651,7 +651,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         tPathA.textSpacer = textSpacer_
         tPathB.textSpacer = textSpacer_
         tPathC.textSpacer = textSpacer_
-        tPathS!!.textSpacer = textSpacer_
+        tPathS.textSpacer = textSpacer_
 
         val margin = paintDim.textSize*0.52f
         val savedDimColor = paintDim.color
