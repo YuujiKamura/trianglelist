@@ -1,6 +1,8 @@
 package com.jpaver.trianglelist
+import com.jpaver.trianglelist.util.Cloneable
+import kotlin.math.acos
 
-class PointXY : Cloneable {
+class PointXY : Cloneable<PointXY> {
      var x: Float
      var y: Float
 
@@ -19,13 +21,14 @@ class PointXY : Cloneable {
         y = p.y
     }
 
-    public override fun clone(): PointXY {
+    override fun clone(): PointXY {
+        val b = PointXY(this.x,this.y)
+
         try {
-            return super.clone() as PointXY
         } catch (e: CloneNotSupportedException) {
             e.printStackTrace()
         }
-        return this
+        return b
     }
 
     private fun validateInputs(lineStart: PointXY, lineEnd: PointXY, scaleX: Float=1f, scaleY: Float=1f ) {
@@ -40,13 +43,13 @@ class PointXY : Cloneable {
         return "(x=$x, y=$y)"
     }
 
-    fun mirroredAndScaledPoint(lineStart: PointXY, lineEnd: PointXY, scaleX: Float, scaleY: Float, scaleOrigin: PointXY = PointXY(0f,0f) ): PointXY {
+    fun mirroredAndScaledPoint(lineStart: PointXY, lineEnd: PointXY, clockwise:Float=1f ): PointXY {
 
-        return mirroredPoint(lineStart, lineEnd).scale(scaleOrigin, scaleX,scaleY)
+        return mirror(lineStart, lineEnd, clockwise )
     }
 
 
-
+/*
     private fun mirroredPoint(lineStart: PointXY, lineEnd: PointXY): PointXY {
         // 直線の傾き（m）とy切片（b）を計算
         val dx = lineEnd.x - lineStart.x
@@ -74,11 +77,14 @@ class PointXY : Cloneable {
         // ミラーリングされた点を返す
         return PointXY(xm, ym)
     }
-
+*/
 
     fun mirror(lineStart: PointXY, lineEnd: PointXY, clockwise: Float = -1f ): PointXY {
         validateInputs( lineStart, lineEnd )
-        return this.rotate(lineStart, this.calcAngle(lineStart, lineEnd) * 2f * clockwise )
+        val angle = this.calcAngle(lineStart, lineEnd)
+        val angleis = angle * 2f * clockwise
+        val result = this.rotate(lineStart, angleis )
+        return result
     }
 
     fun flip(p2: PointXY): PointXY {
@@ -120,7 +126,7 @@ class PointXY : Cloneable {
     fun calcAngle(p2: PointXY, p3: PointXY): Float {
         val v1 = p2.subtract(this)
         val v2 = p2.subtract(p3)
-        val angleRadian = Math.acos(v1.innerProduct(v2) / (v1.magnitude() * v2.magnitude()))
+        val angleRadian = acos(v1.innerProduct(v2) / (v1.magnitude() * v2.magnitude()))
         val angleDegree = angleRadian * 180 / Math.PI
         return if (v1.outerProduct(v2) > 0) {
             angleDegree.toFloat() - 180
@@ -146,14 +152,14 @@ class PointXY : Cloneable {
     }
 
     fun add(a: PointXY): PointXY {
-        x = x + a.x
-        y = y + a.y
+        x += a.x
+        y += a.y
         return this
     }
 
     fun add(a: Float, b: Float): PointXY {
-        x = x + a
-        y = y + b
+        x += a
+        y += b
         return this
     }
 
@@ -180,10 +186,17 @@ class PointXY : Cloneable {
     }
 
     fun offset(p2: PointXY, movement: Float): PointXY {
-        val vector = vectorTo(p2)
-        val normalizedVector = vector.normalize()
-        val itsScaled = normalizedVector.scale(movement)
-        return PointXY(itsScaled).add(this)
+        val offset = vectorTo(p2).normalize().scale(movement)
+        return this + offset
+    }
+
+    fun offset(distance: Float, angle: Float): PointXY {
+        return this + toVector(angle).scale(distance)
+    }
+
+    fun toVector(angle: Float): PointXY{
+        val angleInRadians = Math.toRadians(angle.toDouble())
+        return PointXY(Math.cos(angleInRadians).toFloat(), Math.sin(angleInRadians).toFloat())
     }
 
     // 直交方向へのオフセット p2 is base line, p3 is cross vector align
@@ -295,12 +308,13 @@ class PointXY : Cloneable {
         return targets.map { this.lengthTo(it) }
     }
 
-    fun isCollide(tri: Triangle): Boolean {
-        return isCollide(tri.pointAB_, tri.pointBC_, tri.point[0]) //Inside Triangle
+    fun distancesTo(targets: Array<PointXY>): List<Float> {
+        return targets.map { this.lengthTo(it) }
     }
 
-    fun isCollide(tri: TriangleK): Boolean {
-        return isCollide(tri.point[1], tri.point[2], tri.point[0]) //Inside Triangle
+
+    fun isCollide(tri: Triangle): Boolean {
+        return isCollide(tri.pointAB, tri.pointBC, tri.point[0]) //Inside Triangle
     }
 
     fun subtract(point: PointXY): PointXY {

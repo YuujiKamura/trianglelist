@@ -7,29 +7,10 @@ import org.junit.Test
 
 class PointXYtest {
 
-
-    private fun assertPointXYEquals(expected: PointXY, actual: PointXY) {
-        System.out.printf( "PointXY expected x: %s, y: %s, actual x: %s, y: %s %n", expected.x, expected.y, actual.x, actual.y)
-        assertEquals(expected.y.toDouble(), actual.y.toDouble(), 0.001 )
-        assertEquals(expected.x.toDouble(), actual.x.toDouble(), 0.001 )
-
-    }
-
-
-    data class TestResult(val label: String, val pointIndex: Int, val distance: Float, val isClose: Boolean)
-
-    fun performTest(centerPoint: PointXY, points: List<PointXY>, nearby: Float, label: String): List<TestResult> {
-        val distances = centerPoint.distancesTo(points)
-        return distances.mapIndexed { index, distance ->
-            TestResult(label, index, distance, distance <= nearby)
-        }
-    }
-
     @Test
     fun testDistancesTo() {
         val centerPoint = PointXY(0f, 0f) // 中心点
         val nearby = 5f // 判定距離
-        val failedTests = mutableListOf<TestResult>()
 
         // テスト用のポイントとラベルのリスト
         val testCases = listOf(
@@ -40,24 +21,49 @@ class PointXYtest {
 
         testCases.forEach { (points, label) ->
             println("Testing case: $label")
-            val results = performTest(centerPoint, points, nearby, label)
-            results.forEach { result ->
-                println("  Point ${result.pointIndex}: Distance = ${result.distance}, Is Close = ${result.isClose}")
-                if ((label == "All Far" && result.isClose) || (label != "All Far" && !result.isClose)) {
-                    failedTests.add(result)
-                }
-            }
-        }
-
-        if (failedTests.isEmpty()) {
-            println("All tests passed with distance output.")
-        } else {
-            println("Some tests failed:")
-            failedTests.forEach { result ->
-                println("  Failed Test for ${result.label} at Point ${result.pointIndex}: Distance = ${result.distance}, Expected Close = ${result.label != "All Far"}")
-            }
+            val results = distanceTest(centerPoint, points, nearby, label)
+            processResults(results, label)
         }
     }
+
+    fun distanceTest(centerPoint: PointXY, points: List<PointXY>, nearby: Float, label: String): List<TestResult> {
+        val distances = centerPoint.distancesTo(points)
+        return distances.mapIndexed { index, distance ->
+            TestResult(label, index, distance, distance <= nearby)
+        }
+    }
+
+    fun processResults(results: List<TestResult>, label: String) {
+        results.forEach { result ->
+            printResult(result)
+            checkTestResult(result, label)
+        }
+    }
+
+    fun printResult(result: TestResult) {
+        println("  Point ${result.pointIndex}: Distance = ${result.distance}, Is Close = ${result.isClose}")
+    }
+
+    fun checkTestResult(result: TestResult, label: String) {
+        val expectedClose = label != "All Far"
+        if (result.isClose != expectedClose) {
+            failedTests.add(result)
+        }
+    }
+
+    private fun assertPointXYEquals(expected: PointXY, actual: PointXY) {
+        System.out.printf( "PointXY expected x: %s, y: %s, actual x: %s, y: %s %n", expected.x, expected.y, actual.x, actual.y)
+        assertEquals(expected.y.toDouble(), actual.y.toDouble(), 0.001 )
+        assertEquals(expected.x.toDouble(), actual.x.toDouble(), 0.001 )
+
+    }
+
+    data class TestResult(val label: String, val pointIndex: Int, val distance: Float, val isClose: Boolean)
+
+    // 失敗したテストの結果を格納するリストの宣言
+    val failedTests = mutableListOf<TestResult>()
+
+
 
     @Test
     fun testMirrorOriginalPoint() {
@@ -100,7 +106,7 @@ class PointXYtest {
         val tri = Triangle(5f,5f,5f,
             PointXY(-0.5f, -0.5f), 0f )
 
-        Assert.assertEquals( true, tri.trimming() )
+        Assert.assertEquals( false, tri.isCollide )
 
     }
 
@@ -156,7 +162,7 @@ class PointXYtest {
         // lengthXY 符号は付かない
         Assert.assertEquals(5f, p2.vectorTo(p1).lengthXY(), 0.001f)
         val t1 = Triangle(50f, 50f, 50f)
-        Assert.assertEquals(50.0f, t1.pointCA_.vectorTo(t1.pointAB_).lengthXY(), 0.001f)
+        Assert.assertEquals(50.0f, t1.pointCA_.vectorTo(t1.pointAB).lengthXY(), 0.001f)
     }
 
     @Test

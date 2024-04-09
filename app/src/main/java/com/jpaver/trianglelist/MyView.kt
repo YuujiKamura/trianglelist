@@ -1,3 +1,4 @@
+
 package com.jpaver.trianglelist
 
 import android.annotation.SuppressLint
@@ -18,6 +19,7 @@ import com.jpaver.trianglelist.util.MyScaleGestureListener
 import com.jpaver.trianglelist.util.RotateGestureDetector
 import com.jpaver.trianglelist.util.ScaleGestureCallback
 import com.jpaver.trianglelist.util.ViewTranslateManager
+
 import java.util.*
 import kotlin.math.roundToInt
 
@@ -286,7 +288,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
     val viewTranslateManager = ViewTranslateManager()
 
     override fun onDraw(canvas: Canvas) {
-    Log.d("MyViewLifeCycle", "onDraw.")
+    //Log.d("MyViewLifeCycle", "onDraw.")
 
     onceTransViewToLastTapTriangle()
     viewTranslateManager.setParameters(baseInView,zoomSize,centerInModel,pressedInModel)
@@ -300,7 +302,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
     drawEntities(canvas, paintTri, paintTexS, paintRed, darkColors_, myTriangleList, myDeductionList )
     drawCrossLines(canvas, pressedInModel, paintRed )
 
-    logModelViewPoints()
+    //logModelViewPoints()
     //drawModelViewPoints(canvas)
 
     }
@@ -479,7 +481,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         //if( myTriangleList.size() > 0 ) trilistStored_ = myTriangleList.clone()
         myScale = setscale    // 描画倍率は外から指定する
         myTriangleList = triList.clone() as TriangleList
-        myTriangleList.scaleAndSetPath(
+        myTriangleList.attachToTheView(
             PointXY(
                 0f,
                 0f
@@ -530,10 +532,10 @@ class MyView(context: Context, attrs: AttributeSet?) :
 // region resetview
 
     fun setCenterInModelToLastTappedTriNumber() {
-        centerInModel.set(myTriangleList.getMemberByIndex(lstn()).pointNumber_)
+        centerInModel.set(myTriangleList.getByNumber(lstn()).pointnumber)
     }
 
-    fun resetView( pt: PointXY){
+    fun resetView( pt: PointXY ){
         centerInModel = pt.clone()
         //drawPoint = pt.clone()
         resetPointToZero()
@@ -565,13 +567,11 @@ class MyView(context: Context, attrs: AttributeSet?) :
     }
 
     fun toLastTapTriangle(): PointXY {
-        return myTriangleList.getMemberByIndex(lstn()).pointNumber_
+        return myTriangleList.getLastTriangle().pointnumber
     }
 
     fun lstn(): Int{
-        var lstn = myTriangleList.lastTapNumber_
-        if( lstn < 1 ) lstn = myTriangleList.size()
-        return lstn
+        return myTriangleList.getLastNumber()
     }
 
     fun onceTransViewToLastTapTriangle(){
@@ -588,9 +588,9 @@ class MyView(context: Context, attrs: AttributeSet?) :
 // region drawEntities
     fun drawEntities(canvas: Canvas, paintTri: Paint, paintTex: Paint, paintRed: Paint, colors: Array<Int>, myTriangleList: TriangleList, myDeductionList: DeductionList) {
 
-        Log.d( "myView", "drawEntities: " + myTriangleList.size() )
-        Log.d("myView", "Instance check in View: " + this )
-        Log.d( "myView", "drawEntities- paintTex " + paintTex )
+        //Log.d( "myView", "drawEntities: " + myTriangleList.size() )
+        //Log.d("myView", "Instance check in View: " + this )
+        //Log.d( "myView", "drawEntities- paintTex " + paintTex )
 
         // draw the Shadow...
         drawShadowTriangle( canvas, myTriangleList )
@@ -637,11 +637,11 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
         // arrange
         tri.pointCA_
-        tri.pointAB_
-        tri.pointBC_
-        val tPathA = tri.pathA_
-        val tPathB = tri.pathB_
-        val tPathC = tri.pathC_
+        tri.pointAB
+        tri.pointBC
+        val tPathA = tri.path[0]
+        val tPathB = tri.path[1]
+        val tPathC = tri.path[2]
         val tPathS = tri.pathS_
 
         var la = tri.sla_ //String type
@@ -651,13 +651,13 @@ class MyView(context: Context, attrs: AttributeSet?) :
         tPathA.textSpacer = textSpacer_
         tPathB.textSpacer = textSpacer_
         tPathC.textSpacer = textSpacer_
-        tPathS.textSpacer = textSpacer_
+        tPathS!!.textSpacer = textSpacer_
 
         val margin = paintDim.textSize*0.52f
         val savedDimColor = paintDim.color
 
         // タップされた三角形の塗りつぶし
-        if( tri.myNumber_ == myTriangleList.lastTapNumber_ && deductionMode == false && isPrintPDF_ == false ){
+        if( tri.mynumber == myTriangleList.lastTapNumber_ && deductionMode == false && isPrintPDF_ == false ){
             paintDim.color = DarkBlue_
             drawDigits( canvas, la, makePath(tPathA), tPathA.offsetH, tPathA.offsetV, paintDim, margin )
             paintDim.color = LightYellow_
@@ -669,76 +669,82 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
         if( isPrintPDF_ == false ) {
             if (isDebug_ == true) {
+                logModelViewPoints()
                 //val name = tri.myName_ + " :" + sokt.pointA_.x + " :" + sokt.pointA_.y + " :" + sokt.pointB_.x + " :" + sokt.pointB_.y
 
-                la += " :" + tri.myDimAlignA_ + " :" + tri.dimSideAlignA_
-                lb += " :" + tri.myDimAlignB_ + " :" + tri.dimSideAlignB_
-                lc += " :" + tri.myDimAlignC_ + " :" + tri.dimSideAlignC_
+                la += " :" + tri.dimVerticalA + " :" + tri.dimHorizontalA
+                lb += " :" + tri.dimVerticalB + " :" + tri.dimHorizontalB
+                lc += " :" + tri.dimVerticalC + " :" + tri.dimHorizontalC
             }
-            else if( tri.myNumber_ == myTriangleList.lastTapNumber_ ){
+            else if( tri.mynumber == myTriangleList.lastTapNumber_ ){
                 la += " A"
                 lb += " B"
                 lc += " C"
                 paintDim.color = LightYellow_
             }
-            else if( tri.myNumber_ < myTriangleList.size() ) paintDim.color = White_
+            else if( tri.mynumber < myTriangleList.size() ) paintDim.color = White_
         }
 
         // 線
         drawTriLines( canvas, tri, paintLine )
-        if(tPathA.alignSide > 2) canvas.drawPath(makePath(tPathA), paintLine)
-        if(tPathB.alignSide > 2) canvas.drawPath(makePath(tPathB), paintLine)
-        if(tPathC.alignSide > 2) canvas.drawPath(makePath(tPathC), paintLine)
+        if(tPathA.horizontal > 2) canvas.drawPath(makePath(tPathA), paintLine)
+        if(tPathB.horizontal > 2) canvas.drawPath(makePath(tPathB), paintLine)
+        if(tPathC.horizontal > 2) canvas.drawPath(makePath(tPathC), paintLine)
 
         // 番号
         drawTriangleNumber(canvas, tri, paintDim, paintB)
 
         // 寸法
-        if(tri.getMyNumber_() == 1 || tri.parentBC > 2 || tri.cParam_.type != 0 || tri.myNumber_ == myTriangleList.lastTapNumber_ )
+        if(tri.mynumber == 1 || tri.connectionType > 2 || tri.cParam_.type != 0 || tri.mynumber == myTriangleList.lastTapNumber_ )
             drawDigits( canvas, la, makePath(tPathA), tPathA.offsetH, tPathA.offsetV, paintDim, margin )
         drawDigits( canvas, lb, makePath(tPathB), tPathB.offsetH, tPathB.offsetV, paintDim, margin )
         drawDigits( canvas, lc, makePath(tPathC), tPathC.offsetH, tPathC.offsetV, paintDim, margin )
         paintDim.color = savedDimColor
 
         // 測点
-        if(tri.getMyName_() != ""){
-            canvas.drawTextOnPath(tri.getMyName_(), makePath(tPathS), 0f, -2f, paintSok)
+        if(tri.myName_() != ""){
+            canvas.drawTextOnPath(tri.myName_(), makePath(tPathS), 0f, -5f, paintSok)
             canvas.drawPath(makePath(tPathS), paintLine)
         }
-        Log.d( "myView", "drawTriangle: " + tri.myNumber_ )
+        //Log.d( "myView", "drawTriangle: " + tri.myNumber )
 
     }
 
-    fun drawShadowTriangle( canvas: Canvas, myTriangleList: TriangleList){
+    fun drawShadowTriangle(canvas: Canvas, trilist: TriangleList){
+        if( trilist.lastTapNumber_ < 1 ) return
         if( isPrintPDF_ == true ){
             Log.d( "myVIew", "drawShadowTriangle - isPrintPDF:")
             return
         }
-        if( myTriangleList.lastTapSide_ < 1 || myTriangleList.isDoubleTap_ == false ) {
+        if( trilist.lastTapSide_ < 1 || trilist.isDoubleTap_ == false ) {
             shadowTri_ = Triangle( 0f, 0f, 0f )
             return
         }
 
-        if( myTriangleList.lastTapNumber_ < 1 ) myTriangleList.lastTapNumber_ = myTriangleList.size()
-        val shadowParent = myTriangleList.get(myTriangleList.lastTapNumber_ )
-        val shadowTapSide = myTriangleList.lastTapSide_
+        val shadowParent = trilist.get(trilist.lastTapNumber_ )
+        val shadowTapSide = trilist.lastTapSide_
 
         //番号選択されてるときは以下略。
         if( shadowTapSide != 3) {
-            //val shadowTapNum = myTriangleList.lastTapNum_
             val shadowTapLength = shadowParent.getLengthByIndexForce( shadowTapSide ) * 0.75f
-            shadowTri_ = Triangle( shadowParent, myTriangleList.lastTapSide_, shadowTapLength, shadowTapLength )
-            //shadowTri.setDimPoint()
-            val spca = shadowTri_.pointCA_
-            val spab = shadowTri_.pointAB_
-            val spbc = shadowTri_.pointBC_
+            shadowTri_ = Triangle( shadowParent, trilist.lastTapSide_, shadowTapLength, shadowTapLength )
 
-            shadowTri_.setScale( myTriangleList.scale)
+            shadowTri_.setScale( trilist.scale)
             canvas.drawPath( makeTriangleFillPath( shadowTri_ ), paintGray )
-            //        drawTriLines( canvas, shadowTri, paintGray )
-            canvas.drawTextOnPath( "B " + watchedB1_, makePath( spbc,  spab ), 0f, 0f, paintYellow )
-            canvas.drawTextOnPath( "C " + watchedC1_, makePath( spca,  spbc ), 0f, 0f, paintYellow )
+
+            // 寸法値
+            val pathB = shadowTri_.path[1]
+            val pathC = shadowTri_.path[2]
+            val strB = "B ${watchedB1_}"
+            val strC = "C ${watchedC1_}"
+            drawDigit( canvas, strB, pathB, paintYellow )
+            drawDigit( canvas, strC, pathC, paintYellow )
         }
+    }
+
+    fun drawDigit(canvas: Canvas, str: String, path: PathAndOffset, paint: Paint ){
+        val onecharsize = paint.textSize* 0.5f
+        drawDigits( canvas, str, makePath(path), path.offsetH, path.offsetV, paint, onecharsize )
     }
 
     fun drawDeduction(canvas: Canvas, ded: Deduction, paint: Paint){
@@ -750,7 +756,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         var infoStrLength: Float = str.length * paint.textSize * 0.85f
 
         // boxの時は短くする
-        if(ded.type=="Box") infoStrLength = infoStrLength*0.75f
+        if(ded.type=="Box") infoStrLength = infoStrLength*0.85f
 
         if( isDebug_ == true ){
             val strD = ded.point.x.toString() + " " + ded.point.y.toString()
@@ -758,6 +764,10 @@ class MyView(context: Context, attrs: AttributeSet?) :
             canvas.drawText(strD, pointFlag.x, pointFlag.y-50f, paint)
             canvas.drawText(strDF, pointFlag.x, pointFlag.y-100f, paint)
             canvas.drawCircle(point.x, point.y, ded.lengthX / 2 * ded.myscale, paintYellow)
+
+            val strA = "angle: ${ded.shapeAngle}"
+            canvas.drawText(strA, point.x, point.y-50f, paint)
+
         }
 
         if(point.x <= pointFlag.x) {  //pointFlag is RIGHT from DedCenter
@@ -834,21 +844,21 @@ class MyView(context: Context, attrs: AttributeSet?) :
         if(myTriangleList.lastTapSide_ == 0){
             canvas.drawLine(
                 tri.pointCA_.x, - tri.pointCA_.y,
-                tri.pointAB_.x, - tri.pointAB_.y,
+                tri.pointAB.x, - tri.pointAB.y,
                 paintYellow
             )
         }
         if(myTriangleList.lastTapSide_ == 1){
             canvas.drawLine(
-                tri.pointAB_.x, - tri.pointAB_.y,
-                tri.pointBC_.x, - tri.pointBC_.y,
+                tri.pointAB.x, - tri.pointAB.y,
+                tri.pointBC.x, - tri.pointBC.y,
                 paintYellow
             )
         }
         if(myTriangleList.lastTapSide_ == 2) {
             canvas.drawLine(
                 tri.pointCA_.x, - tri.pointCA_.y,
-                tri.pointBC_.x, - tri.pointBC_.y,
+                tri.pointBC.x, - tri.pointBC.y,
                 paintYellow
             )
         }
@@ -856,9 +866,9 @@ class MyView(context: Context, attrs: AttributeSet?) :
         val circleSize = paintTexS.textSize *0.8f
         paintYellow.style = Paint.Style.STROKE
 
-        if( tri.myNumber_ == myTriangleList.lastTapNumber_ && isPrintPDF_ == false ) canvas.drawCircle(
-            tri.pointNumberAutoAligned_.x,
-            -tri.pointNumberAutoAligned_.y,
+        if( tri.mynumber == myTriangleList.lastTapNumber_ && isPrintPDF_ == false ) canvas.drawCircle(
+            tri.pointnumber.x,
+            -tri.pointnumber.y,
             circleSize,
             paintYellow
         )
@@ -873,8 +883,8 @@ class MyView(context: Context, attrs: AttributeSet?) :
     fun drawTriLines(canvas: Canvas, tri: Triangle, paintLine: Paint){
         // arrange
         val pca = tri.pointCA_
-        val pab = tri.pointAB_
-        val pbc = tri.pointBC_
+        val pab = tri.pointAB
+        val pbc = tri.pointBC
 
         // TriLines
         drawLine(canvas, pca, pab, 1f, -1f, paintLine)
@@ -882,9 +892,9 @@ class MyView(context: Context, attrs: AttributeSet?) :
         drawLine(canvas, pbc, pca, 1f, -1f, paintLine)
     }
 
-    fun drawDigits( canvas: Canvas, str: String, path: Path, offsetH: Float, offsetV: Float, paint: Paint, margin: Float ){
-        for( index in 0 .. str.length-1 ){
-            canvas.drawTextOnPath(str.get(index).toString(), path, offsetH+((index-2)*margin), offsetV, paint )
+    fun drawDigits(canvas: Canvas, str: String, path: Path, offsetH: Float, offsetV: Float, paint: Paint, onecharsize: Float ){
+        for( index in 0..<str.length){
+            canvas.drawTextOnPath(str.get(index).toString(), path, offsetH+((index-2)*onecharsize), offsetV, paint )
         }
     }
 
@@ -894,14 +904,14 @@ class MyView(context: Context, attrs: AttributeSet?) :
         paint1: Paint,
         paint2: Paint
     ){
-        val pnX = tri.pointNumberAutoAligned_.x
-        val pnY = -tri.pointNumberAutoAligned_.y
+        val pnX = tri.pointnumber.x
+        val pnY = -tri.pointnumber.y
         val pnpY = getPaintCenterY(pnY, paint1)
         val areaoffsetY = paint2.textSize *1.3f
         paint2.style = Paint.Style.STROKE
 
 
-        val str_number: String = tri.getMyNumber_().toString()
+        val str_number: String = tri.mynumber.toString()
         val digitCount = str_number.length // 数字の桁数
 
         // 基本のテキストサイズ
@@ -916,8 +926,8 @@ class MyView(context: Context, attrs: AttributeSet?) :
         }
 
         var area =""
-        if(isAreaOff_ == false ) area = tri.getArea().formattedString(1 )+"m^2"
-        if(isDebug_ == true) area = "cp:"+tri.cParam_.type.toString() + "-"+ tri.cParam_.lcr.toString() +" pbc:"+ tri.parentBC_.toString() +" Num:"+ tri.myNumber_ +"-"+ tri.parentNumber_ +" lTS"+ tri.lastTapSide_
+        if(isAreaOff_ == false ) area = tri.getArea().formattedString(1 )+"m^2"+" ${tri.pointNumber.flag.isMovedByUser}"
+        //if(isDebug_ == true) area = "cp:"+tri.cParam_.type.toString() + "-"+ tri.cParam_.lcr.toString() +" pbc:"+ tri.parentBC.toString() +" Num:"+ tri.myNumber +"-"+ tri.parentNumber +" lTS"+ tri.lastTapSide_
 
 
         canvas.drawCircle(pnX, pnY, circleSize, paint2)
@@ -926,12 +936,12 @@ class MyView(context: Context, attrs: AttributeSet?) :
         canvas.drawText(area, pnX, pnpY - areaoffsetY, paint2)
 
         //引き出し矢印線の描画
-        if( tri.isCollide(tri.pointNumber_) == false ){
-            val pc = tri.pointCenter_
-            val pn = tri.pointNumber_
+        if( tri.isCollide(tri.pointnumber) == false ){
+            val pc = tri.pointcenter
+            val pn = tri.pointnumber
             val pcOffsetToN = pc//.offset(pn, circleSize * 1.2f )
             val pnOffsetToC = pn.offset(pc, circleSize * 1.1f )
-            val arrowTail = pcOffsetToN.offset(pn, pcOffsetToN.lengthTo(pnOffsetToC) * 0.7f).rotate(pcOffsetToN, 10f)
+            val arrowTail = pcOffsetToN.offset(pn, pcOffsetToN.lengthTo(pnOffsetToC) * 0.3f).rotate(pcOffsetToN, 10f)
             canvas.drawLine(
                 pcOffsetToN.x,
                 -pcOffsetToN.y,
@@ -964,13 +974,6 @@ class MyView(context: Context, attrs: AttributeSet?) :
         drawLine(canvas, dd.prt, dd.prb, 1f, 1f, paint)
     }
 
-    fun makePath(p1: PointXY, p2: PointXY): Path {
-        val path = Path()
-        path.rewind()
-        path.moveTo(p1.x, -p1.y)
-        path.lineTo(p2.x, -p2.y)
-        return path
-    }
 
     fun makePath(PA: PathAndOffset): Path {
         val path = Path()
@@ -984,8 +987,8 @@ class MyView(context: Context, attrs: AttributeSet?) :
         val path = Path()
         path.rewind()
         path.moveTo(tri.pointCA_.x, -tri.pointCA_.y)
-        path.lineTo(tri.pointAB_.x, -tri.pointAB_.y)
-        path.lineTo(tri.pointBC_.x, -tri.pointBC_.y)
+        path.lineTo(tri.pointAB.x, -tri.pointAB.y)
+        path.lineTo(tri.pointBC.x, -tri.pointBC.y)
         path.lineTo(tri.pointCA_.x, -tri.pointCA_.y)
         return path
     }
@@ -1054,7 +1057,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         val scaleFactor = 1.19f * writer.kaizoudo_ *(2.0f/experience/printScale)// - (myScale/100)
         myScale *= scaleFactor
         // scale
-        myTriangleList.scaleAndSetPath(
+        myTriangleList.attachToTheView(
             PointXY(
                 0f,
                 0f
@@ -1090,7 +1093,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
         // 描画処理
         Log.d( "myView", "drawPDF - isPrintPDF: " + isPrintPDF_ )
-        if( separateCount > 1 && numberList.size > 1 && myTriangleList.get(0).angleInGlobal_ > 45f && myTriangleList.get(0).angleInGlobal_ < 135f  ){
+        if( separateCount > 1 && numberList.size > 1 && myTriangleList.get(0).angle > 45f && myTriangleList.get(0).angle < 135f  ){
 
             //測点を持つ三角形のリスト
             val numleftList = myTriangleList.getSokutenList( 0, 4 )
@@ -1167,7 +1170,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
         //scale back
         myScale /= scaleFactor
-        myTriangleList.scaleAndSetPath(
+        myTriangleList.attachToTheView(
             PointXY(
                 0f,
                 0f

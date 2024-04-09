@@ -1,9 +1,8 @@
 package com.jpaver.trianglelist
 
-import com.jpaver.trianglelist.util.DeductionParams
 import com.jpaver.trianglelist.util.Params
 
-class DeductionList internal constructor() : EditList(), Cloneable {
+class DeductionList : EditList() {
     var dedlist_ = ArrayList<Deduction>()
     var current = 0
     var lastTapIndex_ = -1
@@ -85,37 +84,24 @@ class DeductionList internal constructor() : EditList(), Cloneable {
         dedlist_.clear()
     }
 
-    fun add(dd: Deduction) {
-        processDeduction(dd.apply { sameDedcount = searchSameDed(getParams()) })
-    }
+    fun add(deduction: Deduction) {
+        deduction.setInfo( searchSameDed(deduction) )
 
-    fun add(ddp: DeductionParams?) {
-        ddp?.let { processDeduction(Deduction(it)) } ?: throw IllegalArgumentException("DeductionParams cannot be null")
-    }
-
-    fun add(dp: Params?) {
-        dp?.let {
-            val deduction = Deduction(it)
-            val sameCount = searchSameDed(it)
-            if (sameCount > 1) deduction.sameDedcount = sameCount
-            processDeduction(deduction)
-        } ?: throw IllegalArgumentException("Params cannot be null")
-    }
-
-    private fun processDeduction(deduction: Deduction) {
         dedlist_.add(deduction)
         current = dedlist_.size
     }
 
-    fun searchSameDed(dp: Params?): Int {
-        var count = 1
-        for (i in dedlist_.indices) {
-            if (dedlist_[i].verify(dp!!)) {
-                count++
-            }
-        }
-        return count
+
+    fun add(dp: Params) {
+        val deduction = Deduction(dp)
+        add(deduction)
+
     }
+
+    fun searchSameDed(deduction: Deduction): Int {
+        return dedlist_.count { it.verify(deduction) }
+    }
+
 
     override operator fun get(num: Int): Deduction {
         return if (num < 1 || num > dedlist_.size) Deduction() else getDeduction(num)!!
@@ -148,6 +134,12 @@ class DeductionList internal constructor() : EditList(), Cloneable {
         if (index < 1) return
         dedlist_[index - 1].setParam(dp!!)
     }
+
+    fun replace(index: Int, ded: Deduction?) {
+        if ( ded== null ) return
+        dedlist_[index - 1] = ded
+    }
+
 
     override fun reverse(): DeductionList {
         val rev = DeductionList()

@@ -3,8 +3,29 @@ package com.jpaver.trianglelist
 import com.jpaver.trianglelist.util.Params
 import java.util.Optional
 
-class TriangleList : EditList, Cloneable {
-    var trilist_: ArrayList<Triangle>
+class TriangleList : EditList {
+
+
+    fun rotate(basepoint: PointXY, angle: Float, startnumber: Int, separationFreeMode: Boolean = false, is_recover: Boolean = false ) {
+
+        var startindex = startnumber - 1
+
+        // 0番からすべて回転させる場合
+        if (!(startnumber > 1 && trilist[startindex].connectionType >= 9) || !separationFreeMode) {
+            this.angle += angle
+            this.basepoint = basepoint.clone()
+            startindex = 0
+        }
+        // 開始インデックス以降の要素に対してのみ処理を行う
+        trilist.drop(startindex).forEach {
+            it.rotate( basepoint, angle, is_recover )
+            //if(!it.isPointNumberAutoAligned)
+                it.pointnumber = it.pointnumber.rotate( basepoint, angle )
+        }
+    }
+
+    // region parameters
+    var trilist: ArrayList<Triangle>
     var trilistStored_: ArrayList<Triangle>
     var myCollisionList: ArrayList<Collision>? = null
     var outlineList_: ArrayList<ArrayList<PointXY>>? = null
@@ -19,6 +40,13 @@ class TriangleList : EditList, Cloneable {
     var myLength = PointXY(0f, 0f)
     var outlineStr_ = ""
     var isDoubleTap_ = false
+
+    //endregion parameters
+
+    fun toStrings(): String {
+        return trilist.joinToString(separator = "") { it.toStrings() }
+    }
+
     override fun clone(): TriangleList {
         val b = TriangleList()
         try {
@@ -34,8 +62,8 @@ class TriangleList : EditList, Cloneable {
             b.angle = angle
             b.basepoint = basepoint.clone()
             b.outlineList_ = outlineList_
-            for (i in trilist_.indices) {
-                b.trilist_.add(trilist_[i].clone())
+            for (i in trilist.indices) {
+                b.trilist.add(trilist[i].clone())
                 //b.myTriListAtView.add(this.myTriListAtView.get(i).clone());
             }
         } catch (e: Exception) {
@@ -43,7 +71,7 @@ class TriangleList : EditList, Cloneable {
         }
 
         //ノードポインターのリコネクト
-        if (trilist_.size > 0) b.resetAllNodes()
+        if (trilist.size > 0) b.resetAllNodes()
         return b
     }
 
@@ -56,7 +84,7 @@ class TriangleList : EditList, Cloneable {
         val sokTriList = ArrayList<Triangle>()
         for (i in allSokTriList.indices) {
             // No.Stringから数値を抜き出してIntに変換する
-            val s = allSokTriList[i].myName_
+            val s = allSokTriList[i].name
             val nameInt = s.replace("[^0-9]".toRegex(), "").toInt()
 
             // 剰余演算子%を使ってpitch(4)の倍数の場合を判定する
@@ -95,9 +123,9 @@ class TriangleList : EditList, Cloneable {
         // 全ての測点リストを返す
         get() {
             val numTriList = ArrayList<Triangle>()
-            for (i in trilist_.indices) {
-                if (trilist_[i].myName_.contains("No.")) {
-                    numTriList.add(trilist_[i].clone())
+            for (i in trilist.indices) {
+                if (trilist[i].name.contains("No.")) {
+                    numTriList.add(trilist[i].clone())
                 }
             }
             return numTriList
@@ -108,9 +136,9 @@ class TriangleList : EditList, Cloneable {
             val allSokutenList = allSokutenList
             if (allSokutenList.size > 1) {
                 // No.Stringから数値を抜き出してIntに変換する
-                val sf = allSokutenList[0].myName_
+                val sf = allSokutenList[0].name
                 val fnInt = sf.replace("[^0-9]".toRegex(), "").toInt()
-                val ss = allSokutenList[1].myName_
+                val ss = allSokutenList[1].name
                 val snInt = ss.replace("[^0-9]".toRegex(), "").toInt()
                 return snInt - fnInt
             }
@@ -171,8 +199,8 @@ class TriangleList : EditList, Cloneable {
 
     fun calcBounds(): Bounds {
         myBounds = Bounds(0f, 0f, 0f, 0f)
-        for (i in trilist_.indices) {
-            myBounds = trilist_[i].expandBoundaries(myBounds)
+        for (i in trilist.indices) {
+            myBounds = trilist[i].expandBoundaries(myBounds)
         }
         return myBounds
     }
@@ -222,19 +250,19 @@ class TriangleList : EditList, Cloneable {
     }
 
     internal constructor() {
-        trilist_ = ArrayList()
+        trilist = ArrayList()
         trilistStored_ = ArrayList()
         myCollisionList = ArrayList()
         outlineList_ = ArrayList()
-        selectedNumber = trilist_.size
+        selectedNumber = trilist.size
     }
 
     internal constructor(myFirstTriangle: Triangle) {
-        trilist_ = ArrayList()
+        trilist = ArrayList()
         trilistStored_ = ArrayList()
-        trilist_.add(myFirstTriangle)
+        trilist.add(myFirstTriangle)
         myFirstTriangle.setNumber(1)
-        selectedNumber = trilist_.size
+        selectedNumber = trilist.size
     }
 
     fun setScale(bp: PointXY, sc: Float) {
@@ -243,68 +271,61 @@ class TriangleList : EditList, Cloneable {
         //        this.cloneByScale(basepoint, myScale);
     }
 
-    /*public void cloneByScale(PointXY basepoint, float scale){
-        myTriListAtView.clear();
-        for (int i = 0; i < trilist_.size(); i++ ) {
-            myTriListAtView.add(trilist_.get(i).clone());
-            myTriListAtView.get(i).scale(basepoint, scale);
-        }
-    }*/
-    fun scale(basepoint: PointXY?, scale: Float) {
+    fun scale(basepoint: PointXY, scale: Float) {
         this.scale *= scale
-        for (i in trilist_.indices) {
-            trilist_[i].scale(basepoint, scale)
+        forEach { triangle ->
+            triangle.scale(basepoint, scale)
         }
     }
 
-    fun scaleAndSetPath(basepoint: PointXY?, scale: Float, ts: Float) {
+    fun attachToTheView(basepoint: PointXY, scale: Float, ts: Float) {
         this.scale *= scale
-        for (i in trilist_.indices) {
-            trilist_[i].scale(basepoint, scale)
-            trilist_[i].setDimPath(ts)
+        forEach { triangle ->
+            triangle.scale(basepoint, scale)
+
+            //これがないと結果が変わる、なぜだろう？
+            triangle.setDimPath(ts)
         }
     }
 
     fun setDimPathTextSize(ts: Float) {
-
-        for (i in trilist_.indices) {
-            trilist_[i].setDimPath(ts)
+        forEach { triangle ->
+            triangle.setDimPath(ts)
         }
     }
 
-    fun rotate(bp: PointXY, angle: Float, startnumber: Int, separationFreeMode: Boolean?) {
-        var startindex = startnumber - 1
-
-        // 0番からすべて回転させる場合
-        if (!(startnumber > 1 && trilist_[startindex].parentBC_ >= 9) || !separationFreeMode!!) {
-            this.angle += angle
-            basepoint = bp.clone()
-            startindex = 0
+    fun arrangeNumbers(){
+        forEach { triangle ->
+            triangle.arrangeNumber()
         }
-        for (i in startindex until trilist_.size) {
-            trilist_[i].rotate(trilist_[startindex].point[0], angle, false)
-            trilist_[i].pointNumber_ = trilist_[i].pointNumber_.rotate(basepoint, angle)
+    }
+
+    fun forEach(action: (Triangle) -> Unit) {
+        trilist.forEachIndexed { _, triangle ->
+            action(triangle)
         }
     }
 
     fun setDimsUnconnectedSideToOuter(target: Triangle?) {
         if(target == null ) return
-        if (target.nodeTriangleA_ == null) target.myDimAlignA_ = 1 else target.myDimAlignA_ = 3
-        if (target.nodeTriangleB_ == null) target.myDimAlignB_ = 1 else if (target.nodeTriangleB_.parentBC > 2 ) target.myDimAlignB_ = 3
-        if (target.nodeTriangleC_ == null) target.myDimAlignC_ = 1 else if (target.nodeTriangleC_.parentBC > 2 ) target.myDimAlignC_ = 3
+        if (target.nodeTriangleA_ == null) target.dimVerticalA = 1 else target.dimVerticalA = 3
+        if (target.nodeTriangleB == null) target.dimVerticalB = 1 else if (target.nodeTriangleB!!.connectionType > 2 ) target.dimVerticalB = 3
+        if (target.nodeTriangleC == null) target.dimVerticalC = 1 else if (target.nodeTriangleC!!.connectionType > 2 ) target.dimVerticalC = 3
     }
 
     fun recoverState(bp: PointXY) {
         basepoint = bp.clone()
-        for (i in trilist_.indices) {
-            trilist_[i].rotate(basepoint, angle - 180, false)
-            if (trilist_[i].isPointNumberMoved == false) trilist_[i].pointNumber_ =
-                trilist_[i].pointNumber_.rotate(basepoint, angle - 180)
+        trilist.map {
+            it.rotate(basepoint, angle - 180, false)
+            if (!it.pointNumber.flag.isMovedByUser){
+                it.pointnumber = it.pointnumber.rotate(basepoint, angle - 180)
+            }
         }
+        arrangeNumbers()
     }
 
     override fun size(): Int {
-        return trilist_.size
+        return trilist.size
     }
 
     override fun addCurrent(num: Int): Int {
@@ -338,82 +359,81 @@ class TriangleList : EditList, Cloneable {
         if (!validTriangle(nextTriangle)) return false
 
         // 番号を受け取る
-        if (numbering) nextTriangle.myNumber_ = trilist_.size + 1
-        val pbc = nextTriangle.parentBC_
-        if (nextTriangle.parentNumber_ > 0) {
-            val parent = getMemberByIndex(nextTriangle.parentNumber_)
+        if (numbering) nextTriangle.mynumber = trilist.size + 1
+        val pbc = nextTriangle.connectionType
+        if (nextTriangle.parentnumber > 0) {
+            val parent = getByNumber(nextTriangle.parentnumber)
             if (parent.alreadyHaveChild(pbc)) {
                 // すでに親の接続辺上に子供がいたら、挿入処理
                 //nextTriangle.myNumber_ = nextTriangle.parentNumber_ +1;
                 insertAndSlide(nextTriangle)
             } else {
-                trilist_.add(nextTriangle) // add by arraylist
+                trilist.add(nextTriangle) // add by arraylist
             }
 
             // 親に告知する
             //if( nextTriangle.myNumber_ > 1 ) trilist_.get( nextTriangle.parentNumber_ -1 ).setChild(nextTriangle, nextTriangle.getParentBC());
         } else {
-            trilist_.add(nextTriangle) // add by arraylist
+            trilist.add(nextTriangle) // add by arraylist
         }
 
         setDimsUnconnectedSideToOuter(nextTriangle)
         setDimsUnconnectedSideToOuter(nextTriangle.nodeTriangleA_)
 
-        selectedNumber = nextTriangle.myNumber_
-
+        selectedNumber = nextTriangle.mynumber
         return true
     }
 
     fun resetAllNodes() {
-        for (i in trilist_.indices) {
-            val tri = trilist_[i]
+        for (i in trilist.indices) {
+            val tri = trilist[i]
             if (tri.nodeTriangleA_ != null) {
-                tri.setNode(trilist_[tri.nodeTriangleA_.myNumber_ - 1], 0)
+                tri.setNode(trilist[tri.nodeTriangleA_!!.mynumber - 1], 0)
             }
-            if (tri.nodeTriangleB_ != null) {
-                tri.setNode(trilist_[tri.nodeTriangleB_.myNumber_ - 1], 1)
+            if (tri.nodeTriangleB != null) {
+                tri.setNode(trilist[tri.nodeTriangleB!!.mynumber - 1], 1)
             }
-            if (tri.nodeTriangleC_ != null) {
-                tri.setNode(trilist_[tri.nodeTriangleC_.myNumber_ - 1], 2)
+            if (tri.nodeTriangleC != null) {
+                tri.setNode(trilist[tri.nodeTriangleC!!.mynumber - 1], 2)
             }
         }
     }
 
     fun setChildsToAllParents() {
-        for (i in trilist_.indices) {
+        for (i in trilist.indices) {
             try {
-                val pnForMe = trilist_[i].parentNumber_
-                val me = trilist_[i]
+                val pnForMe = trilist[i].parentnumber
+                val me = trilist[i]
                 if (pnForMe > -1) {
                     // 改善版
-                    val parent = trilist_[pnForMe - 1]
+                    val parent = trilist[pnForMe - 1]
                     // 親に対して、
-                    parent.setChild(me, me.parentBC)
+                    parent.setChild(me, me.connectionType)
                 }
             } catch (e: NullPointerException) {
-                println("NullPointerException!! trilistsize:" + trilist_.size + " index:" + i)
+                println("NullPointerException!! trilistsize:" + trilist.size + " index:" + i)
             }
         }
     }
 
     fun insertAndSlide(nextTriangle: Triangle) {
-        trilist_.add(nextTriangle.myNumber_ - 1, nextTriangle)
-        getMemberByIndex(nextTriangle.parentNumber_).setChild(nextTriangle, nextTriangle.parentBC)
+        trilist.add(nextTriangle.mynumber - 1, nextTriangle)
+        getByNumber(nextTriangle.parentnumber).setChild(nextTriangle, nextTriangle.connectionType)
 
         //次以降の三角形の親番号を全部書き換える、ただし連続しない親で、かつ自分より若い親の場合はそのままにする。
         rewriteAllNodeFrom(nextTriangle, +1)
-        resetTriangles(nextTriangle.myNumber_, nextTriangle)
+        resetTriangles(nextTriangle.mynumber, nextTriangle)
     }
 
     //次以降の三角形の親番号を全部書き換える、ただし連続しない親で、かつ自分より若い親の場合はそのままにする。
     // この関数自体は、どの三角形も書き換えない。
     fun rewriteAllNodeFrom(target: Triangle, numberChange: Int) {
-        for (i in target.myNumber_ until trilist_.size) {
-            val parent = trilist_[i]
-            if (parent.hasConstantParent() || parent.parentNumber_ > target.myNumber_) {
-                parent.parentNumber_ += numberChange
+        for (i in target.mynumber until trilist.size) {
+            val parent = trilist[i]
+            if (parent.hasConstantParent() || parent.parentnumber > target.mynumber) {
+                parent.parentnumber += numberChange
             }
-            parent.myNumber_ += numberChange
+            parent.mynumber += numberChange
         }
     }
 
@@ -421,17 +441,17 @@ class TriangleList : EditList, Cloneable {
         //number = lastTapNum_;
 
         //１番目以下は消せないことにする。
-        if (num <= 1 || num > trilist_.size ) return
+        if (num <= 1 || num > trilist.size ) return
         val i = num -1
-        val target = trilist_[i]
-        target.nodeTriangleA_.removeNode(target) //removeTheirNode();
-        trilist_.removeAt(i)
+        val target = trilist[i]
+        target.nodeTriangleA_!!.removeNode(target) //removeTheirNode();
+        trilist.removeAt(i)
 
         //ひとつ前の三角形を基準にして
-        val parentTriangle = trilist_[target.parentNumber_-1]//trilist_[number - 2]
+        val parentTriangle = trilist[target.parentnumber -1]//trilist_[number - 2]
         //次以降の三角形の親番号を全部書き換える
         rewriteAllNodeFrom(parentTriangle, -1)
-        resetTriangles(parentTriangle.myNumber_, parentTriangle)
+        resetTriangles(parentTriangle.mynumber, parentTriangle)
         selectedNumber = num - 1
         lastTapNumber_ = num - 1
         lastTapSide_ = -1
@@ -441,17 +461,17 @@ class TriangleList : EditList, Cloneable {
 
     fun rotateCurrentTriLCR(): ConnParam? {
         if (lastTapNumber_ < 2) return null
-        val curTri = trilist_[lastTapNumber_ - 1]
+        val curTri = trilist[lastTapNumber_ - 1]
         val cParam = curTri.rotateLCRandGet().cParam_.clone()
         //if( lastTapNum_ < myTriList.size() ) myTriList.get(lastTapNum_).resetByParent( curTri, myTriList.get(lastTapNum_).cParam_ );
 
         // 次以降の三角形を書き換えている
-        for (i in trilist_.indices) {
-            val nextTri = trilist_[i]
+        for (i in trilist.indices) {
+            val nextTri = trilist[i]
             if (i > 0) {
-                val npmi = nextTri.nodeTriangleA_.myNumber_ - 1
-                if (npmi == curTri.myNumber_ - 1) nextTri.parent = curTri.clone()
-                nextTri.resetByParent(trilist_[npmi], nextTri.cParam_)
+                val npmi = nextTri.nodeTriangleA_!!.mynumber - 1
+                if (npmi == curTri.mynumber - 1) nextTri.nodeTriangleA_ = curTri.clone()
+                nextTri.resetByParent(trilist[npmi], nextTri.cParam_)
             }
         }
         //resetMyChild( myTriList.get(lastTapNum_-1), myTriList.get(lastTapNum_-1).cParam_ );
@@ -460,17 +480,17 @@ class TriangleList : EditList, Cloneable {
 
     fun resetNodeByID(prms: Params) {
         val doneObjectList = ArrayList<Triangle>()
-        trilist_[prms.n - 1].resetNode(prms, trilist_[prms.pn - 1], doneObjectList)
+        trilist[prms.n - 1].resetNode(prms, trilist[prms.pn - 1], doneObjectList)
     }
 
     fun resetFromParam(prms: Params): Boolean {
         val ci = prms.n - 1
-        val tri = trilist_[ci]
+        val tri = trilist[ci]
 
         // 親番号が書き換わっている時は入れ替える。ただし現在のリストの範囲外の番号は除く。
         val pn = prms.pn
-        if (pn != tri.parentNumber_ && pn < trilist_.size && pn > 0) tri.setNode(
-            trilist_[pn - 1],
+        if (pn != tri.parentnumber && pn < trilist.size && pn > 0) tri.setNode(
+            trilist[pn - 1],
             0
         )
         tri.reset(prms)
@@ -488,34 +508,34 @@ class TriangleList : EditList, Cloneable {
         //親方向に走査するなら0、自身の接続方向がCなら２、二つの引数を渡して、総当たりに全方向走査する
 
         //trilistStored_ = (ArrayList<Triangle>) trilist_.clone();
-        curtri.myNumber_ = number //useless?
+        curtri.mynumber = number //useless?
 
         // 親がいるときは、子接続を書き換える
-        if (curtri.parentNumber_ > 0 && number - 2 >= 0) {
-            val parent = trilist_[curtri.parentNumber_ - 1]
-            parent.childSide_ = curtri.parentBC_
+        if (curtri.parentnumber > 0 && number - 2 >= 0) {
+            val parent = trilist[curtri.parentnumber - 1]
+            parent.childSide_ = curtri.connectionType
             curtri.nodeTriangleA_ = parent //再リンクしないと位置と角度が連動しない。
-            val curPareNum = trilist_[number - 1].parentNumber_
+            val curPareNum = trilist[number - 1].parentnumber
             // 自分の親番号と、親の三角形の番号が一致したとき？
-            if ( curPareNum == parent.myNumber_) { //trilist_.get(curPareNum-1)
+            if ( curPareNum == parent.mynumber) { //trilist_.get(curPareNum-1)
                 parent.resetByChild(curtri)
             }
         }
 
         // 自身の書き換え
-        val me = trilist_[number - 1]
+        val me = trilist[number - 1]
         //me.setNode( trilist_.get( ));
 
 
         // 浮いてる場合、さらに自己番が最後でない場合、一個前の三角形の位置と角度を自分の変化にあわせて動かしたい。
-        if (curtri.parentNumber_ <= 0 && trilist_.size != number && notHave(curtri.nodeTriangleA_)) {
-            curtri.resetByChild(trilist_[number])
+        if (curtri.parentnumber <= 0 && trilist.size != number && notHave(curtri.nodeTriangleA_)) {
+            curtri.resetByChild(trilist[number])
         }
         me.reset(curtri) // ここがへん！ 親は自身の基準角度に基づいて形状変更をするので、それにあわせてもう一回呼んでいる。
 
 
         // 子をすべて書き換える
-        if (trilist_.size > 1 && number < trilist_.size && curtri.hasChild()) resetMyChild(trilist_[number - 1])
+        if (trilist.size > 1 && number < trilist.size && curtri.hasChild()) resetMyChild(trilist[number - 1])
 
         //lastTapNum_ = 0;
         //lastTapSide_ = -1;
@@ -526,8 +546,8 @@ class TriangleList : EditList, Cloneable {
     fun notHave(target: Triangle?): Boolean {
         if( target == null ) return false
 
-        for (i in trilist_.indices) {
-            if (trilist_[i] === target) return true
+        for (i in trilist.indices) {
+            if (trilist[i] === target) return true
         }
         return false
         //return trilist_.contains( target );
@@ -538,45 +558,55 @@ class TriangleList : EditList, Cloneable {
         var parent = newParent ?: return
 
         // 新しい親の次から
-        for (i in parent.myNumber_ until trilist_.size) {
-            val target = trilist_[i]
+        for (i in parent.mynumber until trilist.size) {
+            val target = trilist[i]
 
             // 連番と派生接続で分岐。
-            if (target.parentNumber_ == parent.myNumber_) {
+            if (target.parentnumber == parent.mynumber) {
                 // ひとつ前の三角形の子接続を書き換える？
-                if (i + 1 < trilist_.size) parent.childSide_ = trilist_[i + 1].parentBC_
-                if (target.resetByParent(parent, target.parentBC_)) return
+                if (i + 1 < trilist.size) parent.childSide_ = trilist[i + 1].connectionType
+                if (target.resetByParent(parent, target.connectionType)) return
                 // 自身が次の親になる
                 parent = target
             } else { //連番でないとき
                 //親を番号で参照する
-                if( target.parentNumber_ < 1 ) return
-                val recent_parent = trilist_[target.parentNumber_ - 1]
+                if( target.parentnumber < 1 ) return
+                val recent_parent = trilist[target.parentnumber - 1]
 
-                if (target.resetByParent(recent_parent, target.parentBC_)) return
-                trilist_[target.parentNumber_ - 1].childSide_ = target.parentBC_
+                if (target.resetByParent(recent_parent, target.connectionType)) return
+                trilist[target.parentnumber - 1].childSide_ = target.connectionType
             }
             //else myTriList.get(i).reload();
         }
     }
 
     fun replace(number: Int, pnum: Int): Boolean {
-        val me = trilist_[number - 1]
-        val pr = trilist_[pnum - 1]
-        me.setOn(pr, me.parentBC_, me.length[0], me.length[1], me.length[2])
+        val me = trilist[number - 1]
+        val pr = trilist[pnum - 1]
+        me.setOn(pr, me.connectionType, me.length[0], me.length[1], me.length[2])
         return true
     }
 
 
     // オブジェクトポインタを返す。
-    fun getMemberByIndex(number: Int): Triangle {
-        return if (number < 1 || number > trilist_.size) Triangle() //under 0 is empty. cant hook null. can hook lenA is not 0.
-        else trilist_[number - 1]
+    fun getByNumber(number: Int): Triangle {
+        return if (number < 1 || number > trilist.size) Triangle() //under 0 is empty. cant hook null. can hook lenA is not 0.
+        else trilist[number - 1]
+    }
+
+    fun getLastTriangle(): Triangle{
+        if(lastTapNumber_<1) return Triangle()
+        return trilist[lastTapNumber_-1]
+    }
+
+    fun getLastNumber(): Int{
+        if(lastTapNumber_<1) return 1
+        return lastTapNumber_
     }
 
     // by number start 1, not index start 0.
     override operator fun get(num: Int): Triangle {
-        return getMemberByIndex(num)
+        return getByNumber(num)
     }
 
     fun spritByColors(): ArrayList<TriangleList> {
@@ -588,31 +618,31 @@ class TriangleList : EditList, Cloneable {
         listByColors.add(TriangleList()) //4
         for (colorindex in 4 downTo -1 + 1) {
             val listByColor = listByColors[colorindex]
-            for (i in trilist_.indices) {
-                val t = trilist_[i].clone()
+            for (i in trilist.indices) {
+                val t = trilist[i].clone()
                 if (t.color_ == colorindex) listByColor.add(
                     t,
                     false
                 ) // 番号変更なしで追加する deep or shallow
                 t.isColored
             }
-            if (listByColor.trilist_.size > 0) listByColor.outlineList()
+            if (listByColor.trilist.size > 0) listByColor.outlineList()
         }
         return listByColors
     }
 
     fun outlineList() {
-        if (trilist_.size < 1) return
+        if (trilist.size < 1) return
         val olplists = outlineList_
         val sb = StringBuilder()
-        for (i in trilist_.indices) {
+        for (i in trilist.indices) {
             sb.setLength(0)
-            val t = trilist_[i]
+            val t = trilist[i]
             if (i == 0 || t.isFloating || t.isColored_) {
                 olplists!!.add(ArrayList())
                 trace(olplists[olplists.size - 1], t, true)
-                olplists[olplists.size - 1].add(trilist_[i].pointAB_) //今のindexでtriを取り直し
-                outlineStr_ = sb.append(outlineStr_).append(trilist_[i].myNumber_).append("ab, ")
+                olplists[olplists.size - 1].add(trilist[i].pointAB) //今のindexでtriを取り直し
+                outlineStr_ = sb.append(outlineStr_).append(trilist[i].mynumber).append("ab, ")
                     .toString() //outlineStr_ + ( trilist_.get( i ).myNumber_ + "ab, " );
             }
         }
@@ -621,10 +651,10 @@ class TriangleList : EditList, Cloneable {
     fun trace(olp: ArrayList<PointXY>, tri: Triangle?, first: Boolean?): ArrayList<PointXY> {
         if (tri == null) return olp
         if ((tri.isFloating || tri.isColored) && !first!!) return olp
-        addOlp(tri.pointAB_, "ab,", olp, tri)
-        trace(olp, tri.nodeTriangleB_, false)
-        addOlp(tri.pointBC_, "bc,", olp, tri)
-        trace(olp, tri.nodeTriangleC_, false)
+        addOlp(tri.pointAB, "ab,", olp, tri)
+        trace(olp, tri.nodeTriangleB, false)
+        addOlp(tri.pointBC, "bc,", olp, tri)
+        trace(olp, tri.nodeTriangleC, false)
         addOlp(tri.point[0], "ca,", olp, tri)
         //trace( olp, tri.nodeTriangleA_, -1 ); //ネスト抜けながら勝手にトレースしていく筈
         return olp
@@ -633,7 +663,7 @@ class TriangleList : EditList, Cloneable {
     fun addOlp(pt: PointXY, str: String, olp: ArrayList<PointXY>, node: Triangle) {
         if (notHave(pt, olp)) {
             olp.add(pt)
-            outlineStr_ += node.myNumber_.toString() + str
+            outlineStr_ += node.mynumber.toString() + str
         }
     }
 
@@ -646,7 +676,7 @@ class TriangleList : EditList, Cloneable {
 
     fun traceOrNot(node: Triangle?, origin: Int, olp: ArrayList<PointXY>) {
         if (node != null && !node.isFloating && !node.isColored) traceOrJumpForward(
-            node.myNumber_ - 1,
+            node.mynumber - 1,
             origin,
             olp,
             node
@@ -654,57 +684,66 @@ class TriangleList : EditList, Cloneable {
     }
 
     fun branchOrNot(t: Triangle, origin: Int, olp: ArrayList<PointXY>) {
-        if (t.nodeTriangleB_ != null && t.nodeTriangleC_ != null) if (notHave(
-                t.nodeTriangleC_.point[0],
+        if (t.nodeTriangleB != null && t.nodeTriangleC != null) if (notHave(
+                t.nodeTriangleC!!.point[0],
                 olp
-            ) && !t.nodeTriangleC_.isFloating_ && !t.nodeTriangleC_.isColored_
-        ) traceOrJumpForward(t.nodeTriangleC_.myNumber_ - 1, origin, olp, t.nodeTriangleC_)
+            ) && !t.nodeTriangleC!!.isFloating_ && !t.nodeTriangleC!!.isColored_
+        ) traceOrJumpForward(t.nodeTriangleC!!.mynumber - 1, origin, olp, t.nodeTriangleC!!)
     }
 
-    fun isCollide(tapP: PointXY?): Int {
-        for (i in trilist_.indices) {
-            if (trilist_[i].isCollide(tapP)) return i + 1.also { lastTapCollideNum_ = it }
+    fun isCollide(tapP: PointXY): Int {
+        for (i in trilist.indices) {
+            if (trilist[i].isCollide(tapP)) return i + 1.also { lastTapCollideNum_ = it }
         }
         return 0
     }
 
     fun dedmapping(dedlist: DeductionList, axisY: Int) {
-        for (i in trilist_.indices) trilist_[i].dedcount = 0f
-        for (i in 0 until dedlist.size()) {
-            for (ii in trilist_.indices) {
-                val isCol =
-                    trilist_[ii].isCollide(dedlist[i + 1].point.scale(PointXY(1f, axisY.toFloat())))
-                if (isCol) {
-                    trilist_[ii].dedcount++
-                    dedlist[i + 1].overlap_to = trilist_[ii].myNumber_
-                }
+        // トライアングルリストのdedcountをリセット
+        trilist.forEach { it.dedcount = 0f }
+
+        // Deductionオブジェクトごとに処理
+        dedlist.dedlist_.forEachIndexed { index, deduction ->
+            processDeduction(deduction, axisY)
+        }
+    }
+
+    private fun processDeduction(deduction: Deduction, axisY: Int) {
+        trilist.forEach { tri ->
+            // スケールされた点での衝突判定
+            val isCol = tri.isCollide(deduction.point.scale(PointXY(1f, axisY.toFloat())))
+            if (isCol) {
+                tri.dedcount++
+                deduction.overlap_to = tri.mynumber
+                deduction.shapeAngle = tri.angleUnconnectedSide()
             }
         }
     }
 
-    fun getTapIndexArray(tapP: PointXY?): IntArray {
-        val tapIndexArray = IntArray(trilist_.size)
-        for (i in trilist_.indices) {
-            tapIndexArray[i] = trilist_[i].getTapLength(tapP, 0.6f)
+
+    fun getTapIndexArray(tapP: PointXY): IntArray {
+        val tapIndexArray = IntArray(trilist.size)
+        for (i in trilist.indices) {
+            tapIndexArray[i] = trilist[i].getTapLength(tapP, 0.6f)
         }
         return tapIndexArray
     }
 
-    fun getTapHitCount(tapP: PointXY?): Int {
+    fun getTapHitCount(tapP: PointXY): Int {
         var hitC = 0
-        for (i in trilist_.indices) {
-            if (trilist_[i].getTapLength(tapP, 0.6f) != -1) hitC++
+        for (i in trilist.indices) {
+            if (trilist[i].getTapLength(tapP, 0.6f) != -1) hitC++
         }
         return hitC
     }
 
-    fun getTap(tapP: PointXY?, rangeRadius: Float): Int {
+    fun getTap(tapP: PointXY, rangeRadius: Float): Int {
         val ltn = lastTapNumber_ + lastTapSide_
         isCollide(tapP)
-        for (i in trilist_.indices) {
-            if (trilist_[i].getTapLength(tapP, rangeRadius) != -1) {
+        for (i in trilist.indices) {
+            if (trilist[i].getTapLength(tapP, rangeRadius) != -1) {
                 lastTapNumber_ = i + 1
-                lastTapSide_ = trilist_[i].getTapLength(tapP, rangeRadius)
+                lastTapSide_ = trilist[i].getTapLength(tapP, rangeRadius)
 
                 //if( i > 0 && lastTapSide_ == 0 ){
                 //                        lastTapNumber_ = i;
@@ -721,16 +760,16 @@ class TriangleList : EditList, Cloneable {
         return lastTapNumber_ * 10 + lastTapSide_
     }
 
-    fun move(to: PointXY?): ArrayList<Triangle> {
-        for (i in trilist_.indices) {
-            trilist_[i].move(to)
+    fun move(to: PointXY): ArrayList<Triangle> {
+        for (i in trilist.indices) {
+            trilist[i].move(to)
         }
-        basepoint.add(to!!)
-        return trilist_
+        basepoint.add(to)
+        return trilist
     }
 
     override fun getParams(num: Int): Params {
-        if (num > trilist_.size) return Params(
+        if (num > trilist.size) return Params(
             "",
             "",
             0,
@@ -742,25 +781,25 @@ class TriangleList : EditList, Cloneable {
             PointXY(0f, 0f),
             PointXY(0f, 0f)
         )
-        val t = trilist_[num - 1]
+        val t = trilist[num - 1]
         return Params(
-            t.getMyName_(),
+            t.myName_(),
             "",
-            t.getMyNumber_(),
+            t.mynumber,
             t.lengthA,
             t.lengthB,
             t.lengthC,
-            t.parentNumber,
-            t.parentBC,
-            t.getPointCenter_(),
-            t.pointNumberAutoAligned_
+            t.parentnumber,
+            t.connectionType,
+            t.pointCenter_(),
+            t.pointnumber
         )
     }
 
     override fun getArea(): Float {
         var area = 0f
-        for (i in trilist_.indices) {
-            area += trilist_[i].getArea()
+        for (i in trilist.indices) {
+            area += trilist[i].getArea()
         }
         return (Math.round(area * 100.0) * 0.01).toFloat()
     }
@@ -768,7 +807,7 @@ class TriangleList : EditList, Cloneable {
     fun addOutlinePoint(pt: PointXY, str: String, olp: ArrayList<PointXY>, node: Triangle?) {
         if (node != null && notHave(pt, olp)) {
             olp.add(pt)
-            outlineStr_ += node.myNumber_.toString() + str
+            outlineStr_ += node.mynumber.toString() + str
         }
     }
 
@@ -778,19 +817,19 @@ class TriangleList : EditList, Cloneable {
         olp: ArrayList<PointXY>,
         node: Triangle
     ): ArrayList<PointXY>? {
-        if (startindex < 0 || startindex >= trilist_.size) return null
+        if (startindex < 0 || startindex >= trilist.size) return null
 
         // AB点を取る。すでにあったらキャンセル
-        addOutlinePoint(node.pointAB_, "ab,", olp, node)
+        addOutlinePoint(node.pointAB, "ab,", olp, node)
 
         // 再起呼び出しで派生方向に右手伝いにのびていく
-        traceOrNot(node.nodeTriangleB_, origin, olp)
+        traceOrNot(node.nodeTriangleB, origin, olp)
 
         // BC点を取る。すでにあったらキャンセル
-        addOutlinePoint(node.pointBC_, "bc,", olp, node)
+        addOutlinePoint(node.pointBC, "bc,", olp, node)
 
         // 再起呼び出しで派生方向に右手伝いにのびていく
-        traceOrNot(node.nodeTriangleC_, origin, olp)
+        traceOrNot(node.nodeTriangleC, origin, olp)
 
         // 折り返し
         traceOrJumpBackward(origin, olp, node)
@@ -803,13 +842,13 @@ class TriangleList : EditList, Cloneable {
         branchOrNot(node, origin, olp)
 
         //BC点を取る。すでにあったらキャンセル
-        addOutlinePoint(node.pointBC_, "bc,", olp, node)
+        addOutlinePoint(node.pointBC, "bc,", olp, node)
 
         //CA点を取る。すでにあったらキャンセル
         addOutlinePoint(node.point[0], "ca,", olp, node)
 
         //AB点を取る。すでにあったらキャンセル
-        addOutlinePoint(node.pointAB_, "ab,", olp, node)
+        addOutlinePoint(node.pointAB, "ab,", olp, node)
 
         //AB点を取る。ダブりを許容
         //if( t.nodeTriangleA_ == null || t.isColored_ || t.isFloating_ ){
@@ -818,46 +857,46 @@ class TriangleList : EditList, Cloneable {
         //}
 
         // 0まで戻る。同じ色でない時はリターン
-        if (node.myNumber_ <= node.parentNumber_) return
+        if (node.mynumber <= node.parentnumber) return
         if (node.nodeTriangleA_ != null && !node.isColored && !node.isFloating) traceOrJumpBackward(
             origin,
             olp,
-            node.nodeTriangleA_
+            node.nodeTriangleA_!!
         )
     }
 
     fun resetNumReverse(): TriangleList {
         val rev = clone()
-        var iBackward = trilist_.size
+        var iBackward = trilist.size
         //マイナンバーの書き換え
-        for (i in trilist_.indices) {
-            rev.trilist_[i].myNumber_ = iBackward
+        for (i in trilist.indices) {
+            rev.trilist[i].mynumber = iBackward
             iBackward--
         }
         return rev
     }
 
     override fun reverse(): TriangleList {
-        for (i in trilist_.indices) {
+        for (i in trilist.indices) {
             //終端でなければ
-            trilist_.size // 連番でない時は
+            trilist.size // 連番でない時は
             //return this;//akirameru
         }
 
         // 番号だけを全部逆順に書き換え
         val numrev = resetNumReverse()
-        for (i in trilist_.indices) {
-            val me = numrev.trilist_[i]
+        for (i in trilist.indices) {
+            val me = numrev.trilist[i]
 
             //接続情報の書き換え
             //終端でなければ
-            if (i + 1 < trilist_.size) {
-                val next = numrev.trilist_[i + 1]
+            if (i + 1 < trilist.size) {
+                val next = numrev.trilist[i + 1]
 
                 // 連番の時は
-                if (i + 1 == next.parentNumber_) {
+                if (i + 1 == next.parentnumber) {
                     // 自身の番号-1を親とする
-                    me.parentNumber_ = me.myNumber_ - 1
+                    me.parentnumber = me.mynumber - 1
                     me.rotateLengthBy(next.parentSide)
                     me.setNode(next, 0)
 
@@ -867,30 +906,30 @@ class TriangleList : EditList, Cloneable {
                     //次がB辺接続だったとしても、そのまた次もB辺接続だったら、次のやつの辺長が配置換えされるので、接続がおかしくなる
                     //次のやつのB辺はC辺にあった。
                     //同じ接続方向が続いている時は、PBCをCtoB、BtoCに反転させる。
-                    if (i + 2 < trilist_.size) {
-                        val nextnext = numrev.trilist_[i + 2]
+                    if (i + 2 < trilist.size) {
+                        val nextnext = numrev.trilist[i + 2]
                         if (next.parentSide == nextnext.parentSide) me.setReverseDefSide(
-                            next.parentBC_,
+                            next.connectionType,
                             true
-                        ) else if (i + 2 != nextnext.parentNumber_ && next.parentBC_ != 1) me.setReverseDefSide(
-                            -next.parentBC_ + 3,
+                        ) else if (i + 2 != nextnext.parentnumber && next.connectionType != 1) me.setReverseDefSide(
+                            -next.connectionType + 3,
                             false
-                        ) else me.setReverseDefSide(next.parentBC_, false)
-                    } else me.setReverseDefSide(next.parentBC_, false)
+                        ) else me.setReverseDefSide(next.connectionType, false)
+                    } else me.setReverseDefSide(next.connectionType, false)
                     next.setNode(me, me.parentSide)
                 } else {
                     //連番でないときは
-                    me.parentNumber_ = -1 //next.parentNumber_;
-                    me.parentBC_ = -1
+                    me.parentnumber = -1 //next.parentNumber_;
+                    me.connectionType = -1
                     me.rotateLengthBy(2)
                     me.setNode(me.nodeTriangleA_, me.parentSide)
 
                     //next.parentNumber_ = trilist_.get( next.parentNumber_ - 1 ).myNumber_;
                     //next.parentBC_ =  trilist_.get( next.parentNumber_ - 1 ).parentBC_;
                 }
-            } else if (i + 1 == trilist_.size) {
+            } else if (i + 1 == trilist.size) {
                 // 終端の時、つまり一番最初のやつ。
-                me.parentNumber_ = 0
+                me.parentnumber = 0
                 // 終端は、自身の接続辺をもとにいっこまえの接続が決まっているので、それに合わせて辺長を回す。
                 // 最初の三角形になるので、接続情報は要らない。
                 me.rotateLengthBy(-me.parentSide + 3)
@@ -899,21 +938,21 @@ class TriangleList : EditList, Cloneable {
 
         // 逆順にソートし、新規に足していく。リビルドした方が考え方が楽。
         val rev = clone()
-        rev.trilist_.clear()
-        for (i in trilist_.size - 1 downTo -1 + 1) {
-            val it = numrev.trilist_[i]
+        rev.trilist.clear()
+        for (i in trilist.size - 1 downTo -1 + 1) {
+            val it = numrev.trilist[i]
 
             // 自身の番号よりも親番号が大きい場合を許容する
             // 子の三角形を指定して生成する。
             //rev.add( new Triangle( trilist_.get( it.parentNumber_), it.parentBC_, it.lengthAforce_, it.lengthBforce_, it.lengthCforce_ ) );
-            if (it.parentNumber_ < 1) rev.add(
+            if (it.parentnumber < 1) rev.add(
                 it.clone(),
                 true
             ) //new Triangle( it.lengthAforce_, it.lengthBforce_, it.lengthCforce_, it.point[0], it.angleInGlobal_)
             else rev.add(
                 Triangle(
-                    rev[it.parentNumber_],
-                    it.parentBC_,
+                    rev[it.parentnumber],
+                    it.connectionType,
                     it.lengthAforce_,
                     it.lengthBforce_,
                     it.lengthCforce_
@@ -922,20 +961,20 @@ class TriangleList : EditList, Cloneable {
         }
 
         // 名前の書き換え、反転後のひとつ先の三角形に移設し、1番の名前は消去
-        for (i in trilist_.indices) {
-            val it = numrev.trilist_[trilist_.size - i - 1]
-            if (i + 2 <= trilist_.size) rev[i + 2].myName_ = it.myName_
+        for (i in trilist.indices) {
+            val it = numrev.trilist[trilist.size - i - 1]
+            if (i + 2 <= trilist.size) rev[i + 2].name = it.name
         }
-        rev[1].myName_ = ""
+        rev[1].name = ""
         return rev
     }
 
     fun numbered(start: Int): TriangleList {
         val rev = TriangleList()
-        for (i in trilist_.indices) {
-            val ti = trilist_[i].clone()
-            ti.myNumber_ = start + i
-            rev.trilist_.add(ti)
+        for (i in trilist.indices) {
+            val ti = trilist[i].clone()
+            ti.mynumber = start + i
+            rev.trilist.add(ti)
         }
         return rev
     }
