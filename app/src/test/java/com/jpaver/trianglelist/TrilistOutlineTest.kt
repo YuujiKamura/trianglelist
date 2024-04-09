@@ -103,17 +103,19 @@ class TrilistOutlineTest {
 
         val op = ArrayList<PointXY>()
         val outline = TrilistOutline(trilist)
-        val tlop = outline.traceOrJumpForward(0, 0, op, trilist[1])
+        val pointlist = outline.traceOrJumpForward(0, 0, op, trilist[1])
         //val tlop = trilist.traceOrJumpForward(0, 0, op, trilist[1])
 
         junit.framework.Assert.assertEquals(11, trilist.size())
-        if (tlop != null) {
-            junit.framework.Assert.assertEquals(14, tlop.size)
+        if (pointlist != null) {
+            junit.framework.Assert.assertEquals(14, pointlist.size)
         }
         junit.framework.Assert.assertEquals(
             "1ab,1bc,3bc,4bc,8bc,10bc,10ca,11bc,11ca,7bc,7ca,5ca,2bc,2ca,",
             outline.outlineStr_
         )
+
+        println(pointlist.toString())
 
         printTriList( trilist )
     }
