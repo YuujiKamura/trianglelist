@@ -27,7 +27,6 @@ class TriangleList : EditList {
     // region parameters
     var trilist: ArrayList<Triangle>
     var trilistStored_: ArrayList<Triangle>
-    var myCollisionList: ArrayList<Collision>? = null
     var outlineList_: ArrayList<ArrayList<PointXY>>? = null
     var lastTapNumber_ = 0
     var lastTapSide_ = -1
@@ -252,7 +251,6 @@ class TriangleList : EditList {
     internal constructor() {
         trilist = ArrayList()
         trilistStored_ = ArrayList()
-        myCollisionList = ArrayList()
         outlineList_ = ArrayList()
         selectedNumber = trilist.size
     }
