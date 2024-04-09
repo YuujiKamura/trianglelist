@@ -1,0 +1,74 @@
+# Couldn't automatically generate a config from your source code.
+# This is a generic template to serve as a base for your custom config
+
+# Use the latest 2.1 version of CircleCI pipeline process engine.
+# See: https://circleci.com/docs/configuration-reference
+version: 2.1
+
+# Define a job to be invoked later in a workflow.
+# See: https://circleci.com/docs/jobs-steps/#jobs-overview & https://circleci.com/docs/configuration-reference/#jobs
+jobs:
+  test:
+    # Specify the execution environment. You can specify an image from Docker Hub or use one of our convenience images from CircleCI's Developer Hub.
+    # See: https://circleci.com/docs/executor-intro/ & https://circleci.com/docs/configuration-reference/#executor-job
+    docker:
+      # Androidビルド用のイメージを指定
+      - image: circleci/android:api-30-node
+    environment:
+      JAVA_HOME: /path/to/java-17
+    steps:
+      - checkout
+      - run:
+          name: Add Google Cloud SDK repo key
+          command: |
+            sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys B53DC80D13EDEF05
+      - run:
+          name: Install JDK
+          command: |
+            wget https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.2%2B8/OpenJDK17U-jdk_x64_linux_hotspot_17.0.2_8.tar.gz -O jdk-17.tar.gz
+            sudo tar -xzf jdk-17.tar.gz -C /opt
+            echo 'export JAVA_HOME=/opt/jdk-17.0.2+8' >> $BASH_ENV
+            echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
+      - run:
+          name: Verify Java Installation
+          command: |
+            echo $JAVA_HOME
+            java -version
+      - run:
+          name: Set executable permission for gradlew
+          command: chmod +x ./gradlew
+      - run:
+          name: Run tests
+          command: ./gradlew :app:test -stacktrace
+  build:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - checkout
+      # Replace this with steps to build a package, or executable
+      - run:
+          name: Build an artifact
+          command: touch example.txt
+      - store_artifacts:
+          path: example.txt
+  deploy:
+    docker:
+      - image: cimg/base:current
+    steps:
+      # Replace this with steps to deploy to users
+      - run:
+          name: deploy
+          command: "#e.g. ./deploy.sh"
+
+# Orchestrate jobs using workflows
+# See: https://circleci.com/docs/workflows/ & https://circleci.com/docs/configuration-reference/#workflows
+workflows:
+  example:
+    jobs:
+      - test
+      - build:
+          requires:
+            - test
+      - deploy:
+          requires:
+            - test
