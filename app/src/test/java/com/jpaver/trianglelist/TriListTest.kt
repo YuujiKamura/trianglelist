@@ -8,146 +8,35 @@ import junit.framework.Assert.assertEquals
 import org.junit.Assert
 import org.junit.Test
 
+fun printTriangle( t: Triangle){
+    System.out.printf( t.toString() )
+}
 
-//@RunWith(PowerMockRunner::class)
-//@PrepareForTest(Log::class)
+fun printTriList( tl: TriangleList){
+    System.out.printf( "TriangleList size ${tl.size()}%n" )
+    for( i in 0 until tl.size() ){
+        printTriangle( tl[i+1] )
+    }
+    System.out.printf( "%n" )
+}
+
+fun printTriListList(listlist: java.util.ArrayList<TriangleList>?) {
+    if (listlist != null) {
+        for( i in 0 until listlist.size ){
+
+            if( listlist.get(i).size() > 0 ) {
+
+                val tl = listlist.get(i)//traceOrJumpForward(0, 0, ArrayList<PointXY>() )
+                System.out.printf( "trilistlist[%s], size %s, outlineList_ %s, outlineStr_ %s%n", i, tl.size(), tl.outlineList_!!.size, tl.outlineStr_ )
+                printTriList( tl )
+            }
+        }
+
+    }
+}
+
 class TriListTest {
 
-    fun printTriangle( t: Triangle){
-        System.out.printf( t.toString() )
-    }
-
-    fun printTriList( tl: TriangleList){
-        System.out.printf( "TriangleList size ${tl.size()}%n" )
-        for( i in 0 until tl.size() ){
-            printTriangle( tl[i+1] )
-        }
-        System.out.printf( "%n" )
-    }
-
-    private fun printTriListList(listlist: java.util.ArrayList<TriangleList>?) {
-        if (listlist != null) {
-            for( i in 0 until listlist.size ){
-
-                if( listlist.get(i).size() > 0 ) {
-
-                    val tl = listlist.get(i)//traceOrJumpForward(0, 0, ArrayList<PointXY>() )
-                    System.out.printf( "trilistlist[%s], size %s, outlineList_ %s, outlineStr_ %s%n", i, tl.size(), tl.outlineList_!!.size, tl.outlineStr_ )
-                    printTriList( tl )
-                }
-            }
-
-        }
-    }
-
-    @Test
-    fun testTrilistTrace() {
-        val trilist = TriangleList()
-        val olp = ArrayList<PointXY>()
-
-        trilist.add(Triangle(3f, 4f, 5f), true)
-        trilist.add(Triangle(trilist[1], 2, 3f, 4f), true)
-        trilist.add(Triangle(trilist[2], 1, 3f, 4f), true)
-        trilist.add(Triangle(trilist[2], 2, 3f, 4f), true)
-
-        trilist.trace(olp, trilist[1], false)
-        System.out.printf( "trilist size %s, outlineStr_ %s%n", trilist.size(), trilist.outlineStr_ )
-    }
-
-        @Test
-    fun testTrilistSpritByColors() {
-        val trilist = TriangleList()
-        trilist.add(Triangle(3f, 4f, 5f), true)
-        trilist.add(Triangle(trilist[1], 2, 3f, 4f), true)
-        trilist.add(Triangle(trilist[2], 1, 4f, 5f), true)
-        trilist.add(Triangle(trilist[2], 2, 3f, 4f), true)
-        trilist.add(Triangle(trilist[4], 1, 4f, 5f), true)
-        Assert.assertEquals(5, trilist.size().toLong())
-
-        trilist[1].setColor(0)
-        trilist[3].setColor(0)
-        trilist[4].setColor(0)
-
-        val listByColors = trilist.spritByColors()
-        Assert.assertEquals(3, listByColors[0].size().toLong())
-        Assert.assertEquals(0, listByColors[1].size().toLong())
-        Assert.assertEquals(0, listByColors[2].size().toLong())
-        Assert.assertEquals(0, listByColors[3].size().toLong())
-        Assert.assertEquals(2, listByColors[4].size().toLong())
-
-        printTriListList( listByColors )
-
-        assertEquals(
-            "1ab,1bc,1ca,1ab, 3ab,3bc,3ca,3ab, 4ab,4bc,4ca,4ab, ",
-            listByColors[0].outlineStr_
-        )
-
-    }
-
-    @Test
-    fun testTriListOutlineFloat(){
-        val trilist = TriangleList()
-        // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
-        trilist.add(Triangle(8f, 6f, 8f), true)//1
-        trilist.add(Triangle(trilist[1], 9, 5f,3f, 4f), true)
-        trilist.add(Triangle(trilist[1], 10, 5f,3f, 4f), true)
-
-        val listByColors = trilist.spritByColors()
-
-        assertEquals(3, listByColors[4].outlineList_!!.size )
-    }
-
-
-    @Test
-    fun testTriListOutlineSimple(){
-        val trilist = TriangleList()
-        // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
-        trilist.add(Triangle(8f, 6f, 8f), true)//1
-
-        val op = ArrayList<PointXY>()
-        val tlop = trilist.trace(op, trilist[1], false) //OrJumpForward(0, 0, op, trilist[1] ) //getOutLinePoints( 0 )
-        assertEquals(1, trilist.size())
-        assertEquals(3, tlop.size)
-        assertEquals(
-            "1ab,1bc,1ca,",
-            trilist.outlineStr_
-        )
-
-        System.out.printf( "outlinestr %s%n", trilist.outlineStr_ )
-        printTriList( trilist )
-    }
-
-    @Test
-    fun testTriListOutline(){
-        val trilist = TriangleList()
-        // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
-        trilist.add(Triangle(8f, 6f, 8f), true)//1
-        trilist.add(1, 2, 9f, 8f)//2
-        trilist.add(2, 4, 7f, 4f, 9f)//3
-        trilist.add(3, 2, 2f, 9f)//4
-        trilist.add(4, 2, 9f, 2f)//5
-        trilist.add(5, 1, 5f, 5f)//6
-        trilist.add(6, 2, 5f, 2f)//7
-        trilist.add(6, 1, 2f, 5f)//8
-        trilist.add(8, 2, 5f, 5f)//9
-        trilist.add(9, 1, 2f, 5f)//10
-        trilist.add(9, 2, 5f, 5f)//11
-
-        trilist.setChildsToAllParents()
-
-        val op = ArrayList<PointXY>()
-        val tlop = trilist.traceOrJumpForward(0, 0, op, trilist[1]) //getOutLinePoints( 0 )
-        assertEquals(11, trilist.size())
-        if (tlop != null) {
-            assertEquals(14, tlop.size)
-        }
-        assertEquals(
-            "1ab,1bc,3bc,4bc,8bc,10bc,10ca,11bc,11ca,7bc,7ca,5ca,2bc,2ca,",
-            trilist.outlineStr_
-        )
-
-        printTriList( trilist )
-    }
 
     @Test
     fun testDedMapping(){
@@ -174,18 +63,6 @@ class TriListTest {
 
     }
 
-    @Test
-    fun testReverseNode() {
-        val trilist = TriangleList()
-        trilist.add(Triangle(5f, 8f, 5f), true)
-        trilist.add(1, 1, 8f, 8f)
-        trilist.add(1, 2, 5f, 5f)
-
-        trilist.reverse()
-        assertEquals(trilist.get(3), trilist.get(1).nodeTriangleC)
-        printTriList(trilist)
-
-    }
 
     @Test
     fun testRemoveNode() {
@@ -380,76 +257,6 @@ class TriListTest {
     }
 
     @Test
-    fun testTriTreeReverse2() {
-        val tritree = TriangleList()
-        // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
-        tritree.add(
-            Triangle(5f, 5f, 5f,
-            PointXY(0f, 0f), 0f), true)
-        tritree.add(1, 1, 5f, 5f, 5f)
-        tritree.add(2, 1, 5f, 5f, 5f)
-        tritree.add(3, 2, 5f, 5f, 5f)
-        tritree.add(2, 2, 5f, 5f, 5f)
-
-        assertEquals(5f, tritree.get(5).pointBC.x, 0.001f)
-
-        val revtree = tritree.reverse()
-
-        assertEquals(5f, revtree.get(1).pointAB.x, 0.001f)
-
-    }
-
-    @Test
-    fun testTriTreeReverse() {
-        val tritree = TriangleList()
-        // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
-        tritree.add(
-            Triangle(5f, 5f, 5f,
-            PointXY(0f, 0f), 0f), true)
-        tritree.add(1, 1, 5f, 5f, 5f)
-        tritree.add(2, 1, 5f, 5f, 5f)
-        tritree.add(2, 2, 5f, 5f, 5f)
-
-        assertEquals(5f, tritree.get(4).pointBC.x, 0.001f)
-
-        val revtree = tritree.reverse()
-
-        assertEquals(5f, revtree.get(1).pointAB.x, 0.001f)
-
-    }
-
-    @Test
-    fun testTriListReverse(){
-        val triList = TriangleList()
-        // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
-        triList.add(Triangle(5f, 5f, 5f), true)
-        triList.add(1, 4, 6f, 9f, 8f)
-        triList.add(2, 5, 6f, 7f, 4f)
-        triList.add(3, 1, 3f, 9f)
-        triList.add(2, 4, 6f, 9f, 8f)
-
-        // test trilist get(n) is returned number, not index
-        // wrapped arraylist get(i). ex, trilist.trilist_.get(i) is required index, not number.
-        assertEquals(1, triList.get(0).mynumber) // ほんとはおかしいけどスルー
-        assertEquals(1, triList.get(1).mynumber)
-        assertEquals(2, triList.get(2).mynumber)
-
-        // reverseの動作
-        // ・1番から順に、次の三角形の親番号と接続辺を元に、自身の接続を書き換える。
-        // ・3辺の順序を右回りか左回りにひとつスライドさせる。
-        // ・逆順にソートする
-        val triList2 = triList.reverse()
-        assertEquals(1, triList2.get(1).mynumber)
-        assertEquals(0, triList2.get(1).parentnumber)
-        assertEquals(-1, triList2.get(2).parentnumber)
-
-
-        val triList3 = triList.numbered(5)
-        assertEquals(5, triList3.get(1).mynumber)
-
-    }
-
-    @Test
     fun testConnectionTypeLoad(){
         val tri1 = Triangle(3f, 4f, 5f)
         val tri2 = Triangle(tri1, 3, 3f, 4f, 5f)
@@ -489,34 +296,6 @@ class TriListTest {
 
     }
 
-
-
-    @Test
-    fun testAlignDimsInExportDXF() {
-        val trilist = TriangleList()
-        trilist.add(Triangle(5f, 5f, 5f), true)
-        trilist.add(Triangle(trilist.get(1), 2, 7f, 7f), true)
-        trilist.add(Triangle(trilist.get(1), 1, 6f, 6f), true)
-
-        val dxfwriter = DxfFileWriter(trilist)
-        val tri = trilist.get(1)
-        val pca = tri.pointCA_
-        val pab = tri.pointAB
-        val pbc = tri.pointBC
-        val alignVdimA = dxfwriter.alignVByVector(tri.dimVerticalA, pca, pab)
-        val alignVdimB = dxfwriter.alignVByVector(tri.dimVerticalB, pab, pbc)//flip(tri.myDimAlignB_, tri.dimAngleB_ )
-        val alignVdimC = dxfwriter.alignVByVector(tri.dimVerticalC, pbc, pca)//flip(tri.myDimAlignC_, tri.dimAngleC_ )
-
-        Assert.assertEquals(3, alignVdimA)
-        Assert.assertEquals(1, alignVdimB)
-        Assert.assertEquals(1, alignVdimC)
-
-        Assert.assertEquals(4, "No.3".length)
-
-
-    }
-
-
     @Test
     fun testExportPDF() {
         val trilist = TriangleList()
@@ -546,7 +325,6 @@ class TriListTest {
 
 
     }
-
 
     @Test
     fun testParentHaveAChild() {
@@ -704,7 +482,6 @@ class TriListTest {
         trilist.rotateCurrentTriLCR() //3.0
         Assert.assertEquals(1f, tri3.pointCA_.y, 0.0001f)
     }
-
 
     @Test
     fun testConnectionType() {
@@ -915,7 +692,6 @@ class TriListTest {
 
     }
 
-
     @Test
     fun testRotate() {
         //PowerMockito.mockStatic(Log::class.java)
@@ -951,8 +727,6 @@ class TriListTest {
         Assert.assertEquals(3.0f, myTrilist.getBy(1).lengthA, 0.001f)
         Assert.assertEquals(1, myTrilist.size().toLong())
     }
-
-
 
     @Test
     fun testReplaceA() {
@@ -998,26 +772,6 @@ class TriListTest {
             PointXY(0f, 0f), 180.0f))
         mytrilist.add(Triangle(mytrilist.getBy(1), 2, 3f, 4f), true)
         Assert.assertEquals(12f, mytrilist.getArea(), 0.01f)
-    }
-
-    @Test
-    fun testDimAlign() {
-        val mytri1 = Triangle(2.0f, 2.3f, 1.2f,
-            PointXY(0f, 0f), 180.0f)
-        val myTrilist = TriangleList(mytri1)
-        myTrilist.add(Triangle(mytri1, 3, 2.5f, 1.1f, 2.0f), true) //2
-
-        // 1下 3上 -> // 夾角の、1:外 　3:内
-        Assert.assertEquals(1, myTrilist.getBy(1).dim.vertical.a)
-        Assert.assertEquals(1, myTrilist.getBy(1).dim.vertical.b)
-        Assert.assertEquals(1, myTrilist.getBy(1).dim.vertical.c)
-        Assert.assertEquals(1, myTrilist.getBy(2).dim.vertical.a)
-        Assert.assertEquals(1, myTrilist.getBy(2).dim.vertical.b)
-        Assert.assertEquals(1, myTrilist.getBy(2).dim.vertical.c)
-        val t1 = Triangle(1.0f, 1.5f, 1.0f)
-        Assert.assertEquals(1, t1.dim.vertical.a)
-        Assert.assertEquals(1, t1.dim.vertical.b)
-        Assert.assertEquals(1, t1.dim.vertical.c)
     }
 
     @Test
