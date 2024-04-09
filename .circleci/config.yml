@@ -18,6 +18,10 @@ jobs:
       JAVA_HOME: /path/to/java-17
     steps:
       - checkout
+      - restore_cache:
+          key: gradle-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}
+      - restore_cache:
+          key: android-sdk-{{ checksum "build.gradle" }}      -
       - run:
           name: Add Google Cloud SDK repo key
           command: |
@@ -40,6 +44,14 @@ jobs:
       - run:
           name: Run tests
           command: ./gradlew :app:test -stacktrace
+      - save_cache:
+          key: gradle-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}
+          paths:
+            - ~/.gradle
+      - save_cache:
+          key: android-sdk-{{ checksum "build.gradle" }}
+          paths:
+            - ~/android/sdk
   build:
     docker:
       - image: cimg/base:current
