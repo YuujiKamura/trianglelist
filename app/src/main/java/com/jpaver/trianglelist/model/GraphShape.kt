@@ -1,8 +1,9 @@
 package com.jpaver.trianglelist.model
-
+/*
 import com.jpaver.trianglelist.PointXY
 import kotlin.math.cos
 import kotlin.math.sin
+
 
 class GraphShape<T>(
     value: T,
@@ -41,4 +42,4 @@ class GraphShape<T>(
         // 面積計算ロジックを実装
         return 0f  // 仮の戻り値
     }
-}
+}*/
