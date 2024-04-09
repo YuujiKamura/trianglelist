@@ -1000,7 +1000,7 @@ class MainActivity : AppCompatActivity(),
         val dedArea = myDeductionList.getArea()
         val triArea = myTriangleList.getArea()
         val totalArea = roundByUnderTwo(triArea - dedArea).formattedString(2)
-        title = rStr.menseki_ + ": ${ totalArea } m^2"
+        title = rStr.menseki_ + ": $totalArea m^2"
 
         /*if( myTriangleList.lastTapNumber_ > 0 ){
             val coloredArea = myTriangleList.getAreaC( myTriangleList.lastTapNumber_ )

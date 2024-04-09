@@ -104,7 +104,6 @@ class TrilistOutlineTest {
         val op = ArrayList<PointXY>()
         val outline = TrilistOutline(trilist)
         val pointlist = outline.traceOrJumpForward(0, 0, op, trilist[1])
-        //val tlop = trilist.traceOrJumpForward(0, 0, op, trilist[1])
 
         junit.framework.Assert.assertEquals(11, trilist.size())
         if (pointlist != null) {
@@ -117,7 +116,9 @@ class TrilistOutlineTest {
 
         println(pointlist.toString())
 
-        printTriList( trilist )
+        val hashes = pointlist?.map { Integer.toHexString(it.hashCode()) }
+        println(hashes?.joinToString(" "))
+
     }
 
 }
