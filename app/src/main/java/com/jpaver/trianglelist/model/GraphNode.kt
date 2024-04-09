@@ -1,5 +1,5 @@
 package com.jpaver.trianglelist.model
-
+/*
 open class GraphNode<T>(val value: T) {
     open val neighbors: MutableList<GraphNode<T>> = mutableListOf()
 
@@ -22,3 +22,4 @@ open class GraphNode<T>(val value: T) {
     }
 }
 
+*/
