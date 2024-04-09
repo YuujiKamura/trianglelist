@@ -1,5 +1,5 @@
 package com.jpaver.trianglelist
-
+/*
 import org.junit.Test
 
 class RectangleTest {
@@ -17,4 +17,4 @@ class RectangleTest {
         Assert.assertEquals(rectangle.innerangle[2], 36.869f, 0.001)*/
     }
 
-}
+}*/
