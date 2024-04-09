@@ -306,9 +306,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         point[0] = PointXY(0f, 0f)
         angle = 180f
         initBasicArguments(A, B, C, point[0], angle)
-        if(A <= 0.0 ) return
-        calcPoints(point[0], angle)
-        //myDimAlign_ = autoSetDimAlign();
+        if(isValid) calcPoints(point[0], angle)
     }
 
     //for first triangle.
