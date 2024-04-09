@@ -111,7 +111,7 @@ class Dims( val triangle: Triangle ) : Cloneable<Dims> {
         when(side){
             SIDEA -> {
                 if(!flag[0].isMovedByUser ) if(triangle.connectionType < 3) return OUTER
-                return vertical.a
+                return INNER
             }
             SIDEB -> {
                 if(!flag[1].isMovedByUser ) return autoDimVerticalByAreaCompare(triangle.nodeTriangleB)
