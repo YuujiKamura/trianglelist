@@ -1,6 +1,6 @@
 package com.jpaver.trianglelist
 
-import com.jpaver.trianglelist.util.Params
+import com.jpaver.trianglelist.util.InputParameter
 import junit.framework.TestCase.assertSame
 import org.hamcrest.CoreMatchers
 import org.hamcrest.MatcherAssert
@@ -150,7 +150,7 @@ class TriangleTest {
     @Test
     fun testSetPointersFromCParams() {
         val one =
-            Triangle(Params("", "", 1, 5f, 5f, 5f, -1, -1, PointXY(0f, 0f), PointXY(0f, 0f)), 0f)
+            Triangle(InputParameter("", "", 1, 5f, 5f, 5f, -1, -1, PointXY(0f, 0f), PointXY(0f, 0f)), 0f)
         val connection = ConnParam(1, 0, 0, 5f)
         val two = Triangle(one, connection, 6f, 6f)
 
@@ -171,9 +171,9 @@ class TriangleTest {
     @Test
     fun testSetPointersFromParams() {
         val one =
-            Triangle(Params("", "", 1, 5f, 5f, 5f, -1, -1, PointXY(0f, 0f), PointXY(0f, 0f)), 0f)
+            Triangle(InputParameter("", "", 1, 5f, 5f, 5f, -1, -1, PointXY(0f, 0f), PointXY(0f, 0f)), 0f)
         val two =
-            Triangle(one, Params("", "", 2, 5f, 5f, 5f, 1, 1, PointXY(0f, 0f), PointXY(0f, 0f)))
+            Triangle(one, InputParameter("", "", 2, 5f, 5f, 5f, 1, 1, PointXY(0f, 0f), PointXY(0f, 0f)))
 
         // 内容の一致
         Assert.assertEquals(one.mynumber.toLong(), two.nodeTriangleA_!!.mynumber.toLong())
@@ -293,7 +293,7 @@ class TriangleTest {
         myT.move(PointXY(5f, 5f))
         Assert.assertEquals(9f, myT.myBP_.top, 0.001f)
         val myDParam =
-            Params("集水桝", "Box", 3, 0.8f, 0.8f, 0f, 0, 0, PointXY(0.5f, 0.5f), PointXY(0f, 0f))
+            InputParameter("集水桝", "Box", 3, 0.8f, 0.8f, 0f, 0, 0, PointXY(0.5f, 0.5f), PointXY(0f, 0f))
         val myD = Deduction(myDParam)
         myD.move(PointXY(5f, 5f))
         Assert.assertEquals(5.5f, myD.point.x, 0.001f)

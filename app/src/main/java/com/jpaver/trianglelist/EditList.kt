@@ -1,6 +1,6 @@
 package com.jpaver.trianglelist
 
-import com.jpaver.trianglelist.util.Params
+import com.jpaver.trianglelist.util.InputParameter
 import com.jpaver.trianglelist.util.Cloneable
 
 open class EditList: Cloneable<EditList> {
@@ -12,7 +12,7 @@ open class EditList: Cloneable<EditList> {
     open fun retrieveCurrent() :Int { return 0 }
     //open fun setCurrent(i: Int) {}
     open fun addCurrent(num: Int) :Int { return 0 }
-    open fun getParams(num: Int) : Params { return Params( )
+    open fun getParams(num: Int) : InputParameter { return InputParameter( )
     }
     open fun remove(num: Int) {}
 
@@ -29,7 +29,7 @@ open class EditList: Cloneable<EditList> {
 }
 
 open class EditObject {
-    open fun getParams() : Params { return Params() }
+    open fun getParams() : InputParameter { return InputParameter() }
     open fun getArea(): Float { return 0f }
 
     var sameDedcount: Int = 0
