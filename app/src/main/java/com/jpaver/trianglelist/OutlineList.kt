@@ -6,6 +6,24 @@ class OutlineList(var trianglelist: TriangleList) :Cloneable{
     var outlineStr_ = trianglelist.outlineStr_
     val pointlist = ArrayList<PointXY>()
 
+    fun calcAngle(target: PointXY): Float {
+        val result = find(target) ?: return 0f
+        val index = pointlist.indexOf(result)
+
+        if (index == -1 || pointlist.size < 3) return 0f // リストに十分な要素がない、または見つからない場合
+
+        // リストが閉じていると仮定して、前後のポイントのインデックスを計算
+        val prevIndex = if (index > 0) index - 1 else pointlist.size - 1
+        val nextIndex = if (index < pointlist.size - 1) index + 1 else 0
+
+        val prevPoint = pointlist[prevIndex]
+        val nextPoint = pointlist[nextIndex]
+
+        // prevPoint、result（現在のポイント）、nextPointを使って角度を計算
+        // calcAngleメソッドの実装は、具体的な角度の計算方法に依存します
+        return prevPoint.calcAngle(result, nextPoint)
+    }
+
     fun find(target: PointXY): PointXY? {
         return pointlist.firstOrNull { pointXY ->
             target.nearBy( pointXY, 0.05f)
