@@ -91,7 +91,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
     var colorindex_ = 4
 
     var myScale = 1f
-    var myTriangleList: TriangleList = TriangleList()
+    var trianglelist: TriangleList = TriangleList()
     var myDeductionList: DeductionList = DeductionList()
 
     var deductionMode = false
@@ -165,7 +165,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
     var shadowTri_ = Triangle( 0f, 0f, 0f )
 
     fun setFillColor(colorindex: Int, index: Int){
-        myTriangleList.get(index).color_ = colorindex
+        trianglelist.get(index).color_ = colorindex
 
         paintFill.color = darkColors_.get(colorindex)
         colorindex_ = colorindex
@@ -299,7 +299,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
     canvas.drawColor(Color.argb(255, zero, zero, zero))
 
 
-    drawEntities(canvas, paintTri, paintTexS, paintRed, darkColors_, myTriangleList, myDeductionList )
+    drawEntities(canvas, paintTri, paintTexS, paintRed, darkColors_, trianglelist, myDeductionList )
     drawCrossLines(canvas, pressedInModel, paintRed )
 
     //logModelViewPoints()
@@ -468,7 +468,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         invalidate()
     }
 
-    fun getTriangleList() : TriangleList { return myTriangleList }
+    fun getTriangleList() : TriangleList { return trianglelist }
 
     fun setDeductionList(dedlist: DeductionList, scale: Float){
         dedlist.lastTapIndex_ = myDeductionList.lastTapIndex_ //逆に状態をコピー?
@@ -480,8 +480,8 @@ class MyView(context: Context, attrs: AttributeSet?) :
     fun setTriangleList(triList: EditList, setscale: Float, moveCenter: Boolean = true){
         //if( myTriangleList.size() > 0 ) trilistStored_ = myTriangleList.clone()
         myScale = setscale    // 描画倍率は外から指定する
-        myTriangleList = triList.clone() as TriangleList
-        myTriangleList.attachToTheView(
+        trianglelist = triList.clone() as TriangleList
+        trianglelist.attachToTheView(
             PointXY(
                 0f,
                 0f
@@ -496,8 +496,8 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
     fun setTriListLengthStr(){
 
-        for( i in 0 until myTriangleList.size() ){
-            val tri = myTriangleList.get(i+1)
+        for( i in 0 until trianglelist.size() ){
+            val tri = trianglelist.get(i+1)
             tri.sla_ = tri.lengthNotSized[0].formattedString(2)
             tri.slb_ = tri.lengthNotSized[1].formattedString(2)
             tri.slc_ = tri.lengthNotSized[2].formattedString(2)
@@ -532,7 +532,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 // region resetview
 
     fun setCenterInModelToLastTappedTriNumber() {
-        centerInModel.set(myTriangleList.getBy(lstn()).pointnumber)
+        centerInModel.set(trianglelist.getBy(lstn()).pointnumber)
     }
 
     fun resetView( pt: PointXY ){
@@ -567,11 +567,11 @@ class MyView(context: Context, attrs: AttributeSet?) :
     }
 
     fun toLastTapTriangle(): PointXY {
-        return myTriangleList.getLastTriangle().pointnumber
+        return trianglelist.getLastTriangle().pointcenter
     }
 
     fun lstn(): Int{
-        return myTriangleList.getLastNumber()
+        return trianglelist.getLastNumber()
     }
 
     fun onceTransViewToLastTapTriangle(){
@@ -1019,7 +1019,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
         paintTexM.textSize = textSize
         textSpacer_ = textSize * 0.2f
-        myTriangleList.setDimPathTextSize( textSize )
+        trianglelist.setDimPathTextSize( textSize )
 
 
         invalidate()
@@ -1046,7 +1046,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
         isPrintPDF_ = true
 
-        val printScale = myTriangleList.getPrintScale(myScale)
+        val printScale = trianglelist.getPrintScale(myScale)
 
         // テキストスペーサー
         textSpacer_ = adjustTextSpacer(printScale)
@@ -1057,7 +1057,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         val scaleFactor = 1.19f * writer.kaizoudo_ *(2.0f/experience/printScale)// - (myScale/100)
         myScale *= scaleFactor
         // scale
-        myTriangleList.attachToTheView(
+        trianglelist.attachToTheView(
             PointXY(
                 0f,
                 0f
@@ -1073,7 +1073,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         val printAreaH = 29.7f*printScale
 
         //スケールされてないリストの幅を測って、分割回数を計算する
-        val drawingRect = myTriangleList.measureLongLineNotScaled()
+        val drawingRect = trianglelist.measureLongLineNotScaled()
         val separateCount = ( drawingRect.x / printAreaW ).roundToInt() + 1
 
         //キャンバスをどれだけ動かすか決める。幅は固定値、縦はリストのナンバーを検索し、ナンバー上のA辺の長さによって動かす。
@@ -1084,22 +1084,22 @@ class MyView(context: Context, attrs: AttributeSet?) :
         val hYohaku = 75f
         val hkaishi = 5f
         var zukeinohaba: Float
-        val halfAreaH = printAreaH*0.5f*myTriangleList.scale
+        val halfAreaH = printAreaH*0.5f*trianglelist.scale
 
         // canvasの動きを追跡する
         val printPoint = PointXY(0f, 0f)
-        val numberList = myTriangleList.getSokutenList( 2, 4 )
+        val numberList = trianglelist.getSokutenList( 2, 4 )
 
 
         // 描画処理
         Log.d( "myView", "drawPDF - isPrintPDF: " + isPrintPDF_ )
-        if( separateCount > 1 && numberList.size > 1 && myTriangleList.get(0).angle > 45f && myTriangleList.get(0).angle < 135f  ){
+        if( separateCount > 1 && numberList.size > 1 && trianglelist.get(0).angle > 45f && trianglelist.get(0).angle < 135f  ){
 
             //測点を持つ三角形のリスト
-            val numleftList = myTriangleList.getSokutenList( 0, 4 )
+            val numleftList = trianglelist.getSokutenList( 0, 4 )
             numleftList.add(0, Triangle(5f, 5f, 5f) )
 
-            if( myTriangleList.angle < 0 && numberList.size > 1 ){
+            if( trianglelist.angle < 0 && numberList.size > 1 ){
                 Collections.reverse( numberList )
                 Collections.reverse( numleftList )
             }
@@ -1146,17 +1146,17 @@ class MyView(context: Context, attrs: AttributeSet?) :
                 }
 
                 //描画
-                drawEntities(canvas, paintTri, paintTex, paintRed, lightColors_, myTriangleList, myDeductionList )
+                drawEntities(canvas, paintTri, paintTex, paintRed, lightColors_, trianglelist, myDeductionList )
             }
         }
         else{
             // mirror -X +Y
-            canvas.translate(-myTriangleList.center.x, myTriangleList.center.y)
+            canvas.translate(-trianglelist.center.x, trianglelist.center.y)
 
-            drawEntities(canvas, paintTri, paintTex, paintRed, lightColors_, myTriangleList, myDeductionList )
+            drawEntities(canvas, paintTri, paintTex, paintRed, lightColors_, trianglelist, myDeductionList )
 
             // mirror +X -Y
-            canvas.translate(myTriangleList.center.x, -myTriangleList.center.y)
+            canvas.translate(trianglelist.center.x, -trianglelist.center.y)
         }
 
         // canvas を大きくしてより小さいテキストを描画するテスト
@@ -1170,7 +1170,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
         //scale back
         myScale /= scaleFactor
-        myTriangleList.attachToTheView(
+        trianglelist.attachToTheView(
             PointXY(
                 0f,
                 0f

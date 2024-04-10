@@ -572,7 +572,6 @@ class MainActivity : AppCompatActivity(),
         prefSetting = PreferenceManager.getDefaultSharedPreferences(this)
 
         myDeductionList = DeductionList()
-        //Toast.makeText(this, "Welcome back!", Toast.LENGTH_SHORT).show()
 
         initFabs()
         fabController()
@@ -1435,7 +1434,7 @@ class MainActivity : AppCompatActivity(),
 
         setCommonFabListener(fab_fillcolor) {
             if(!deductionMode){
-                myTriangleList.get(myview.myTriangleList.selectedNumber)
+                myTriangleList.get(myview.trianglelist.selectedNumber)
 
 
                 colorindex ++
@@ -1443,7 +1442,7 @@ class MainActivity : AppCompatActivity(),
                 bindingMain.fabFillcolor.backgroundTintList = getColorStateList(resColors[colorindex])
 
                 //dParams_ = myEditor.ReadLine(dParams_, myELSecond)
-                myTriangleList.get(myview.myTriangleList.selectedNumber).color_ = colorindex
+                myTriangleList.get(myview.trianglelist.selectedNumber).color_ = colorindex
 
                 myview.setFillColor(colorindex, myTriangleList.selectedNumber)
             }
@@ -1741,8 +1740,8 @@ class MainActivity : AppCompatActivity(),
         setTitles()
 
 
-        myview.myTriangleList.isDoubleTap_ = false
-        myview.myTriangleList.lastTapSide_ = 0
+        myview.trianglelist.isDoubleTap_ = false
+        myview.trianglelist.lastTapSide_ = 0
 
         //logListCurrent()
         logFabController()
@@ -1752,7 +1751,7 @@ class MainActivity : AppCompatActivity(),
 
     private fun moveTrilist(){
         myview.getTriangleList().changeSelectedNumber(myTriangleList.retrieveCurrent())
-        myview.myTriangleList.lastTapNumber_ = myTriangleList.retrieveCurrent()
+        myview.trianglelist.lastTapNumber_ = myTriangleList.retrieveCurrent()
         myTriangleList.lastTapNumber_ = myTriangleList.retrieveCurrent()
         myview.resetViewToLastTapTriangle()
     }
@@ -1817,7 +1816,7 @@ class MainActivity : AppCompatActivity(),
         myDeductionList.add( ded.clone() )
 
         myview.setDeductionList(myDeductionList, mScale)
-        myview.myTriangleList.dedmapping(myDeductionList, -1)
+        myview.trianglelist.dedmapping(myDeductionList, -1)
         lastParams = params
 
         logFabController()
@@ -1835,7 +1834,7 @@ class MainActivity : AppCompatActivity(),
         else params.type = "Circle"
 
         // 所属する三角形の判定処理
-        params.pn = myview.myTriangleList.isCollide(
+        params.pn = myview.trianglelist.isCollide(
             params.pt.scale(
                 PointXY(
                     1f,
@@ -1849,10 +1848,10 @@ class MainActivity : AppCompatActivity(),
         if (params.pn != 0) {
             Log.d(
                 "Deduction",
-                "ptri dedcount" + myview.myTriangleList.get(params.pn).dedcount
+                "ptri dedcount" + myview.trianglelist.get(params.pn).dedcount
             )
 
-            val trilistinview = myview.myTriangleList
+            val trilistinview = myview.trianglelist
             val parent = trilistinview.get(params.pn)
             Log.d("Deduction", "parent:" + parent.toString() )
             Log.d("Deduction", "params.point:  " + params.pt.x + ", " + params.pt.y)
@@ -1889,7 +1888,7 @@ class MainActivity : AppCompatActivity(),
 
         // 所属する三角形の判定処理
         myDeductionList.replace(params.n, ded )
-        myview.myTriangleList.dedmapping(myDeductionList, -1)
+        myview.trianglelist.dedmapping(myDeductionList, -1)
         return true
     }
 
@@ -1951,12 +1950,12 @@ class MainActivity : AppCompatActivity(),
     //region TapEvent
     private fun autoConnection(i: Int){
 
-        myview.myTriangleList.lastTapSide_ = i
+        myview.trianglelist.lastTapSide_ = i
         dParams = myEditor.readLineTo(dParams, myELFirst) //keep them
 
         var focusTo = elb1
 
-        if( myview.myTriangleList.isDoubleTap_ == true ){
+        if( myview.trianglelist.isDoubleTap_ == true ){
             if(i == 1) focusTo = elb2
             if(i == 2) focusTo = elc2
         }
@@ -1981,14 +1980,17 @@ class MainActivity : AppCompatActivity(),
 
             myview.setParentSide(t.mynumber, i)
 
-            if(myview.myTriangleList.lastTapSide_ != -1){
-                myview.myTriangleList.isDoubleTap_ = true
+            if(myview.trianglelist.lastTapSide_ != -1){
+                myview.trianglelist.isDoubleTap_ = true
 
                 focusTo.requestFocus()
                 focusTo.setSelection(focusTo.text.length)
                 val inputMethodManager: InputMethodManager =
                     getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
                 inputMethodManager.showSoftInput(focusTo, 0)
+
+                myview.resetViewToLastTapTriangle()
+
             }
         }
         else{
@@ -2024,7 +2026,7 @@ class MainActivity : AppCompatActivity(),
         val inputMethodManager: InputMethodManager =
             getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
 
-        val trilistV = myview.myTriangleList
+        val trilistV = myview.trianglelist
 
         if(deductionMode){
 
@@ -2035,7 +2037,7 @@ class MainActivity : AppCompatActivity(),
             if ( myview.myDeductionList.lastTapIndex_ > -1 ) {
                 val tapIndex = myview.myDeductionList.lastTapIndex_+1
                 if( -1 < tapIndex ) {
-                    //Toast.makeText(this, "deduction tap", Toast.LENGTH_SHORT).show()
+
                     myEditor.scroll(
                             tapIndex - myDeductionList.current,
                             getList(deductionMode), myELSecond, myELThird
@@ -2092,16 +2094,16 @@ class MainActivity : AppCompatActivity(),
                 setEditTextContent(myTriangleList) // EditTextに三角形情報をセットする
 
                 // タップされた辺に応じた処理を行う
-                when (myview.myTriangleList.lastTapSide_) {
+                when (myview.trianglelist.lastTapSide_) {
                     0 -> handleSideZero(inputMethodManager) // 辺0がタップされたときの処理
-                    1, 2 -> autoConnection(myview.myTriangleList.lastTapSide_) // 辺1または2がタップされたときの自動接続処理
+                    1, 2 -> autoConnection(myview.trianglelist.lastTapSide_) // 辺1または2がタップされたときの自動接続処理
                     3 -> myview.resetViewToLastTapTriangle() // 辺3がタップされたときのビューをリセットする処理
                 }
             }
 
         }
 
-        Log.d("SetTarget", "Tap Triangle is : " + myview.myTriangleList.lastTapNumber_ + ", side is :" + myview.myTriangleList.lastTapSide_ )
+        Log.d("SetTarget", "Tap Triangle is : " + myview.trianglelist.lastTapNumber_ + ", side is :" + myview.trianglelist.lastTapSide_ )
         logListCurrent()
     }
 
@@ -2109,9 +2111,9 @@ class MainActivity : AppCompatActivity(),
     fun handleTriangleTap(trilistV: TriangleList, myEditor: EditorTable, myTriangleList: TriangleList, isEditorScroll: Boolean = false ) {
         if( isEditorScroll ) myEditor.scroll(trilistV.lastTapNumber_ - trilistV.selectedNumber, myTriangleList, myELSecond, myELThird) // スクロールしてタップされた三角形を表示
         trilistV.selectedNumber = trilistV.lastTapNumber_ // 現在の三角形を更新
-        myTriangleList.changeSelectedNumber(myview.myTriangleList.lastTapNumber_) // myTriangleListの現在の三角形を更新
-        myTriangleList.lastTapNumber_ = myview.myTriangleList.lastTapNumber_ // 最後にタップされた三角形の番号を更新
-        myTriangleList.lastTapSide_ = myview.myTriangleList.lastTapSide_ // 最後にタップされた三角形の辺を更新
+        myTriangleList.changeSelectedNumber(myview.trianglelist.lastTapNumber_) // myTriangleListの現在の三角形を更新
+        myTriangleList.lastTapNumber_ = myview.trianglelist.lastTapNumber_ // 最後にタップされた三角形の番号を更新
+        myTriangleList.lastTapSide_ = myview.trianglelist.lastTapSide_ // 最後にタップされた三角形の辺を更新
     }
 
     // タップされた三角形の詳細設定を行う関数
@@ -2135,6 +2137,7 @@ class MainActivity : AppCompatActivity(),
         editLengthA2.setSelection(editLengthA2.text.length) // EditTextのテキストを選択状態にする
         inputMethodManager.showSoftInput(editLengthA2, 0) // ソフトキーボードを表示
         myview.setParentSide(myview.getTriangleList().lastTapNumber_, 3) // 親となる辺を設定
+        myview.resetViewToLastTapTriangle()
     }
 //endregion
 
@@ -2662,10 +2665,10 @@ class MainActivity : AppCompatActivity(),
 
         myview.setTriangleList(trilist, mScale)
         myview.setDeductionList(myDeductionList, mScale)
-        myview.myTriangleList.lastTapNumber_ = myview.myTriangleList.size()
+        myview.trianglelist.lastTapNumber_ = myview.trianglelist.size()
         myview.resetViewToLastTapTriangle()
 
-        Log.d("FileLoader", "createNew: " + myview.myTriangleList.size() )
+        Log.d("FileLoader", "createNew: " + myview.trianglelist.size() )
 
         fab_fillcolor.backgroundTintList = getColorStateList(resColors[colorindex])
 
@@ -2832,7 +2835,7 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun showToast(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 
     /**
@@ -3072,7 +3075,7 @@ class MainActivity : AppCompatActivity(),
         myview.setTriangleList(trilist, mScale)
         myview.resetViewToLastTapTriangle()
 
-        Log.d( "FileLoader", "my_view.setTriangleList: " + myview.myTriangleList.size() )
+        Log.d( "FileLoader", "my_view.setTriangleList: " + myview.trianglelist.size() )
         // メニューバーのタイトル
         //setTitles()
 
@@ -3150,8 +3153,8 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun logListCurrent(tag: String="ui", callerName: String = "unknown"){
-        Log.d(tag,callerName+" my_view.trilist.current:"+myview.myTriangleList.selectedNumber)
-        Log.d(tag,callerName+" my_view.trilist.lastTapNumber:"+myview.myTriangleList.lastTapNumber_)
+        Log.d(tag,callerName+" my_view.trilist.current:"+myview.trianglelist.selectedNumber)
+        Log.d(tag,callerName+" my_view.trilist.lastTapNumber:"+myview.trianglelist.lastTapNumber_)
         Log.d(tag,callerName+" mainActivity.trilist.current:"+myTriangleList.selectedNumber)
         Log.d(tag,callerName+" mainActivity.trilist.lastTapNumber:"+myTriangleList.lastTapNumber_)
         Log.d(tag,callerName+" mainActivity.dedlist.current:"+myDeductionList.current)
@@ -3160,7 +3163,7 @@ class MainActivity : AppCompatActivity(),
 
     private fun logFabController(tag: String = "ui fab"){
         val info1 = "trilist in mainActivity \n${myTriangleList.toStrings()}"
-        val info2 = "trilist in myview \n${myview.myTriangleList.toStrings()}"
+        val info2 = "trilist in myview \n${myview.trianglelist.toStrings()}"
         Log.d(tag,info1)
         Log.d(tag,info2)
     }
