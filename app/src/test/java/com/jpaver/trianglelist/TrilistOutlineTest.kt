@@ -1,5 +1,7 @@
 package com.jpaver.trianglelist
 
+import junit.framework.TestCase.assertEquals
+import junit.framework.TestCase.assertTrue
 import org.junit.Assert
 import org.junit.Test
 
@@ -83,8 +85,7 @@ class TrilistOutlineTest {
         printTriList( trilist )
     }
 
-    @Test
-    fun testTriListOutline(){
+    fun setupTrilist(): TriangleList{
         val trilist = TriangleList()
         // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
         trilist.add(Triangle(8f, 6f, 8f), true)//1
@@ -98,27 +99,49 @@ class TrilistOutlineTest {
         trilist.add(8, 2, 5f, 5f)//9
         trilist.add(9, 1, 2f, 5f)//10
         trilist.add(9, 2, 5f, 5f)//11
-
         trilist.setChildsToAllParents()
+        return trilist
+    }
 
-        val op = ArrayList<PointXY>()
-        val outline = TrilistOutline(trilist)
-        val pointlist = outline.traceOrJumpForward(0, 0, op, trilist[1])
+    @Test
+    fun testTriListOutline(){
+        val trilist = setupTrilist()
+        ArrayList<PointXY>()
+        val outlinelist = OutlineList(trilist)
+        val pointlist = outlinelist.traceForward(0, 0, trilist[1])
+        val strExpected = "1ab,1bc,3bc,4bc,8bc,10bc,10ca,11bc,11ca,7bc,7ca,5ca,2bc,2ca,"
 
-        junit.framework.Assert.assertEquals(11, trilist.size())
-        if (pointlist != null) {
-            junit.framework.Assert.assertEquals(14, pointlist.size)
-        }
-        junit.framework.Assert.assertEquals(
-            "1ab,1bc,3bc,4bc,8bc,10bc,10ca,11bc,11ca,7bc,7ca,5ca,2bc,2ca,",
-            outline.outlineStr_
-        )
+        assertEquals(11, trilist.size())
+
+        assertEquals(14, pointlist!!.size)
+
+
+        assertEquals( strExpected, outlinelist.outlineStr_ )
 
         println(pointlist.toString())
 
-        val hashes = pointlist?.map { Integer.toHexString(it.hashCode()) }
-        println(hashes?.joinToString(" "))
+        val hashes = pointlist.map { Integer.toHexString(it.hashCode()) }
+        println(hashes.joinToString(" "))
 
     }
+
+    @Test
+    fun testFindShouldReturnCorrectPointFromOutlineList() {
+        // テストのセットアップ
+        val trilist = setupTrilist() // テスト用の三角形リストを準備
+        val outlinelist = OutlineList(trilist) // OutlineList インスタンスを作成
+        outlinelist.traceForward(0, 0, trilist[1]) // traceForward で点のリストを生成
+
+        // テスト対象のポイントを指定
+        val targetPoint = PointXY(-7.6478295f, 9.0832615f)
+
+        // 期待値と実際の結果（outlinelist.find(targetPoint)）を比較
+        val expectedResult = targetPoint
+        val actualResult = outlinelist.find(targetPoint)!!
+
+        // アサーション: find メソッドが正しいポイントを返すことを確認
+        assertTrue( expectedResult.nearBy( actualResult, 0.01f) )
+    }
+
 
 }
