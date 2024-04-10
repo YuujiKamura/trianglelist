@@ -31,6 +31,7 @@ class PointXY :Cloneable<PointXY> {
     // yの値をフォーマットして返すメソッド
     fun getFormattedY(decimalPlaces: Int = DECIMAL): String {
         return String.format("%.${decimalPlaces}f", y)
+
     }
 
     fun format(decimalPlaces: Int = DECIMAL): String{
