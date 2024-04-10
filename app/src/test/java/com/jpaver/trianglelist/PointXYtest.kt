@@ -162,7 +162,7 @@ class PointXYtest {
         // lengthXY 符号は付かない
         Assert.assertEquals(5f, p2.vectorTo(p1).lengthXY(), 0.001f)
         val t1 = Triangle(50f, 50f, 50f)
-        Assert.assertEquals(50.0f, t1.pointCA_.vectorTo(t1.pointAB).lengthXY(), 0.001f)
+        Assert.assertEquals(50.0f, t1.pointCA.vectorTo(t1.pointAB).lengthXY(), 0.001f)
     }
 
     @Test

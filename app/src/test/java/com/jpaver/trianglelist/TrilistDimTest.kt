@@ -35,7 +35,7 @@ class TrilistDimTest {
 
         val dxfwriter = DxfFileWriter(trilist)
         val tri = trilist.get(1)
-        val pca = tri.pointCA_
+        val pca = tri.pointCA
         val pab = tri.pointAB
         val pbc = tri.pointBC
         val alignVdimA = dxfwriter.alignVByVector(tri.dimVerticalA, pca, pab)

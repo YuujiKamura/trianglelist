@@ -125,8 +125,6 @@ class MyView(context: Context, attrs: AttributeSet?) :
     var isViewScrolling = false
     var touchCounter = 0
 
-    var alpha: Int = 200
-
     var isDebug_ = false
     var isPrintPDF_ = false
     var isAreaOff_ = true
@@ -216,8 +214,8 @@ class MyView(context: Context, attrs: AttributeSet?) :
         paintTexS.textSize = textSize
         //paintTexS.set
 
-        paintYellow.strokeWidth = 5f
-        paintYellow.color = Color.argb(50, 255, 255, 0)
+        paintYellow.strokeWidth = 10f
+        paintYellow.color = Color.argb(100, 255, 255, 0)
         paintYellow.textAlign = Paint.Align.CENTER
         paintYellow.textSize = textSize*1.2f
 
@@ -277,32 +275,6 @@ class MyView(context: Context, attrs: AttributeSet?) :
             ).toInt()).toDouble()
         ).toInt()
         Log.d("MyViewLifeCycle", "SetScreenSize.")
-    }
-
-// endregion
-
-
-// region onDraw
-    val viewTranslateManager = ViewTranslateManager()
-
-    override fun onDraw(canvas: Canvas) {
-    //Log.d("MyViewLifeCycle", "onDraw.")
-
-    onceTransViewToLastTapTriangle()
-    viewTranslateManager.setParameters(baseInView,zoomSize,centerInModel,pressedInModel)
-    viewTranslateManager.screenTranslate(canvas)
-
-    // 背景の塗りつぶし（黒）
-    val zero = 0
-    canvas.drawColor(Color.argb(255, zero, zero, zero))
-
-
-    drawEntities(canvas, paintTri, paintTexS, paintRed, darkColors_, trianglelist, myDeductionList )
-    drawCrossLines(canvas, pressedInModel, paintRed )
-
-    //logModelViewPoints()
-    //drawModelViewPoints(canvas)
-
     }
 
 // endregion
@@ -576,13 +548,24 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
 // endregion resetview
 
+// region onDraw
+    val viewTranslateManager = ViewTranslateManager()
+    val zero = 0
+    override fun onDraw(canvas: Canvas) {
+        onceTransViewToLastTapTriangle()
+        viewTranslateManager.setParameters(baseInView,zoomSize,centerInModel,pressedInModel)
+        viewTranslateManager.screenTranslate(canvas)
+
+        // 背景の塗りつぶし
+        canvas.drawColor(Color.argb(255, zero, zero, zero))
+
+        drawEntities(canvas, paintTri, paintTexS, paintRed, darkColors_, trianglelist, myDeductionList )
+        drawCrossLines(canvas, pressedInModel, paintRed )
+    }
+// endregion onDraw
 
 // region drawEntities
     fun drawEntities(canvas: Canvas, paintTri: Paint, paintTex: Paint, paintRed: Paint, colors: Array<Int>, myTriangleList: TriangleList, myDeductionList: DeductionList) {
-
-        //Log.d( "myView", "drawEntities: " + myTriangleList.size() )
-        //Log.d("myView", "Instance check in View: " + this )
-        //Log.d( "myView", "drawEntities- paintTex " + paintTex )
 
         // draw the Shadow...
         drawShadowTriangle( canvas, myTriangleList )
@@ -614,6 +597,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
                 paintRed
         )
 
+        //選択三角形
         drawBlinkLine( canvas, myTriangleList )
     }
 
@@ -628,7 +612,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
     ){
 
         // arrange
-        tri.pointCA_
+        tri.pointCA
         tri.pointAB
         tri.pointBC
         val tPathA = tri.path[0]
@@ -825,35 +809,21 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
     }
 
+    fun drawLine( start:PointXY, end:PointXY, paint:Paint, canvas: Canvas ){
+        canvas.drawLine( start.x, -start.y,end.x, -end.y, paint )
+    }
+
     fun drawBlinkLine( canvas: Canvas, myTriangleList: TriangleList){
         if( myTriangleList.lastTapNumber_ < 1 || myTriangleList.lastTapSide_ < 0 || isPrintPDF_ == true ) return
 
-        Log.d( "myView", "drawBrinkLine")
-        paintYellow.color = Color.argb(alpha, 255, 255, 0)
-
         val tri = myTriangleList.get( myTriangleList.lastTapNumber_ )
 
-        if(myTriangleList.lastTapSide_ == 0){
-            canvas.drawLine(
-                tri.pointCA_.x, - tri.pointCA_.y,
-                tri.pointAB.x, - tri.pointAB.y,
-                paintYellow
-            )
-        }
-        if(myTriangleList.lastTapSide_ == 1){
-            canvas.drawLine(
-                tri.pointAB.x, - tri.pointAB.y,
-                tri.pointBC.x, - tri.pointBC.y,
-                paintYellow
-            )
-        }
-        if(myTriangleList.lastTapSide_ == 2) {
-            canvas.drawLine(
-                tri.pointCA_.x, - tri.pointCA_.y,
-                tri.pointBC.x, - tri.pointBC.y,
-                paintYellow
-            )
-        }
+        if(myTriangleList.lastTapSide_ == 0)
+            drawLine( tri.pointCA,tri.pointAB,paintYellow, canvas )
+        if(myTriangleList.lastTapSide_ == 1)
+            drawLine( tri.pointAB,tri.pointBC,paintYellow, canvas )
+        if(myTriangleList.lastTapSide_ == 2)
+            drawLine( tri.pointBC,tri.pointCA,paintYellow, canvas )
 
         val circleSize = paintTexS.textSize *0.8f
         paintYellow.style = Paint.Style.STROKE
@@ -874,7 +844,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
     fun drawTriLines(canvas: Canvas, tri: Triangle, paintLine: Paint){
         // arrange
-        val pca = tri.pointCA_
+        val pca = tri.pointCA
         val pab = tri.pointAB
         val pbc = tri.pointBC
 
@@ -978,10 +948,10 @@ class MyView(context: Context, attrs: AttributeSet?) :
     fun makeTriangleFillPath(tri: Triangle): Path {
         val path = Path()
         path.rewind()
-        path.moveTo(tri.pointCA_.x, -tri.pointCA_.y)
+        path.moveTo(tri.pointCA.x, -tri.pointCA.y)
         path.lineTo(tri.pointAB.x, -tri.pointAB.y)
         path.lineTo(tri.pointBC.x, -tri.pointBC.y)
-        path.lineTo(tri.pointCA_.x, -tri.pointCA_.y)
+        path.lineTo(tri.pointCA.x, -tri.pointCA.y)
         return path
     }
 
@@ -1102,12 +1072,12 @@ class MyView(context: Context, attrs: AttributeSet?) :
             for( i in 0 until numberList.size ){
 
                 //測点の座標
-                val numcenPCAy = numberList[i].pointCA_.y
-                val numlefPCAy = numleftList[i].pointCA_.y
+                val numcenPCAy = numberList[i].pointCA.y
+                val numlefPCAy = numleftList[i].pointCA.y
                 if( i > 0 ){
                     //前回の測点の座標と距離
-                    val numcenzenPCAy = numberList[i - 1].pointCA_.y
-                    val numlefzenPCAy = numleftList[i - 1].pointCA_.y
+                    val numcenzenPCAy = numberList[i - 1].pointCA.y
+                    val numlefzenPCAy = numleftList[i - 1].pointCA.y
                     numkyoriC = numcenPCAy - numcenzenPCAy
                     numkyoriL = numlefPCAy - numlefzenPCAy
                     val katamuki = numkyoriC - numkyoriL
@@ -1121,14 +1091,14 @@ class MyView(context: Context, attrs: AttributeSet?) :
                 //最初の一回目
                 if(i == 0){
                     // 初期位置に動かす。
-                    printPoint.add( -numberList[0].pointCA_.x,  - halfAreaH + (hTransLen) + numcenPCAy ) //* 0.75f ) )
+                    printPoint.add( -numberList[0].pointCA.x,  - halfAreaH + (hTransLen) + numcenPCAy ) //* 0.75f ) )
 
                     canvas.translate( printPoint.x, printPoint.y )
                 }
                 else{
                     // 次の中心座標へ動かす
-                    val lastPointX = numberList.get( i - 1 ).pointCA_.x
-                    wTransLen  = numberList.get(i).pointCA_.x - lastPointX
+                    val lastPointX = numberList.get( i - 1 ).pointCA.x
+                    wTransLen  = numberList.get(i).pointCA.x - lastPointX
 
                     // 縦にのびていく理由はなんだろう？それは図形の座標差が蓄積されていくからと思われる
                     hTransLen = ( zukeinohaba + hYohaku + numkyori )

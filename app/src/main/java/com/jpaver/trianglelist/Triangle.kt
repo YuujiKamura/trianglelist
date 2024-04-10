@@ -261,7 +261,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         get() = lengthNotSized[1]
     val lengthCforce_: Float
         get() = lengthNotSized[2]
-    val pointCA_: PointXY
+    val pointCA: PointXY
         get() = point[0].clone()
 
     fun pointAB_(): PointXY {
@@ -631,7 +631,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
             2 -> {
                 connectionType = 2
                 length[0] = nodeTriangleA_!!.lengthNotSized[2]
-                point[0] = nodeTriangleA_!!.pointCA_
+                point[0] = nodeTriangleA_!!.pointCA
                 angle = nodeTriangleA_!!.angleMmCA
             }
             else -> {

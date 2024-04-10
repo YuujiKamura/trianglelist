@@ -71,7 +71,7 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
 
     override fun writeTriangle(tri: Triangle){
         // arrange
-        val pca = tri.pointCA_
+        val pca = tri.pointCA
         val pab = tri.pointAB
         val pbc = tri.pointBC
 

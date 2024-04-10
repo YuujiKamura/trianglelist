@@ -212,7 +212,7 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
     override fun writeTriangle( tri: Triangle){
         val ts = textscale_
         //val tri = trilist_.get( trinumber )
-        val pca = tri.pointCA_
+        val pca = tri.pointCA
         val pab = tri.pointAB
         val pbc = tri.pointBC
         val la = tri.lengthAforce_.formattedString(2)

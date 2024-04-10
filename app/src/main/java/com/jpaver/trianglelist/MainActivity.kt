@@ -2747,7 +2747,7 @@ class MainActivity : AppCompatActivity(),
                 val pointnumber: PointXY = mt.pointnumber
                 val cp = parentBCtoCParam(mt.connectionType, mt.lengthNotSized[0], mt.cParam_)
 
-                writer.write("${mt.mynumber},${mt.lengthA_},${mt.lengthB_},${mt.lengthC_},${mt.parentnumber},${mt.connectionType},${mt.name},${pointnumber.x},${pointnumber.y},${mt.pointNumber.flag.isMovedByUser},${mt.color_},${mt.dim.horizontal.a},${mt.dim.horizontal.b},${mt.dim.horizontal.c},${mt.dim.vertical.a},${mt.dim.vertical.b},${mt.dim.vertical.c},${cp.side},${cp.type},${cp.lcr},${mt.dim.flag[1].isMovedByUser},${mt.dim.flag[2].isMovedByUser},${mt.angle},${mt.pointCA_.x},${mt.pointCA_.y},${mt.angleInLocal_}")
+                writer.write("${mt.mynumber},${mt.lengthA_},${mt.lengthB_},${mt.lengthC_},${mt.parentnumber},${mt.connectionType},${mt.name},${pointnumber.x},${pointnumber.y},${mt.pointNumber.flag.isMovedByUser},${mt.color_},${mt.dim.horizontal.a},${mt.dim.horizontal.b},${mt.dim.horizontal.c},${mt.dim.vertical.a},${mt.dim.vertical.b},${mt.dim.vertical.c},${cp.side},${cp.type},${cp.lcr},${mt.dim.flag[1].isMovedByUser},${mt.dim.flag[2].isMovedByUser},${mt.angle},${mt.pointCA.x},${mt.pointCA.y},${mt.angleInLocal_}")
                 writer.newLine()
             }
 
