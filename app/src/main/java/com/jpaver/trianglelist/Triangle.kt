@@ -1207,18 +1207,16 @@ class Triangle : EditObject, Cloneable<Triangle> {
     // endregion scale and translate
 
     //region rotater
-    fun rotate(basepoint: PointXY, addDegree: Float, recover: Boolean = false ) {
-        if (connectionType < 9 && recover ) return
-        if (!recover) angleInLocal_ += addDegree else angleInLocal_ = addDegree
+    fun rotate(basepoint: PointXY, addDegree: Float, isRecover: Boolean = false, isNumberMove: Boolean = false ) {
+        if (connectionType < 9 && isRecover ) return
+        if (!isRecover) angleInLocal_ += addDegree else angleInLocal_ = addDegree
 
-        //val allpoints = arrayOf(*point, *dimpoint, pointcenter, pointCA_, pointAB, pointBC)
-        //allpoints.map { it.rotate(basepoint, addDegree) }
+        if (isNumberMove && pointNumber.flag.isMovedByUser )
+            pointNumber.point = pointNumber.point.rotate(basepoint,addDegree)
 
         point[0] = point[0].rotate(basepoint, addDegree)
         angle += addDegree
         calcPoints(point[0], angle)
-        //setDimPath(dimHeight)
-
     }
 
 
