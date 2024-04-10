@@ -278,7 +278,8 @@ class PointXY : Cloneable<PointXY> {
     }
 
     fun nearBy(target: PointXY, range: Float): Boolean {
-        return x > target.x - range && x < target.x + range && y > target.y - range && y < target.y + range
+        return x > target.x - range && x < target.x + range &&
+                y > target.y - range && y < target.y + range
     }
 
     fun isCollide(ab: PointXY, bc: PointXY, ca: PointXY): Boolean {
