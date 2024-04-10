@@ -1,6 +1,6 @@
 package com.jpaver.trianglelist
 
-import com.jpaver.trianglelist.util.Params
+import com.jpaver.trianglelist.util.InputParameter
 
 class DeductionList : EditList() {
     var dedlist_ = ArrayList<Deduction>()
@@ -92,7 +92,7 @@ class DeductionList : EditList() {
     }
 
 
-    fun add(dp: Params) {
+    fun add(dp: InputParameter) {
         val deduction = Deduction(dp)
         add(deduction)
 
@@ -107,7 +107,7 @@ class DeductionList : EditList() {
         return if (num < 1 || num > dedlist_.size) Deduction() else getDeduction(num)!!
     }
 
-    override fun getParams(num: Int): Params {
+    override fun getParams(num: Int): InputParameter {
         return dedlist_[num - 1].getParams()
     }
 
@@ -130,9 +130,8 @@ class DeductionList : EditList() {
         current = dedlist_.size
     }
 
-    fun replace(index: Int, dp: Params?) {
-        if (index < 1) return
-        dedlist_[index - 1].setParam(dp!!)
+    fun replace(parameter: InputParameter) {
+        dedlist_[parameter.number-1].set(parameter)
     }
 
     fun replace(index: Int, ded: Deduction?) {

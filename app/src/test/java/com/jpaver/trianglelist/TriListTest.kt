@@ -3,7 +3,7 @@
 package com.jpaver.trianglelist
 
 //import com.jpaver.trianglelist.model.*
-import com.jpaver.trianglelist.util.Params
+import com.jpaver.trianglelist.util.InputParameter
 import junit.framework.Assert.assertEquals
 import org.junit.Assert
 import org.junit.Test
@@ -93,7 +93,7 @@ class TriListTest {
         trilist.add(1, 1, 8f, 8f)
         trilist.add(2, 2, 5f, 5f)
 
-        trilist.resetNodeByID(Params("", "", 3, 6f, 6f, 6f, 1, 2))
+        trilist.resetNodeByID(InputParameter("", "", 3, 6f, 6f, 6f, 1, 2))
         assertEquals(trilist.get(1), trilist.get(3).nodeTriangleA_)
         assertEquals(trilist.get(3), trilist.get(1).nodeTriangleC)
 
@@ -107,7 +107,7 @@ class TriListTest {
         trilist.add(2, 2, 5f, 5f)
 
         //trilist.resetPointAndAngleByNodeChain( Params("", "", 2, 6f, 6f, 6f, 1, 1) )
-        trilist.get(2).resetElegant(Params("", "", 2, 6f, 6f, 6f, 1, 1))
+        trilist.get(2).resetElegant(InputParameter("", "", 2, 6f, 6f, 6f, 1, 1))
 
         assertEquals(6f, trilist.get(1).lengthB_)
         //assertEquals( trilist.get(2).pointCA_.x, trilist.get(1).pointBC_.x )
@@ -122,7 +122,7 @@ class TriListTest {
         trilist.add(2, 2, 5f, 5f)
 
         //　ケース４：接続三角形にとって辺長がおかしい場合は伝播を止める
-        trilist.resetFromParam(Params("", "", 2, 12f, 12f, 12f, 1, 1))
+        trilist.resetFromParam(InputParameter("", "", 2, 12f, 12f, 12f, 1, 1))
         assertEquals(8f, trilist.get(1).lengthB_)
         assertEquals(8f, trilist.get(3).lengthA_)
 
@@ -144,17 +144,17 @@ class TriListTest {
         assertEquals(0.000f, trilist.get(2).pointAB.y, 0.001f)
 
         //　ケース３：二重断面中、7:BC、trilist.get(1)：△、(2)：▽△
-        trilist.resetFromParam(Params("", "", 2, 6f, 6f, 6f, 1, 7))
+        trilist.resetFromParam(InputParameter("", "", 2, 6f, 6f, 6f, 1, 7))
         assertEquals(4.763f, trilist.get(2).pointCA_.y, 0.001f)
         assertEquals(-0.433f, trilist.get(2).pointAB.y, 0.001f)
 
         //　ケース３：二重断面右、3:BR、trilist.get(1)：△、(2)：▽△
-        trilist.resetFromParam(Params("", "", 2, 6f, 6f, 6f, 1, 3))
+        trilist.resetFromParam(InputParameter("", "", 2, 6f, 6f, 6f, 1, 3))
         assertEquals(4.330f, trilist.get(2).pointCA_.y, 0.001f)
         assertEquals(-0.866f, trilist.get(2).pointAB.y, 0.001f)
 
         //　ケース３：二重断面左、4:BL、trilist.get(1)：△、(2)：▽△
-        trilist.resetFromParam(Params("", "", 2, 6f, 6f, 6f, 1, 4))
+        trilist.resetFromParam(InputParameter("", "", 2, 6f, 6f, 6f, 1, 4))
         assertEquals(5.196f, trilist.get(2).pointCA_.y, 0.001f)
         assertEquals(0.000f, trilist.get(2).pointAB.y, 0.001f)
 
@@ -169,11 +169,11 @@ class TriListTest {
         trilist.add(2, 2, 5f, 5f)
 
         //　ケース２：接続辺の書き換えが子に伝播する
-        trilist.resetFromParam(Params("", "", 2, 5f, 6f, 6f, 1, 1))
+        trilist.resetFromParam(InputParameter("", "", 2, 5f, 6f, 6f, 1, 1))
         assertEquals(6f, trilist.get(3).lengthA_)
 
         //　ケース３：接続辺の書き換えが親に伝播する
-        trilist.resetFromParam(Params("", "", 2, 6f, 6f, 6f, 1, 1))
+        trilist.resetFromParam(InputParameter("", "", 2, 6f, 6f, 6f, 1, 1))
         assertEquals(6f, trilist.get(1).lengthB_)
 
     }
@@ -186,7 +186,7 @@ class TriListTest {
         trilist.add(2, 2, 5f, 5f)
 
         // ケース１：親番号の書き換え
-        trilist.resetFromParam(Params("", "", 3, 5f, 6f, 6f, 1, 2))
+        trilist.resetFromParam(InputParameter("", "", 3, 5f, 6f, 6f, 1, 2))
         assertEquals(1, trilist.get(3).parentnumber)
         assertEquals(3, trilist.get(3).mynumber)
 
@@ -291,7 +291,7 @@ class TriListTest {
         val trilist = TriangleList()
         trilist.add(Triangle(5f, 5f, 5f), true)
 
-        val params = Params("", "", 1, 7f, 7f, 7f, -1, 1)
+        val params = InputParameter("", "", 1, 7f, 7f, 7f, -1, 1)
         trilist.resetFromParam(params)
 
     }
@@ -429,7 +429,7 @@ class TriListTest {
         val tri5 = Triangle(tri1, ConnParam(2, 1, 2, 3f), 3f, 5f)
         Assert.assertEquals(true, tri5.pointCA_.equals(0f, 0f))
         val tri8 =
-            Triangle(tri1, Params("", "", 2, 3f, 3f, 5f, 2, 5, tri1.pointCA_,
+            Triangle(tri1, InputParameter("", "", 2, 3f, 3f, 5f, 2, 5, tri1.pointCA_,
                 PointXY(0f, 0f)
             )
             )
@@ -437,7 +437,7 @@ class TriListTest {
         val tri6 = Triangle(tri1, ConnParam(2, 1, 0, 3f), 3f, 5f)
         Assert.assertEquals(true, tri6.pointCA_.equals(-1.1999f, 1.5999f))
         val tri7 =
-            Triangle(tri1, Params("", "", 2, 3f, 3f, 5f, 2, 6, tri1.pointCA_,
+            Triangle(tri1, InputParameter("", "", 2, 3f, 3f, 5f, 2, 6, tri1.pointCA_,
                 PointXY(0f, 0f)
             )
             )
@@ -741,7 +741,7 @@ class TriListTest {
         assertEquals(trilist.get(2).pointAB.x, trilist.get(1).pointBC.x, 0.001f)
         assertEquals(trilist.get(2).pointAB.y, trilist.get(1).pointBC.y, 0.001f)
 
-        trilist.resetFromParam(Params("", "", 2, 2.5f, 5f, 5f, 1, 2))
+        trilist.resetFromParam(InputParameter("", "", 2, 2.5f, 5f, 5f, 1, 2))
         assertEquals(trilist.get(2).pointAB.x, trilist.get(1).pointBC.x, 0.001f)
         assertEquals(trilist.get(2).pointAB.y, trilist.get(1).pointBC.y, 0.001f)
 

@@ -18,19 +18,19 @@ data class EditTextViewLine(var n: EditText, var name: EditText, var a: EditText
 
 data class Keys(var n: KeyListener, var name: KeyListener, var a: KeyListener, var b: KeyListener, var c: KeyListener, var pn: KeyListener)
 
-data class Params(var name: String = "",
-                  var type: String = "",
-                  var n: Int = 0,
-                  var a: Float = 0f,
-                  var b: Float = 0f,
-                  var c: Float = 0f,
-                  var pn: Int = 0,
-                  var pl: Int = 0,
-                  var pt: PointXY = PointXY(
+data class InputParameter(var name: String = "",
+                          var type: String = "",
+                          var number: Int = 0,
+                          var a: Float = 0f,
+                          var b: Float = 0f,
+                          var c: Float = 0f,
+                          var pn: Int = 0,
+                          var pl: Int = 0,
+                          var point: PointXY = PointXY(
                       0f,
                       0f
                   ),
-                  var ptF: PointXY = PointXY(
+                          var pointflag: PointXY = PointXY(
                       0f,
                       0f
                   )
@@ -65,7 +65,7 @@ class EditorTable {
             lineRewrite(myList.getParams(current), secondly)
             if(current == 1) {
                 lineRewrite(
-                    Params("","",0,0f,0f,0f,0,0,
+                    InputParameter("","",0,0f,0f,0f,0,0,
                     PointXY(0f, 0f),
                     PointXY(0f, 0f)
                 ), thirdly)
@@ -85,11 +85,11 @@ class EditorTable {
         return format.format(this)
     }
 
-    fun lineRewrite(prm: Params, line: EditTextViewLine){
+    fun lineRewrite(prm: InputParameter, line: EditTextViewLine){
 
 //        if(prm.n == 0)  line.n.setText("")
         //else
-        line.n.setText(prm.n.toString())
+        line.n.setText(prm.number.toString())
         line.name.setText(prm.name)
 
         if(prm.a == 0f) line.a.setText("")
@@ -108,7 +108,7 @@ class EditorTable {
         return str.toFloat()
     }
 
-    fun readLineTo(prm: Params, line: EditTextViewLine) : Params {
+    fun readLineTo(prm: InputParameter, line: EditTextViewLine) : InputParameter {
 
         var sa: String = line.a.text.toString()
         var sb: String = line.b.text.toString()
@@ -122,7 +122,7 @@ class EditorTable {
         if (sn == "") sn = "0"
         if (spn == "") spn = "0"
 
-        prm.n = sn.toInt()
+        prm.number = sn.toInt()
         prm.pn = spn.toInt()
 
         prm.name = line.name.text.toString()

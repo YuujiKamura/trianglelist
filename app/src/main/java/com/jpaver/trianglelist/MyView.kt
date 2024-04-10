@@ -125,8 +125,6 @@ class MyView(context: Context, attrs: AttributeSet?) :
     var isViewScrolling = false
     var touchCounter = 0
 
-    var parentNum: Int = 0
-    var parentSide: Int = 0
     var alpha: Int = 200
 
     var isDebug_ = false
@@ -437,7 +435,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         }
 
     }
-// endregion
+// endregion screen onTouchEvent
 
 // region logs
     fun logModelViewPoints(){
@@ -457,16 +455,9 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
     }
 
-
-//endregion
-
+//endregion logs
 
 // region setter and getter
-    fun setParentSide(pn: Int, ps: Int){
-        parentNum = pn
-        parentSide = ps
-        invalidate()
-    }
 
     fun getTriangleList() : TriangleList { return trianglelist }
 
@@ -506,10 +497,6 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
     }
 
-    fun getTapPoint() : PointXY {
-        return pressedInModel.clone()
-    }
-
     /**
      * `printScale` の値に基づいて適切なテキストスペーサーの値を調整します。
      *
@@ -525,14 +512,11 @@ class MyView(context: Context, attrs: AttributeSet?) :
         printScale > 3.0 -> 0.5f  // 中間のスケールには中間のスペーサーを使用
         else -> 2f  // 小さいスケールには大きなスペーサーを使用
     }
-
-// endregion
-
+// endregion setter and getter
 
 // region resetview
-
     fun setCenterInModelToLastTappedTriNumber() {
-        centerInModel.set(trianglelist.getBy(lstn()).pointnumber)
+        centerInModel = trianglelist.getLastTriangle().pointcenter
     }
 
     fun resetView( pt: PointXY ){
@@ -545,6 +529,20 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
     fun resetViewToLastTapTriangle(){
         resetView( toLastTapTriangle() )
+    }
+
+
+    val INDEXCENTER=3
+    fun toLastTapTriangle(sideIndex: Int=INDEXCENTER): PointXY {
+        val triangle = trianglelist.getLastTriangle()
+        when(sideIndex){
+            0 -> return triangle.dimpoint.a
+            1 -> return triangle.dimpoint.b
+            2 -> return triangle.dimpoint.c
+            3 -> return triangle.pointcenter
+        }
+
+       return triangle.pointcenter
     }
 
     fun resetViewToCurrentDeduction(){
@@ -566,13 +564,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         baseInView.set( centerInView.x, centerInView.y )
     }
 
-    fun toLastTapTriangle(): PointXY {
-        return trianglelist.getLastTriangle().pointcenter
-    }
 
-    fun lstn(): Int{
-        return trianglelist.getLastNumber()
-    }
 
     fun onceTransViewToLastTapTriangle(){
         if(transOnce == true) {
@@ -582,7 +574,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         }
     }
 
-// endregion
+// endregion resetview
 
 
 // region drawEntities

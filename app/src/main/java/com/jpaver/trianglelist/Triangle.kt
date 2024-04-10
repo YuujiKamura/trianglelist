@@ -1,7 +1,7 @@
 package com.jpaver.trianglelist
 
 import com.jpaver.trianglelist.util.Cloneable
-import com.jpaver.trianglelist.util.Params
+import com.jpaver.trianglelist.util.InputParameter
 import com.jpaver.trianglelist.util.cloneArray
 import kotlin.math.acos
 import kotlin.math.atan2
@@ -338,16 +338,16 @@ class Triangle : EditObject, Cloneable<Triangle> {
         setOn(parent, pbc, B, C)
     }
 
-    internal constructor(myParent: Triangle?, dP: Params) {
+    internal constructor(myParent: Triangle?, dP: InputParameter) {
         setOn(myParent, dP.pl, dP.a, dP.b, dP.c)
         name = dP.name
     }
 
-    internal constructor(dP: Params, angle: Float) {
-        mynumber = dP.n
+    internal constructor(dP: InputParameter, angle: Float) {
+        mynumber = dP.number
         name = dP.name
-        initBasicArguments(dP.a, dP.b, dP.c, dP.pt, angle)
-        calcPoints(dP.pt, angle)
+        initBasicArguments(dP.a, dP.b, dP.c, dP.point, angle)
+        calcPoints(dP.point, angle)
     }
 
     fun getPointByCParam(cparam: ConnParam, prnt: Triangle?): PointXY? {
@@ -438,8 +438,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
         }
     }
 
-    override fun getParams(): Params {
-        return Params(
+    override fun getParams(): InputParameter {
+        return InputParameter(
             name,
             "",
             mynumber,
@@ -558,7 +558,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     //endregion
 
     //region setter
-    fun resetNode(prms: Params, parent: Triangle?, doneObjectList: ArrayList<Triangle>) {
+    fun resetNode(prms: InputParameter, parent: Triangle?, doneObjectList: ArrayList<Triangle>) {
 
         // 接続情報の変更、とりあえず挿入処理は考慮しない、すでに他のノードがあるときは上書きする。
         nodeTriangleA_!!.removeNode(this)
@@ -976,7 +976,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         }
     }
 
-    fun reset(prm: Params) {
+    fun reset(prm: InputParameter) {
         //ConneParam thisCP = cParam_.clone();
         length[0] = prm.a
         lengthNotSized[0] = prm.a
@@ -991,7 +991,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         name = prm.name
     }
 
-    fun resetElegant(prm: Params) {
+    fun resetElegant(prm: InputParameter) {
         reset(prm)
         if (nodeTriangleA_ != null) nodeTriangleA_!!.resetByNode(parentSide)
     }

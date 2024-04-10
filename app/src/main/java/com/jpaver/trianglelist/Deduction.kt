@@ -1,7 +1,7 @@
 package com.jpaver.trianglelist
 
 import com.jpaver.trianglelist.util.DeductionParams
-import com.jpaver.trianglelist.util.Params
+import com.jpaver.trianglelist.util.InputParameter
 import com.jpaver.trianglelist.util.Cloneable
 
 import kotlin.math.roundToInt
@@ -40,16 +40,16 @@ class Deduction(var num: Int = 0,
         point =  ddp.point
     )
 
-    constructor(dp: Params) :this(
-        num = dp.n,
+    constructor(dp: InputParameter) :this(
+        num = dp.number,
         name = dp.name,
         lengthX = dp.a,
         lengthY = dp.b,
         overlap_to = dp.pn,
         type = dp.type,
         angle = 0f,
-        point =  dp.pt ,
-        pointFlag = dp.ptF
+        point =  dp.point ,
+        pointFlag = dp.pointflag
 
     )
 
@@ -133,16 +133,16 @@ class Deduction(var num: Int = 0,
         return b
     }
 
-    fun setParam(dp: Params){
-        num = dp.n
-        name = dp.name
-        lengthX = dp.a
-        lengthY = dp.b
-        overlap_to = dp.pn
-        type = dp.type
+    fun set(params: InputParameter){
+        num = params.number
+        name = params.name
+        lengthX = params.a
+        lengthY = params.b
+        overlap_to = params.pn
+        type = params.type
         angle = 0f
-        if( dp.pt.x != 0f && dp.pt.y != 0f ) point =  dp.pt
-        pointFlag =  dp.ptF
+        if( params.point.x != 0f && params.point.y != 0f ) point =  params.point
+        pointFlag =  params.pointflag
         infoStr = getInfo()
     }
 
@@ -250,9 +250,9 @@ class Deduction(var num: Int = 0,
         return false
     }
 
-    override fun getParams() : Params {
+    override fun getParams() : InputParameter {
 
-        return Params(name, type, num, lengthX, lengthY,0f, overlap_to, typeToInt(type), point, pointFlag)
+        return InputParameter(name, type, num, lengthX, lengthY,0f, overlap_to, typeToInt(type), point, pointFlag)
     }
 
     fun flag(tri: Triangle): Boolean{

@@ -59,7 +59,7 @@ import com.jpaver.trianglelist.util.AdInitializerFactory
 import com.jpaver.trianglelist.util.AdManager
 import com.jpaver.trianglelist.util.EditTextViewLine
 import com.jpaver.trianglelist.util.EditorTable
-import com.jpaver.trianglelist.util.Params
+import com.jpaver.trianglelist.util.InputParameter
 import com.jpaver.trianglelist.util.TitleParamStr
 import com.jpaver.trianglelist.util.TitleParams
 import java.io.BufferedOutputStream
@@ -97,7 +97,7 @@ data class ResStr(
 //region TextWatcher
 private class MyTextWatcher(
     val mELine: EditTextViewLine,
-    var lastParams: Params
+    var lastParams: InputParameter
 ) : TextWatcher {
     //private val afterTextChanged_: TextView = findViewById<TextView>(R.id.afterTextChanged)
     //private val beforeTextChanged_: TextView = findViewById<TextView>(R.id.beforeTextChanged)
@@ -235,11 +235,11 @@ class MainActivity : AppCompatActivity(),
     lateinit var fab_xlsx: FloatingActionButton
 
     lateinit var ela1 : EditText
-    lateinit var elb1 : EditText
+    lateinit var editorline1_lengthB : EditText
     lateinit var elc1 : EditText
     lateinit var ela2 : EditText
-    lateinit var elb2 : EditText
-    lateinit var elc2 : EditText
+    lateinit var editorline2_lengthB : EditText
+    lateinit var editorline2_lengthC : EditText
     lateinit var elsa1 : String
     lateinit var elsb1 : String
     lateinit var elsc1 : String
@@ -254,8 +254,8 @@ class MainActivity : AppCompatActivity(),
 
     var isCSVsavedToPrivate = false
 
-    private lateinit var myELFirst: EditTextViewLine
-    private lateinit var myELSecond: EditTextViewLine
+    private lateinit var editorline1: EditTextViewLine
+    private lateinit var editorLine2: EditTextViewLine
     private lateinit var myELThird: EditTextViewLine
 
     private val sNumberList = listOf(
@@ -281,10 +281,10 @@ class MainActivity : AppCompatActivity(),
     // val dedmap = MapOf(dedNameList to )
 
     private var myEditor: EditorTable = EditorTable()
-    private var dParams: Params = Params("", "", 0, 0f, 0f, 0f, 0, 0,
+    private var parameter: InputParameter = InputParameter("", "", 0, 0f, 0f, 0f, 0, 0,
         PointXY(0f, 0f)
     )
-    private var lastParams: Params = dParams
+    private var lastParams: InputParameter = parameter
 
     // タイトルパラメータ、stringリソースから構成する
 
@@ -667,14 +667,14 @@ class MainActivity : AppCompatActivity(),
         checkPermission()
 
         ela1 = findViewById<EditText>(R.id.editLengthA1)
-        elb1 = findViewById<EditText>(R.id.editLengthB1)
+        editorline1_lengthB = findViewById<EditText>(R.id.editLengthB1)
         elc1 = findViewById<EditText>(R.id.editLengthC1)
         ela2 = findViewById<EditText>(R.id.editLengthA2)
-        elb2 = findViewById<EditText>(R.id.editLengthB2)
-        elc2 = findViewById<EditText>(R.id.editLengthC2)
+        editorline2_lengthB = findViewById<EditText>(R.id.editLengthB2)
+        editorline2_lengthC = findViewById<EditText>(R.id.editLengthC2)
 
         // EditTextの入力値の変化を追跡するリスナーを登録
-        elb1.addTextChangedListener(object : CustomTextWatcher {
+        editorline1_lengthB.addTextChangedListener(object : CustomTextWatcher {
             override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
                 myview.watchedB1_ = p0.toString()
                 myview.invalidate()
@@ -704,14 +704,14 @@ class MainActivity : AppCompatActivity(),
         })
 
 
-        elb2.addTextChangedListener(object : CustomTextWatcher {
+        editorline2_lengthB.addTextChangedListener(object : CustomTextWatcher {
             override fun afterTextChanged(p0: Editable?) {
                 myview.watchedB2_ = p0.toString()
                 myview.invalidate()
             }
         })
 
-        elc2.addTextChangedListener(object : CustomTextWatcher {
+        editorline2_lengthC.addTextChangedListener(object : CustomTextWatcher {
             override fun afterTextChanged(p0: Editable?) {
                 myview.watchedC2_ = p0.toString()
                 myview.invalidate()
@@ -989,7 +989,7 @@ class MainActivity : AppCompatActivity(),
         textView.threshold = 1
         textView2.threshold = 1
         textView3.threshold = 1
-        textView.addTextChangedListener(MyTextWatcher(myELFirst, lastParams))
+        textView.addTextChangedListener(MyTextWatcher(editorline1, lastParams))
 
     }
     private fun setTitles(){
@@ -1173,9 +1173,8 @@ class MainActivity : AppCompatActivity(),
         val eob = elist.get(currentNum - 1)
 
         loadEditTable()
-        myview.setParentSide(elist.size(), 0)
         myEditor.lineRewrite(
-                Params(
+                InputParameter(
                         "",
                         "",
                         elist.size() + 1,
@@ -1185,12 +1184,12 @@ class MainActivity : AppCompatActivity(),
                         elist.size(),
                         0,
                     PointXY(0f, 0f)
-                ), myELFirst
+                ), editorline1
         )
-        myEditor.lineRewrite(eo.getParams(), myELSecond)
+        myEditor.lineRewrite(eo.getParams(), editorLine2)
         if(currentNum > 1) myEditor.lineRewrite(eob.getParams(), myELThird)
         if(currentNum == 1) myEditor.lineRewrite(
-                Params(
+                InputParameter(
                         "",
                         "",
                         0,
@@ -1204,7 +1203,7 @@ class MainActivity : AppCompatActivity(),
         )
     }
 
-    fun isValid(dp: Params) : Boolean{
+    fun isValid(dp: InputParameter) : Boolean{
         if (dp.a <= 0.0f || dp.b <= 0.0f || dp.c <= 0.0f) return false
         if (dp.a + dp.b <= dp.c ){
             Toast.makeText(this, "Invalid!! : C > A + B", Toast.LENGTH_LONG).show()
@@ -1219,11 +1218,11 @@ class MainActivity : AppCompatActivity(),
             return false
         }
 
-        if ( dp.pn > myTriangleList.size() || ( dp.pn < 1 && dp.n != 1 )) {
+        if ( dp.pn > myTriangleList.size() || ( dp.pn < 1 && dp.number != 1 )) {
             Toast.makeText(this, "Invalid!! : number of parent", Toast.LENGTH_LONG).show()
             return false
         }
-        if (  dp.pl < 1 && dp.n != 1  ) {
+        if (  dp.pl < 1 && dp.number != 1  ) {
             Toast.makeText(this, "Invalid!! : connection in parent", Toast.LENGTH_LONG).show()
             return false
         }
@@ -1232,7 +1231,7 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun loadEditTable(){
-        myELFirst =
+        editorline1 =
             EditTextViewLine(
                     findViewById(R.id.editNumber1),
                     findViewById(R.id.editName1),
@@ -1243,7 +1242,7 @@ class MainActivity : AppCompatActivity(),
                     findViewById(R.id.editParentConnect1)
             )
 
-        myELSecond =
+        editorLine2 =
             EditTextViewLine(
                     findViewById(R.id.editNumber2),
                     findViewById(R.id.editName2),
@@ -1269,7 +1268,7 @@ class MainActivity : AppCompatActivity(),
 
     }
 
-    private fun validDeduction(dp: Params): Boolean {
+    private fun validDeduction(dp: InputParameter): Boolean {
         return isValidName(dp.name) && isValidDimensions(dp)
     }
 
@@ -1277,7 +1276,7 @@ class MainActivity : AppCompatActivity(),
         return name.isNotEmpty()
     }
 
-    private fun isValidDimensions(dp: Params): Boolean {
+    private fun isValidDimensions(dp: InputParameter): Boolean {
         if (dp.a < 0.1f) return false
         if (dp.type == "Box" && dp.b < 0.1f) return false
         return true
@@ -1294,11 +1293,11 @@ class MainActivity : AppCompatActivity(),
 
     private fun updateElStrings(){
         elsa1 = toString( ela1 )
-        elsb1 = toString( elb1 )
+        elsb1 = toString( editorline1_lengthB )
         elsc1 = toString( elc1 )
         elsa2 = toString( ela2 )
-        elsb2 = toString( elb2 )
-        elsc2 = toString( elc2 )
+        elsb2 = toString( editorline2_lengthB )
+        elsc2 = toString( editorline2_lengthC )
     }
 
 
@@ -1350,7 +1349,7 @@ class MainActivity : AppCompatActivity(),
         val mainViewModel = MainViewModel()
 
         setCommonFabListener(fab_replace) {
-            fabReplace(dParams, false)
+            fabReplace(parameter, false)
         }
 
         setCommonFabListener(fab_flag) {
@@ -1519,7 +1518,7 @@ class MainActivity : AppCompatActivity(),
         }
 
         fab_up.setOnClickListener {
-            myEditor.scroll(-1, getList(deductionMode), myELSecond, myELThird)
+            myEditor.scroll(-1, getList(deductionMode), editorLine2, myELThird)
 
             if(!deductionMode) moveTrilist()
             else if( myDeductionList.size() > 0 ){
@@ -1533,7 +1532,7 @@ class MainActivity : AppCompatActivity(),
         }
 
         fab_down.setOnClickListener {
-            myEditor.scroll(1, getList(deductionMode), myELSecond, myELThird)
+            myEditor.scroll(1, getList(deductionMode), editorLine2, myELThird)
 
             if(!deductionMode) moveTrilist()
             else if( myDeductionList.size() > 0 ){
@@ -1574,14 +1573,14 @@ class MainActivity : AppCompatActivity(),
             //CreateNew()
 
             findViewById<TextView>(R.id.editLengthB1).text = "" // reset
-            fabReplace(Params("", "", 1, 7f, 7f, 7f, 0, 0), true)
+            fabReplace(InputParameter("", "", 1, 7f, 7f, 7f, 0, 0), true)
             findViewById<TextView>(R.id.editLengthB1).text = 0.6f.toString()//"6f" // add
-            fabReplace(Params("", "", 2, 7f, 6f, 6f, 1, 2), true)
+            fabReplace(InputParameter("", "", 2, 7f, 6f, 6f, 1, 2), true)
 
             findViewById<TextView>(R.id.editLengthA1).text = 0.23f.toString()//"0.23f" // add
             deductionMode = true
             fabReplace(
-                Params(
+                InputParameter(
                     "仕切弁", "Circle", 1, 0.23f, 0f, 0f, 1, 0,
                     PointXY(1f, 0f),
                     PointXY(
@@ -1642,40 +1641,41 @@ class MainActivity : AppCompatActivity(),
         //saveCSVtoPrivate()
     }
 
-    fun fabFlag(){
-        dParams = myEditor.readLineTo(dParams, myELSecond)// 200703 // if式の中に入っていると当然ながら更新されない時があるので注意
+    fun setDeductionlist(){
+        myview.setDeductionList(myDeductionList, mScale)
+    }
 
-        if(deductionMode){
-            val d = myDeductionList.get(dParams.n)
-            dParams.ptF = myview.getTapPoint()
-            dParams.pt = d.point
-            //var ded = myDeductionList.get(dParams_.n)
-            myview.getTapPoint().scale(
-                PointXY(
-                    0f,
-                    0f
-                ), 1 / mScale, -1 / mScale)
-            if(validDeduction(dParams)) {// あまり遠い時はスルー
-                myDeductionList.replace(dParams.n, dParams)
-//                    EditorReset(getList(myDeductionMode),getList(myDeductionMode).length())
-                myview.setDeductionList(myDeductionList, mScale)
-            }
+    fun setTrianglelist(){
+        myview.setTriangleList(myTriangleList, mScale, false)
+    }
+
+    fun flagDeduction(){
+        val deduction = myDeductionList.get(parameter.number)
+        parameter.pointflag = myview.pressedInModel
+        parameter.point = deduction.point
+        if(validDeduction(parameter)) {// あまり遠い時はスルー
+            myDeductionList.replace(parameter)
+            setDeductionlist()
         }
-        else{
-            val tri = myTriangleList.get(dParams.n)
-            val tp = myview.getTapPoint().scale(
-                PointXY(
-                    0f,
-                    0f
-                ), 1 / mScale, -1 / mScale)
-            if( tp.lengthTo(tri.pointcenter) < 10f ){ // あまり遠い時はスルー
-                tri.pointnumber = tp
-                tri.pointNumber.point = tp
-                tri.pointNumber.flag.isMovedByUser = true
-                tri.pointNumber.flag.isAutoAligned = false
-                myview.setTriangleList(myTriangleList, mScale, false)
-            }
+    }
+
+    fun flagTriangle(){
+        val triangle = myTriangleList.get(parameter.number)
+        val tappoint = myview.pressedInModel.scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
+        if( tappoint.lengthTo(triangle.pointcenter) < 10f ){ // あまり遠い時はスルー
+            triangle.pointnumber = tappoint
+            triangle.pointNumber.point = tappoint
+            triangle.pointNumber.flag.isMovedByUser = true
+            triangle.pointNumber.flag.isAutoAligned = false
+            setTrianglelist()
         }
+    }
+
+    fun fabFlag(){
+        parameter = myEditor.readLineTo(parameter, editorLine2)
+
+        if(deductionMode) flagDeduction()
+        else flagTriangle()
 
         myview.invalidate()
     }
@@ -1699,15 +1699,15 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    fun fabReplace(params: Params = dParams, useit: Boolean = false ){
+    fun fabReplace(params: InputParameter = parameter, useit: Boolean = false ){
         //val editor = myEditor
         trilistSaving(myTriangleList)
         val dedMode = deductionMode
 
-        var readedFirst  = Params()
-        var readedSecond = Params()
-        myEditor.readLineTo(readedFirst, myELFirst)
-        myEditor.readLineTo(readedSecond, myELSecond)
+        var readedFirst  = InputParameter()
+        var readedSecond = InputParameter()
+        myEditor.readLineTo(readedFirst, editorline1)
+        myEditor.readLineTo(readedSecond, editorLine2)
         if(useit){
             readedFirst = params
             readedSecond = params
@@ -1727,10 +1727,10 @@ class MainActivity : AppCompatActivity(),
         } else { // if in deduction mode
             if (strTopA == "") {
                 resetDeductionsBy(readedSecond)
-                myview.myDeductionList[readedSecond.n].point
+                myview.myDeductionList[readedSecond.number].point
             } else {
                 addDeductionBy(readedFirst)
-                myview.myDeductionList[readedFirst.n].point
+                myview.myDeductionList[readedFirst.number].point
             }
             findViewById<EditText>(R.id.editName1).requestFocus()
         }
@@ -1785,25 +1785,25 @@ class MainActivity : AppCompatActivity(),
     return movable
 }
     // Params インスタンスの中身をログに出力する関数
-    private fun logParams(params: Params, tag: String = "ParamsLog") {
+    private fun logParams(params: InputParameter, tag: String = "ParamsLog") {
         val paramsContents = with(params) {
             """
         |name: $name
         |type: $type
-        |n: $n
+        |n: $number
         |a: $a
         |b: $b
         |c: $c
         |pn: $pn
         |pl: $pl
-        |pt: (${pt.x}, ${pt.y})
-        |pts: (${ptF.x}, ${ptF.y})
+        |pt: (${point.x}, ${point.y})
+        |pts: (${pointflag.x}, ${pointflag.y})
         """.trimMargin()
         }
         Log.d(tag, paramsContents)
     }
 
-    private fun addDeductionBy(params: Params) : Boolean {
+    private fun addDeductionBy(params: InputParameter) : Boolean {
         if (!validDeduction(params)) {
             Log.d( "Deduction", "invalid parameters" )
             logParams(params, "add Dedution")
@@ -1811,7 +1811,7 @@ class MainActivity : AppCompatActivity(),
         }
 
         // 所属する三角形の判定処理
-        val ded = processDeduction(params)
+        val ded = flagDeduction(params)
         if( ded == null ) return false
         myDeductionList.add( ded.clone() )
 
@@ -1825,9 +1825,9 @@ class MainActivity : AppCompatActivity(),
     }
 
 
-    private fun processDeduction(params: Params): Deduction?{//Params {
-        params.pt = myview.getTapPoint()
-        if (params.pt == PointXY(0f, 0f)) return null
+    private fun flagDeduction(params: InputParameter): Deduction?{//Params {
+        params.point = myview.pressedInModel
+        if (params.point == PointXY(0f, 0f)) return null
 
         //形状の自動判定
         if( params.b > 0f ) params.type = "Box"
@@ -1835,7 +1835,7 @@ class MainActivity : AppCompatActivity(),
 
         // 所属する三角形の判定処理
         params.pn = myview.trianglelist.isCollide(
-            params.pt.scale(
+            params.point.scale(
                 PointXY(
                     1f,
                     -1f
@@ -1854,8 +1854,8 @@ class MainActivity : AppCompatActivity(),
             val trilistinview = myview.trianglelist
             val parent = trilistinview.get(params.pn)
             Log.d("Deduction", "parent:" + parent.toString() )
-            Log.d("Deduction", "params.point:  " + params.pt.x + ", " + params.pt.y)
-            Log.d("Deduction", "params.pointF: " + params.ptF.x + ", " + params.ptF.y)
+            Log.d("Deduction", "params.point:  " + params.point.x + ", " + params.point.y)
+            Log.d("Deduction", "params.pointF: " + params.pointflag.x + ", " + params.pointflag.y)
 
             ded.flag(parent)
 
@@ -1874,7 +1874,7 @@ class MainActivity : AppCompatActivity(),
         //return params
     }
 
-    private fun resetDeductionsBy(params: Params) : Boolean {
+    private fun resetDeductionsBy(params: InputParameter) : Boolean {
         if (!validDeduction(params)) {
             Log.d( "Deduction", "invalid parameters" )
             logParams(params, "reset Dedution")
@@ -1883,11 +1883,11 @@ class MainActivity : AppCompatActivity(),
 
         //myTriangleList.current = params.pn
 
-        val ded = processDeduction(params)
+        val ded = flagDeduction(params)
         if( ded == null ) return false
 
         // 所属する三角形の判定処理
-        myDeductionList.replace(params.n, ded )
+        myDeductionList.replace(params.number, ded )
         myview.trianglelist.dedmapping(myDeductionList, -1)
         return true
     }
@@ -1899,16 +1899,16 @@ class MainActivity : AppCompatActivity(),
     private fun trilistSaving( from: TriangleList ){
         trilistUndo = from.clone()
     }
-    private fun createNewTriangle( params: Params, parentTri: Triangle ): Triangle{
+    private fun createNewTriangle(params: InputParameter, parentTri: Triangle ): Triangle{
         val newTri = Triangle(
             parentTri,
             params
         )
-        newTri.mynumber = params.n
+        newTri.mynumber = params.number
         return newTri
     }
 
-    private fun trilistAdd(params: Params, triList: TriangleList ){
+    private fun trilistAdd(params: InputParameter, triList: TriangleList ){
         val newTri = createNewTriangle( params, triList.getBy(params.pn) )
         triList.add(newTri, true)
         triList.lastTapNumber_ = triList.size()
@@ -1918,7 +1918,7 @@ class MainActivity : AppCompatActivity(),
         findViewById<EditText>(R.id.editLengthA1).requestFocus()
     }
 
-    private fun addTriangleBy(params: Params) : Boolean {
+    private fun addTriangleBy(params: InputParameter) : Boolean {
         if ( isValid( params ) ) {
 
             trilistSaving( myTriangleList )
@@ -1930,7 +1930,7 @@ class MainActivity : AppCompatActivity(),
         return false
     }
 
-    private fun resetTrianglesBy(params: Params) : Boolean {
+    private fun resetTrianglesBy(params: InputParameter) : Boolean {
 
         return if (isValid(params)){
             trilistUndo = myTriangleList.clone()
@@ -1948,70 +1948,83 @@ class MainActivity : AppCompatActivity(),
 
 
     //region TapEvent
-    private fun autoConnection(i: Int){
 
-        myview.trianglelist.lastTapSide_ = i
-        dParams = myEditor.readLineTo(dParams, myELFirst) //keep them
+    fun getTriangleParameter(sideindex: Int): InputParameter{
+        val triangle: Triangle = myTriangleList.get(parameter.pn)
+        return InputParameter(
+            parameter.name,
+            "",
+            myTriangleList.size() + 1,
+            triangle.getLengthByIndex(sideindex),
+            parameter.b,
+            parameter.c,
+            triangle.mynumber,
+            sideindex,
+            PointXY(0f, 0f),
+            PointXY(0f, 0f)
+        )
+    }
 
-        var focusTo = elb1
+    fun isDoubleTap(): Boolean{
+        return myview.trianglelist.isDoubleTap_
+    }
 
-        if( myview.trianglelist.isDoubleTap_ == true ){
-            if(i == 1) focusTo = elb2
-            if(i == 2) focusTo = elc2
+    fun connectTriangle(sideindex: Int ){
+        var focusTo = editorline1_lengthB
+
+        if( isDoubleTap() ){
+            if(sideindex == 1) focusTo = editorline2_lengthB
+            if(sideindex == 2) focusTo = editorline2_lengthC
         }
 
-        if(!deductionMode) {
+        myEditor.lineRewrite( getTriangleParameter(sideindex), editorline1 )
 
-            val t: Triangle = myTriangleList.get(dParams.pn)
-            myEditor.lineRewrite(
-                    Params(
-                            dParams.name,
-                            "",
-                            myTriangleList.size() + 1,
-                            t.getLengthByIndex(i),
-                            dParams.b,
-                            dParams.c,
-                            t.mynumber,
-                            i,
-                        PointXY(0f, 0f),
-                        PointXY(0f, 0f)
-                    ), myELFirst
+        if(myview.trianglelist.lastTapSide_ != -1){
+            myview.trianglelist.isDoubleTap_ = true
+
+            focusTo.requestFocus()
+            focusTo.setSelection(focusTo.text.length)
+            val inputMethodManager: InputMethodManager =
+                getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+            inputMethodManager.showSoftInput(focusTo, 0)
+
+
+        }
+        myview.resetViewToLastTapTriangle()
+    }
+
+
+
+    fun connectDeduction(sideindex: Int){
+        setFabSetBC(sideindex)
+        myEditor.lineRewrite( setupDedParameter(sideindex), editorline1 )
+    }
+
+    fun setupDedParameter(sideindex: Int): InputParameter{
+        return InputParameter(
+            parameter.name,
+            "",
+            myDeductionList.size() + 1,
+            parameter.a,
+            parameter.b,
+            parameter.c,
+            parameter.pn,
+            sideindex,
+            PointXY(
+                0f,
+                0f
             )
+        )
+    }
 
-            myview.setParentSide(t.mynumber, i)
+    private fun autoConnection(sideindex: Int){
+        myview.trianglelist.lastTapSide_ = sideindex
+        parameter = myEditor.readLineTo(parameter, editorline1) //keep them
 
-            if(myview.trianglelist.lastTapSide_ != -1){
-                myview.trianglelist.isDoubleTap_ = true
-
-                focusTo.requestFocus()
-                focusTo.setSelection(focusTo.text.length)
-                val inputMethodManager: InputMethodManager =
-                    getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
-                inputMethodManager.showSoftInput(focusTo, 0)
-
-                myview.resetViewToLastTapTriangle()
-
-            }
-        }
-        else{
-            setFabSetBC(i)
-            myEditor.lineRewrite(
-                    Params(
-                            dParams.name,
-                            "",
-                            myDeductionList.size() + 1,
-                            dParams.a,
-                            dParams.b,
-                            dParams.c,
-                            dParams.pn,
-                            i,
-                        PointXY(
-                            0f,
-                            0f
-                        )
-                    ), myELFirst
-            )
-        }
+        if(!deductionMode)
+            connectTriangle(sideindex)
+        else
+            connectDeduction(sideindex)
     }
 
     private fun setFabSetBC(i: Int){
@@ -2040,7 +2053,7 @@ class MainActivity : AppCompatActivity(),
 
                     myEditor.scroll(
                             tapIndex - myDeductionList.current,
-                            getList(deductionMode), myELSecond, myELThird
+                            getList(deductionMode), editorLine2, myELThird
                     )
                     //my_view.resetView( my_view.myDeductionList.get( tapIndex ).point.scale( PointXY(1f,-1f ) ) )
                 }
@@ -2109,7 +2122,7 @@ class MainActivity : AppCompatActivity(),
 
     // タップされた三角形に関連する基本処理を行う関数
     fun handleTriangleTap(trilistV: TriangleList, myEditor: EditorTable, myTriangleList: TriangleList, isEditorScroll: Boolean = false ) {
-        if( isEditorScroll ) myEditor.scroll(trilistV.lastTapNumber_ - trilistV.selectedNumber, myTriangleList, myELSecond, myELThird) // スクロールしてタップされた三角形を表示
+        if( isEditorScroll ) myEditor.scroll(trilistV.lastTapNumber_ - trilistV.selectedNumber, myTriangleList, editorLine2, myELThird) // スクロールしてタップされた三角形を表示
         trilistV.selectedNumber = trilistV.lastTapNumber_ // 現在の三角形を更新
         myTriangleList.changeSelectedNumber(myview.trianglelist.lastTapNumber_) // myTriangleListの現在の三角形を更新
         myTriangleList.lastTapNumber_ = myview.trianglelist.lastTapNumber_ // 最後にタップされた三角形の番号を更新
@@ -2136,7 +2149,6 @@ class MainActivity : AppCompatActivity(),
         editLengthA2.requestFocus() // フォーカスを設定
         editLengthA2.setSelection(editLengthA2.text.length) // EditTextのテキストを選択状態にする
         inputMethodManager.showSoftInput(editLengthA2, 0) // ソフトキーボードを表示
-        myview.setParentSide(myview.getTriangleList().lastTapNumber_, 3) // 親となる辺を設定
         myview.resetViewToLastTapTriangle()
     }
 //endregion
@@ -2940,7 +2952,7 @@ class MainActivity : AppCompatActivity(),
                 //            PointXY(chunks[10]!!.toFloat(),-chunks[11]!!.toFloat()).scale(mScale)))
                 dedlist.add(
                     Deduction(
-                        Params(
+                        InputParameter(
                             chunks[2], chunks[6], chunks[1].toInt(),
                             chunks[3].toFloat(), chunks[4].toFloat(), 0f,
                             chunks[5].toInt(), typeToInt(chunks[6]),

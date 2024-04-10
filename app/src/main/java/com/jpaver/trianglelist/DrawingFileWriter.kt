@@ -529,7 +529,7 @@ open class DrawingFileWriter {
 
 
         if( editObject is Triangle) {
-            writeText(param.n.toString(),
+            writeText(param.number.toString(),
                 PointXY(baseX, baseY), color, ts, 1, 1, 0f, scale)
             writeText(
                 param.b.formattedString(2),

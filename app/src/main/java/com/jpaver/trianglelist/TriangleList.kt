@@ -1,6 +1,6 @@
 package com.jpaver.trianglelist
 
-import com.jpaver.trianglelist.util.Params
+import com.jpaver.trianglelist.util.InputParameter
 import java.util.Optional
 
 class TriangleList : EditList {
@@ -475,13 +475,13 @@ class TriangleList : EditList {
         return cParam
     }
 
-    fun resetNodeByID(prms: Params) {
+    fun resetNodeByID(prms: InputParameter) {
         val doneObjectList = ArrayList<Triangle>()
-        trilist[prms.n - 1].resetNode(prms, trilist[prms.pn - 1], doneObjectList)
+        trilist[prms.number - 1].resetNode(prms, trilist[prms.pn - 1], doneObjectList)
     }
 
-    fun resetFromParam(prms: Params): Boolean {
-        val ci = prms.n - 1
+    fun resetFromParam(prms: InputParameter): Boolean {
+        val ci = prms.number - 1
         val tri = trilist[ci]
 
         // 親番号が書き換わっている時は入れ替える。ただし現在のリストの範囲外の番号は除く。
@@ -493,7 +493,7 @@ class TriangleList : EditList {
         tri.reset(prms)
 
         // 関係する三角形を書き換える
-        resetTriangles(prms.n, tri)
+        resetTriangles(prms.number, tri)
         return true
     }
 
@@ -592,13 +592,8 @@ class TriangleList : EditList {
     }
 
     fun getLastTriangle(): Triangle{
-        if(lastTapNumber_<1) return Triangle()
+        if(lastTapNumber_<1) return trilist[0]
         return trilist[lastTapNumber_-1]
-    }
-
-    fun getLastNumber(): Int{
-        if(lastTapNumber_<1) return 1
-        return lastTapNumber_
     }
 
     // by number start 1, not index start 0.
@@ -765,8 +760,8 @@ class TriangleList : EditList {
         return trilist
     }
 
-    override fun getParams(num: Int): Params {
-        if (num > trilist.size) return Params(
+    override fun getParams(num: Int): InputParameter {
+        if (num > trilist.size) return InputParameter(
             "",
             "",
             0,
@@ -779,7 +774,7 @@ class TriangleList : EditList {
             PointXY(0f, 0f)
         )
         val t = trilist[num - 1]
-        return Params(
+        return InputParameter(
             t.myName_(),
             "",
             t.mynumber,
