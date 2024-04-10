@@ -306,7 +306,9 @@ class Triangle : EditObject, Cloneable<Triangle> {
         point[0] = PointXY(0f, 0f)
         angle = 180f
         initBasicArguments(A, B, C, point[0], angle)
-        if(isValid) calcPoints(point[0], angle)
+        if(A <= 0.0 ) return
+        calcPoints(point[0], angle)
+        //myDimAlign_ = autoSetDimAlign()
     }
 
     //for first triangle.
@@ -1207,14 +1209,13 @@ class Triangle : EditObject, Cloneable<Triangle> {
     //region rotater
     fun rotate(basepoint: PointXY, addDegree: Float, recover: Boolean = false ) {
         if (connectionType < 9 && recover ) return
-        if (!recover) angleInLocal_ += addDegree
-        if ( recover) angleInLocal_  = addDegree
+        if (!recover) angleInLocal_ += addDegree else angleInLocal_ = addDegree
+
+        //val allpoints = arrayOf(*point, *dimpoint, pointcenter, pointCA_, pointAB, pointBC)
+        //allpoints.map { it.rotate(basepoint, addDegree) }
 
         point[0] = point[0].rotate(basepoint, addDegree)
         angle += addDegree
-        if(pointNumber.flag.isMovedByUser && !recover){
-            pointNumber.point = pointNumber.point.rotate( basepoint, addDegree )
-        }
         calcPoints(point[0], angle)
         //setDimPath(dimHeight)
 
