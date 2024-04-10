@@ -35,16 +35,27 @@ class TrilistOutlineTest {
     }
 
     @Test
+    fun testCompare(){
+        val trilist = pattern2()//setupTrilist() // テスト用の三角形リストを準備
+        val outlinelist = OutlineList(trilist) // OutlineList インスタンスを作成
+
+        val target1 = trilist.get(1).pointAB
+        val target2 = trilist.get(1).pointBC
+        val widerside = outlinelist.compare(target1,target2)
+        println( "${widerside} from ${target1} and ${target2}" )
+    }
+
+    @Test
     fun testFind_calcAngle() { //ShouldReturnCorrectPointFromOutlineList
         // テストのセットアップ
         val trilist = pattern2()//setupTrilist() // テスト用の三角形リストを準備
         val outlinelist = OutlineList(trilist) // OutlineList インスタンスを作成
         val pointlist = outlinelist.traceForward(0, 0, trilist[1]) // traceForward で点のリストを生成
 
-        // テスト対象のポイントを指定
-        val target = trilist.get(10).pointAB
+        val target = trilist.get(2).pointAB
         val actualResult = outlinelist.find(target)!!
-        // アサーション: find メソッドが正しいポイントを返すことを確認
+
+        println(actualResult)
         assertTrue( target.nearBy( actualResult, 0.01f) )
 
         val angles = pointlist!!.map{ outlinelist.calcAngle(it) }
