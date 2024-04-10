@@ -687,15 +687,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
     }
 
     fun drawShadowTriangle(canvas: Canvas, trilist: TriangleList){
-        if( trilist.lastTapNumber_ < 1 ) return
-        if( isPrintPDF_ == true ){
-            Log.d( "myVIew", "drawShadowTriangle - isPrintPDF:")
-            return
-        }
-        if( trilist.lastTapSide_ < 1 || trilist.isDoubleTap_ == false ) {
-            shadowTri_ = Triangle( 0f, 0f, 0f )
-            return
-        }
+        if( trilist.lastTapNumber_ < 1 || isPrintPDF_ == true || trilist.lastTapSide_ < 1 || trilist.isDoubleTap_ == false ) return
 
         val shadowParent = trilist.get(trilist.lastTapNumber_ )
         val shadowTapSide = trilist.lastTapSide_

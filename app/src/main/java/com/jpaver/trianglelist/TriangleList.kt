@@ -736,11 +736,6 @@ class TriangleList : EditList {
             if (trilist[i].getTapLength(tapP, rangeRadius) != -1) {
                 lastTapNumber_ = i + 1
                 lastTapSide_ = trilist[i].getTapLength(tapP, rangeRadius)
-
-                //if( i > 0 && lastTapSide_ == 0 ){
-                //                        lastTapNumber_ = i;
-                //                      lastTapSide_ = trilist_.get(i-1).getTapLength(tapP);
-                //}
                 isDoubleTap_ = ltn == lastTapSide_ + lastTapNumber_
             }
         }
