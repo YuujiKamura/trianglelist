@@ -7,11 +7,37 @@ import org.junit.Test
 
 @Suppress("DEPRECATION")
 class TrilistOutlineTest {
+    fun setupTrilist(): TriangleList{
+        val trilist = TriangleList()
+        // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
+        trilist.add(Triangle(8f, 6f, 8f), true)//1
+        trilist.add(1, 2, 9f, 8f)//2
+        trilist.add(2, 4, 7f, 4f, 9f)//3
+        trilist.add(3, 2, 2f, 9f)//4
+        trilist.add(4, 2, 9f, 2f)//5
+        trilist.add(5, 1, 5f, 5f)//6
+        trilist.add(6, 2, 5f, 2f)//7
+        trilist.add(6, 1, 2f, 5f)//8
+        trilist.add(8, 2, 5f, 5f)//9
+        trilist.add(9, 1, 2f, 5f)//10
+        trilist.add(9, 2, 5f, 5f)//11
+        trilist.setChildsToAllParents()
+        return trilist
+    }
+
+    fun pattern2(): TriangleList{
+        val trilist = TriangleList()
+        trilist.add(Triangle(5f, 5f, 5f), true)//1
+        trilist.add(1, 1, 5f, 5f)//2
+        trilist.add(2, 1, 5f, 5f)//3
+        trilist.add(3, 1, 5f, 5f)//4
+        return trilist
+    }
 
     @Test
     fun testFind_calcAngle() { //ShouldReturnCorrectPointFromOutlineList
         // テストのセットアップ
-        val trilist = setupTrilist() // テスト用の三角形リストを準備
+        val trilist = pattern2()//setupTrilist() // テスト用の三角形リストを準備
         val outlinelist = OutlineList(trilist) // OutlineList インスタンスを作成
         val pointlist = outlinelist.traceForward(0, 0, trilist[1]) // traceForward で点のリストを生成
 
@@ -103,23 +129,7 @@ class TrilistOutlineTest {
         printTriList( trilist )
     }
 
-    fun setupTrilist(): TriangleList{
-        val trilist = TriangleList()
-        // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
-        trilist.add(Triangle(8f, 6f, 8f), true)//1
-        trilist.add(1, 2, 9f, 8f)//2
-        trilist.add(2, 4, 7f, 4f, 9f)//3
-        trilist.add(3, 2, 2f, 9f)//4
-        trilist.add(4, 2, 9f, 2f)//5
-        trilist.add(5, 1, 5f, 5f)//6
-        trilist.add(6, 2, 5f, 2f)//7
-        trilist.add(6, 1, 2f, 5f)//8
-        trilist.add(8, 2, 5f, 5f)//9
-        trilist.add(9, 1, 2f, 5f)//10
-        trilist.add(9, 2, 5f, 5f)//11
-        trilist.setChildsToAllParents()
-        return trilist
-    }
+
 
     @Test
     fun testTriListOutline(){
