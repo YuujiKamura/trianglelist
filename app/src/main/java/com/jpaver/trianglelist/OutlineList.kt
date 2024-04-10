@@ -19,9 +19,12 @@ class OutlineList(var trianglelist: TriangleList) :Cloneable{
         val prevPoint = pointlist[prevIndex]
         val nextPoint = pointlist[nextIndex]
 
+        // ここでポイントを出力
+        println("prevPoint:$prevIndex${prevPoint.format()}, target:$index${target.format()}, nextPoint:$nextIndex${nextPoint.format()}")
+
         // prevPoint、result（現在のポイント）、nextPointを使って角度を計算
         // calcAngleメソッドの実装は、具体的な角度の計算方法に依存します
-        return prevPoint.calcAngle(result, nextPoint)
+        return prevPoint.calcAngle360(result, nextPoint)
     }
 
     fun find(target: PointXY): PointXY? {

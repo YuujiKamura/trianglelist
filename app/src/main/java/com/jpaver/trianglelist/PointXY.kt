@@ -2,24 +2,52 @@ package com.jpaver.trianglelist
 import com.jpaver.trianglelist.util.Cloneable
 import kotlin.math.acos
 
-class PointXY : Cloneable<PointXY> {
-     var x: Float
-     var y: Float
+class PointXY :Cloneable<PointXY> {
+    private var _x: Float = 0.0f
+    private var _y: Float = 0.0f
 
+    var x: Float
+        get() = adjustForRoundingError(_x)
+        set(value) {
+            _x = value
+        }
+
+    var y: Float
+        get() = adjustForRoundingError(_y)
+        set(value) {
+            _y = value
+        }
+
+    private fun adjustForRoundingError(value: Float, threshold: Float = 1e-5f): Float {
+        return if (Math.abs(value) < threshold) 0.0f else value
+    }
+
+    // xの値をフォーマットして返すメソッド
+    val DECIMAL = 4
+    fun getFormattedX(decimalPlaces: Int = DECIMAL): String {
+        return String.format("%.${decimalPlaces}f", x)
+    }
+
+    // yの値をフォーマットして返すメソッド
+    fun getFormattedY(decimalPlaces: Int = DECIMAL): String {
+        return String.format("%.${decimalPlaces}f", y)
+    }
+
+    fun format(decimalPlaces: Int = DECIMAL): String{
+        return "("+getFormattedX(decimalPlaces)+","+getFormattedY(decimalPlaces)+")"
+    }
+
+    // 主コンストラクタ
     constructor(x: Float, y: Float) {
         this.x = x
         this.y = y
     }
 
-    constructor(x: Float, y: Float, s: Float) {
-        this.x = x * s
-        this.y = y * s
-    }
+    // スケールを適用する追加のコンストラクタ
+    constructor(x: Float, y: Float, s: Float) : this(x * s, y * s)
 
-    constructor(p: PointXY) {
-        x = p.x
-        y = p.y
-    }
+    // PointXY オブジェクトからのコピーコンストラクタ
+    constructor(p: PointXY) : this(p.x, p.y)
 
     override fun clone(): PointXY {
         val b = PointXY(this.x,this.y)
@@ -134,6 +162,21 @@ class PointXY : Cloneable<PointXY> {
             180 - angleDegree.toFloat()
         }
     }
+
+    fun calcAngle360(p2: PointXY, p3: PointXY): Float {
+        val v1 = p2.subtract(this) // thisからp2へのベクトル
+        val v2 = p2.subtract(p3) // p2からp3へのベクトル
+        val angleRadian = acos(v1.innerProduct(v2) / (v1.magnitude() * v2.magnitude())) // ベクトル間の角度（ラジアン）
+        val angleDegree = angleRadian * 180 / Math.PI // ラジアンから度へ変換
+
+        // 外積を使って角度の方向（時計回りか反時計回りか）を判断し、角度を調整
+        return if (v1.outerProduct(v2) > 0) {
+            360 - angleDegree.toFloat() // 時計回りの場合は360度から角度を引く
+        } else {
+            angleDegree.toFloat() // 反時計回りの場合はそのまま角度を使用
+        }
+    }
+
 
     fun set(sp: PointXY) {
         x = sp.x

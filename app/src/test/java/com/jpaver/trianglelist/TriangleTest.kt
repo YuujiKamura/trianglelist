@@ -228,10 +228,10 @@ class TriangleTest {
     @Test
     fun testCalcDimAngle() {
         val tri = Triangle(5f, 5f, 5f)
-        val angle = tri.point[0].calcAngle(tri.pointAB, tri.pointBC)
-        Assert.assertEquals(-120f, angle, 0.0001f)
-        Assert.assertEquals(-120f, tri.pointBC.calcAngle(tri.point[0], tri.pointAB), 0.0001f)
-        Assert.assertEquals(-120f, tri.pointAB.calcAngle(tri.pointBC, tri.point[0]), 0.0001f)
+        val angle360 = tri.point[0].calcAngle(tri.pointAB, tri.pointBC)
+        Assert.assertEquals(300f, angle360, 0.0001f)
+        Assert.assertEquals(300f, tri.pointBC.calcAngle(tri.point[0], tri.pointAB), 0.0001f)
+        Assert.assertEquals(300f, tri.pointAB.calcAngle(tri.pointBC, tri.point[0]), 0.0001f)
     }
 
     @Test
