@@ -9,6 +9,24 @@ import org.junit.Test
 class TrilistOutlineTest {
 
     @Test
+    fun testFind_calcAngle() { //ShouldReturnCorrectPointFromOutlineList
+        // テストのセットアップ
+        val trilist = setupTrilist() // テスト用の三角形リストを準備
+        val outlinelist = OutlineList(trilist) // OutlineList インスタンスを作成
+        val pointlist = outlinelist.traceForward(0, 0, trilist[1]) // traceForward で点のリストを生成
+
+        // テスト対象のポイントを指定
+        val target = trilist.get(10).pointAB
+        val actualResult = outlinelist.find(target)!!
+        // アサーション: find メソッドが正しいポイントを返すことを確認
+        assertTrue( target.nearBy( actualResult, 0.01f) )
+
+        val angles = pointlist!!.map{ outlinelist.calcAngle(it) }
+        println(angles.joinToString("\n") )
+        //assertTrue( angle>10f )
+    }
+
+    @Test
     fun testTrilistTrace() {
         val trilist = TriangleList()
         val olp = ArrayList<PointXY>()
@@ -124,24 +142,5 @@ class TrilistOutlineTest {
         println(hashes.joinToString(" "))
 
     }
-
-    @Test
-    fun testFindShouldReturnCorrectPointFromOutlineList() {
-        // テストのセットアップ
-        val trilist = setupTrilist() // テスト用の三角形リストを準備
-        val outlinelist = OutlineList(trilist) // OutlineList インスタンスを作成
-        outlinelist.traceForward(0, 0, trilist[1]) // traceForward で点のリストを生成
-
-        // テスト対象のポイントを指定
-        val targetPoint = PointXY(-7.6478295f, 9.0832615f)
-
-        // 期待値と実際の結果（outlinelist.find(targetPoint)）を比較
-        val expectedResult = targetPoint
-        val actualResult = outlinelist.find(targetPoint)!!
-
-        // アサーション: find メソッドが正しいポイントを返すことを確認
-        assertTrue( expectedResult.nearBy( actualResult, 0.01f) )
-    }
-
 
 }
