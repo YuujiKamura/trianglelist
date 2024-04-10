@@ -122,8 +122,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
     // region pointNumber
     var pointNumber = PointNumber(this)
 
-    fun arrangeNumber(isUse: Boolean = false ): PointXY{
-        return pointNumber.arrangeNumber(isUse)
+    fun arrangeNumber(isUse: Boolean = false, outlineList: OutlineList?=null ): PointXY{
+        return pointNumber.arrangeNumber(isUse,outlineList)
     }
 
     //Deductionからも呼ばれている
@@ -1042,13 +1042,13 @@ class Triangle : EditObject, Cloneable<Triangle> {
     //endregion node and boundaries
 
     //region calculater
-    fun calcPoints(basepoint: PointXY, angle: Float, isArrange: Boolean = false) {
-        pointAB = basepoint.offset(length[0], angle)
+    fun calcPoints(basepoint: PointXY=point[0], _angle: Float=angle, isArrange: Boolean = false, outlineList: OutlineList?=null ) {
+        pointAB = basepoint.offset(length[0], _angle)
         pointBC = calculatePointBC( basepoint )
         calculateInternalAngles()
         calculatePointCenter()
         arrangeDims(isArrange)
-        pointnumber = arrangeNumber(isArrange)
+        pointnumber = arrangeNumber(isArrange,outlineList)
         setBoundaryBox()
     }
 
@@ -1168,7 +1168,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     //endregion old hataage method
 
     //region scale and translate
-    fun scale(basepoint: PointXY, scale_: Float) {
+    fun scale(basepoint: PointXY, scale_: Float, isArrange: Boolean=false, outlineList: OutlineList?=null) {
         scaleFactror *= scale_
         //pointAB.scale(basepoint, scale);
         //pointBC.scale(basepoint, scale);
@@ -1180,7 +1180,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         length[2] *= scale_
         pointNumber.triangle = this
         pointNumber.point.scale(basepoint, scale_)
-        calcPoints( point[0], angle, true )
+        calcPoints( point[0], angle, isArrange, outlineList )
     }
 
     fun move(to: PointXY) {
@@ -1207,13 +1207,14 @@ class Triangle : EditObject, Cloneable<Triangle> {
     //region rotater
     fun rotate(basepoint: PointXY, addDegree: Float, recover: Boolean = false ) {
         if (connectionType < 9 && recover ) return
-        if (!recover) angleInLocal_ += addDegree else angleInLocal_ = addDegree
-
-        //val allpoints = arrayOf(*point, *dimpoint, pointcenter, pointCA_, pointAB, pointBC)
-        //allpoints.map { it.rotate(basepoint, addDegree) }
+        if (!recover) angleInLocal_ += addDegree
+        if ( recover) angleInLocal_  = addDegree
 
         point[0] = point[0].rotate(basepoint, addDegree)
         angle += addDegree
+        if(pointNumber.flag.isMovedByUser && !recover){
+            pointNumber.point = pointNumber.point.rotate( basepoint, addDegree )
+        }
         calcPoints(point[0], angle)
         //setDimPath(dimHeight)
 

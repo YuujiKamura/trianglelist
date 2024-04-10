@@ -19,8 +19,6 @@ class TriangleList : EditList {
         // 開始インデックス以降の要素に対してのみ処理を行う
         trilist.drop(startindex).forEach {
             it.rotate( basepoint, angle, is_recover )
-            //if(!it.isPointNumberAutoAligned)
-                it.pointnumber = it.pointnumber.rotate( basepoint, angle )
         }
     }
 
@@ -279,7 +277,7 @@ class TriangleList : EditList {
     fun attachToTheView(basepoint: PointXY, scale: Float, ts: Float) {
         this.scale *= scale
         forEach { triangle ->
-            triangle.scale(basepoint, scale)
+            triangle.scale(basepoint, scale, true, OutlineList(this) )
 
             //これがないと結果が変わる、なぜだろう？
             triangle.setDimPath(ts)
@@ -315,9 +313,6 @@ class TriangleList : EditList {
         basepoint = bp.clone()
         trilist.map {
             it.rotate(basepoint, angle - 180, false)
-            if (!it.pointNumber.flag.isMovedByUser){
-                it.pointnumber = it.pointnumber.rotate(basepoint, angle - 180)
-            }
         }
         arrangeNumbers()
     }

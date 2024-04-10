@@ -18,15 +18,15 @@ class PointNumber( var triangle: Triangle ): Cloneable {
 
     val WEIGHT = 35f
 
-    fun arrangeNumber(isUse: Boolean = false ): PointXY {
+    fun arrangeNumber(isUse: Boolean = false , outlineList: OutlineList? = null ): PointXY {
         if(flag.isMovedByUser || flag.isAutoAligned ) return point
         if(!isUse) return weightedMidpoint(WEIGHT)
-        return autoAlignPointNumber()
+        return autoAlignPointNumber(outlineList)
     }
 
     val BORDER_AREA = 4f
     val BORDER_LENGTH = 2.0f
-    private fun autoAlignPointNumber() : PointXY {
+    private fun autoAlignPointNumber(outlineList: OutlineList? = null) : PointXY {
 
         val length = arrayOf(triangle.lengthAforce_, triangle.lengthBforce_, triangle.lengthCforce_)
         // lengthのどれかがBORDERよりも少ない場合にtrueを返す
@@ -35,16 +35,14 @@ class PointNumber( var triangle: Triangle ): Cloneable {
         if (triangle.getArea() <= BORDER_AREA && isAnyLengthLessThanBorder  ){
             point = triangle.pointcenter
             flag.isAutoAligned = true
-            return pointUnconnectedSide(triangle.pointcenter)
+            return pointUnconnectedSide( triangle.pointcenter, outlineList )
         }
 
         return weightedMidpoint(WEIGHT)
     }
 
     //pointNumberだけ使う
-    fun pointUnconnectedSide(
-        point: PointXY
-    ): PointXY {
+    fun pointUnconnectedSide( point: PointXY, outlineList: OutlineList?=null ): PointXY {
         //外側に出すと実行時エラーになる
         val FLAG_LENGTH_B = triangle.lengthB*0.8f
         val FLAG_LENGTH_C = triangle.lengthA*0.8f
@@ -52,11 +50,17 @@ class PointNumber( var triangle: Triangle ): Cloneable {
         val point_ = arrayOf( triangle.point[0], triangle.pointAB, triangle.pointBC )
 
         if (triangle.nodeTriangleB == null)
-            return point.offset( getPointByAngle( angle_[1], angle_[2], point_[1], point_[2] ), FLAG_LENGTH_C ) //.mirroredAndScaledPoint(triangle.pointAB, triangle.pointBC, clockwise)
+            return point.offset( getPointByOuterAngle( angle_[1], angle_[2], point_[1], point_[2], outlineList ), FLAG_LENGTH_C ) //.mirroredAndScaledPoint(triangle.pointAB, triangle.pointBC, clockwise)
         if (triangle.nodeTriangleC == null)
-            return point.offset( getPointByAngle( angle_[2], angle_[0], point_[2], point_[0] ),  FLAG_LENGTH_B ) //mirroredAndScaledPoint(triangle.point[0], triangle.pointBC, clockwise)
+            return point.offset( getPointByOuterAngle( angle_[2], angle_[0], point_[2], point_[0], outlineList ), FLAG_LENGTH_B ) //mirroredAndScaledPoint(triangle.point[0], triangle.pointBC, clockwise)
 
         return weightedMidpoint(WEIGHT)
+    }
+
+    fun getPointByOuterAngle( angle1:Float, angle2:Float, point1:PointXY, point2:PointXY, outlineList: OutlineList? ):PointXY{
+        if(outlineList==null) return getPointByAngle(angle1,angle2,point1, point2)
+
+        return outlineList.compare(point1,point2)
     }
 
     fun getPointByAngle(angle1:Float, angle2:Float, point1:PointXY, point2:PointXY):PointXY{

@@ -6,20 +6,23 @@ class OutlineList(var trianglelist: TriangleList) :Cloneable{
     var outlineStr_ = trianglelist.outlineStr_
     val pointlist = ArrayList<PointXY>()
 
+    init{
+    }
+
     fun compare(_target1:PointXY, _target2:PointXY):PointXY{
         if(trilist.size < 1) {
             println("outlinelist.compare: trilist.size < 1, return _target1")
             return _target1
         }
-
         traceForward(0,0, trilist[0] )
+
         val targetone = find(_target1)
         val targettwo = find(_target2)
 
         if( targetone != null && targettwo != null ){
             val angle1 = calcAngle( targetone )
             val angle2 = calcAngle( targettwo )
-            println("outlinelist.compare: 1:$angle1, 2:$angle2")
+            println("outlinelist.compare: 1=$angle1, 2=$angle2")
 
             if( angle1 > angle2 ) return targetone
             return targettwo
