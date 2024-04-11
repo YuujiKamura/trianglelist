@@ -274,12 +274,13 @@ class TriangleList : EditList {
         }
     }
 
-    fun attachToTheView(basepoint: PointXY, scale: Float, ts: Float) {
+    fun attachToTheView(basepoint: PointXY, scale: Float, ts: Float, isArrange:Boolean=true, isResetAutoFlag: Boolean= false ) {
         this.scale *= scale
         forEach { triangle ->
-            triangle.scale(basepoint, scale, true, OutlineList(this) )
+            if(isResetAutoFlag) triangle.pointNumber.resetAutoFlag()
+            triangle.scale(basepoint, scale, isArrange, OutlineList(this) )
 
-            //これがないと結果が変わる、なぜだろう？
+            //これがないと結果が変わる、へんな揺らぎが起きたりする
             triangle.setDimPath(ts)
         }
     }

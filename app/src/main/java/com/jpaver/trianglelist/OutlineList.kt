@@ -3,7 +3,7 @@ package com.jpaver.trianglelist
 class OutlineList(var trianglelist: TriangleList) :Cloneable{
 
     val trilist = trianglelist.trilist
-    var outlineStr_ = trianglelist.outlineStr_
+    var outlineStr_ = ""
     val pointlist = ArrayList<PointXY>()
 
     init{
@@ -22,8 +22,11 @@ class OutlineList(var trianglelist: TriangleList) :Cloneable{
         if( targetone != null && targettwo != null ){
             val angle1 = calcAngle( targetone )
             val angle2 = calcAngle( targettwo )
-            println("outlinelist.compare: 1=$angle1, 2=$angle2")
-
+            println("outlinelist.compare: 1=$angle1, 2=$angle2 $outlineStr_")
+            // リストの各要素をループして内容を表示
+            for (point in pointlist) {
+                println("Point: x = ${point.x}, y = ${point.y}")
+            }
             if( angle1 > angle2 ) return targetone
             return targettwo
         }

@@ -853,7 +853,6 @@ class MyView(context: Context, attrs: AttributeSet?) :
         val areaoffsetY = paint2.textSize *1.3f
         paint2.style = Paint.Style.STROKE
 
-
         val str_number: String = tri.mynumber.toString()
         val digitCount = str_number.length // 数字の桁数
 
@@ -871,7 +870,6 @@ class MyView(context: Context, attrs: AttributeSet?) :
         var area =""
         if(isAreaOff_ == false ) area = tri.getArea().formattedString(1 )+"m^2"+" ${tri.pointNumber.flag.isMovedByUser}"
         //if(isDebug_ == true) area = "cp:"+tri.cParam_.type.toString() + "-"+ tri.cParam_.lcr.toString() +" pbc:"+ tri.parentBC.toString() +" Num:"+ tri.myNumber +"-"+ tri.parentNumber +" lTS"+ tri.lastTapSide_
-
 
         canvas.drawCircle(pnX, pnY, circleSize, paint2)
         canvas.drawText(str_number, pnX, pnpY, paint1)
@@ -986,7 +984,6 @@ class MyView(context: Context, attrs: AttributeSet?) :
         this.paintBlue.textSize = textscale
         this.paintBlue.strokeWidth = 0.05f
 
-
         isPrintPDF_ = true
 
         val printScale = trianglelist.getPrintScale(myScale)
@@ -995,48 +992,68 @@ class MyView(context: Context, attrs: AttributeSet?) :
         textSpacer_ = adjustTextSpacer(printScale)
 
         // 用紙の単位にリストの大きさを合わせる
-        //
-
         val scaleFactor = 1.19f * writer.kaizoudo_ *(2.0f/experience/printScale)// - (myScale/100)
         myScale *= scaleFactor
-        // scale
-        trianglelist.attachToTheView(
-            PointXY(
-                0f,
-                0f
-            ), scaleFactor, paintTex.textSize )
+
+        trianglelist.attachToTheView(PointXY(0f, 0f), scaleFactor, paintTex.textSize, isResetAutoFlag = true )
+
         myDeductionList.scale(PointXY(0f, 0f), scaleFactor)
         myDeductionList.setScale( myScale )
 
+        // 分割描画処理（使ってない）
+        // canvasの動きが複雑になるためデバッグ用に追跡する
+        val printPoint = PointXY(0f, 0f)
+        drawSeparatedPDF(false, printPoint, canvas, paintTex )
+
+        // リストの中心座標にキャンバスを動かす、Xはマイナス、Yはプラス
+        canvas.translate(-trianglelist.center.x, trianglelist.center.y)
+
+        drawEntities(canvas, paintTri, paintTex, paintRed, lightColors_, trianglelist, myDeductionList )
+
+        canvas.translate(trianglelist.center.x, -trianglelist.center.y)
+
+        teardownDrawPdf(scaleFactor)
+
+        return printPoint
+    }
+
+    fun teardownDrawPdf(scaleFactor:Float){
+        //scaleを戻す
+        myScale /= scaleFactor
+
+        // pointNumberの旗揚げがリセットされる
+        trianglelist.attachToTheView(PointXY(0f, 0f), 1 / scaleFactor, paintTexS.textSize, isResetAutoFlag = true )
+
+        myDeductionList.scale(PointXY(0f, 0f), 1 / scaleFactor)
+        myDeductionList.setScale(myScale)
+
+        isPrintPDF_ = false
+        this.paintBlue.textSize = textSize
+        this.paintBlue.strokeWidth = 2f
+        textSpacer_ = 5f
+    }
+
+    fun drawSeparatedPDF( useit:Boolean = false, printPoint:PointXY, canvas: Canvas,paintTex: Paint ): PointXY{
+        if(!useit) return PointXY(0f,0f)
 
         //ここから横長図形の分割処理
-//        var num = 2
-//        val printableW = //myTriangleList.getUnScaledPointOfName( "No."+num ).x//40f
+        val printScale = trianglelist.getPrintScale(myScale)
         val printAreaW = 40f*printScale
-        val printAreaH = 29.7f*printScale
 
         //スケールされてないリストの幅を測って、分割回数を計算する
         val drawingRect = trianglelist.measureLongLineNotScaled()
         val separateCount = ( drawingRect.x / printAreaW ).roundToInt() + 1
-
-        //キャンバスをどれだけ動かすか決める。幅は固定値、縦はリストのナンバーを検索し、ナンバー上のA辺の長さによって動かす。
-        var wTransLen: Float
-
-
-        // 縦方向の移動量
-        val hYohaku = 75f
-        val hkaishi = 5f
-        var zukeinohaba: Float
-        val halfAreaH = printAreaH*0.5f*trianglelist.scale
-
-        // canvasの動きを追跡する
-        val printPoint = PointXY(0f, 0f)
         val numberList = trianglelist.getSokutenList( 2, 4 )
+        if( separateCount > 1 && numberList.size > 1 && trianglelist.get(0).angle > 45f && trianglelist.get(0).angle < 135f ){
 
-
-        // 描画処理
-        Log.d( "myView", "drawPDF - isPrintPDF: " + isPrintPDF_ )
-        if( separateCount > 1 && numberList.size > 1 && trianglelist.get(0).angle > 45f && trianglelist.get(0).angle < 135f  ){
+            val printAreaH = 29.7f*printScale
+            //キャンバスをどれだけ動かすか決める。幅は固定値、縦はリストのナンバーを検索し、ナンバー上のA辺の長さによって動かす。
+            var wTransLen: Float
+            // 縦方向の移動量
+            val hYohaku = 75f
+            val hkaishi = 5f
+            var zukeinohaba: Float
+            val halfAreaH = printAreaH*0.5f*trianglelist.scale
 
             //測点を持つ三角形のリスト
             val numleftList = trianglelist.getSokutenList( 0, 4 )
@@ -1091,46 +1108,13 @@ class MyView(context: Context, attrs: AttributeSet?) :
                 //描画
                 drawEntities(canvas, paintTri, paintTex, paintRed, lightColors_, trianglelist, myDeductionList )
             }
+
         }
-        else{
-            // mirror -X +Y
-            canvas.translate(-trianglelist.center.x, trianglelist.center.y)
-
-            drawEntities(canvas, paintTri, paintTex, paintRed, lightColors_, trianglelist, myDeductionList )
-
-            // mirror +X -Y
-            canvas.translate(trianglelist.center.x, -trianglelist.center.y)
-        }
-
-        // canvas を大きくしてより小さいテキストを描画するテスト
-        // textsizeが小さすぎて字間が崩れているわけではないのか
-        val paintmin = Paint()
-        paintmin.textSize = 10f
-//        paintmin.fontSpacing = 0.5f
-        paintmin.color = Gray_
-
-        paintmin.letterSpacing = 0.05f
-
-        //scale back
-        myScale /= scaleFactor
-        trianglelist.attachToTheView(
-            PointXY(
-                0f,
-                0f
-            ), 1 / scaleFactor, paintTexS.textSize )
-        myDeductionList.scale(PointXY(0f, 0f), 1 / scaleFactor)
-        myDeductionList.setScale(myScale)
-        //isAreaOff_ = true
-        isPrintPDF_ = false
-        this.paintBlue.textSize = textSize
-        this.paintBlue.strokeWidth = 2f
-        //this.paintFill.color = darkColors_.get(colorindex_)
-        textSpacer_ = 5f
 
         return printPoint
     }
 
-//endregion
+//endregiondrawPDF
 
 }
 
