@@ -29,7 +29,7 @@ class MainViewModel {
 
 
     fun fabDimArrange(WorH: String, refreshMethod:()->Unit ){
-        if(deductionMode || myTriangleList.lastTapNumber_ < 1 ){
+        if(deductionMode || myTriangleList.lastTapNumber < 1 ){
             return
         }
         val triAndDimside = isConnectedOrNot()
@@ -42,8 +42,8 @@ class MainViewModel {
 
     fun isConnectedOrNot(): Pair<Triangle,Int> {
         Log.d("fabDimSide", "isConnectedOrNot")
-        val dimside = myTriangleList.lastTapSide_
-        val trinum  = myTriangleList.lastTapNumber_
+        val dimside = myTriangleList.lastTapSide
+        val trinum  = myTriangleList.lastTapNumber
         val tri = myTriangleList.get(trinum)
         Log.d("TriangleList", "Triangle dim rot w : $trinum$dimside")
 

@@ -214,7 +214,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         paintTexS.textSize = textSize
         //paintTexS.set
 
-        paintYellow.strokeWidth = 10f
+        paintYellow.strokeWidth = 7f
         paintYellow.color = Color.argb(100, 255, 255, 0)
         paintYellow.textAlign = Paint.Align.CENTER
         paintYellow.textSize = textSize*1.2f
@@ -597,7 +597,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
                 paintRed
         )
 
-        //選択三角形
+        //選択三角形の辺と番号サークルの強調表示
         drawBlinkLine( canvas, myTriangleList )
     }
 
@@ -632,17 +632,6 @@ class MyView(context: Context, attrs: AttributeSet?) :
         val margin = paintDim.textSize*0.52f
         val savedDimColor = paintDim.color
 
-        // タップされた三角形の塗りつぶし
-        if( tri.mynumber == myTriangleList.lastTapNumber_ && deductionMode == false && isPrintPDF_ == false ){
-            paintDim.color = DarkBlue_
-            drawDigits( canvas, la, makePath(tPathA), tPathA.offsetH, tPathA.offsetV, paintDim, margin )
-            paintDim.color = LightYellow_
-            la = watchedA2_
-            lb = watchedB2_
-            lc = watchedC2_
-            drawTriLines( canvas, tri, paintYellow )
-        }
-
         if( isPrintPDF_ == false ) {
             if (isDebug_ == true) {
                 logModelViewPoints()
@@ -652,7 +641,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
                 lb += " :" + tri.dimVerticalB + " :" + tri.dimHorizontalB
                 lc += " :" + tri.dimVerticalC + " :" + tri.dimHorizontalC
             }
-            else if( tri.mynumber == myTriangleList.lastTapNumber_ ){
+            else if( tri.mynumber == myTriangleList.lastTapNumber ){
                 la += " A"
                 lb += " B"
                 lc += " C"
@@ -671,7 +660,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         drawTriangleNumber(canvas, tri, paintDim, paintB)
 
         // 寸法
-        if(tri.mynumber == 1 || tri.connectionType > 2 || tri.cParam_.type != 0 || tri.mynumber == myTriangleList.lastTapNumber_ )
+        if(tri.mynumber == 1 || tri.connectionType > 2 || tri.cParam_.type != 0 )
             drawDigits( canvas, la, makePath(tPathA), tPathA.offsetH, tPathA.offsetV, paintDim, margin )
         drawDigits( canvas, lb, makePath(tPathB), tPathB.offsetH, tPathB.offsetV, paintDim, margin )
         drawDigits( canvas, lc, makePath(tPathC), tPathC.offsetH, tPathC.offsetV, paintDim, margin )
@@ -687,15 +676,15 @@ class MyView(context: Context, attrs: AttributeSet?) :
     }
 
     fun drawShadowTriangle(canvas: Canvas, trilist: TriangleList){
-        if( trilist.lastTapNumber_ < 1 || isPrintPDF_ == true || trilist.lastTapSide_ < 1 || trilist.isDoubleTap_ == false ) return
+        if( trilist.lastTapNumber < 1 || isPrintPDF_ == true || trilist.lastTapSide < 1 || trilist.isDoubleTap == false ) return
 
-        val shadowParent = trilist.get(trilist.lastTapNumber_ )
-        val shadowTapSide = trilist.lastTapSide_
+        val parent = trilist.get(trilist.lastTapNumber )
+        val lastTapSide = trilist.lastTapSide
 
         //番号選択されてるときは以下略。
-        if( shadowTapSide != 3) {
-            val shadowTapLength = shadowParent.getLengthByIndexForce( shadowTapSide ) * 0.75f
-            shadowTri_ = Triangle( shadowParent, trilist.lastTapSide_, shadowTapLength, shadowTapLength )
+        if( lastTapSide != 3) {
+            val shadowlength = parent.getForceLength( lastTapSide ) * 0.75f
+            shadowTri_ = Triangle( parent, trilist.lastTapSide, shadowlength, shadowlength )
 
             shadowTri_.setScale( trilist.scale)
             canvas.drawPath( makeTriangleFillPath( shadowTri_ ), paintGray )
@@ -806,21 +795,21 @@ class MyView(context: Context, attrs: AttributeSet?) :
     }
 
     fun drawBlinkLine( canvas: Canvas, myTriangleList: TriangleList){
-        if( myTriangleList.lastTapNumber_ < 1 || myTriangleList.lastTapSide_ < 0 || isPrintPDF_ == true ) return
+        if( myTriangleList.lastTapNumber < 1 || myTriangleList.lastTapSide < 0 || isPrintPDF_ == true ) return
 
-        val tri = myTriangleList.get( myTriangleList.lastTapNumber_ )
+        val tri = myTriangleList.get( myTriangleList.lastTapNumber )
 
-        if(myTriangleList.lastTapSide_ == 0)
+        if(myTriangleList.lastTapSide == 0)
             drawLine( tri.pointCA,tri.pointAB,paintYellow, canvas )
-        if(myTriangleList.lastTapSide_ == 1)
+        if(myTriangleList.lastTapSide == 1)
             drawLine( tri.pointAB,tri.pointBC,paintYellow, canvas )
-        if(myTriangleList.lastTapSide_ == 2)
+        if(myTriangleList.lastTapSide == 2)
             drawLine( tri.pointBC,tri.pointCA,paintYellow, canvas )
 
         val circleSize = paintTexS.textSize *0.8f
         paintYellow.style = Paint.Style.STROKE
 
-        if( tri.mynumber == myTriangleList.lastTapNumber_ && isPrintPDF_ == false ) canvas.drawCircle(
+        if( tri.mynumber == myTriangleList.lastTapNumber && isPrintPDF_ == false ) canvas.drawCircle(
             tri.pointnumber.x,
             -tri.pointnumber.y,
             circleSize,

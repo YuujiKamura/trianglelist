@@ -517,7 +517,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         return if (i == 2) length[2] else 0f
     }
 
-    fun getLengthByIndexForce(i: Int): Float {
+    fun getForceLength(i: Int): Float {
         if (i == 1) return lengthNotSized[1]
         return if (i == 2) lengthNotSized[2] else 0f
     }

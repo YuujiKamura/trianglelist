@@ -419,7 +419,7 @@ class TriListTest {
         trilist.add(tri2, true)
         trilist.add(tri3, true)
         tri2.reset(tri2, ConnParam(1, 1, 1, 3f))
-        trilist.lastTapNumber_ = 2
+        trilist.lastTapNumber = 2
         trilist.rotateCurrentTriLCR()
         Assert.assertEquals(1.0f, tri3.pointCA.y, 0.0001f)
         //trilist.resetTriConnection(2, ConnParam(1, 1, 0, 3f))
@@ -474,7 +474,7 @@ class TriListTest {
         val trilist = TriangleList(tri1)
         trilist.add(tri2, true)
         trilist.add(tri3, true)
-        trilist.lastTapNumber_ = 2
+        trilist.lastTapNumber = 2
         trilist.rotateCurrentTriLCR() //3
         trilist.rotateCurrentTriLCR() //3.5
         Assert.assertEquals(4.0f, tri2.rotateLCR().y, 0.0001f)
@@ -536,7 +536,7 @@ class TriListTest {
 
 
         //Assert.assertEquals( 21, trilist.getTap( PointXY( -6.25f, 2.165f ) ) )
-        Assert.assertEquals(30, trilist.getTap(
+        Assert.assertEquals(30, trilist.getTapNumber(
             PointXY(
                 -5f,
                 4.33f

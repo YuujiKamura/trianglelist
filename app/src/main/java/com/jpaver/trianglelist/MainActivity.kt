@@ -1372,7 +1372,7 @@ class MainActivity : AppCompatActivity(),
         }
 
         setCommonFabListener(fab_nijyuualign) {
-            if(!deductionMode && myTriangleList.lastTapNumber_ > 1 ){
+            if(!deductionMode && myTriangleList.lastTapNumber > 1 ){
                 myTriangleList.rotateCurrentTriLCR()
                 //myTriangleList.resetTriConnection(myTriangleList.lastTapNum_, );
                 myview.setTriangleList(myTriangleList, mScale, false )
@@ -1396,7 +1396,7 @@ class MainActivity : AppCompatActivity(),
                     trilistUndo = myTriangleList.clone()
 
                     var eraseNum = listLength
-                    if(!deductionMode) eraseNum = myTriangleList.lastTapNumber_
+                    if(!deductionMode) eraseNum = myTriangleList.lastTapNumber
 
                     getList(deductionMode).remove(eraseNum)
 
@@ -1682,7 +1682,7 @@ class MainActivity : AppCompatActivity(),
 
     fun fabRotate(degrees: Float, bSeparateFreeMode: Boolean, isRotateDedBoxShape: Boolean = true ){
         if(!deductionMode) {
-            myTriangleList.rotate(PointXY(0f, 0f), degrees, myTriangleList.lastTapNumber_, bSeparateFreeMode )
+            myTriangleList.rotate(PointXY(0f, 0f), degrees, myTriangleList.lastTapNumber, bSeparateFreeMode )
             myDeductionList.rotate(PointXY(0f, 0f), -degrees )
             myview.setTriangleList(myTriangleList, mScale)
             myview.setDeductionList(myDeductionList, mScale)
@@ -1740,8 +1740,8 @@ class MainActivity : AppCompatActivity(),
         setTitles()
 
 
-        myview.trianglelist.isDoubleTap_ = false
-        myview.trianglelist.lastTapSide_ = 0
+        myview.trianglelist.isDoubleTap = false
+        myview.trianglelist.lastTapSide = 0
 
         //logListCurrent()
         logFabController()
@@ -1751,8 +1751,8 @@ class MainActivity : AppCompatActivity(),
 
     private fun moveTrilist(){
         myview.getTriangleList().changeSelectedNumber(myTriangleList.retrieveCurrent())
-        myview.trianglelist.lastTapNumber_ = myTriangleList.retrieveCurrent()
-        myTriangleList.lastTapNumber_ = myTriangleList.retrieveCurrent()
+        myview.trianglelist.lastTapNumber = myTriangleList.retrieveCurrent()
+        myTriangleList.lastTapNumber = myTriangleList.retrieveCurrent()
         myview.resetViewToLastTapTriangle()
     }
 
@@ -1911,7 +1911,7 @@ class MainActivity : AppCompatActivity(),
     private fun trilistAdd(params: InputParameter, triList: TriangleList ){
         val newTri = createNewTriangle( params, triList.getBy(params.pn) )
         triList.add(newTri, true)
-        triList.lastTapNumber_ = triList.size()
+        triList.lastTapNumber = triList.size()
     }
     private fun setUI(){
         setFabColor( fab_undo, R.color.colorLime )
@@ -1966,7 +1966,7 @@ class MainActivity : AppCompatActivity(),
     }
 
     fun isDoubleTap(): Boolean{
-        return myview.trianglelist.isDoubleTap_
+        return myview.trianglelist.isDoubleTap
     }
 
     fun connectTriangle(sideindex: Int ){
@@ -1979,8 +1979,8 @@ class MainActivity : AppCompatActivity(),
 
         myEditor.lineRewrite( getTriangleParameter(sideindex), editorline1 )
 
-        if(myview.trianglelist.lastTapSide_ != -1){
-            myview.trianglelist.isDoubleTap_ = true
+        if(myview.trianglelist.lastTapSide != -1){
+            myview.trianglelist.isDoubleTap = true
 
             focusTo.requestFocus()
             focusTo.setSelection(focusTo.text.length)
@@ -1992,8 +1992,6 @@ class MainActivity : AppCompatActivity(),
         }
         myview.resetViewToLastTapTriangle()
     }
-
-
 
     fun connectDeduction(sideindex: Int){
         setFabSetBC(sideindex)
@@ -2018,7 +2016,7 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun autoConnection(sideindex: Int){
-        myview.trianglelist.lastTapSide_ = sideindex
+        myview.trianglelist.lastTapSide = sideindex
         parameter = myEditor.readLineTo(parameter, editorline1) //keep them
 
         if(!deductionMode)
@@ -2034,104 +2032,103 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    fun setTargetEditText(zoomsize: Float)
-    {
-        val inputMethodManager: InputMethodManager =
-            getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+    fun getDedTapIndex():Int {
+        myview.myDeductionList.setScale(myview.myScale)
+        return myview.myDeductionList.getTapIndex(myview.pressedInModel)
+    }
+
+    fun targetInDedmode(zoomsize: Float){
+        val trilistV = myview.trianglelist
+
+        if ( getDedTapIndex() > -1 ) {
+            val tapNumber = myview.myDeductionList.lastTapIndex_+1
+
+            myEditor.scroll(
+                tapNumber - myDeductionList.current,
+                getList(deductionMode), editorLine2, myELThird
+            )
+        }
+
+        // 三角形番号が押されたときはセンタリング
+        val RANGE = 0.4f / zoomsize
+        trilistV.getTapNumber(getPressedInModel(), RANGE )
+        if ( trilistV.lastTapNumber != 0 ){
+            handleTriangleTap(trilistV, myEditor, myTriangleList)
+            if( trilistV.lastTapSide == 3 ) myview.resetViewToLastTapTriangle()
+        }
+    }
+
+    fun getShadowTap(pressedpoint:PointXY, range: Float):Int { return myview.shadowTri_.getTapLength(pressedpoint, range ) }
+    fun getPressedInModel():PointXY { return myview.pressedInModel.scale(PointXY(0f, 0f), 1f, -1f) }
+
+    fun shadowTapMode(zoomsize: Float): Boolean {
+        val RANGE = 0.8f / zoomsize
+        val shadowTapside = getShadowTap(getPressedInModel(), RANGE)
+
+        when (shadowTapside) {
+            1 -> {
+                findViewById<EditText>(R.id.editLengthB1).requestFocus() // EditTextB1にフォーカスを設定
+                return true // trueを返して関数から抜ける
+            }
+            2 -> {
+                findViewById<EditText>(R.id.editLengthC1).requestFocus() // EditTextC1にフォーカスを設定
+                return true // trueを返して関数から抜ける
+            }
+        }
+
+        return false // 何もアクションが起こらなかった場合はfalseを返す
+    }
+
+    fun getTriTapNumber(zoomsize: Float):Int {
+        val TAPRANGE= myview.textSize / zoomsize * 0.02f
+        return myview.trianglelist.getTapNumber( getPressedInModel(), TAPRANGE )
+    }
+    fun targetInTriMode(zoomsize: Float){
+        if(shadowTapMode(zoomsize)) return
 
         val trilistV = myview.trianglelist
 
-        if(deductionMode){
+        val inputMethodManager = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+        updateElStrings()
+        myview.setWatchedStrings(elsa1,elsb1,elsc1,elsa2,elsb2,elsc2)
 
-            myview.myDeductionList.setScale(myview.myScale)
-            val lasttap = myview.myDeductionList.getTapIndex(myview.pressedInModel)
-            Log.d("Deduction", "lasttap:"+lasttap )
+        // タップされた三角形がある場合の処理を行う
+        if (getTriTapNumber(zoomsize) != 0) {
+            handleTriangleTap(trilistV, myEditor, myTriangleList, true ) // タップされた三角形の基本処理を行う
+            setTriangleDetails(myTriangleList) // タップされた三角形の詳細設定を行う
+            setEditTextContent(myTriangleList) // EditTextに三角形情報をセットする
 
-            if ( myview.myDeductionList.lastTapIndex_ > -1 ) {
-                val tapIndex = myview.myDeductionList.lastTapIndex_+1
-                if( -1 < tapIndex ) {
-
-                    myEditor.scroll(
-                            tapIndex - myDeductionList.current,
-                            getList(deductionMode), editorLine2, myELThird
-                    )
-                    //my_view.resetView( my_view.myDeductionList.get( tapIndex ).point.scale( PointXY(1f,-1f ) ) )
-                }
+            // タップされた辺に応じた処理を行う
+            when (myview.trianglelist.lastTapSide) {
+                0 -> handleSideZero(inputMethodManager) // 辺0がタップされたときの処理
+                1, 2 -> autoConnection(myview.trianglelist.lastTapSide) // 辺1または2がタップされたときの自動接続処理
+                3 -> myview.resetViewToLastTapTriangle() // 辺3がタップされたときのビューをリセットする処理
             }
-
-            // 三角形番号が押されたときはセンタリング
-            trilistV.getTap(
-                myview.pressedInModel.scale(
-                    PointXY(
-                        0f,
-                        0f
-                    ), 1f, -1f),
-                0.4f / zoomsize
-            )
-            if ( trilistV.lastTapNumber_ != 0 ){
-                handleTriangleTap(trilistV, myEditor, myTriangleList)
-                if( trilistV.lastTapSide_ == 3 ) myview.resetViewToLastTapTriangle()
-            }
-
-
-        }
-        else { // edit triangle
-            updateElStrings()
-            myview.setWatchedStrings(elsa1,elsb1,elsc1,elsa2,elsb2,elsc2)
-
-            val lpp = myview.pressedInModel.scale(PointXY(0f, 0f), 1f, -1f)
-            val slpp = myview.shadowTri_.getTapLength(lpp, 0.8f / zoomsize)
-
-            when (slpp) {
-                1 -> {
-                    findViewById<EditText>(R.id.editLengthB1).requestFocus() // EditTextB1にフォーカスを設定
-                    // my_view.myTriangleList.lastTapSide_ = 1
-                    return
-                }
-                2 -> {
-
-                    findViewById<EditText>(R.id.editLengthC1).requestFocus() // EditTextC1にフォーカスを設定
-                    // my_view.myTriangleList.lastTapSide_ = 2
-                    return
-                }
-            }
-
-
-            // view　の　trilistのlastTapとcurrentをずらして editorTableを移動させる
-            trilistV.getTap(lpp, myview.textSize * 0.02f / zoomsize )
-
-            // タップされた三角形がある場合の処理を行う
-            if (trilistV.lastTapNumber_ != 0) {
-                handleTriangleTap(trilistV, myEditor, myTriangleList, true ) // タップされた三角形の基本処理を行う
-                setTriangleDetails(myTriangleList) // タップされた三角形の詳細設定を行う
-                setEditTextContent(myTriangleList) // EditTextに三角形情報をセットする
-
-                // タップされた辺に応じた処理を行う
-                when (myview.trianglelist.lastTapSide_) {
-                    0 -> handleSideZero(inputMethodManager) // 辺0がタップされたときの処理
-                    1, 2 -> autoConnection(myview.trianglelist.lastTapSide_) // 辺1または2がタップされたときの自動接続処理
-                    3 -> myview.resetViewToLastTapTriangle() // 辺3がタップされたときのビューをリセットする処理
-                }
-            }
-
         }
 
-        Log.d("SetTarget", "Tap Triangle is : " + myview.trianglelist.lastTapNumber_ + ", side is :" + myview.trianglelist.lastTapSide_ )
+    }
+
+    fun setTargetEditText(zoomsize: Float)
+    {
+        if(deductionMode)targetInDedmode(zoomsize)
+        else targetInTriMode(zoomsize)
+
+        Log.d("SetTarget", "Tap Triangle is : " + myview.trianglelist.lastTapNumber + ", side is :" + myview.trianglelist.lastTapSide )
         logListCurrent()
     }
 
     // タップされた三角形に関連する基本処理を行う関数
     fun handleTriangleTap(trilistV: TriangleList, myEditor: EditorTable, myTriangleList: TriangleList, isEditorScroll: Boolean = false ) {
-        if( isEditorScroll ) myEditor.scroll(trilistV.lastTapNumber_ - trilistV.selectedNumber, myTriangleList, editorLine2, myELThird) // スクロールしてタップされた三角形を表示
-        trilistV.selectedNumber = trilistV.lastTapNumber_ // 現在の三角形を更新
-        myTriangleList.changeSelectedNumber(myview.trianglelist.lastTapNumber_) // myTriangleListの現在の三角形を更新
-        myTriangleList.lastTapNumber_ = myview.trianglelist.lastTapNumber_ // 最後にタップされた三角形の番号を更新
-        myTriangleList.lastTapSide_ = myview.trianglelist.lastTapSide_ // 最後にタップされた三角形の辺を更新
+        if( isEditorScroll ) myEditor.scroll(trilistV.lastTapNumber - trilistV.selectedNumber, myTriangleList, editorLine2, myELThird) // スクロールしてタップされた三角形を表示
+        trilistV.selectedNumber = trilistV.lastTapNumber // 現在の三角形を更新
+        myTriangleList.changeSelectedNumber(myview.trianglelist.lastTapNumber) // myTriangleListの現在の三角形を更新
+        myTriangleList.lastTapNumber = myview.trianglelist.lastTapNumber // 最後にタップされた三角形の番号を更新
+        myTriangleList.lastTapSide = myview.trianglelist.lastTapSide // 最後にタップされた三角形の辺を更新
     }
 
     // タップされた三角形の詳細設定を行う関数
     fun setTriangleDetails(myTriangleList: TriangleList) {
-        colorindex = myTriangleList.get(myTriangleList.lastTapNumber_).color_ // タップされた三角形の色を取得
+        colorindex = myTriangleList.get(myTriangleList.lastTapNumber).color_ // タップされた三角形の色を取得
         colorMovementFabs() // 色の設定を更新
         printDebugConsole() // デバッグコンソールに情報を出力
         setTitles() // タイトルを設定
@@ -2139,7 +2136,7 @@ class MainActivity : AppCompatActivity(),
 
     // EditTextに三角形情報をセットする関数
     fun setEditTextContent(myTriangleList: TriangleList) {
-        findViewById<EditText>(R.id.editParentNumber1).setText(myTriangleList.lastTapNumber_.toString()) // 最後にタップされた三角形の番号を設定
+        findViewById<EditText>(R.id.editParentNumber1).setText(myTriangleList.lastTapNumber.toString()) // 最後にタップされた三角形の番号を設定
         findViewById<EditText>(R.id.editNumber1).setText(myTriangleList.size().toString()) // 三角形リストのサイズを設定
     }
 
@@ -2677,7 +2674,7 @@ class MainActivity : AppCompatActivity(),
 
         myview.setTriangleList(trilist, mScale)
         myview.setDeductionList(myDeductionList, mScale)
-        myview.trianglelist.lastTapNumber_ = myview.trianglelist.size()
+        myview.trianglelist.lastTapNumber = myview.trianglelist.size()
         myview.resetViewToLastTapTriangle()
 
         Log.d("FileLoader", "createNew: " + myview.trianglelist.size() )
@@ -3166,9 +3163,9 @@ class MainActivity : AppCompatActivity(),
 
     private fun logListCurrent(tag: String="ui", callerName: String = "unknown"){
         Log.d(tag,callerName+" my_view.trilist.current:"+myview.trianglelist.selectedNumber)
-        Log.d(tag,callerName+" my_view.trilist.lastTapNumber:"+myview.trianglelist.lastTapNumber_)
+        Log.d(tag,callerName+" my_view.trilist.lastTapNumber:"+myview.trianglelist.lastTapNumber)
         Log.d(tag,callerName+" mainActivity.trilist.current:"+myTriangleList.selectedNumber)
-        Log.d(tag,callerName+" mainActivity.trilist.lastTapNumber:"+myTriangleList.lastTapNumber_)
+        Log.d(tag,callerName+" mainActivity.trilist.lastTapNumber:"+myTriangleList.lastTapNumber)
         Log.d(tag,callerName+" mainActivity.dedlist.current:"+myDeductionList.current)
         Log.d(tag,callerName+" mainActivity.dedlist.lastTapIndex_:"+myDeductionList.lastTapIndex_)
     }
