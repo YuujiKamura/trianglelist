@@ -26,8 +26,8 @@ class TriangleList : EditList {
     var trilist: ArrayList<Triangle>
     var trilistStored_: ArrayList<Triangle>
     var outlineList_: ArrayList<ArrayList<PointXY>>? = null
-    var lastTapNumber_ = 0
-    var lastTapSide_ = -1
+    var lastTapNumber = 0
+    var lastTapSide = -1
     var lastTapCollideNum_ = 0
     var selectedNumber = 0
     var scale = 1f
@@ -36,7 +36,7 @@ class TriangleList : EditList {
     var myCenter = PointXY(0f, 0f)
     var myLength = PointXY(0f, 0f)
     var outlineStr_ = ""
-    var isDoubleTap_ = false
+    var isDoubleTap = false
 
     //endregion parameters
 
@@ -53,8 +53,8 @@ class TriangleList : EditList {
             b.myLength = myLength.clone()
             //b = new TriangleList();
             b.selectedNumber = selectedNumber
-            b.lastTapNumber_ = lastTapNumber_
-            b.lastTapSide_ = lastTapSide_
+            b.lastTapNumber = lastTapNumber
+            b.lastTapSide = lastTapSide
             b.scale = scale
             b.angle = angle
             b.basepoint = basepoint.clone()
@@ -450,15 +450,15 @@ class TriangleList : EditList {
         rewriteAllNodeFrom(parentTriangle, -1)
         resetTriangles(parentTriangle.mynumber, parentTriangle)
         selectedNumber = num - 1
-        lastTapNumber_ = num - 1
-        lastTapSide_ = -1
+        lastTapNumber = num - 1
+        lastTapSide = -1
 
         //this.cloneByScale(basepoint, myScale);
     }
 
     fun rotateCurrentTriLCR(): ConnParam? {
-        if (lastTapNumber_ < 2) return null
-        val curTri = trilist[lastTapNumber_ - 1]
+        if (lastTapNumber < 2) return null
+        val curTri = trilist[lastTapNumber - 1]
         val cParam = curTri.rotateLCRandGet().cParam_.clone()
         //if( lastTapNum_ < myTriList.size() ) myTriList.get(lastTapNum_).resetByParent( curTri, myTriList.get(lastTapNum_).cParam_ );
 
@@ -592,8 +592,8 @@ class TriangleList : EditList {
     }
 
     fun getLastTriangle(): Triangle{
-        if(lastTapNumber_<1) return trilist[0]
-        return trilist[lastTapNumber_-1]
+        if(lastTapNumber<1) return trilist[0]
+        return trilist[lastTapNumber-1]
     }
 
     // by number start 1, not index start 0.
@@ -729,22 +729,22 @@ class TriangleList : EditList {
         return hitC
     }
 
-    fun getTap(tapP: PointXY, rangeRadius: Float): Int {
-        val ltn = lastTapNumber_ + lastTapSide_
+    fun getTapNumber(tapP: PointXY, rangeRadius: Float): Int {
+        val ltn = lastTapNumber + lastTapSide
         isCollide(tapP)
         for (i in trilist.indices) {
             if (trilist[i].getTapLength(tapP, rangeRadius) != -1) {
-                lastTapNumber_ = i + 1
-                lastTapSide_ = trilist[i].getTapLength(tapP, rangeRadius)
-                isDoubleTap_ = ltn == lastTapSide_ + lastTapNumber_
+                lastTapNumber = i + 1
+                lastTapSide = trilist[i].getTapLength(tapP, rangeRadius)
+                isDoubleTap = ltn == lastTapSide + lastTapNumber
             }
         }
         if (getTapHitCount(tapP) == 0) {
-            lastTapNumber_ = 0
-            isDoubleTap_ = false
+            lastTapNumber = 0
+            isDoubleTap = false
         }
-        //Log.d("TriangleList", "Tap Triangle num: " + lastTapNumber_ + ", side:" + lastTapSide_ );
-        return lastTapNumber_ * 10 + lastTapSide_
+
+        return lastTapNumber
     }
 
     fun move(to: PointXY): ArrayList<Triangle> {

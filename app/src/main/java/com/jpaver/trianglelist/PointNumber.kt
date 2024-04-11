@@ -25,7 +25,7 @@ class PointNumber( var triangle: Triangle ): Cloneable {
     }
 
     val BORDER_AREA = 4f
-    val BORDER_LENGTH = 2.0f
+    val BORDER_LENGTH = 1.5f
     private fun autoAlignPointNumber(outlineList: OutlineList? = null) : PointXY {
 
         val length = arrayOf(triangle.lengthAforce_, triangle.lengthBforce_, triangle.lengthCforce_)
@@ -44,8 +44,9 @@ class PointNumber( var triangle: Triangle ): Cloneable {
     //pointNumberだけ使う
     fun pointUnconnectedSide( point: PointXY, outlineList: OutlineList?=null ): PointXY {
         //外側に出すと実行時エラーになる
-        val FLAG_LENGTH_B = triangle.lengthB*0.8f
-        val FLAG_LENGTH_C = triangle.lengthA*0.8f
+        val KEISUU = 0.9f
+        val FLAG_LENGTH_B = triangle.lengthB*KEISUU
+        val FLAG_LENGTH_C = triangle.lengthA*KEISUU
         val angle_ = arrayOf( triangle.angleCA, triangle.angleAB, triangle.angleBC )
         val point_ = arrayOf( triangle.point[0], triangle.pointAB, triangle.pointBC )
 
