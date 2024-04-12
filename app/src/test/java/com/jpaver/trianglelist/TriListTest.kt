@@ -78,11 +78,10 @@ class TriListTest {
 
         //val trilist2 = trilist.clone()
 
-        trilist.remove(3)
-        assertEquals(null, trilist.get(2).nodeTriangleC)
+        trilist.remove(4)
+        assertEquals(null, trilist.get(3).nodeTriangleB)
         printTriList(trilist)
 
-        trilist.remove(4)
 
     }
 
@@ -526,33 +525,12 @@ class TriListTest {
 
         val trilist = TriangleList(Triangle(5f, 5f, 5f))
 
-        //Assert.assertEquals( 10, trilist.getTap( PointXY( -2.5f, 0f ) ) )
-        //Assert.assertEquals( 11, trilist.getTap( PointXY( -3.75f, 2.165f ) ) )
-        //Assert.assertEquals( 12, trilist.getTap( PointXY( -1.25f, 2.165f ) ) )
-
         trilist.add(Triangle(trilist[1], 1, 5f, 5f), true)
         trilist.add(Triangle(trilist[2], 2, 5f, 5f), true)
-        //Assert.assertEquals( 20, trilist.getTap( PointXY( -3.75f, 2.165f ) ) )
 
+        Assert.assertEquals(3, trilist.getTapNumber(
+            PointXY(-5f, 4.33f), 0.6f))
 
-        //Assert.assertEquals( 21, trilist.getTap( PointXY( -6.25f, 2.165f ) ) )
-        Assert.assertEquals(30, trilist.getTapNumber(
-            PointXY(
-                -5f,
-                4.33f
-            ), 0.6f))
-
-        //Assert.assertEquals( 31, trilist.getTap( PointXY( -6.25f, 6.495f ) ) )
-        //Assert.assertEquals( 32, trilist.getTap( PointXY( -3.75f, 6.495f ) ) )
-
-        /*
-        Assert.assertEquals(0, trilist[1].getTapLength(PointXY(-2.5f, 0f)).toLong())
-        Assert.assertEquals(1, trilist[1].getTapLength(PointXY(-3.75f, 2.5f)).toLong())
-        Assert.assertEquals(2, trilist[1].getTapLength(PointXY(-1.25f, 2.5f)).toLong())
-        Assert.assertEquals(-2.5f, trilist[1].getDimPointA_().x, 0.001f)
-        Assert.assertEquals(6.495f, trilist[3].getDimPointB_().y, 0.001f)
-        Assert.assertEquals(-1.25f, trilist[3].getDimPointB_().x, 0.001f)
-        */
     }
 
     @Test

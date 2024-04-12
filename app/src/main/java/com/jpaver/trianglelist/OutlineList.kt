@@ -53,7 +53,7 @@ class OutlineList(var trianglelist: TriangleList) :Cloneable{
         println("prevPoint:$prevIndex${prevPoint.format()}, target:$index${target.format()}, nextPoint:$nextIndex${nextPoint.format()}")
 
         // prevPoint、result（現在のポイント）、nextPointを使って角度を計算
-        // calcAngleメソッドの実装は、具体的な角度の計算方法に依存します
+        // 360単位の角度を得る
         return prevPoint.calcAngle360(result, nextPoint)
     }
 
@@ -88,7 +88,7 @@ class OutlineList(var trianglelist: TriangleList) :Cloneable{
 
     // 同じポイントは二ついらない
     private fun notHave(it: PointXY, inthis: ArrayList<PointXY>): Boolean {
-        for (i in inthis.indices) if (it.nearBy(inthis[i], 0.001f)) return false
+        for (i in inthis.indices) if (it.nearBy(inthis[i], 0.01f)) return false
         return true
     }
 

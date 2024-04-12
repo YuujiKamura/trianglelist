@@ -274,7 +274,15 @@ class TriangleList : EditList {
         }
     }
 
-    fun attachToTheView(basepoint: PointXY, scale: Float, ts: Float, isArrange:Boolean=true, isResetAutoFlag: Boolean= false ) {
+    fun arrangePointNumbers() {
+        forEach { triangle ->
+            triangle.pointNumber.resetAutoFlag()
+            triangle.pointnumber = triangle.pointNumber.arrangeNumber(true, OutlineList(this))
+        }
+    }
+
+
+    fun attachToTheView(basepoint: PointXY=PointXY(0f,0f), scale: Float=this.scale, ts: Float, isArrange:Boolean=true, isResetAutoFlag: Boolean= false ) {
         this.scale *= scale
         forEach { triangle ->
             if(isResetAutoFlag) triangle.pointNumber.resetAutoFlag()
@@ -663,7 +671,7 @@ class TriangleList : EditList {
     // 同じポイントは二ついらない
     private fun notHave(it: PointXY, inthis: ArrayList<PointXY>): Boolean {
         //if( inthis.size() < 1 ) return false;
-        for (i in inthis.indices) if (it.nearBy(inthis[i], 0.001f)) return false
+        for (i in inthis.indices) if (it.nearBy(inthis[i], 0.01f)) return false
         return true
     }
 

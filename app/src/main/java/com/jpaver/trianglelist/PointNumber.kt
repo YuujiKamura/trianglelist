@@ -16,6 +16,10 @@ class PointNumber( var triangle: Triangle ): Cloneable {
 
     // region pointNumber
 
+    fun isFlagOn():Boolean{
+        return flag.isMovedByUser || flag.isAutoAligned
+    }
+
     val WEIGHT = 35f
 
     fun resetAutoFlag(onoff:Boolean=false){

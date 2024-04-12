@@ -27,7 +27,7 @@ class Dims( val triangle: Triangle ) : Cloneable<Dims> {
 
     // region constant parameters
     val SIDE_SOKUTEN = 4
-    val BORDERDISTANCE = 0.5f
+    val BORDERDISTANCE = 1.0f
     val SELFDISTANCE = 0f
     val HORIZONTAL_OPTIONMAX = 4
 
