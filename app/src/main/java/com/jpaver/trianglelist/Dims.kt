@@ -160,7 +160,6 @@ class Dims( val triangle: Triangle ) : Cloneable<Dims> {
             SIDE_SOKUTEN -> {
                 triangle.nameAlign_ = flipVertical(triangle.nameAlign_)
             }
-            else -> throw IllegalArgumentException("Unknown side: $side")
         }
     }
 
