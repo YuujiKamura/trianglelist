@@ -42,7 +42,7 @@ jobs:
           name: Run tests in parallel
           command: |
             TEST_FILES=$(find ./app/src/test/java/com/jpaver -name "*Test*.kt" | circleci tests split --split-by=timings)
-            ./gradlew test --tests $TEST_FILES
+            ./gradlew test
   build:
     docker:
       - image: cimg/base:current
