@@ -47,25 +47,31 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
 
     }
 
-    fun alignVByVector(num: Int, p1: PointXY, p2: PointXY): Int{
+    fun verticalFromBaseline(vertical: Int, p1: PointXY, p2: PointXY): Int{
         // 垂直方向の文字位置合わせタイプ(省略可能、既定 = 0): 整数コード(ビットコードではありません):
         // 0 = 基準線、1 = 下、2 = 中央、3 = 上
         // ベクトルの方向でB,Cを表現するなら
         // x軸の方向で正負を表す。正の時は下1が内、負の時は上3が内。
 
-        // inner:3, outer:1 in Tri
+        // 挟角の 外:1 内:3　in Triangle
+        // 基準線の　下:1 上:3
         // ただし、Triangleで外(1)を指定しているときは、そちらを優先したい。
         // 正の時は上３が外、負の時は下１が外。
-        val isVectorRight = p1.vectorTo(p2).side()
+        val LOWER = 1
+        val UPPER = 3
+        val OUTER = 1
+        //val INNER = 3
 
-        // 'num == 1' の場合のみ特別な処理を行い、それ以外は基本的なルールに従う
-        if (num == 1) {
-            // 'isVectorRight >= 0' の場合、1 を返し、そうでなければ 3 を返す
-            return if (isVectorRight >= 0) 1 else 3
+        //基準線の方向が右向きか左向きかで上下を反転する
+        val isVectorToRight = p1.vectorTo(p2).isVectorToRight()
+
+        if (vertical == OUTER) {
+            // 基準線が右向き の場合、下：1 を返し、そうでなければ 上：3 を返す
+            return if ( isVectorToRight > 0) LOWER else UPPER
         }
 
-        // 'num != 1' の場合、'isVectorRight >= 0' であれば 3 を、そうでなければ 1 を返す
-        return if (isVectorRight >= 0) 3 else 1
+        // INNER の場合、基準線が右向き であれば 上、左向きなら 下 を返す
+        return if ( isVectorToRight > 0 ) UPPER else LOWER
 
     }
 
@@ -78,11 +84,10 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
         val textSize: Float = textscale_
         val textSize2: Float = textscale_
 
-        //if( tri.myAngle_ > 90 ) dimA = 1
-        //if( tri.myAngle_ > 270 ) dimA = 3
-        val tateAlignDimA = alignVByVector(tri.dimVerticalA, pca, pab)
-        val tateAlignDimB = alignVByVector(tri.dimVerticalB, pab, pbc)//flip(tri.myDimAlignB_, tri.dimAngleB_ )
-        val tateAlignDImC = alignVByVector(tri.dimVerticalC, pbc, pca)//flip(tri.myDimAlignC_, tri.dimAngleC_ )
+
+        val dimverticalA = verticalFromBaseline(tri.dim.vertical.a, pca, pab)
+        val dimverticalB = verticalFromBaseline(tri.dim.vertical.b, pab, pbc)
+        val dimverticalC = verticalFromBaseline(tri.dim.vertical.c, pbc, pca)
 
         var nagasaA = tri.lengthAforce_.formattedString(2)
         var nagasaB = tri.lengthBforce_.formattedString(2)
@@ -90,9 +95,9 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
 
 
         if(isDebug){
-            nagasaA += "-$tateAlignDimA"
-            nagasaB += "-$tateAlignDimB"
-            nagasaC += "-$tateAlignDImC"
+            nagasaA += "-$dimverticalA"
+            nagasaB += "-$dimverticalB"
+            nagasaC += "-$dimverticalC"
         }
 
         // TriLines
@@ -102,17 +107,17 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
 
         // DimTexts
         if( tri.mynumber == 1 || tri.connectionType > 2)
-            writeTextDimension(tateAlignDimA, nagasaA, tri.dimpoint.a, pab.calcDimAngle(pca))
-        writeTextDimension(tateAlignDimB, nagasaB, tri.dimpoint.b, pbc.calcDimAngle(pab))
-        writeTextDimension(tateAlignDImC, nagasaC, tri.dimpoint.c, pca.calcDimAngle(pbc))
+            writeTextDimension(dimverticalA, nagasaA, tri.dimpoint.a, pab.calcDimAngle(pca))
+        writeTextDimension(dimverticalB, nagasaB, tri.dimpoint.b, pbc.calcDimAngle(pab))
+        writeTextDimension(dimverticalC, nagasaC, tri.dimpoint.c, pca.calcDimAngle(pbc))
 
         // DimTextの旗上げ
         val tPathA = tri.path[0]
         val tPathB = tri.path[1]
         val tPathC = tri.path[2]
-        if(tPathA.horizontal > 2) writeLine( tPathA.pointA, tPathA.pointB, 7)
-        if(tPathB.horizontal > 2) writeLine( tPathB.pointA, tPathB.pointB, 7)
-        if(tPathC.horizontal > 2) writeLine( tPathC.pointA, tPathC.pointB, 7)
+        if(tri.dim.horizontal.a > 2) writeLine( tPathA.pointA, tPathA.pointB, 7)
+        if(tri.dim.horizontal.b > 2) writeLine( tPathB.pointA, tPathB.pointB, 7)
+        if(tri.dim.horizontal.c > 2) writeLine( tPathC.pointA, tPathC.pointB, 7)
 
 
         // 番号
@@ -124,10 +129,10 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
         writeTextNumber(tri)
 
         //引き出し矢印線の描画
-        if(!tri.isCollide(tri.pointnumber)){
+        if( tri.pointNumber.isFlagOn() ){
             val pcOffsetToN = pc.offset(pn, circleSize * 0.5f )
             val pnOffsetToC = pn.offset(pc, circleSize * 1.2f )
-            val arrowTail = pcOffsetToN.offset(pn, pcOffsetToN.lengthTo(pnOffsetToC) * 0.7f).rotate(pcOffsetToN, 5f)
+            val arrowTail = pcOffsetToN.offset(pn, pcOffsetToN.lengthTo(pnOffsetToC) * 0.5f).rotate(pcOffsetToN, 5f)
 
             writeLine( pcOffsetToN, pnOffsetToC, 5)
             writeLine( pcOffsetToN, arrowTail, 5)

@@ -109,7 +109,7 @@ class PointXY :Cloneable<PointXY> {
 
     fun mirror(lineStart: PointXY, lineEnd: PointXY, clockwise: Float = -1f ): PointXY {
         validateInputs( lineStart, lineEnd )
-        val angle = this.calcAngle(lineStart, lineEnd)
+        val angle = this.calcAngle180(lineStart, lineEnd)
         val angleis = angle * 2f * clockwise
         val result = this.rotate(lineStart, angleis )
         return result
@@ -147,11 +147,11 @@ class PointXY :Cloneable<PointXY> {
         return this
     }
 
-    fun side(): Int {
+    fun isVectorToRight(): Int {
         return if (x < 0) -1 else 1
     }
 
-    fun calcAngle(p2: PointXY, p3: PointXY): Float {
+    fun calcAngle180(p2: PointXY, p3: PointXY): Float {
         val v1 = p2.subtract(this)
         val v2 = p2.subtract(p3)
         val angleRadian = acos(v1.innerProduct(v2) / (v1.magnitude() * v2.magnitude()))

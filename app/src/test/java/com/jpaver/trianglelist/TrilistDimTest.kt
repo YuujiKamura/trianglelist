@@ -38,13 +38,13 @@ class TrilistDimTest {
         val pca = tri.pointCA
         val pab = tri.pointAB
         val pbc = tri.pointBC
-        val alignVdimA = dxfwriter.alignVByVector(tri.dimVerticalA, pca, pab)
-        val alignVdimB = dxfwriter.alignVByVector(
+        val alignVdimA = dxfwriter.verticalFromBaseline(tri.dimVerticalA, pca, pab)
+        val alignVdimB = dxfwriter.verticalFromBaseline(
             tri.dimVerticalB,
             pab,
             pbc
         )//flip(tri.myDimAlignB_, tri.dimAngleB_ )
-        val alignVdimC = dxfwriter.alignVByVector(
+        val alignVdimC = dxfwriter.verticalFromBaseline(
             tri.dimVerticalC,
             pbc,
             pca
