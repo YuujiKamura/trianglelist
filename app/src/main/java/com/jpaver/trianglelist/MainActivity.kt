@@ -336,7 +336,7 @@ class MainActivity : AppCompatActivity(),
     private lateinit var shareFilesLauncher: ActivityResultLauncher<Intent>
     private lateinit var loadContent: ActivityResultLauncher<Intent>
 
-    val shareFiles: MutableList<String> = mutableListOf(strDateRosenname(".csv"), strDateRosenname(".xlsx"), strDateRosenname(".dxf"))
+    var shareFiles: MutableList<String> = mutableListOf(strDateRosenname(".csv"), strDateRosenname(".xlsx"), strDateRosenname(".dxf"))
     val shareUris: MutableList<Uri> = mutableListOf()
 
     //endregion
@@ -765,7 +765,7 @@ class MainActivity : AppCompatActivity(),
 //endregion
 
     //region File Intent
-    fun playMedia(file: Uri) {
+    fun launchViewIntent(file: Uri) {
         val intent = Intent(Intent.ACTION_VIEW).apply {
             data = file
         }
@@ -809,7 +809,6 @@ class MainActivity : AppCompatActivity(),
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         rosenname = findViewById<EditText>(R.id.rosenname).text.toString()
 
-
         when (item.itemId) {
             R.id.action_new -> {
                 MyDialogFragment().show(supportFragmentManager, "dialog.basic")
@@ -837,7 +836,7 @@ class MainActivity : AppCompatActivity(),
             }
             R.id.action_usage, R.id.action_privacy -> {
                 val url = if (item.itemId == R.id.action_usage) "https://trianglelist.home.blog" else "https://drive.google.com/file/d/1C7xlXZGvabeQoNEjmVpOCAxQGrFCXS60/view?usp=sharing"
-                playMedia(Uri.parse(url))
+                launchViewIntent(Uri.parse(url))
             }
             else -> return super.onOptionsItemSelected(item)
         }
@@ -1668,7 +1667,7 @@ class MainActivity : AppCompatActivity(),
         val tappoint = myview.pressedInModel.scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
         if( tappoint.lengthTo(triangle.pointcenter) < 10f ){ // あまり遠い時はスルー
             triangle.pointnumber = tappoint
-            triangle.pointNumber.point = tappoint
+            triangle.pointNumber.pointnumber = tappoint
             triangle.pointNumber.flag.isMovedByUser = true
             triangle.pointNumber.flag.isAutoAligned = false
             setTrianglelist()
@@ -2479,9 +2478,14 @@ class MainActivity : AppCompatActivity(),
         else Uri.EMPTY
     }
 
-    private fun showFileTypeSelectionDialog(onComplete: () -> Unit, checkedItems: BooleanArray = booleanArrayOf(true, true, true, false, false)) {
-        val fileTypes = arrayOf(".csv", ".xlsx", ".dxf", ".sfc", ".pdf")
+
+    val fileTypes = arrayOf(".csv", ".xlsx", ".dxf", ".sfc", ".pdf")
+
+    private fun showFileTypeSelectionDialog(onComplete: () -> Unit ) {
         val selectedFileTypes = ArrayList<String>()
+
+        // ファイルリストをロード
+        val checkedItems = loadListFromFile().toBooleanArray()
 
         AlertDialog.Builder(this)
             .setTitle("Select File Types")
@@ -2499,6 +2503,8 @@ class MainActivity : AppCompatActivity(),
                 }
                 // 選択されたファイルタイプに対する処理
                 handleSelectedFileTypes(selectedFileTypes, onComplete)
+                // shareFilesを保存
+                saveListToFile(checkedItems.toList())
             }
             .setNegativeButton("Cancel", null)
             .show()
@@ -2515,12 +2521,30 @@ class MainActivity : AppCompatActivity(),
             Log.d("SelectedFileType", shareFiles[i] )
             i++
         }
-
-
         // 必要に応じて他の処理を追加
         onComplete()
     }
 
+
+    // ファイルにリストを保存する関数
+    val SHAREFILENAME = "shareFiles.txt"
+    private fun saveListToFile(booleans: List<Boolean>, fileName: String = SHAREFILENAME) {
+        try {
+            val file = File(filesDir, fileName)
+            file.writeText(booleans.joinToString("\n"))
+        } catch (e: IOException) {
+            // エラーハンドリング: ログ記録やユーザーへの通知など
+            e.printStackTrace()
+        }
+    }
+
+    // ファイルからリストを読み込む関数
+    private fun loadListFromFile(fileName: String = SHAREFILENAME): List<Boolean> {
+        val file = File(filesDir, fileName)
+        if (!file.exists()) return List(fileTypes.size) { false } // fileTypesSize の長さの、false のみを含むリストを返す
+
+        return file.readLines().map { it.toBoolean() }
+    }
 
     private fun sendFiles(){
 

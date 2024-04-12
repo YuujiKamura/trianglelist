@@ -3,13 +3,15 @@ package com.jpaver.trianglelist
 class PointNumber( var triangle: Triangle ): Cloneable {
     data class Flags( var isMovedByUser: Boolean = false, var isAutoAligned: Boolean = false )
     var flag = Flags()
-    var point = PointXY(0f,0f)
+    var pointnumber = PointXY(0f,0f) //ここでtriangle.pointnumberを代入するとエラーになるの何でかな？
+    var pointcenter = PointXY(0f,0f)
 
     public override fun clone(): PointNumber {
         val b = PointNumber(triangle)
 
         b.flag = flag.copy()
-        b.point = point.clone()
+        b.pointnumber = pointnumber.clone()
+        b.pointcenter = pointcenter.clone()
 
         return b
     }
@@ -27,7 +29,7 @@ class PointNumber( var triangle: Triangle ): Cloneable {
     }
 
     fun arrangeNumber(isUse: Boolean = false , outlineList: OutlineList? = null ): PointXY {
-        if(flag.isMovedByUser || flag.isAutoAligned ) return point
+        if(flag.isMovedByUser || flag.isAutoAligned ) return pointnumber
         if(!isUse) return weightedMidpoint(WEIGHT)
         return autoAlignPointNumber(outlineList)
     }
@@ -41,9 +43,10 @@ class PointNumber( var triangle: Triangle ): Cloneable {
         val isAnyLengthLessThanBorder = length.any { it < BORDER_LENGTH }
 
         if (triangle.getArea() <= BORDER_AREA && isAnyLengthLessThanBorder  ){
-            point = triangle.pointcenter
             flag.isAutoAligned = true
-            return pointUnconnectedSide( triangle.pointcenter, outlineList )
+            pointcenter = triangle.pointcenter
+            pointnumber = pointUnconnectedSide( pointcenter, outlineList )
+            return pointnumber
         }
 
         return weightedMidpoint(WEIGHT)

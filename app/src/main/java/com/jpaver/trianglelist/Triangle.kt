@@ -147,7 +147,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     fun setPointNumberMovedByUser_(p: PointXY) {
         if( p.lengthTo(pointcenter) < 10f ) return // あまり遠い時はスルー
         pointnumber = p
-        pointNumber.point = p
+        pointNumber.pointnumber = p
         pointNumber.flag.isMovedByUser = true
     }
 
@@ -1181,7 +1181,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         length[1] *= scale_
         length[2] *= scale_
         pointNumber.triangle = this
-        pointNumber.point.scale(basepoint, scale_)
+        pointNumber.pointnumber.scale(basepoint, scale_)
         calcPoints( point[0], angle, isArrange, outlineList )
     }
 
@@ -1212,7 +1212,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         if (!isRecover) angleInLocal_ += addDegree else angleInLocal_ = addDegree
 
         if (isNumberMove && pointNumber.flag.isMovedByUser )
-            pointNumber.point = pointNumber.point.rotate(basepoint,addDegree)
+            pointNumber.pointnumber = pointNumber.pointnumber.rotate(basepoint,addDegree)
 
         point[0] = point[0].rotate(basepoint, addDegree)
         angle += addDegree
