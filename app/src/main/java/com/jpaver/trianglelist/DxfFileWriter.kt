@@ -53,25 +53,25 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
         // ベクトルの方向でB,Cを表現するなら
         // x軸の方向で正負を表す。正の時は下1が内、負の時は上3が内。
 
-        // 挟角の 外:1 内:3　in Triangle
-        // 基準線の　下:1 上:3
-        // ただし、Triangleで外(1)を指定しているときは、そちらを優先したい。
-        // 正の時は上３が外、負の時は下１が外。
-        val LOWER = 1
-        val UPPER = 3
+        // 挟角の 外:3 内:1　in Triangle
+        // 基準線の　下:3 上:1
+        val LOWER = 3
+        val UPPER = 1
+
         val OUTER = 1
         //val INNER = 3
 
         //基準線の方向が右向きか左向きかで上下を反転する
-        val isVectorToRight = p1.vectorTo(p2).isVectorToRight()
 
+
+        // 外側
         if (vertical == OUTER) {
-            // 基準線が右向き の場合、下：1 を返し、そうでなければ 上：3 を返す
-            return if ( isVectorToRight > 0) LOWER else UPPER
+            // 基準線が右向き の場合
+            return if ( p1.isVectorToRight(p2) ) UPPER else LOWER
         }
 
-        // INNER の場合、基準線が右向き であれば 上、左向きなら 下 を返す
-        return if ( isVectorToRight > 0 ) UPPER else LOWER
+        // 内側
+        return if ( p1.isVectorToRight(p2) ) LOWER else UPPER
 
     }
 
@@ -83,7 +83,6 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
 
         val textSize: Float = textscale_
         val textSize2: Float = textscale_
-
 
         val dimverticalA = verticalFromBaseline(tri.dim.vertical.a, pca, pab)
         val dimverticalB = verticalFromBaseline(tri.dim.vertical.b, pab, pbc)
