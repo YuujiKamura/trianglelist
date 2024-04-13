@@ -276,7 +276,7 @@ class TriangleList : EditList {
 
     fun arrangePointNumbers() {
         forEach { triangle ->
-            triangle.pointNumber.resetAutoFlag()
+            triangle.pointNumber.resetFlag()
             triangle.pointnumber = triangle.pointNumber.arrangeNumber(true, OutlineList(this))
         }
     }
@@ -285,12 +285,14 @@ class TriangleList : EditList {
     fun attachToTheView(basepoint: PointXY=PointXY(0f,0f), scale: Float=this.scale, ts: Float, isArrange:Boolean=true, isResetAutoFlag: Boolean= false ) {
         this.scale *= scale
         forEach { triangle ->
-            if(isResetAutoFlag) triangle.pointNumber.resetAutoFlag()
             triangle.scale(basepoint, scale, isArrange, OutlineList(this) )
 
             //これがないと結果が変わる、へんな揺らぎが起きたりする
             triangle.setDimPath(ts)
         }
+
+        //全体のスケールが終わってから一度だけ呼ぶ
+        if(isResetAutoFlag) arrangeNumbers()
     }
 
     fun setDimPathTextSize(ts: Float) {
@@ -326,7 +328,7 @@ class TriangleList : EditList {
                 it.pointnumber = it.pointnumber.rotate(basepoint, angle - 180)
             }
         }
-        arrangeNumbers()
+        //arrangeNumbers()
     }
 
     override fun size(): Int {

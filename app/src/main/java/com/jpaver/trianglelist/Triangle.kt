@@ -1172,14 +1172,12 @@ class Triangle : EditObject, Cloneable<Triangle> {
     //region scale and translate
     fun scale(basepoint: PointXY, scale_: Float, isArrange: Boolean=false, outlineList: OutlineList?=null) {
         scaleFactror *= scale_
-        //pointAB.scale(basepoint, scale);
-        //pointBC.scale(basepoint, scale);
         point[0].scale(basepoint, scale_)
-        pointcenter.scale(basepoint, scale_)
-        pointnumber.scale(basepoint, scale_)
         length[0] *= scale_
         length[1] *= scale_
         length[2] *= scale_
+        pointcenter.scale(basepoint, scale_)
+        pointnumber.scale(basepoint, scale_)
         pointNumber.triangle = this
         pointNumber.pointnumber.scale(basepoint, scale_)
         calcPoints( point[0], angle, isArrange, outlineList )

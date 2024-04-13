@@ -147,8 +147,8 @@ class PointXY :Cloneable<PointXY> {
         return this
     }
 
-    fun isVectorToRight(): Int {
-        return if (x < 0) -1 else 1
+    fun isVectorToRight(p2:PointXY): Boolean {
+        return if ( vectorTo(p2).x > 0 ) true else false
     }
 
     fun calcAngle180(p2: PointXY, p3: PointXY): Float {

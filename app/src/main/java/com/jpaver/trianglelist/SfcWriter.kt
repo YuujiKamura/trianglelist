@@ -197,14 +197,16 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
         // inner:3, outer:1 in Tri
         // ただし、Triangleで外(1)を指定しているときは、そちらを優先したい。
         // 正の時は上8が外、負の時は下2が外。
-        val isVectorRight = p1.vectorTo(p2).isVectorToRight()
+        val LOWER = 2
+        val UPPER = 8
+
         if( num == 1 ){
-            if(  isVectorRight >= 0 ) return 2
+            if( p1.isVectorToRight(p2) ) return LOWER
             return 8
         }
 
         // 基本は内側。正の時は下2が内、負の時は上8が内。
-        if(  isVectorRight >= 0 ) return 8
+        if(  p1.isVectorToRight(p2) ) return UPPER
         return 2
 
     }
