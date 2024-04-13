@@ -292,7 +292,7 @@ class TriangleList : EditList {
         }
 
         //全体のスケールが終わってから一度だけ呼ぶ
-        if(isResetAutoFlag) arrangeNumbers()
+        //if(isResetAutoFlag) arrangeNumbers()
     }
 
     fun setDimPathTextSize(ts: Float) {

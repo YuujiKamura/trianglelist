@@ -24,16 +24,14 @@ class PointNumber( var triangle: Triangle ): Cloneable {
 
     val WEIGHT = 35f
 
-    fun resetFlag(isUser:Boolean=true, isAuto:Boolean=false){
-        flag.isMovedByUser = isUser
+    fun resetFlag(isAuto: Boolean = false){
         flag.isAutoAligned = isAuto
     }
 
     fun arrangeNumber(isUse: Boolean = false , outlineList: OutlineList? = null ): PointXY {
         if(flag.isMovedByUser || flag.isAutoAligned ) return pointnumber
-        //if(!isUse)
-        return weightedMidpoint(WEIGHT)
-        //return autoAlignPointNumber(outlineList)
+        if(!isUse) return weightedMidpoint(WEIGHT)
+        return autoAlignPointNumber(outlineList)
     }
 
     val BORDER_AREA = 4f

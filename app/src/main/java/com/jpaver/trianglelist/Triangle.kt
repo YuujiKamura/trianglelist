@@ -1050,7 +1050,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
         calculateInternalAngles()
         calculatePointCenter()
         arrangeDims(isArrange)
-        pointnumber = arrangeNumber(isArrange,outlineList)
+        if(!pointNumber.flag.isMovedByUser) pointnumber = pointcenter
+        //pointnumber = arrangeNumber(isArrange,outlineList)
         setBoundaryBox()
     }
 
@@ -1178,8 +1179,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
         length[2] *= scale_
         pointcenter.scale(basepoint, scale_)
         pointnumber.scale(basepoint, scale_)
-        pointNumber.triangle = this
-        pointNumber.pointnumber.scale(basepoint, scale_)
+        //pointNumber.triangle = this
+        //pointNumber.pointnumber.scale(basepoint, scale_)
         calcPoints( point[0], angle, isArrange, outlineList )
     }
 
