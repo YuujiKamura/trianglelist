@@ -449,7 +449,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
                 0f,
                 0f
             ), setscale, paintTexS.textSize )
-        setTriListLengthStr()
+
         if( moveCenter ) setCenterInModelToLastTappedTriNumber() //画面を動かしてしまうので注意
         //resetView()
         //invalidate()
@@ -457,17 +457,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         watchedC1_ = ""
      }
 
-    fun setTriListLengthStr(){
 
-        for( i in 0 until trianglelist.size() ){
-            val tri = trianglelist.get(i+1)
-            tri.sla_ = tri.lengthNotSized[0].formattedString(2)
-            tri.slb_ = tri.lengthNotSized[1].formattedString(2)
-            tri.slc_ = tri.lengthNotSized[2].formattedString(2)
-
-        }
-
-    }
 
     /**
      * `printScale` の値に基づいて適切なテキストスペーサーの値を調整します。
@@ -620,9 +610,9 @@ class MyView(context: Context, attrs: AttributeSet?) :
         val tPathC = tri.dimOnPath[2]
         val tPathS = tri.dimOnPathSokuten
 
-        var la = tri.sla_ //String type
-        var lb = tri.slb_
-        var lc = tri.slc_
+        var la = tri.strLengthA //String type
+        var lb = tri.strLengthB
+        var lc = tri.strLengthC
 
         tPathA.textSpacer = textSpacer_
         tPathB.textSpacer = textSpacer_
@@ -637,9 +627,9 @@ class MyView(context: Context, attrs: AttributeSet?) :
                 logModelViewPoints()
                 //val name = tri.myName_ + " :" + sokt.pointA_.x + " :" + sokt.pointA_.y + " :" + sokt.pointB_.x + " :" + sokt.pointB_.y
 
-                la += " :" + tri.dimVerticalA + " :" + tri.dimHorizontalA
-                lb += " :" + tri.dimVerticalB + " :" + tri.dimHorizontalB
-                lc += " :" + tri.dimVerticalC + " :" + tri.dimHorizontalC
+                la += " :" + tri.dim.vertical.a + " :" + tri.dim.horizontal.a
+                lb += " :" + tri.dim.vertical.b + " :" + tri.dim.horizontal.b
+                lc += " :" + tri.dim.vertical.c + " :" + tri.dim.horizontal.c
             }
             else if( tri.mynumber == myTriangleList.lastTapNumber ){
                 la += " A"
@@ -1033,7 +1023,6 @@ class MyView(context: Context, attrs: AttributeSet?) :
         pdfTrilistA.toStrings()
         pdfTrilistB.toStrings()
 
-
         myDeductionList.scale(PointXY(0f, 0f), scaleFactor)
         myDeductionList.setScale( myScale )
 
@@ -1045,7 +1034,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         // リストの中心座標にキャンバスを動かす、Xはマイナス、Yはプラス
         canvas.translate(-trianglelist.center.x, trianglelist.center.y)
 
-        drawEntities(canvas, paintTri, paintTex, paintRed, lightColors_, pdfTrilistA, myDeductionList )
+        drawEntities(canvas, paintTri, paintTex, paintRed, lightColors_, pdfTrilistB, myDeductionList )
 
         canvas.translate(trianglelist.center.x, -trianglelist.center.y)
 
