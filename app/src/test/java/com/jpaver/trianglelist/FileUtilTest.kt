@@ -17,6 +17,7 @@ class FileUtilTest {
     private val testFile = File(userHome, testPath)
 
     @Before
+    @Ignore("This test is only for local development.")
     fun setUp() {
         // テスト用のディレクトリとファイルが既に存在する場合は削除
         testFile.parentFile?.deleteRecursively()
@@ -34,6 +35,7 @@ class FileUtilTest {
     }
 
     @Test
+    @Ignore("This test is only for local development.")
     fun testDxfWriterToUserHome() {
         // テスト内容をユーザーのホームディレクトリに書き出し
         FileUtil.writeToUserHome(testContent, "$testDirectoryName${File.separator}$fileNameDxf")
@@ -41,6 +43,7 @@ class FileUtilTest {
     }
 
     @After
+    @Ignore("This test is only for local development.")
     fun tearDown() {
         // テストで作成したファイルとディレクトリを削除してクリーンアップ
         //testFile.delete()
