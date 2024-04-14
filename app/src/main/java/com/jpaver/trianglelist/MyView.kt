@@ -995,7 +995,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         val scaleFactor = 1.19f * writer.kaizoudo_ *(2.0f/experience/printScale)// - (myScale/100)
         myScale *= scaleFactor
 
-        trianglelist.attachToTheView(PointXY(0f, 0f), scaleFactor, paintTex.textSize, isResetAutoFlag = true )
+        trianglelist.attachToTheView(PointXY(0f, 0f), scaleFactor, paintTex.textSize )
 
         myDeductionList.scale(PointXY(0f, 0f), scaleFactor)
         myDeductionList.setScale( myScale )
@@ -1022,7 +1022,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         myScale /= scaleFactor
 
         // pointNumberの旗揚げがリセットされる
-        trianglelist.attachToTheView(PointXY(0f, 0f), 1 / scaleFactor, paintTexS.textSize, isResetAutoFlag = true )
+        trianglelist.attachToTheView(PointXY(0f, 0f), 1 / scaleFactor, paintTexS.textSize )
 
         myDeductionList.scale(PointXY(0f, 0f), 1 / scaleFactor)
         myDeductionList.setScale(myScale)
