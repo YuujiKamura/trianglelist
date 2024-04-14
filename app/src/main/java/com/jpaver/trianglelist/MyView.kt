@@ -967,20 +967,16 @@ class MyView(context: Context, attrs: AttributeSet?) :
         Log.d( "CadView", "TextSize changed to:" + textSize )
     }
 
-//endregion
+    //endregion
 
 
-//region drawPdf
-
-    fun drawPDF(
+    //region drawPdf
+    fun patternA(
         writer: PdfWriter,
-        canvas: Canvas,
-        paintTri: Paint,
         paintTex: Paint,
-        paintRed: Paint,
         textscale: Float,
         experience: Float
-    ): PointXY { // 追跡されたcanvasの移動ベクトルを返す
+    ):TriangleList { // 追跡されたcanvasの移動ベクトルを返す
         this.paintBlue.textSize = textscale
         this.paintBlue.strokeWidth = 0.05f
 
@@ -992,10 +988,51 @@ class MyView(context: Context, attrs: AttributeSet?) :
         textSpacer_ = adjustTextSpacer(printScale)
 
         // 用紙の単位にリストの大きさを合わせる
-        val scaleFactor = 1.19f * writer.kaizoudo_ *(2.0f/experience/printScale)// - (myScale/100)
+        val scaleFactor = 1.19f * writer.kaizoudo_ * (2.0f / experience / printScale)// - (myScale/100)
         myScale *= scaleFactor
 
-        trianglelist.attachToTheView(PointXY(0f, 0f), scaleFactor, paintTex.textSize )
+        trianglelist.attachToTheView(PointXY(0f, 0f), scaleFactor, paintTex.textSize)
+
+        return trianglelist
+    }
+
+    fun patternB(
+        textscale: Float
+    ):TriangleList { // 追跡されたcanvasの移動ベクトルを返す
+        this.paintBlue.textSize = textscale
+        this.paintBlue.strokeWidth = 0.05f
+
+        isPrintPDF_ = true
+
+        val pdfTrilist = trianglelist.clone()
+        val printScale = pdfTrilist.getPrintScale(myScale)
+        // テキストスペーサー
+        textSpacer_ = adjustTextSpacer(printScale)
+        // 用紙の単位にリストの大きさを合わせる
+
+        return pdfTrilist
+    }
+
+    fun drawPDF(
+        writer: PdfWriter,
+        canvas: Canvas,
+        paintTri: Paint,
+        paintTex: Paint,
+        paintRed: Paint,
+        textscale: Float,
+        experience: Float
+    ): PointXY { // 追跡されたcanvasの移動ベクトルを返す
+
+        val pdfTrilistA = patternA( writer,paintTex,textscale, experience )
+        val pdfTrilistB = patternB(textscale)
+        val printScale = pdfTrilistA.getPrintScale(myScale)
+        val scaleFactor = 1.19f * writer.kaizoudo_ * (2.0f / experience / printScale)// - (myScale/100)
+        myScale *= scaleFactor
+        pdfTrilistA.attachToTheView(PointXY(0f, 0f), scaleFactor, paintTex.textSize)
+        pdfTrilistB.attachToTheView(PointXY(0f, 0f), scaleFactor, paintTex.textSize)
+        pdfTrilistA.toStrings()
+        pdfTrilistB.toStrings()
+
 
         myDeductionList.scale(PointXY(0f, 0f), scaleFactor)
         myDeductionList.setScale( myScale )
@@ -1008,7 +1045,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         // リストの中心座標にキャンバスを動かす、Xはマイナス、Yはプラス
         canvas.translate(-trianglelist.center.x, trianglelist.center.y)
 
-        drawEntities(canvas, paintTri, paintTex, paintRed, lightColors_, trianglelist, myDeductionList )
+        drawEntities(canvas, paintTri, paintTex, paintRed, lightColors_, pdfTrilistB, myDeductionList )
 
         canvas.translate(trianglelist.center.x, -trianglelist.center.y)
 

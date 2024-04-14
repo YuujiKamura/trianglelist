@@ -18,6 +18,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         val b = Triangle()
         try {
 
+            b.scaleFactror = scaleFactror
             b.pointNumber = pointNumber.clone()
             b.dimpoint = dimpoint.copy()//cloneArray(dimpoints) // 代入だと参照になるので要素ごとにクローン
             b.path = cloneArray( path )
