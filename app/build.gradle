@@ -5,12 +5,13 @@ apply plugin: 'kotlin-android'
 android {
     compileSdk 34
 
+    // must sync before build AAB
     defaultConfig {
         applicationId "com.jpaver.myapplication"
         minSdk 26
         targetSdk 34
-        versionCode 1320
-        versionName "7.26" // must sync before build AAB
+        versionCode 1321
+        versionName "7.27"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 

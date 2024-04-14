@@ -1217,10 +1217,10 @@ class Triangle : EditObject, Cloneable<Triangle> {
         angleInLocal_ += addDegree
 
         rotate_body(basepoint,addDegree)
+
     }
 
     fun recover_rotate(basepoint: PointXY, addDegree: Float){
-        if (connectionType < 9 ) return
         angleInLocal_ = addDegree
 
         rotate_body(basepoint,addDegree)
@@ -1231,6 +1231,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         point[0] = point[0].rotate(basepoint, addDegree)
         angle += addDegree
         calcPoints(point[0], angle)
+
     }
 
     // 自分の次の番号がくっついている辺を調べてA辺にする。
