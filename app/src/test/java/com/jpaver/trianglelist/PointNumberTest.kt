@@ -38,7 +38,7 @@ class PointNumberTest {
         Assert.assertEquals(-2.5f, t1.pointnumber.y, 0.01f)
 
         //更新される
-        t1.rotate(PointXY(0f,0f), 90f)
+        t1.control_rotate(PointXY(0f,0f), 90f)
         Assert.assertEquals(2.5f, t1.pointnumber.x, 0.01f)
         Assert.assertEquals(0.0f, t1.pointnumber.y, 0.01f)
 
