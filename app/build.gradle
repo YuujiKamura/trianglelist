@@ -10,7 +10,7 @@ android {
         minSdk 26
         targetSdk 34
         versionCode 1320
-        versionName "7.26"
+        versionName "7.26" // must sync before build AAB
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 

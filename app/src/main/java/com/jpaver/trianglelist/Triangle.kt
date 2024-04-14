@@ -1213,17 +1213,25 @@ class Triangle : EditObject, Cloneable<Triangle> {
     // endregion scale and translate
 
     //region rotater
-    fun rotate(basepoint: PointXY, addDegree: Float, isRecover: Boolean = false) {
-        if (connectionType < 9 && isRecover ) return
-        if (!isRecover) angleInLocal_ += addDegree else angleInLocal_ = addDegree
+    fun control_rotate(basepoint: PointXY, addDegree: Float) {
+        angleInLocal_ += addDegree
 
+        rotate_body(basepoint,addDegree)
+    }
+
+    fun recover_rotate(basepoint: PointXY, addDegree: Float){
+        if (connectionType < 9 ) return
+        angleInLocal_ = addDegree
+
+        rotate_body(basepoint,addDegree)
+    }
+
+    fun rotate_body(basepoint: PointXY, addDegree: Float){
         pointnumber = pointNumber.rotate(basepoint,addDegree)
-
         point[0] = point[0].rotate(basepoint, addDegree)
         angle += addDegree
         calcPoints(point[0], angle)
     }
-
 
     // 自分の次の番号がくっついている辺を調べてA辺にする。
     // 他の番号にあって自身の辺上に無い場合は、A辺を変更しない。

@@ -6,7 +6,12 @@ import java.util.Optional
 class TriangleList : EditList {
 
 
-    fun rotate(basepoint: PointXY, angle: Float, startnumber: Int, separationFreeMode: Boolean = false, isRecover: Boolean = false ) {
+    fun rotate(
+        basepoint: PointXY,
+        angle: Float,
+        startnumber: Int,
+        separationFreeMode: Boolean = false
+    ) {
 
         var startindex = startnumber - 1
 
@@ -18,7 +23,7 @@ class TriangleList : EditList {
         }
         // 開始インデックス以降の要素に対してのみ処理を行う
         trilist.drop(startindex).forEach {
-            it.rotate(basepoint, angle, isRecover)
+            it.control_rotate(basepoint, angle)
         }
     }
 
@@ -323,7 +328,7 @@ class TriangleList : EditList {
     fun recoverState(bp: PointXY) {
         basepoint = bp.clone()
         trilist.map {
-            it.rotate(basepoint, angle - 180, true)
+            it.recover_rotate(basepoint, angle - 180)
             if (!it.pointNumber.flag.isMovedByUser){
                 it.pointnumber = it.pointnumber.rotate(basepoint, angle - 180)
             }
