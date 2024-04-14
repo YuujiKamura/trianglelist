@@ -18,7 +18,7 @@ class TriangleList : EditList {
         }
         // 開始インデックス以降の要素に対してのみ処理を行う
         trilist.drop(startindex).forEach {
-            it.rotate( basepoint, angle, isRecover, true )
+            it.rotate(basepoint, angle, isRecover)
         }
     }
 
@@ -282,7 +282,12 @@ class TriangleList : EditList {
     }
 
 
-    fun attachToTheView(basepoint: PointXY=PointXY(0f,0f), scale: Float=this.scale, ts: Float, isArrange:Boolean=true, isResetAutoFlag: Boolean= false ) {
+    fun attachToTheView(
+        basepoint: PointXY = PointXY(0f, 0f),
+        scale: Float = this.scale,
+        ts: Float,
+        isArrange: Boolean = true
+    ) {
         this.scale *= scale
         forEach { triangle ->
             triangle.scale(basepoint, scale, isArrange, OutlineList(this) )
@@ -298,12 +303,6 @@ class TriangleList : EditList {
     fun setDimPathTextSize(ts: Float) {
         forEach { triangle ->
             triangle.setDimPath(ts)
-        }
-    }
-
-    fun arrangeNumbers(){
-        forEach { triangle ->
-            triangle.arrangeNumber()
         }
     }
 
