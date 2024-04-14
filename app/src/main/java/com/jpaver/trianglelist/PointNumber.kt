@@ -1,13 +1,13 @@
 package com.jpaver.trianglelist
 
-class PointNumber( var triangle: Triangle ): Cloneable {
+class PointNumber(val point:PointXY, var triangle: Triangle ): Cloneable {
     data class Flags( var isMovedByUser: Boolean = false, var isAutoAligned: Boolean = false )
     var flag = Flags()
-    var pointnumber = PointXY(0f,0f) //ここでtriangle.pointnumberを代入するとエラーになるの何でかな？
+    var pointnumber = point //ここでtriangle.pointnumberを代入するとエラーになるの何でかな？
     var pointcenter = PointXY(0f,0f)
 
     public override fun clone(): PointNumber {
-        val b = PointNumber(triangle)
+        val b = PointNumber(pointnumber, triangle)
 
         b.flag = flag.copy()
         b.pointnumber = pointnumber.clone()
@@ -17,6 +17,19 @@ class PointNumber( var triangle: Triangle ): Cloneable {
     }
 
     // region pointNumber
+
+    fun setPointNumberMovedByUser_(p: PointXY):PointXY {
+        if( p.lengthTo(pointcenter) > 10f ) return pointnumber// あまり遠い時はスルー
+        pointnumber = p
+        flag.isMovedByUser = true
+        return pointnumber
+    }
+
+    fun rotate( basepoint:PointXY, angle:Float ): PointXY{
+        // pointnumberが更新される、参照は解除される
+        pointnumber = pointnumber.rotate(basepoint, angle)
+        return pointnumber
+    }
 
     fun isFlagOn():Boolean{
         return flag.isMovedByUser || flag.isAutoAligned

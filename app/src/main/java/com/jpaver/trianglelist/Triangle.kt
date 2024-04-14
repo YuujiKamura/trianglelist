@@ -118,9 +118,15 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
     //endregion dimalign
 
-
     // region pointNumber
-    var pointNumber = PointNumber(this)
+
+    var pointnumber = PointXY(0f, 0f)
+
+    init{
+        pointnumber = PointXY(0f,0f)
+    }
+
+    var pointNumber = PointNumber( pointnumber,this)
 
     fun arrangeNumber(isUse: Boolean = false, outlineList: OutlineList?=null ): PointXY{
         return pointNumber.arrangeNumber(isUse,outlineList)
@@ -144,13 +150,9 @@ class Triangle : EditObject, Cloneable<Triangle> {
         return -angleMpAB
     }
 
-    fun setPointNumberMovedByUser_(p: PointXY) {
-        if( p.lengthTo(pointcenter) < 10f ) return // あまり遠い時はスルー
-        pointnumber = p
-        pointNumber.pointnumber = p
-        pointNumber.flag.isMovedByUser = true
+    fun setPointNumber(p: PointXY) {
+        pointnumber = pointNumber.setPointNumberMovedByUser_(p)
     }
-
     //endregion pointNumber
 
     // 各辺に接続されている Triangle オブジェクトの識別子を返す
@@ -198,10 +200,6 @@ class Triangle : EditObject, Cloneable<Triangle> {
         private set
     var pointName_ = PointXY(0f, 0f)
         private set
-
-    var pointnumber = PointXY(0f, 0f)
-
-
 
     var path: Array<PathAndOffset> = Array(3) { PathAndOffset() }
     data class Dimpoint(var a:PointXY= PointXY(0f,0f), var b:PointXY=PointXY(0f,0f), var c:PointXY=PointXY(0f,0f), var name:PointXY=PointXY(0f,0f)){
@@ -1206,12 +1204,11 @@ class Triangle : EditObject, Cloneable<Triangle> {
     // endregion scale and translate
 
     //region rotater
-    fun rotate(basepoint: PointXY, addDegree: Float, isRecover: Boolean = false, isNumberMove: Boolean = false ) {
+    fun rotate(basepoint: PointXY, addDegree: Float, isRecover: Boolean = false) {
         if (connectionType < 9 && isRecover ) return
         if (!isRecover) angleInLocal_ += addDegree else angleInLocal_ = addDegree
 
-        if (isNumberMove && pointNumber.flag.isMovedByUser )
-            pointNumber.pointnumber = pointNumber.pointnumber.rotate(basepoint,addDegree)
+        pointnumber = pointNumber.rotate(basepoint,addDegree)
 
         point[0] = point[0].rotate(basepoint, addDegree)
         angle += addDegree

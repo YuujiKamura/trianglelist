@@ -9,8 +9,8 @@ android {
         applicationId "com.jpaver.myapplication"
         minSdk 26
         targetSdk 34
-        versionCode 1318
-        versionName "7.24"
+        versionCode 1319
+        versionName "7.25"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
