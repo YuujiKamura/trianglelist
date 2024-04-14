@@ -5,9 +5,9 @@ import com.jpaver.trianglelist.util.Cloneable
 
 class PathAndOffset(
     private var scale: Float = 1.0f,
-    leftP: PointXY = PointXY(0f,0f),
-    rightP: PointXY = PointXY(0f,0f),
-    vertical: Int = 1,
+    leftP: PointXY = PointXY(10f,10f),
+    rightP: PointXY = PointXY(10f,10f),
+    var vertical: Int = 1,
     var horizontal: Int = 0,
     private var dimheight: Float = 0.05f
 ) : Cloneable<PathAndOffset>{
@@ -21,6 +21,9 @@ class PathAndOffset(
         b.offsetV = offsetV
         b.offsetH = offsetH
         b.textSpacer = textSpacer
+        b.horizontal = horizontal
+        b.vertical = vertical
+        b.dimheight = dimheight
         return b
     }
 

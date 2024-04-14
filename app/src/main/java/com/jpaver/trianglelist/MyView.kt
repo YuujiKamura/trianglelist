@@ -1045,7 +1045,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         // リストの中心座標にキャンバスを動かす、Xはマイナス、Yはプラス
         canvas.translate(-trianglelist.center.x, trianglelist.center.y)
 
-        drawEntities(canvas, paintTri, paintTex, paintRed, lightColors_, pdfTrilistB, myDeductionList )
+        drawEntities(canvas, paintTri, paintTex, paintRed, lightColors_, pdfTrilistA, myDeductionList )
 
         canvas.translate(trianglelist.center.x, -trianglelist.center.y)
 
