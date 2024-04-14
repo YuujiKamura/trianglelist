@@ -2919,7 +2919,7 @@ class MainActivity : AppCompatActivity(),
 
         mt.name = chunks[6]!!.toString()
         //pointNumber
-        if(chunks[9]!! == "true") mt.setPointNumberMovedByUser_(
+        if(chunks[9]!! == "true") mt.setPointNumber(
             PointXY(
                 chunks[7]!!.toFloat(),
                 chunks[8]!!.toFloat()
@@ -3073,7 +3073,7 @@ class MainActivity : AppCompatActivity(),
             if( trilist.size() > 1 ) trilist.get(trilist.size() - 1).childSide_ = chunks[5].toInt()
 
             // 番号円　pointNumber
-            if(chunks[9] == "true") mT.setPointNumberMovedByUser_(
+            if(chunks[9] == "true") mT.setPointNumber(
                 PointXY(
                     chunks[7].toFloat(),
                     chunks[8].toFloat()

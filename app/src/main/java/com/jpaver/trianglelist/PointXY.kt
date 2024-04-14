@@ -378,17 +378,21 @@ class PointXY :Cloneable<PointXY> {
     }
 
     // 座標回転メソッド
-    fun rotate(cp: PointXY, degree: Float): PointXY {
-        val x: Float
-        val y: Float //回転後の座標
-        val px: Double
-        val py: Double
-        px = (this.x - cp.x).toDouble()
-        py = (this.y - cp.y).toDouble()
-        x =
-            (px * Math.cos(degree / 180 * 3.141592)).toFloat() - (py * Math.sin(degree / 180 * 3.141592)).toFloat() + cp.x
-        y =
-            (px * Math.sin(degree / 180 * 3.141592)).toFloat() + (py * Math.cos(degree / 180 * 3.141592)).toFloat() + cp.y
-        return PointXY(x, y)
+    fun rotate(center: PointXY, degrees: Float): PointXY {
+        // 回転後の座標
+        val rotatedX: Float
+        val rotatedY: Float
+        // 中心点からの相対座標
+        val offsetX: Double = (this.x - center.x).toDouble()
+        val offsetY: Double = (this.y - center.y).toDouble()
+        // 角度をラジアンに変換
+        val radians = degrees / 180 * Math.PI
+        // 回転後のX座標を計算
+        rotatedX = (offsetX * Math.cos(radians) - offsetY * Math.sin(radians)).toFloat() + center.x
+        // 回転後のY座標を計算
+        rotatedY = (offsetX * Math.sin(radians) + offsetY * Math.cos(radians)).toFloat() + center.y
+
+        return PointXY(rotatedX, rotatedY)
     }
+
 }
