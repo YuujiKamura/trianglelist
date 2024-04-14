@@ -323,7 +323,7 @@ class TriangleList : EditList {
     fun recoverState(bp: PointXY) {
         basepoint = bp.clone()
         trilist.map {
-            it.rotate(basepoint, angle - 180, false)
+            it.rotate(basepoint, angle - 180, true)
             if (!it.pointNumber.flag.isMovedByUser){
                 it.pointnumber = it.pointnumber.rotate(basepoint, angle - 180)
             }
