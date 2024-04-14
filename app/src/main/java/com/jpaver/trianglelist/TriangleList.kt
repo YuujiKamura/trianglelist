@@ -294,6 +294,7 @@ class TriangleList : EditList {
 
             //これがないと結果が変わる、へんな揺らぎが起きたりする
             triangle.setDimPath(ts)
+            triangle.setLengthStr()
         }
 
         //全体のスケールが終わってから一度だけ呼ぶ

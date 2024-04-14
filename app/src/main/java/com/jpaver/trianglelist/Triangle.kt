@@ -59,6 +59,9 @@ class Triangle : EditObject, Cloneable<Triangle> {
             b.color_ = color_
             b.connectionLCR_ = connectionLCR_
             b.connectionType_ = connectionType_
+            b.strLengthA = strLengthA
+            b.strLengthB = strLengthB
+            b.strLengthC = strLengthC
         } catch (e: Exception) {
             //e.printStackTrace();
         }
@@ -66,6 +69,12 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
     //region dimAlign
+
+    fun setLengthStr(){
+        strLengthA = lengthNotSized[0].formattedString(2)
+        strLengthB = lengthNotSized[1].formattedString(2)
+        strLengthC = lengthNotSized[2].formattedString(2)
+    }
 
     // あらゆる場所でよばれる
     private fun arrangeDims(isVertical:Boolean=false, isHorizontal:Boolean=true ) {
@@ -186,9 +195,9 @@ class Triangle : EditObject, Cloneable<Triangle> {
     var angle = 180f
     var angleInLocal_ = 0f
     var dedcount = 0f
-    var sla_ = ""
-    var slb_ = ""
-    var slc_ = ""
+    var strLengthA = ""
+    var strLengthB = ""
+    var strLengthC = ""
 
     var point = arrayOf(PointXY(0f,0f),PointXY(0f,0f),PointXY(0f,0f))
         private set
