@@ -2,7 +2,6 @@ package com.jpaver.trianglelist
 
 import com.jpaver.trianglelist.util.Cloneable
 import com.jpaver.trianglelist.util.InputParameter
-import com.jpaver.trianglelist.util.cloneArray
 import kotlin.math.acos
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -21,8 +20,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
             b.scaleFactror = scaleFactror
             b.pointNumber = pointNumber.clone()
             b.dimpoint = dimpoint.copy()//cloneArray(dimpoints) // 代入だと参照になるので要素ごとにクローン
-            b.path = cloneArray( path )
-            b.pathSokuten = pathSokuten.clone()
+            b.dimOnPath = dimOnPath.copyOf()
+            b.dimOnPathSokuten = dimOnPathSokuten.copy()
             b.dim = dim.clone()
 
             b.dimVerticalA = dimVerticalA
@@ -79,10 +78,10 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
     fun setDimPath(ts: Float = dimHeight) {
         dimHeight = ts
-        path[0] = PathAndOffset(scaleFactror, pointAB, point[0], dim.vertical.a, dim.horizontal.a, ts )
-        path[1] = PathAndOffset(scaleFactror, pointBC, pointAB, dim.vertical.b, dim.horizontal.b, ts )
-        path[2] = PathAndOffset(scaleFactror, point[0], pointBC,  dim.vertical.c, dim.horizontal.c, ts )
-        pathSokuten = PathAndOffset(scaleFactror, pointAB, point[0], SIDE_SOKUTEN, dim.getunconnectedSide(1, -1), ts )
+        dimOnPath[0] = DimOnPath(scaleFactror, pointAB, point[0], dim.vertical.a, dim.horizontal.a, ts )
+        dimOnPath[1] = DimOnPath(scaleFactror, pointBC, pointAB, dim.vertical.b, dim.horizontal.b, ts )
+        dimOnPath[2] = DimOnPath(scaleFactror, point[0], pointBC,  dim.vertical.c, dim.horizontal.c, ts )
+        dimOnPathSokuten = DimOnPath(scaleFactror, pointAB, point[0], SIDE_SOKUTEN, dim.getunconnectedSide(1, -1), ts )
     }
 
     fun controlDimHorizontal(side: Int) {
@@ -110,11 +109,11 @@ class Triangle : EditObject, Cloneable<Triangle> {
     fun setDimPoint() {
         //dimpoints.forEachIndexed { i, path -> dimpoints[i] = path[i].pointD }
         dimpoint.a =
-            path[0].dimpoint
+            dimOnPath[0].dimpoint
         dimpoint.b =
-            path[1].dimpoint
+            dimOnPath[1].dimpoint
         dimpoint.c =
-            path[2].dimpoint
+            dimOnPath[2].dimpoint
     }
 
     //endregion dimalign
@@ -202,7 +201,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     var pointName_ = PointXY(0f, 0f)
         private set
 
-    var path: Array<PathAndOffset> = Array(3) { PathAndOffset() }
+    var dimOnPath: Array<DimOnPath> = Array(3) { DimOnPath() }
     data class Dimpoint(var a:PointXY= PointXY(0f,0f), var b:PointXY=PointXY(0f,0f), var c:PointXY=PointXY(0f,0f), var name:PointXY=PointXY(0f,0f)){
         fun toArray(): Array<PointXY>{
             return arrayOf(a,b,c)
@@ -238,7 +237,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     var childSide_ = 0
     var name = ""
     var myBP_ = Bounds(0f, 0f, 0f, 0f)
-    var pathSokuten: PathAndOffset = PathAndOffset()
+    var dimOnPathSokuten = DimOnPath()
     var dimHeight = 0f
     var nodeTriangleB: Triangle? = null
     var nodeTriangleC: Triangle? = null
@@ -1196,10 +1195,10 @@ class Triangle : EditObject, Cloneable<Triangle> {
         myBP_.right = myBP_.right + to.x
         myBP_.top = myBP_.top + to.y
         myBP_.bottom = myBP_.bottom + to.x
-        path[0].move(to)
-        path[1].move(to)
-        path[2].move(to)
-        pathSokuten.move(to)
+        dimOnPath[0].move(to)
+        dimOnPath[1].move(to)
+        dimOnPath[2].move(to)
+        dimOnPathSokuten.move(to)
     }
 
     // endregion scale and translate

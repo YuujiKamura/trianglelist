@@ -25,7 +25,7 @@ class TriangleTest {
         val triangle = Triangle(1f,3f,3f)
         val triangle2 = triangle.clone()
 
-        compare(triangle.path[0].dimpoint,triangle2.path[0].dimpoint)
+        compare(triangle.dimOnPath[0].dimpoint,triangle2.dimOnPath[0].dimpoint)
     }
 
 

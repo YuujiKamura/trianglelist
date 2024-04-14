@@ -615,10 +615,10 @@ class MyView(context: Context, attrs: AttributeSet?) :
         tri.pointCA
         tri.pointAB
         tri.pointBC
-        val tPathA = tri.path[0]
-        val tPathB = tri.path[1]
-        val tPathC = tri.path[2]
-        val tPathS = tri.pathSokuten
+        val tPathA = tri.dimOnPath[0]
+        val tPathB = tri.dimOnPath[1]
+        val tPathC = tri.dimOnPath[2]
+        val tPathS = tri.dimOnPathSokuten
 
         var la = tri.sla_ //String type
         var lb = tri.slb_
@@ -690,8 +690,8 @@ class MyView(context: Context, attrs: AttributeSet?) :
             canvas.drawPath( makeTriangleFillPath( shadowTri_ ), paintGray )
 
             // 寸法値
-            val pathB = shadowTri_.path[1]
-            val pathC = shadowTri_.path[2]
+            val pathB = shadowTri_.dimOnPath[1]
+            val pathC = shadowTri_.dimOnPath[2]
             val strB = "B ${watchedB1_}"
             val strC = "C ${watchedC1_}"
             drawDigit( canvas, strB, pathB, paintYellow )
@@ -699,7 +699,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         }
     }
 
-    fun drawDigit(canvas: Canvas, str: String, path: PathAndOffset, paint: Paint ){
+    fun drawDigit(canvas: Canvas, str: String, path: DimOnPath, paint: Paint ){
         val onecharsize = paint.textSize* 0.5f
         drawDigits( canvas, str, makePath(path), path.offsetH, path.offsetV, paint, onecharsize )
     }
@@ -916,7 +916,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
     }
 
 
-    fun makePath(PA: PathAndOffset): Path {
+    fun makePath(PA: DimOnPath): Path {
         val path = Path()
         path.rewind()
         path.moveTo(PA.pointA.x, -PA.pointA.y)

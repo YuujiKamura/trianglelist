@@ -111,9 +111,9 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
         writeTextDimension(dimverticalC, nagasaC, tri.dimpoint.c, pca.calcDimAngle(pbc))
 
         // DimTextの旗上げ
-        val tPathA = tri.path[0]
-        val tPathB = tri.path[1]
-        val tPathC = tri.path[2]
+        val tPathA = tri.dimOnPath[0]
+        val tPathB = tri.dimOnPath[1]
+        val tPathC = tri.dimOnPath[2]
         if(tri.dim.horizontal.a > 2) writeLine( tPathA.pointA, tPathA.pointB, 7)
         if(tri.dim.horizontal.b > 2) writeLine( tPathB.pointA, tPathB.pointB, 7)
         if(tri.dim.horizontal.c > 2) writeLine( tPathC.pointA, tPathC.pointB, 7)
