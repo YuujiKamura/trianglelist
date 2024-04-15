@@ -83,7 +83,7 @@ class Dims( val triangle: Triangle ) : Cloneable<Dims> {
     }
 
     fun getunconnectedSide(outerright: Int, outerleft: Int): Int{
-        if (triangle.nodeTriangleC == null) return outerright
+        if (triangle.nodeC == null) return outerright
         return outerleft
     }
 
@@ -114,11 +114,11 @@ class Dims( val triangle: Triangle ) : Cloneable<Dims> {
                 return INNER
             }
             SIDEB -> {
-                if(!flag[1].isMovedByUser ) return autoDimVerticalByAreaCompare(triangle.nodeTriangleB)
+                if(!flag[1].isMovedByUser ) return autoDimVerticalByAreaCompare(triangle.nodeB)
                 return vertical.b
             }
             SIDEC -> {
-                if(!flag[2].isMovedByUser ) return autoDimVerticalByAreaCompare(triangle.nodeTriangleC)
+                if(!flag[2].isMovedByUser ) return autoDimVerticalByAreaCompare(triangle.nodeC)
                 return vertical.c
             }
         }
@@ -165,10 +165,10 @@ class Dims( val triangle: Triangle ) : Cloneable<Dims> {
 
     fun setAlignByChild() {
         if (!flag[1].isMovedByUser) {
-            vertical.b = if (triangle.nodeTriangleB == null) OUTER else INNER
+            vertical.b = if (triangle.nodeB == null) OUTER else INNER
         }
         if (!flag[2].isMovedByUser) {
-            vertical.c = if (triangle.nodeTriangleC == null) OUTER else INNER
+            vertical.c = if (triangle.nodeC == null) OUTER else INNER
         }
     }
 

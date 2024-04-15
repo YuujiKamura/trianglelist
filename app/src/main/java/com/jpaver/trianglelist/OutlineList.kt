@@ -69,11 +69,11 @@ class OutlineList(var trianglelist: TriangleList) :Cloneable{
         // AB点を取る。
         // B辺接続があれば、そっち方向に自身を呼び出す
         addPoint(triangle.pointAB, "ab,", pointlist, triangle)
-        traceOrNot(triangle.nodeTriangleB, origin)
+        traceOrNot(triangle.nodeB, origin)
         // BC点を取る。
         // C辺接続があれば、そっち方向に自身を呼び出す
         addPoint(triangle.pointBC, "bc,", pointlist, triangle)
-        traceOrNot(triangle.nodeTriangleC, origin)
+        traceOrNot(triangle.nodeC, origin)
         // どっちもなければ折り返し
         traceBackward(origin, pointlist, triangle)
         return pointlist
@@ -110,16 +110,16 @@ class OutlineList(var trianglelist: TriangleList) :Cloneable{
         addPoint(triangle.pointAB, "ab,", pointlist, triangle)
         // 0まで戻る。同じ色でない時はリターン
         if (triangle.mynumber <= triangle.parentnumber) return
-        if (triangle.nodeTriangleA_ != null && !triangle.isColored && !triangle.isFloating)
-            traceBackward(origin, pointlist, triangle.nodeTriangleA_!!)
+        if (triangle.nodeA != null && !triangle.isColored && !triangle.isFloating)
+            traceBackward(origin, pointlist, triangle.nodeA!!)
     }
 
     fun branchOrNot(triangle: Triangle, origin: Int, olp: ArrayList<PointXY>) {
-        if (triangle.nodeTriangleB != null && triangle.nodeTriangleC != null)
-            if (notHave(triangle.nodeTriangleC!!.point[0], olp)
-                && !triangle.nodeTriangleC!!.isFloating_
-                && !triangle.nodeTriangleC!!.isColored_)
-                traceForward(triangle.nodeTriangleC!!.mynumber - 1, origin, triangle.nodeTriangleC!!)
+        if (triangle.nodeB != null && triangle.nodeC != null)
+            if (notHave(triangle.nodeC!!.point[0], olp)
+                && !triangle.nodeC!!.isFloating_
+                && !triangle.nodeC!!.isColored_)
+                traceForward(triangle.nodeC!!.mynumber - 1, origin, triangle.nodeC!!)
     }
 
 }

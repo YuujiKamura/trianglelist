@@ -9,34 +9,59 @@ import org.junit.Assert
 import org.junit.Test
 
 fun printTriangle( t: Triangle){
-    System.out.printf( t.toString() )
+    System.out.printf( t.toStrings() )
 }
 
-fun printTriList( tl: TriangleList){
-    System.out.printf( "TriangleList size ${tl.size()}%n" )
+fun print_trilist(tl: TriangleList){
+    System.out.printf( "TriangleList size ${tl.size()} hash ${tl.hashCode()}%n" )
     for( i in 0 until tl.size() ){
         printTriangle( tl[i+1] )
     }
     System.out.printf( "%n" )
 }
 
-fun printTriListList(listlist: java.util.ArrayList<TriangleList>?) {
-    if (listlist != null) {
-        for( i in 0 until listlist.size ){
-
-            if( listlist.get(i).size() > 0 ) {
-
-                val tl = listlist.get(i)//traceOrJumpForward(0, 0, ArrayList<PointXY>() )
-                System.out.printf( "trilistlist[%s], size %s, outlineList_ %s, outlineStr_ %s%n", i, tl.size(), tl.outlineList_!!.size, tl.outlineStr_ )
-                printTriList( tl )
-            }
+fun printTriListList(listlist: ArrayList<TriangleList>?) {
+    listlist?.forEachIndexed { index, triangleList ->
+        if (triangleList.size() > 0) {
+            val outlineSize = triangleList.outlineList_?.size ?: 0
+            val outlineStr = triangleList.outlineStr_
+            System.out.printf("trilistlist[%s], size %s, outlineList_ %s, outlineStr_ %s%n", index, triangleList.size(), outlineSize, outlineStr)
+            print_trilist(triangleList)
         }
-
     }
 }
 
-class TriListTest {
+class TriangleListTest {
+    @Test
+    fun testResetAllNodesAtClone() {
+        val trilist = TriangleList()
+        trilist.add(Triangle(5f, 5f, 5f), true)
+        trilist.add(1, 1, 5f, 5f)
+        trilist.add(1, 2, 5f, 5f)
 
+        val triangle1 = trilist.get(1)
+        val triangle2 = trilist.get(2)
+        val triangle3 = trilist.get(3)
+
+        assertEquals( triangle1, triangle3.nodeA )
+        assertEquals( triangle1, triangle2.nodeA )
+        assertEquals( triangle2, triangle1.nodeB )
+        assertEquals( triangle3, triangle1.nodeC )
+
+        val trilist2 = trilist.clone().attachToTheView(PointXY(0f,0f),47.0f)
+
+        val triangle2_1 = trilist2.get(1)
+        val triangle2_2 = trilist2.get(2)
+        val triangle2_3 = trilist2.get(3)
+
+        assertEquals( triangle2_1, triangle2_3.nodeA )
+        assertEquals( triangle2_1, triangle2_2.nodeA )
+        assertEquals( triangle2_2, triangle2_1.nodeB )
+        assertEquals( triangle2_3, triangle2_1.nodeC )
+
+        print_trilist(trilist)
+        print_trilist(trilist2)
+    }
 
     @Test
     fun testDedMapping(){
@@ -79,8 +104,8 @@ class TriListTest {
         //val trilist2 = trilist.clone()
 
         trilist.remove(4)
-        assertEquals(null, trilist.get(3).nodeTriangleB)
-        printTriList(trilist)
+        assertEquals(null, trilist.get(3).nodeB)
+        print_trilist(trilist)
 
 
     }
@@ -93,8 +118,8 @@ class TriListTest {
         trilist.add(2, 2, 5f, 5f)
 
         trilist.resetNodeByID(InputParameter("", "", 3, 6f, 6f, 6f, 1, 2))
-        assertEquals(trilist.get(1), trilist.get(3).nodeTriangleA_)
-        assertEquals(trilist.get(3), trilist.get(1).nodeTriangleC)
+        assertEquals(trilist.get(1), trilist.get(3).nodeA)
+        assertEquals(trilist.get(3), trilist.get(1).nodeC)
 
     }
 
@@ -157,7 +182,7 @@ class TriListTest {
         assertEquals(5.196f, trilist.get(2).pointCA.y, 0.001f)
         assertEquals(0.000f, trilist.get(2).pointAB.y, 0.001f)
 
-        printTriList(trilist)
+        print_trilist(trilist)
     }
 
     @Test
@@ -201,31 +226,6 @@ class TriListTest {
         trilist.replace(3, 1)
 
         assertEquals(1, trilist.get(3).parentnumber)
-    }
-
-    @Test
-    fun testResetAllNodesAtClone() {
-        val trilist = TriangleList()
-        trilist.add(Triangle(5f, 5f, 5f), true)
-        trilist.add(1, 1, 5f, 5f)
-        trilist.add(1, 2, 5f, 5f)
-
-        assertEquals(trilist.get(1), trilist.get(3).nodeTriangleA_)
-        assertEquals(trilist.get(1), trilist.get(2).nodeTriangleA_)
-        assertEquals(trilist.get(2), trilist.get(1).nodeTriangleB)
-        assertEquals(trilist.get(3), trilist.get(1).nodeTriangleC)
-
-        val trilist2 = trilist.clone()
-
-        //assertEquals( trilist2.get(1), trilist2.get(3).nodeTriangleA_ )
-
-
-        assertEquals(trilist2.get(1), trilist2.get(3).nodeTriangleA_)
-        assertEquals(trilist2.get(1), trilist2.get(2).nodeTriangleA_)
-        assertEquals(trilist2.get(2), trilist2.get(1).nodeTriangleB)
-        assertEquals(trilist2.get(3), trilist2.get(1).nodeTriangleC)
-
-
     }
 
     @Test
@@ -488,7 +488,7 @@ class TriListTest {
         val tri2 = Triangle(tri1, 3, 4f, 5f, 5f)
 
         //tri2.setConnectionType( 1, 1, 1, 4f);
-        Assert.assertEquals(-5f, tri2.nodeTriangleA_!!.pointAB.x, 0.0001f)
+        Assert.assertEquals(-5f, tri2.nodeA!!.pointAB.x, 0.0001f)
         Assert.assertEquals(-2.75f, tri2.getParentPointByLCR(1, 1).x, 0.0001f)
         Assert.assertEquals(-2.75f, tri2.getParentPointByType(1, 0, 1).x, 0.0001f)
         Assert.assertEquals(-2.75f, tri2.getParentPointByType(1, 1, 1).x, 0.0001f)
