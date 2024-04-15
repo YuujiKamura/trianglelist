@@ -137,9 +137,6 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
     var pointNumber = PointNumber( pointnumber,this)
 
-    fun arrangeNumber(isUse: Boolean = false, outlineList: OutlineList?=null ): PointXY{
-        return pointNumber.arrangeNumber(isUse,outlineList)
-    }
 
     //Deductionからも呼ばれている
     fun pointUnconnectedSide(
@@ -1051,14 +1048,13 @@ class Triangle : EditObject, Cloneable<Triangle> {
     //endregion node and boundaries
 
     //region calculater
-    fun calcPoints(basepoint: PointXY=point[0], _angle: Float=angle, isArrange: Boolean = false, outlineList: OutlineList?=null ) {
+    fun calcPoints(basepoint: PointXY = point[0], _angle: Float = angle, isArrange: Boolean = false) {
         pointAB = basepoint.offset(length[0], _angle)
         pointBC = calculatePointBC( basepoint )
         calculateInternalAngles()
         calculatePointCenter()
         arrangeDims(isArrange)
         if(!pointNumber.flag.isMovedByUser) pointnumber = pointcenter
-        //pointnumber = arrangeNumber(isArrange,outlineList)
         setBoundaryBox()
     }
 
@@ -1178,7 +1174,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     //endregion old hataage method
 
     //region scale and translate
-    fun scale(basepoint: PointXY, scale_: Float, isArrange: Boolean=false, outlineList: OutlineList?=null) {
+    fun scale(basepoint: PointXY, scale_: Float, isArrange: Boolean = false) {
         scaleFactror *= scale_
         point[0].scale(basepoint, scale_)
         length[0] *= scale_
@@ -1186,9 +1182,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         length[2] *= scale_
         pointcenter.scale(basepoint, scale_)
         pointnumber.scale(basepoint, scale_)
-        //pointNumber.triangle = this
-        //pointNumber.pointnumber.scale(basepoint, scale_)
-        calcPoints( point[0], angle, isArrange, outlineList )
+        calcPoints(point[0], angle, isArrange)
     }
 
     fun move(to: PointXY) {
@@ -1218,16 +1212,18 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
         rotate_body(basepoint,addDegree)
 
+        pointnumber = pointNumber.rotate(basepoint,addDegree)
     }
 
     fun recover_rotate(basepoint: PointXY, addDegree: Float){
         angleInLocal_ = addDegree
 
         rotate_body(basepoint,addDegree)
+
+        if (!pointNumber.flag.isMovedByUser) pointnumber = pointNumber.rotate(basepoint,addDegree)
     }
 
     fun rotate_body(basepoint: PointXY, addDegree: Float){
-        pointnumber = pointNumber.rotate(basepoint,addDegree)
         point[0] = point[0].rotate(basepoint, addDegree)
         angle += addDegree
         calcPoints(point[0], angle)

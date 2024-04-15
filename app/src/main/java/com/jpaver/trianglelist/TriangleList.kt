@@ -295,7 +295,7 @@ class TriangleList : EditList {
     ) {
         this.scale *= scale
         forEach { triangle ->
-            triangle.scale(basepoint, scale, isArrange, OutlineList(this) )
+            triangle.scale(basepoint, scale, isArrange)
 
             //これがないと結果が変わる、へんな揺らぎが起きたりする
             triangle.setDimPath(ts)
@@ -329,9 +329,6 @@ class TriangleList : EditList {
         basepoint = bp.clone()
         trilist.map {
             it.recover_rotate(basepoint, angle - 180)
-            if (!it.pointNumber.flag.isMovedByUser){
-                it.pointnumber = it.pointnumber.rotate(basepoint, angle - 180)
-            }
         }
         //arrangeNumbers()
     }
