@@ -73,6 +73,9 @@ import java.io.OutputStreamWriter
 import java.time.LocalDate
 import kotlin.math.roundToInt
 
+import android.animation.ObjectAnimator
+import android.animation.ValueAnimator
+
 
 data class ResStr(
         // 文字列リソースをstringに変換して保持する。
@@ -1347,12 +1350,24 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
+    fun blinkFAB(fab: FloatingActionButton) {
+        // ObjectAnimatorを使用して透明度を変更するアニメーションを作成
+        val animator = ObjectAnimator.ofFloat(fab, "alpha",1f, 0.1f, 1f).apply {
+            duration = 1000 // アニメーションの期間を500ミリ秒に設定
+            repeatCount = ValueAnimator.INFINITE // 無限に繰り返し
+            repeatMode = ValueAnimator.RESTART // アニメーションが再開するように設定
+        }
+        animator.start()
+    }
+
+
     private fun fabController(){
 
         val mainViewModel = MainViewModel()
 
         setCommonFabListener(fab_replace) {
             fabReplace(parameter, false)
+            blinkFAB(fab_replace)
         }
 
         setCommonFabListener(fab_flag) {
