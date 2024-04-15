@@ -281,7 +281,7 @@ class TriangleList : EditList {
 
     fun arrangePointNumbers() {
         forEach { triangle ->
-            triangle.pointNumber.resetFlag()
+            triangle.pointNumber.resetAutoFlag()
             triangle.pointnumber = triangle.pointNumber.autoAlign(triangle, OutlineList(this))
         }
     }
@@ -303,7 +303,7 @@ class TriangleList : EditList {
         }
 
         //全体のスケールが終わってから一度だけ呼ぶ
-        //if(isResetAutoFlag) arrangeNumbers()
+        arrangePointNumbers()
     }
 
     fun setDimPathTextSize(ts: Float) {

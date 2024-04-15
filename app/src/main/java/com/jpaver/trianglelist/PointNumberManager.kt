@@ -18,6 +18,7 @@ class PointNumberManager( ): Cloneable {
         val length = to.lengthTo(triangle.pointcenter)
         if( length > BORDER ) return triangle.pointnumber// あまり遠い時はスルー
         flag.isMovedByUser = true
+        flag.isAutoAligned = false
         return to
     }
 
@@ -27,7 +28,7 @@ class PointNumberManager( ): Cloneable {
 
     val WEIGHT = 35f
 
-    fun resetFlag(isAuto: Boolean = false){
+    fun resetAutoFlag(isAuto: Boolean = false){
         flag.isAutoAligned = isAuto
     }
 
