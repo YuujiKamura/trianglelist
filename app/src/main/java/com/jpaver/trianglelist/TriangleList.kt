@@ -3,6 +3,20 @@ package com.jpaver.trianglelist
 import com.jpaver.trianglelist.util.InputParameter
 import java.util.Optional
 
+import android.util.Log
+
+fun printTriangle(t: Triangle) {
+    Log.d("Triangle", t.toStrings())
+}
+
+fun print_trilist(tl: TriangleList) {
+    Log.d("TriangleList", "TriangleList size ${tl.size()} hash ${tl.hashCode()}")
+    for (i in 0 until tl.size()) {
+        printTriangle(tl[i]) // Indexing directly to i assuming `tl[i]` is valid and starts from 0
+    }
+    Log.d("TriangleList", "") // To add the newline effect, although Logcat naturally separates logs
+}
+
 class TriangleList : EditList {
 
 
