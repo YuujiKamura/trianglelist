@@ -460,8 +460,6 @@ class MyView(context: Context, attrs: AttributeSet?) :
         watchedC1_ = ""
      }
 
-
-
     /**
      * `printScale` の値に基づいて適切なテキストスペーサーの値を調整します。
      *
