@@ -48,7 +48,9 @@ class TriangleListTest {
         assertEquals( triangle2, triangle1.nodeB )
         assertEquals( triangle3, triangle1.nodeC )
 
-        val trilist2 = trilist.clone().attachToTheView(PointXY(0f,0f),47.0f)
+        // もとの三角形のハッシュを参照していないか試してみる
+        val trilist2 = trilist.clone()//.attachToTheView(PointXY(0f,0f),47.0f)
+        trilist2.attachToTheView(PointXY(0f,0f),47.0f)
 
         val triangle2_1 = trilist2.get(1)
         val triangle2_2 = trilist2.get(2)

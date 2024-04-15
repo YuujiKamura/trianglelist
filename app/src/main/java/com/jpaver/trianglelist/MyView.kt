@@ -440,10 +440,11 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
     }
 
-    fun setTriangleList(triList: EditList, setscale: Float, moveCenter: Boolean = true){
+    fun setTriangleList(editlist: EditList, setscale: Float, moveCenter: Boolean = true){
         //if( myTriangleList.size() > 0 ) trilistStored_ = myTriangleList.clone()
+        print_trilist(editlist as TriangleList)
         myScale = setscale    // 描画倍率は外から指定する
-        trianglelist = triList.clone() as TriangleList
+        trianglelist = editlist.clone()
         trianglelist.attachToTheView(
             PointXY(
                 0f,
@@ -451,8 +452,10 @@ class MyView(context: Context, attrs: AttributeSet?) :
             ), setscale, paintTexS.textSize )
 
         if( moveCenter ) setCenterInModelToLastTappedTriNumber() //画面を動かしてしまうので注意
-        //resetView()
-        //invalidate()
+
+        print_trilist(editlist)
+        print_trilist(trianglelist)
+
         watchedB1_ = ""
         watchedC1_ = ""
      }
