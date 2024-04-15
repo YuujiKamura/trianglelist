@@ -189,7 +189,7 @@ class PointXY :Cloneable<PointXY> {
         zoom: Float
     ): PointXY {
         val inLocal = clone()
-        inLocal.addminus(baseInView).scale(PointXY(0f, 0f), 1 / zoom) // // 左上起点座標を自身(pressedInView)から引く
+        inLocal.addminus(baseInView).change_scale(PointXY(0f, 0f), 1 / zoom) // // 左上起点座標を自身(pressedInView)から引く
         inLocal.add(centerInModel.scale(1f, -1f))
         return inLocal
     }
@@ -290,7 +290,7 @@ class PointXY :Cloneable<PointXY> {
         return angle
     }
 
-    fun scale(a: PointXY, scale: Float) {
+    fun change_scale(a: PointXY, scale: Float) {
         x = x * scale + a.x
         y = y * scale + a.y
     }

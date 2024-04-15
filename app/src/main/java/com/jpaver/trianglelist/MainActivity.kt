@@ -304,7 +304,7 @@ class MainActivity : AppCompatActivity(),
     private var mIsCreateNew: Boolean = false
     private val onetohandred = 11.9f
     private val experience = 4f
-    private val mScale = onetohandred*experience
+    private val viewscale = onetohandred*experience
 
     private var koujiname = ""
     private var rosenname = ""
@@ -1378,7 +1378,7 @@ class MainActivity : AppCompatActivity(),
             if(!deductionMode && trianglelist.lastTapNumber > 1 ){
                 trianglelist.rotateCurrentTriLCR()
                 //myTriangleList.resetTriConnection(myTriangleList.lastTapNum_, );
-                myview.setTriangleList(trianglelist, mScale, false )
+                myview.setTriangleList(trianglelist, viewscale, false )
                 myview.resetView(myview.toLastTapTriangle())
                 editorResetBy(getList(deductionMode))
 
@@ -1404,8 +1404,8 @@ class MainActivity : AppCompatActivity(),
                     getList(deductionMode).remove(eraseNum)
 
                     //my_view.removeTriangle()
-                    myview.setDeductionList(myDeductionList, mScale)
-                    myview.setTriangleList(trianglelist, mScale)
+                    myview.setDeductionList(myDeductionList, viewscale)
+                    myview.setTriangleList(trianglelist, viewscale)
 
                     editorResetBy(getList(deductionMode))
                 }
@@ -1423,7 +1423,7 @@ class MainActivity : AppCompatActivity(),
             if( trilistUndo.size() > 0 ){
                 trianglelist = trilistUndo.clone()
                 //my_view.undo()
-                myview.setTriangleList(trilistUndo, mScale)
+                myview.setTriangleList(trilistUndo, viewscale)
                 myview.resetViewToLastTapTriangle()
 
                 trilistUndo.trilist.clear()
@@ -1631,9 +1631,9 @@ class MainActivity : AppCompatActivity(),
     }
     private fun setListByDedMode( moveCenter: Boolean = true ){
         whenTriDed({
-            myview.setTriangleList( trianglelist, mScale, moveCenter )
+            myview.setTriangleList( trianglelist, viewscale, moveCenter )
         },{
-            myview.setDeductionList(myDeductionList, mScale)
+            myview.setDeductionList(myDeductionList, viewscale)
         })
     }
     private fun setListAndResetView(resetViewMethod:() -> Unit, moveCenter: Boolean = true ) {
@@ -1645,11 +1645,11 @@ class MainActivity : AppCompatActivity(),
     }
 
     fun setDeductionlist(){
-        myview.setDeductionList(myDeductionList, mScale)
+        myview.setDeductionList(myDeductionList, viewscale)
     }
 
     fun setTrianglelist(){
-        myview.setTriangleList(trianglelist, mScale, false)
+        myview.setTriangleList(trianglelist, viewscale, false)
     }
 
     fun flagDeduction(){
@@ -1664,14 +1664,9 @@ class MainActivity : AppCompatActivity(),
 
     fun flagTriangle(){
         val triangle = trianglelist.get(parameter.number)
-        val tappoint = myview.pressedInModel.scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
-        if( tappoint.lengthTo(triangle.pointcenter) < 10f ){ // あまり遠い時はスルー
-            triangle.pointnumber = tappoint
-            triangle.pointNumber.pointnumber = tappoint
-            triangle.pointNumber.flag.isMovedByUser = true
-            triangle.pointNumber.flag.isAutoAligned = false
-            setTrianglelist()
-        }
+        val tappoint = myview.pressedInModel.scale(PointXY(0f, 0f), 1 / viewscale, -1 / viewscale)
+        triangle.setPointNumber(tappoint)
+        setTrianglelist()
     }
 
     fun fabFlag(){
@@ -1687,8 +1682,8 @@ class MainActivity : AppCompatActivity(),
         if(!deductionMode) {
             trianglelist.rotate(PointXY(0f, 0f), degrees, trianglelist.lastTapNumber, bSeparateFreeMode )
             myDeductionList.rotate(PointXY(0f, 0f), -degrees )
-            myview.setTriangleList(trianglelist, mScale)
-            myview.setDeductionList(myDeductionList, mScale)
+            myview.setTriangleList(trianglelist, viewscale)
+            myview.setDeductionList(myDeductionList, viewscale)
             myview.invalidate()//resetViewToLSTP()
         }
         // ded rotate
@@ -1697,7 +1692,7 @@ class MainActivity : AppCompatActivity(),
             val current_deduction_number = myview.myDeductionList.lastTapIndex_+1
             val current_deduction = myDeductionList.get(current_deduction_number)
             current_deduction.rotateShape( current_deduction.point, -degrees )
-            myview.setDeductionList(myDeductionList, mScale)
+            myview.setDeductionList(myDeductionList, viewscale)
             myview.invalidate()
         }
     }
@@ -1738,7 +1733,7 @@ class MainActivity : AppCompatActivity(),
             findViewById<EditText>(R.id.editName1).requestFocus()
         }
 
-        myview.setTriangleList(trianglelist, mScale)
+        myview.setTriangleList(trianglelist, viewscale)
         setListAndResetView( { whenTriDed( {myview.resetView(myview.toLastTapTriangle())}, {myview.invalidate()} ) } )
         setTitles()
 
@@ -1818,7 +1813,7 @@ class MainActivity : AppCompatActivity(),
         if( ded == null ) return false
         myDeductionList.add( ded.clone() )
 
-        myview.setDeductionList(myDeductionList, mScale)
+        myview.setDeductionList(myDeductionList, viewscale)
         myview.trianglelist.dedmapping(myDeductionList, -1)
         lastParams = params
 
@@ -2700,8 +2695,8 @@ class MainActivity : AppCompatActivity(),
         findViewById<EditText>(R.id.rosenname).setText(rosenname)
         setTitles()
 
-        myview.setTriangleList(trilist, mScale)
-        myview.setDeductionList(myDeductionList, mScale)
+        myview.setTriangleList(trilist, viewscale)
+        myview.setDeductionList(myDeductionList, viewscale)
         myview.trianglelist.lastTapNumber = myview.trianglelist.size()
         myview.resetViewToLastTapTriangle()
 
@@ -2789,8 +2784,8 @@ class MainActivity : AppCompatActivity(),
             // 減算リストのデータをCSVファイルに書き込み
             for (index in 1..myDeductionList.size()) {
                 val dd: Deduction = myDeductionList.get(index)
-                val pointAtRealscale = dd.point.scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
-                val pointFlagAtRealscale = dd.pointFlag.scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
+                val pointAtRealscale = dd.point.scale(PointXY(0f, 0f), 1 / viewscale, -1 / viewscale)
+                val pointFlagAtRealscale = dd.pointFlag.scale(PointXY(0f, 0f), 1 / viewscale, -1 / viewscale)
 
                 writer.write("Deduction,${dd.num},${dd.name},${dd.lengthX},${dd.lengthY},${dd.overlap_to},${dd.type},${dd.angle},${pointAtRealscale.x},${pointAtRealscale.y},${pointFlagAtRealscale.x},${pointFlagAtRealscale.y},${dd.shapeAngle}")
                 writer.newLine()
@@ -2984,11 +2979,11 @@ class MainActivity : AppCompatActivity(),
                             PointXY(
                                 chunks[8].toFloat(),
                                 -chunks[9].toFloat()
-                            ).scale(mScale),
+                            ).scale(viewscale),
                             PointXY(
                                 chunks[10].toFloat(),
                                 -chunks[11].toFloat()
-                            ).scale(mScale)
+                            ).scale(viewscale)
                         )
                     )
                 )
@@ -3108,8 +3103,8 @@ class MainActivity : AppCompatActivity(),
 
         trilist.recoverState(PointXY(0f, 0f))
 
-        myview.setDeductionList(dedlist, mScale)
-        myview.setTriangleList(trilist, mScale)
+        myview.setDeductionList(dedlist, viewscale)
+        myview.setTriangleList(trilist, viewscale)
         myview.resetViewToLastTapTriangle()
 
         Log.d( "FileLoader", "my_view.setTriangleList: " + myview.trianglelist.size() )

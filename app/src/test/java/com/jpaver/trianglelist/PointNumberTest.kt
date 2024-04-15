@@ -15,7 +15,7 @@ class PointNumberTest {
         val trilist = pattern()
         val outlinelist = OutlineList(trilist) // OutlineList インスタンスを作成
 
-        trilist.get(1).calcPoints( isArrange = true, outlineList = outlinelist )
+        trilist.get(1).calcPoints(isArrange = true)
 
         println( "pointlist:${outlinelist.pointlist}" )
         println( "pointcenter:${trilist.get(1).pointcenter}\npointnumber:${trilist.get(1).pointnumber}\n${trilist.get(1).toStrings()}")
@@ -26,14 +26,13 @@ class PointNumberTest {
         val t1 = Triangle(5.0f, 5.0f, 5.0f)
         t1.setPointNumber(PointXY(0f,2.5f))
 
-        //この時点でt1は変化なし、pointNumberは内部で変化している
-        //参照はこの時点で解除される
-        t1.pointNumber.rotate(PointXY(0f,0f), 90f)
-        Assert.assertEquals(2.5f, t1.pointnumber.y, 0.01f)
-        Assert.assertEquals(0.0f, t1.pointNumber.pointnumber.y, 0.01f)
+        //参照を排除したpointnumber
+        t1.pointnumber = t1.pointnumber.rotate(PointXY(0f,0f), 90f)
+        Assert.assertEquals(-2.5f, t1.pointnumber.x, 0.01f)
+        Assert.assertEquals(0.0f, t1.pointnumber.y, 0.01f)
 
-        //t1は更新される...pointNumberの方は内部で２回目の回転
-        t1.pointnumber = t1.pointNumber.rotate(PointXY(0f,0f), 90f)
+        //一様に回転する
+        t1.pointnumber = t1.pointnumber.rotate(PointXY(0f,0f), 90f)
         Assert.assertEquals(0f, t1.pointnumber.x, 0.01f)
         Assert.assertEquals(-2.5f, t1.pointnumber.y, 0.01f)
 

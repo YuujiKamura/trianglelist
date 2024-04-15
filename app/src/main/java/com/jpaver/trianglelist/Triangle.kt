@@ -135,7 +135,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         pointnumber = PointXY(0f,0f)
     }
 
-    var pointNumber = PointNumber( pointnumber,this)
+    var pointNumber = PointNumberManager()
 
 
     //Deductionからも呼ばれている
@@ -157,7 +157,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
     fun setPointNumber(p: PointXY) {
-        pointnumber = pointNumber.setPointNumberMovedByUser_(p)
+        pointnumber = pointNumber.setPointByUser(p, this)
     }
     //endregion pointNumber
 
@@ -1175,13 +1175,13 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
     //region scale and translate
     fun scale(basepoint: PointXY, scale_: Float, isArrange: Boolean = false) {
-        scaleFactror *= scale_
-        point[0].scale(basepoint, scale_)
+        scaleFactror = scaleFactror * scale_
+        point[0].change_scale(basepoint, scale_)
         length[0] *= scale_
         length[1] *= scale_
         length[2] *= scale_
-        pointcenter.scale(basepoint, scale_)
-        pointnumber.scale(basepoint, scale_)
+        pointcenter.change_scale(basepoint, scale_)
+        pointnumber.change_scale(basepoint, scale_)
         calcPoints(point[0], angle, isArrange)
     }
 
@@ -1212,7 +1212,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
         rotate_body(basepoint,addDegree)
 
-        pointnumber = pointNumber.rotate(basepoint,addDegree)
+        pointnumber = pointnumber.rotate(basepoint,addDegree)
     }
 
     fun recover_rotate(basepoint: PointXY, addDegree: Float){
@@ -1220,7 +1220,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
         rotate_body(basepoint,addDegree)
 
-        if (!pointNumber.flag.isMovedByUser) pointnumber = pointNumber.rotate(basepoint,addDegree)
+        if (!pointNumber.flag.isMovedByUser) pointnumber = pointnumber.rotate(basepoint,addDegree)
     }
 
     fun rotate_body(basepoint: PointXY, addDegree: Float){

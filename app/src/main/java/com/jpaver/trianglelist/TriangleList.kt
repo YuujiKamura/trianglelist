@@ -282,7 +282,7 @@ class TriangleList : EditList {
     fun arrangePointNumbers() {
         forEach { triangle ->
             triangle.pointNumber.resetFlag()
-            triangle.pointnumber = triangle.pointNumber.arrangeNumber(true, OutlineList(this))
+            triangle.pointnumber = triangle.pointNumber.autoAlign(triangle, OutlineList(this))
         }
     }
 
