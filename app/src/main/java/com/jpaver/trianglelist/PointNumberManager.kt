@@ -59,9 +59,9 @@ class PointNumberManager( ): Cloneable {
         val angle_ = arrayOf( triangle.angleCA, triangle.angleAB, triangle.angleBC )
         val point_ = arrayOf( triangle.pointCA, triangle.pointAB, triangle.pointBC )
 
-        if (triangle.nodeTriangleB == null)
+        if (triangle.nodeB == null)
             return triangle.pointcenter.offset( getPointByOuterAngle( triangle, angle_[1], angle_[2], point_[1], point_[2], outlineList ), FLAG_LENGTH_C )
-        if (triangle.nodeTriangleC == null)
+        if (triangle.nodeC == null)
             return triangle.pointcenter.offset( getPointByOuterAngle( triangle,  angle_[2], angle_[0], point_[2], point_[0], outlineList ), FLAG_LENGTH_B )
 
         return weightedMidpoint(triangle, WEIGHT)

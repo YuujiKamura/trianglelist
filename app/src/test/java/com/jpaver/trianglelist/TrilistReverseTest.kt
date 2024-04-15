@@ -84,8 +84,8 @@ class TrilistReverseTest {
         trilist.add(1, 2, 5f, 5f)
 
         trilist.reverse()
-        Assert.assertEquals(trilist.get(3), trilist.get(1).nodeTriangleC)
-        printTriList(trilist)
+        Assert.assertEquals(trilist.get(3), trilist.get(1).nodeC)
+        print_trilist(trilist)
 
     }
 }

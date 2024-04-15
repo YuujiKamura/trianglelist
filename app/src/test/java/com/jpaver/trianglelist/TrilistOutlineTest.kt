@@ -137,7 +137,7 @@ class TrilistOutlineTest {
         )
 
         System.out.printf( "outlinestr %s%n", trilist.outlineStr_ )
-        printTriList( trilist )
+        print_trilist( trilist )
     }
 
 

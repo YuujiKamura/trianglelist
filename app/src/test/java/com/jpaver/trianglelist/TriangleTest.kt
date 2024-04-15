@@ -92,13 +92,13 @@ class TriangleTest {
     fun testSameObjectPropaties(){
         val triangleA = Triangle()
         val triangleB = Triangle()
-        triangleB.nodeTriangleA_ = triangleA // 参照インスタンス代入
+        triangleB.nodeA = triangleA // 参照インスタンス代入
 
         // オブジェクトのハッシュコードが一致するか？
         println("triangleA のハッシュコード: ${triangleA.hashCode()}")
-        println("triangleB.nodeTriangleA のハッシュコード: ${triangleB.nodeTriangleA_.hashCode()}")
+        println("triangleB.nodeTriangleA のハッシュコード: ${triangleB.nodeA.hashCode()}")
 
-        assertSame( "BのnodeTriangleA と A は異なるオブジェクトを参照しています。", triangleB.nodeTriangleA_, triangleA )
+        assertSame( "BのnodeTriangleA と A は異なるオブジェクトを参照しています。", triangleB.nodeA, triangleA )
     }
 
     @Test
@@ -146,17 +146,17 @@ class TriangleTest {
         val two = Triangle(one, connection, 6f, 6f)
 
         // 内容の一致
-        Assert.assertEquals(one.mynumber.toLong(), two.nodeTriangleA_!!.mynumber.toLong())
-        Assert.assertEquals(one.nodeTriangleB!!.mynumber.toLong(), two.mynumber.toLong())
+        Assert.assertEquals(one.mynumber.toLong(), two.nodeA!!.mynumber.toLong())
+        Assert.assertEquals(one.nodeB!!.mynumber.toLong(), two.mynumber.toLong())
 
         // オブジェクトポインタの一致。
-        Assert.assertEquals(one, two.nodeTriangleA_)
-        Assert.assertEquals(one.nodeTriangleB, two)
+        Assert.assertEquals(one, two.nodeA)
+        Assert.assertEquals(one.nodeB, two)
         two.setOn(one, 2, 5f, 5f)
 
         // オブジェクトポインタの一致。
-        Assert.assertEquals(one, two.nodeTriangleA_)
-        Assert.assertEquals(one.nodeTriangleC, two)
+        Assert.assertEquals(one, two.nodeA)
+        Assert.assertEquals(one.nodeC, two)
     }
 
     @Test
@@ -167,17 +167,17 @@ class TriangleTest {
             Triangle(one, InputParameter("", "", 2, 5f, 5f, 5f, 1, 1, PointXY(0f, 0f), PointXY(0f, 0f)))
 
         // 内容の一致
-        Assert.assertEquals(one.mynumber.toLong(), two.nodeTriangleA_!!.mynumber.toLong())
-        Assert.assertEquals(one.nodeTriangleB!!.mynumber.toLong(), two.mynumber.toLong())
+        Assert.assertEquals(one.mynumber.toLong(), two.nodeA!!.mynumber.toLong())
+        Assert.assertEquals(one.nodeB!!.mynumber.toLong(), two.mynumber.toLong())
 
         // オブジェクトポインタの一致。
-        Assert.assertEquals(one, two.nodeTriangleA_)
-        Assert.assertEquals(one.nodeTriangleB, two)
+        Assert.assertEquals(one, two.nodeA)
+        Assert.assertEquals(one.nodeB, two)
         two.setOn(one, 2, 5f, 5f)
 
         // オブジェクトポインタの一致。
-        Assert.assertEquals(one, two.nodeTriangleA_)
-        Assert.assertEquals(one.nodeTriangleC, two)
+        Assert.assertEquals(one, two.nodeA)
+        Assert.assertEquals(one.nodeC, two)
     }
 
     @Test
@@ -186,17 +186,17 @@ class TriangleTest {
         val two = Triangle(one, 1, 5f, 5f)
 
         // 内容の一致
-        Assert.assertEquals(one.mynumber.toLong(), two.nodeTriangleA_!!.mynumber.toLong())
-        Assert.assertEquals(one.nodeTriangleB!!.mynumber.toLong(), two.mynumber.toLong())
+        Assert.assertEquals(one.mynumber.toLong(), two.nodeA!!.mynumber.toLong())
+        Assert.assertEquals(one.nodeB!!.mynumber.toLong(), two.mynumber.toLong())
 
         // オブジェクトポインタの一致。
-        Assert.assertEquals(one, two.nodeTriangleA_)
-        Assert.assertEquals(one.nodeTriangleB, two)
+        Assert.assertEquals(one, two.nodeA)
+        Assert.assertEquals(one.nodeB, two)
         two.setOn(one, 2, 5f, 5f)
 
         // オブジェクトポインタの一致。
-        Assert.assertEquals(one, two.nodeTriangleA_)
-        Assert.assertEquals(one.nodeTriangleC, two)
+        Assert.assertEquals(one, two.nodeA)
+        Assert.assertEquals(one.nodeC, two)
     }
 
     @Test
