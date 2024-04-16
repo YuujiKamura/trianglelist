@@ -1011,6 +1011,51 @@ class MyView(context: Context, attrs: AttributeSet?) :
         textscale: Float,
         experience: Float
     ): PointXY { // 追跡されたcanvasの移動ベクトルを返す
+        this.paintBlue.textSize = textscale
+        this.paintBlue.strokeWidth = 0.05f
+
+        isPrintPDF_ = true
+
+        val printScale = trianglelist.getPrintScale(myScale)
+
+        // テキストスペーサー
+        textSpacer_ = adjustTextSpacer(printScale)
+
+        // 用紙の単位にリストの大きさを合わせる
+        val scaleFactor = 1.19f * writer.kaizoudo_ *(2.0f/experience/printScale)// - (myScale/100)
+        myScale *= scaleFactor
+
+        trianglelist.attachToTheView(PointXY(0f, 0f), scaleFactor, paintTex.textSize )
+
+        myDeductionList.scale(PointXY(0f, 0f), scaleFactor)
+        myDeductionList.setScale( myScale )
+
+        // 分割描画処理（使ってない）
+        // canvasの動きが複雑になるためデバッグ用に追跡する
+        val printPoint = PointXY(0f, 0f)
+        drawSeparatedPDF(false, printPoint, canvas, paintTex )
+
+        // リストの中心座標にキャンバスを動かす、Xはマイナス、Yはプラス
+        canvas.translate(-trianglelist.center.x, trianglelist.center.y)
+
+        drawEntities(canvas, paintTri, paintTex, paintRed, lightColors_, trianglelist, myDeductionList )
+
+        canvas.translate(trianglelist.center.x, -trianglelist.center.y)
+
+        teardownDrawPdf(scaleFactor)
+
+        return printPoint
+    }
+
+    fun drawPDF2(
+        writer: PdfWriter,
+        canvas: Canvas,
+        paintTri: Paint,
+        paintTex: Paint,
+        paintRed: Paint,
+        textscale: Float,
+        experience: Float
+    ): PointXY { // 追跡されたcanvasの移動ベクトルを返す
 
         val pdfTrilistA = patternA( writer,paintTex,textscale, experience )
         val pdfTrilistB = patternB(textscale)
