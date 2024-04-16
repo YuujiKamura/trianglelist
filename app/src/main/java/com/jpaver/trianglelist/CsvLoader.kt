@@ -9,7 +9,7 @@ class CsvLoader {
     fun parseCSV(
         reader: BufferedReader,
         showToast: (String) -> Unit,
-        addTriangle:(TriangleList,List<String?>,PointXY,Float) ->Unit,
+        addTriangle:(TriangleList,List<String?>,PointXY,Float) -> Unit,
         setAllTextSize:(Float) -> Unit,
         typeToInt:(String) -> Int,
         viewscale: Float,
@@ -17,7 +17,6 @@ class CsvLoader {
         rosennameEditText: EditText
     ) :ReturnValues?{
 
-        val str: StringBuilder = StringBuilder()
         var line: String? = reader.readLine()
         if(line == null) return null
         var chunks: List<String?> = line.split(",").map { it.trim() }
@@ -30,58 +29,21 @@ class CsvLoader {
         val headerValues = readCsvHeaderLines(chunks, reader)
         rosennameEditText.setText(headerValues.rosenname)
 
-        val pair = readLine(reader)
-        chunks = pair.first
-        line = pair.second
+        line = reader.readLine()
+        if(line == null) return null
+        chunks = line.split(",").map { it.trim() }
 
         val trilist = TriangleList()
-
-        val pointfirst = PointXY(0f, 0f)
-        val anglefirst = 180f
-
-        addTriangle(trilist, chunks, pointfirst, anglefirst)
-
-
-        val mt = trilist.getBy(trilist.size())
-
-        mt.name = chunks[6]!!.toString()
-        //pointNumber
-        if(chunks[9]!! == "true") mt.setPointNumber(
-            PointXY(
-                chunks[7]!!.toFloat(),
-                chunks[8]!!.toFloat()
-            )
-        )
-        // 色
-        if( chunks.size > 10 ) mt.setColor(chunks[10]!!.toInt())
-
-        // dimaligns
-        if( chunks.size > 11 ) {
-            mt.setDimAligns(
-                chunks[11]!!.toInt(), chunks[12]!!.toInt(), chunks[13]!!.toInt(),
-                chunks[14]!!.toInt(), chunks[15]!!.toInt(), chunks[16]!!.toInt()
-            )
-        }
-        if( chunks.size > 20 ) {
-            mt.dim.flag[1].isMovedByUser = chunks[20]!!.toBoolean()
-            mt.dim.flag[2].isMovedByUser = chunks[21]!!.toBoolean()
-        }
-
-        if( chunks.size > 17 ) {
-            mt.cParam_ = ConnParam(
-                chunks[17]!!.toInt(),
-                chunks[18]!!.toInt(),
-                chunks[19]!!.toInt(),
-                chunks[1]!!.toFloat()
-            )
-        }
-
         val dedlist = DeductionList()
+
+        //最初の一つ目の三角形をつくる
+        buildTriangle(addTriangle,trilist,chunks)
 
         while (line != null){
             line = reader.readLine()
             if(line == null) break
             chunks = line.split(",").map { it.trim() }
+
             if(chunks[0] == "ListAngle") {
                 trilist.angle = chunks[1].toFloat()
                 continue
@@ -116,105 +78,160 @@ class CsvLoader {
                 if(chunks[12].isNotEmpty()) dedlist.get(dedlist.size()).shapeAngle = chunks[12].toFloat()
                 continue
             }
-            //Connection Params
-            if( chunks.size > 17 ) {
 
-                if( chunks[5].toInt() == 0 ){
-                    val pt = PointXY(0f, 0f)
-                    var angle = 0f
+            buildTriangle2(addTriangle,trilist,chunks,parentBCtoCParam )
 
-                    if( chunks.size > 22 ){
-                        pt.set( -chunks[23].toFloat(), -chunks[24].toFloat() )
-                        angle = chunks[22].toFloat()
-                    }
+        }
 
+        return ReturnValues(trilist,dedlist,headerValues)
+    }
 
-                    addTriangle(trilist, chunks, pt, angle - 180f)
+    fun buildTriangle2(
+        addTriangle:(TriangleList,List<String?>,PointXY,Float) -> Unit,
+        trilist: TriangleList,
+        chunks: List<String>,
+        parentBCtoCParam:(Int,Float,ConnParam) -> ConnParam
+    ){
+        val USING_CONNECTION_PARAMETER = 17
+        val connectiontype = chunks[5].toInt()
 
+        if( chunks.size > USING_CONNECTION_PARAMETER ) {
+
+            //非接続
+            if( connectiontype == 0 ){
+                val pt = PointXY(0f, 0f)
+                var angle = 0f
+
+                if( chunks.size > 22 ){
+                    pt.set( -chunks[23].toFloat(), -chunks[24].toFloat() )
+                    angle = chunks[22].toFloat()
                 }
-                else {
 
-                    val ptri = trilist.getBy(chunks[4].toInt())
-                    val cp = ConnParam(
-                        chunks[17].toInt(),
-                        chunks[18].toInt(),
-                        chunks[19].toInt(),
-                        chunks[1].toFloat()
-                    )
-                    trilist.add(
-                        Triangle(
-                            ptri, cp,
-                            chunks[2].toFloat(),
-                            chunks[3].toFloat()
-                        ),
-                        true
-                    )
-
-                }
-                trilist.getBy(trilist.size()).connectionType = chunks[5].toInt()
+                addTriangle(trilist, chunks, pt, angle - 180f)
             }
-            else{
-
-                val cp = parentBCtoCParam(
-                    chunks[5].toInt(), chunks[1].toFloat(), ConnParam(
-                        0,
-                        0,
-                        0,
-                        0f
-                    )
+            //接続
+            else {
+                val ptri = trilist.getBy(chunks[4].toInt())
+                val cp = ConnParam(
+                    chunks[17].toInt(),
+                    chunks[18].toInt(),
+                    chunks[19].toInt(),
+                    chunks[1].toFloat()
                 )
-
                 trilist.add(
                     Triangle(
-                        trilist.getBy(chunks[4].toInt()), ConnParam(
-                            cp.side,
-                            cp.type,
-                            cp.lcr,
-                            cp.lenA
-                        ),
+                        ptri, cp,
                         chunks[2].toFloat(),
                         chunks[3].toFloat()
                     ),
                     true
                 )
-
-                val mT = trilist.getBy(trilist.size())
-                mT.connectionType = chunks[5].toInt()
             }
 
-            val mT = trilist.getBy(trilist.size())
-            mT.name = chunks[6]
-            if( trilist.size() > 1 ) trilist.get(trilist.size() - 1).childSide_ = chunks[5].toInt()
+            trilist.getBy(trilist.size()).connectionType = chunks[5].toInt()
+        }
+        else{
 
-            // 番号円　pointNumber
-            if(chunks[9] == "true") mT.setPointNumber(
-                PointXY(
-                    chunks[7].toFloat(),
-                    chunks[8].toFloat()
+            val cp = parentBCtoCParam(
+                chunks[5].toInt(), chunks[1].toFloat(), ConnParam(
+                    0,
+                    0,
+                    0,
+                    0f
                 )
             )
 
-            // 色
-            if( chunks.size > 10 ) mT.setColor(chunks[10].toInt())
+            trilist.add(
+                Triangle(
+                    trilist.getBy(chunks[4].toInt()), ConnParam(
+                        cp.side,
+                        cp.type,
+                        cp.lcr,
+                        cp.lenA
+                    ),
+                    chunks[2].toFloat(),
+                    chunks[3].toFloat()
+                ),
+                true
+            )
 
-            // dimaligns
-            if( chunks.size > 11 ) {
-                mT.setDimAligns(
-                    chunks[11].toInt(), chunks[12].toInt(), chunks[13].toInt(),
-                    chunks[14].toInt(), chunks[15].toInt(), chunks[16].toInt()
-                )
-            }
-
-            if( chunks.size > 20 ) {
-                mT.isChangeDimAlignB_ = chunks[20].toBoolean()
-                mT.isChangeDimAlignC_ = chunks[21].toBoolean()
-            }
-
-            str.append(line)
-            str.append(System.getProperty("line.separator"))
+            val mT = trilist.getBy(trilist.size())
+            mT.connectionType = chunks[5].toInt()
         }
 
-        return ReturnValues(trilist,dedlist,headerValues)
+        val mT = trilist.getBy(trilist.size())
+        mT.name = chunks[6]
+        if( trilist.size() > 1 ) trilist.get(trilist.size() - 1).childSide_ = chunks[5].toInt()
+
+        // 番号円　pointNumber
+        if(chunks[9] == "true") mT.setPointNumber(
+            PointXY(
+                chunks[7].toFloat(),
+                chunks[8].toFloat()
+            )
+        )
+
+        // 色
+        if( chunks.size > 10 ) mT.setColor(chunks[10].toInt())
+
+        // dimaligns
+        if( chunks.size > 11 ) {
+            mT.setDimAligns(
+                chunks[11].toInt(), chunks[12].toInt(), chunks[13].toInt(),
+                chunks[14].toInt(), chunks[15].toInt(), chunks[16].toInt()
+            )
+        }
+
+        if( chunks.size > 20 ) {
+            mT.isChangeDimAlignB_ = chunks[20].toBoolean()
+            mT.isChangeDimAlignC_ = chunks[21].toBoolean()
+        }
+    }
+
+    fun buildTriangle(
+        addTriangle:(TriangleList,List<String?>,PointXY,Float) -> Unit,
+        trilist: TriangleList,
+        chunks: List<String?>,
+    ){
+
+        val pointfirst = PointXY(0f, 0f)
+        val anglefirst = 180f
+
+        addTriangle(trilist, chunks, pointfirst, anglefirst)
+
+        val mt = trilist.getBy(trilist.size())
+
+        mt.name = chunks[6]!!.toString()
+        //pointNumber
+        if(chunks[9]!! == "true") mt.setPointNumber(
+            PointXY(
+                chunks[7]!!.toFloat(),
+                chunks[8]!!.toFloat()
+            )
+        )
+        // 色
+        if( chunks.size > 10 ) mt.setColor(chunks[10]!!.toInt())
+
+        // dimaligns
+        if( chunks.size > 11 ) {
+            mt.setDimAligns(
+                chunks[11]!!.toInt(), chunks[12]!!.toInt(), chunks[13]!!.toInt(),
+                chunks[14]!!.toInt(), chunks[15]!!.toInt(), chunks[16]!!.toInt()
+            )
+        }
+        if( chunks.size > 20 ) {
+            mt.dim.flag[1].isMovedByUser = chunks[20]!!.toBoolean()
+            mt.dim.flag[2].isMovedByUser = chunks[21]!!.toBoolean()
+        }
+
+        if( chunks.size > 17 ) {
+            mt.cParam_ = ConnParam(
+                chunks[17]!!.toInt(),
+                chunks[18]!!.toInt(),
+                chunks[19]!!.toInt(),
+                chunks[1]!!.toFloat()
+            )
+        }
     }
 
     private fun readCsvHeaderLines(
@@ -223,9 +240,9 @@ class CsvLoader {
     ): HeaderValues {
         val headerValues = HeaderValues(
         koujiname = parseLine(chunks,"koujiname"),
-        rosenname = parseLine(readAndSplit(reader),"rosenname"),
-        gyousyaname = parseLine(readAndSplit(reader),"gyousyaname"),
-        zumennum = parseLine(readAndSplit(reader),"zumennum")
+        rosenname = parseLine(readChunks(reader),"rosenname"),
+        gyousyaname = parseLine(readChunks(reader),"gyousyaname"),
+        zumennum = parseLine(readChunks(reader),"zumennum")
         )
         return headerValues
     }
@@ -239,14 +256,8 @@ class CsvLoader {
         }
     }
 
-    private fun readAndSplit(reader: BufferedReader): List<String?> {
+    private fun readChunks(reader: BufferedReader): List<String?> {
         return reader.readLine()?.split(",")?.map { it.trim() } ?: emptyList()
-    }
-
-    private fun readLine(reader: BufferedReader): Pair<List<String?>, String?>{
-        val line1 = reader.readLine()
-        val chunks1 = line1?.split(",")!!.map { it.trim() }
-        return Pair(chunks1, line1)
     }
 
 }
