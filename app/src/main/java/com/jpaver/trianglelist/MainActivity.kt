@@ -1,6 +1,8 @@
 package com.jpaver.trianglelist
 
 import android.Manifest
+import android.animation.ObjectAnimator
+import android.animation.ValueAnimator
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.ActivityNotFoundException
@@ -13,6 +15,7 @@ import android.graphics.Color
 import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Bundle
+import android.provider.OpenableColumns
 import android.text.Editable
 import android.text.InputFilter
 import android.util.Log
@@ -70,11 +73,6 @@ import java.io.OutputStream
 import java.io.OutputStreamWriter
 import java.time.LocalDate
 import kotlin.math.roundToInt
-
-import android.animation.ObjectAnimator
-import android.animation.ValueAnimator
-import android.database.Cursor
-import android.provider.OpenableColumns
 
 
 data class ZumenInfo(
@@ -294,23 +292,25 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun getFileName(uri: Uri): String {
-        var result: String? = null
-        if (uri.scheme.equals("content")) {
-            val cursor: Cursor? = contentResolver.query(uri, null, null, null, null)
-            cursor?.use {
-                if (it.moveToFirst()) {
-                    result = it.getString(it.getColumnIndexOrThrow(OpenableColumns.DISPLAY_NAME))
-                }
+        return if (uri.scheme == "content") {
+            getFileNameFromContentUri(uri)
+        } else {
+            getFileNameFromFilePath(uri)
+        }
+    }
+
+    private fun getFileNameFromContentUri(uri: Uri): String {
+        val cursor = contentResolver.query(uri, null, null, null, null)
+        cursor?.use {
+            if (it.moveToFirst()) {
+                return it.getString(it.getColumnIndexOrThrow(OpenableColumns.DISPLAY_NAME))
             }
         }
-        if (result == null) {
-            result = uri.path
-            val cut = result!!.lastIndexOf('/')
-            if (cut != -1) {
-                result = result!!.substring(cut + 1)
-            }
-        }
-        return result ?: ""
+        return ""
+    }
+
+    private fun getFileNameFromFilePath(uri: Uri): String {
+        return uri.path?.substringAfterLast('/') ?: ""
     }
 
     private fun loadFileWithEncoding(uri: Uri, encoding: String = "Shift-JIS", onFileLoaded: (BufferedReader) -> Unit) {
