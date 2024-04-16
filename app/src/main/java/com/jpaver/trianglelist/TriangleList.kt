@@ -19,7 +19,6 @@ fun print_trilist(tl: TriangleList) {
 
 class TriangleList : EditList {
 
-
     fun rotate(
         basepoint: PointXY,
         angle: Float,
@@ -91,10 +90,6 @@ class TriangleList : EditList {
         return b
     }
 
-    fun undo() {
-        //if( trilistStored_ != null ) trilist_ = (ArrayList<Triangle>) trilistStored_.clone();
-    }
-
     fun getSokutenList(start: Int, pitch: Int): ArrayList<Triangle> {
         val allSokTriList = allSokutenList
         val sokTriList = ArrayList<Triangle>()
@@ -146,6 +141,7 @@ class TriangleList : EditList {
             }
             return numTriList
         }
+
     val sokutenListVector: Int
         // 測点のリストの順逆を返す。正の時は三角形リストと同じ方向、負の時は逆方向
         get() {
@@ -293,6 +289,7 @@ class TriangleList : EditList {
         }
     }
 
+    //結構重い処理、リストが数百とかになると自動で走らせるのはかなりつらい。どうするか
     fun arrangePointNumbers() {
         forEach { triangle ->
             triangle.pointNumber.resetAutoFlag()
@@ -300,24 +297,25 @@ class TriangleList : EditList {
         }
     }
 
-
     fun attachToTheView(
         basepoint: PointXY = PointXY(0f, 0f),
         scale: Float = this.scale,
         ts: Float = 5f,
-        isArrange: Boolean = true
+        isArrangeDims: Boolean = true,
+        isArrangePointNumbers: Boolean = false
     ):TriangleList {
         this.scale *= scale
         forEach { triangle ->
-            triangle.scale(basepoint, scale, isArrange)
+            triangle.scale(basepoint, scale, isArrangeDims)
 
             //これがないと結果が変わる、へんな揺らぎが起きたりする
             triangle.setDimPath(ts)
+            //これがなくてDrawPDFに寸法値が出なくて長時間意味が分からなかった
             triangle.setLengthStr()
         }
 
         //全体のスケールが終わってから一度だけ呼ぶ
-        arrangePointNumbers()
+        if(isArrangePointNumbers) arrangePointNumbers()
 
         return this
     }

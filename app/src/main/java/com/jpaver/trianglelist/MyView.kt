@@ -215,7 +215,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         //paintTexS.set
 
         paintYellow.strokeWidth = 7f
-        paintYellow.color = Color.argb(100, 255, 255, 0)
+        paintYellow.color = Color.argb(150, 255, 255, 0)
         paintYellow.textAlign = Paint.Align.CENTER
         paintYellow.textSize = textSize*1.2f
 
@@ -423,8 +423,6 @@ class MyView(context: Context, attrs: AttributeSet?) :
         Log.d("ModelView", "        mFocus:" + mFocusX + ", " + mFocusY  )
         Log.d("ModelView", "pressedInModel:" + pressedInModel.x + ", " + pressedInModel.y )
         Log.d("ModelView", "      zoomSize:" + zoomSize )
-
-
     }
 
 //endregion logs
@@ -437,9 +435,9 @@ class MyView(context: Context, attrs: AttributeSet?) :
         dedlist.lastTapIndex_ = myDeductionList.lastTapIndex_ //逆に状態をコピー?
         myDeductionList = dedlist.clone()
         myDeductionList.setScale( scale )
-
     }
 
+    //ボタンが押された時の結果としt呼ばれるほかに、回転操作(fabRotate)でも毎秒以下の間隔で呼ばれる
     fun setTriangleList(editlist: EditList, setscale: Float, moveCenter: Boolean = true){
         //if( myTriangleList.size() > 0 ) trilistStored_ = myTriangleList.clone()
         print_trilist(editlist as TriangleList)
@@ -1035,7 +1033,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         // リストの中心座標にキャンバスを動かす、Xはマイナス、Yはプラス
         canvas.translate(-trianglelist.center.x, trianglelist.center.y)
 
-        drawEntities(canvas, paintTri, paintTex, paintRed, lightColors_, pdfTrilistB, myDeductionList )
+        drawEntities(canvas, paintTri, paintTex, paintRed, lightColors_, pdfTrilistA, myDeductionList )
 
         canvas.translate(trianglelist.center.x, -trianglelist.center.y)
 
@@ -1141,7 +1139,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         return printPoint
     }
 
-//endregiondrawPDF
+//endregion　drawPDF
 
 }
 
