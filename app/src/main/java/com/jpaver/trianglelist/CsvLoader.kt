@@ -44,44 +44,16 @@ class CsvLoader {
             if(line == null) break
             chunks = line.split(",").map { it.trim() }
 
-            if(chunks[0] == "ListAngle") {
-                trilist.angle = chunks[1].toFloat()
-                continue
-            }
-            if(chunks[0] == "ListScale") {
-                trilist.setScale(PointXY(0f, 0f), chunks[1].toFloat())
-                continue
-            }
-            if(chunks[0] == "TextSize") {
-                setAllTextSize(chunks[1].toFloat())
-                continue
-            }
+            // リストの回転とかテキストサイズなどの状態
+            if( readListParameter(chunks,trilist,setAllTextSize ) ) continue
 
-            if(chunks[0] == "Deduction"){
-                dedlist.add(
-                    Deduction(
-                        InputParameter(
-                            chunks[2], chunks[6], chunks[1].toInt(),
-                            chunks[3].toFloat(), chunks[4].toFloat(), 0f,
-                            chunks[5].toInt(), typeToInt(chunks[6]),
-                            PointXY(
-                                chunks[8].toFloat(),
-                                -chunks[9].toFloat()
-                            ).scale(viewscale),
-                            PointXY(
-                                chunks[10].toFloat(),
-                                -chunks[11].toFloat()
-                            ).scale(viewscale)
-                        )
-                    )
-                )
-                if(chunks[12].isNotEmpty()) dedlist.get(dedlist.size()).shapeAngle = chunks[12].toFloat()
-                continue
-            }
+            // 控除
+            if( buildDeductions(chunks,dedlist,typeToInt,viewscale) ) continue
 
+            // 三角形
             buildTriangle2(addTriangle,trilist,chunks,parentBCtoCParam )
 
-        }
+        } //end while
 
         return ReturnValues(trilist,dedlist,headerValues)
     }
@@ -256,8 +228,52 @@ class CsvLoader {
         }
     }
 
-    private fun readChunks(reader: BufferedReader): List<String?> {
-        return reader.readLine()?.split(",")?.map { it.trim() } ?: emptyList()
+    fun buildDeductions(chunks: List<String>, dedlist: DeductionList, typeToInt: (String) -> Int, viewscale:Float):Boolean{
+        if(chunks[0] == "Deduction"){
+            dedlist.add(
+                Deduction(
+                    InputParameter(
+                        chunks[2], chunks[6], chunks[1].toInt(),
+                        chunks[3].toFloat(), chunks[4].toFloat(), 0f,
+                        chunks[5].toInt(), typeToInt(chunks[6]),
+                        PointXY(
+                            chunks[8].toFloat(),
+                            -chunks[9].toFloat()
+                        ).scale(viewscale),
+                        PointXY(
+                            chunks[10].toFloat(),
+                            -chunks[11].toFloat()
+                        ).scale(viewscale)
+                    )
+                )
+            )
+            if(chunks[12].isNotEmpty()) dedlist.get(dedlist.size()).shapeAngle = chunks[12].toFloat()
+            return true
+        }
+        return false
+    }
+
+    fun readListParameter(chunks: List<String>, trilist: TriangleList,setAllTextSize: (Float) -> Unit ):Boolean{
+        when (chunks[0]) {
+            "ListAngle" -> {
+                trilist.angle = chunks[1].toFloat()
+                return true
+            }
+            "ListScale" -> {
+                trilist.setScale(PointXY(0f, 0f), chunks[1].toFloat())
+                return true
+            }
+            "TextSize"  -> {
+                setAllTextSize(chunks[1].toFloat())
+                return true
+            }
+        }
+        return false
+    }
+
+    private fun readChunks(reader: BufferedReader): List<String> {
+        val line = reader.readLine()
+        return line.split(",").map { it.trim() }
     }
 
 }
