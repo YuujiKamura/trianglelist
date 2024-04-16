@@ -1338,24 +1338,32 @@ class MainActivity : AppCompatActivity(),
         fab_xlsx = bindingMain.fabXlsx
     }
 
-    private fun saveAndPerform(action: () -> Unit) {
-        action()
+    private fun autosave() {
         isCSVsavedToPrivate = false
         isCSVsavedToPrivate = saveCSVtoPrivate()
     }
 
-    private fun setCommonFabListener(fab: FloatingActionButton, action: () -> Unit) {
+    val BLINKSECOND = 1
+
+    private fun setCommonFabListener(fab: FloatingActionButton, isSaveCSV:Boolean=true, action: () -> Unit) {
         fab.setOnClickListener {
-            saveAndPerform(action)
+            action()
+            blinkFAB(fab,BLINKSECOND)
+            if(!isSaveCSV) return@setOnClickListener
+            autosave()
         }
     }
 
-    fun blinkFAB(fab: FloatingActionButton) {
-        // ObjectAnimatorを使用して透明度を変更するアニメーションを作成
-        val animator = ObjectAnimator.ofFloat(fab, "alpha",1f, 0.1f, 1f).apply {
-            duration = 1000 // アニメーションの期間を500ミリ秒に設定
-            repeatCount = ValueAnimator.INFINITE // 無限に繰り返し
-            repeatMode = ValueAnimator.RESTART // アニメーションが再開するように設定
+    fun blinkFAB(fab: FloatingActionButton, totalDurationSeconds: Int) {
+        val singleAnimationDuration = 500 // 1回のアニメーション持続時間（ミリ秒）
+
+        // 全体の持続時間をミリ秒に変換し、1回のアニメーション持続時間で割ることで繰り返し回数を計算
+        val repeatCount = (totalDurationSeconds * 1000 / singleAnimationDuration) - 1
+
+        val animator = ObjectAnimator.ofFloat(fab, "alpha", 1f, 0.1f, 1f).apply {
+            duration = singleAnimationDuration.toLong()
+            this.repeatCount = repeatCount
+            repeatMode = ValueAnimator.RESTART
         }
         animator.start()
     }
@@ -1367,36 +1375,28 @@ class MainActivity : AppCompatActivity(),
 
         setCommonFabListener(fab_replace) {
             fabReplace(parameter, false)
-            blinkFAB(fab_replace)
         }
 
         setCommonFabListener(fab_flag) {
-
             fabFlag()
         }
 
-
         setCommonFabListener(fab_dimsidew) {
-
             mainViewModel.setMember( deductionMode, trianglelist, myDeductionList )
             mainViewModel.fabDimArrange("W", { setListAndResetView( { myview.invalidate() }, false ) } )
-
         }
 
         setCommonFabListener(fab_dimsideh) {
             mainViewModel.setMember( deductionMode, trianglelist, myDeductionList )
             mainViewModel.fabDimArrange("H", { setListAndResetView( { myview.invalidate() }, false ) }  )
-
         }
 
         setCommonFabListener(fab_nijyuualign) {
             if(!deductionMode && trianglelist.lastTapNumber > 1 ){
                 trianglelist.rotateCurrentTriLCR()
-                //myTriangleList.resetTriConnection(myTriangleList.lastTapNum_, );
                 myview.setTriangleList(trianglelist, viewscale, false )
                 myview.resetView(myview.toLastTapTriangle())
                 editorResetBy(getList(deductionMode))
-
             }
         }
 
@@ -1407,7 +1407,6 @@ class MainActivity : AppCompatActivity(),
             if(listLength > 0 && deleteWarning == 0) {
                 deleteWarning = 1
                 bindingMain.fabMinus.backgroundTintList = getColorStateList(R.color.colorTT2)
-
             }
             else {
                 if (listLength > 0) {
@@ -1418,7 +1417,6 @@ class MainActivity : AppCompatActivity(),
 
                     getList(deductionMode).remove(eraseNum)
 
-                    //my_view.removeTriangle()
                     myview.setDeductionList(myDeductionList, viewscale)
                     myview.setTriangleList(trianglelist, viewscale)
 
@@ -1431,7 +1429,6 @@ class MainActivity : AppCompatActivity(),
             colorMovementFabs()
             myview.resetViewToLastTapTriangle()
             setTitles()
-
         }
 
         setCommonFabListener(fab_undo){
@@ -1453,12 +1450,10 @@ class MainActivity : AppCompatActivity(),
             if(!deductionMode){
                 trianglelist.get(myview.trianglelist.selectedNumber)
 
-
                 colorindex ++
                 if(colorindex == resColors.size) colorindex = 0
                 bindingMain.fabFillcolor.backgroundTintList = getColorStateList(resColors[colorindex])
 
-                //dParams_ = myEditor.ReadLine(dParams_, myELSecond)
                 trianglelist.get(myview.trianglelist.selectedNumber).color_ = colorindex
 
                 myview.setFillColor(colorindex, trianglelist.selectedNumber)
@@ -1468,8 +1463,6 @@ class MainActivity : AppCompatActivity(),
         setCommonFabListener(fab_texplus) {
             myview.textSize += 5f
             myview.setAllTextSize(myview.textSize)
-
-//            my_view.paintTexS.textSize = my_view.ts_
             myview.invalidate()
         }
 
@@ -1479,7 +1472,6 @@ class MainActivity : AppCompatActivity(),
 
             myview.invalidate()
         }
-
 
         setCommonFabListener(fab_rot_l) {
             fabRotate(5f, true )
@@ -1502,30 +1494,28 @@ class MainActivity : AppCompatActivity(),
                 myDeductionList = mainViewModel.fabReverse() as DeductionList
                 setListAndResetView( { myview.invalidate() } )
             })
-
         }
 
         //ここからはビュー操作用とファイルシェア用のFAB、図形を書き換えないのでオートセーブの対象外
-        fab_setB.setOnClickListener {
+        setCommonFabListener(fab_setB,false) {
             autoConnection(1)
             findViewById<EditText>(R.id.editLengthB1).requestFocus()
         }
 
-        fab_setC.setOnClickListener {
+        setCommonFabListener(fab_setC,false) {
             autoConnection(2)
             findViewById<EditText>(R.id.editLengthB1).requestFocus()
         }
 
 
-        fab_deduction.setOnClickListener {
+        setCommonFabListener(fab_deduction,false) {
             deleteWarning = 0
             fab_minus.backgroundTintList = getColorStateList(R.color.colorAccent)
             flipDeductionMode()
             colorMovementFabs()
         }
 
-        fab_resetView.setOnClickListener {
-
+        setCommonFabListener(fab_resetView,false) {
             try{
                 if(!deductionMode) myview.resetViewToLastTapTriangle()
                 else if( myDeductionList.size() > 0 )  myview.resetViewToCurrentDeduction()
@@ -1535,7 +1525,7 @@ class MainActivity : AppCompatActivity(),
             }
         }
 
-        fab_up.setOnClickListener {
+        setCommonFabListener(fab_up,false) {
             myEditor.scroll(-1, getList(deductionMode), editorLine2, myELThird)
 
             if(!deductionMode) moveTrilist()
@@ -1543,13 +1533,12 @@ class MainActivity : AppCompatActivity(),
                 myview.myDeductionList.current = myDeductionList.current
                 myview.resetViewToCurrentDeduction()
             }
-
             colorMovementFabs()
             printDebugConsole()
             setTitles()
         }
 
-        fab_down.setOnClickListener {
+        setCommonFabListener(fab_down,false) {
             myEditor.scroll(1, getList(deductionMode), editorLine2, myELThird)
 
             if(!deductionMode) moveTrilist()
@@ -1557,15 +1546,12 @@ class MainActivity : AppCompatActivity(),
                 myview.myDeductionList.current = myDeductionList.current
                 myview.resetViewToCurrentDeduction()
             }
-
             colorMovementFabs()
             printDebugConsole()
             setTitles()
-
         }
 
-        fab_debug.setOnClickListener {
-
+        setCommonFabListener(fab_debug,false) {
             if(!myview.isAreaOff_){
                 myview.isAreaOff_ = true
                 myview.isDebug_ = false
@@ -1578,18 +1564,9 @@ class MainActivity : AppCompatActivity(),
             }
 
             myview.invalidate()
-
-            // オートセーブpdf, dxf
-            //if( BuildConfig.BUILD_TYPE == "debug" ) {
-            //    AutoSavePDF()
-            //AutoSaveDXF()
-            //}
-
         }
 
-        fab_testbasic.setOnClickListener {
-            //CreateNew()
-
+        setCommonFabListener(fab_testbasic,false) {
             findViewById<TextView>(R.id.editLengthB1).text = "" // reset
             fabReplace(InputParameter("", "", 1, 7f, 7f, 7f, 0, 0), true)
             findViewById<TextView>(R.id.editLengthB1).text = 0.6f.toString()//"6f" // add
@@ -1609,32 +1586,24 @@ class MainActivity : AppCompatActivity(),
             )
             deductionMode = false
 
-
             Toast.makeText(this, "Basic Senario Test Done.", Toast.LENGTH_SHORT).show()
         }
 
-        fab_pdf.setOnClickListener {
+        setCommonFabListener(fab_pdf,false) {
             viewPdf( getAppLocalFile(this, "privateTrilist.pdf") )
         }
 
-        fab_xlsx.setOnClickListener{
+        setCommonFabListener(fab_xlsx,false){
             viewXlsx( getAppLocalFile(this, "privateTrilist.xlsx") )
         }
 
-        fab_share.setOnClickListener {
+        setCommonFabListener(fab_share,false) {
             sendFiles()
         }
 
-        fab_mail.setOnClickListener {
-            //findViewById<ProgressBar>(R.id.indeterminateBar).visibility = View.VISIBLE
-            //progressBar.visibility = View.VISIBLE
-
+        setCommonFabListener(fab_mail,false) {
             sendMail()
-
-            //    progressBar.visibility = View.INVISIBLE
-
         }
-
 
     }
 
