@@ -1048,12 +1048,12 @@ class Triangle : EditObject, Cloneable<Triangle> {
     //endregion node and boundaries
 
     //region calculater
-    fun calcPoints(basepoint: PointXY = point[0], _angle: Float = angle, isArrange: Boolean = false) {
+    fun calcPoints(basepoint: PointXY = point[0], _angle: Float = angle, isArrangeDims: Boolean = false) {
         pointAB = basepoint.offset(length[0], _angle)
         pointBC = calculatePointBC( basepoint )
         calculateInternalAngles()
         calculatePointCenter()
-        arrangeDims(isArrange)
+        arrangeDims(isArrangeDims)
         if(!pointNumber.flag.isMovedByUser) pointnumber = pointcenter
         setBoundaryBox()
     }
@@ -1174,7 +1174,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     //endregion old hataage method
 
     //region scale and translate
-    fun scale(basepoint: PointXY, scale_: Float, isArrange: Boolean = false) {
+    fun scale(basepoint: PointXY, scale_: Float, isArrangeDims: Boolean = false) {
         scaleFactror = scaleFactror * scale_
         point[0].change_scale(basepoint, scale_)
         length[0] *= scale_
@@ -1182,7 +1182,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         length[2] *= scale_
         pointcenter.change_scale(basepoint, scale_)
         pointnumber.change_scale(basepoint, scale_)
-        calcPoints(point[0], angle, isArrange)
+        calcPoints(point[0], angle, isArrangeDims)
     }
 
     fun move(to: PointXY) {

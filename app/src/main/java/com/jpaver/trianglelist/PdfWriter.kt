@@ -183,7 +183,7 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
         PointXY(xr, yb)
         val ut = PointXY(xr - uw, yb - ht)
         val ub = PointXY(xr - uw, yb)
-        rStr_.tCredit_
+        zumeninfo.tCredit_
         val centerX = sizeX_ / 2
         sizeY_ / 2
         val kt = (sw-uw)/2f+uw
@@ -254,24 +254,24 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
         writeLine(
             PointXY(centerX - 50f, 50f),
             PointXY(centerX + 50f, 50f),1f,7)
-        writeText( rStr_.tTitle_,
+        writeText( zumeninfo.zumentitle,
             PointXY(centerX, 45f), 1f, 7, 16f, 1 )
         writeText( rosenname_ + " A=" + Utils.formattedString( triangleList_.getArea() - deductionList_.getArea() ) + "m^2",
             PointXY(centerX, 70f), 1f, 7, 16f, 1 )
 
-        writeText( rStr_.tCname_,
+        writeText( zumeninfo.koujiname,
             PointXY(xr - kt, yb - 95f + ofs), 1f, 7, 8f, 1 )
-        writeText( rStr_.tDtype_,
+        writeText( zumeninfo.tDtype_,
             PointXY(xr - kt, yb - 70f + ofs), 1f, 7, 8f, 1 )
-        writeText( rStr_.tDname_,
+        writeText( zumeninfo.tDname_,
             PointXY(xr - kt, yb - 50f + ofs), 1f, 7, 8f, 1 )
-        writeText( rStr_.tScale_,
+        writeText( zumeninfo.tScale_,
             PointXY(xr - kt, yb - 30f + ofs), 1f, 7, 8f, 1 )
-        writeText( rStr_.tNum_,
+        writeText( zumeninfo.tNum_,
             PointXY(xr - 75, yb - 30f + ofs), 1f, 7, 8f, 1 )
-        writeText( rStr_.tAname_,
+        writeText( zumeninfo.tAname_,
             PointXY(xr - kt, yb - 10f + ofs), 1f, 7, 8f, 1 )
-        writeText( rStr_.tCredit_,
+        writeText( zumeninfo.tCredit_,
             PointXY(50f, yb + 10f), 1f, 7, 7f, 0 )
 
 /*
@@ -300,7 +300,7 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
         //else writeText(koujiname_, PointXY(xr-tt, yb-95f+ofs ), 1f, 7, 8f, 0 )
         drawTextWithLineBreak(koujiname_, xr, yb, tt)
 
-        writeText(rStr_.tTitle_,
+        writeText(zumeninfo.zumentitle,
             PointXY(xr - tt, yb - 70f + ofs), 1f, 7, 8f, 0 )
         writeText(rosenname_,
             PointXY(xr - tt, yb - 50f + ofs), 1f, 7, 8f, 0 )

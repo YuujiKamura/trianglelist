@@ -15,7 +15,7 @@ class PointNumberTest {
         val trilist = pattern()
         val outlinelist = OutlineList(trilist) // OutlineList インスタンスを作成
 
-        trilist.get(1).calcPoints(isArrange = true)
+        trilist.get(1).calcPoints(isArrangeDims = true)
 
         println( "pointlist:${outlinelist.pointlist}" )
         println( "pointcenter:${trilist.get(1).pointcenter}\npointnumber:${trilist.get(1).pointnumber}\n${trilist.get(1).toStrings()}")

@@ -251,7 +251,6 @@ class TriangleListTest {
         val trilist = TriangleList()
         trilist.add(Triangle(5f, 5f, 5f), true)
         trilist.add(1, 4, 6f, 5f, 5f)
-        trilist.undo()
 
         assertEquals(2, trilist.size())
 

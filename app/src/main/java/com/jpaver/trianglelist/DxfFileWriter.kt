@@ -26,9 +26,9 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
 
     private var entityHandle = 100
 
-    override var iWhite_ = 7
-    override var iBlue_ = 5
-    override var cRed_ = 1
+    override var WHITE = 7
+    override var BLUE = 5
+    override var RED = 1
 
     var activeLayer = "0"
 

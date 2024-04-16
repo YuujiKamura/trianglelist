@@ -1,6 +1,5 @@
 package com.jpaver.trianglelist
 
-
 import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
@@ -16,7 +15,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
 import android.text.InputFilter
-import android.text.TextWatcher
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -77,129 +75,26 @@ import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
 
 
-data class ResStr(
-        // 文字列リソースをstringに変換して保持する。
-        var tTitle_: String = "",
-        var eRName_: String = "",
-        var tCname_: String = "",
-        var tDtype_: String = "",
-        var tDname_: String = "",
-        var tScale_: String = "",
-        var tNum_: String = "",
-        var tDateHeader_: String = "",
-        var tDate_: String = "",
-        var tAname_: String = "",
-        var menseki_: String = "",
-        var mTitle_: String = "",
-        var mCname_: String = "",
-        var mSyoukei_: String = "",
-        var mGoukei_: String = "",
-        var tCredit_: String = ""
+data class ZumenInfo(
+    // 文字列リソースをstringに変換して保持する。
+    // 改めてみると、どれがどこで使われているのか不明、なんでtitleふたつあんの
+    var zumentitle: String = "",
+    var rosenname: String = "",
+    var koujiname: String = "",
+    var tDtype_: String = "",
+    var tDname_: String = "",
+    var tScale_: String = "",
+    var tNum_: String = "",
+    var tDateHeader_: String = "",
+    var tDate_: String = "",
+    var tAname_: String = "",
+    var menseki_: String = "",
+    var mTitle_: String = "",
+    var mCname_: String = "",
+    var mSyoukei_: String = "",
+    var mGoukei_: String = "",
+    var tCredit_: String = ""
 )
-
-//region TextWatcher
-private class MyTextWatcher(
-    val mELine: EditTextViewLine,
-    var lastParams: InputParameter
-) : TextWatcher {
-    //private val afterTextChanged_: TextView = findViewById<TextView>(R.id.afterTextChanged)
-    //private val beforeTextChanged_: TextView = findViewById<TextView>(R.id.beforeTextChanged)
-    //private val onTextChanged_: TextView = findViewById<TextView>(R.id.onTextChanged)
-    override fun afterTextChanged(s: Editable) {
-        val input = mELine.name.text.toString()
-//            myEditor.LineRewrite(Params(input,"",myDeductionList.length()+1,dP.a, dP.b, dP.c, dP.pn, i, PointXY(0f,0f)), myELFirst)
-
-        if(input == "仕切弁" || input == "ソフト弁" || input == "ドレーン") {
-            mELine.a.setText( 0.23f.toString() )
-            mELine.b.setText("")
-            mELine.pl.setSelection(2)
-        }
-        if(input == "消火栓" || input == "空気弁") {
-            mELine.a.setText( 0.55f.toString() )
-            mELine.b.setText("")
-            mELine.pl.setSelection(2)
-        }
-        if(input == "下水") {
-            mELine.a.setText( 0.72f.toString() )
-            mELine.b.setText("")
-            mELine.pl.setSelection(2)
-        }
-        if(input == "汚水") {
-            mELine.a.setText( 0.67f.toString() )
-            mELine.b.setText("")
-            mELine.pl.setSelection(2)
-        }
-        if(input == "雨水枡" || input == "電柱"){
-            mELine.a.setText( 0.40f.toString() )
-            mELine.b.setText("")
-            mELine.pl.setSelection(2)
-        }
-        if(input == "電気" || input == "NTT"){
-            mELine.a.setText("1.0")
-            mELine.b.setText("")
-            mELine.pl.setSelection(2)
-        }
-        if(input == "基準点"){
-            mELine.a.setText("0.3")
-            mELine.b.setText("")
-            mELine.pl.setSelection(2)
-        }
-        if(input == "消火栓B") {
-            mELine.a.setText( 0.35f.toString() )
-            mELine.b.setText( 0.45f.toString() )
-            mELine.pl.setSelection(1)
-        }
-        if(input == "基礎") {
-            mELine.a.setText( 0.50f.toString() )
-            mELine.b.setText( 0.50f.toString() )
-            mELine.pl.setSelection(1)
-        }
-        if(input == "集水桝") {
-            mELine.a.setText( 0.70f.toString() )
-            mELine.b.setText( 0.70f.toString() )
-            mELine.pl.setSelection(1)
-        }
-
-        // 記憶した控除パラメータの復元
-        if(input == lastParams.name){
-            mELine.a.setText(lastParams.a.toString())
-            mELine.b.setText(lastParams.b.toString())
-            mELine.pl.setSelection(lastParams.pl)
-        }
-    }
-
-    override fun beforeTextChanged(
-        s: CharSequence,
-        start: Int,
-        count: Int,
-        after: Int
-    ) {
-        ("start=" + start
-                + ", count=" + count
-                + ", after=" + after
-                + ", s=" + s.toString())
-        //beforeTextChanged_.text = input
-    }
-
-    override fun onTextChanged(
-        s: CharSequence,
-        start: Int,
-        before: Int,
-        count: Int
-    ) {
-        ("start=" + start
-                + ", before=" + before
-                + ", count=" + count
-                + ", s=" + s.toString())
-        //onTextChanged_.text = input
-    }
-}
-
-interface CustomTextWatcher: TextWatcher{
-    override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {}
-    override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {}
-}
-//endregion
 
 class MainActivity : AppCompatActivity(),
         MyDialogFragment.NoticeDialogListener {
@@ -291,7 +186,7 @@ class MainActivity : AppCompatActivity(),
 
     // タイトルパラメータ、stringリソースから構成する
 
-    private lateinit var rStr : ResStr
+    private lateinit var rStr : ZumenInfo
     private lateinit var titleTri: TitleParams//
     private lateinit var titleDed: TitleParams
     private lateinit var titleTriStr : TitleParamStr
@@ -589,7 +484,7 @@ class MainActivity : AppCompatActivity(),
         Log.d("myView", "Instance check in MainActivity: " + myview )
         Log.d("MainActivityLifeCyce", "onAttachedToWindow")
 
-        rStr = ResStr(
+        rStr = ZumenInfo(
             getString(R.string.tenkai_title),
             getString(R.string.rosen1),
             getString(R.string.tenkai_koujimei),
@@ -995,7 +890,7 @@ class MainActivity : AppCompatActivity(),
         textView.threshold = 1
         textView2.threshold = 1
         textView3.threshold = 1
-        textView.addTextChangedListener(MyTextWatcher(editorline1, lastParams))
+        textView.addTextChangedListener(DeductionNameTextWatcher(editorline1, lastParams))
 
     }
     private fun setTitles(){
@@ -1347,8 +1242,8 @@ class MainActivity : AppCompatActivity(),
 
     private fun setCommonFabListener(fab: FloatingActionButton, isSaveCSV:Boolean=true, action: () -> Unit) {
         fab.setOnClickListener {
-            action()
             blinkFAB(fab,BLINKSECOND)
+            action()
             if(!isSaveCSV) return@setOnClickListener
             autosave()
         }
@@ -2575,10 +2470,11 @@ class MainActivity : AppCompatActivity(),
     //region File saving
     private fun saveDXF(bWriter: BufferedWriter) :BufferedWriter{
 
-        trianglelist.arrangePointNumbers()
+        //想定と違う結果になりえる
+        //trianglelist.arrangePointNumbers()
 
         val writer = DxfFileWriter(trianglelist)
-        writer.rStr_ = rStr
+        writer.zumeninfo = rStr
         writer.titleTri_ = titleTriStr
         writer.titleDed_ = titleDedStr
         writer.textscale_ = myview.textSize * 0.016f //25*0.014f=0.35f, 25/0.02f=0.5f
@@ -2602,7 +2498,7 @@ class MainActivity : AppCompatActivity(),
 
         val writer = SfcWriter(trianglelist, myDeductionList, out, filename, drawingStartNumber)
         writer.setNames(koujiname, rosenname, gyousyaname, zumennum)
-        writer.rStr_ = rStr
+        writer.zumeninfo = rStr
         writer.textscale_ = myview.textSize * 20f //25*14f=350f, 25/20f=500f
         writer.titleTri_ = titleTriStr
         writer.titleDed_ = titleDedStr
@@ -2627,7 +2523,7 @@ class MainActivity : AppCompatActivity(),
         writer.initPaints()
         writer.titleTri_ = titleTriStr
         writer.titleDed_ = titleDedStr
-        writer.rStr_ = rStr
+        writer.zumeninfo = rStr
         writer.setNames(koujiname, rosenname, gyousyaname, zumennum)
 
         //my_view.isAreaOff_ = false
