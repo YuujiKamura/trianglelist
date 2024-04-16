@@ -73,6 +73,8 @@ import kotlin.math.roundToInt
 
 import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
+import android.database.Cursor
+import android.provider.OpenableColumns
 
 
 data class ZumenInfo(
@@ -271,11 +273,16 @@ class MainActivity : AppCompatActivity(),
     private fun handleLoadContentResult(result: ActivityResult) {
         if (result.resultCode == Activity.RESULT_OK && result.data != null) {
             result.data?.data?.let { uri ->
+                // Check the file extension
+                val fileName = getFileName(uri)
+                if (!fileName.endsWith(".csv", ignoreCase = true)) {
+                    Toast.makeText(this, "Selected file is not a CSV file.", Toast.LENGTH_LONG).show()
+                    return  // Stop further processing
+                }
+
                 try {
-                    //showEncodingSelectionDialog(uri)
-                     loadFileWithEncoding(uri) { reader ->
-                        // ここでreaderを使用したファイルの読み込み処理を行う
-                        // 例: CSVファイルの読み込みとパース
+                    loadFileWithEncoding(uri) { reader ->
+                        // Use reader to perform file reading/parsing
                         parseCSV(reader)
                     }
                 } catch (e: IOException) {
@@ -286,21 +293,39 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
+    private fun getFileName(uri: Uri): String {
+        var result: String? = null
+        if (uri.scheme.equals("content")) {
+            val cursor: Cursor? = contentResolver.query(uri, null, null, null, null)
+            cursor?.use {
+                if (it.moveToFirst()) {
+                    result = it.getString(it.getColumnIndexOrThrow(OpenableColumns.DISPLAY_NAME))
+                }
+            }
+        }
+        if (result == null) {
+            result = uri.path
+            val cut = result!!.lastIndexOf('/')
+            if (cut != -1) {
+                result = result!!.substring(cut + 1)
+            }
+        }
+        return result ?: ""
+    }
+
     private fun loadFileWithEncoding(uri: Uri, encoding: String = "Shift-JIS", onFileLoaded: (BufferedReader) -> Unit) {
         try {
             contentResolver.openInputStream(uri)?.use { inputStream ->
                 val reader = BufferedReader(InputStreamReader(inputStream, encoding))
-                onFileLoaded(reader)  // 選択されたエンコーディングでファイルを読み込んだ後に渡された関数を実行
+                onFileLoaded(reader)  // Execute the passed function with the loaded file
             }
         } catch (e: IOException) {
             e.printStackTrace()
-            // エラーハンドリング
+            // Error handling
         }
     }
 
-
     // endregion
-
 
 //region adMob loading
     private lateinit var mAdView : AdView
