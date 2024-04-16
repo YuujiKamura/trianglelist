@@ -2746,9 +2746,6 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    private fun showToast(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-    }
 
     /**
      * Triangle オブジェクトをリストに追加します。
@@ -2766,217 +2763,34 @@ class MainActivity : AppCompatActivity(),
         )
     }
 
-    private fun parseCSV(reader: BufferedReader) :Boolean{
-
-        val str: StringBuilder = StringBuilder()
-        var line: String? = reader.readLine()
-        if(line == null) return false
-        var chunks: List<String?> = line.split(",").map { it.trim() }
-
-        if(chunks[0]!! != "koujiname"){
-            showToast( "It's not supported file." )
-            return false
-        }
-
-        val pair = readheaderLine(chunks, line, reader)
-        chunks = pair.first
-        line = pair.second
-
-        val trilist = TriangleList()
-
-        val pointfirst = PointXY(0f, 0f)
-        val anglefirst = 180f
-
-        addTriangle(trilist, chunks, pointfirst, anglefirst)
-
-
-        val mt = trilist.getBy(trilist.size())
-
-        mt.name = chunks[6]!!.toString()
-        //pointNumber
-        if(chunks[9]!! == "true") mt.setPointNumber(
-            PointXY(
-                chunks[7]!!.toFloat(),
-                chunks[8]!!.toFloat()
-            )
+    private fun parseCSV(reader: BufferedReader):Boolean{
+        val csvloader = CsvLoader()
+        val returnValues = csvloader.parseCSV(
+            reader,
+            this::showToast,
+            this::addTriangle,
+            this::setAllTextSize,
+            this::typeToInt,
+            viewscale,
+            this::parentBCtoCParam,
+            findViewById(R.id.rosenname)
         )
-        // 色
-        if( chunks.size > 10 ) mt.setColor(chunks[10]!!.toInt())
 
-        // dimaligns
-        if( chunks.size > 11 ) {
-            mt.setDimAligns(
-                chunks[11]!!.toInt(), chunks[12]!!.toInt(), chunks[13]!!.toInt(),
-                chunks[14]!!.toInt(), chunks[15]!!.toInt(), chunks[16]!!.toInt()
-            )
-        }
-        if( chunks.size > 20 ) {
-            mt.dim.flag[1].isMovedByUser = chunks[20]!!.toBoolean()
-            mt.dim.flag[2].isMovedByUser = chunks[21]!!.toBoolean()
-        }
+        if(returnValues == null ) return false
 
-        if( chunks.size > 17 ) {
-            mt.cParam_ = ConnParam(
-                chunks[17]!!.toInt(),
-                chunks[18]!!.toInt(),
-                chunks[19]!!.toInt(),
-                chunks[1]!!.toFloat()
-            )
-        }
+        setEditLists( returnValues.trilist, returnValues.dedlist )
+        parseHeaderValues( returnValues.headerValues )
+        return true
+    }
 
+    private fun parseHeaderValues( headerValues: HeaderValues){
+        koujiname = headerValues.koujiname
+        rosenname = headerValues.rosenname
+        gyousyaname = headerValues.gyousyaname
+        zumennum = headerValues.zumennum
+    }
 
-        val dedlist = DeductionList()
-
-        while (line != null){
-            line = reader.readLine()
-            if(line == null) break
-            chunks = line.split(",").map { it.trim() }
-            if(chunks[0] == "ListAngle") {
-                trilist.angle = chunks[1].toFloat()
-                continue
-            }
-            if(chunks[0] == "ListScale") {
-                trilist.setScale(PointXY(0f, 0f), chunks[1].toFloat())
-                continue
-            }
-            if(chunks[0] == "TextSize") {
-                myview.setAllTextSize(chunks[1].toFloat())
-                continue
-            }
-
-            if(chunks[0] == "Deduction"){
-//                dedlist.add(Params(chunks[2]!!.toString(),chunks[6]!!.toString(), chunks[1]!!.toInt(),
-                //                  chunks[3]!!.toFloat(),chunks[4]!!.toFloat(),0f,
-                //                chunks[5]!!.toInt(),typeToInt(chunks[6]!!.toString()),
-                //              PointXY(chunks[8]!!.toFloat(),-chunks[9]!!.toFloat()).scale(mScale),
-                //            PointXY(chunks[10]!!.toFloat(),-chunks[11]!!.toFloat()).scale(mScale)))
-                dedlist.add(
-                    Deduction(
-                        InputParameter(
-                            chunks[2], chunks[6], chunks[1].toInt(),
-                            chunks[3].toFloat(), chunks[4].toFloat(), 0f,
-                            chunks[5].toInt(), typeToInt(chunks[6]),
-                            PointXY(
-                                chunks[8].toFloat(),
-                                -chunks[9].toFloat()
-                            ).scale(viewscale),
-                            PointXY(
-                                chunks[10].toFloat(),
-                                -chunks[11].toFloat()
-                            ).scale(viewscale)
-                        )
-                    )
-                )
-                if(chunks[12].isNotEmpty()) dedlist.get(dedlist.size()).shapeAngle = chunks[12].toFloat()
-                continue
-            }
-            //Connection Params
-            if( chunks.size > 17 ) {
-
-                if( chunks[5].toInt() == 0 ){
-                    val pt = PointXY(0f, 0f)
-                    var angle = 0f
-
-                    if( chunks.size > 22 ){
-                        pt.set( -chunks[23].toFloat(), -chunks[24].toFloat() )
-                        angle = chunks[22].toFloat()
-                    }
-
-
-                    addTriangle(trilist, chunks, pt, angle - 180f)
-
-                }
-                else {
-
-                    val ptri = trilist.getBy(chunks[4].toInt())
-                    val cp = ConnParam(
-                        chunks[17].toInt(),
-                        chunks[18].toInt(),
-                        chunks[19].toInt(),
-                        chunks[1].toFloat()
-                    )
-                    trilist.add(
-                        Triangle(
-                            ptri, cp,
-                            chunks[2].toFloat(),
-                            chunks[3].toFloat()
-                        ),
-                        true
-                    )
-
-                }
-                trilist.getBy(trilist.size()).connectionType = chunks[5].toInt()
-            }
-            else{
-
-                val cp = parentBCtoCParam(
-                    chunks[5].toInt(), chunks[1].toFloat(), ConnParam(
-                        0,
-                        0,
-                        0,
-                        0f
-                    )
-                )
-
-                trilist.add(
-                    Triangle(
-                        trilist.getBy(chunks[4].toInt()), ConnParam(
-                            cp.side,
-                            cp.type,
-                            cp.lcr,
-                            cp.lenA
-                        ),
-                        chunks[2].toFloat(),
-                        chunks[3].toFloat()
-                    ),
-                    true
-                )
-
-                val mT = trilist.getBy(trilist.size())
-                mT.connectionType = chunks[5].toInt()
-                /*
-                if( chunks.size > 25 && mT.parentBC_ >= 9 ) mT.rotate(
-                    mT.pointCA_,
-                    chunks[25].toFloat(),
-                    false
-                )*/
-                // trilist.getTriangle(trilist.size()).setCParamFromParentBC( chunks[5]!!.toInt() )
-            }
-
-            val mT = trilist.getBy(trilist.size())
-            mT.name = chunks[6]
-            if( trilist.size() > 1 ) trilist.get(trilist.size() - 1).childSide_ = chunks[5].toInt()
-
-            // 番号円　pointNumber
-            if(chunks[9] == "true") mT.setPointNumber(
-                PointXY(
-                    chunks[7].toFloat(),
-                    chunks[8].toFloat()
-                )
-            )
-
-            // 色
-            if( chunks.size > 10 ) mT.setColor(chunks[10].toInt())
-
-            // dimaligns
-            if( chunks.size > 11 ) {
-                mT.setDimAligns(
-                    chunks[11].toInt(), chunks[12].toInt(), chunks[13].toInt(),
-                    chunks[14].toInt(), chunks[15].toInt(), chunks[16].toInt()
-                )
-            }
-
-            if( chunks.size > 20 ) {
-                mT.isChangeDimAlignB_ = chunks[20].toBoolean()
-                mT.isChangeDimAlignC_ = chunks[21].toBoolean()
-            }
-
-
-
-            str.append(line)
-            str.append(System.getProperty("line.separator"))
-        }
-        //trilist.lastTapNumber_ = 1
+    private fun setEditLists(trilist: TriangleList, dedlist:DeductionList ){
         trianglelist = trilist
         myDeductionList = dedlist
         turnToBlankTrilistUndo()
@@ -2988,46 +2802,14 @@ class MainActivity : AppCompatActivity(),
         myview.resetViewToLastTapTriangle()
 
         Log.d( "FileLoader", "my_view.setTriangleList: " + myview.trianglelist.size() )
-        // メニューバーのタイトル
-        //setTitles()
 
         deductionMode = true
         editorResetBy(trianglelist)
-        //colorMovementFabs()
         flipDeductionMode()
-        //printDebugConsole()
-        return true
     }
 
-    private fun readheaderLine(
-        chunks: List<String?>,
-        line: String?,
-        reader: BufferedReader
-    ): Pair<List<String?>, String?> {
-        var chunks1 = chunks
-        var line1 = line
-        if (chunks1[0]!! == "koujiname") {
-            koujiname = chunks1[1]!!.toString()
-            line1 = reader.readLine()
-            chunks1 = line1?.split(",")!!.map { it.trim() }
-        }
-        if (chunks1[0]!! == "rosenname") {
-            rosenname = chunks1[1]!!.toString()
-            findViewById<EditText>(R.id.rosenname).setText(rosenname)
-            line1 = reader.readLine()
-            chunks1 = line1?.split(",")!!.map { it.trim() }
-        }
-        if (chunks1[0]!! == "gyousyaname") {
-            gyousyaname = chunks1[1]!!.toString()
-            line1 = reader.readLine()
-            chunks1 = line1?.split(",")!!.map { it.trim() }
-        }
-        if (chunks1[0]!! == "zumennum") {
-            zumennum = chunks1[1]!!.toString()
-            line1 = reader.readLine()
-            chunks1 = line1?.split(",")!!.map { it.trim() }
-        }
-        return Pair(chunks1, line1)
+    private fun setAllTextSize(textsize:Float){
+        myview.setAllTextSize(textsize)
     }
 
     private fun resumeCSV() {
@@ -3049,7 +2831,10 @@ class MainActivity : AppCompatActivity(),
 
     //endregion
 
-    // region logs
+    // region logs and Toast
+    private fun showToast(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
 
     fun Context.logFilePreview(filePath: String, callerMethodName: String = "UnknownCaller") {
         val file = File(this.filesDir, filePath)
