@@ -301,7 +301,7 @@ class TriangleList : EditList {
         basepoint: PointXY = PointXY(0f, 0f),
         scale: Float = this.scale,
         ts: Float = 5f,
-        isArrangeDims: Boolean = true,
+        isArrangeDims: Boolean = false,
         isArrangePointNumbers: Boolean = false
     ):TriangleList {
         this.scale *= scale
