@@ -9,32 +9,40 @@ class OutlineList(var trianglelist: TriangleList) :Cloneable{
     init{
     }
 
-    fun compare(_target1:PointXY, _target2:PointXY):PointXY{
-        if(trilist.size < 1) {
-            println("outlinelist.compare: trilist.size < 1, return _target1")
+    fun compare(_target1: PointXY, _target2: PointXY): PointXY {
+        if (trilist.isEmpty()) {
+            println("outlinelist.compare: trilist is empty, returning _target1")
             return _target1
         }
-        traceForward(0,0, trilist[0] )
 
-        val targetone = find(_target1)
-        val targettwo = find(_target2)
+        traceForward(0, 0, trilist[0])
 
-        if( targetone != null && targettwo != null ){
-            val angle1 = calcAngle( targetone )
-            val angle2 = calcAngle( targettwo )
-            println("outlinelist.compare: 1=$angle1, 2=$angle2 $outlineStr_")
-            // リストの各要素をループして内容を表示
-            for (point in pointlist) {
-                println("Point: x = ${point.x}, y = ${point.y}")
-            }
-            if( angle1 > angle2 ) return targetone
-            return targettwo
+        val targetOne = find(_target1)
+        val targetTwo = find(_target2)
+
+        if (targetOne == null || targetTwo == null) {
+            println("outlinelist.compare: one or both targets not found, returning _target1")
+            return _target1
         }
 
-        println("outlinelist.compare: targets are not found, return _target1")
-        return _target1
+        val angle1 = calcAngle(targetOne)
+        val angle2 = calcAngle(targetTwo)
+        println("outlinelist.compare: angles computed - angle1=$angle1, angle2=$angle2")
 
+        // リストの各要素をループして内容を表示
+        pointlist.forEach { point ->
+            println("Point: x = ${point.x}, y = ${point.y}")
+        }
+
+        return if (angle1 > angle2) {
+            println("outlinelist.compare: angle1 is greater, returning targetOne")
+            targetOne
+        } else {
+            println("outlinelist.compare: angle2 is greater or equal, returning targetTwo")
+            targetTwo
+        }
     }
+
 
     fun calcAngle(target: PointXY): Float {
         val result = find(target) ?: return 0f

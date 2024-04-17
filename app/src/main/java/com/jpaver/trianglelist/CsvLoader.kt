@@ -39,13 +39,13 @@ class CsvLoader {
             if (buildDeductions(chunks, dedlist, typeToInt, viewscale)) continue
 
             // 三角形
-            buildTriangle2(addTriangle, trilist, chunks)
+            buildTriangle(addTriangle, trilist, chunks)
         }
 
         return ReturnValues(trilist, dedlist, headerValues)
     }
 
-    fun buildTriangle2(
+    fun buildTriangle(
         addTriangle: (TriangleList, List<String?>, PointXY, Float) -> Unit,
         trilist: TriangleList,
         chunks: List<String>
@@ -74,8 +74,6 @@ class CsvLoader {
         finalizeBuildTriangle(chunks, trilist.getBy(trilist.size()) )
     }
 
-    //i  0,1,2,3, 4, 5,6,7    ,8     ,9    ,10,11,12,13,14,15,16,17,18,19,20   ,21   ,22     ,23 ,24 ,25
-    //ex 1,6,1,1,-1,-1, ,4.060,-2.358,false,4 ,0 ,0 ,0 , 1, 1, 3, 0, 0, 0,false,false,-268.70,0.0,0.0,-448.70
     // 0-3 ${mt.mynumber}, ${mt.lengthA_}, ${mt.lengthB_}, ${mt.lengthC_},
     // 4-5 ${mt.parentnumber}, ${mt.connectionType},
     // 6-9 ${mt.name}, ${pointnumber.x}, ${pointnumber.y}, ${mt.pointNumber.flag.isMovedByUser},
@@ -85,6 +83,9 @@ class CsvLoader {
     // 17-19 ${cp.side}, ${cp.type}, ${cp.lcr},
     // 20-21 ${mt.dim.flag[1].isMovedByUser}, ${mt.dim.flag[2].isMovedByUser},
     // 22-25 ${mt.angle}, ${mt.pointCA.x}, ${mt.pointCA.y}, ${mt.angleInLocal_}
+
+    //i  0,1,2,3, 4, 5,6,7    ,8     ,9    ,10,11,12,13,14,15,16,17,18,19,20   ,21   ,22     ,23 ,24 ,25
+    //ex 1,6,1,1,-1,-1, ,4.060,-2.358,false,4 ,0 ,0 ,0 , 1, 1, 3, 0, 0, 0,false,false,-268.70,0.0,0.0,-448.70
 
     fun finalizeBuildTriangle(chunks: List<String?>, mt:Triangle){
         mt.connectionType = chunks[5]!!.toInt()

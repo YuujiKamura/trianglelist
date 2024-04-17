@@ -233,8 +233,6 @@ class Triangle : EditObject, Cloneable<Triangle> {
     var dimVerticalA = 3
     var dimVerticalB = 1
     var dimVerticalC = 1
-    var isChangeDimAlignB_ = false
-    var isChangeDimAlignC_ = false
     var dimHorizontalA = 0
     var dimHorizontalB = 0
     var dimHorizontalC = 0
@@ -259,11 +257,11 @@ class Triangle : EditObject, Cloneable<Triangle> {
         get() = length[1]
     val lengthC_: Float
         get() = length[2]
-    val lengthAforce_: Float
+    val lengthAforce: Float
         get() = lengthNotSized[0]
-    val lengthBforce_: Float
+    val lengthBforce: Float
         get() = lengthNotSized[1]
-    val lengthCforce_: Float
+    val lengthCforce: Float
         get() = lengthNotSized[2]
     val pointCA: PointXY
         get() = point[0].clone()

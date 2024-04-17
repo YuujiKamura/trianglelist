@@ -217,9 +217,9 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
         val pca = tri.pointCA
         val pab = tri.pointAB
         val pbc = tri.pointBC
-        val la = tri.lengthAforce_.formattedString(2)
-        val lb = tri.lengthBforce_.formattedString(2)
-        val lc = tri.lengthCforce_.formattedString(2)
+        val la = tri.lengthAforce.formattedString(2)
+        val lb = tri.lengthBforce.formattedString(2)
+        val lc = tri.lengthCforce.formattedString(2)
         val dimA = alignVByVector(tri.dimVerticalA, pca, pab)
         val dimB = alignVByVector(tri.dimVerticalB, pab, pbc)//flip(tri.myDimAlignB_, tri.dimAngleB_ )
         val dimC = alignVByVector(tri.dimVerticalC, pbc, pca)//flip(tri.myDimAlignC_, tri.dimAngleC_ )
