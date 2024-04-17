@@ -302,7 +302,7 @@ class TriangleList : EditList {
         scale: Float = this.scale,
         ts: Float = 5f,
         isArrangeDims: Boolean = true,
-        isArrangePointNumbers: Boolean = true
+        isArrangePointNumbers: Boolean = false
     ):TriangleList {
         this.scale *= scale
         forEach { triangle ->
