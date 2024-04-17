@@ -102,7 +102,7 @@ class CsvLoader {
 
             trilist.getBy(trilist.size()).connectionType = chunks[5].toInt()
         }
-        else{
+        else{//not use cparam
 
             val cp = parentBCtoCParam(
                 chunks[5].toInt(), chunks[1].toFloat(), ConnParam(
