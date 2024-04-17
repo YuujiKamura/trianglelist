@@ -302,7 +302,7 @@ class TriangleList : EditList {
         scale: Float = this.scale,
         ts: Float = 5f,
         isArrangeDims: Boolean = true,
-        isArrangePointNumbers: Boolean = false
+        isArrangePointNumbers: Boolean = true
     ):TriangleList {
         this.scale *= scale
         forEach { triangle ->
@@ -967,9 +967,9 @@ class TriangleList : EditList {
                 Triangle(
                     rev[it.parentnumber],
                     it.connectionType,
-                    it.lengthAforce_,
-                    it.lengthBforce_,
-                    it.lengthCforce_
+                    it.lengthAforce,
+                    it.lengthBforce,
+                    it.lengthCforce
                 ), true
             )
         }

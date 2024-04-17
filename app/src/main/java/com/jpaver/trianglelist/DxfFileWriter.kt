@@ -88,9 +88,9 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
         val dimverticalB = verticalFromBaseline(tri.dim.vertical.b, pab, pbc)
         val dimverticalC = verticalFromBaseline(tri.dim.vertical.c, pbc, pca)
 
-        var nagasaA = tri.lengthAforce_.formattedString(2)
-        var nagasaB = tri.lengthBforce_.formattedString(2)
-        var nagasaC = tri.lengthCforce_.formattedString(2)
+        var nagasaA = tri.lengthAforce.formattedString(2)
+        var nagasaB = tri.lengthBforce.formattedString(2)
+        var nagasaC = tri.lengthCforce.formattedString(2)
 
 
         if(isDebug){

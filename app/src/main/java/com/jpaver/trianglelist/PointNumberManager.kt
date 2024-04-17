@@ -37,7 +37,7 @@ class PointNumberManager( ): Cloneable {
     fun autoAlign( triangle: Triangle, outlineList: OutlineList? = null) : PointXY {
         if(flag.isMovedByUser || flag.isAutoAligned ) return triangle.pointnumber
 
-        val length = arrayOf(triangle.lengthAforce_, triangle.lengthBforce_, triangle.lengthCforce_)
+        val length = arrayOf(triangle.lengthAforce, triangle.lengthBforce, triangle.lengthCforce)
         // lengthのどれかがBORDERよりも少ない場合にtrueを返す
         val isAnyLengthLessThanBorder = length.any { it < BORDER_LENGTH }
 
@@ -54,20 +54,31 @@ class PointNumberManager( ): Cloneable {
     fun pointUnconnectedSide( triangle: Triangle, outlineList: OutlineList?=null ): PointXY {
         //外側に出すと実行時エラーになる
         val KEISUU = 0.9f
+        //val number = triangle.mynumber
+        //val la = triangle.lengthAforce
+        //val lb = triangle.lengthBforce
+        //val lc = triangle.lengthCforce
         val FLAG_LENGTH_B = triangle.lengthB*KEISUU
         val FLAG_LENGTH_C = triangle.lengthA*KEISUU
         val angle_ = arrayOf( triangle.angleCA, triangle.angleAB, triangle.angleBC )
         val point_ = arrayOf( triangle.pointCA, triangle.pointAB, triangle.pointBC )
 
-        if (triangle.nodeB == null)
-            return triangle.pointcenter.offset( getPointByOuterAngle( triangle, angle_[1], angle_[2], point_[1], point_[2], outlineList ), FLAG_LENGTH_C )
-        if (triangle.nodeC == null)
-            return triangle.pointcenter.offset( getPointByOuterAngle( triangle,  angle_[2], angle_[0], point_[2], point_[0], outlineList ), FLAG_LENGTH_B )
+        if (triangle.nodeB == null){
+            val pointB = getPointByOuterAngle( triangle, angle_[1], angle_[2], point_[1], point_[2], outlineList )
+            val resultB = triangle.pointcenter.offset( pointB, FLAG_LENGTH_C )
+            return resultB
+        }
+        if (triangle.nodeC == null){
+            val pointC = getPointByOuterAngle( triangle,  angle_[2], angle_[0], point_[2], point_[0], outlineList )
+            val resultC = triangle.pointcenter.offset( pointC, FLAG_LENGTH_B )
+            return resultC
+        }
 
         return weightedMidpoint(triangle, WEIGHT)
     }
 
     fun getPointByOuterAngle( triangle: Triangle, angle1:Float, angle2:Float, point1:PointXY, point2:PointXY, outlineList: OutlineList? ):PointXY{
+        //val number = triangle.mynumber
 
         println("getPointByOuterAngle triangle${triangle.mynumber} $angle1 $angle2 $point1 $point2")
 
