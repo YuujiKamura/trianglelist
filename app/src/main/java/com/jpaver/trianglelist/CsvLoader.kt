@@ -82,12 +82,7 @@ class CsvLoader {
             //接続
             else {
                 val ptri = trilist.getBy(chunks[4].toInt())
-                val cp = ConnParam(
-                    chunks[17].toInt(),
-                    chunks[18].toInt(),
-                    chunks[19].toInt(),
-                    chunks[1].toFloat()
-                )
+                val cp = readCParam(chunks)
                 trilist.add(
                     Triangle(
                         ptri, cp,
@@ -140,19 +135,17 @@ class CsvLoader {
             mt.dim.flag[2].isMovedByUser = chunks[21]!!.toBoolean()
         }
 
-        param17(chunks,mt)
+        if( chunks.size > 17 ) mt.cParam_ = readCParam(chunks)
         
     }
 
-    fun param17( chunks:List<String?>, mt:Triangle ){
-        if( chunks.size > 17 ) {
-            mt.cParam_ = ConnParam(
-                chunks[17]!!.toInt(),
-                chunks[18]!!.toInt(),
-                chunks[19]!!.toInt(),
-                chunks[1]!!.toFloat()
+    fun readCParam( chunks:List<String?> ):ConnParam{
+            return ConnParam(
+            chunks[17]!!.toInt(),
+            chunks[18]!!.toInt(),
+            chunks[19]!!.toInt(),
+            chunks[1]!!.toFloat()
             )
-        }
     }
 
 
