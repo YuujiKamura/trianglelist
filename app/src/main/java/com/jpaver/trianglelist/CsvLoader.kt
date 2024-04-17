@@ -100,12 +100,8 @@ class CsvLoader {
                 )
             }
 
-            trilist.getBy(trilist.size()).connectionType = chunks[5].toInt()
-        }
-        else{//not use cparam
-        }
-
-        if( chunks.size > 20 ) {
+            val mT = trilist.getBy(trilist.size())
+            mT.connectionType = chunks[5].toInt()
             mT.isChangeDimAlignB_ = chunks[20].toBoolean()
             mT.isChangeDimAlignC_ = chunks[21].toBoolean()
         }
