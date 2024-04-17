@@ -15,7 +15,7 @@ jobs:
     docker:
       # Androidビルド用のイメージを指定
       - image: cimg/android:2024.01
-        auth:
+    auth:
           username: yuujikamura@gmail.com
           password: $DOCKERHUB_PASSWORD  # コンテキストや環境変数で設定
     steps:
