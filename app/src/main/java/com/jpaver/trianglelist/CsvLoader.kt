@@ -67,8 +67,6 @@ class CsvLoader {
         val USING_CONNECTION_PARAMETER = 17
         val connectiontype = chunks[5].toInt()
 
-        if( chunks.size > USING_CONNECTION_PARAMETER ) {
-
             //非接続
             if( connectiontype == 0 ){
                 val pt = PointXY(0f, 0f)
@@ -104,7 +102,6 @@ class CsvLoader {
             mT.connectionType = chunks[5].toInt()
             mT.isChangeDimAlignB_ = chunks[20].toBoolean()
             mT.isChangeDimAlignC_ = chunks[21].toBoolean()
-        }
     }
 
     fun buildTriangle(
