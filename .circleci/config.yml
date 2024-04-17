@@ -18,7 +18,7 @@ jobs:
     environment:
       JAVA_HOME: /path/to/java-17
     steps:
-      - run: sudo apt-get update && sudo apt-get install -y git sudo tar
+      #- run: sudo apt-get update && sudo apt-get install -y git sudo tar
       - checkout
       - restore_cache:
           keys:
