@@ -13,12 +13,12 @@ jobs:
     # See: https://circleci.com/docs/executor-intro/ & https://circleci.com/docs/configuration-reference/#executor-job
     docker:
       # Androidビルド用のイメージを指定
-      #- image: circleci/android:api-30-node
-      - image: cimg/android:30.0-node
+      - image: circleci/android:api-30-node
     parallelism: 4
     environment:
       JAVA_HOME: /path/to/java-17
     steps:
+      - run: sudo apt-get update && sudo apt-get install -y git sudo tar
       - checkout
       - restore_cache:
           keys:
