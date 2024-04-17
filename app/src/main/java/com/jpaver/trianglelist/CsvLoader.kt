@@ -103,55 +103,6 @@ class CsvLoader {
             trilist.getBy(trilist.size()).connectionType = chunks[5].toInt()
         }
         else{//not use cparam
-
-            val cp = parentBCtoCParam(
-                chunks[5].toInt(), chunks[1].toFloat(), ConnParam(
-                    0,
-                    0,
-                    0,
-                    0f
-                )
-            )
-
-            trilist.add(
-                Triangle(
-                    trilist.getBy(chunks[4].toInt()), ConnParam(
-                        cp.side,
-                        cp.type,
-                        cp.lcr,
-                        cp.lenA
-                    ),
-                    chunks[2].toFloat(),
-                    chunks[3].toFloat()
-                ),
-                true
-            )
-
-            val mT = trilist.getBy(trilist.size())
-            mT.connectionType = chunks[5].toInt()
-        }
-
-        val mT = trilist.getBy(trilist.size())
-        mT.name = chunks[6]
-        if( trilist.size() > 1 ) trilist.get(trilist.size() - 1).childSide_ = chunks[5].toInt()
-
-        // 番号円　pointNumber
-        if(chunks[9] == "true") mT.setPointNumber(
-            PointXY(
-                chunks[7].toFloat(),
-                chunks[8].toFloat()
-            )
-        )
-
-        // 色
-        if( chunks.size > 10 ) mT.setColor(chunks[10].toInt())
-
-        // dimaligns
-        if( chunks.size > 11 ) {
-            mT.setDimAligns(
-                chunks[11].toInt(), chunks[12].toInt(), chunks[13].toInt(),
-                chunks[14].toInt(), chunks[15].toInt(), chunks[16].toInt()
-            )
         }
 
         if( chunks.size > 20 ) {
