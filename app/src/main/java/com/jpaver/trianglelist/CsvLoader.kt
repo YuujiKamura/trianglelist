@@ -17,30 +17,20 @@ class CsvLoader {
     ): ReturnValues? {
         val trilist = TriangleList()
         val dedlist = DeductionList()
-        var headerRead = false
-        var headerValues: HeaderValues? = null
-        var firstLine = true
+        val headerValues: HeaderValues?
+        val line1 = reader.readLine() ?: return null
+        val chunks1 = line1.split(",").map { it.trim() }
+
+        if (chunks1[0] != "koujiname") {
+            showToast("It's not supported file.")
+            return null
+        }
+        headerValues = readCsvHeaderLines(chunks1, reader)
+        rosennameEditText.setText(headerValues.rosenname)
 
         while (true) {
             val line = reader.readLine() ?: break
             val chunks = line.split(",").map { it.trim() }
-
-            if (!headerRead) {
-                if (chunks[0] != "koujiname") {
-                    showToast("It's not supported file.")
-                    return null
-                }
-                headerValues = readCsvHeaderLines(chunks, reader)
-                rosennameEditText.setText(headerValues.rosenname)
-                headerRead = true
-                continue
-            }
-
-            if (firstLine) {
-                buildFirstTriangle(addTriangle, trilist, chunks)
-                firstLine = false
-                continue
-            }
 
             // リストの回転とかテキストサイズなどの状態
             if (readListParameter(chunks, trilist, setAllTextSize)) continue
@@ -52,7 +42,7 @@ class CsvLoader {
             buildTriangle2(addTriangle, trilist, chunks)
         }
 
-        return if (headerValues != null) ReturnValues(trilist, dedlist, headerValues) else null
+        return ReturnValues(trilist, dedlist, headerValues)
     }
 
     fun buildTriangle2(
@@ -62,17 +52,10 @@ class CsvLoader {
     ){
         val connectiontype = chunks[5].toInt()
 
-        //非接続
-        if( connectiontype == 0 ){
+        //非接続というか１番目
+        if( connectiontype == -1 ){
             val pt = PointXY(0f, 0f)
-            var angle = 0f
-
-            if( chunks.size > 22 ){
-                pt.set( -chunks[23].toFloat(), -chunks[24].toFloat() )
-                angle = chunks[22].toFloat()
-            }
-
-            addTriangle(trilist, chunks, pt, angle - 180f)
+            addTriangle(trilist, chunks, pt, 180f )
         }
         //接続
         else {
@@ -91,17 +74,17 @@ class CsvLoader {
         finalizeBuildTriangle(chunks, trilist.getBy(trilist.size()) )
     }
 
-    fun buildFirstTriangle(
-        addTriangle:(TriangleList,List<String?>,PointXY,Float) -> Unit,
-        trilist: TriangleList,
-        chunks: List<String?>,
-    ){
-        val pointfirst = PointXY(0f, 0f)
-        val anglefirst = 180f
-
-        addTriangle(trilist, chunks, pointfirst, anglefirst)
-        finalizeBuildTriangle(chunks, trilist.getBy(trilist.size()) )
-    }
+    //i  0,1,2,3, 4, 5,6,7    ,8     ,9    ,10,11,12,13,14,15,16,17,18,19,20   ,21   ,22     ,23 ,24 ,25
+    //ex 1,6,1,1,-1,-1, ,4.060,-2.358,false,4 ,0 ,0 ,0 , 1, 1, 3, 0, 0, 0,false,false,-268.70,0.0,0.0,-448.70
+    // 0-3 ${mt.mynumber}, ${mt.lengthA_}, ${mt.lengthB_}, ${mt.lengthC_},
+    // 4-5 ${mt.parentnumber}, ${mt.connectionType},
+    // 6-9 ${mt.name}, ${pointnumber.x}, ${pointnumber.y}, ${mt.pointNumber.flag.isMovedByUser},
+    // 10  ${mt.color_},
+    // 11-13 ${mt.dim.horizontal.a}, ${mt.dim.horizontal.b}, ${mt.dim.horizontal.c},
+    // 14-16 ${mt.dim.vertical.a}, ${mt.dim.vertical.b}, ${mt.dim.vertical.c},
+    // 17-19 ${cp.side}, ${cp.type}, ${cp.lcr},
+    // 20-21 ${mt.dim.flag[1].isMovedByUser}, ${mt.dim.flag[2].isMovedByUser},
+    // 22-25 ${mt.angle}, ${mt.pointCA.x}, ${mt.pointCA.y}, ${mt.angleInLocal_}
 
     fun finalizeBuildTriangle(chunks: List<String?>, mt:Triangle){
         mt.connectionType = chunks[5]!!.toInt()
