@@ -144,7 +144,7 @@ class CsvLoader {
         
     }
 
-    fun param17( chunks:List<String>, mt:Triangle ){
+    fun param17( chunks:List<String?>, mt:Triangle ){
         if( chunks.size > 17 ) {
             mt.cParam_ = ConnParam(
                 chunks[17]!!.toInt(),
