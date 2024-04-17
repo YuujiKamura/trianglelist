@@ -6,59 +6,7 @@ import java.io.BufferedReader
 
 class CsvLoader {
 
-    fun parseCSV(
-        reader: BufferedReader,
-        showToast: (String) -> Unit,
-        addTriangle:(TriangleList,List<String?>,PointXY,Float) -> Unit,
-        setAllTextSize:(Float) -> Unit,
-        typeToInt:(String) -> Int,
-        viewscale: Float,
-        parentBCtoCParam:(Int,Float,ConnParam) -> ConnParam,
-        rosennameEditText: EditText
-    ) :ReturnValues?{
-
-        var line: String? = reader.readLine()
-        if(line == null) return null
-        var chunks: List<String?> = line.split(",").map { it.trim() }
-
-        if(chunks[0]!! != "koujiname"){
-            showToast( "It's not supported file." )
-            return null
-        }
-
-        val headerValues = readCsvHeaderLines(chunks, reader)
-        rosennameEditText.setText(headerValues.rosenname)
-
-        line = reader.readLine()
-        if(line == null) return null
-        chunks = line.split(",").map { it.trim() }
-
-        val trilist = TriangleList()
-        val dedlist = DeductionList()
-
-        //最初の一つ目の三角形をつくる
-        buildTriangle(addTriangle,trilist,chunks)
-
-        while (line != null){
-            line = reader.readLine()
-            if(line == null) break
-            chunks = line.split(",").map { it.trim() }
-
-            // リストの回転とかテキストサイズなどの状態
-            if( readListParameter(chunks,trilist,setAllTextSize ) ) continue
-
-            // 控除
-            if( buildDeductions(chunks,dedlist,typeToInt,viewscale) ) continue
-
-            // 三角形
-            buildTriangle2(addTriangle,trilist,chunks,parentBCtoCParam )
-
-        } //end while
-
-        return ReturnValues(trilist,dedlist,headerValues)
-    }
-
-    fun buildTriangle2(
+　　　fun buildTriangle2(
         addTriangle:(TriangleList,List<String?>,PointXY,Float) -> Unit,
         trilist: TriangleList,
         chunks: List<String>,
@@ -148,6 +96,58 @@ class CsvLoader {
                 chunks[1]!!.toFloat()
             )
         }
+    }
+
+    fun parseCSV(
+        reader: BufferedReader,
+        showToast: (String) -> Unit,
+        addTriangle:(TriangleList,List<String?>,PointXY,Float) -> Unit,
+        setAllTextSize:(Float) -> Unit,
+        typeToInt:(String) -> Int,
+        viewscale: Float,
+        parentBCtoCParam:(Int,Float,ConnParam) -> ConnParam,
+        rosennameEditText: EditText
+    ) :ReturnValues?{
+
+        var line: String? = reader.readLine()
+        if(line == null) return null
+        var chunks: List<String?> = line.split(",").map { it.trim() }
+
+        if(chunks[0]!! != "koujiname"){
+            showToast( "It's not supported file." )
+            return null
+        }
+
+        val headerValues = readCsvHeaderLines(chunks, reader)
+        rosennameEditText.setText(headerValues.rosenname)
+
+        line = reader.readLine()
+        if(line == null) return null
+        chunks = line.split(",").map { it.trim() }
+
+        val trilist = TriangleList()
+        val dedlist = DeductionList()
+
+        //最初の一つ目の三角形をつくる
+        buildTriangle(addTriangle,trilist,chunks)
+
+        while (line != null){
+            line = reader.readLine()
+            if(line == null) break
+            chunks = line.split(",").map { it.trim() }
+
+            // リストの回転とかテキストサイズなどの状態
+            if( readListParameter(chunks,trilist,setAllTextSize ) ) continue
+
+            // 控除
+            if( buildDeductions(chunks,dedlist,typeToInt,viewscale) ) continue
+
+            // 三角形
+            buildTriangle2(addTriangle,trilist,chunks,parentBCtoCParam )
+
+        } //end while
+
+        return ReturnValues(trilist,dedlist,headerValues)
     }
 
     private fun readCsvHeaderLines(
