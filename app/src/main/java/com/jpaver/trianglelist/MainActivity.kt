@@ -2797,7 +2797,6 @@ class MainActivity : AppCompatActivity(),
             this::setAllTextSize,
             this::typeToInt,
             viewscale,
-            this::parentBCtoCParam,
             findViewById(R.id.rosenname)
         )
 
