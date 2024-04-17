@@ -140,6 +140,11 @@ class CsvLoader {
             mt.dim.flag[2].isMovedByUser = chunks[21]!!.toBoolean()
         }
 
+        param17(chunks,mt)
+        
+    }
+
+    fun param17( chunks:List<String>, mt:Triangle ){
         if( chunks.size > 17 ) {
             mt.cParam_ = ConnParam(
                 chunks[17]!!.toInt(),
@@ -149,6 +154,7 @@ class CsvLoader {
             )
         }
     }
+
 
     private fun readCsvHeaderLines(
         chunks: List<String?>,
