@@ -2771,34 +2771,14 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-
-    /**
-     * Triangle オブジェクトをリストに追加します。
-     */
-    private fun addTriangle(trilist: TriangleList, chunks: List<String?>, point: PointXY, angle: Float) {
-        trilist.add(
-            Triangle(
-                chunks.getOrNull(1)?.toFloatOrNull() ?: 0f,
-                chunks.getOrNull(2)?.toFloatOrNull() ?: 0f,
-                chunks.getOrNull(3)?.toFloatOrNull() ?: 0f,
-                point,
-                angle
-            ),
-            true
-        )
-    }
-
     private fun parseCSV(reader: BufferedReader):Boolean{
-
-
         val csvloader = CsvLoader()
         val returnValues = csvloader.parseCSV(
             reader,
             this::showToast,
-            this::addTriangle,
             this::setAllTextSize,
             this::typeToInt,
-            viewscale,
+            viewscale
         )
 
         if(returnValues == null ) return false
