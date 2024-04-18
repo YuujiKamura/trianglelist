@@ -30,6 +30,7 @@ jobs:
           name: Add Google Cloud SDK repo key
           command: |
             sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys B53DC80D13EDEF05
+            ./gradlew assembleDebug
       - run:
           name: Install JDK
           command: |
@@ -49,7 +50,6 @@ jobs:
           name: Run tests in parallel
           command: |
             TEST_FILES=$(find ./app/src/test/java/com/jpaver -name "*Test*.kt" | circleci tests split --split-by=timings)
-            ./gradlew devDebug
             ./gradlew test
       - store_test_results:
           path: /tmp/test-results
