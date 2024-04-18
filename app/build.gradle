@@ -13,6 +13,7 @@ android {
         versionCode 1323
         versionName "7.29"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        multiDexEnabled true
     }
 
 
