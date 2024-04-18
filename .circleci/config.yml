@@ -15,6 +15,9 @@ jobs:
     docker:
       # Androidビルド用のイメージを指定
       - image: cimg/android:2024.01
+        auth:
+          username: $DOCKERHUB_USERNAME  # 環境変数を参照
+          password: $DOCKERHUB_PASSWORD  # 環境変数を参照
     parallelism: 4
     environment:
       JAVA_HOME: /path/to/java-17
