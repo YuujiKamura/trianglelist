@@ -8,7 +8,6 @@ class CsvLoader {
     fun parseCSV(
         reader: BufferedReader,
         showToast: (String) -> Unit,
-        addTriangle: (TriangleList, List<String?>, PointXY, Float) -> Unit,
         setAllTextSize: (Float) -> Unit,
         typeToInt: (String) -> Int,
         viewscale: Float,
@@ -36,23 +35,30 @@ class CsvLoader {
             if (buildDeductions(chunks, dedlist, typeToInt, viewscale)) continue
 
             // 三角形
-            buildTriangle(addTriangle, trilist, chunks)
+            buildTriangle(trilist, chunks)
         }
 
         return ReturnValues(trilist, dedlist, headerValues)
     }
 
     fun buildTriangle(
-        addTriangle: (TriangleList, List<String?>, PointXY, Float) -> Unit,
         trilist: TriangleList,
         chunks: List<String>
     ){
         val connectiontype = chunks[5].toInt()
 
         //非接続というか１番目
-        if( connectiontype == -1 ){
+        if( connectiontype < 1 ){
             val pt = PointXY(0f, 0f)
-            addTriangle(trilist, chunks, pt, 180f )
+            trilist.add(
+                Triangle(
+                    chunks[1].toFloat(),
+                    chunks[2].toFloat(),
+                    chunks[3].toFloat(),
+                    pt, 180f
+                ),
+                true
+            )
         }
         //接続
         else {
