@@ -2789,6 +2789,8 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun parseCSV(reader: BufferedReader):Boolean{
+
+
         val csvloader = CsvLoader()
         val returnValues = csvloader.parseCSV(
             reader,
