@@ -1,6 +1,5 @@
 package com.jpaver.trianglelist
 
-import android.widget.EditText
 import com.jpaver.trianglelist.util.InputParameter
 import java.io.BufferedReader
 
@@ -13,7 +12,6 @@ class CsvLoader {
         setAllTextSize: (Float) -> Unit,
         typeToInt: (String) -> Int,
         viewscale: Float,
-        rosennameEditText: EditText
     ): ReturnValues? {
         val trilist = TriangleList()
         val dedlist = DeductionList()
@@ -26,7 +24,6 @@ class CsvLoader {
             return null
         }
         headerValues = readCsvHeaderLines(chunks1, reader)
-        rosennameEditText.setText(headerValues.rosenname)
 
         while (true) {
             val line = reader.readLine() ?: break

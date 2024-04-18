@@ -2799,7 +2799,6 @@ class MainActivity : AppCompatActivity(),
             this::setAllTextSize,
             this::typeToInt,
             viewscale,
-            findViewById(R.id.rosenname)
         )
 
         if(returnValues == null ) return false
@@ -2814,6 +2813,7 @@ class MainActivity : AppCompatActivity(),
         rosenname = headerValues.rosenname
         gyousyaname = headerValues.gyousyaname
         zumennum = headerValues.zumennum
+        findViewById<EditText>(R.id.rosenname).setText(rosenname)
     }
 
     private fun setEditLists(trilist: TriangleList, dedlist:DeductionList ){
