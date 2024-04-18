@@ -29,6 +29,10 @@ jobs:
       - run:
           name: Add Google Cloud SDK repo key
           command: |
+            sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys B53DC80D13EDEF05
+      - run:
+          name: assemble Debug
+          command: |
             ./gradlew assembleDebug
       - run:
           name: Install JDK
