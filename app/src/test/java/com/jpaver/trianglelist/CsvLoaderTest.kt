@@ -8,7 +8,7 @@ import org.junit.*
 import java.io.BufferedReader
 import java.io.FileReader
 
-class CSVParserTest {
+class CsvloaderTest {
 
     @Test
     fun `parseCSV correctly parses valid input from file`() {
@@ -28,13 +28,15 @@ class CSVParserTest {
         every { typeToInt(any()) } returns 1
 
         // 関数のテスト実行
-        val result = csvLoader.parseCSV(reader, showToast, addTriangle, setAllTextSize, typeToInt, 1.0f)
+        val result = csvLoader.parseCSV(reader, showToast, setAllTextSize, typeToInt, 1.0f)
 
         // ファイルをクローズ
         reader.close()
 
         // 検証
-        if(result != null)
-            assertEquals(9, result.trilist.size())
+        if(result != null){
+            assertEquals(10, result.trilist.size())
+            print_trilist(result.trilist)
+        }
     }
 }
