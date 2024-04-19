@@ -3,8 +3,9 @@ package com.jpaver.trianglelist
 class OutlineList(var trianglelist: TriangleList) :Cloneable{
 
     val trilist = trianglelist.trilist
-    var outlineStr_ = ""
+    var outlineStr_ = ArrayList<String>()
     val pointlist = ArrayList<PointXY>()
+    var outlineIndex = ArrayList<Int>()
 
     init{
     }
@@ -30,15 +31,19 @@ class OutlineList(var trianglelist: TriangleList) :Cloneable{
         println("outlinelist.compare: angles computed - angle1=$angle1, angle2=$angle2")
 
         // リストの各要素をループして内容を表示
-        pointlist.forEach { point ->
-            println("Point: x = ${point.x}, y = ${point.y}")
+        pointlist.forEachIndexed() { i, point ->
+            val b = trilist[outlineIndex[i]-1].nodeB
+            val bnumber = b?.mynumber ?: 0
+            val c = trilist[outlineIndex[i]-1].nodeC
+            val cnumber = c?.mynumber ?: 0
+            println("Point $i: ${outlineStr_[i]} x = ${point.x}, y = ${point.y} NodeB:${bnumber}:${b.hashCode()} NodeC:${cnumber}:${c.hashCode()}")
         }
 
         return if (angle1 > angle2) {
-            println("outlinelist.compare: angle1 is greater, returning targetOne")
+            println("outlinelist.compare: angle1 is greater, returning targetOne\n")
             targetOne
         } else {
-            println("outlinelist.compare: angle2 is greater or equal, returning targetTwo")
+            println("outlinelist.compare: angle2 is greater or equal, returning targetTwo\n")
             targetTwo
         }
     }
@@ -90,7 +95,8 @@ class OutlineList(var trianglelist: TriangleList) :Cloneable{
     fun addPoint(pt: PointXY, strSide: String, pointlist: ArrayList<PointXY>, triangle: Triangle?) {
         if (triangle != null && notHave(pt, pointlist)) {
             pointlist.add(pt)
-            outlineStr_ += triangle.mynumber.toString() + strSide
+            outlineStr_.add(triangle.mynumber.toString() + strSide)
+            outlineIndex.add(triangle.mynumber)
         }
     }
 

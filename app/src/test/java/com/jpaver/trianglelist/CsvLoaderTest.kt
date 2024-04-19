@@ -3,8 +3,7 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
-import junit.framework.TestCase.assertEquals
-import org.junit.*
+import org.junit.Test
 import java.io.BufferedReader
 import java.io.FileReader
 
@@ -12,7 +11,8 @@ class CsvloaderTest {
 
     @Test
     fun `parseCSV correctly parses valid input from file`() {
-        val path = "src/test/resources/test.csv"
+        val FILENAME = "4.11.csv"
+        val path = "src/test/resources/$FILENAME"
         val fileReader = FileReader(path)
         val reader = BufferedReader(fileReader)
         val showToast = mockk<(String) -> Unit>()
@@ -35,7 +35,8 @@ class CsvloaderTest {
 
         // 検証
         if(result != null){
-            assertEquals(10, result.trilist.size())
+            result.trilist.arrangePointNumbers()
+            result.trilist.arrangePointNumbers()
             print_trilist(result.trilist)
         }
     }

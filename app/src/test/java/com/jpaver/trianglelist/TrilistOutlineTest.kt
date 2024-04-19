@@ -155,7 +155,7 @@ class TrilistOutlineTest {
         assertEquals(14, pointlist!!.size)
 
 
-        assertEquals( strExpected, outlinelist.outlineStr_ )
+        assertEquals( strExpected, outlinelist.outlineStr_.joinToString("") )
 
         println(pointlist.toString())
 
