@@ -86,7 +86,7 @@ class TriangleList : EditList {
         }
 
         //ノードポインターのリコネクト
-        if (trilist.size > 0) b.resetAllNodes()
+        if (trilist.size > 0) b.resetAllNode()
         return b
     }
 
@@ -291,6 +291,7 @@ class TriangleList : EditList {
 
     //結構重い処理、リストが数百とかになると自動で走らせるのはかなりつらい。どうするか
     fun arrangePointNumbers() {
+        resetAllNode()
         forEach { triangle ->
             triangle.pointNumber.resetAutoFlag()
             triangle.pointnumber = triangle.pointNumber.autoAlign(triangle, OutlineList(this))
@@ -407,7 +408,7 @@ class TriangleList : EditList {
         return true
     }
 
-    fun resetAllNodes() {
+    fun resetAllNode() {
         for (i in trilist.indices) {
             val tri = trilist[i]
             if (tri.nodeA != null) {
@@ -419,6 +420,7 @@ class TriangleList : EditList {
             if (tri.nodeC != null) {
                 tri.setNode(trilist[tri.nodeC!!.mynumber - 1], 2)
             }
+            println("resetAllNode: ${tri.mynumber} ${tri.nodeA.hashCode()}, ${tri.nodeB.hashCode()}, ${tri.nodeC.hashCode()}")
         }
     }
 
