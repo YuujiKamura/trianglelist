@@ -409,20 +409,24 @@ class TriangleList : EditList {
     }
 
     fun resetAllNode() {
-        for (i in trilist.indices) {
-            val tri = trilist[i]
-            if (tri.nodeA != null) {
-                tri.setNode(trilist[tri.nodeA!!.mynumber - 1], 0)
-            }
-            if (tri.nodeB != null) {
-                tri.setNode(trilist[tri.nodeB!!.mynumber - 1], 1)
-            }
-            if (tri.nodeC != null) {
-                tri.setNode(trilist[tri.nodeC!!.mynumber - 1], 2)
-            }
-            println("resetAllNode: ${tri.mynumber} ${tri.nodeA.hashCode()}, ${tri.nodeB.hashCode()}, ${tri.nodeC.hashCode()}")
+        for (tri in trilist) {
+            resetSingleNode(tri, tri.nodeA, 0)
+            resetSingleNode(tri, tri.nodeB, 1)
+            resetSingleNode(tri, tri.nodeC, 2)
+
+            println("resetAllNode: ${tri.mynumber} - Node A: ${tri.nodeA?.hashCode()}, Node B: ${tri.nodeB?.hashCode()}, Node C: ${tri.nodeC?.hashCode()}")
         }
     }
+
+    fun resetSingleNode(triangle: Triangle, node: Triangle?, side: Int) {
+        node?.let {
+            val index = it.mynumber - 1
+            if (index in trilist.indices) {
+                triangle.setNode(trilist[index], side)
+            }
+        }
+    }
+
 
     fun setChildsToAllParents() {
         for (i in trilist.indices) {
