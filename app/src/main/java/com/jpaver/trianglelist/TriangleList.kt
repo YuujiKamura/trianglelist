@@ -649,7 +649,7 @@ class TriangleList : EditList {
                     t,
                     false
                 ) // 番号変更なしで追加する deep or shallow
-                t.isColored
+                t.getIsColored
             }
             if (listByColor.trilist.size > 0) listByColor.outlineList()
         }
@@ -663,7 +663,7 @@ class TriangleList : EditList {
         for (i in trilist.indices) {
             sb.setLength(0)
             val t = trilist[i]
-            if (i == 0 || t.isFloating || t.isColored_) {
+            if (i == 0 || t.getIsFloating || t.isColored) {
                 olplists!!.add(ArrayList())
                 trace(olplists[olplists.size - 1], t, true)
                 olplists[olplists.size - 1].add(trilist[i].pointAB) //今のindexでtriを取り直し
@@ -675,7 +675,7 @@ class TriangleList : EditList {
 
     fun trace(olp: ArrayList<PointXY>, tri: Triangle?, first: Boolean?): ArrayList<PointXY> {
         if (tri == null) return olp
-        if ((tri.isFloating || tri.isColored) && !first!!) return olp
+        if ((tri.getIsFloating || tri.getIsColored) && !first!!) return olp
         addOlp(tri.pointAB, "ab,", olp, tri)
         trace(olp, tri.nodeB, false)
         addOlp(tri.pointBC, "bc,", olp, tri)
@@ -700,7 +700,7 @@ class TriangleList : EditList {
     }
 
     fun traceOrNot(node: Triangle?, origin: Int, olp: ArrayList<PointXY>) {
-        if (node != null && !node.isFloating && !node.isColored) traceOrJumpForward(
+        if (node != null && !node.getIsFloating && !node.getIsColored) traceOrJumpForward(
             node.mynumber - 1,
             origin,
             olp,
@@ -712,7 +712,7 @@ class TriangleList : EditList {
         if (t.nodeB != null && t.nodeC != null) if (notHave(
                 t.nodeC!!.point[0],
                 olp
-            ) && !t.nodeC!!.isFloating_ && !t.nodeC!!.isColored_
+            ) && !t.nodeC!!.isFloating && !t.nodeC!!.isColored
         ) traceOrJumpForward(t.nodeC!!.mynumber - 1, origin, olp, t.nodeC!!)
     }
 
@@ -878,7 +878,7 @@ class TriangleList : EditList {
 
         // 0まで戻る。同じ色でない時はリターン
         if (node.mynumber <= node.parentnumber) return
-        if (node.nodeA != null && !node.isColored && !node.isFloating) traceOrJumpBackward(
+        if (node.nodeA != null && !node.getIsColored && !node.getIsFloating) traceOrJumpBackward(
             origin,
             olp,
             node.nodeA!!

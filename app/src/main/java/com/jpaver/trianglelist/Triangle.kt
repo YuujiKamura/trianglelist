@@ -46,8 +46,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
             b.pointcenter = pointcenter.clone()
             b.pointnumber = pointnumber.clone()
             b.cParam_ = cParam_.clone()
-            b.isFloating_ = isFloating_
-            b.isColored_ = isColored_
+            b.isFloating = isFloating
+            b.isColored = isColored
             b.myBP_.left = myBP_.left
             b.myBP_.top = myBP_.top
             b.myBP_.right = myBP_.right
@@ -248,8 +248,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
     var nodeB: Triangle? = null
     var nodeC: Triangle? = null
 
-    var isFloating_ = false
-    var isColored_ = false
+    var isFloating = false
+    var isColored = false
 
     val lengthA_: Float
         get() = length[0]
@@ -842,7 +842,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
     fun setColor(num: Int) {
         color_ = num
-        isColored_ = true
+        isColored = true
     }
 
     fun setChild(newchild: Triangle, cbc: Int) {
@@ -1352,15 +1352,15 @@ class Triangle : EditObject, Cloneable<Triangle> {
         return !(A + B <= C) && !(B + C <= A) && !(C + A <= B)
     }
 
-    val isFloating: Boolean
+    val getIsFloating: Boolean
         get() {
-            isFloating_ = nodeA != null && connectionType > 8
-            return isFloating_
+            isFloating = nodeA != null && connectionType > 8
+            return isFloating
         }
-    val isColored: Boolean
+    val getIsColored: Boolean
         get() {
-            isColored_ = nodeA != null && color_ != nodeA!!.color_
-            return isColored_
+            isColored = nodeA != null && color_ != nodeA!!.color_
+            return isColored
         }
     val isCollide: Boolean = false
 
