@@ -101,8 +101,10 @@ class OutlineList(var trianglelist: TriangleList) :Cloneable{
     }
 
     // 同じポイントは二ついらない
-    private fun notHave(it: PointXY, inthis: ArrayList<PointXY>): Boolean {
-        for (i in inthis.indices) if (it.nearBy(inthis[i], 0.01f)) return false
+    private fun notHave(target: PointXY, pointarray: ArrayList<PointXY>): Boolean {
+        for (i in pointarray.indices){
+            if( target.nearBy(pointarray[i], 0.005f) ) return false
+        }
         return true
     }
 
@@ -131,8 +133,9 @@ class OutlineList(var trianglelist: TriangleList) :Cloneable{
     fun branchOrNot(triangle: Triangle, origin: Int, olp: ArrayList<PointXY>) {
         if (triangle.nodeB != null && triangle.nodeC != null)
             if (notHave(triangle.nodeC!!.point[0], olp)
-                && !triangle.nodeC!!.isFloating_
-                && !triangle.nodeC!!.isColored_)
+                //&& !triangle.nodeC!!.isFloating_
+                //&& !triangle.nodeC!!.isColored_ //??? trueになってたりするのでコメントアウト。
+                )
                 traceForward(triangle.nodeC!!.mynumber - 1, origin, triangle.nodeC!!)
     }
 

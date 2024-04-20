@@ -243,14 +243,14 @@ class Triangle : EditObject, Cloneable<Triangle> {
     var myBP_ = Bounds(0f, 0f, 0f, 0f)
     var dimOnPathSokuten = DimOnPath()
     var dimHeight = 0f
+
+    var nodeA: Triangle? = null
     var nodeB: Triangle? = null
     var nodeC: Triangle? = null
-    var nodeA: Triangle? = null
 
-    var isChildB_ = false
-    var isChildC_ = false
     var isFloating_ = false
     var isColored_ = false
+
     val lengthA_: Float
         get() = length[0]
     val lengthB_: Float
@@ -849,11 +849,9 @@ class Triangle : EditObject, Cloneable<Triangle> {
         childSide_ = cbc
         if (newchild.getPbc(cbc) == 1) {
             nodeB = newchild
-            isChildB_ = true
         }
         if (newchild.getPbc(cbc) == 2) {
             nodeC = newchild
-            isChildC_ = true
         }
         setDimAlignByChild()
     }
@@ -1323,11 +1321,15 @@ class Triangle : EditObject, Cloneable<Triangle> {
     //region isBoolean
     fun alreadyHaveChild(pbc: Int): Boolean {
         if (pbc < 1) return false
-        return if (getSideByIndex(pbc) == "B" && isChildB_) true else getSideByIndex(pbc) == "C" && isChildC_
+        when(pbc){
+            1 -> if(nodeB!=null) return true
+            2 -> if(nodeC!=null) return true
+        }
+        return false
     }
 
     fun hasChildIn(cbc: Int): Boolean {
-        return if ((nodeB != null || isChildB_) && cbc == 1) true else (nodeC != null || isChildC_) && cbc == 2
+        return if ((nodeB != null) && cbc == 1) true else (nodeC != null) && cbc == 2
     }
 
     fun hasConstantParent(): Boolean {

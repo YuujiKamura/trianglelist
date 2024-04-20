@@ -36,7 +36,6 @@ class CsvloaderTest {
         // 検証
         if(result != null){
             result.trilist.arrangePointNumbers()
-            result.trilist.arrangePointNumbers()
             print_trilist(result.trilist)
         }
     }
