@@ -109,7 +109,7 @@ class OutlineList(var trianglelist: TriangleList) :Cloneable{
     }
 
     fun traceOrNot(triangle: Triangle?, origin: Int) {
-        if (triangle != null && !triangle.isFloating && !triangle.isColored)
+        if (triangle != null && !triangle.getIsFloating && !triangle.getIsColored)
             traceForward(triangle.mynumber - 1, origin, triangle )
     }
 
@@ -126,15 +126,15 @@ class OutlineList(var trianglelist: TriangleList) :Cloneable{
         addPoint(triangle.pointAB, "ab,", pointlist, triangle)
         // 0まで戻る。同じ色でない時はリターン
         if (triangle.mynumber <= triangle.parentnumber) return
-        if (triangle.nodeA != null && !triangle.isColored && !triangle.isFloating)
+        if (triangle.nodeA != null && !triangle.getIsColored && !triangle.getIsFloating)
             traceBackward(origin, pointlist, triangle.nodeA!!)
     }
 
     fun branchOrNot(triangle: Triangle, origin: Int, olp: ArrayList<PointXY>) {
         if (triangle.nodeB != null && triangle.nodeC != null)
             if (notHave(triangle.nodeC!!.point[0], olp)
-                //&& !triangle.nodeC!!.isFloating_
-                //&& !triangle.nodeC!!.isColored_ //??? trueになってたりするのでコメントアウト。
+                && !triangle.nodeC!!.getIsFloating
+                && !triangle.nodeC!!.getIsColored //??? trueになってたりするのでコメントアウト。->getterを別名にしたら良くなった
                 )
                 traceForward(triangle.nodeC!!.mynumber - 1, origin, triangle.nodeC!!)
     }
