@@ -64,25 +64,26 @@ class Dims( val triangle: Triangle ) : Cloneable<Dims> {
 
     //つかうの難しい？
     fun outerDimHorizontal(targetindex: Int){
-        val OUTERRIGHT = 3
-        val OUTERLEFT = 4
+        val OUTERLEFT = 3
+        val OUTERRIGHT = 4
+
         when (targetindex) {
             SIDEC -> {
                 if(!flag[2].isMovedByUser )
-                    horizontal.c = getunconnectedSide(OUTERRIGHT,OUTERLEFT)
+                    horizontal.c = getunconnectedSide(OUTERLEFT,OUTERRIGHT)
                 flag[2].isAutoAligned = true
                 return
             }
             SIDEB -> {
                 if(!flag[1].isMovedByUser )
-                    horizontal.b = getunconnectedSide(OUTERRIGHT,OUTERLEFT)
+                    horizontal.b = getunconnectedSide(OUTERLEFT,OUTERRIGHT)
                 flag[1].isAutoAligned = true
                 return
             }
         }
     }
 
-    fun getunconnectedSide(outerright: Int, outerleft: Int): Int{
+    fun getunconnectedSide( outerleft: Int, outerright: Int): Int{
         if (triangle.nodeC == null) return outerright
         return outerleft
     }
