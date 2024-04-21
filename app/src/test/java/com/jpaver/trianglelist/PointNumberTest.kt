@@ -24,7 +24,7 @@ class PointNumberTest {
     @Test
     fun testRotatePointNumber() {
         val t1 = Triangle(5.0f, 5.0f, 5.0f)
-        t1.setPointNumber(PointXY(0f,2.5f))
+        t1.setPointNumber(PointXY(0f,2.5f), true)
 
         //参照を排除したpointnumber
         t1.pointnumber = t1.pointnumber.rotate(PointXY(0f,0f), 90f)

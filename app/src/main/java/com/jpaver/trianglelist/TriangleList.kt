@@ -624,7 +624,7 @@ class TriangleList : EditList {
     }
 
     fun getLastTriangle(): Triangle{
-        if(lastTapNumber<1) return trilist[0]
+        if(lastTapNumber<1) return trilist[trilist.size-1]
         return trilist[lastTapNumber-1]
     }
 

@@ -156,7 +156,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         return -angleMpAB
     }
 
-    fun setPointNumber(p: PointXY, is_user:Boolean ) {
+    fun setPointNumber(p: PointXY, is_user:Boolean = true ) {
         pointnumber = pointNumber.setPointByUser(p, this, is_user )
     }
     //endregion pointNumber

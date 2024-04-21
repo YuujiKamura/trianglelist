@@ -13,7 +13,7 @@ class PointNumberManager( ): Cloneable {
 
     // region pointNumber
 
-    fun setPointByUser(to: PointXY, triangle: Triangle, is_user:Boolean ):PointXY {
+    fun setPointByUser(to: PointXY, triangle: Triangle, is_user:Boolean = true ):PointXY {
         val BORDER = 20f * triangle.scaleFactror
         val length = to.lengthTo(triangle.pointcenter)
         if( length > BORDER ) return triangle.pointnumber// あまり遠い時はスルー
