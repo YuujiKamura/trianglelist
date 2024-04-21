@@ -39,12 +39,13 @@ class OutlineList(var trianglelist: TriangleList) :Cloneable{
             println("Point $i: ${outlineStr_[i]} x = ${point.x}, y = ${point.y} NodeB:${bnumber}:${b.hashCode()} NodeC:${cnumber}:${c.hashCode()}")
         }
 
-        return if (angle1 > angle2) {
-            println("outlinelist.compare: angle1 is greater, returning targetOne\n")
-            targetOne
-        } else {
+        //同一の角度の時もカバー
+        return if (angle1 <= angle2) {
             println("outlinelist.compare: angle2 is greater or equal, returning targetTwo\n")
             targetTwo
+        } else {
+            println("outlinelist.compare: angle1 is greater, returning targetOne\n")
+            targetOne
         }
     }
 

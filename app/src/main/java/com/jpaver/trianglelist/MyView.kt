@@ -492,7 +492,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
     }
 
 
-    val INDEXCENTER=3
+    val INDEXCENTER = 3
     fun toLastTapTriangle(sideIndex: Int=INDEXCENTER): PointXY {
         val triangle = trianglelist.getLastTriangle()
         when(sideIndex){
