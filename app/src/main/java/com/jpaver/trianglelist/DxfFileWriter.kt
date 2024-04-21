@@ -3,6 +3,14 @@ package com.jpaver.trianglelist
 import android.util.Log
 import java.io.BufferedWriter
 
+fun stringTriple(tri: Triangle): Triple<String, String, String> {
+    tri.setLengthStr()
+    val nagasaA = tri.strLengthA
+    val nagasaB = tri.strLengthB
+    val nagasaC = tri.strLengthC
+    return Triple(nagasaA, nagasaB, nagasaC)
+}
+
 class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
     //region parameters
     override var trilist_ = trilist
@@ -77,26 +85,19 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
 
     override fun writeTriangle(tri: Triangle){
         // arrange
-        val pca = tri.pointCA
-        val pab = tri.pointAB
-        val pbc = tri.pointBC
+        val (pca, pab, pbc) = xyPointXYTriple(tri)
+
+        val (dimverticalA, dimverticalB, dimverticalC) = intTriple(tri, pca, pab, pbc)
+
+        var (la, lb, lc) = stringTriple(tri)
 
         val textSize: Float = textscale_
         val textSize2: Float = textscale_
 
-        val dimverticalA = verticalFromBaseline(tri.dim.vertical.a, pca, pab)
-        val dimverticalB = verticalFromBaseline(tri.dim.vertical.b, pab, pbc)
-        val dimverticalC = verticalFromBaseline(tri.dim.vertical.c, pbc, pca)
-
-        tri.setLengthStr()
-        var nagasaA = tri.strLengthA
-        var nagasaB = tri.strLengthB
-        var nagasaC = tri.strLengthC
-
         if(isDebug){
-            nagasaA += "-$dimverticalA"
-            nagasaB += "-$dimverticalB"
-            nagasaC += "-$dimverticalC"
+            la += "-$dimverticalA"
+            lb += "-$dimverticalB"
+            lc += "-$dimverticalC"
         }
 
         // TriLines
@@ -106,9 +107,9 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
 
         // DimTexts
         if( tri.mynumber == 1 || tri.connectionType > 2)
-            writeTextDimension(dimverticalA, nagasaA, tri.dimpoint.a, pab.calcDimAngle(pca))
-        writeTextDimension(dimverticalB, nagasaB, tri.dimpoint.b, pbc.calcDimAngle(pab))
-        writeTextDimension(dimverticalC, nagasaC, tri.dimpoint.c, pca.calcDimAngle(pbc))
+            writeTextDimension(dimverticalA, la, tri.dimpoint.a, pab.calcDimAngle(pca))
+        writeTextDimension(dimverticalB, lb, tri.dimpoint.b, pbc.calcDimAngle(pab))
+        writeTextDimension(dimverticalC, lc, tri.dimpoint.c, pca.calcDimAngle(pbc))
 
         // DimTextの旗上げ
         val tPathA = tri.dimOnPath[0]
@@ -153,6 +154,20 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
             writeLine( pab.offset(pca, -tri.myName_().length*0.5f), pab.offset(pca, -0.25f), 5)
         }
     }
+
+    private fun intTriple(
+        tri: Triangle,
+        pca: PointXY,
+        pab: PointXY,
+        pbc: PointXY
+    ): Triple<Int, Int, Int> {
+        val dimverticalA = verticalFromBaseline(tri.dim.vertical.a, pca, pab)
+        val dimverticalB = verticalFromBaseline(tri.dim.vertical.b, pab, pbc)
+        val dimverticalC = verticalFromBaseline(tri.dim.vertical.c, pbc, pca)
+        return Triple(dimverticalA, dimverticalB, dimverticalC)
+    }
+
+
 
     private fun writeTextDimension(verticalAlign: Int, len: String, p1: PointXY, angle: Float){
         writeText(len, p1, 7, textscale_, 1, verticalAlign, angle, 1f)
@@ -5072,4 +5087,11 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
         return "IAMOVERRIDED."
     }
 
+}
+
+private fun xyPointXYTriple(tri: Triangle): Triple<PointXY, PointXY, PointXY> {
+    val pca = tri.pointCA
+    val pab = tri.pointAB
+    val pbc = tri.pointBC
+    return Triple(pca, pab, pbc)
 }
