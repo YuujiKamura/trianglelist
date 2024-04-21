@@ -1418,17 +1418,14 @@ class MainActivity : AppCompatActivity(),
 
         //ここからはビュー操作用とファイルシェア用のFAB、図形を書き換えないのでオートセーブの対象外
         setCommonFabListener(fab_setB,false) {
-            if( myview.trianglelist.lastTapNumber < 1 ) myview.trianglelist.lastTapNumber = myview.trianglelist.size()
             autoConnection(1)
             findViewById<EditText>(R.id.editLengthB1).requestFocus()
         }
 
         setCommonFabListener(fab_setC,false) {
-            if( myview.trianglelist.lastTapNumber < 1 ) myview.trianglelist.lastTapNumber = myview.trianglelist.size()
             autoConnection(2)
             findViewById<EditText>(R.id.editLengthB1).requestFocus()
         }
-
 
         setCommonFabListener(fab_deduction,false) {
             deleteWarning = 0
@@ -1526,7 +1523,6 @@ class MainActivity : AppCompatActivity(),
         setCommonFabListener(fab_mail,false) {
             sendMail()
         }
-
     }
 
     private fun whenTriDed(methodFalse:() -> Unit, methodTrue:() -> Unit ){
@@ -1919,7 +1915,12 @@ class MainActivity : AppCompatActivity(),
         )
     }
 
+    fun setTriListNumber(){
+        if( myview.trianglelist.lastTapNumber < 1 ) myview.trianglelist.lastTapNumber = myview.trianglelist.size()
+    }
+
     private fun autoConnection(sideindex: Int){
+        setTriListNumber()
         myview.trianglelist.lastTapSide = sideindex
         parameter = myEditor.readLineTo(parameter, editorline1) //keep them
 
