@@ -9,8 +9,8 @@ fun printTriangle(t: Triangle) {
     Log.d("Triangle", t.toStrings())
 }
 
-fun print_trilist(tl: TriangleList) {
-    Log.d("TriangleList", "TriangleList size ${tl.size()} hash ${tl.hashCode()}")
+fun print_trilist(tl: TriangleList, callername:String = "undefined caller") {
+    Log.d("TriangleList", callername + "-TriangleList size ${tl.size()} hash ${tl.hashCode()}")
     for (i in 0 until tl.size()) {
         printTriangle(tl[i]) // Indexing directly to i assuming `tl[i]` is valid and starts from 0
     }
@@ -303,7 +303,7 @@ class TriangleList : EditList {
         scale: Float = this.scale,
         ts: Float = 5f,
         isArrangeDims: Boolean = true,
-        isArrangePointNumbers: Boolean = false
+        isArrangePointNumbers: Boolean = true
     ):TriangleList {
         this.scale *= scale
         forEach { triangle ->
@@ -426,7 +426,6 @@ class TriangleList : EditList {
             }
         }
     }
-
 
     fun setChildsToAllParents() {
         for (i in trilist.indices) {
@@ -645,7 +644,7 @@ class TriangleList : EditList {
             val listByColor = listByColors[colorindex]
             for (i in trilist.indices) {
                 val t = trilist[i].clone()
-                if (t.color_ == colorindex) listByColor.add(
+                if (t.mycolor == colorindex) listByColor.add(
                     t,
                     false
                 ) // 番号変更なしで追加する deep or shallow
@@ -744,7 +743,6 @@ class TriangleList : EditList {
             }
         }
     }
-
 
     fun getTapIndexArray(tapP: PointXY): IntArray {
         val tapIndexArray = IntArray(trilist.size)

@@ -164,19 +164,19 @@ class PointXY :Cloneable<PointXY> {
     }
 
     fun calcAngle360(p2: PointXY, p3: PointXY): Float {
-        val v1 = p2.subtract(this) // thisからp2へのベクトル
+        val v1 = p2.subtract(this) // p2からthisへのベクトル、逆にすると結果が変わる
         val v2 = p2.subtract(p3) // p2からp3へのベクトル
-        val angleRadian = acos(v1.innerProduct(v2) / (v1.magnitude() * v2.magnitude())) // ベクトル間の角度（ラジアン）
-        val angleDegree = angleRadian * 180 / Math.PI // ラジアンから度へ変換
+        val angleRadian = acos(v1.innerProduct(v2) / (v1.magnitude() * v2.magnitude()))
+        val angleDegree = (angleRadian * 180 / Math.PI).toFloat()
+        val outerProduct = v1.outerProduct(v2)
 
-        // 外積を使って角度の方向（時計回りか反時計回りか）を判断し、角度を調整
-        return if (v1.outerProduct(v2) > 0) {
-            360 - angleDegree.toFloat() // 時計回りの場合は360度から角度を引く
-        } else {
-            angleDegree.toFloat() // 反時計回りの場合はそのまま角度を使用
+        // 外角の反転
+        if ( outerProduct > 0 && angleDegree <= 180f ||
+             outerProduct < 0 && angleDegree >  180f ) {
+             return  360f - angleDegree
         }
+        return angleDegree
     }
-
 
     fun set(sp: PointXY) {
         x = sp.x

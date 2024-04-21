@@ -56,7 +56,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
             b.nodeB = nodeB
             b.nodeC = nodeC
             b.childSide_ = childSide_
-            b.color_ = color_
+            b.mycolor = mycolor
             b.connectionLCR_ = connectionLCR_
             b.connectionType_ = connectionType_
             b.strLengthA = strLengthA
@@ -156,13 +156,18 @@ class Triangle : EditObject, Cloneable<Triangle> {
         return -angleMpAB
     }
 
-    fun setPointNumber(p: PointXY) {
-        pointnumber = pointNumber.setPointByUser(p, this)
+    fun setPointNumber(p: PointXY, is_user:Boolean ) {
+        pointnumber = pointNumber.setPointByUser(p, this, is_user )
     }
     //endregion pointNumber
 
     // 各辺に接続されている Triangle オブジェクトの識別子を返す
-    fun toStrings(ispoints: Boolean = true, islength: Boolean = true, isnode: Boolean = true, isalign: Boolean = true ): String {
+    fun toStrings(
+        ispoints: Boolean = true,
+        islength: Boolean = true,
+        isnode: Boolean = true,
+        isalign: Boolean = true
+    ): String {
         val connectedTriangles = arrayOfNulls<Triangle>(3) // 各辺に接続された Triangle オブジェクトを保持する配列
         connectedTriangles[0] = nodeA
         connectedTriangles[1] = nodeB
@@ -180,7 +185,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
         if(ispoints) sb.append("pointDim:${dimpoint.a} ${dimpoint.b} ${dimpoint.c} \n")
         if(islength) sb.append("length:${lengthA_} ${lengthB_} ${lengthC_} \n")
         if(isalign) sb.append("isPointnumber_user: ${pointNumber.flag.isMovedByUser}\n")
-        if(isalign) sb.append("isPointnumber_auto: ${pointNumber.flag.isAutoAligned}\n\n")
+        if(isalign) sb.append("isPointnumber_auto: ${pointNumber.flag.isAutoAligned}\n")
+        if(isalign) sb.append("pointnumber: ${pointnumber}\n\n")
         return sb.toString()
     }
 
@@ -237,7 +243,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     var dimHorizontalB = 0
     var dimHorizontalC = 0
     var lastTapSide_ = -1
-    var color_ = 4
+    var mycolor = 4
     var childSide_ = 0
     var name = ""
     var myBP_ = Bounds(0f, 0f, 0f, 0f)
@@ -841,7 +847,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
     fun setColor(num: Int) {
-        color_ = num
+        mycolor = num
         isColored = true
     }
 
@@ -1357,11 +1363,16 @@ class Triangle : EditObject, Cloneable<Triangle> {
             isFloating = nodeA != null && connectionType > 8
             return isFloating
         }
+
+    //isColoredという名前にしていたら、プロパティ名と重複していて、意図せずtrueを返すという不思議なバグを生んでいたので修正
+    //ユーザーが色を変更する以外に、こうやって隣と違う色になっているときにフラグを立てるのは、同色の三角形どうしの外枠を作るため
     val getIsColored: Boolean
         get() {
-            isColored = nodeA != null && color_ != nodeA!!.color_
+            if( nodeA == null ) return isColored
+            isColored = mycolor != nodeA!!.mycolor
             return isColored
         }
+
     val isCollide: Boolean = false
 
     fun isCollide(p: PointXY): Boolean {
