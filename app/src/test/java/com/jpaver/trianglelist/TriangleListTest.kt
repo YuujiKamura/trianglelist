@@ -9,7 +9,7 @@ import org.junit.Assert
 import org.junit.Test
 
 fun printTriangle( t: Triangle){
-    System.out.printf( t.toStrings() )
+    System.out.printf( t.toStrings())
 }
 
 fun print_trilist(tl: TriangleList){

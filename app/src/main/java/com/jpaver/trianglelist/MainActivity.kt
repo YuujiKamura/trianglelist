@@ -924,7 +924,7 @@ class MainActivity : AppCompatActivity(),
 
         val dedArea = myDeductionList.getArea()
         val triArea = trianglelist.getArea()
-        val totalArea = roundByUnderTwo(triArea - dedArea).formattedString(2)
+        val totalArea = roundByUnderTwo(triArea - dedArea)//.formattedString(2)
         title = rStr.menseki_ + ": $totalArea m^2"
 
         /*if( myTriangleList.lastTapNumber_ > 0 ){
@@ -1374,7 +1374,7 @@ class MainActivity : AppCompatActivity(),
                 if(colorindex == resColors.size) colorindex = 0
                 bindingMain.fabFillcolor.backgroundTintList = getColorStateList(resColors[colorindex])
 
-                trianglelist.get(myview.trianglelist.selectedNumber).color_ = colorindex
+                trianglelist.get(myview.trianglelist.selectedNumber).mycolor = colorindex
 
                 myview.setFillColor(colorindex, trianglelist.selectedNumber)
             }
@@ -1569,7 +1569,7 @@ class MainActivity : AppCompatActivity(),
     fun flagTriangle(){
         val triangle = trianglelist.get(parameter.number)
         val tappoint = myview.pressedInModel.scale(PointXY(0f, 0f), 1 / viewscale, -1 / viewscale)
-        triangle.setPointNumber(tappoint)
+        triangle.setPointNumber( tappoint, true )
         setTrianglelist()
     }
 
@@ -2030,7 +2030,7 @@ class MainActivity : AppCompatActivity(),
 
     // タップされた三角形の詳細設定を行う関数
     fun setTriangleDetails(myTriangleList: TriangleList) {
-        colorindex = myTriangleList.get(myTriangleList.lastTapNumber).color_ // タップされた三角形の色を取得
+        colorindex = myTriangleList.get(myTriangleList.lastTapNumber).mycolor // タップされた三角形の色を取得
         colorMovementFabs() // 色の設定を更新
         printDebugConsole() // デバッグコンソールに情報を出力
         setTitles() // タイトルを設定
@@ -2672,7 +2672,7 @@ class MainActivity : AppCompatActivity(),
                 val pointnumber: PointXY = mt.pointnumber
                 val cp = parentBCtoCParam(mt.connectionType, mt.lengthNotSized[0], mt.cParam_)
 
-                writer.write("${mt.mynumber},${mt.lengthA_},${mt.lengthB_},${mt.lengthC_},${mt.parentnumber},${mt.connectionType},${mt.name},${pointnumber.x},${pointnumber.y},${mt.pointNumber.flag.isMovedByUser},${mt.color_},${mt.dim.horizontal.a},${mt.dim.horizontal.b},${mt.dim.horizontal.c},${mt.dim.vertical.a},${mt.dim.vertical.b},${mt.dim.vertical.c},${cp.side},${cp.type},${cp.lcr},${mt.dim.flag[1].isMovedByUser},${mt.dim.flag[2].isMovedByUser},${mt.angle},${mt.pointCA.x},${mt.pointCA.y},${mt.angleInLocal_}")
+                writer.write("${mt.mynumber},${mt.lengthA_},${mt.lengthB_},${mt.lengthC_},${mt.parentnumber},${mt.connectionType},${mt.name},${pointnumber.x},${pointnumber.y},${mt.pointNumber.flag.isMovedByUser},${mt.mycolor},${mt.dim.horizontal.a},${mt.dim.horizontal.b},${mt.dim.horizontal.c},${mt.dim.vertical.a},${mt.dim.vertical.b},${mt.dim.vertical.c},${cp.side},${cp.type},${cp.lcr},${mt.dim.flag[1].isMovedByUser},${mt.dim.flag[2].isMovedByUser},${mt.angle},${mt.pointCA.x},${mt.pointCA.y},${mt.angleInLocal_}")
                 writer.newLine()
             }
 

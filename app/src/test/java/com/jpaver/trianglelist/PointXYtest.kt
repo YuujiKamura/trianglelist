@@ -7,6 +7,27 @@ import org.junit.Test
 
 class PointXYtest {
 
+    data class AnglePoint(var num:Int, var prev:PointXY, var targ:PointXY, var next:PointXY ){
+        init{
+            calculate()
+        }
+        fun calculate(): Float{
+            val angle1 = prev.calcAngle360(targ,next)
+            println("$num: $angle1")
+            return angle1
+        }
+    }
+
+    @Test
+    fun testCalcAngle(){
+        val a = AnglePoint( 1, PointXY(-7.9f,6.2f), PointXY(-6.4f,4.6f), PointXY(-5.7f,5.2f) )
+        val b = AnglePoint( 2, a.targ, a.next, PointXY(-6.1f,7.1f) )
+        val c = AnglePoint( 3, b.targ, b.next, PointXY(-4.1f,7.2f) )
+        val d = AnglePoint( 4, c.targ, c.next, PointXY(-3.7f,8.1f) )
+                AnglePoint( 5, d.targ, d.next, PointXY(-0.9f,24.2f) )
+
+    }
+
     @Test
     fun testDistancesTo() {
         val centerPoint = PointXY(0f, 0f) // 中心点

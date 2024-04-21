@@ -13,11 +13,11 @@ class PointNumberManager( ): Cloneable {
 
     // region pointNumber
 
-    fun setPointByUser(to: PointXY, triangle: Triangle ):PointXY {
-        val BORDER = 10f * triangle.scaleFactror
+    fun setPointByUser(to: PointXY, triangle: Triangle, is_user:Boolean ):PointXY {
+        val BORDER = 20f * triangle.scaleFactror
         val length = to.lengthTo(triangle.pointcenter)
         if( length > BORDER ) return triangle.pointnumber// あまり遠い時はスルー
-        flag.isMovedByUser = true
+        flag.isMovedByUser = is_user
         flag.isAutoAligned = false
         return to
     }
@@ -53,7 +53,7 @@ class PointNumberManager( ): Cloneable {
     //pointNumberだけ使う
     fun pointUnconnectedSide( triangle: Triangle, outlineList: OutlineList?=null ): PointXY {
         //外側に出すと実行時エラーになる
-        val KEISUU = 0.9f
+        val KEISUU = 0.8f
         //val number = triangle.mynumber
         //val la = triangle.lengthAforce
         //val lb = triangle.lengthBforce

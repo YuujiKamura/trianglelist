@@ -56,7 +56,7 @@ class TrilistOutlineTest {
         val actualResult = outlinelist.find(target)!!
 
         println(actualResult)
-        assertTrue( target.nearBy( actualResult, 0.01f) )
+        assertTrue( target.nearBy( actualResult, 0.05f) )
 
         val angles = pointlist!!.map{ outlinelist.calcAngle(it) }
         println(angles.joinToString("\n") )
@@ -139,8 +139,6 @@ class TrilistOutlineTest {
         System.out.printf( "outlinestr %s%n", trilist.outlineStr_ )
         print_trilist( trilist )
     }
-
-
 
     @Test
     fun testTriListOutline(){

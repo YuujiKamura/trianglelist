@@ -67,7 +67,7 @@ class OutlineList(var trianglelist: TriangleList) :Cloneable{
 
         // prevPoint、result（現在のポイント）、nextPointを使って角度を計算
         // 360単位の角度を得る
-        return prevPoint.calcAngle360(result, nextPoint)
+        return prevPoint.calcAngle360( result, nextPoint)
     }
 
     fun find(target: PointXY): PointXY? {

@@ -9,8 +9,7 @@ import java.io.FileReader
 
 class CsvloaderTest {
 
-    @Test
-    fun `parseCSV correctly parses valid input from file`() {
+    fun loadTriangleList(): ReturnValues?{
         val FILENAME = "4.11.csv"
         val path = "src/test/resources/$FILENAME"
         val fileReader = FileReader(path)
@@ -28,10 +27,17 @@ class CsvloaderTest {
         every { typeToInt(any()) } returns 1
 
         // 関数のテスト実行
-        val result = csvLoader.parseCSV(reader, showToast, setAllTextSize, typeToInt, 1.0f)
+        val result: ReturnValues? = csvLoader.parseCSV(reader, showToast, setAllTextSize, typeToInt, 1.0f)
 
         // ファイルをクローズ
         reader.close()
+        return result
+    }
+
+    @Test
+    fun `parseCSV correctly parses valid input from file`() {
+
+        val result = loadTriangleList()
 
         // 検証
         if(result != null){

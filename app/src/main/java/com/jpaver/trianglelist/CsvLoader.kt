@@ -28,6 +28,13 @@ class CsvLoader {
             val line = reader.readLine() ?: break
             val chunks = line.split(",").map { it.trim() }
 
+            // チェック関数を使ってchunksが適切か確認
+            if (!checkChunks(chunks)) {
+                // 不適切なデータに対する処理、ログ記録、エラーメッセージ表示など
+                println("Invalid input or insufficient data")
+                continue
+            }
+
             // リストの回転とかテキストサイズなどの状態
             if (readListParameter(chunks, trilist, setAllTextSize)) continue
 
@@ -41,10 +48,20 @@ class CsvLoader {
         return ReturnValues(trilist, dedlist, headerValues)
     }
 
+    fun checkChunks(chunks: List<String?>): Boolean {
+
+        chunks.forEach() { if (it == null) return false }
+
+        return true
+    }
+
+    val SIZE_CHUNKS_TRI = 26
+
     fun buildTriangle(
         trilist: TriangleList,
         chunks: List<String>
     ){
+        if( chunks.size < SIZE_CHUNKS_TRI ) return
         val connectiontype = chunks[5].toInt()
 
         //非接続というか１番目
@@ -90,52 +107,54 @@ class CsvLoader {
     //i  0,1,2,3, 4, 5,6,7    ,8     ,9    ,10,11,12,13,14,15,16,17,18,19,20   ,21   ,22     ,23 ,24 ,25
     //ex 1,6,1,1,-1,-1, ,4.060,-2.358,false,4 ,0 ,0 ,0 , 1, 1, 3, 0, 0, 0,false,false,-268.70,0.0,0.0,-448.70
 
-    fun finalizeBuildTriangle(chunks: List<String?>, mt:Triangle){
-        mt.connectionType = chunks[5]!!.toInt()
-        mt.name = chunks[6]!!.toString()
-        if( chunks[9]!! == "true" ) readPointNumber( chunks, mt)
-        if( chunks.size > 10 ) mt.setColor(chunks[10]!!.toInt())
+
+    fun finalizeBuildTriangle(chunks: List<String>, mt:Triangle){
+        mt.connectionType = chunks[5].toInt()
+        mt.name = chunks[6]
+        if( chunks[9] == "true" ) readPointNumber( chunks, mt)
+        if( chunks.size > 10 ) mt.setColor(chunks[10].toInt())
         if( chunks.size > 11 ) readDimAligns(chunks, mt)
         if( chunks.size > 17 ) mt.cParam_ = readCParam(chunks)
         if( chunks.size > 20 ) mt.dim.flag = readDimFlag(chunks)
     }
 
-    fun readPointNumber(chunks: List<String?>, mt:Triangle){
+    fun readPointNumber(chunks: List<String>, mt:Triangle){
         mt.setPointNumber(
             PointXY(
-                chunks[7]!!.toFloat(),
-                chunks[8]!!.toFloat()
-            )
+                chunks[7].toFloat(),
+                chunks[8].toFloat()
+            ),
+            chunks[9].toBoolean()
         )
     }
 
-    fun readDimAligns(chunks: List<String?>, triangle:Triangle ){
+    fun readDimAligns(chunks: List<String>, triangle:Triangle ){
             triangle.setDimAligns(
-                chunks[11]!!.toInt(), chunks[12]!!.toInt(), chunks[13]!!.toInt(),
-                chunks[14]!!.toInt(), chunks[15]!!.toInt(), chunks[16]!!.toInt()
+                chunks[11].toInt(), chunks[12].toInt(), chunks[13].toInt(),
+                chunks[14].toInt(), chunks[15].toInt(), chunks[16].toInt()
             )
     }
 
-    fun readDimFlag( chunks: List<String?>):Array<Flags>{
+    fun readDimFlag( chunks: List<String>):Array<Flags>{
 
         val flags = arrayOf(Flags(), Flags(), Flags())
-        flags[1].isMovedByUser = chunks[20]!!.toBoolean()
-        flags[2].isMovedByUser = chunks[21]!!.toBoolean()
+        flags[1].isMovedByUser = chunks[20].toBoolean()
+        flags[2].isMovedByUser = chunks[21].toBoolean()
         return flags
 
     }
 
-    fun readCParam( chunks:List<String?> ):ConnParam{
+    fun readCParam( chunks:List<String> ):ConnParam{
             return ConnParam(
-            chunks[17]!!.toInt(),
-            chunks[18]!!.toInt(),
-            chunks[19]!!.toInt(),
-            chunks[1]!!.toFloat()
+            chunks[17].toInt(),
+            chunks[18].toInt(),
+            chunks[19].toInt(),
+            chunks[1].toFloat()
             )
     }
 
     private fun readCsvHeaderLines(
-        chunks: List<String?>,
+        chunks: List<String>,
         reader: BufferedReader,
     ): HeaderValues {
         val headerValues = HeaderValues(
