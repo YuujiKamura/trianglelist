@@ -103,19 +103,26 @@ class CsvLoader {
     // 17-19 ${cp.side}, ${cp.type}, ${cp.lcr},
     // 20-21 ${mt.dim.flag[1].isMovedByUser}, ${mt.dim.flag[2].isMovedByUser},
     // 22-25 ${mt.angle}, ${mt.pointCA.x}, ${mt.pointCA.y}, ${mt.angleInLocal_}
+    // 26-27 "${mt.dim.horizontal.s},${mt.dim.flagS.isMovedByUser}"
 
     //i  0,1,2,3, 4, 5,6,7    ,8     ,9    ,10,11,12,13,14,15,16,17,18,19,20   ,21   ,22     ,23 ,24 ,25
     //ex 1,6,1,1,-1,-1, ,4.060,-2.358,false,4 ,0 ,0 ,0 , 1, 1, 3, 0, 0, 0,false,false,-268.70,0.0,0.0,-448.70
 
 
     fun finalizeBuildTriangle(chunks: List<String>, mt:Triangle){
-        mt.connectionType = chunks[5].toInt()
+        mt.connectionSide = chunks[5].toInt()
         mt.name = chunks[6]
         if( chunks[9] == "true" ) readPointNumber( chunks, mt)
         if( chunks.size > 10 ) mt.setColor(chunks[10].toInt())
         if( chunks.size > 11 ) readDimAligns(chunks, mt)
         if( chunks.size > 17 ) mt.cParam_ = readCParam(chunks)
         if( chunks.size > 20 ) mt.dim.flag = readDimFlag(chunks)
+        if( chunks.size > 26 ) readDimSokuten( chunks, mt)
+    }
+
+    fun readDimSokuten(chunks: List<String>, mt:Triangle){
+        mt.dim.horizontal.s = chunks[26].toInt()
+        mt.dim.flagS.isMovedByUser = chunks[27].toBoolean()
     }
 
     fun readPointNumber(chunks: List<String>, mt:Triangle){

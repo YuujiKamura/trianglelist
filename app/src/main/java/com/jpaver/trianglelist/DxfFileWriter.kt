@@ -106,7 +106,7 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
         writeLine( pbc, pca, 7)
 
         // DimTexts
-        if( tri.mynumber == 1 || tri.connectionType > 2)
+        if( tri.mynumber == 1 || tri.connectionSide > 2)
             writeTextDimension(dimverticalA, la, tri.dimpoint.a, pab.calcDimAngle(pca))
         writeTextDimension(dimverticalB, lb, tri.dimpoint.b, pbc.calcDimAngle(pab))
         writeTextDimension(dimverticalC, lc, tri.dimpoint.c, pca.calcDimAngle(pbc))
@@ -141,16 +141,7 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
 
         // 測点
         if(tri.myName_() != "") {
-            writeText(
-                tri.myName_(),
-                pab.offset(pca, -1.25f),
-                5,
-                textSize2,
-                1,
-                1,
-                pab.calcSokAngle( pca, numvector ),
-                1f
-            )
+            writeText( tri.myName_(), pab.offset(pca, -1.25f), 5, textSize2, 1, 1, pab.calcSokAngle( pca, numvector ), 1f )
             writeLine( pab.offset(pca, -tri.myName_().length*0.5f), pab.offset(pca, -0.25f), 5)
         }
     }

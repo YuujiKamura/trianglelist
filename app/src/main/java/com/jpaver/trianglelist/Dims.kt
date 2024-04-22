@@ -3,14 +3,15 @@ package com.jpaver.trianglelist
 import com.jpaver.trianglelist.util.Cloneable
 
 data class Flags( var isMovedByUser: Boolean = false, var isAutoAligned: Boolean = false )
-data class DimAligns(var a:Int=1, var b:Int=1, var c:Int=1)
+data class DimAligns(var a:Int=1, var b:Int=1, var c:Int=1, var s:Int=0 )
 
 class Dims( val triangle: Triangle ) : Cloneable<Dims> {
 
     //region propaties and clone
-    var vertical = DimAligns(1,1,1 )
-    var horizontal = DimAligns(0,0,0 )
-    var flag = arrayOf( Flags(), Flags(),Flags() )
+    var vertical = DimAligns(1,1,1,1 )
+    var horizontal = DimAligns(0,0,0,0 )
+    var flag = arrayOf( Flags(), Flags(), Flags())
+    var flagS = Flags()
     var height = 0f
     var scale = 1f
 
@@ -20,6 +21,7 @@ class Dims( val triangle: Triangle ) : Cloneable<Dims> {
         b.horizontal = horizontal.copy()
         b.height = height
         b.flag = flag.copyOf()
+        b.flagS = flagS.copy()
         b.scale = scale
         return b
     }
@@ -99,7 +101,10 @@ class Dims( val triangle: Triangle ) : Cloneable<Dims> {
                 horizontal.c = cycleIncrement(horizontal.c)
                 flag[2].isMovedByUser = true
             }
-            SIDE_SOKUTEN -> triangle.nameHorizontal = cycleIncrement(triangle.nameHorizontal)
+            SIDE_SOKUTEN -> {
+                horizontal.s = cycleIncrement(horizontal.s, 1 )
+                flagS.isMovedByUser = true
+            }
         }
     }
 
@@ -111,7 +116,7 @@ class Dims( val triangle: Triangle ) : Cloneable<Dims> {
     fun autoDimVertical(side: Int): Int {
         when(side){
             SIDEA -> {
-                if(!flag[0].isMovedByUser ) if(triangle.connectionType < 3) return OUTER
+                if(!flag[0].isMovedByUser ) if(triangle.connectionSide < 3) return OUTER
                 return INNER
             }
             SIDEB -> {
@@ -132,7 +137,7 @@ class Dims( val triangle: Triangle ) : Cloneable<Dims> {
     fun autoDimVerticalByAreaCompare(node: Triangle?): Int{
         if(node==null) return OUTER
 
-        if(node.getArea() > triangle.getArea() && node.connectionType < 3 )  return OUTER
+        if(node.getArea() > triangle.getArea() && node.connectionSide < 3 )  return OUTER
 
         return INNER
     }

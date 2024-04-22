@@ -26,9 +26,33 @@ data class DimOnPath(
     init {
         setPointAB( leftP, rightP )
         setVerticalOffset(0, vertical)
-        if(vertical != SIDE_SOKUTEN ) initDimPoint(leftP,rightP, vertical)
-        if(vertical == SIDE_SOKUTEN ) initSoktenNamePath(leftP, rightP)
+        when(vertical){
+            SIDE_SOKUTEN -> initSoktenNamePath(leftP,rightP)
+            else         -> initDimPoint(leftP,rightP,vertical)
+        }
         dimpoint = pointA.calcMidPoint(pointB).offset(pointB, offsetH)
+    }
+
+    fun initSoktenNamePath(p1: PointXY, p2: PointXY){
+
+        // -だと線の左側、というか進行方向の左側
+        val SIDE = horizontal
+        var leftpoint = p1
+        var rightpoint = p2
+
+        when(SIDE){
+            1 -> {
+                leftpoint = p2
+                rightpoint = p1
+            }
+        }
+
+        val tmp = leftpoint.offset( rightpoint, -3f * this.scale)
+        val outerright = leftpoint.offset(rightpoint, -0.5f * this.scale)
+        val outerleft  = tmp
+
+        setPointAB( outerleft, outerright )
+        if( pointA.y < pointB.y ) pointA.flip( pointB )
     }
 
     fun initDimPoint( leftP: PointXY,rightP: PointXY, alignVertical: Int ){
@@ -63,28 +87,6 @@ data class DimOnPath(
         pointA = leftP.offset(rightP, -HATAAGE )
         pointB = rightP.offset(leftP, movement)
         offsetH = HABAYOSE
-    }
-
-    fun initSoktenNamePath(p1: PointXY, p2: PointXY){
-
-        // -だと線の左側、というか進行方向の左側
-        val SIDE = horizontal
-        var leftpoint = p1
-        var rightpoint = p2
-
-        when(SIDE){
-            1 -> {
-                leftpoint = p2
-                rightpoint = p1
-            }
-        }
-
-        val tmp = leftpoint.offset( rightpoint, -3f * this.scale)
-        val outerright = leftpoint.offset(rightpoint, -0.5f * this.scale)
-        val outerleft  = tmp
-
-        setPointAB( outerleft, outerright )
-        if( pointA.y < pointB.y ) pointA.flip( pointB )
     }
 
     fun move(to: PointXY){

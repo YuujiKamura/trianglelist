@@ -229,7 +229,7 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
         writeLine(pbc, pca, 8)
 
         // DimTexts
-        if(tri.mynumber ==1 || tri.connectionType > 2)
+        if(tri.mynumber ==1 || tri.connectionSide > 2)
             writeText(la, tri.dimpoint.a, 8, ts, dimA, pab.calcDimAngle(pca), 1f)
         writeText(lb, tri.dimpoint.b, 8, ts, dimB, pbc.calcDimAngle(pab), 1f)
         writeText(lc, tri.dimpoint.c, 8, ts, dimC, pca.calcDimAngle(pbc), 1f)

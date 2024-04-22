@@ -606,7 +606,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         val tPathA = tri.dimOnPath[0]
         val tPathB = tri.dimOnPath[1]
         val tPathC = tri.dimOnPath[2]
-        val tPathS = tri.dimOnPathSokuten
+        val tPathS = tri.pathS
 
         var la = tri.strLengthA //String type
         var lb = tri.strLengthB
@@ -648,7 +648,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         drawTriangleNumber(canvas, tri, paintDim, paintB)
 
         // 寸法
-        if(tri.mynumber == 1 || tri.connectionType > 2 || tri.cParam_.type != 0 )
+        if(tri.mynumber == 1 || tri.connectionSide > 2 || tri.cParam_.type != 0 )
             drawDigits( canvas, la, makePath(tPathA), tPathA.offsetH, tPathA.offsetV, paintDim, margin )
         drawDigits( canvas, lb, makePath(tPathB), tPathB.offsetH, tPathB.offsetV, paintDim, margin )
         drawDigits( canvas, lc, makePath(tPathC), tPathC.offsetH, tPathC.offsetV, paintDim, margin )
@@ -787,12 +787,14 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
         val tri = myTriangleList.get( myTriangleList.lastTapNumber )
 
-        if(myTriangleList.lastTapSide == 0)
-            drawLine( tri.pointCA,tri.pointAB,paintYellow, canvas )
-        if(myTriangleList.lastTapSide == 1)
-            drawLine( tri.pointAB,tri.pointBC,paintYellow, canvas )
-        if(myTriangleList.lastTapSide == 2)
-            drawLine( tri.pointBC,tri.pointCA,paintYellow, canvas )
+        var line:Pair<PointXY,PointXY>? = null
+        when(myTriangleList.lastTapSide){
+            0 -> line = Pair( tri.pointCA,tri.pointAB )
+            1 -> line = Pair( tri.pointAB,tri.pointBC )
+            2 -> line = Pair( tri.pointBC,tri.pointCA )
+            4 -> line = Pair( tri.pathS.pointB,tri.pathS.pointA )
+        }
+        if( line != null ) drawLine( line.first, line.second, paintYellow, canvas )
 
         val circleSize = paintTexS.textSize *0.8f
         paintYellow.style = Paint.Style.STROKE
