@@ -256,6 +256,7 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
         val pc = tri.pointcenter
         // 本体
         writeCircle(pn, circleSize, 4, 1f)
+
         writeText(tri.mynumber.toString(), tri.pointnumber, 4, ts, 5, 0f, 1f)
 
         //引き出し矢印線の描画

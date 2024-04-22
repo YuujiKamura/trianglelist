@@ -29,6 +29,8 @@ class CsvloaderTest {
         // 関数のテスト実行
         val result: ReturnValues? = csvLoader.parseCSV(reader, showToast, setAllTextSize, typeToInt, 1.0f)
 
+        if(result!=null) result.trilist.recoverState()
+
         // ファイルをクローズ
         reader.close()
         return result
