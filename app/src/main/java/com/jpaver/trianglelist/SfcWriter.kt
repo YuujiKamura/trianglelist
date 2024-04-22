@@ -67,6 +67,32 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
         return
     }
 
+    fun moveCenterTri(center:PointXY,tricenter:PointXY ){
+        dedlist_.move(
+            PointXY(
+                center.x - tricenter.x,
+                center.y - tricenter.y
+            )
+        )
+        trilist_.move(
+            PointXY(
+                center.x - tricenter.x,
+                center.y - tricenter.y
+            )
+        )
+
+        moveCenterDed( center, tricenter )
+    }
+
+    fun moveCenterDed( center:PointXY, tricenter:PointXY ){
+        dedlist_.move(
+            PointXY(
+                center.x - tricenter.x,
+                center.y - tricenter.y
+            )
+        )
+    }
+
     override fun writeEntities(){
         // サークルサイズの更新
         circleSize = textscale_ * 0.8f
@@ -83,19 +109,10 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
             21000f * printscale_,
             14850f * printscale_
         )
+
         val tricenter = trilist_.center
-        dedlist_.move(
-            PointXY(
-                center.x - tricenter.x,
-                center.y - tricenter.y
-            )
-        )
-        trilist_.move(
-            PointXY(
-                center.x - tricenter.x,
-                center.y - tricenter.y
-            )
-        )
+
+        moveCenterTri(center,tricenter)
 
         // 開始番号指定
         var trilistNumbered = trilist_.numbered( startTriNumber_ )
