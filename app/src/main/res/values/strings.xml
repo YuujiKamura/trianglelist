@@ -88,4 +88,30 @@
     </string-array>
     <string name="action_privacy">個人情報保護方針</string>
     <string name="action_save_xlsx">Xlsx出力</string>
+    <string name="rotate_to_left">rotate to left</string>
+    <string name="rotate_to_right">rotate to right</string>
+    <string name="test_run_basic_senario">test run basic senario</string>
+    <string name="reset_view">reset view</string>
+    <string name="list_to_up">list to up</string>
+    <string name="list_to_down">list to down</string>
+    <string name="fill_color">fill color</string>
+    <string name="show_xlsx">show xlsx</string>
+    <string name="increase_text_size">increase text size</string>
+    <string name="decrease_text_size">decrease text size</string>
+    <string name="show_debug_string">show debug string</string>
+    <string name="view_pdf">view pdf</string>
+    <string name="share_pdf_to">share pdf to</string>
+    <string name="send_email_to">send email to</string>
+    <string name="connect_to_b_length_in_parent">connect to B length in parent</string>
+    <string name="connect_to_c_length_in_parent">connect to C length in parent</string>
+    <string name="rewrite_shape">rewrite shape</string>
+    <string name="undo">undo</string>
+    <string name="flip_dimension_text_in_horizonal">flip dimension text in horizonal</string>
+    <string name="flip_dimension_text_in_vertical">flip dimension text in vertical</string>
+    <string name="flip_connect_point_in_horizonal">flip connect point in horizonal</string>
+    <string name="flag_up_a_information_text">flag up a information text</string>
+    <string name="change_deduction_mode">change deduction mode</string>
+    <string name="delete_a_shape_tap_twice">delete a shape, tap twice</string>
+    <string name="trilist_number_reverse">trilist number reverse</string>
+    <string name="view_dxf">view_dxf</string>
 </resources>
