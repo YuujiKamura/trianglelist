@@ -340,7 +340,7 @@ class TriangleList : EditList {
         if (target.nodeC == null) target.dimVerticalC = 1 else if (target.nodeC!!.connectionSide > 2 ) target.dimVerticalC = 3
     }
 
-    fun recoverState(bp: PointXY) {
+    fun recoverState(bp: PointXY= PointXY(0f,0f)) {
         basepoint = bp.clone()
         trilist.map {
             it.recover_rotate(basepoint, angle - 180)

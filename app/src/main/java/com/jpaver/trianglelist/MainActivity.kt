@@ -2293,25 +2293,66 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    private fun viewDxf(contentUri: Uri){
-        saveDxfToPrivate( PRIVATE_FILENAME_DXF )
+    private fun viewDxf(contentUri: Uri, useSpecificPackages: Boolean = false) {
+        if (contentUri == Uri.EMPTY) return
 
-        if ( contentUri != Uri.EMPTY ) {
-            val intent = Intent(Intent.ACTION_VIEW)
-            intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-            intent.setDataAndType(contentUri, "application/dxf")
+        saveDxfToPrivate(PRIVATE_FILENAME_DXF)
 
-            // JW_cad viewerのパッケージ名を設定
-            intent.setPackage("com.junkbulk.jw_cadviewer")
-
-            try {
-                startActivity(intent)
-            } catch (e: ActivityNotFoundException) {
-                Log.d("viewDxf", "jw cad viewer is not installed." )
-                Toast.makeText(this, "jw cad viewer is not installed.", Toast.LENGTH_LONG).show()
-            }
+        if (useSpecificPackages) {
+            viewDxfWithSpecificPackages(contentUri)
+        } else {
+            viewDxfWithChooser(contentUri)
         }
     }
+
+    private fun viewDxfWithSpecificPackages(contentUri: Uri) {
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+            setDataAndType(contentUri, "application/dxf")
+        }
+
+        val resolveInfoList = packageManager.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY)
+        val targetIntents = mutableListOf<Intent>()
+
+        val PACKAGES = listOf(
+            "com.junkbulk.jw_cadviewer",
+            "com.ZWSoft.ZWCAD",
+            "com.gstarmc.android",
+            "com.autodesk.autocadws",
+            "com.mozongsoft.uvcad"
+        )
+
+        for (resolveInfo in resolveInfoList) {
+            val packageName = resolveInfo.activityInfo.packageName
+            if (packageName in PACKAGES) {
+                val targetIntent = Intent(intent).setPackage(packageName)
+                targetIntents.add(targetIntent)
+            }
+        }
+
+        if (targetIntents.isNotEmpty()) {
+            val chooserIntent = Intent.createChooser(targetIntents.removeAt(0), "Open with:")
+            chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, targetIntents.toTypedArray())
+            startActivity(chooserIntent)
+        } else {
+            Toast.makeText(this, "Supported CAD viewer is not installed.", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun viewDxfWithChooser(contentUri: Uri) {
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+            setDataAndType(contentUri, "application/dxf")
+        }
+
+        try {
+            val chooserIntent = Intent.createChooser(intent, "Open with")
+            startActivity(chooserIntent)
+        } catch (e: ActivityNotFoundException) {
+            Toast.makeText(this, "No suitable application installed.", Toast.LENGTH_LONG).show()
+        }
+    }
+
 
     private fun viewXlsx(contentUri: Uri){
         // ファイルを生成。
