@@ -29,7 +29,7 @@ class TriangleList : EditList {
         var startindex = startnumber - 1
 
         // 0番からすべて回転させる場合
-        if (!(startnumber > 1 && trilist[startindex].connectionType >= 9) || !separationFreeMode) {
+        if (!(startnumber > 1 && trilist[startindex].connectionSide >= 9) || !separationFreeMode) {
             this.angle += angle
             this.basepoint = basepoint.clone()
             startindex = 0
@@ -336,8 +336,8 @@ class TriangleList : EditList {
     fun setDimsUnconnectedSideToOuter(target: Triangle?) {
         if(target == null ) return
         if (target.nodeA == null) target.dimVerticalA = 1 else target.dimVerticalA = 3
-        if (target.nodeB == null) target.dimVerticalB = 1 else if (target.nodeB!!.connectionType > 2 ) target.dimVerticalB = 3
-        if (target.nodeC == null) target.dimVerticalC = 1 else if (target.nodeC!!.connectionType > 2 ) target.dimVerticalC = 3
+        if (target.nodeB == null) target.dimVerticalB = 1 else if (target.nodeB!!.connectionSide > 2 ) target.dimVerticalB = 3
+        if (target.nodeC == null) target.dimVerticalC = 1 else if (target.nodeC!!.connectionSide > 2 ) target.dimVerticalC = 3
     }
 
     fun recoverState(bp: PointXY) {
@@ -384,7 +384,7 @@ class TriangleList : EditList {
 
         // 番号を受け取る
         if (numbering) nextTriangle.mynumber = trilist.size + 1
-        val pbc = nextTriangle.connectionType
+        val pbc = nextTriangle.connectionSide
         if (nextTriangle.parentnumber > 0) {
             val parent = getBy(nextTriangle.parentnumber)
             if (parent.alreadyHaveChild(pbc)) {
@@ -436,7 +436,7 @@ class TriangleList : EditList {
                     // 改善版
                     val parent = trilist[pnForMe - 1]
                     // 親に対して、
-                    parent.setChild(me, me.connectionType)
+                    parent.setChild(me, me.connectionSide)
                 }
             } catch (e: NullPointerException) {
                 println("NullPointerException!! trilistsize:" + trilist.size + " index:" + i)
@@ -446,7 +446,7 @@ class TriangleList : EditList {
 
     fun insertAndSlide(nextTriangle: Triangle) {
         trilist.add(nextTriangle.mynumber - 1, nextTriangle)
-        getBy(nextTriangle.parentnumber).setChild(nextTriangle, nextTriangle.connectionType)
+        getBy(nextTriangle.parentnumber).setChild(nextTriangle, nextTriangle.connectionSide)
 
         //次以降の三角形の親番号を全部書き換える、ただし連続しない親で、かつ自分より若い親の場合はそのままにする。
         rewriteAllNodeFrom(nextTriangle, +1)
@@ -542,7 +542,7 @@ class TriangleList : EditList {
         // 親がいるときは、子接続を書き換える
         if (curtri.parentnumber > 0 && number - 2 >= 0) {
             val parent = trilist[curtri.parentnumber - 1]
-            parent.childSide_ = curtri.connectionType
+            parent.childSide_ = curtri.connectionSide
             curtri.nodeA = parent //再リンクしないと位置と角度が連動しない。
             val curPareNum = trilist[number - 1].parentnumber
             // 自分の親番号と、親の三角形の番号が一致したとき？
@@ -593,8 +593,8 @@ class TriangleList : EditList {
             // 連番と派生接続で分岐。
             if (target.parentnumber == parent.mynumber) {
                 // ひとつ前の三角形の子接続を書き換える？
-                if (i + 1 < trilist.size) parent.childSide_ = trilist[i + 1].connectionType
-                if (target.resetByParent(parent, target.connectionType)) return
+                if (i + 1 < trilist.size) parent.childSide_ = trilist[i + 1].connectionSide
+                if (target.resetByParent(parent, target.connectionSide)) return
                 // 自身が次の親になる
                 parent = target
             } else { //連番でないとき
@@ -602,8 +602,8 @@ class TriangleList : EditList {
                 if( target.parentnumber < 1 ) return
                 val recent_parent = trilist[target.parentnumber - 1]
 
-                if (target.resetByParent(recent_parent, target.connectionType)) return
-                trilist[target.parentnumber - 1].childSide_ = target.connectionType
+                if (target.resetByParent(recent_parent, target.connectionSide)) return
+                trilist[target.parentnumber - 1].childSide_ = target.connectionSide
             }
             //else myTriList.get(i).reload();
         }
@@ -612,7 +612,7 @@ class TriangleList : EditList {
     fun replace(number: Int, pnum: Int): Boolean {
         val me = trilist[number - 1]
         val pr = trilist[pnum - 1]
-        me.setOn(pr, me.connectionType, me.length[0], me.length[1], me.length[2])
+        me.setOn(pr, me.connectionSide, me.length[0], me.length[1], me.length[2])
         return true
     }
 
@@ -764,10 +764,11 @@ class TriangleList : EditList {
         val ltn = lastTapNumber + lastTapSide
         isCollide(tapP)
         for (i in trilist.indices) {
-            if (trilist[i].getTapLength(tapP, rangeRadius) != -1) {
+            lastTapSide = trilist[i].getTapLength(tapP, rangeRadius)
+            if (lastTapSide != -1) {
                 lastTapNumber = i + 1
-                lastTapSide = trilist[i].getTapLength(tapP, rangeRadius)
                 isDoubleTap = ltn == lastTapSide + lastTapNumber
+                return lastTapNumber
             }
         }
         if (getTapHitCount(tapP) == 0) {
@@ -808,7 +809,7 @@ class TriangleList : EditList {
             t.lengthB,
             t.lengthC,
             t.parentnumber,
-            t.connectionType,
+            t.connectionSide,
             t.pointCenter_(),
             t.pointnumber
         )
@@ -927,18 +928,18 @@ class TriangleList : EditList {
                     if (i + 2 < trilist.size) {
                         val nextnext = numrev.trilist[i + 2]
                         if (next.parentSide == nextnext.parentSide) me.setReverseDefSide(
-                            next.connectionType,
+                            next.connectionSide,
                             true
-                        ) else if (i + 2 != nextnext.parentnumber && next.connectionType != 1) me.setReverseDefSide(
-                            -next.connectionType + 3,
+                        ) else if (i + 2 != nextnext.parentnumber && next.connectionSide != 1) me.setReverseDefSide(
+                            -next.connectionSide + 3,
                             false
-                        ) else me.setReverseDefSide(next.connectionType, false)
-                    } else me.setReverseDefSide(next.connectionType, false)
+                        ) else me.setReverseDefSide(next.connectionSide, false)
+                    } else me.setReverseDefSide(next.connectionSide, false)
                     next.setNode(me, me.parentSide)
                 } else {
                     //連番でないときは
                     me.parentnumber = -1 //next.parentNumber_;
-                    me.connectionType = -1
+                    me.connectionSide = -1
                     me.rotateLengthBy(2)
                     me.setNode(me.nodeA, me.parentSide)
 
@@ -970,7 +971,7 @@ class TriangleList : EditList {
             else rev.add(
                 Triangle(
                     rev[it.parentnumber],
-                    it.connectionType,
+                    it.connectionSide,
                     it.lengthAforce,
                     it.lengthBforce,
                     it.lengthCforce

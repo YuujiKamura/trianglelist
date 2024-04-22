@@ -38,7 +38,7 @@
             app:fabSize="mini"
             app:layout_constraintStart_toEndOf="@+id/LL3"
             app:srcCompat="@drawable/rot_l"
-            android:contentDescription="rotate to left" />
+            android:contentDescription="@string/rotate_to_left" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_rot_r"
@@ -50,7 +50,7 @@
             app:fabSize="mini"
             app:layout_constraintStart_toEndOf="@+id/fab_up"
             app:srcCompat="@drawable/rot_r"
-            android:contentDescription="rotate to right" />
+            android:contentDescription="@string/rotate_to_right" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_resetView"
@@ -59,7 +59,7 @@
             android:layout_gravity="top|start"
             android:layout_marginStart="16dp"
             android:layout_marginTop="@dimen/top_btn"
-            android:contentDescription="reset view"
+            android:contentDescription="@string/reset_view"
             android:visibility="visible"
             app:fabSize="mini"
             app:layout_constraintTop_toBottomOf="@id/toolbarLayout"
@@ -79,7 +79,7 @@
             app:fabSize="mini"
             app:layout_constraintTop_toBottomOf="@id/fab_resetView"
             app:srcCompat="@drawable/up"
-            android:contentDescription="list to up"/>
+            android:contentDescription="@string/list_to_up"/>
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_down"
@@ -93,7 +93,7 @@
             app:fabSize="mini"
             app:layout_constraintTop_toBottomOf="@id/fab_up"
             app:srcCompat="@drawable/down"
-            android:contentDescription="list to down"/>
+            android:contentDescription="@string/list_to_down"/>
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_testbasic"
@@ -106,7 +106,7 @@
             app:fabSize="mini"
             app:layout_constraintStart_toEndOf="@+id/rot_r"
             app:srcCompat="@drawable/ic_trilist_playstore"
-            android:contentDescription="test run basic senario" />
+            android:contentDescription="@string/test_run_basic_senario" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_fillcolor"
@@ -120,7 +120,7 @@
             app:fabSize="mini"
             app:layout_constraintTop_toBottomOf="@id/fab_down"
             app:srcCompat="@drawable/fillcolor"
-            android:contentDescription="fill color"/>
+            android:contentDescription="@string/fill_color"/>
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_xlsx"
@@ -134,7 +134,7 @@
             app:fabSize="mini"
             app:layout_constraintTop_toBottomOf="@id/fab_down"
             app:srcCompat="@drawable/xlsx"
-            android:contentDescription="show xlsx"/>
+            android:contentDescription="@string/show_xlsx"/>
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_texplus"
@@ -148,7 +148,7 @@
             app:fabSize="mini"
             app:layout_constraintTop_toBottomOf="@id/fab_xlsx"
             app:srcCompat="@drawable/texplus"
-            android:contentDescription="increase text size"/>
+            android:contentDescription="@string/increase_text_size"/>
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_texminus"
@@ -162,7 +162,7 @@
             app:fabSize="mini"
             app:layout_constraintTop_toBottomOf="@id/fab_texplus"
             app:srcCompat="@drawable/texminus"
-            android:contentDescription="decrease text size"/>
+            android:contentDescription="@string/decrease_text_size"/>
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_debug"
@@ -176,7 +176,7 @@
             app:fabSize="mini"
             app:layout_constraintTop_toBottomOf="@id/fab_texminus"
             app:srcCompat="@android:drawable/ic_menu_info_details"
-            android:contentDescription="show debug string"/>
+            android:contentDescription="@string/show_debug_string"/>
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_pdf"
@@ -190,7 +190,7 @@
             app:fabSize="mini"
             app:layout_constraintTop_toBottomOf="@id/fab_texminus"
             app:srcCompat="@drawable/pdf"
-            android:contentDescription="view pdf"/>
+            android:contentDescription="@string/view_pdf"/>
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_share"
@@ -204,7 +204,7 @@
             app:fabSize="mini"
             app:layout_constraintTop_toBottomOf="@id/fab_pdf"
             app:srcCompat="@android:drawable/ic_menu_share"
-            android:contentDescription="share pdf to"/>
+            android:contentDescription="@string/share_pdf_to"/>
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_mail"
@@ -218,7 +218,7 @@
             app:fabSize="mini"
             app:layout_constraintTop_toBottomOf="@id/fab_share"
             app:srcCompat="@android:drawable/ic_dialog_email"
-            android:contentDescription="share pdf to"/>
+            android:contentDescription="@string/share_mail_to"/>
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_setB"
@@ -228,7 +228,7 @@
             android:layout_gravity="top|end"
             android:layout_marginTop="@dimen/top_btn"
             android:layout_marginEnd="136dp"
-            android:contentDescription="connect to B length in parent"
+            android:contentDescription="@string/connect_to_b_length_in_parent"
             app:fabSize="mini"
             app:layout_constraintTop_toBottomOf="@id/toolbarLayout"
             app:srcCompat="@drawable/set_b" />
@@ -241,7 +241,7 @@
             android:layout_gravity="top|end"
             android:layout_marginTop="@dimen/top_btn"
             android:layout_marginEnd="76dp"
-            android:contentDescription="connect to C length in parent"
+            android:contentDescription="@string/connect_to_c_length_in_parent"
             app:fabSize="mini"
             app:layout_constraintTop_toBottomOf="@+id/fab_setB"
             app:srcCompat="@drawable/set_c" />
@@ -258,13 +258,13 @@
             app:fabSize="mini"
             app:layout_constraintTop_toBottomOf="parent"
             app:srcCompat="@android:drawable/ic_menu_edit"
-            android:contentDescription="rewrite shape"/>
+            android:contentDescription="@string/rewrite_shape"/>
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_undo"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignRight="@id/toolbarLayout"
+            android:layout_alignEnd="@id/toolbarLayout"
             android:layout_gravity="top|end"
             android:layout_alignTop="@id/fab_replace"
             android:layout_marginTop="60dp"
@@ -274,13 +274,13 @@
             android:visibility="visible"
             app:layout_constraintTop_toBottomOf="@+id/fab_replace"
             app:srcCompat="@android:drawable/ic_menu_revert"
-            android:contentDescription="undo"/>
+            android:contentDescription="@string/undo"/>
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_dimsidew"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignRight="@id/toolbarLayout"
+            android:layout_alignEnd="@id/toolbarLayout"
             android:layout_gravity="top|end"
             android:layout_alignTop="@id/fab_undo"
             android:layout_marginTop="50dp"
@@ -289,13 +289,13 @@
             app:fabSize="mini"
             app:layout_constraintTop_toBottomOf="@+id/fab_replace"
             app:srcCompat="@drawable/textright"
-            android:contentDescription="flip dimension text in horizonal" />
+            android:contentDescription="@string/flip_dimension_text_in_horizonal" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_dimsideh"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignRight="@id/toolbarLayout"
+            android:layout_alignEnd="@id/toolbarLayout"
             android:layout_gravity="top|end"
             android:layout_alignTop="@id/fab_dimsidew"
             android:layout_marginTop="50dp"
@@ -304,13 +304,13 @@
             app:fabSize="mini"
             app:layout_constraintTop_toBottomOf="@+id/fab_dimsidew"
             app:srcCompat="@drawable/textoutside"
-            android:contentDescription="flip dimension text in vertical"/>
+            android:contentDescription="@string/flip_dimension_text_in_vertical"/>
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_nijyuualign"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignRight="@id/toolbarLayout"
+            android:layout_alignEnd="@id/toolbarLayout"
             android:layout_gravity="top|end"
             android:layout_alignTop="@id/fab_dimsideh"
             android:layout_marginTop="50dp"
@@ -319,13 +319,13 @@
             app:fabSize="mini"
             app:layout_constraintTop_toBottomOf="@+id/fab_dimsideh"
             app:srcCompat="@drawable/nijyuu"
-            android:contentDescription="flip connect point in horizonal"/>
+            android:contentDescription="@string/flip_connect_point_in_horizonal"/>
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_flag"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignRight="@id/toolbarLayout"
+            android:layout_alignEnd="@id/toolbarLayout"
             android:layout_gravity="top|end"
             android:layout_alignTop="@id/fab_nijyuualign"
             android:layout_marginTop="50dp"
@@ -333,13 +333,13 @@
             app:fabSize="mini"
             app:layout_constraintTop_toBottomOf="@+id/fab_nijyuualign"
             app:srcCompat="@drawable/flag_b"
-            android:contentDescription="flag up a information text"/>
+            android:contentDescription="@string/flag_up_a_information_text"/>
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_deduction"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignRight="@id/toolbarLayout"
+            android:layout_alignEnd="@id/toolbarLayout"
             android:layout_gravity="top|end"
             android:layout_alignTop="@id/fab_flag"
             android:layout_marginTop="50dp"
@@ -347,13 +347,13 @@
             app:fabSize="mini"
             app:layout_constraintTop_toBottomOf="@+id/fab_insert"
             app:srcCompat="@drawable/deduction"
-            android:contentDescription="into deduction mode" />
+            android:contentDescription="@string/into_deduction_mode" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_minus"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignRight="@id/toolbarLayout"
+            android:layout_alignEnd="@id/toolbarLayout"
             android:layout_gravity="top|end"
             android:layout_alignTop="@id/fab_deduction"
             android:layout_marginTop="50dp"
@@ -362,13 +362,13 @@
             app:fabSize="mini"
             app:layout_constraintTop_toBottomOf="@+id/fab_replace"
             app:srcCompat="@android:drawable/ic_menu_close_clear_cancel"
-            android:contentDescription="delete a shape, tap twice"/>
+            android:contentDescription="@string/delete_a_shape_tap_twice"/>
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_numreverse"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignRight="@id/toolbarLayout"
+            android:layout_alignEnd="@id/toolbarLayout"
             android:visibility="visible"
             android:layout_gravity="top|end"
             android:layout_marginTop="50dp"
@@ -378,7 +378,24 @@
             app:backgroundTint="@color/colorAccent"
             app:fabSize="mini"
             app:srcCompat="@android:drawable/ic_popup_sync"
-            android:contentDescription="trilist number reverse"/>
+            android:contentDescription="@string/trilist_number_reverse"/>
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_dxfview"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignEnd="@id/toolbarLayout"
+            android:visibility="visible"
+            android:layout_gravity="top|end"
+            android:layout_marginTop="50dp"
+            android:layout_marginEnd="16dp"
+            android:layout_alignTop="@id/fab_numreverse"
+            app:layout_constraintTop_toBottomOf="@+id/fab_numreverse"
+            app:backgroundTint="@color/colorAccent"
+            app:fabSize="mini"
+            app:srcCompat="@drawable/fab_dxf"
+            android:contentDescription="@string/view_dxf"/>
+
 
         <ProgressBar
             android:id="@+id/indeterminateBar"

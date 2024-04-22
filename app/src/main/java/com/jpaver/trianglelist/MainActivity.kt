@@ -126,7 +126,8 @@ class MainActivity : AppCompatActivity(),
     lateinit var fab_down: FloatingActionButton
     lateinit var fab_debug: FloatingActionButton
     lateinit var fab_testbasic: FloatingActionButton
-    lateinit var fab_pdf: FloatingActionButton
+    lateinit var fab_pdfview: FloatingActionButton
+    lateinit var fab_dxfview: FloatingActionButton
     lateinit var fab_share: FloatingActionButton
     lateinit var fab_mail: FloatingActionButton
     lateinit var fab_numreverse: FloatingActionButton
@@ -148,6 +149,8 @@ class MainActivity : AppCompatActivity(),
 
 
 //region Parameters
+    val PRIVATE_FILENAME_DXF = "privateTrilist.dxf"
+
     var isViewAttached = false
 
     var isCSVsavedToPrivate = false
@@ -1251,7 +1254,8 @@ class MainActivity : AppCompatActivity(),
         fab_down =      bindingMain.fabDown
         fab_debug =     bindingMain.fabDebug
         fab_testbasic = bindingMain.fabTestbasic
-        fab_pdf =       bindingMain.fabPdf
+        fab_pdfview =   bindingMain.fabPdf
+        fab_dxfview =   bindingMain.fabDxfview
         fab_share =     bindingMain.fabShare
         fab_mail =      bindingMain.fabMail
         fab_numreverse = bindingMain.fabNumreverse
@@ -1508,8 +1512,13 @@ class MainActivity : AppCompatActivity(),
             Toast.makeText(this, "Basic Senario Test Done.", Toast.LENGTH_SHORT).show()
         }
 
-        setCommonFabListener(fab_pdf,false) {
+        setCommonFabListener(fab_pdfview,false) {
             viewPdf( getAppLocalFile(this, "privateTrilist.pdf") )
+        }
+
+
+        setCommonFabListener(fab_dxfview,false) {
+            viewDxf( getAppLocalFile(this, PRIVATE_FILENAME_DXF) )
         }
 
         setCommonFabListener(fab_xlsx,false){
@@ -1988,6 +1997,7 @@ class MainActivity : AppCompatActivity(),
         val TAPRANGE= myview.textSize / zoomsize * 0.02f
         return myview.trianglelist.getTapNumber( getPressedInModel(), TAPRANGE )
     }
+
     fun targetInTriMode(zoomsize: Float){
         if(shadowTapMode(zoomsize)) return
 
@@ -2010,7 +2020,6 @@ class MainActivity : AppCompatActivity(),
                 3 -> myview.resetViewToLastTapTriangle() // 辺3がタップされたときのビューをリセットする処理
             }
         }
-
     }
 
     fun setTargetEditText(zoomsize: Float)
@@ -2273,15 +2282,33 @@ class MainActivity : AppCompatActivity(),
 
         if ( contentUri != Uri.EMPTY ) {
             val intent = Intent(Intent.ACTION_VIEW)
-            intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION// or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED//flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-            //intent.flags = Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
             intent.setDataAndType(contentUri, "application/pdf")
-            //intent.setPackage("com.adobe.reader")
             try {
                 startActivity(intent)
             } catch (e: ActivityNotFoundException) {
                 Log.d("viewPDF", "PDF viewer is not installed." )
                 Toast.makeText(this, "PDF viewer is not installed.", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun viewDxf(contentUri: Uri){
+        saveDxfToPrivate( PRIVATE_FILENAME_DXF )
+
+        if ( contentUri != Uri.EMPTY ) {
+            val intent = Intent(Intent.ACTION_VIEW)
+            intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+            intent.setDataAndType(contentUri, "application/dxf")
+
+            // JW_cad viewerのパッケージ名を設定
+            intent.setPackage("com.junkbulk.jw_cadviewer")
+
+            try {
+                startActivity(intent)
+            } catch (e: ActivityNotFoundException) {
+                Log.d("viewDxf", "jw cad viewer is not installed." )
+                Toast.makeText(this, "jw cad viewer is not installed.", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -2501,7 +2528,7 @@ class MainActivity : AppCompatActivity(),
         //想定と違う結果になりえる
         //trianglelist.arrangePointNumbers()
 
-        val writer = DxfFileWriter(trianglelist)
+        val writer = DxfFileWriter(trianglelist.clone())
         writer.zumeninfo = rStr
         writer.titleTri_ = titleTriStr
         writer.titleDed_ = titleDedStr
@@ -2509,7 +2536,7 @@ class MainActivity : AppCompatActivity(),
 
         writer.writer = bWriter
         writer.drawingLength = trianglelist.measureMostLongLine()
-        writer.dedlist_ = myDeductionList
+        writer.dedlist_ = myDeductionList.clone()
         writer.setNames(koujiname, rosenname, gyousyaname, zumennum)
         writer.isDebug = myview.isDebug_
 
@@ -2524,7 +2551,7 @@ class MainActivity : AppCompatActivity(),
 
     private fun saveSFC(out: BufferedOutputStream) {
 
-        val writer = SfcWriter(trianglelist, myDeductionList, out, filename, drawingStartNumber)
+        val writer = SfcWriter(trianglelist.clone(), myDeductionList.clone(), out, filename, drawingStartNumber)
         writer.setNames(koujiname, rosenname, gyousyaname, zumennum)
         writer.zumeninfo = rStr
         writer.textscale_ = myview.textSize * 20f //25*14f=350f, 25/20f=500f
@@ -2673,9 +2700,19 @@ class MainActivity : AppCompatActivity(),
             for (index in 1..trianglelist.size()) {
                 val mt: Triangle = trianglelist.getBy(index)
                 val pointnumber: PointXY = mt.pointnumber
-                val cp = parentBCtoCParam(mt.connectionType, mt.lengthNotSized[0], mt.cParam_)
+                val cp = parentBCtoCParam(mt.connectionSide, mt.lengthNotSized[0], mt.cParam_)
 
-                writer.write("${mt.mynumber},${mt.lengthA_},${mt.lengthB_},${mt.lengthC_},${mt.parentnumber},${mt.connectionType},${mt.name},${pointnumber.x},${pointnumber.y},${mt.pointNumber.flag.isMovedByUser},${mt.mycolor},${mt.dim.horizontal.a},${mt.dim.horizontal.b},${mt.dim.horizontal.c},${mt.dim.vertical.a},${mt.dim.vertical.b},${mt.dim.vertical.c},${cp.side},${cp.type},${cp.lcr},${mt.dim.flag[1].isMovedByUser},${mt.dim.flag[2].isMovedByUser},${mt.angle},${mt.pointCA.x},${mt.pointCA.y},${mt.angleInLocal_}")
+                writer.write("${mt.mynumber},${mt.lengthA_},${mt.lengthB_},${mt.lengthC_}," +
+                        "${mt.parentnumber},${mt.connectionSide}," +
+                        "${mt.name},${pointnumber.x},${pointnumber.y},${mt.pointNumber.flag.isMovedByUser}," +
+                        "${mt.mycolor}," +
+                        "${mt.dim.horizontal.a},${mt.dim.horizontal.b},${mt.dim.horizontal.c}," +
+                        "${mt.dim.vertical.a},${mt.dim.vertical.b},${mt.dim.vertical.c}," +
+                        "${cp.side},${cp.type},${cp.lcr}," +
+                        "${mt.dim.flag[1].isMovedByUser},${mt.dim.flag[2].isMovedByUser}," +
+                        "${mt.angle},${mt.pointCA.x},${mt.pointCA.y},${mt.angleInLocal_}," +
+                        "${mt.dim.horizontal.s},${mt.dim.flagS.isMovedByUser}"
+                )
                 writer.newLine()
             }
 
