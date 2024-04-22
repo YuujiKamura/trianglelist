@@ -5,7 +5,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity">
-
     <RelativeLayout
         android:layout_width="fill_parent"
         android:layout_height="fill_parent" >
@@ -14,6 +13,7 @@
             android:id="@+id/toolbarLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
             android:background="@color/colorPrimary"
             android:theme="@style/AppTheme.AppBarOverlay">
 
@@ -36,7 +36,7 @@
             android:layout_marginStart="76dp"
             android:layout_marginTop="@dimen/top_btn"
             app:fabSize="mini"
-            app:layout_constraintStart_toEndOf="@+id/LL3"
+            app:layout_constraintStart_toEndOf="@+id/editTextLayout"
             app:srcCompat="@drawable/rot_l"
             android:contentDescription="@string/rotate_to_left" />
 
@@ -53,19 +53,30 @@
             android:contentDescription="@string/rotate_to_right" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_testbasic"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|start"
+            android:layout_marginStart="186dp"
+            android:layout_marginTop="@dimen/top_btn"
+            android:visibility="invisible"
+            app:fabSize="mini"
+            app:layout_constraintStart_toEndOf="@+id/rot_r"
+            app:srcCompat="@drawable/ic_trilist_playstore"
+            android:contentDescription="@string/test_run_basic_senario" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_resetView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="top|start"
             android:layout_marginStart="16dp"
             android:layout_marginTop="@dimen/top_btn"
-            android:contentDescription="@string/reset_view"
             android:visibility="visible"
             app:fabSize="mini"
             app:layout_constraintTop_toBottomOf="@id/toolbarLayout"
-            app:srcCompat="@android:drawable/ic_menu_mylocation" />
-
-
+            app:srcCompat="@android:drawable/ic_menu_mylocation"
+            android:contentDescription="@string/reset_view"/>
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_up"
@@ -94,19 +105,6 @@
             app:layout_constraintTop_toBottomOf="@id/fab_up"
             app:srcCompat="@drawable/down"
             android:contentDescription="@string/list_to_down"/>
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_testbasic"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top|start"
-            android:layout_marginStart="186dp"
-            android:layout_marginTop="@dimen/top_btn"
-            android:visibility="invisible"
-            app:fabSize="mini"
-            app:layout_constraintStart_toEndOf="@+id/rot_r"
-            app:srcCompat="@drawable/ic_trilist_playstore"
-            android:contentDescription="@string/test_run_basic_senario" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_fillcolor"
@@ -210,15 +208,17 @@
             android:id="@+id/fab_mail"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_alignTop="@id/fab_share"
             android:layout_gravity="top|start"
             android:layout_marginStart="16dp"
-            android:layout_alignTop="@id/fab_share"
             android:layout_marginTop="70dp"
             android:visibility="visible"
             app:fabSize="mini"
             app:layout_constraintTop_toBottomOf="@id/fab_share"
-            app:srcCompat="@android:drawable/ic_dialog_email"
-            android:contentDescription="@string/share_mail_to"/>
+            app:srcCompat="@drawable/mail"
+            android:contentDescription="@string/send_email_to" />
+
+
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_setB"
@@ -228,10 +228,10 @@
             android:layout_gravity="top|end"
             android:layout_marginTop="@dimen/top_btn"
             android:layout_marginEnd="136dp"
-            android:contentDescription="@string/connect_to_b_length_in_parent"
             app:fabSize="mini"
-            app:layout_constraintTop_toBottomOf="@id/toolbarLayout"
-            app:srcCompat="@drawable/set_b" />
+            app:layout_constraintTop_toBottomOf="@+id/fab"
+            app:srcCompat="@drawable/set_b"
+            android:contentDescription="@string/connect_to_b_length_in_parent"/>
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_setC"
@@ -245,6 +245,7 @@
             app:fabSize="mini"
             app:layout_constraintTop_toBottomOf="@+id/fab_setB"
             app:srcCompat="@drawable/set_c" />
+
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_replace"
@@ -271,7 +272,6 @@
             android:layout_marginEnd="16dp"
             app:backgroundTint="@color/colorAccent"
             app:fabSize="mini"
-            android:visibility="visible"
             app:layout_constraintTop_toBottomOf="@+id/fab_replace"
             app:srcCompat="@android:drawable/ic_menu_revert"
             android:contentDescription="@string/undo"/>
@@ -297,12 +297,12 @@
             android:layout_height="wrap_content"
             android:layout_alignEnd="@id/toolbarLayout"
             android:layout_gravity="top|end"
-            android:layout_alignTop="@id/fab_dimsidew"
             android:layout_marginTop="50dp"
             android:layout_marginEnd="16dp"
+            android:layout_alignTop="@id/fab_dimsidew"
+            app:layout_constraintTop_toBottomOf="@+id/fab_dimsidew"
             app:backgroundTint="@color/colorAccent"
             app:fabSize="mini"
-            app:layout_constraintTop_toBottomOf="@+id/fab_dimsidew"
             app:srcCompat="@drawable/textoutside"
             android:contentDescription="@string/flip_dimension_text_in_vertical"/>
 
@@ -312,14 +312,15 @@
             android:layout_height="wrap_content"
             android:layout_alignEnd="@id/toolbarLayout"
             android:layout_gravity="top|end"
-            android:layout_alignTop="@id/fab_dimsideh"
             android:layout_marginTop="50dp"
             android:layout_marginEnd="16dp"
+            android:layout_alignTop="@id/fab_dimsideh"
+            app:layout_constraintTop_toBottomOf="@+id/fab_dimsideh"
             app:backgroundTint="@color/colorAccent"
             app:fabSize="mini"
-            app:layout_constraintTop_toBottomOf="@+id/fab_dimsideh"
             app:srcCompat="@drawable/nijyuu"
             android:contentDescription="@string/flip_connect_point_in_horizonal"/>
+
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_flag"
@@ -327,12 +328,12 @@
             android:layout_height="wrap_content"
             android:layout_alignEnd="@id/toolbarLayout"
             android:layout_gravity="top|end"
-            android:layout_alignTop="@id/fab_nijyuualign"
             android:layout_marginTop="50dp"
             android:layout_marginEnd="16dp"
-            app:fabSize="mini"
+            android:layout_alignTop="@id/fab_nijyuualign"
             app:layout_constraintTop_toBottomOf="@+id/fab_nijyuualign"
             app:srcCompat="@drawable/flag_b"
+            app:fabSize="mini"
             android:contentDescription="@string/flag_up_a_information_text"/>
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -341,13 +342,13 @@
             android:layout_height="wrap_content"
             android:layout_alignEnd="@id/toolbarLayout"
             android:layout_gravity="top|end"
-            android:layout_alignTop="@id/fab_flag"
             android:layout_marginTop="50dp"
             android:layout_marginEnd="16dp"
+            android:layout_alignTop="@id/fab_flag"
+            app:layout_constraintTop_toBottomOf="@+id/fab_flag"
             app:fabSize="mini"
-            app:layout_constraintTop_toBottomOf="@+id/fab_insert"
             app:srcCompat="@drawable/deduction"
-            android:contentDescription="@string/into_deduction_mode" />
+            android:contentDescription="@string/change_deduction_mode" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_minus"
@@ -355,12 +356,12 @@
             android:layout_height="wrap_content"
             android:layout_alignEnd="@id/toolbarLayout"
             android:layout_gravity="top|end"
-            android:layout_alignTop="@id/fab_deduction"
             android:layout_marginTop="50dp"
             android:layout_marginEnd="16dp"
+            android:layout_alignTop="@id/fab_deduction"
+            app:layout_constraintTop_toBottomOf="@+id/fab_deduction"
             app:backgroundTint="@color/colorAccent"
             app:fabSize="mini"
-            app:layout_constraintTop_toBottomOf="@+id/fab_replace"
             app:srcCompat="@android:drawable/ic_menu_close_clear_cancel"
             android:contentDescription="@string/delete_a_shape_tap_twice"/>
 
@@ -369,7 +370,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignEnd="@id/toolbarLayout"
-            android:visibility="visible"
             android:layout_gravity="top|end"
             android:layout_marginTop="50dp"
             android:layout_marginEnd="16dp"
