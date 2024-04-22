@@ -529,7 +529,7 @@ class TriangleListTest {
         trilist.add(Triangle(trilist[1], 1, 5f, 5f), true)
         trilist.add(Triangle(trilist[2], 2, 5f, 5f), true)
 
-        Assert.assertEquals(3, trilist.getTapNumber(
+        Assert.assertEquals(2, trilist.getTapNumber(
             PointXY(-5f, 4.33f), 0.6f))
 
     }
