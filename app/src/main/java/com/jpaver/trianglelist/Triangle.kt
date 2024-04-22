@@ -1154,9 +1154,9 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
     fun move(to: PointXY) {
-        pointAB.add(to)
-        pointBC.add(to)
-        point[0].add(to)
+        pointAB = pointAB.plus(to)
+        pointBC = pointBC.plus(to)
+        point[0]= point[0].plus(to)
         pointcenter = pointcenter.plus(to)
         pointnumber = pointnumber.plus(to)
         dimpoint.a.add(to)
