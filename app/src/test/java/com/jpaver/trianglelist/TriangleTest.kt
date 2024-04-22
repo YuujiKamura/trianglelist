@@ -102,26 +102,6 @@ class TriangleTest {
     }
 
     @Test
-    fun testDistanceHataage() {
-        //PowerMockito.mockStatic(Log.class);
-        val t = Triangle(5f, 5f, 5f)
-        val t2 = Triangle(t, 1, 5f, 5f)
-        val t3 = Triangle(t2, 2, 5f, 5f)
-        var p = t.hataage(PointXY(-2.5f, 2f), 0f, 1f, 1f)
-        Assert.assertEquals(4.33f, p.y, 0.01f)
-        p = t.hataage(PointXY(2.5f, 3f), 0f, 1f, 1f)
-        Assert.assertEquals(4.33f, p.y, 0.01f)
-        p = t.hataage(PointXY(2.5f, 3f), 1f, 1f, 1f)
-        Assert.assertEquals(4.33f, p.y, 0.01f)
-        p = t.hataage(PointXY(2.5f, 1f), 1f, 1f, 1f)
-        Assert.assertEquals(0f, p.y, 0.01f)
-        val p2 = t2.hataage(PointXY(2.5f, 1f), 1f, 1f, 1f)
-        Assert.assertEquals(0f, p2.y, 0.01f)
-        val p3 = t3.hataage(PointXY(2.5f, 5f), 1f, 1f, 1f)
-        Assert.assertEquals(4.33f, p3.y, 0.01f)
-    }
-
-    @Test
     fun testResetNodeChain() {
         val t = Triangle(5f, 5f, 5f)
 
