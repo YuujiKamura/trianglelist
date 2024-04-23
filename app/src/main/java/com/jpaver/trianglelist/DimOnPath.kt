@@ -23,12 +23,14 @@ data class DimOnPath(
     val OUTERLEFT =  4
     val SIDE_SOKUTEN = 4
 
+    var HOUKOU = "R"
+
     init {
         setPointAB( leftP, rightP )
         setVerticalOffset(0, vertical)
         when(vertical){
             SIDE_SOKUTEN -> initSoktenNamePath(leftP,rightP)
-            else         -> initDimPoint(leftP,rightP,vertical)
+            else         -> initDimPoint(leftP, rightP)
         }
         dimpoint = pointA.calcMidPoint(pointB).offset(pointB, offsetH)
     }
@@ -55,7 +57,7 @@ data class DimOnPath(
         if( pointA.y < pointB.y ) pointA.flip( pointB )
     }
 
-    fun initDimPoint( leftP: PointXY,rightP: PointXY, alignVertical: Int ){
+    fun initDimPoint(leftP: PointXY, rightP: PointXY){
 
         val lineLength = leftP.lengthTo(rightP)
         val HABAYOSE = lineLength*0.275f
@@ -73,9 +75,25 @@ data class DimOnPath(
         }
 
         // 上下逆さまにならない様に反転
-        if( pointA.x >= pointB.x ) flipPassAndOffset(alignVertical, pointA, pointB )
+        if( pointA.x >= pointB.x ) setVerticalOffset(1, vertical)
+    }
 
-        //standUpShortDim()
+    private fun setVerticalOffset(flipside: Int, alignVertical: Int, p1:PointXY=pointA, p2:PointXY=pointB ){
+        val offsetUpper = -dimheight * 0.2f //
+        val offsetLower =  dimheight * 0.9f //
+
+        if( flipside == 0 ) { // 夾角の、 1:内、3:外
+            if (alignVertical == 1) offsetV = offsetLower
+            if (alignVertical == 3) offsetV = offsetUpper
+        }
+        if( flipside == 1 ) { // 夾角の、 1:外、3:内
+            HOUKOU = "L"
+            offsetH = -offsetH
+            pointA = p2
+            pointB = p1
+            if (alignVertical == 1) offsetV = offsetUpper
+            if (alignVertical == 3) offsetV = offsetLower
+        }
     }
 
     fun initPointsOuter(leftP: PointXY, rightP: PointXY, lineLength: Float){
@@ -98,37 +116,4 @@ data class DimOnPath(
         pointA = p1
         pointB = p2
     }
-
-    private fun setVerticalOffset(flipside: Int, alignVertical: Int){
-        val offsetUpper = -dimheight * 0.2f //- textSpacer_ //* 0.7f
-        val offsetLower =  dimheight * 0.9f //textSpacer_ ///* 0.7f )
-        //var offsetMiddle= dimH_/2
-        if( flipside == 0 ) { // 夾角の、 1:内、3:外
-            if (alignVertical == 3) offsetV = offsetUpper
-            if (alignVertical == 1) offsetV = offsetLower
-        }
-        if( flipside == 1 ) { // 夾角の、 1:外、3:内
-            if (alignVertical == 1) offsetV = offsetUpper
-            if (alignVertical == 3) offsetV = offsetLower
-        }
-        //if(length < 1.0f) offsetV_ = offsetMiddle
-    }
-
-    private fun flipPassAndOffset(align: Int, p1: PointXY, p2: PointXY) {
-
-        setVerticalOffset(1, align)
-        offsetH = -offsetH
-
-        pointA = p2
-        pointB = p1
-    }
-
-    /*fun standUpShortDim(TO DO)
-    if(length < 1.0f){  // 短い辺の寸法を立てる
-        p3 = p1.calcMidPoint(p2).offset(p3_, -0.3f*myScale_)
-        p4 = p3.offset(p3_, -1.3f*myScale_)
-        p1 = p3
-        p2 = p4
-    }*/
-
 }
