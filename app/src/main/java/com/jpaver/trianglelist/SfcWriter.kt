@@ -190,7 +190,7 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
         scale: Float
     ){
         writeLine( p1, p2, 2, scale )
-        writeText(st, p1.plus( 200f, 100f ), 2, textscale_, 1, 0f, scale )
+        writeTextA9(st, p1.plus( 200f, 100f ), 2, textscale_, 1, 0f, scale )
 
         //writeDXFText(writer_, st, p1.plus(0.2f,0.1f), 1, textsize, 0)
         //writeLine(writer_, p1, p2, 1)
@@ -231,9 +231,7 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
     override fun writeTriangle( tri: Triangle){
         val ts = textscale_
         //val tri = trilist_.get( trinumber )
-        val pca = tri.pointCA
-        val pab = tri.pointAB
-        val pbc = tri.pointBC
+        val (pca, pab, pbc) = xyPointXYTriple(tri)
 
         val (la, lb, lc) = stringTriple(tri)
 
@@ -241,56 +239,37 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
         val dimB = alignVByVector(tri.dimVerticalB, pab, pbc)//flip(tri.myDimAlignB_, tri.dimAngleB_ )
         val dimC = alignVByVector(tri.dimVerticalC, pbc, pca)//flip(tri.myDimAlignC_, tri.dimAngleC_ )
 
-        writeLine(pca, pab, 8)
-        writeLine(pab, pbc, 8)
-        writeLine(pbc, pca, 8)
+        // TriLines
+        writeTriangleLines(tri,8)
 
         // DimTexts
         if(tri.mynumber ==1 || tri.connectionSide > 2)
-            writeText(la, tri.dimpoint.a, 8, ts, dimA, pab.calcDimAngle(pca), 1f)
-        writeText(lb, tri.dimpoint.b, 8, ts, dimB, pbc.calcDimAngle(pab), 1f)
-        writeText(lc, tri.dimpoint.c, 8, ts, dimC, pca.calcDimAngle(pbc), 1f)
+            writeTextA9(la, tri.dimpoint.a, 8, ts, dimA, pab.calcDimAngle(pca), 1f)
+        writeTextA9(lb, tri.dimpoint.b, 8, ts, dimB, pbc.calcDimAngle(pab), 1f)
+        writeTextA9(lc, tri.dimpoint.c, 8, ts, dimC, pca.calcDimAngle(pbc), 1f)
+
+        //DimFlags
+        writeDimFlags(tri, 8)
 
         // 番号
-        val pn = tri.pointnumber
-        val pc = tri.pointcenter
-        // 本体
-        writeCircle(pn, circleSize, 4, 1f)
-
-        writeText(tri.mynumber.toString(), tri.pointnumber, 4, ts, 5, 0f, 1f)
-
-        //引き出し矢印線の描画
-        if( tri.isCollide(tri.pointnumber) == false ){
-            val pcOffsetToN = pc.offset(pn, circleSize)
-            val pnOffsetToC = pn.offset(pc, circleSize)
-            val arrowTail = pcOffsetToN.offset(pn, pcOffsetToN.lengthTo(pnOffsetToC) * 0.7f).rotate(pcOffsetToN, 5f)
-
-            writeLine(pcOffsetToN, pnOffsetToC, 4)
-            writeLine(pcOffsetToN, arrowTail, 4)
-        }
+        writePointNumber( tri, ts, 8, 5,-1,ts*0.85f )
 
         // 測点
         if(tri.name != "") {
-            val noffset = -250f
-            val nlength = -tri.name.length*500f+noffset
-            val nhalflength = nlength*0.5f+noffset
+            //val noffset = -250f
+            //val nlength = -tri.name.length*500f+noffset
+            //val nhalflength = nlength*0.5f+noffset
             val slv = trilist_.sokutenListVector
             var align = 2
             if( slv < 0 ) align = 8
 
-            writeText(
-                tri.name,
-                pab.offset( pca, nhalflength ),
-                4,
-                ts,
-                align,
-                pab.calcSokAngle( pca, slv ),
-                1f
-            )
-            writeLine(pab.offset( pca, nlength ), pab.offset (pca, noffset ), 4)
+            writeSokuten(tri, trilist_.sokutenListVector, ts, 4, align, -1 )
+            //writeText(tri.name, pab.offset( pca, nhalflength ), 4, ts, align, pab.calcSokAngle( pca, slv ), 1f)
+            //writeLine(pab.offset( pca, nlength ), pab.offset (pca, noffset ), 4)
         }
-
     }
+
+
 
     override fun writeCircle(point: PointXY, size: Float, color: Int, scale: Float){
         adas( "circle_feature('1','${color}','1','1','${point.x}','${point.y}','${size}')" )
@@ -309,7 +288,7 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
     //5 = フィット(垂直位置合わせ = 0 の場合)
     //垂直方向の文字位置合わせタイプ(省略可能、既定 = 0): 整数コード(ビットコードではありません):
     //0 = 基準線、1 = 下、2 = 中央、3 = 上
-    override fun writeText(
+    override fun writeTextHV(
         text: String,
         point: PointXY,
         color: Int,
@@ -325,11 +304,11 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
         if( alignV == 2 ) aV = 0
         val aligntenkey = 5 + aH + aV
 
-        writeText(text, point, color, textsize, aligntenkey, angle, 1f)
+        writeTextA9(text, point, color, textsize, aligntenkey, angle, 1f)
 
     }
 
-    override fun writeText(
+    override fun writeTextA9(
         text: String,
         point: PointXY,
         color: Int,

@@ -3,27 +3,14 @@ package com.jpaver.trianglelist
 import android.util.Log
 import java.io.BufferedWriter
 
-fun stringTriple(tri: Triangle): Triple<String, String, String> {
-    tri.setLengthStr()
-    val nagasaA = tri.strLengthA
-    val nagasaB = tri.strLengthB
-    val nagasaC = tri.strLengthC
-    return Triple(nagasaA, nagasaB, nagasaC)
-}
 
 class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
     //region parameters
     override var trilist_ = trilist
-    //override lateinit var dedlist_: DeductionList// = deductionList
-
-    private val numvector = trilist_.sokutenListVector
     lateinit var writer: BufferedWriter
     lateinit var drawingLength: PointXY // = drawingLength
-    //var sheetscale_ = 1000f //* setScale(drawingLength)    //metric to mill
-    //val viewscale_ = 11.9f*4f//12.5f
 
     var isDebug = false
-    //var isReverse_ = false;
 
     override var textscale_ = trilist_.getPrintTextScale( 1f , "dxf")
     override var printscale_ = trilist_.getPrintScale(1f)//setScale(drawingLength)
@@ -65,12 +52,9 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
         // 基準線の　下:3 上:1
         val LOWER = 3
         val UPPER = 1
-
         val OUTER = 1
-        //val INNER = 3
 
         //基準線の方向が右向きか左向きかで上下を反転する
-
 
         // 外側
         if (vertical == OUTER) {
@@ -87,12 +71,15 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
         // arrange
         val (pca, pab, pbc) = xyPointXYTriple(tri)
 
-        val (dimverticalA, dimverticalB, dimverticalC) = intTriple(tri, pca, pab, pbc)
+        val (dimverticalA, dimverticalB, dimverticalC) = getDimTriple(tri, pca, pab, pbc)
 
         var (la, lb, lc) = stringTriple(tri)
 
         val textSize: Float = textscale_
         val textSize2: Float = textscale_
+
+        // TriLines
+        writeTriangleLines(tri,7)
 
         if(isDebug){
             la += "-$dimverticalA"
@@ -100,33 +87,25 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
             lc += "-$dimverticalC"
         }
 
-        // TriLines
-        writeLine( pca, pab, 7)
-        writeLine( pab, pbc, 7)
-        writeLine( pbc, pca, 7)
-
         // DimTexts
         if( tri.mynumber == 1 || tri.connectionSide > 2)
             writeTextDimension(dimverticalA, la, tri.dimpoint.a, pab.calcDimAngle(pca))
         writeTextDimension(dimverticalB, lb, tri.dimpoint.b, pbc.calcDimAngle(pab))
         writeTextDimension(dimverticalC, lc, tri.dimpoint.c, pca.calcDimAngle(pbc))
 
-        // DimTextの旗上げ
-        val tPathA = tri.dimOnPath[0]
-        val tPathB = tri.dimOnPath[1]
-        val tPathC = tri.dimOnPath[2]
-        if(tri.dim.horizontal.a > 2) writeLine( tPathA.pointA, tPathA.pointB, 7)
-        if(tri.dim.horizontal.b > 2) writeLine( tPathB.pointA, tPathB.pointB, 7)
-        if(tri.dim.horizontal.c > 2) writeLine( tPathC.pointA, tPathC.pointB, 7)
-
+        //DimFlags
+        writeDimFlags(tri, 5)
 
         // 番号
+        writePointNumber(tri, textSize,5,1,2, textSize*0.85f )
+
+        /*
         val pn = tri.pointnumber
         val pc = tri.pointcenter
         val circleSize = textSize *0.85f
         // 本体
         writeCircle(pn, textSize, 5, 1f)
-        writeTextNumber(tri)
+
 
         //引き出し矢印線の描画
         if( tri.pointNumber.isFlagOn() ){
@@ -137,16 +116,17 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
             writeLine( pcOffsetToN, pnOffsetToC, 5)
             writeLine( pcOffsetToN, arrowTail, 5)
         }
-
+*/
 
         // 測点
         if(tri.myName_() != "") {
-            writeText( tri.myName_(), pab.offset(pca, -1.25f), 5, textSize2, 1, 1, pab.calcSokAngle( pca, numvector ), 1f )
-            writeLine( pab.offset(pca, -tri.myName_().length*0.5f), pab.offset(pca, -0.25f), 5)
+            writeSokuten(tri, trilist_.sokutenListVector, textSize2, 5, 1, 1)
+            //writeText( tri.myName_(), pab.offset(pca, -1.25f), 5, textSize2, 1, 1, pab.calcSokAngle( pca, numvector ), 1f )
+            //writeLine( pab.offset(pca, -tri.myName_().length*0.5f), pab.offset(pca, -0.25f), 5)
         }
     }
 
-    private fun intTriple(
+    private fun getDimTriple(
         tri: Triangle,
         pca: PointXY,
         pab: PointXY,
@@ -158,26 +138,11 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
         return Triple(dimverticalA, dimverticalB, dimverticalC)
     }
 
-
-
     private fun writeTextDimension(verticalAlign: Int, len: String, p1: PointXY, angle: Float){
-        writeText(len, p1, 7, textscale_, 1, verticalAlign, angle, 1f)
+        writeTextHV(len, p1, 7, textscale_, 1, verticalAlign, angle, 1f)
     }
 
-    private fun writeTextNumber(tri: Triangle){
-        writeText(
-            tri.mynumber.toString(),
-            tri.pointnumber,
-            5,
-            textscale_,
-            1,
-            2,
-            0f,
-            1f
-        )
-    }
-
-    override fun writeText(
+    override fun writeTextHV(
         text: String,
         point: PointXY,
         color: Int,
@@ -336,7 +301,7 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
         textsize: Float,
         scale: Float
     ){
-        writeText(st, p1.plus(textsize,textsize*0.2f), 1, textsize, 0, 1, 0f, 1f)
+        writeTextHV(st, p1.plus(textsize,textsize*0.2f), 1, textsize, 0, 1, 0f, 1f)
         writeLine( p1, p2, 1)
     }
 
@@ -5078,11 +5043,4 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
         return "IAMOVERRIDED."
     }
 
-}
-
-private fun xyPointXYTriple(tri: Triangle): Triple<PointXY, PointXY, PointXY> {
-    val pca = tri.pointCA
-    val pab = tri.pointAB
-    val pbc = tri.pointBC
-    return Triple(pca, pab, pbc)
 }
