@@ -603,19 +603,19 @@ class MyView(context: Context, attrs: AttributeSet?) :
         tri.pointCA
         tri.pointAB
         tri.pointBC
-        val tPathA = tri.dimOnPath[0]
-        val tPathB = tri.dimOnPath[1]
-        val tPathC = tri.dimOnPath[2]
-        val tPathS = tri.pathS
+        val pathA = tri.dimOnPath[0]
+        val pathB = tri.dimOnPath[1]
+        val pathC = tri.dimOnPath[2]
+        val pathS = tri.pathS
 
         var la = tri.strLengthA //String type
         var lb = tri.strLengthB
         var lc = tri.strLengthC
 
-        tPathA.textSpacer = textSpacer_
-        tPathB.textSpacer = textSpacer_
-        tPathC.textSpacer = textSpacer_
-        tPathS.textSpacer = textSpacer_
+        pathA.textSpacer = textSpacer_
+        pathB.textSpacer = textSpacer_
+        pathC.textSpacer = textSpacer_
+        pathS.textSpacer = textSpacer_
 
         val margin = paintDim.textSize*0.52f
         val savedDimColor = paintDim.color
@@ -625,9 +625,9 @@ class MyView(context: Context, attrs: AttributeSet?) :
                 logModelViewPoints()
                 //val name = tri.myName_ + " :" + sokt.pointA_.x + " :" + sokt.pointA_.y + " :" + sokt.pointB_.x + " :" + sokt.pointB_.y
 
-                la += " :" + tri.dim.vertical.a + " :" + tri.dim.horizontal.a
-                lb += " :" + tri.dim.vertical.b + " :" + tri.dim.horizontal.b
-                lc += " :" + tri.dim.vertical.c + " :" + tri.dim.horizontal.c
+                la += ":${pathA.HOUKOU}${pathA.vertical}-${tri.dim.vertical.a}"// + " :" + tri.dim.horizontal.a
+                lb += ":${pathB.HOUKOU}${pathB.vertical}-${tri.dim.vertical.b}"// + " :" + tri.dim.horizontal.b
+                lc += ":${pathC.HOUKOU}${pathC.vertical}-${tri.dim.vertical.c}"// + " :" + tri.dim.horizontal.c
             }
             else if( tri.mynumber == myTriangleList.lastTapNumber ){
                 la += " A"
@@ -640,24 +640,24 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
         // 線
         drawTriLines( canvas, tri, paintLine )
-        if(tPathA.horizontal > 2) canvas.drawPath(makePath(tPathA), paintLine)
-        if(tPathB.horizontal > 2) canvas.drawPath(makePath(tPathB), paintLine)
-        if(tPathC.horizontal > 2) canvas.drawPath(makePath(tPathC), paintLine)
+        if(pathA.horizontal > 2) canvas.drawPath(makePath(pathA), paintLine)
+        if(pathB.horizontal > 2) canvas.drawPath(makePath(pathB), paintLine)
+        if(pathC.horizontal > 2) canvas.drawPath(makePath(pathC), paintLine)
 
         // 番号
         drawTriangleNumber(canvas, tri, paintDim, paintB)
 
         // 寸法
         if(tri.mynumber == 1 || tri.connectionSide > 2 || tri.cParam_.type != 0 )
-            drawDigits( canvas, la, makePath(tPathA), tPathA.offsetH, tPathA.offsetV, paintDim, margin )
-        drawDigits( canvas, lb, makePath(tPathB), tPathB.offsetH, tPathB.offsetV, paintDim, margin )
-        drawDigits( canvas, lc, makePath(tPathC), tPathC.offsetH, tPathC.offsetV, paintDim, margin )
+            drawDigits( canvas, la, makePath(pathA), pathA.offsetH, pathA.offsetV, paintDim, margin )
+        drawDigits( canvas, lb, makePath(pathB), pathB.offsetH, pathB.offsetV, paintDim, margin )
+        drawDigits( canvas, lc, makePath(pathC), pathC.offsetH, pathC.offsetV, paintDim, margin )
         paintDim.color = savedDimColor
 
         // 測点
         if(tri.myName_() != ""){
-            canvas.drawTextOnPath(tri.myName_(), makePath(tPathS), 0f, -5f, paintSok)
-            canvas.drawPath(makePath(tPathS), paintLine)
+            canvas.drawTextOnPath(tri.myName_(), makePath(pathS), 0f, -5f, paintSok)
+            canvas.drawPath(makePath(pathS), paintLine)
         }
         //Log.d( "myView", "drawTriangle: " + tri.myNumber )
 
