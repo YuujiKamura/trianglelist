@@ -24,10 +24,13 @@ data class DimOnPath(
     val SIDE_SOKUTEN = 4
 
     var CLOCKWISE = "C"
+    val offsetUpper = -dimheight * 0.2f //
+    val offsetLower =  dimheight * 0.9f //
 
     init {
         setPointAB( leftP, rightP )
-        setVerticalOffset(0, vertical)
+        if (vertical == 1) offsetV = offsetLower
+        if (vertical == 3) offsetV = offsetUpper
         when(vertical){
             SIDE_SOKUTEN -> initSoktenNamePath(leftP,rightP)
             else         -> initDimPoint(leftP, rightP)
@@ -60,7 +63,7 @@ data class DimOnPath(
     fun initDimPoint(leftP: PointXY, rightP: PointXY){
 
         val lineLength = leftP.lengthTo(rightP)
-        val HABAYOSE = lineLength*0.275f
+        val HABAYOSE = lineLength*0.1f
 
         when( horizontal ){
             CENTER  -> {}
@@ -75,24 +78,14 @@ data class DimOnPath(
         }
 
         // 上下逆さまにならない様に反転
-        if( pointA.x >= pointB.x ) setVerticalOffset(1, vertical)
-    }
-
-    private fun setVerticalOffset(flipside: Int, alignVertical: Int, p1:PointXY=pointA, p2:PointXY=pointB ){
-        val offsetUpper = -dimheight * 0.2f //
-        val offsetLower =  dimheight * 0.9f //
-
-        if( flipside == 0 ) { // 夾角の、 1:内、3:外
-            if (alignVertical == 1) offsetV = offsetLower
-            if (alignVertical == 3) offsetV = offsetUpper
-        }
-        if( flipside == 1 ) { // 夾角の、 1:外、3:内
-            CLOCKWISE = "CC"
+        if( pointA.x >= pointB.x ){ // 夾角の、 1:外、3:内
+            CLOCKWISE = "A"
             offsetH = -offsetH
-            pointA = p2
-            pointB = p1
-            if (alignVertical == 1) offsetV = offsetUpper
-            if (alignVertical == 3) offsetV = offsetLower
+            val tmp = pointA
+            pointA = pointB
+            pointB = tmp
+            if (vertical == 1) offsetV = offsetUpper
+            if (vertical == 3) offsetV = offsetLower
         }
     }
 
