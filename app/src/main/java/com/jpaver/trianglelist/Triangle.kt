@@ -1151,6 +1151,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
         pointcenter.change_scale(basepoint, scale_)
         pointnumber.change_scale(basepoint, scale_)
         calcPoints(point[0], angle, isArrangeDims)
+        setDimPath()
+        setDimPoint()
     }
 
     fun move(to: PointXY) {
@@ -1162,6 +1164,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         dimpoint.a.add(to)
         dimpoint.b.add(to)
         dimpoint.c.add(to)
+        dimpoint.s.add(to)
         myBP_.left = myBP_.left + to.x
         myBP_.right = myBP_.right + to.x
         myBP_.top = myBP_.top + to.y

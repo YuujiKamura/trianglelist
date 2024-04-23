@@ -33,6 +33,72 @@ open class DrawingFileWriter {
     open var RED   = 2
 
 //endregion parameter
+    fun stringTriple(tri: Triangle): Triple<String, String, String> {
+        tri.setLengthStr()
+        val nagasaA = tri.strLengthA
+        val nagasaB = tri.strLengthB
+        val nagasaC = tri.strLengthC
+        return Triple(nagasaA, nagasaB, nagasaC)
+    }
+
+    fun xyPointXYTriple(tri: Triangle): Triple<PointXY, PointXY, PointXY> {
+        val pca = tri.pointCA
+        val pab = tri.pointAB
+        val pbc = tri.pointBC
+        return Triple(pca, pab, pbc)
+    }
+
+    fun writeTriangleLines(tri: Triangle,color: Int){
+
+        writeLine( tri.point[0], tri.pointAB, color)
+        writeLine( tri.pointAB, tri.pointBC, color)
+        writeLine( tri.pointBC, tri.point[0], color)
+    }
+
+    fun writeTextSwitch( str: String, point: PointXY, ts:Float, color:Int, align1: Int, align2:Int, angle: Float ){
+        //引数の数でテキスト描画関数を変える
+        when(align2){
+            -1   -> writeTextA9( str, point, color, ts, align1, angle, 1f)
+            else -> writeTextHV( str, point, color, ts, align1, align2, angle, 1f)
+        }
+    }
+
+    fun writePointNumber( tri: Triangle, ts:Float, color:Int, align1: Int, align2:Int, circleSize:Float ){
+        val pn = tri.pointnumber
+        val pc = tri.pointcenter
+        // 本体
+        writeCircle(pn, circleSize, color, 1f)
+
+        writeTextSwitch( tri.mynumber.toString(), tri.pointnumber, ts, color, align1, align2, 0f)
+
+        //引き出し矢印線の描画
+        if( tri.isCollide(tri.pointnumber) == false ){
+            val pcOffsetToN = pc.offset(pn, circleSize)
+            val pnOffsetToC = pn.offset(pc, circleSize)
+            val arrowTail = pcOffsetToN.offset(pn, pcOffsetToN.lengthTo(pnOffsetToC) * 0.5f).rotate(pcOffsetToN, 5f)
+
+            writeLine(pcOffsetToN, pnOffsetToC, color)
+            writeLine(pcOffsetToN, arrowTail, color)
+        }
+    }
+
+    fun writeSokuten(tri:Triangle, normalizedvector:Int, ts:Float, color:Int, align1:Int, align2:Int ){
+        tri.setDimPath()
+        tri.setDimPoint()
+        val pa = tri.pathS.pointA
+        val pb = tri.pathS.pointB
+        writeTextSwitch( tri.name, tri.dimpoint.s, ts, color, align1, align2, pa.calcSokAngle( pb, normalizedvector ) )
+        writeLine( pa, pb, color)
+    }
+    fun writeDimFlags(tri: Triangle, color: Int){
+        // DimTextの旗上げ
+        val tPathA = tri.dimOnPath[0]
+        val tPathB = tri.dimOnPath[1]
+        val tPathC = tri.dimOnPath[2]
+        if(tri.dim.horizontal.a > 2) writeLine( tPathA.pointA, tPathA.pointB, color)
+        if(tri.dim.horizontal.b > 2) writeLine( tPathB.pointA, tPathB.pointB, color)
+        if(tri.dim.horizontal.c > 2) writeLine( tPathC.pointA, tPathC.pointB, color)
+    }
 
     fun setNames(kn: String, rn: String, gn: String, zn: String){
         koujiname_ = kn
@@ -82,7 +148,7 @@ open class DrawingFileWriter {
     }
 
     // align tenkey ( ex 8 is top and center ) in sfc
-    open fun writeText(
+    open fun writeTextA9(
         text: String,
         point: PointXY,
         color: Int = 8,
@@ -94,7 +160,7 @@ open class DrawingFileWriter {
     }
 
     // Align H and V ( 0 is center, 1 is left/top, 3 is right/bottom ) in dxf
-    open fun writeText(
+    open fun writeTextHV(
         text: String,
         point: PointXY,
         color: Int,
@@ -123,9 +189,9 @@ open class DrawingFileWriter {
 
     fun writeTopTitle(scale: Float = 1f, textsize: Float ){
         // 上のタイトル
-        writeText(zumeninfo.zumentitle,
+        writeTextHV(zumeninfo.zumentitle,
             PointXY(21f, 27.1f, scale),  WHITE, textsize, 1, 1, 0f, scale)
-        writeText(rosenname_,
+        writeTextHV(rosenname_,
             PointXY(21f, 26f, scale), WHITE, textsize, 1, 1, 0f, scale)
 
         writeLine(
@@ -184,21 +250,21 @@ open class DrawingFileWriter {
         val yo = 0.2f * scale
 
         // 題字(工事名　路線名　など）
-        writeText(zumeninfo.koujiname,
+        writeTextHV(zumeninfo.koujiname,
             PointXY(32f, 6.7f, scale), WHITE, frameTextSize, 1, 0, 0f, 1f)
-        writeText(zumeninfo.tDtype_,
+        writeTextHV(zumeninfo.tDtype_,
             PointXY(32f, 5.7f, scale), WHITE, frameTextSize, 1, 0, 0f, 1f)
-        writeText(zumeninfo.tDname_,
+        writeTextHV(zumeninfo.tDname_,
             PointXY(32f, 4.7f, scale), WHITE, frameTextSize, 1, 0, 0f, 1f)
-        writeText(zumeninfo.tDateHeader_,
+        writeTextHV(zumeninfo.tDateHeader_,
             PointXY(32f, 3.7f, scale), WHITE, frameTextSize, 1, 0, 0f, 1f)
-        writeText(zumeninfo.tScale_,
+        writeTextHV(zumeninfo.tScale_,
             PointXY(32f, 2.7f, scale), WHITE, frameTextSize, 1, 0, 0f, 1f)
-        writeText(zumeninfo.tNum_,
+        writeTextHV(zumeninfo.tNum_,
             PointXY(37f, 2.7f, scale), WHITE, frameTextSize, 1, 0, 0f, 1f)
-        writeText(zumeninfo.tAname_,
+        writeTextHV(zumeninfo.tAname_,
             PointXY(32f, 1.7f, scale), WHITE, frameTextSize, 1, 0, 0f, 1f)
-        writeText(zumeninfo.tCredit_,
+        writeTextHV(zumeninfo.tCredit_,
             PointXY(8f, 1f, scale), WHITE, frameTextSize, 1, 0, 0f, 1f)
 
         // 内容
@@ -210,17 +276,17 @@ open class DrawingFileWriter {
 
         val nengappi = LocalDate.now().year.toString() + " 年 " + LocalDate.now().monthValue.toString() + " 月 " + LocalDate.now().dayOfMonth.toString() + " 日"
 
-        writeText(zumeninfo.zumentitle,
+        writeTextHV(zumeninfo.zumentitle,
             PointXY(strx, 5.7f * scale), WHITE, frameTextSize, 0, 0, 0f, 1f)
-        writeText(rosenname_,
+        writeTextHV(rosenname_,
             PointXY(strx, 4.7f * scale), WHITE, frameTextSize, 0, 0, 0f, 1f)
-        writeText(nengappi,
+        writeTextHV(nengappi,
             PointXY(strx, 3.7f * scale), WHITE, frameTextSize, 0, 0, 0f, 1f)
-        writeText("1/${st.toInt()} (A3)",
+        writeTextHV("1/${st.toInt()} (A3)",
             PointXY(34.5f, 2.7f, scale), WHITE, frameTextSize, 1, 0, 0f, 1f)
-        writeText(zumennum_,
+        writeTextHV(zumennum_,
             PointXY(39.5f, 2.7f, scale), WHITE, frameTextSize, 1, 0, 0f, 1f)
-        writeText(gyousyaname_,
+        writeTextHV(gyousyaname_,
             PointXY(strx, 1.7f * scale), WHITE, frameTextSize, 0, 0, 0f, 1f)
 
         //myDXFscale = 1000f  // 1:1
@@ -231,7 +297,7 @@ open class DrawingFileWriter {
         if (str.length > iKaigyou ) {
             splitAndWriteText(str, iKaigyou, xr, yb, yo, iColor, textsize)
         } else {
-            writeText(str, PointXY(xr, yb), iColor, textsize, 0, 0,0f, 1f)
+            writeTextHV(str, PointXY(xr, yb), iColor, textsize, 0, 0,0f, 1f)
         }
     }
 
@@ -243,10 +309,10 @@ open class DrawingFileWriter {
             listOf(str.substring(0, iKaigyou), str.substring(iKaigyou))
         }
 
-        writeText(parts[0], PointXY(xr, yb + yo), iColor, textsize, 0, 0,0f, 1f)
+        writeTextHV(parts[0], PointXY(xr, yb + yo), iColor, textsize, 0, 0,0f, 1f)
         // Check if there is a second part to avoid IndexOutOfBoundsException
         if (parts.size > 1) {
-            writeText(parts[1], PointXY(xr, yb - yo), iColor, textsize, 0, 0,0f, 1f)
+            writeTextHV(parts[1], PointXY(xr, yb - yo), iColor, textsize, 0, 0,0f, 1f)
         }
     }
 
@@ -323,9 +389,9 @@ open class DrawingFileWriter {
         )
 
         baseY -= yoffset
-        writeText(zumeninfo.mGoukei_,
+        writeTextHV(zumeninfo.mGoukei_,
             PointXY(baseX, baseY), WHITE, ts, 1, 1, 0f, scale)
-        writeText(
+        writeTextHV(
             ( trilist_.getArea() - dedlist_.getArea() ).formattedString(2),
             PointXY(baseX + xoffset * 4, baseY),
             WHITE,
@@ -386,9 +452,9 @@ open class DrawingFileWriter {
         if( editList is DeductionList) color = RED
 
         if( editList is TriangleList) {
-            writeText(titleParamStr.n,
+            writeTextHV(titleParamStr.n,
                 PointXY(baseX, basey), color, ts, 1, 1, 0f, scale)
-            writeText(
+            writeTextHV(
                 titleParamStr.c+"(m)",
                 PointXY(baseX + xoffset * 3, basey),
                 color,
@@ -400,9 +466,9 @@ open class DrawingFileWriter {
             )
         }
         if( editList is DeductionList) {
-            writeText(titleParamStr.name,
+            writeTextHV(titleParamStr.name,
                 PointXY(baseX, basey), color, ts, 1, 1, 0f, scale)
-            writeText(
+            writeTextHV(
                 titleParamStr.pl,
                 PointXY(baseX + xoffset * 3, basey),
                 color,
@@ -413,9 +479,9 @@ open class DrawingFileWriter {
                 scale
             )
         }
-        writeText(titleParamStr.a+"(m)",
+        writeTextHV(titleParamStr.a+"(m)",
             PointXY(baseX + xoffset, basey), color, ts, 1, 1, 0f, scale)
-        writeText(
+        writeTextHV(
             titleParamStr.b+"(m)",
             PointXY(baseX + xoffset * 2, basey),
             color,
@@ -425,7 +491,7 @@ open class DrawingFileWriter {
             0f,
             scale
         )
-        writeText(
+        writeTextHV(
             titleParamStr.type+"(m2)",
             PointXY(baseX + xoffset * 4, basey),
             color,
@@ -470,9 +536,9 @@ open class DrawingFileWriter {
             basey -= yoffset
         }
 
-        writeText(zumeninfo.mSyoukei_+"("+syokeiNum+")",
+        writeTextHV(zumeninfo.mSyoukei_+"("+syokeiNum+")",
             PointXY(baseX, basey), color, ts, 1, 1, 0f, scale)
-        writeText(
+        writeTextHV(
             editList.getArea().formattedString(2),
             PointXY(baseX + xoffset * 4, basey),
             color,
@@ -529,9 +595,9 @@ open class DrawingFileWriter {
 
 
         if( editObject is Triangle) {
-            writeText(param.number.toString(),
+            writeTextHV(param.number.toString(),
                 PointXY(baseX, baseY), color, ts, 1, 1, 0f, scale)
-            writeText(
+            writeTextHV(
                 param.b.formattedString(2),
                 PointXY(baseX + xoffset * 2, baseY),
                 color,
@@ -541,7 +607,7 @@ open class DrawingFileWriter {
                 0f,
                 scale
             )
-            writeText(
+            writeTextHV(
                 param.c.formattedString(2),
                 PointXY(baseX + xoffset * 3, baseY),
                 color,
@@ -553,9 +619,9 @@ open class DrawingFileWriter {
             )
         }
         if( editObject is Deduction){
-            writeText(param.name,
+            writeTextHV(param.name,
                 PointXY(baseX, baseY), color, ts, 1, 1, 0f, scale)
-            writeText(
+            writeTextHV(
                     param.type,
                 PointXY(baseX + xoffset * 3, baseY),
                 color,
@@ -566,7 +632,7 @@ open class DrawingFileWriter {
                 scale
             )
         }
-        if( param.type =="Box" )      writeText(
+        if( param.type =="Box" )      writeTextHV(
             param.b.formattedString(2),
             PointXY(baseX + xoffset * 2, baseY),
             color,
@@ -577,7 +643,7 @@ open class DrawingFileWriter {
             scale
         )
 
-        writeText(
+        writeTextHV(
             param.a.formattedString(2),
             PointXY(baseX + xoffset, baseY),
             color,
@@ -587,7 +653,7 @@ open class DrawingFileWriter {
             0f,
             scale
         )
-        writeText(
+        writeTextHV(
             editObject.getArea().formattedString(2),
             PointXY(baseX + xoffset * 4, baseY),
             color,

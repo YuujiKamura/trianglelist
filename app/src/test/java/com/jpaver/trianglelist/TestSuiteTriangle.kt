@@ -6,6 +6,7 @@ import org.junit.runners.Suite
 @RunWith(Suite::class)
 @Suite.SuiteClasses(
     CsvloaderTest::class,
+    SfcWriterTest::class,
     TriangleTest::class,
     TriangleListTest::class,
     PointNumberTest::class
