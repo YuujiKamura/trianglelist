@@ -5,6 +5,7 @@ import org.junit.Before
 import org.junit.Ignore
 import org.junit.Test
 import java.io.File
+import java.nio.charset.Charset
 
 class FileUtilTest {
 
@@ -26,7 +27,7 @@ class FileUtilTest {
     @Ignore("This test is only for local development.")
     fun testWriteToUserHome() {
         // テスト内容をユーザーのホームディレクトリに書き出し
-        FileUtil.writeToUserHome(testContent, testPath)
+        FileUtil.writeToUserHome(testContent, testPath, Charset.defaultCharset())
 
         // ファイルが正しく作成され、内容が期待通りか確認
         assertTrue("File was not created.", testFile.exists())

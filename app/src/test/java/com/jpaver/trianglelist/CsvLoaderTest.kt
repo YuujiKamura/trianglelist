@@ -5,15 +5,17 @@ import io.mockk.just
 import io.mockk.mockk
 import org.junit.Test
 import java.io.BufferedReader
-import java.io.FileReader
+import java.io.FileInputStream
+import java.io.InputStreamReader
+import java.nio.charset.StandardCharsets
 
 class CsvloaderTest {
 
     fun loadTriangleList(): ReturnValues?{
         val FILENAME = "4.11.csv"
         val path = "src/test/resources/$FILENAME"
-        val fileReader = FileReader(path)
-        val reader = BufferedReader(fileReader)
+        val charset = StandardCharsets.UTF_8
+        val reader =  BufferedReader(InputStreamReader(FileInputStream(path), charset))
         val showToast = mockk<(String) -> Unit>()
         val addTriangle = mockk<(TriangleList, List<String?>, PointXY, Float) -> Unit>()
         val setAllTextSize = mockk<(Float) -> Unit>()

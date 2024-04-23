@@ -927,7 +927,7 @@ class MainActivity : AppCompatActivity(),
 
         val dedArea = myDeductionList.getArea()
         val triArea = trianglelist.getArea()
-        val totalArea = roundByUnderTwo(triArea - dedArea)//.formattedString(2)
+        val totalArea = roundByUnderTwo(triArea - dedArea).formattedString(2)
         title = rStr.menseki_ + ": $totalArea m^2"
 
         /*if( myTriangleList.lastTapNumber_ > 0 ){
@@ -2592,7 +2592,7 @@ class MainActivity : AppCompatActivity(),
 
     private fun saveSFC(out: BufferedOutputStream) {
 
-        val writer = SfcWriter(trianglelist.clone(), myDeductionList.clone(), out, filename, drawingStartNumber)
+        val writer = SfcWriter(trianglelist.clone(), myDeductionList.clone(), out, filename, drawingStartNumber, 47.6f)
         writer.setNames(koujiname, rosenname, gyousyaname, zumennum)
         writer.zumeninfo = rStr
         writer.textscale_ = myview.textSize * 20f //25*14f=350f, 25/20f=500f

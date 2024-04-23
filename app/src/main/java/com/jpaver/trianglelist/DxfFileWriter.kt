@@ -32,9 +32,6 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
     override fun save(){
 
         writeHeader()
-        /* writeDXFTables(writer)
-         writeDXFBlock(writer)
-         */
         writeEntities()
         writeFooter()
 
@@ -94,35 +91,14 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
         writeTextDimension(dimverticalC, lc, tri.dimpoint.c, pca.calcDimAngle(pbc))
 
         //DimFlags
-        writeDimFlags(tri, 5)
+        writeDimFlags(tri, 7)
 
         // 番号
         writePointNumber(tri, textSize,5,1,2, textSize*0.85f )
 
-        /*
-        val pn = tri.pointnumber
-        val pc = tri.pointcenter
-        val circleSize = textSize *0.85f
-        // 本体
-        writeCircle(pn, textSize, 5, 1f)
-
-
-        //引き出し矢印線の描画
-        if( tri.pointNumber.isFlagOn() ){
-            val pcOffsetToN = pc.offset(pn, circleSize * 0.5f )
-            val pnOffsetToC = pn.offset(pc, circleSize * 1.2f )
-            val arrowTail = pcOffsetToN.offset(pn, pcOffsetToN.lengthTo(pnOffsetToC) * 0.5f).rotate(pcOffsetToN, 5f)
-
-            writeLine( pcOffsetToN, pnOffsetToC, 5)
-            writeLine( pcOffsetToN, arrowTail, 5)
-        }
-*/
-
         // 測点
         if(tri.myName_() != "") {
             writeSokuten(tri, trilist_.sokutenListVector, textSize2, 5, 1, 1)
-            //writeText( tri.myName_(), pab.offset(pca, -1.25f), 5, textSize2, 1, 1, pab.calcSokAngle( pca, numvector ), 1f )
-            //writeLine( pab.offset(pca, -tri.myName_().length*0.5f), pab.offset(pca, -0.25f), 5)
         }
     }
 
@@ -390,7 +366,6 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
             myDXFDedList.reverse()
         }
 
-
         // アウトラインの描画
         //myDXFTriList.setChildsToAllParents()
 
@@ -402,43 +377,10 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
         val sixtytwo = arrayOf( 254, 254, 51, 254, 7)
         val color = arrayOf( RED, ORANGE, YELLOW, GREEN, BLUE )
 
-        val sprit = true
+        val sprit = false
 
         if( sprit == true ){
-            val spritByColors = myDXFTriList.spritByColors()
-            for( index in 0 until spritByColors.size ){
-
-                val outlineLists = spritByColors[index].outlineList_ //myDXFTriList.outlineList() //ArrayList<PointXY>()
-
-                if (outlineLists != null) {
-                    for( index2 in 0 until outlineLists.size){
-
-                        if( outlineLists[index2].size > 0 ){
-                            writeDXFTriHatch(writer, outlineLists[index2], color[index], sixtytwo[index] )
-                            //writeDXFTriOutlines( writer, outlineLists[index2] )
-                        }
-                    }
-                }
-            }
-
-            for (index in 1 .. myDXFTriList.size()) {
-                writeTriangle(trilistNumbered.get(index))
-            }
-
-            for( index in 0 until spritByColors.size ){
-
-                val outlineLists = spritByColors[index].outlineList_ //myDXFTriList.outlineList() //ArrayList<PointXY>()
-
-                if (outlineLists != null) {
-                    for( index2 in 0 until outlineLists.size){
-
-                        if( outlineLists[index2].size > 0 ){
-                            writeDXFTriOutlines( writer, outlineLists[index2] )
-                        }
-                    }
-                }
-            }
-
+            writeSpritTrilist(myDXFTriList,trilistNumbered,color,sixtytwo)
         }
         else{
             for (index in 1 .. myDXFTriList.size()) {
@@ -470,6 +412,43 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
         """.trimIndent())
         writer.newLine()
 
+    }
+
+
+    fun writeSpritTrilist(myDXFTriList:TriangleList,trilistNumbered:TriangleList, color: Array<Int>, sixtytwo:Array<Int> ){
+        val spritByColors = myDXFTriList.spritByColors()
+        for( index in 0 until spritByColors.size ){
+
+            val outlineLists = spritByColors[index].outlineList_ //myDXFTriList.outlineList() //ArrayList<PointXY>()
+
+            if (outlineLists != null) {
+                for( index2 in 0 until outlineLists.size){
+
+                    if( outlineLists[index2].size > 0 ){
+                        writeDXFTriHatch(writer, outlineLists[index2], color[index], sixtytwo[index] )
+                        //writeDXFTriOutlines( writer, outlineLists[index2] )
+                    }
+                }
+            }
+        }
+
+        for (index in 1 .. myDXFTriList.size()) {
+            writeTriangle(trilistNumbered.get(index))
+        }
+
+        for( index in 0 until spritByColors.size ){
+
+            val outlineLists = spritByColors[index].outlineList_ //myDXFTriList.outlineList() //ArrayList<PointXY>()
+
+            if (outlineLists != null) {
+                for( index2 in 0 until outlineLists.size){
+
+                    if( outlineLists[index2].size > 0 ){
+                        writeDXFTriOutlines( writer, outlineLists[index2] )
+                    }
+                }
+            }
+        }
     }
 
     private fun writeDXFTriHatch(
