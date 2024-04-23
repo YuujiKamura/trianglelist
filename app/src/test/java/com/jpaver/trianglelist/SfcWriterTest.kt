@@ -35,7 +35,6 @@ class SfcWriterTest {
         val fileOutputStream = FileOutputStream(fullPath)
         val outputStream = BufferedOutputStream(fileOutputStream)
 
-
         // 以下、既存の処理を続ける
         val csvloadresult = CsvloaderTest().loadTriangleList()
         if(csvloadresult == null ) return
@@ -43,7 +42,7 @@ class SfcWriterTest {
         val deductionlist = csvloadresult.dedlist
         val drawingStartNumber = 1
 
-        val writer = SfcWriter(trianglelist, deductionlist, outputStream, fileName, drawingStartNumber)
+        val writer = SfcWriter(trianglelist, deductionlist, outputStream, fileName, drawingStartNumber, 1f)
         writer.setNames("koujiname", "rosenname", "gyousyaname", "zumennum")
         writer.zumeninfo = ZumenInfo()
         writer.textscale_ = 25f * 20f
@@ -58,7 +57,7 @@ class SfcWriterTest {
         outputStream.close()
 
         // テスト内容をユーザーのホームディレクトリに書き出し
-        FileUtil.writeToUserHome(writer.strPool_, fullPath)
+        FileUtil.writeToUserHome(writer.strPool_, fullPath )
 
         // ファイルが正しく作成され、内容が期待通りか確認
         Assert.assertTrue("File was not created.", testFile.exists())

@@ -17,10 +17,9 @@ open class DrawingFileWriter {
     var zumennum_ = "1/1"
     var startTriNumber_ = 1
     open var unitscale_ = 1000f
-    val viewscale_ = 47.6f
+    open var viewscale_ = 47.6f
     open var printscale_ = 1f
     var isReverse_ = false
-
 
     open var textscale_ = 5f//trilist_.getPrintTextScale( 1f , "dxf") * drawscale_
     open val sizeX_ get() = 420 * printscale_ // カスタムゲッター
@@ -87,7 +86,7 @@ open class DrawingFileWriter {
         tri.setDimPoint()
         val pa = tri.pathS.pointA
         val pb = tri.pathS.pointB
-        writeTextSwitch( tri.name, tri.dimpoint.s, ts, color, align1, align2, pa.calcSokAngle( pb, normalizedvector ) )
+        writeTextSwitch( tri.name, tri.dimpoint.s, ts, color, align1, align2, pb.calcSokAngle( pa, normalizedvector ) )
         writeLine( pa, pb, color)
     }
     fun writeDimFlags(tri: Triangle, color: Int){
