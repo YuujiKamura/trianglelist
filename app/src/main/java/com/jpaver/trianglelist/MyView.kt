@@ -14,7 +14,6 @@ import android.view.MotionEvent
 import android.view.MotionEvent.ACTION_UP
 import android.view.ScaleGestureDetector
 import android.view.View
-import androidx.core.view.GestureDetectorCompat
 import com.jpaver.trianglelist.util.MyScaleGestureListener
 import com.jpaver.trianglelist.util.RotateGestureDetector
 import com.jpaver.trianglelist.util.ScaleGestureCallback
@@ -51,7 +50,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
     lateinit var rotateGestureDetector: RotateGestureDetector
     lateinit var scaleGestureDetector: ScaleGestureDetector
-    lateinit var mDetector: GestureDetectorCompat
+    lateinit var mDetector: GestureDetector
 
     private var screen_width = 0
     private var screen_height = 0
@@ -246,7 +245,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
         initParams()
 
-        mDetector = GestureDetectorCompat(context, this)
+        mDetector = GestureDetector(context, this)
 
         rotateGestureDetector = RotateGestureDetector(object : RotateGestureDetector.SimpleOnRotateGestureDetector() {
             override fun onRotate(degrees: Float, focusX: Float, focusY: Float): Boolean {
@@ -625,9 +624,9 @@ class MyView(context: Context, attrs: AttributeSet?) :
                 logModelViewPoints()
                 //val name = tri.myName_ + " :" + sokt.pointA_.x + " :" + sokt.pointA_.y + " :" + sokt.pointB_.x + " :" + sokt.pointB_.y
 
-                la += ":${pathA.HOUKOU}${pathA.vertical}-${tri.dim.vertical.a}"// + " :" + tri.dim.horizontal.a
-                lb += ":${pathB.HOUKOU}${pathB.vertical}-${tri.dim.vertical.b}"// + " :" + tri.dim.horizontal.b
-                lc += ":${pathC.HOUKOU}${pathC.vertical}-${tri.dim.vertical.c}"// + " :" + tri.dim.horizontal.c
+                la += ":${pathA.CLOCKWISE}${pathA.vertical}"//-${tri.dim.vertical.a}"// + " :" + tri.dim.horizontal.a
+                lb += ":${pathB.CLOCKWISE}${pathB.vertical}"//-${tri.dim.vertical.b}"// + " :" + tri.dim.horizontal.b
+                lc += ":${pathC.CLOCKWISE}${pathC.vertical}"//-${tri.dim.vertical.c}"// + " :" + tri.dim.horizontal.c
             }
             else if( tri.mynumber == myTriangleList.lastTapNumber ){
                 la += " A"

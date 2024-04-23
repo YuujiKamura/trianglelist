@@ -23,7 +23,7 @@ data class DimOnPath(
     val OUTERLEFT =  4
     val SIDE_SOKUTEN = 4
 
-    var HOUKOU = "R"
+    var CLOCKWISE = "C"
 
     init {
         setPointAB( leftP, rightP )
@@ -87,7 +87,7 @@ data class DimOnPath(
             if (alignVertical == 3) offsetV = offsetUpper
         }
         if( flipside == 1 ) { // 夾角の、 1:外、3:内
-            HOUKOU = "L"
+            CLOCKWISE = "CC"
             offsetH = -offsetH
             pointA = p2
             pointB = p1
