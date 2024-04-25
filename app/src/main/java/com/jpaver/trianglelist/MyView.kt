@@ -624,9 +624,9 @@ class MyView(context: Context, attrs: AttributeSet?) :
                 logModelViewPoints()
                 //val name = tri.myName_ + " :" + sokt.pointA_.x + " :" + sokt.pointA_.y + " :" + sokt.pointB_.x + " :" + sokt.pointB_.y
 
-                la += ":${pathA.CLOCKWISE}-${pathA.vertical}r${pathA.revVertical}"//-${tri.dim.vertical.a}"// + " :" + tri.dim.horizontal.a
-                lb += ":${pathB.CLOCKWISE}-${pathB.vertical}r${pathB.revVertical}"//-${tri.dim.vertical.b}"// + " :" + tri.dim.horizontal.b
-                lc += ":${pathC.CLOCKWISE}-${pathC.vertical}r${pathC.revVertical}"//-${tri.dim.vertical.c}"// + " :" + tri.dim.horizontal.c
+                la += ":${pathA.clockwise}-${pathA.vertical}r${pathA.revVertical}"//-${tri.dim.vertical.a}"// + " :" + tri.dim.horizontal.a
+                lb += ":${pathB.clockwise}-${pathB.vertical}r${pathB.revVertical}"//-${tri.dim.vertical.b}"// + " :" + tri.dim.horizontal.b
+                lc += ":${pathC.clockwise}-${pathC.vertical}r${pathC.revVertical}"//-${tri.dim.vertical.c}"// + " :" + tri.dim.horizontal.c
             }
             else if( tri.mynumber == myTriangleList.lastTapNumber ){
                 la += " A"

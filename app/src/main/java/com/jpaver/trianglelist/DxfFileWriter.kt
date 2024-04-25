@@ -79,9 +79,9 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
         writeTriangleLines(tri,7)
 
         if(isDebug){
-            la += "-$dimverticalA"
-            lb += "-$dimverticalB"
-            lc += "-$dimverticalC"
+            la += "-$dimverticalA-R${tri.dimOnPath[0].revVertical}-${tri.dimOnPath[0].clockwise}"
+            lb += "-$dimverticalB-R${tri.dimOnPath[1].revVertical}-${tri.dimOnPath[1].clockwise}"
+            lc += "-$dimverticalC-R${tri.dimOnPath[2].revVertical}-${tri.dimOnPath[2].clockwise}"
         }
 
         // DimTexts
