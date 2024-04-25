@@ -85,14 +85,12 @@ android {
     buildFeatures {
         buildConfig true
     }
-
-}
-
-test {
-    // テスト結果の詳細をコンソールに表示する
-    testLogging {
-        events "passed", "skipped", "failed"
-        showStandardStreams = true
+    test {
+        // テスト結果の詳細をコンソールに表示する
+        testLogging {
+            events "passed", "skipped", "failed"
+            showStandardStreams = true
+        }
     }
 }
 
