@@ -27,6 +27,8 @@ data class DimOnPath(
     val offsetUpper = -dimheight * 0.2f //
     val offsetLower =  dimheight * 0.9f //
 
+    var revVertical = 4 - vertical
+
     init {
         setPointAB( leftP, rightP )
         if (vertical == 1) offsetV = offsetLower
@@ -79,9 +81,10 @@ data class DimOnPath(
 
         // 上下逆さまにならない様に反転
         if( pointA.x >= pointB.x ){ // 夾角の、 1:外、3:内
-            CLOCKWISE = "A"
+            CLOCKWISE = "A" // ANTI CLOCKWISE
             offsetH = -offsetH
             val tmp = pointA
+
             pointA = pointB
             pointB = tmp
             if (vertical == 1) offsetV = offsetUpper
