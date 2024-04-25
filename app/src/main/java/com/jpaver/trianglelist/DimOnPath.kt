@@ -23,7 +23,7 @@ data class DimOnPath(
     val OUTERLEFT =  4
     val SIDE_SOKUTEN = 4
 
-    var CLOCKWISE = "C"
+    var clockwise = "C"
     val offsetUpper = -dimheight * 0.2f //
     val offsetLower =  dimheight * 0.9f //
 
@@ -81,7 +81,7 @@ data class DimOnPath(
 
         // 上下逆さまにならない様に反転
         if( pointA.x >= pointB.x ){ // 夾角の、 1:外、3:内
-            CLOCKWISE = "A" // ANTI CLOCKWISE
+            clockwise = "A" // ANTI CLOCKWISE
             offsetH = -offsetH
             val tmp = pointA
 
