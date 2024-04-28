@@ -1,4 +1,4 @@
-package com.jpaver.trianglelist
+すpackage com.jpaver.trianglelist
 
 import com.jpaver.trianglelist.util.Cloneable
 
@@ -120,11 +120,11 @@ class Dims( val triangle: Triangle ) : Cloneable<Dims> {
                 return INNER
             }
             SIDEB -> {
-                if(!flag[1].isMovedByUser ) return autoDimVerticalByAreaCompare(triangle.nodeB)
+            //    if(!flag[1].isMovedByUser ) return autoDimVerticalByAreaCompare(triangle.nodeB)
                 return vertical.b
             }
             SIDEC -> {
-                if(!flag[2].isMovedByUser ) return autoDimVerticalByAreaCompare(triangle.nodeC)
+             //   if(!flag[2].isMovedByUser ) return autoDimVerticalByAreaCompare(triangle.nodeC)
                 return vertical.c
             }
         }
