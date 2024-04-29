@@ -19,6 +19,18 @@ fun compare(target1: Any, target2:Any ){
 //@PrepareForTest(Log.class)
 class TriangleTest {
 
+
+    //連結したときに寸法配置はどう変わる？
+    @Test
+    fun testDimPathAndOffset() {
+        val t1 = Triangle(3f, 4f, 5f)
+
+        // 1下 3上 -> // 夾角の、1:外 　3:内
+        Assert.assertEquals(1, t1.dim.vertical.a)
+        Assert.assertEquals(1, t1.dim.vertical.b)
+        Assert.assertEquals(1, t1.dim.vertical.c)
+    }
+
     //PathAndOffsetはクローンしたらどうなる？
     @Test
     fun testClonePathAndOffset(){
@@ -250,16 +262,6 @@ class TriangleTest {
         val myD = Deduction(myDParam)
         myD.move(PointXY(5f, 5f))
         Assert.assertEquals(5.5f, myD.point.x, 0.001f)
-    }
-
-    @Test
-    fun testDimPathAndOffset() {
-        val t1 = Triangle(3f, 4f, 5f)
-
-        // 1下 3上 -> // 夾角の、1:外 　3:内
-        Assert.assertEquals(1, t1.dim.vertical.a)
-        Assert.assertEquals(1, t1.dim.vertical.b)
-        Assert.assertEquals(1, t1.dim.vertical.c)
     }
 
     @Test
