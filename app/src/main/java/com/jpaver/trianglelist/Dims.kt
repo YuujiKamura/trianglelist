@@ -1,11 +1,11 @@
-すpackage com.jpaver.trianglelist
+package com.jpaver.trianglelist
 
 import com.jpaver.trianglelist.util.Cloneable
 
 data class Flags( var isMovedByUser: Boolean = false, var isAutoAligned: Boolean = false )
 data class DimAligns(var a:Int=1, var b:Int=1, var c:Int=1, var s:Int=0 )
 
-class Dims( val triangle: Triangle ) : Cloneable<Dims> {
+class Dims( val triangle: Triangle) : Cloneable<Dims> {
 
     //region propaties and clone
     var vertical = DimAligns(1,1,1,1 )
@@ -120,11 +120,11 @@ class Dims( val triangle: Triangle ) : Cloneable<Dims> {
                 return INNER
             }
             SIDEB -> {
-                if(!flag[1].isMovedByUser ) return autoDimVerticalByAreaCompare(triangle.nodeB)
+                //if(!flag[1].isMovedByUser ) return autoDimVerticalByAreaCompare(triangle.nodeB)
                 return vertical.b
             }
             SIDEC -> {
-                if(!flag[2].isMovedByUser ) return autoDimVerticalByAreaCompare(triangle.nodeC)
+                //if(!flag[2].isMovedByUser ) return autoDimVerticalByAreaCompare(triangle.nodeC)
                 return vertical.c
             }
         }
