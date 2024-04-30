@@ -2293,7 +2293,7 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    private fun viewDxf(contentUri: Uri, useSpecificPackages: Boolean = false) {
+    private fun viewDxf1(contentUri: Uri, useSpecificPackages: Boolean = false) {
         if (contentUri == Uri.EMPTY) return
 
         saveDxfToPrivate(PRIVATE_FILENAME_DXF)
@@ -2302,6 +2302,51 @@ class MainActivity : AppCompatActivity(),
             viewDxfWithSpecificPackages(contentUri)
         } else {
             viewDxfWithChooser(contentUri)
+        }
+    }
+
+    // Function to prompt for the filename and handle the DXF viewing
+    private fun viewDxf( contentUri: Uri, useSpecificPackages: Boolean = false, context: Context = this ) {
+        if (contentUri == Uri.EMPTY) return
+
+        // Display dialog to enter the filename
+        promptForFilename(context) { filename ->
+            if (filename.isEmpty()) return@promptForFilename
+
+            saveDxfToPrivate(filename)
+
+            if (useSpecificPackages) {
+                viewDxfWithSpecificPackages(contentUri)
+            } else {
+                viewDxfWithChooser(contentUri)
+            }
+        }
+    }
+
+    private fun promptForFilename(context: Context, onFilenameEntered: (String) -> Unit) {
+        val input = EditText(context).apply {
+            hint = "Enter filename"
+            setText(PRIVATE_FILENAME_DXF)  // Set the default text to PRIVATE_FILENAME_DXF
+        }
+
+        AlertDialog.Builder(context).apply {
+            setTitle("Enter Filename for DXF")
+            setView(input)
+            setPositiveButton("OK") { dialog, _ ->
+                val tempFilename = input.text.toString()
+                if (tempFilename.endsWith(".dxf")) {
+                    onFilenameEntered(tempFilename)
+                    dialog.dismiss()
+                } else {
+                    // Inform the user about the incorrect filename and do not dismiss the dialog
+                    input.error = "Filename must end with .dxf"
+                    // To ensure the user can try again, do not disable the "OK" button
+                }
+            }
+            setNegativeButton("Cancel") { dialog, _ ->
+                dialog.cancel()
+            }
+            show()
         }
     }
 

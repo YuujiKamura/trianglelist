@@ -185,6 +185,7 @@ class Dims( val triangle: Triangle) : Cloneable<Dims> {
         vertical.a = ha
         vertical.b = hb
         vertical.c = hc
+
     }
 
     //endregion vertical
