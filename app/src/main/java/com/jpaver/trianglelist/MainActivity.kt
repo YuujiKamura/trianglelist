@@ -1,5 +1,6 @@
 package com.jpaver.trianglelist
 
+import LocalFileViewer
 import android.Manifest
 import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
@@ -1513,16 +1514,16 @@ class MainActivity : AppCompatActivity(),
         }
 
         setCommonFabListener(fab_pdfview,false) {
-            viewPdf( getAppLocalFile(this, "privateTrilist.pdf") )
+            viewPdf()
         }
 
 
         setCommonFabListener(fab_dxfview,false) {
-            viewDxf( getAppLocalFile(this, PRIVATE_FILENAME_DXF) )
+            viewDxf()
         }
 
         setCommonFabListener(fab_xlsx,false){
-            viewXlsx( getAppLocalFile(this, "privateTrilist.xlsx") )
+            viewXlsx()
         }
 
         setCommonFabListener(fab_share,false) {
@@ -2140,7 +2141,7 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    private fun saveDxfToPrivate(filename: String) {
+    private fun saveDxfToPrivate(filename: String = PRIVATE_FILENAME_DXF ) {
         saveToFile(filename) { outputStream ->
             BufferedWriter(OutputStreamWriter(outputStream, "Shift-JIS")).use { bufferedWriter ->
                 saveDXF(bufferedWriter)
@@ -2276,148 +2277,18 @@ class MainActivity : AppCompatActivity(),
         saveContent.launch( Pair( intentType, strDateRosenname(fileprefix) ) )
     }
 
-
-    private fun viewPdf(contentUri: Uri){
-        savePDFinPrivate()
-
-        if ( contentUri != Uri.EMPTY ) {
-            val intent = Intent(Intent.ACTION_VIEW)
-            intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-            intent.setDataAndType(contentUri, "application/pdf")
-            try {
-                startActivity(intent)
-            } catch (e: ActivityNotFoundException) {
-                Log.d("viewPDF", "PDF viewer is not installed." )
-                Toast.makeText(this, "PDF viewer is not installed.", Toast.LENGTH_LONG).show()
-            }
-        }
+    private fun viewPdf(){
+        val PRIVATE_FILENAME_PDF = "privateTrilist.pdf"
+        LocalFileViewer(this).view(::savePdfToPrivate, PRIVATE_FILENAME_PDF, ::getAppLocalFile,"application/pdf" )
     }
 
-    private fun viewDxf1(contentUri: Uri, useSpecificPackages: Boolean = false) {
-        if (contentUri == Uri.EMPTY) return
-
-        saveDxfToPrivate(PRIVATE_FILENAME_DXF)
-
-        if (useSpecificPackages) {
-            viewDxfWithSpecificPackages(contentUri)
-        } else {
-            viewDxfWithChooser(contentUri)
-        }
+    private fun viewDxf() {
+        LocalFileViewer(this).view(::saveDxfToPrivate, PRIVATE_FILENAME_DXF, ::getAppLocalFile,"application/dxf" )
     }
 
-    // Function to prompt for the filename and handle the DXF viewing
-    private fun viewDxf( contentUri: Uri, useSpecificPackages: Boolean = false, context: Context = this ) {
-        if (contentUri == Uri.EMPTY) return
-
-        // Display dialog to enter the filename
-        promptForFilename(context) { filename ->
-            if (filename.isEmpty()) return@promptForFilename
-
-            saveDxfToPrivate(filename)
-
-            if (useSpecificPackages) {
-                viewDxfWithSpecificPackages(contentUri)
-            } else {
-                viewDxfWithChooser(contentUri)
-            }
-        }
-    }
-
-    private fun promptForFilename(context: Context, onFilenameEntered: (String) -> Unit) {
-        val input = EditText(context).apply {
-            hint = "Enter filename"
-            setText(PRIVATE_FILENAME_DXF)  // Set the default text to PRIVATE_FILENAME_DXF
-        }
-
-        AlertDialog.Builder(context).apply {
-            setTitle("Enter Filename for DXF")
-            setView(input)
-            setPositiveButton("OK") { dialog, _ ->
-                val tempFilename = input.text.toString()
-                if (tempFilename.endsWith(".dxf")) {
-                    onFilenameEntered(tempFilename)
-                    dialog.dismiss()
-                } else {
-                    // Inform the user about the incorrect filename and do not dismiss the dialog
-                    input.error = "Filename must end with .dxf"
-                    // To ensure the user can try again, do not disable the "OK" button
-                }
-            }
-            setNegativeButton("Cancel") { dialog, _ ->
-                dialog.cancel()
-            }
-            show()
-        }
-    }
-
-    private fun viewDxfWithSpecificPackages(contentUri: Uri) {
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-            setDataAndType(contentUri, "application/dxf")
-        }
-
-        val resolveInfoList = packageManager.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY)
-        val targetIntents = mutableListOf<Intent>()
-
-        val PACKAGES = listOf(
-            "com.junkbulk.jw_cadviewer",
-            "com.ZWSoft.ZWCAD",
-            "com.gstarmc.android",
-            "com.autodesk.autocadws",
-            "com.mozongsoft.uvcad"
-        )
-
-        for (resolveInfo in resolveInfoList) {
-            val packageName = resolveInfo.activityInfo.packageName
-            if (packageName in PACKAGES) {
-                val targetIntent = Intent(intent).setPackage(packageName)
-                targetIntents.add(targetIntent)
-            }
-        }
-
-        if (targetIntents.isNotEmpty()) {
-            val chooserIntent = Intent.createChooser(targetIntents.removeAt(0), "Open with:")
-            chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, targetIntents.toTypedArray())
-            startActivity(chooserIntent)
-        } else {
-            Toast.makeText(this, "Supported CAD viewer is not installed.", Toast.LENGTH_LONG).show()
-        }
-    }
-
-    private fun viewDxfWithChooser(contentUri: Uri) {
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-            setDataAndType(contentUri, "application/dxf")
-        }
-
-        try {
-            val chooserIntent = Intent.createChooser(intent, "Open with")
-            startActivity(chooserIntent)
-        } catch (e: ActivityNotFoundException) {
-            Toast.makeText(this, "No suitable application installed.", Toast.LENGTH_LONG).show()
-        }
-    }
-
-
-    private fun viewXlsx(contentUri: Uri){
-        // ファイルを生成。
-        saveXlsxInPrivate()
-        setTitles()
-
-        if ( contentUri != Uri.EMPTY ) {
-            val intent = Intent(Intent.ACTION_VIEW)
-            intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-            intent.setDataAndType(contentUri, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-            //intent.setType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-
-            try {
-                startActivity(intent)
-            } catch (e: ActivityNotFoundException) {
-                Log.d("viewXlsx", ".xlsx viewer is not installed." )
-                Toast.makeText(this, ".xlsx viewer is not installed.", Toast.LENGTH_LONG).show()
-            }
-        }
-
+    private fun viewXlsx(){
+        val PRIVATE_FILENAME_XLSX = "privateTrilist.xlsx"
+        LocalFileViewer(this).view(::saveXlsxToPrivate, PRIVATE_FILENAME_XLSX, ::getAppLocalFile,"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     }
 
     private fun deletePrivateFile(fileName: String) {
@@ -2730,7 +2601,7 @@ class MainActivity : AppCompatActivity(),
 
     }
 
-    private fun savePDFinPrivate(filename: String = "privateTrilist.pdf"){
+    private fun savePdfToPrivate(filename: String = "privateTrilist.pdf"){
         try {
             savePDF(openFileOutput(filename, MODE_PRIVATE))
         } catch (e: IOException) {
@@ -2738,7 +2609,7 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    private fun saveXlsxInPrivate(filename: String = "privateTrilist.xlsx"){
+    private fun saveXlsxToPrivate(filename: String = "privateTrilist.xlsx"){
         try {
             XlsxWriter().write( openFileOutput(filename, MODE_PRIVATE ), trianglelist, myDeductionList, rosenname )
         } catch (e: IOException) {
@@ -2752,7 +2623,7 @@ class MainActivity : AppCompatActivity(),
 
         when (extension) {
             "xlsx" -> XlsxWriter().write( openFileOutput(filename, MODE_PRIVATE ), trianglelist, myDeductionList, rosenname )
-            "pdf" -> savePDFinPrivate(filename)
+            "pdf" -> savePdfToPrivate(filename)
             "dxf" -> saveDxfToPrivate(filename)
             "sfc" -> saveSfcToPrivate(filename)
             "csv" -> saveCSVtoPrivate(filename)
