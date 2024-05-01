@@ -158,56 +158,65 @@ class TriangleList : EditList {
         }
 
     fun getPrintTextScale(drawingScale: Float, exportFileType: String): Float {
-        val textScaleMapPDF: MutableMap<Float, Float> = HashMap()
-        textScaleMapPDF[45f] = 3f
-        textScaleMapPDF[40f] = 5f
-        textScaleMapPDF[25f] = 6f
-        textScaleMapPDF[20f] = 8f
-        textScaleMapPDF[15f] = 8f
-        val textScaleMapDXF: MutableMap<Float, Float> = HashMap()
-        textScaleMapDXF[15f] = 0.35f
-        textScaleMapDXF[5f] = 0.25f
-        val exportFileTypeMap: MutableMap<String, Map<Float, Float>> = HashMap()
-        exportFileTypeMap["dxf"] = textScaleMapDXF
-        exportFileTypeMap["sfc"] = textScaleMapDXF
-        exportFileTypeMap["pdf"] = textScaleMapPDF
-        val defaultTextScaleMap: MutableMap<String, Float> = HashMap()
-        defaultTextScaleMap["dxf"] = 0.45f
-        defaultTextScaleMap["sfc"] = 0.45f
-        defaultTextScaleMap["pdf"] = 10f
-        val defaultValue = Optional.ofNullable(defaultTextScaleMap[exportFileType]).orElse(10f)
-        val selectedMap = Optional.ofNullable(
-            exportFileTypeMap[exportFileType]
-        ).orElse(textScaleMapDXF)
-        return Optional.ofNullable(selectedMap[getPrintScale(drawingScale) * 10])
-            .orElse(defaultValue)
+        val exportFileTypeMap = initializeFileTypeMap()
+        val defaultTextScaleMap = initializeDefaultScaleMap()
+
+        val defaultValue = defaultTextScaleMap.getOrDefault(exportFileType, 10f)
+        val selectedMap = exportFileTypeMap.getOrDefault(exportFileType, initializeDXFMap())
+
+        val printScale = getPrintScale(drawingScale) * 10
+        return selectedMap.getOrDefault(printScale, defaultValue)
     }
 
-    fun getPrintScale(drawingScale: Float): Float { // ex. 1/100 is w40m h27m drawing in range.
+    private fun initializeFileTypeMap(): Map<String, Map<Float, Float>> {
+        val textScaleMapPDF = mapOf(45f to 3f, 40f to 5f, 25f to 6f, 20f to 8f, 15f to 8f)
+        val textScaleMapDXF = mapOf(15f to 0.35f, 5f to 0.25f)
+        return mapOf(
+            "dxf" to textScaleMapDXF,
+            "sfc" to textScaleMapDXF,
+            "pdf" to textScaleMapPDF
+        )
+    }
+
+    private fun initializeDefaultScaleMap(): Map<String, Float> {
+        return mapOf(
+            "dxf" to 0.45f,
+            "sfc" to 0.45f,
+            "pdf" to 10f
+        )
+    }
+
+    private fun initializeDXFMap(): Map<Float, Float> {
+        return mapOf(15f to 0.35f, 5f to 0.25f)
+    }
+
+    fun getPrintScale(drawingScale: Float): Float {
+        // 最初にスケーリングして最長辺を測定
         scale(PointXY(0f, 0f), 1 / drawingScale)
-        val longsidex = measureMostLongLine().x
-        val longsidey = measureMostLongLine().y
-        scale(PointXY(0f, 0f), drawingScale)
+        val longestLine = measureMostLongLine()
+        val longsidex = longestLine.x
+        val longsidey = longestLine.y
+        scale(PointXY(0f, 0f), drawingScale) // 元のスケールに戻す
+
+        // ペーパーサイズ
         val paperWidth = 38f
         val paperHeight = 25f
 
-//        float printScale = 1f; //drawingScale;
-        //if( longsideX <= paperWidth*0.2 && longsideY <= paperHeight*0.2 ) return printScale *= 0.2f;
-        if (longsidex <= paperWidth * 0.5 && longsidey <= paperHeight * 0.4) return 0.5f
-        if (longsidex <= paperWidth && longsidey <= paperHeight) return 1.0f
-        if (longsidex <= paperWidth * 1.5 && longsidey <= paperHeight * 1.4) return 1.5f
-        if (longsidex <= paperWidth * 2.0 && longsidey <= paperHeight * 1.9) return 2.0f
-        if (longsidex <= paperWidth * 2.5 && longsidey <= paperHeight * 2.5) return 2.5f
-        if (longsidex <= paperWidth * 3.0 && longsidey <= paperHeight * 3.0) return 3.0f
-        if (longsidex <= paperWidth * 4.0 && longsidey <= paperHeight * 4.0) return 4.0f
-        if (longsidex <= paperWidth * 4.5 && longsidey <= paperHeight * 4.5) return 4.5f
-        if (longsidex <= paperWidth * 5.0 && longsidey <= paperHeight * 5.0) return 5.0f
-        if (longsidex <= paperWidth * 6.0 && longsidey <= paperHeight * 5.0) return 6.0f
-        if (longsidex <= paperWidth * 7.0 && longsidey <= paperHeight * 5.0) return 7.0f
-        if (longsidex <= paperWidth * 8.0 && longsidey <= paperHeight * 5.0) return 8.0f
-        if (longsidex <= paperWidth * 9.0 && longsidey <= paperHeight * 5.0) return 9.0f
-        return if (longsidex <= paperWidth * 10.0 && longsidey <= paperHeight * 10.0) 10.0f else 15f
+        // スケールの倍数と倍率の配列
+        val scales = arrayOf(0.5f, 1.0f, 1.5f, 2.0f, 2.5f, 3.0f, 4.0f, 4.5f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 15f)
+        val limits = arrayOf(0.5f, 1.0f, 1.4f, 1.9f, 2.5f, 3.0f, 4.0f, 4.5f, 5.0f, 5.0f, 5.0f, 5.0f, 5.0f, 10.0f)
+
+        // 適切なスケールを見つける
+        for ((index, scale) in scales.withIndex()) {
+            if (longsidex <= paperWidth * scale && longsidey <= paperHeight * limits[index]) {
+                return scale
+            }
+        }
+
+        // 最大スケールを超えた場合
+        return 15f
     }
+
 
     fun calcBounds(): Bounds {
         myBounds = Bounds(0f, 0f, 0f, 0f)
