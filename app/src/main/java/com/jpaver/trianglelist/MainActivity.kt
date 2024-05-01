@@ -72,6 +72,7 @@ import java.io.IOException
 import java.io.InputStreamReader
 import java.io.OutputStream
 import java.io.OutputStreamWriter
+import java.io.Writer
 import java.time.LocalDate
 import kotlin.math.roundToInt
 
@@ -2109,7 +2110,7 @@ class MainActivity : AppCompatActivity(),
                 contentResolver.openOutputStream(uri)?.use { outputStream ->
                     when (fileType) {
                         "DXF" -> saveDXF(BufferedWriter(OutputStreamWriter(outputStream, "Shift-JIS")))
-                        "CSV" -> saveCSV(BufferedWriter(OutputStreamWriter(outputStream, "Shift-JIS")))
+                        "CSV" -> writeCSV(BufferedWriter(OutputStreamWriter(outputStream, "Shift-JIS")))
                         "PDF" -> savePDF(outputStream)
                         "SFC" -> saveSFC(BufferedOutputStream(outputStream))
                         "XLSX" -> {
@@ -2283,6 +2284,7 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun viewDxf() {
+        ClipCsv(this).copyCSVToClipboard(::writeCSV )
         LocalFileViewer(this).view(::saveDxfToPrivate, PRIVATE_FILENAME_DXF, ::getAppLocalFile,"application/dxf" )
     }
 
@@ -2636,21 +2638,17 @@ class MainActivity : AppCompatActivity(),
 
     //region File CSV Save and Load
 
-    private fun saveCSV(writer: BufferedWriter): Boolean {
+    private fun writeCSV(writer: Writer): Boolean {
         return try {
             // 入力データの取得
             rosenname = findViewById<EditText>(R.id.rosenname).text.toString()
 
             // CSVファイルへのヘッダー情報の書き込み
             writer.apply {
-                write("koujiname, $koujiname")
-                newLine()
-                write("rosenname, $rosenname")
-                newLine()
-                write("gyousyaname, $gyousyaname")
-                newLine()
-                write("zumennum, $zumennum")
-                newLine()
+                write("koujiname, $koujiname\n")
+                write("rosenname, $rosenname\n")
+                write("gyousyaname, $gyousyaname\n")
+                write("zumennum, $zumennum\n")
             }
 
             // 三角形リストのデータをCSVファイルに書き込み
@@ -2670,17 +2668,17 @@ class MainActivity : AppCompatActivity(),
                         "${mt.angle},${mt.pointCA.x},${mt.pointCA.y},${mt.angleInLocal_}," +
                         "${mt.dim.horizontal.s},${mt.dim.flagS.isMovedByUser}"
                 )
-                writer.newLine()
+                writer.write("\n")
             }
 
             // その他の情報をCSVファイルに書き込み
             writer.apply {
                 write("ListAngle, ${trianglelist.angle}")
-                newLine()
+                writer.write("\n")
                 write("ListScale, ${trianglelist.scale}")
-                newLine()
+                writer.write("\n")
                 write("TextSize, ${myview.textSize}")
-                newLine()
+                writer.write("\n")
             }
 
             // 減算リストのデータをCSVファイルに書き込み
@@ -2690,7 +2688,7 @@ class MainActivity : AppCompatActivity(),
                 val pointFlagAtRealscale = dd.pointFlag.scale(PointXY(0f, 0f), 1 / viewscale, -1 / viewscale)
 
                 writer.write("Deduction,${dd.num},${dd.name},${dd.lengthX},${dd.lengthY},${dd.overlap_to},${dd.type},${dd.angle},${pointAtRealscale.x},${pointAtRealscale.y},${pointFlagAtRealscale.x},${pointFlagAtRealscale.y},${dd.shapeAngle}")
-                writer.newLine()
+                writer.write("\n")
             }
 
             // すべての書き込みが成功したらtrueを返す
@@ -2713,28 +2711,21 @@ class MainActivity : AppCompatActivity(),
 
     private fun saveCSVtoPrivate(filename: String = PrivateCSVFileName): Boolean{
         if( isCSVsavedToPrivate ) return true //既に保存済み
-        try {
+        return try {
             setTitles()
 
             val writer = BufferedWriter(
                 OutputStreamWriter(openFileOutput(filename, MODE_PRIVATE), "Shift-JIS"))
 
-            saveCSV(writer)
-            // 結果をログに出力
-            //logFilePreview(PrivateCSVFileName, "saveCSVtoPrivate")
+            writeCSV(writer)
             showToast("saveCSVToPrivate: success")
 
-            return true
+            true
         } catch (e: IOException) {
             e.printStackTrace()
-            return false
+            false
         }
-
-        // 広告の再表示
-        //if( BuildConfig.FLAVOR == "free" ) mAdView.visibility = VISIBLE
-
     }
-
 
     private fun openDocumentPicker() {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
