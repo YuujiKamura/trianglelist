@@ -317,7 +317,7 @@ open class DrawingFileWriter {
 
     fun writeCalcSheet(
         scale: Float = 1f,
-        textsize: Float = textscale_,
+        textsize_: Float,
         trilist: TriangleList,
         dedlist: DeductionList
     ) {
@@ -325,10 +325,10 @@ open class DrawingFileWriter {
 
         val baseX = ( 42f + 3f ) * printscale_ * scale
         var baseY = 27f * printscale_ * scale
-        val ts = textsize * scale
-        val xoffset = ts * 6f
-        val yoffset = ts * 2f
-        val yspacer = -ts * 0.01f
+        val textsize = textsize_
+        val xoffset = textsize * 6f
+        val yoffset = textsize * 2f
+        val yspacer = -textsize * 0.01f
 
         writeLine(
             PointXY(
@@ -351,7 +351,7 @@ open class DrawingFileWriter {
                         titleTri_,
                         baseX,
                         baseY,
-                        ts,
+                        textsize,
                         xoffset,
                         scale,
                         shokeiNum
@@ -367,7 +367,7 @@ open class DrawingFileWriter {
                     titleTri_,
                     baseX,
                     baseY,
-                    ts,
+                    textsize,
                     xoffset,
                     scale,
                     shokeiNum
@@ -381,7 +381,7 @@ open class DrawingFileWriter {
             titleDed_,
             baseX,
             baseY,
-            ts,
+            textsize,
             xoffset,
             scale,
             shokeiNum
@@ -389,12 +389,12 @@ open class DrawingFileWriter {
 
         baseY -= yoffset
         writeTextHV(zumeninfo.mGoukei_,
-            PointXY(baseX, baseY), WHITE, ts, 1, 1, 0f, scale)
+            PointXY(baseX, baseY), WHITE, textsize, 1, 1, 0f, scale)
         writeTextHV(
             ( trilist_.getArea() - dedlist_.getArea() ).formattedString(2),
             PointXY(baseX + xoffset * 4, baseY),
             WHITE,
-            ts,
+            textsize,
             1,
             1,
             0f,

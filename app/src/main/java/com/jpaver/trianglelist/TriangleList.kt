@@ -159,7 +159,7 @@ class TriangleList : EditList {
         val exportFileTypeMap = initializeFileTypeMap()
         val defaultTextScaleMap = initializeDefaultScaleMap()
 
-        val defaultValue = defaultTextScaleMap.getOrDefault(exportFileType, 10f)
+        val defaultValue = defaultTextScaleMap.getOrDefault(exportFileType, 5f)
         val selectedMap = exportFileTypeMap.getOrDefault(exportFileType, initializeDXFMap())
 
         val printScale = getPrintScale(drawingScale) * 10
