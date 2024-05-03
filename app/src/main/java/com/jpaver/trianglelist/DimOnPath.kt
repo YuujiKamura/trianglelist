@@ -130,10 +130,10 @@ data class DimOnPath(
         // 外側
         if (vertical == OUTER) {
             // 基準線が右向き の場合
-            return if ( pointA.isVectorToRight(pointB) ) UPPER else LOWER
+            return if ( rightP.isVectorToRight(leftP) ) UPPER else LOWER
         }
 
         // 内側
-        return if ( pointA.isVectorToRight(pointB) ) LOWER else UPPER
+        return if ( rightP.isVectorToRight(leftP) ) LOWER else UPPER
     }
 }
