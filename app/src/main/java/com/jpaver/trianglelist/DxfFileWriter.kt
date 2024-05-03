@@ -68,7 +68,7 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
         // arrange
         val (pca, pab, pbc) = xyPointXYTriple(tri)
 
-        val (dimverticalA, dimverticalB, dimverticalC) = getDimTriple(tri, pca, pab, pbc)
+        val (dimverticalA, dimverticalB, dimverticalC) = getDimTriple(tri)
 
         var (la, lb, lc) = stringTriple(tri)
 
@@ -103,15 +103,16 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
     }
 
     private fun getDimTriple(
-        tri: Triangle,
-        pca: PointXY,
-        pab: PointXY,
-        pbc: PointXY
+        tri: Triangle
     ): Triple<Int, Int, Int> {
         val dimverticalA = tri.dimOnPath[0].verticalDxf()//verticalFromBaseline(tri.dim.vertical.a, pca, pab)
         val dimverticalB = tri.dimOnPath[1].verticalDxf()//verticalFromBaseline(tri.dim.vertical.b, pab, pbc)
         val dimverticalC = tri.dimOnPath[2].verticalDxf()//verticalFromBaseline(tri.dim.vertical.c, pbc, pca)
+        //val dimverticalD = verticalFromBaseline(tri.dim.vertical.a, pca, pab)
+        //val dimverticalE = verticalFromBaseline(tri.dim.vertical.b, pab, pbc)
+        //val dimverticalF = verticalFromBaseline(tri.dim.vertical.c, pbc, pca)
         return Triple(dimverticalA, dimverticalB, dimverticalC)
+        //return Triple(dimverticalD, dimverticalE, dimverticalF)
     }
 
     private fun writeTextDimension(verticalAlign: Int, len: String, p1: PointXY, angle: Float){
