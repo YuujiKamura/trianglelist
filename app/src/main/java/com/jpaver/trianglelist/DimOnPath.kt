@@ -27,8 +27,6 @@ data class DimOnPath(
     val offsetUpper = -dimheight * 0.2f //
     val offsetLower =  dimheight * 0.9f //
 
-    var revVertical = 4 - vertical
-
     init {
         setPointAB( leftP, rightP )
         if (vertical == 1) offsetV = offsetLower
@@ -115,14 +113,15 @@ data class DimOnPath(
 
     fun verticalDxf(): Int{
         // 垂直方向の文字位置合わせタイプ(省略可能、既定 = 0): 整数コード(ビットコードではありません):
+        // 寸法値から見た基準線の上下
         // 0 = 基準線、1 = 下、2 = 中央、3 = 上
         // ベクトルの方向でB,Cを表現するなら
         // x軸の方向で正負を表す。正の時は下1が内、負の時は上3が内。
 
-        // 挟角の 外:3 内:1　in Triangle
-        // 基準線の　下:3 上:1
-        val LOWER = 3
-        val UPPER = 1
+        // 挟角の 外:1 内:3　in view
+        // 基準線が　下:1 上:3
+        val UPPER = 3
+        val LOWER = 1
         val OUTER = 1
 
         //基準線の方向が右向きか左向きかで上下を反転する
@@ -130,10 +129,10 @@ data class DimOnPath(
         // 外側
         if (vertical == OUTER) {
             // 基準線が右向き の場合
-            return if ( rightP.isVectorToRight(leftP) ) UPPER else LOWER
+            return if ( rightP.isVectorToRight(leftP) ) LOWER else UPPER
         }
 
         // 内側
-        return if ( rightP.isVectorToRight(leftP) ) LOWER else UPPER
+        return if ( rightP.isVectorToRight(leftP) ) UPPER else LOWER
     }
 }
