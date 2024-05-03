@@ -396,8 +396,8 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
 
         unitscale_ *= printscale_
         activeLayer = "C-TTL-FRAM"
-        writeDrawingFrame(textsize = 0.25f)
-        writeTopTitle(textsize = 0.25f)
+        writeDrawingFrame(textsize = textscale_)
+        writeTopTitle(textsize = textscale_)
         unitscale_ = 1000f
 
         if(isReverse_) {
