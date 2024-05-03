@@ -15,9 +15,9 @@ class TrilistDimTest {
 
         // 1下 3上 -> // 夾角の、1:外 　3:内
         Assert.assertEquals(1, myTrilist.getBy(1).dim.vertical.a)
-        Assert.assertEquals(1, myTrilist.getBy(1).dim.vertical.b)
+        Assert.assertEquals(3, myTrilist.getBy(1).dim.vertical.b)
         Assert.assertEquals(1, myTrilist.getBy(1).dim.vertical.c)
-        Assert.assertEquals(1, myTrilist.getBy(2).dim.vertical.a)
+        Assert.assertEquals(3, myTrilist.getBy(2).dim.vertical.a)
         Assert.assertEquals(1, myTrilist.getBy(2).dim.vertical.b)
         Assert.assertEquals(1, myTrilist.getBy(2).dim.vertical.c)
         val t1 = Triangle(1.0f, 1.5f, 1.0f)
@@ -41,9 +41,6 @@ class TrilistDimTest {
         val alignVdimA = tri.dimOnPath[0].verticalDxf()//dxfwriter.verticalFromBaseline(tri.dimVerticalA, pca, pab)
         val alignVdimB = tri.dimOnPath[1].verticalDxf()//dxfwriter.verticalFromBaseline(tri.dimVerticalB,pab,pbc)//flip(tri.myDimAlignB_, tri.dimAngleB_ )
         val alignVdimC = tri.dimOnPath[2].verticalDxf()//dxfwriter.verticalFromBaseline(tri.dimVerticalC,pbc,pca)//flip(tri.myDimAlignC_, tri.dimAngleC_ )
-        //val alignVdimD = dxfwriter.verticalFromBaseline(tri.dimVerticalA, pca, pab)
-        //val alignVdimE = dxfwriter.verticalFromBaseline(tri.dimVerticalB,pab,pbc)//flip(tri.myDimAlignB_, tri.dimAngleB_ )
-        //val alignVdimF = dxfwriter.verticalFromBaseline(tri.dimVerticalC,pbc,pca)//flip(tri.myDimAlignC_, tri.dimAngleC_ )
         val alignVdimG = dxfwriter.verticalFromBaseline(tri.dim.vertical.a, pca, pab)
         val alignVdimH = dxfwriter.verticalFromBaseline(tri.dim.vertical.b,pab,pbc)//flip(tri.myDimAlignB_, tri.dimAngleB_ )
         val alignVdimI = dxfwriter.verticalFromBaseline(tri.dim.vertical.c,pbc,pca)//flip(tri.myDimAlignC_, tri.dimAngleC_ )
@@ -54,17 +51,10 @@ class TrilistDimTest {
         Assert.assertEquals(1,tri.dim.vertical.a)
         Assert.assertEquals(3,tri.dim.vertical.b)
         Assert.assertEquals(3,tri.dim.vertical.c)
-        //Assert.assertEquals(1,tri.dimVerticalA)
-        //Assert.assertEquals(1,tri.dimVerticalB)
-        //Assert.assertEquals(1,tri.dimVerticalC)
 
         Assert.assertEquals(1, alignVdimA)
         Assert.assertEquals(3, alignVdimB)
         Assert.assertEquals(3, alignVdimC)
-
-        //Assert.assertEquals(3, alignVdimD)
-        //Assert.assertEquals(1, alignVdimE)
-        //Assert.assertEquals(1, alignVdimF)
 
         Assert.assertEquals(3, alignVdimG)
         Assert.assertEquals(3, alignVdimH)

@@ -24,9 +24,6 @@ class Triangle : EditObject, Cloneable<Triangle> {
             b.pathS = pathS.copy()
             b.dim = dim.clone()
 
-            //b.dimVerticalA = dimVerticalA
-            //b.dimVerticalB = dimVerticalB
-            //b.dimVerticalC = dimVerticalC
             b.dimHorizontalA = dimHorizontalA
             b.dimHorizontalB = dimHorizontalB
             b.dimHorizontalC = dimHorizontalC
@@ -240,9 +237,6 @@ class Triangle : EditObject, Cloneable<Triangle> {
     var connectionLCR_ = 2 // 0:L 1:C 2:R
     var cParam_ = ConnParam(0, 0, 2, 0f)
     var mynumber = 1
-    //var dimVerticalA = 3
-    //var dimVerticalB = 1
-    //var dimVerticalC = 1
     var dimHorizontalA = 0
     var dimHorizontalB = 0
     var dimHorizontalC = 0
