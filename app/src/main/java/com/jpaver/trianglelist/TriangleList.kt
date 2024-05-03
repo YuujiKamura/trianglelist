@@ -1,9 +1,7 @@
 package com.jpaver.trianglelist
 
-import com.jpaver.trianglelist.util.InputParameter
-import java.util.Optional
-
 import android.util.Log
+import com.jpaver.trianglelist.util.InputParameter
 
 fun printTriangle(t: Triangle) {
     Log.d("Triangle", t.toStrings())
@@ -344,9 +342,9 @@ class TriangleList : EditList {
 
     fun setDimsUnconnectedSideToOuter(target: Triangle?) {
         if(target == null ) return
-        if (target.nodeA == null) target.dimVerticalA = 1 else target.dimVerticalA = 3
-        if (target.nodeB == null) target.dimVerticalB = 1 else if (target.nodeB!!.connectionSide > 2 ) target.dimVerticalB = 3
-        if (target.nodeC == null) target.dimVerticalC = 1 else if (target.nodeC!!.connectionSide > 2 ) target.dimVerticalC = 3
+        if (target.nodeA == null) target.dim.vertical.a = 1 else target.dim.vertical.a = 3
+        if (target.nodeB == null) target.dim.vertical.b = 1 else if (target.nodeB!!.connectionSide > 2 ) target.dim.vertical.b = 3
+        if (target.nodeC == null) target.dim.vertical.c = 1 else if (target.nodeC!!.connectionSide > 2 ) target.dim.vertical.c = 3
     }
 
     fun recoverState(bp: PointXY= PointXY(0f,0f)) {

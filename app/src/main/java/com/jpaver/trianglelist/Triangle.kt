@@ -24,9 +24,9 @@ class Triangle : EditObject, Cloneable<Triangle> {
             b.pathS = pathS.copy()
             b.dim = dim.clone()
 
-            b.dimVerticalA = dimVerticalA
-            b.dimVerticalB = dimVerticalB
-            b.dimVerticalC = dimVerticalC
+            //b.dimVerticalA = dimVerticalA
+            //b.dimVerticalB = dimVerticalB
+            //b.dimVerticalC = dimVerticalC
             b.dimHorizontalA = dimHorizontalA
             b.dimHorizontalB = dimHorizontalB
             b.dimHorizontalC = dimHorizontalC
@@ -240,9 +240,9 @@ class Triangle : EditObject, Cloneable<Triangle> {
     var connectionLCR_ = 2 // 0:L 1:C 2:R
     var cParam_ = ConnParam(0, 0, 2, 0f)
     var mynumber = 1
-    var dimVerticalA = 3
-    var dimVerticalB = 1
-    var dimVerticalC = 1
+    //var dimVerticalA = 3
+    //var dimVerticalB = 1
+    //var dimVerticalC = 1
     var dimHorizontalA = 0
     var dimHorizontalB = 0
     var dimHorizontalC = 0
@@ -1204,7 +1204,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     fun rotateLengthBy(side: Int) {
         //Triangle this = this.clone();
         var pf: Float
-        var pi: Int
+        var temp: Int
         var pp: PointXY
         if (side == 1) { // B to A
             pf = length[0]
@@ -1230,14 +1230,14 @@ class Triangle : EditObject, Cloneable<Triangle> {
             dimpoint.a = dimpoint.b
             dimpoint.b = dimpoint.c
             dimpoint.c = pp.clone()
-            pi = dimVerticalA
-            dimVerticalA = dimVerticalB
-            dimVerticalB = dimVerticalC
-            dimVerticalC = pi
-            pi = dimHorizontalA
+            temp = dim.vertical.a//dimVerticalA
+            dim.vertical.a = dim.vertical.b//dimVerticalA = dimVerticalB
+            dim.vertical.b = dim.vertical.c//dimVerticalB = dimVerticalC
+            dim.vertical.a = temp//dimVerticalC = pi
+            temp = dimHorizontalA
             dimHorizontalA = dimHorizontalB
             dimHorizontalB = dimHorizontalC
-            dimHorizontalC = pi
+            dimHorizontalC = temp
         }
         if (side == 2) { // C to A
             pf = length[0]
@@ -1263,14 +1263,18 @@ class Triangle : EditObject, Cloneable<Triangle> {
             dimpoint.b = dimpoint.c
             dimpoint.c = dimpoint.b
             dimpoint.b = pp.clone()
-            pi = dimVerticalA
-            dimVerticalA = dimVerticalC
-            dimVerticalC = dimVerticalB
-            dimVerticalB = pi
-            pi = dimHorizontalA
+            temp = dim.vertical.a//dimVerticalA
+            dim.vertical.a = dim.vertical.c//dimVerticalA = dimVerticalB
+            dim.vertical.c = dim.vertical.b//dimVerticalB = dimVerticalC
+            dim.vertical.b = temp//dimVerticalC = pi
+            //temp = dimVerticalA
+            //dimVerticalA = dimVerticalC
+            //dimVerticalC = dimVerticalB
+            //dimVerticalB = temp
+            temp = dimHorizontalA
             dimHorizontalA = dimHorizontalC
             dimHorizontalC = dimHorizontalB
-            dimHorizontalB = pi
+            dimHorizontalB = temp
         }
     }
 
