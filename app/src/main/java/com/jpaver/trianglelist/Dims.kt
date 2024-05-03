@@ -113,6 +113,8 @@ class Dims( val triangle: Triangle) : Cloneable<Dims> {
     //endregion horizontal
 
     //region vertical
+
+
     fun autoDimVertical(side: Int): Int {
         when(side){
             SIDEA -> {

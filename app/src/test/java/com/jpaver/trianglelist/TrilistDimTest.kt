@@ -38,23 +38,23 @@ class TrilistDimTest {
         val pca = tri.pointCA
         val pab = tri.pointAB
         val pbc = tri.pointBC
-        val alignVdimA = dxfwriter.verticalFromBaseline(tri.dimVerticalA, pca, pab)
-        val alignVdimB = dxfwriter.verticalFromBaseline(
-            tri.dimVerticalB,
-            pab,
-            pbc
-        )//flip(tri.myDimAlignB_, tri.dimAngleB_ )
-        val alignVdimC = dxfwriter.verticalFromBaseline(
-            tri.dimVerticalC,
-            pbc,
-            pca
-        )//flip(tri.myDimAlignC_, tri.dimAngleC_ )
+        val alignVdimA = tri.dimOnPath[0].verticalDxf()//dxfwriter.verticalFromBaseline(tri.dimVerticalA, pca, pab)
+        val alignVdimB = tri.dimOnPath[1].verticalDxf()//dxfwriter.verticalFromBaseline(tri.dimVerticalB,pab,pbc)//flip(tri.myDimAlignB_, tri.dimAngleB_ )
+        val alignVdimC = tri.dimOnPath[2].verticalDxf()//dxfwriter.verticalFromBaseline(tri.dimVerticalC,pbc,pca)//flip(tri.myDimAlignC_, tri.dimAngleC_ )
+        val alignVdimD = dxfwriter.verticalFromBaseline(tri.dimVerticalA, pca, pab)
+        val alignVdimE = dxfwriter.verticalFromBaseline(tri.dimVerticalB,pab,pbc)//flip(tri.myDimAlignB_, tri.dimAngleB_ )
+        val alignVdimF = dxfwriter.verticalFromBaseline(tri.dimVerticalC,pbc,pca)//flip(tri.myDimAlignC_, tri.dimAngleC_ )
 
-        Assert.assertEquals(3, alignVdimA)
-        Assert.assertEquals(1, alignVdimB)
-        Assert.assertEquals(1, alignVdimC)
+        Assert.assertEquals(1, alignVdimA)
+        Assert.assertEquals(3, alignVdimB)
+        Assert.assertEquals(3, alignVdimC)
+        Assert.assertEquals(3, alignVdimD)
+        Assert.assertEquals(1, alignVdimE)
+        Assert.assertEquals(1, alignVdimF)
 
         Assert.assertEquals(4, "No.3".length)
+
+        printTriangle(tri)
 
     }
 }

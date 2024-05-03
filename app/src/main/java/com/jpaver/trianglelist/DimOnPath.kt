@@ -112,4 +112,28 @@ data class DimOnPath(
         pointA = p1
         pointB = p2
     }
+
+    fun verticalDxf(): Int{
+        // 垂直方向の文字位置合わせタイプ(省略可能、既定 = 0): 整数コード(ビットコードではありません):
+        // 0 = 基準線、1 = 下、2 = 中央、3 = 上
+        // ベクトルの方向でB,Cを表現するなら
+        // x軸の方向で正負を表す。正の時は下1が内、負の時は上3が内。
+
+        // 挟角の 外:3 内:1　in Triangle
+        // 基準線の　下:3 上:1
+        val LOWER = 3
+        val UPPER = 1
+        val OUTER = 1
+
+        //基準線の方向が右向きか左向きかで上下を反転する
+
+        // 外側
+        if (vertical == OUTER) {
+            // 基準線が右向き の場合
+            return if ( pointA.isVectorToRight(pointB) ) UPPER else LOWER
+        }
+
+        // 内側
+        return if ( pointA.isVectorToRight(pointB) ) LOWER else UPPER
+    }
 }
