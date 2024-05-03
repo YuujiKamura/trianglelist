@@ -1271,14 +1271,21 @@ class MainActivity : AppCompatActivity(),
 
     val BLINKSECOND = 1
 
-    private fun setCommonFabListener(fab: FloatingActionButton, isSaveCSV:Boolean=true, action: () -> Unit) {
+    private fun setCommonFabListener(fab: FloatingActionButton, isSaveCSV: Boolean = true, action: () -> Unit) {
         fab.setOnClickListener {
-            blinkFAB(fab,BLINKSECOND)
+            blinkFAB(fab, BLINKSECOND)
             action()
-            if(!isSaveCSV) return@setOnClickListener
+
+            // contentDescriptionからToastメッセージを取得し表示
+            fab.contentDescription?.let {
+                Toast.makeText(fab.context, it, Toast.LENGTH_SHORT).show()
+            }
+
+            if (!isSaveCSV) return@setOnClickListener
             autosave()
         }
     }
+
 
     fun blinkFAB(fab: FloatingActionButton, totalDurationSeconds: Int) {
         val singleAnimationDuration = 500 // 1回のアニメーション持続時間（ミリ秒）
@@ -2718,11 +2725,11 @@ class MainActivity : AppCompatActivity(),
                 OutputStreamWriter(openFileOutput(filename, MODE_PRIVATE), "Shift-JIS"))
 
             writeCSV(writer)
-            showToast("saveCSVToPrivate: success")
 
             true
         } catch (e: IOException) {
             e.printStackTrace()
+            showToast("saveCSVToPrivate: IOException")
             false
         }
     }
@@ -2816,7 +2823,7 @@ class MainActivity : AppCompatActivity(),
 
             // 結果をログに出力
             if(myview.isDebug_)logFilePreview(PrivateCSVFileName, "resumeCSV")
-            showToast("resumeCSV: success")
+            //showToast("resumeCSV: success")
 
         } catch (e: IOException) {
             e.printStackTrace()

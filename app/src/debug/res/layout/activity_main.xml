@@ -202,7 +202,7 @@
             app:fabSize="mini"
             app:layout_constraintTop_toBottomOf="@id/fab_pdf"
             app:srcCompat="@android:drawable/ic_menu_share"
-            android:contentDescription="@string/share_pdf_to"/>
+            android:contentDescription="@string/share_files"/>
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_mail"
@@ -289,7 +289,7 @@
             app:fabSize="mini"
             app:layout_constraintTop_toBottomOf="@+id/fab_replace"
             app:srcCompat="@drawable/textright"
-            android:contentDescription="@string/flip_dimension_text_in_horizonal" />
+            android:contentDescription="@string/flip_connect_point_in_horizontal" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_dimsideh"
@@ -319,7 +319,7 @@
             app:backgroundTint="@color/colorAccent"
             app:fabSize="mini"
             app:srcCompat="@drawable/nijyuu"
-            android:contentDescription="@string/flip_connect_point_in_horizonal"/>
+            android:contentDescription="@string/flip_connect_point_in_horizontal"/>
 
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
