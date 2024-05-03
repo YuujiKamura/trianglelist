@@ -71,6 +71,7 @@ data class DimOnPath(
             INLEFT  -> offsetH = HABAYOSE
             OUTERRIGHT -> {
                 initPointsOuter(rightP, leftP, lineLength)
+                vertical = flip(vertical)
             }
             OUTERLEFT  -> {
                 initPointsOuter(leftP, rightP, lineLength)
@@ -90,13 +91,33 @@ data class DimOnPath(
         }
     }
 
+    // 垂直方向の文字位置合わせタイプ(省略可能、既定 = 0): 整数コード(ビットコードではありません):
+    // 寸法値から見た基準線の上下
+    // 0 = 基準線、1 = 下、2 = 中央、3 = 上
+    // ベクトルの方向でB,Cを表現するなら
+    // x軸の方向で正負を表す。正の時は下1が内、負の時は上3が内。
+
+    // 挟角の 外:1 内:3　in view
+    // 基準線が　下:1 上:3
+    val UPPER = 3
+    val LOWER = 1
+    val INNER = 3
+    val OUTER = 1
+
+    fun flip(vertical: Int): Int {
+        return when(vertical){
+            OUTER -> INNER
+            else  -> OUTER
+        }
+    }
+
     fun initPointsOuter(leftP: PointXY, rightP: PointXY, lineLength: Float){
         val SUKIMA = 0.5f*scale
         val movement = SUKIMA+lineLength
-        val HATAAGE = 3*scale
+        val HATAAGE = -3*scale
         val HABAYOSE = -lineLength*0.05f
 
-        pointA = leftP.offset(rightP, -HATAAGE )
+        pointA = leftP.offset(rightP, HATAAGE )
         pointB = rightP.offset(leftP, movement)
         offsetH = HABAYOSE
     }
@@ -112,17 +133,6 @@ data class DimOnPath(
     }
 
     fun verticalDxf(): Int{
-        // 垂直方向の文字位置合わせタイプ(省略可能、既定 = 0): 整数コード(ビットコードではありません):
-        // 寸法値から見た基準線の上下
-        // 0 = 基準線、1 = 下、2 = 中央、3 = 上
-        // ベクトルの方向でB,Cを表現するなら
-        // x軸の方向で正負を表す。正の時は下1が内、負の時は上3が内。
-
-        // 挟角の 外:1 内:3　in view
-        // 基準線が　下:1 上:3
-        val UPPER = 3
-        val LOWER = 1
-        val OUTER = 1
 
         //基準線の方向が右向きか左向きかで上下を反転する
 
