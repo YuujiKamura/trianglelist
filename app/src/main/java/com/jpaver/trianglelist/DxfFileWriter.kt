@@ -108,9 +108,9 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
         pab: PointXY,
         pbc: PointXY
     ): Triple<Int, Int, Int> {
-        val dimverticalA = verticalFromBaseline(tri.dim.vertical.a, pca, pab)
-        val dimverticalB = verticalFromBaseline(tri.dim.vertical.b, pab, pbc)
-        val dimverticalC = verticalFromBaseline(tri.dim.vertical.c, pbc, pca)
+        val dimverticalA = tri.dimOnPath[0].verticalDxf()//verticalFromBaseline(tri.dim.vertical.a, pca, pab)
+        val dimverticalB = tri.dimOnPath[1].verticalDxf()//verticalFromBaseline(tri.dim.vertical.b, pab, pbc)
+        val dimverticalC = tri.dimOnPath[2].verticalDxf()//verticalFromBaseline(tri.dim.vertical.c, pbc, pca)
         return Triple(dimverticalA, dimverticalB, dimverticalC)
     }
 
