@@ -324,33 +324,27 @@ open class DrawingFileWriter {
         if( checkInstance() == false ) return
 
         val baseX = ( 42f + 3f ) * printscale_ * scale
-        var baseY = 27f * printscale_ * scale
         val textsize = textsize_
         val xoffset = textsize * 6f
         val yoffset = textsize * 2f
         val yspacer = -textsize * 0.01f
-
-        writeLine(
-            PointXY(
-                baseX - xoffset * 0.5f,
-                baseY + yoffset + yspacer
-            ),
-            PointXY(
-                baseX + xoffset * 4.5f,
-                baseY + yoffset + yspacer
-            ), WHITE, scale)
-
         var shokeiNum = 1
+
+        //不変
+        val immutable_baseY = 27f * printscale_ * scale
+        //可変
+        var mutable_baseY = 27f * printscale_ * scale
+
         val sprit = false
         if( sprit ){
             val tlSpC = trilist.spritByColors()
             for( index in 4 downTo 0 ){
                 if( tlSpC[index].size() > 0 ) {
-                    baseY = writeCalcSheetEditList(
+                    mutable_baseY = writeCalcSheetEditList(
                         tlSpC[ index ],
                         titleTri_,
                         baseX,
-                        baseY,
+                        mutable_baseY,
                         textsize,
                         xoffset,
                         scale,
@@ -362,11 +356,11 @@ open class DrawingFileWriter {
         }
         else{
             if( trilist.size() > 0 ) {
-                baseY = writeCalcSheetEditList(
+                mutable_baseY = writeCalcSheetEditList(
                     trilist,
                     titleTri_,
                     baseX,
-                    baseY,
+                    mutable_baseY,
                     textsize,
                     xoffset,
                     scale,
@@ -376,23 +370,23 @@ open class DrawingFileWriter {
             }
         }
 
-        if( dedlist.size() > 0 ) baseY = writeCalcSheetEditList(
+        if( dedlist.size() > 0 ) mutable_baseY = writeCalcSheetEditList(
             dedlist,
             titleDed_,
             baseX,
-            baseY,
+            mutable_baseY,
             textsize,
             xoffset,
             scale,
             shokeiNum
         )
 
-        baseY -= yoffset
+        mutable_baseY -= yoffset
         writeTextHV(zumeninfo.mGoukei_,
-            PointXY(baseX, baseY), WHITE, textsize, 1, 1, 0f, scale)
+            PointXY(baseX, mutable_baseY), WHITE, textsize, 1, 1, 0f, scale)
         writeTextHV(
             ( trilist_.getArea() - dedlist_.getArea() ).formattedString(2),
-            PointXY(baseX + xoffset * 4, baseY),
+            PointXY(baseX + xoffset * 4, mutable_baseY),
             WHITE,
             textsize,
             1,
@@ -400,34 +394,35 @@ open class DrawingFileWriter {
             0f,
             scale
         )
-        writeLine(
-            PointXY(
-                baseX - xoffset * 0.5f,
-                baseY + yspacer
-            ),
-            PointXY(
-                baseX + xoffset * 4.5f,
-                baseY + yspacer
-            ),WHITE, scale)
-        writeLine(
-            PointXY(
-                baseX - xoffset * 0.5f,
-                baseY + yoffset * 2 + yspacer
-            ),
-            PointXY(
-                baseX - xoffset * 0.5f,
-                baseY + yspacer
-            ),WHITE, scale)
-        writeLine(
-            PointXY(
-                baseX + xoffset * 4.5f,
-                baseY + yoffset * 2 + yspacer
-            ),
-            PointXY(
-                baseX + xoffset * 4.5f,
-                baseY + yspacer
-            ),WHITE, scale)
 
+        writeBox( baseX, xoffset, immutable_baseY, mutable_baseY, yoffset, yspacer, scale )
+    }
+
+    fun writeBox(baseX: Float,
+                 xoffset: Float,
+                 immutable_baseY: Float,
+                 mutable_baseY: Float,
+                 yoffset:Float,
+                 yspacer:Float,
+                 scale: Float ){
+
+        val left = baseX - xoffset * 0.5f
+        val right = baseX + xoffset * 4.5f
+        val top = immutable_baseY + yoffset + yspacer
+        val middle = mutable_baseY + yoffset * 2 + yspacer
+        val bottom = mutable_baseY + yspacer
+        writeLine(
+            PointXY( left, top ),
+            PointXY( right, top ), WHITE, scale)
+        writeLine(
+            PointXY( left, bottom ),
+            PointXY( right, bottom ),WHITE, scale)
+        writeLine(
+            PointXY( left, middle ),
+            PointXY( left, bottom ),WHITE, scale)
+        writeLine(
+            PointXY( right, middle ),
+            PointXY( right, bottom ),WHITE, scale)
     }
 
     fun writeCalcSheetEditList(
