@@ -7,9 +7,9 @@ open class DrawingFileWriter {
     //region parameter
     open lateinit var trilist_: TriangleList
     open lateinit var dedlist_: DeductionList
-    lateinit var titleTri_ : TitleParamStr
-    lateinit var titleDed_ : TitleParamStr
-    lateinit var zumeninfo : ZumenInfo
+    open lateinit var zumeninfo : ZumenInfo
+    open lateinit var titleTri_ : TitleParamStr
+    open lateinit var titleDed_ : TitleParamStr
 
     var koujiname_: String = ""
     var rosenname_ = ""
