@@ -24,5 +24,6 @@ class DxfWriterTest {
 
         dxfwriter.writer = writer
         dxfwriter.save()
+        writer.close()
     }
 }
