@@ -1,7 +1,9 @@
 package com.jpaver.trianglelist.util
+import java.io.BufferedOutputStream
 import java.io.BufferedWriter
 import java.io.File
 import java.io.FileOutputStream
+import java.io.FileWriter
 import java.io.OutputStreamWriter
 import java.nio.charset.Charset
 import java.nio.file.Paths
@@ -14,6 +16,40 @@ object Utils {
 
 
 object FileUtil {
+
+    fun initBufferedWriter(path:String, filename:String ): BufferedWriter?{
+        if (System.getenv("CI") != null) return null
+        // CI環境ではこのテストをスキップ
+
+        val fullPath = "$path${File.separator}$filename"
+
+        // ディレクトリが存在するか確認し、存在しない場合は作成する
+        val directory = File(path)
+        if (!directory.exists()) {
+            directory.mkdirs()  // ディレクトリが存在しない場合は、ディレクトリを作成する
+        }
+
+        // ファイル出力ストリームを安全に作成
+        val fileWriter = FileWriter(fullPath)
+        return BufferedWriter(fileWriter)
+    }
+
+    fun initBufferedOutputStream(path:String, filename:String ): BufferedOutputStream?{
+        if (System.getenv("CI") != null) return null
+        // CI環境ではこのテストをスキップ
+
+        val fullPath = "$path${File.separator}$filename"
+
+        // ディレクトリが存在するか確認し、存在しない場合は作成する
+        val directory = File(path)
+        if (!directory.exists()) {
+            directory.mkdirs()  // ディレクトリが存在しない場合は、ディレクトリを作成する
+        }
+
+        // ファイル出力ストリームを安全に作成
+        val fileOutputStream = FileOutputStream(fullPath)
+        return BufferedOutputStream(fileOutputStream)
+    }
 
     fun writeToUserHome(content: String, relativePath: String, charset: Charset = Charsets.UTF_8 ) {
         val filePath = constructFilePathInUserHome(relativePath)

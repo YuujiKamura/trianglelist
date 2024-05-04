@@ -1,12 +1,16 @@
 package com.jpaver.trianglelist
 
-import android.util.Log
+import com.jpaver.trianglelist.util.TitleParamStr
 import java.io.BufferedWriter
 
 
-class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
+class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
+                    override var dedlist_: DeductionList = DeductionList(),
+                    override var zumeninfo: ZumenInfo = ZumenInfo(),
+                    override var titleTri_: TitleParamStr = TitleParamStr(),
+                    override var titleDed_: TitleParamStr = TitleParamStr()
+): DrawingFileWriter() {
     //region parameters
-    override var trilist_ = trilist
     lateinit var writer: BufferedWriter
     lateinit var drawingLength: PointXY // = drawingLength
 
@@ -34,8 +38,6 @@ class DxfFileWriter( trilist: TriangleList): DrawingFileWriter() {
         writeHeader()
         writeEntities()
         writeFooter()
-
-        Log.d("DxfFileWriter", "Writer Process Done.")
 
     }
 

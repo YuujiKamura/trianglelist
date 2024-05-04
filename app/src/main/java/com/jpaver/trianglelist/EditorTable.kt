@@ -11,7 +11,7 @@ data class DeductionParams(var num: Int, var name: String, var lengthX: Float, v
 
 data class TitleParams(var type: Int, var n: Int, var name: Int, var a: Int, var b: Int, var c: Int, var pn: Int, var pl: Int)
 
-class TitleParamStr(var type: String, var n: String, var name: String, var a: String, var b: String, var c: String, var pn: String, var pl: String)
+class TitleParamStr(var type: String="", var n: String="", var name: String="", var a: String="", var b: String="", var c: String="", var pn: String="", var pl: String="")
 
 
 data class EditTextViewLine(var n: EditText, var name: EditText, var a: EditText, var b: EditText, var c: EditText, var pn: EditText, var pl: Spinner)

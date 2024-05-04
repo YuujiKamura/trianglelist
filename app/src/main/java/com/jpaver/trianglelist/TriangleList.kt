@@ -168,7 +168,7 @@ class TriangleList : EditList {
 
     private fun initializeFileTypeMap(): Map<String, Map<Float, Float>> {
         val textScaleMapPDF = mapOf(45f to 3f, 40f to 5f, 25f to 6f, 20f to 8f, 15f to 8f)
-        val textScaleMapDXF = mapOf(15f to 0.35f, 5f to 0.25f)
+        val textScaleMapDXF = mapOf(15f to 0.35f, 10f to 0.30f, 5f to 0.25f)
         return mapOf(
             "dxf" to textScaleMapDXF,
             "sfc" to textScaleMapDXF,
