@@ -17,5 +17,6 @@
     <file url="file://$PROJECT_DIR$/app/src/main/cpp/sfc/dev_tool/max.h" charset="windows-31j" />
     <file url="file://$PROJECT_DIR$/app/src/main/cpp/sfc/sample_main/SXFStruct.h" charset="windows-31j" />
     <file url="file://$PROJECT_DIR$/app/src/main/cpp/sfc/sample_main/main.cpp" charset="windows-31j" />
+    <file url="file://$PROJECT_DIR$/app/testDxf/test.dxf" charset="windows-31j" />
   </component>
 </project>
