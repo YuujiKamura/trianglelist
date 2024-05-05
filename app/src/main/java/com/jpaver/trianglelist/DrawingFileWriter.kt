@@ -395,34 +395,73 @@ open class DrawingFileWriter {
             scale
         )
 
-        writeBox( baseX, xoffset, immutable_baseY, mutable_baseY, yoffset, yspacer, scale )
+        writeTopAndBottomHalfBox( baseX, xoffset, immutable_baseY, mutable_baseY, yoffset, yspacer, scale )
     }
 
-    fun writeBox(baseX: Float,
-                 xoffset: Float,
-                 immutable_baseY: Float,
-                 mutable_baseY: Float,
-                 yoffset:Float,
-                 yspacer:Float,
-                 scale: Float ){
+    fun writeTopAndBottomHalfBox(baseX: Float,
+                                 xoffset: Float,
+                                 immutable_baseY: Float,
+                                 mutable_baseY: Float,
+                                 yoffset:Float,
+                                 yspacer:Float,
+                                 scale: Float ){
 
         val left = baseX - xoffset * 0.5f
         val right = baseX + xoffset * 4.5f
         val top = immutable_baseY + yoffset + yspacer
         val middle = mutable_baseY + yoffset * 2 + yspacer
         val bottom = mutable_baseY + yspacer
+        // top left right
         writeLine(
             PointXY( left, top ),
             PointXY( right, top ), WHITE, scale)
+        // bottom left right
         writeLine(
             PointXY( left, bottom ),
             PointXY( right, bottom ),WHITE, scale)
+        // left middle bottom
         writeLine(
             PointXY( left, middle ),
             PointXY( left, bottom ),WHITE, scale)
+        // right middle bottom
         writeLine(
             PointXY( right, middle ),
             PointXY( right, bottom ),WHITE, scale)
+    }
+
+    fun writeHalfBox(baseX: Float,
+                     xoffset: Float,
+                     basey: Float,
+                     yspacer: Float,
+                     yoffset: Float,
+                     scale: Float ){
+        writeLine(
+            PointXY(
+                baseX - xoffset * 0.5f,
+                basey + yspacer
+            ),
+            PointXY(
+                baseX + xoffset * 4.5f,
+                basey + yspacer
+            ),WHITE, scale)
+        writeLine(
+            PointXY(
+                baseX - xoffset * 0.5f,
+                basey + yoffset + yspacer
+            ),
+            PointXY(
+                baseX - xoffset * 0.5f,
+                basey + yspacer
+            ),WHITE, scale)
+        writeLine(
+            PointXY(
+                baseX + xoffset * 4.5f,
+                basey + yoffset + yspacer
+            ),
+            PointXY(
+                baseX + xoffset * 4.5f,
+                basey + yspacer
+            ),WHITE, scale)
     }
 
     fun writeCalcSheetEditList(
@@ -495,33 +534,8 @@ open class DrawingFileWriter {
             0f,
             scale
         )
-        writeLine(
-            PointXY(
-                baseX - xoffset * 0.5f,
-                basey + yspacer
-            ),
-            PointXY(
-                baseX + xoffset * 4.5f,
-                basey + yspacer
-            ),WHITE, scale)
-        writeLine(
-            PointXY(
-                baseX - xoffset * 0.5f,
-                basey + yoffset + yspacer
-            ),
-            PointXY(
-                baseX - xoffset * 0.5f,
-                basey + yspacer
-            ),WHITE, scale)
-        writeLine(
-            PointXY(
-                baseX + xoffset * 4.5f,
-                basey + yoffset + yspacer
-            ),
-            PointXY(
-                baseX + xoffset * 4.5f,
-                basey + yspacer
-            ),WHITE, scale)
+
+        writeHalfBox(baseX,xoffset,basey,yspacer,yoffset,scale)
 
         basey -= yoffset
 
@@ -542,33 +556,8 @@ open class DrawingFileWriter {
             0f,
             scale
         )
-        writeLine(
-            PointXY(
-                baseX - xoffset * 0.5f,
-                basey + yspacer
-            ),
-            PointXY(
-                baseX + xoffset * 4.5f,
-                basey + yspacer
-            ),WHITE, scale)
-        writeLine(
-            PointXY(
-                baseX - xoffset * 0.5f,
-                basey + yoffset + yspacer
-            ),
-            PointXY(
-                baseX - xoffset * 0.5f,
-                basey + yspacer
-            ),WHITE, scale)
-        writeLine(
-            PointXY(
-                baseX + xoffset * 4.5f,
-                basey + yoffset + yspacer
-            ),
-            PointXY(
-                baseX + xoffset * 4.5f,
-                basey + yspacer
-            ),WHITE, scale)
+
+        writeHalfBox(baseX,xoffset,basey,yspacer,yoffset,scale)
 
         basey -= yoffset
         return basey
@@ -657,34 +646,8 @@ open class DrawingFileWriter {
             0f,
             scale
         )
-        writeLine(
-            PointXY(
-                baseX - xoffset * 0.5f,
-                baseY + yspacer
-            ),
-            PointXY(
-                baseX + xoffset * 4.5f,
-                baseY + yspacer
-            ),WHITE, scale)
 
-        writeLine(
-            PointXY(
-                baseX - xoffset * 0.5f,
-                baseY + yoffset + yspacer
-            ),
-            PointXY(
-                baseX - xoffset * 0.5f,
-                baseY + yspacer
-            ),WHITE, scale)
-        writeLine(
-            PointXY(
-                baseX + xoffset * 4.5f,
-                baseY + yoffset + yspacer
-            ),
-            PointXY(
-                baseX + xoffset * 4.5f,
-                baseY + yspacer
-            ),WHITE, scale)
+        writeHalfBox(baseX,xoffset,baseY,yspacer,yoffset,scale)
 
         return editObject.getArea()
     }
