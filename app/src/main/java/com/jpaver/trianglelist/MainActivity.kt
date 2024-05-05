@@ -1005,7 +1005,8 @@ class MainActivity : AppCompatActivity(),
         if(!deductionMode) {
             deductionMode = true
             myview.deductionMode = true
-            Toast.makeText(this, "Edit Mode : Area Deductions", Toast.LENGTH_LONG).show()
+            //showToast("Edit Mode : Area Deductions")
+            //Toast.makeText(this, "Edit Mode : Area Deductions", Toast.LENGTH_LONG).show()
 
             // 入力テーブルの見かけの変更、タイトル行の文字列とカラー
             myEditor.setHeaderTable(
@@ -1053,7 +1054,8 @@ class MainActivity : AppCompatActivity(),
         } else {
             deductionMode = false
             myview.deductionMode = false
-            Toast.makeText(this, "Edit Mode : Triangles", Toast.LENGTH_LONG).show()
+            //showToast("Edit Mode : Triangles")
+            //Toast.makeText(this, "Edit Mode : Triangles", Toast.LENGTH_LONG).show()
             // 入力テーブルの見かけの変更、タイトル行の文字列とカラー
             myEditor.setHeaderTable(
                 findViewById(R.id.TV_NUM),
@@ -1271,6 +1273,8 @@ class MainActivity : AppCompatActivity(),
 
     val BLINKSECOND = 1
 
+
+
     private fun setCommonFabListener(fab: FloatingActionButton, isSaveCSV: Boolean = true, action: () -> Unit) {
         fab.setOnClickListener {
             blinkFAB(fab, BLINKSECOND)
@@ -1278,7 +1282,8 @@ class MainActivity : AppCompatActivity(),
 
             // contentDescriptionからToastメッセージを取得し表示
             fab.contentDescription?.let {
-                Toast.makeText(fab.context, it, Toast.LENGTH_SHORT).show()
+                showToast(fab.contentDescription.toString())
+                //Toast.makeText(fab.context, it, Toast.LENGTH_SHORT).show()
             }
 
             if (!isSaveCSV) return@setOnClickListener
@@ -2833,9 +2838,12 @@ class MainActivity : AppCompatActivity(),
     //endregion
 
     // region logs and Toast
-    private fun showToast(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    var currentToast: Toast? = null
+    fun showToast(message: String) {
+        currentToast?.cancel() // 現在表示されているToastがあればキャンセル
+        currentToast = Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).apply { show() }
     }
+
 
     fun Context.logFilePreview(filePath: String, callerMethodName: String = "UnknownCaller") {
         val file = File(this.filesDir, filePath)
