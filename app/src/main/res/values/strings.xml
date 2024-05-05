@@ -88,30 +88,31 @@
     </string-array>
     <string name="action_privacy">個人情報保護方針</string>
     <string name="action_save_xlsx">Xlsx出力</string>
-    <string name="rotate_to_left" translatable="false">rotate to left</string>
-    <string name="rotate_to_right" translatable="false">rotate to right</string>
-    <string name="test_run_basic_senario" translatable="false">test run basic senario</string>
-    <string name="reset_view" translatable="false">reset view</string>
-    <string name="list_to_up" translatable="false">list to up</string>
-    <string name="list_to_down" translatable="false">list to down</string>
-    <string name="fill_color" translatable="false">fill color</string>
-    <string name="show_xlsx" translatable="false">show xlsx</string>
-    <string name="increase_text_size" translatable="false">increase text size</string>
-    <string name="decrease_text_size" translatable="false">decrease text size</string>
-    <string name="show_debug_string" translatable="false">show debug string</string>
-    <string name="view_pdf" translatable="false">view pdf</string>
-    <string name="share_pdf_to" translatable="false">share pdf</string>
-    <string name="send_email_to" translatable="false">send email</string>
-    <string name="connect_to_b_length_in_parent" translatable="false">connect to length B</string>
-    <string name="connect_to_c_length_in_parent" translatable="false">connect to length C</string>
-    <string name="rewrite_shape" translatable="false">rewrite shape</string>
-    <string name="undo" translatable="false">undo</string>
-    <string name="flip_dimension_text_in_vertical" translatable="false">flip dimension text in vertical</string>
-    <string name="flip_connect_point_in_horizontal" translatable="false">flip connect point in horizontal</string>
-    <string name="flag_up_a_information_text" translatable="false">flag up the information text</string>
-    <string name="change_deduction_mode" translatable="false">change deduction mode</string>
-    <string name="delete_a_shape_tap_twice" translatable="false">delete a shape, tap twice</string>
-    <string name="trilist_number_reverse" translatable="false">trilist number reverse</string>
-    <string name="view_dxf" translatable="false">view_dxf</string>
-    <string name="share_files" translatable="false" >share files</string>
+    <string name="rotate_to_left" translatable="false">Rotate Left</string>
+    <string name="rotate_to_right" translatable="false">Rotate Right</string>
+    <string name="test_run_basic_senario" translatable="false">Test run basic senario</string>
+    <string name="reset_view" translatable="false">Reset View</string>
+    <string name="list_to_up" translatable="false">List Up</string>
+    <string name="list_to_down" translatable="false">List Down</string>
+    <string name="fill_color" translatable="false">"Change Color "</string>
+    <string name="show_xlsx" translatable="false">View Xlsx</string>
+    <string name="increase_text_size" translatable="false">Increase Text Size</string>
+    <string name="decrease_text_size" translatable="false">Decrease Text Size</string>
+    <string name="show_debug_string" translatable="false">Show Debug Strings</string>
+    <string name="view_pdf" translatable="false">View PDF</string>
+    <string name="share_pdf_to" translatable="false">Share PDF</string>
+    <string name="send_email_to" translatable="false">Email</string>
+    <string name="connect_to_b_length_in_parent" translatable="false">Connect to length B</string>
+    <string name="connect_to_c_length_in_parent" translatable="false">Connect to length C</string>
+    <string name="rewrite_shape" translatable="false">Add or Rewrite</string>
+    <string name="undo" translatable="false">Undo</string>
+    <string name="flip_dimension_text_in_vertical" translatable="false">Flip Dim in Vertical</string>
+    <string name="flip_dimension_text_in_horizontal" translatable="false">Flip Dim in Horizontal</string>
+    <string name="flip_connect_point_in_horizontal" translatable="false">Slide Connection in Horizontal</string>
+    <string name="flag_up_a_information_text" translatable="false">Flag Up</string>
+    <string name="change_deduction_mode" translatable="false">Change Edit Mode</string>
+    <string name="delete_a_shape_tap_twice" translatable="false">Delete last, when tap twice</string>
+    <string name="trilist_number_reverse" translatable="false">Reverse</string>
+    <string name="view_dxf" translatable="false">View DXF</string>
+    <string name="share_files" translatable="false" >Share Files</string>
 </resources>
