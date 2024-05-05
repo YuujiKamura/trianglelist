@@ -1903,6 +1903,12 @@ class MainActivity : AppCompatActivity(),
         myEditor.lineRewrite( getTriangleParameter(sideindex), editorline1 )
 
         if(myview.trianglelist.lastTapSide != -1){
+            val numToLetterMap = mapOf(
+                1 to "B",
+                2 to "C"
+                // 他の数値と文字の対応を追加可能
+            )
+            showToast("Connect to ${numToLetterMap[sideindex]}")
             myview.trianglelist.isDoubleTap = true
 
             focusTo.requestFocus()
