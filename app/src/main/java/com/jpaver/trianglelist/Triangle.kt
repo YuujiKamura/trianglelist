@@ -358,6 +358,15 @@ class Triangle : EditObject, Cloneable<Triangle> {
     //endregion constructor
 
     //region getter
+    fun getChainedLengthOrZero(triangle: Triangle?): Float{
+        if( triangle == null ) return 0f
+        return when(triangle){
+            this.nodeB -> lengthBforce
+            this.nodeC -> lengthCforce
+            else -> 0f
+        }
+    }
+
     fun getPointByCParam(cparam: ConnParam, prnt: Triangle?): PointXY? {
         if (prnt == null) return PointXY(0f, 0f)
         val cside = cparam.side

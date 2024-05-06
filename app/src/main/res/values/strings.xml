@@ -101,17 +101,17 @@
     <string name="show_debug_string" translatable="false">Show Debug Strings</string>
     <string name="view_pdf" translatable="false">View PDF</string>
     <string name="share_pdf_to" translatable="false">Share PDF</string>
-    <string name="send_email_to" translatable="false">Email</string>
+    <string name="send_email_to" translatable="false">Gmail</string>
     <string name="connect_to_b_length_in_parent" translatable="false">Connect to length B</string>
     <string name="connect_to_c_length_in_parent" translatable="false">Connect to length C</string>
     <string name="rewrite_shape" translatable="false">Add or Rewrite</string>
-    <string name="undo" translatable="false">Undo</string>
+    <string name="undo" translatable="false">Undo (one-time only)</string>
     <string name="flip_dimension_text_in_vertical" translatable="false">Flip Dim in Vertical</string>
     <string name="flip_dimension_text_in_horizontal" translatable="false">Flip Dim in Horizontal</string>
-    <string name="flip_connect_point_in_horizontal" translatable="false">Slide Connection in Horizontal</string>
-    <string name="flag_up_a_information_text" translatable="false">Flag Up</string>
+    <string name="flip_connect_point_in_horizontal" translatable="false">Slide Connection (in Different Lengthes)</string>
+    <string name="flag_up_a_information_text" translatable="false">Flag Up the Info</string>
     <string name="change_deduction_mode" translatable="false">Change Edit Mode</string>
-    <string name="delete_a_shape_tap_twice" translatable="false">Delete last, when tap twice</string>
+    <string name="delete_a_shape_tap_twice" translatable="false">Delete Last, when Tap Twice</string>
     <string name="trilist_number_reverse" translatable="false">List Reverse (Dedmode Only)</string>
     <string name="view_dxf" translatable="false">View DXF (need JW cad viewer)</string>
     <string name="share_files" translatable="false" >Share Files</string>
