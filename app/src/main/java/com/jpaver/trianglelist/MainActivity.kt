@@ -56,6 +56,7 @@ import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.UpdateAvailability
 import com.jpaver.trianglelist.databinding.ActivityMainBinding
+import com.jpaver.trianglelist.dataclass.ZumenInfo
 import com.jpaver.trianglelist.filemanager.XlsxWriter
 import com.jpaver.trianglelist.fragment.MyDialogFragment
 import com.jpaver.trianglelist.util.AdInitializer
@@ -77,28 +78,6 @@ import java.io.OutputStreamWriter
 import java.io.Writer
 import java.time.LocalDate
 import kotlin.math.roundToInt
-
-
-data class ZumenInfo(
-    // 文字列リソースをstringに変換して保持する。
-    // 改めてみると、どれがどこで使われているのか不明、なんでtitleふたつあんの
-    var zumentitle: String = "",
-    var rosenname: String = "",
-    var koujiname: String = "",
-    var tDtype_: String = "",
-    var tDname_: String = "",
-    var tScale_: String = "",
-    var tNum_: String = "",
-    var tDateHeader_: String = "",
-    var tDate_: String = "",
-    var tAname_: String = "",
-    var menseki_: String = "",
-    var mTitle_: String = "",
-    var mCname_: String = "",
-    var mSyoukei_: String = "",
-    var mGoukei_: String = "",
-    var tCredit_: String = ""
-)
 
 class MainActivity : AppCompatActivity(),
         MyDialogFragment.NoticeDialogListener {
@@ -1108,7 +1087,7 @@ class MainActivity : AppCompatActivity(),
         val eob = elist.get(currentNum - 1)
 
         loadEditTable()
-        myEditor.lineRewrite(
+        myEditor.write(
                 InputParameter(
                         "",
                         "",
@@ -1121,9 +1100,9 @@ class MainActivity : AppCompatActivity(),
                     PointXY(0f, 0f)
                 ), editorline1
         )
-        myEditor.lineRewrite(eo.getParams(), editorLine2)
-        if(currentNum > 1) myEditor.lineRewrite(eob.getParams(), myELThird)
-        if(currentNum == 1) myEditor.lineRewrite(
+        myEditor.write(eo.getParams(), editorLine2)
+        if(currentNum > 1) myEditor.write(eob.getParams(), myELThird)
+        if(currentNum == 1) myEditor.write(
                 InputParameter(
                         "",
                         "",
@@ -1611,7 +1590,7 @@ class MainActivity : AppCompatActivity(),
     }
 
     fun fabFlag(){
-        parameter = myEditor.readLineTo(parameter, editorLine2)
+        parameter = myEditor.read(parameter, editorLine2)
 
         if(deductionMode) flagDeduction()
         else flagTriangle()
@@ -1670,8 +1649,8 @@ class MainActivity : AppCompatActivity(),
 
         var inputLineAdd  = InputParameter()
         var inputLineEdit = InputParameter()
-        myEditor.readLineTo(inputLineAdd, editorline1)
-        myEditor.readLineTo(inputLineEdit, editorLine2)
+        myEditor.read(inputLineAdd, editorline1)
+        myEditor.read(inputLineEdit, editorLine2)
 
         // 主にデバッグ用
         if( forceParameter != null ){
@@ -1952,7 +1931,7 @@ class MainActivity : AppCompatActivity(),
             if(sideindex == 2) focusTo = editorline2_lengthC
         }
 
-        myEditor.lineRewrite( getTriangleParameter(sideindex), editorline1 )
+        myEditor.write( getTriangleParameter(sideindex), editorline1 )
 
         if(myview.trianglelist.lastTapSide != -1){
             val numToLetterMap = mapOf(
@@ -1976,7 +1955,7 @@ class MainActivity : AppCompatActivity(),
 
     fun connectDeduction(sideindex: Int){
         setFabSetBC(sideindex)
-        myEditor.lineRewrite( setupDedParameter(sideindex), editorline1 )
+        myEditor.write( setupDedParameter(sideindex), editorline1 )
     }
 
     fun setupDedParameter(sideindex: Int): InputParameter{
@@ -2003,7 +1982,7 @@ class MainActivity : AppCompatActivity(),
     private fun autoConnection(sideindex: Int){
         setTriListNumber()
         myview.trianglelist.lastTapSide = sideindex
-        parameter = myEditor.readLineTo(parameter, editorline1) //keep them
+        parameter = myEditor.read(parameter, editorline1) //keep them
 
         if(!deductionMode)
             connectTriangle(sideindex)
