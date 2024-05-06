@@ -1,5 +1,6 @@
 package com.jpaver.trianglelist
 
+import com.jpaver.trianglelist.dataclass.ZumenInfo
 import com.jpaver.trianglelist.util.TitleParamStr
 import java.io.BufferedWriter
 

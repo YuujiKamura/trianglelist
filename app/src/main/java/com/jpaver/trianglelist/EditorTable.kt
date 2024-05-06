@@ -34,13 +34,9 @@ data class InputParameter(var name: String = "",
                       0f,
                       0f
                   )
-)//,
-//                  var an: Float = 0f)
+)
 
 class EditorTable {
-    //var dTP: TriParams = TriParams(0f, 0f, 0f, "", 0, 0, 0)
-    //var dDP: DeductionParams = DeductionParams(PointXY(0f,0f), 0f, 0f, "", "", 0f, 0f)
-
     fun setHeaderTable(tV1: TextView, tV2: TextView, tV3: TextView, tV4: TextView, tV5: TextView, tV6: TextView, tV7: TextView, tp: TitleParams){
         tV1.setText(tp.n)
         tV2.setText(tp.name)
@@ -62,18 +58,16 @@ class EditorTable {
         if( (max > current && movement > 0) ||
           (current > min && movement < 0) ) {
             current = myList.addCurrent(movement)
-            lineRewrite(myList.getParams(current), secondly)
+            write(myList.getParams(current), secondly)
             if(current == 1) {
-                lineRewrite(
+                write(
                     InputParameter("","",0,0f,0f,0f,0,0,
                     PointXY(0f, 0f),
                     PointXY(0f, 0f)
                 ), thirdly)
-                //setLineEditable(false, thirdly, thirdly)
             }
             else {
-//                setLineEditable(true, thirdly, thirdly)
-                lineRewrite(myList.getParams(current - 1), thirdly)
+                write(myList.getParams(current - 1), thirdly)
             }
         }
 }
@@ -85,10 +79,8 @@ class EditorTable {
         return format.format(this)
     }
 
-    fun lineRewrite(prm: InputParameter, line: EditTextViewLine){
+    fun write(prm: InputParameter, line: EditTextViewLine){
 
-//        if(prm.n == 0)  line.n.setText("")
-        //else
         line.n.setText(prm.number.toString())
         line.name.setText(prm.name)
 
@@ -108,32 +100,28 @@ class EditorTable {
         return str.toFloat()
     }
 
-    fun readLineTo(prm: InputParameter, line: EditTextViewLine) : InputParameter {
+    fun read(inputParams: InputParameter, line: EditTextViewLine): InputParameter {
+        // より簡潔な方法で空文字をデフォルト値に置き換える
+        fun String.defaultIfEmpty(default: String): String = if (this.isEmpty()) default else this
 
-        var sa: String = line.a.text.toString()
-        var sb: String = line.b.text.toString()
-        var sc: String = line.c.text.toString()
-        if(sa == "") sa = "0.0"
-        if(sb == "") sb = "0.0"
-        if(sc == "") sc = "0.0"
+        // 入力されたテキストを適切な型に変換するヘルパー関数
+        fun String.toIntOrDefault(): Int = this.defaultIfEmpty("0").toInt()
+        fun String.toFloatOrDefault(): Float = toFloatIgnoreDot(this.defaultIfEmpty("0.0"))
 
-        var sn: String = line.n.text.toString()
-        var spn: String = line.pn.text.toString()
-        if (sn == "") sn = "0"
-        if (spn == "") spn = "0"
+        // パラメータを読み取り、適切な型に変換
+        with(inputParams) {
+            number = line.n.text.toString().toIntOrDefault()
+            pn = line.pn.text.toString().toIntOrDefault()
+            name = line.name.text.toString()
+            a = line.a.text.toString().toFloatOrDefault()
+            b = line.b.text.toString().toFloatOrDefault()
+            c = line.c.text.toString().toFloatOrDefault()
+            pl = line.pl.selectedItemPosition
+            type = line.pl.selectedItem.toString()
+        }
 
-        prm.number = sn.toInt()
-        prm.pn = spn.toInt()
-
-        prm.name = line.name.text.toString()
-        prm.a = toFloatIgnoreDot(sa)
-        prm.b = toFloatIgnoreDot(sb)
-        prm.c = toFloatIgnoreDot(sc)
-        prm.pl = line.pl.selectedItemPosition
-        prm.type = line.pl.selectedItem.toString()
-
-        return prm.copy()
+        // 元のオブジェクトのコピーを返す
+        return inputParams.copy()
     }
-
 
 }
