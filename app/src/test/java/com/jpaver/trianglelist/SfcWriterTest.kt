@@ -1,5 +1,6 @@
 package com.jpaver.trianglelist
 
+import com.jpaver.trianglelist.dataclass.ZumenInfo
 import com.jpaver.trianglelist.util.FileUtil
 import com.jpaver.trianglelist.util.TitleParamStr
 import org.junit.Assert
