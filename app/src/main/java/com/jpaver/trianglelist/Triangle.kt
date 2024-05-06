@@ -477,15 +477,18 @@ class Triangle : EditObject, Cloneable<Triangle> {
     fun getTapLength(tapP: PointXY, rangeRadius: Float): Int {
         setDimPoint()
         val range = rangeRadius * scaleFactror
-        return when {
-            tapP.nearBy(dimpoint.s, range) -> 4
+        val result = when {
             tapP.nearBy(dimpoint.a, range) -> 0
             tapP.nearBy(dimpoint.b, range) -> 1
             tapP.nearBy(dimpoint.c, range) -> 2
             tapP.nearBy(pointnumber, range) -> 3
+            tapP.nearBy(dimpoint.s, range) && !name.isEmpty() -> 4
             else -> -1
-        }.also { lastTapSide_ = it }
+        }
+        lastTapSide_ = result
+        return result
     }
+
 
     fun pointCenter_(): PointXY {
         return PointXY(pointcenter)
