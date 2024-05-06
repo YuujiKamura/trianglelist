@@ -496,9 +496,17 @@ class TriangleList : EditList {
     }
 
     fun rotateCurrentTriLCR(): ConnParam? {
-        if (lastTapNumber < 2) return null
-        val curTri = trilist[lastTapNumber - 1]
-        val cParam = curTri.rotateLCRandGet().cParam_.clone()
+        if(lastTapNumber < 2) return null
+        val target = trilist[lastTapNumber - 1]
+        val nodeA = target.nodeA
+
+        if( nodeA == null ) return null
+        val lengthChained = nodeA.getChainedLengthOrZero(target)
+
+        if( lengthChained == 0f ) return null
+        if( target.lengthAforce == lengthChained ) return null
+
+        val cParam = target.rotateLCRandGet().cParam_.clone()
         //if( lastTapNum_ < myTriList.size() ) myTriList.get(lastTapNum_).resetByParent( curTri, myTriList.get(lastTapNum_).cParam_ );
 
         // 次以降の三角形を書き換えている
@@ -506,7 +514,7 @@ class TriangleList : EditList {
             val nextTri = trilist[i]
             if (i > 0) {
                 val npmi = nextTri.nodeA!!.mynumber - 1
-                if (npmi == curTri.mynumber - 1) nextTri.nodeA = curTri.clone()
+                if (npmi == target.mynumber - 1) nextTri.nodeA = target.clone()
                 nextTri.resetByParent(trilist[npmi], nextTri.cParam_)
             }
         }
