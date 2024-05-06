@@ -23,16 +23,6 @@
     <string name="menseki_koujimei">Cons name : </string>
     <string name="menseki_syoukei"> Sum</string>
     <string name="menseki_goukei">Sum</string>
-    <string name="editor_number">Num</string>
-    <string name="editor_name">Name</string>
-    <string name="editor_sokuten">Name</string>
-    <string name="editor_lA">LenA</string>
-    <string name="editor_lB">LenB</string>
-    <string name="editor_lC">LenC</string>
-    <string name="editor_parent">Pare</string>
-    <string name="editor_setuzoku">Conn</string>
-    <string name="editor_syozoku">inside</string>
-    <string name="editor_form">Form</string>
     <string name="editor_koujyo">Deduction</string>
     <string name="credit">http://trianglelist.home.blog</string>
 

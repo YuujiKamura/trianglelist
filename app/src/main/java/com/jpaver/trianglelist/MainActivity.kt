@@ -39,9 +39,11 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.FileProvider.getUriForFile
 import androidx.core.content.edit
 import androidx.fragment.app.DialogFragment
+import androidx.lifecycle.ViewModelProvider
 import androidx.preference.PreferenceManager
 import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdRequest
@@ -451,6 +453,7 @@ class MainActivity : AppCompatActivity(),
         setTheme(R.style.AppTheme_NoActionBar) //Note that this should be called before any views are instantiated in the Context (for example before calling Activity.setContentView(View) or LayoutInflater.inflate(int, ViewGroup)).
 
         bindingMain = ActivityMainBinding.inflate(layoutInflater)
+        initFabs()
 
         val view = bindingMain.root
 
@@ -503,7 +506,6 @@ class MainActivity : AppCompatActivity(),
 
         myDeductionList = DeductionList()
 
-        initFabs()
         fabController()
 
     }
@@ -1268,14 +1270,30 @@ class MainActivity : AppCompatActivity(),
         fab_xlsx = bindingMain.fabXlsx
     }
 
+    fun adjustFabPositions(tableHeight: Int) {
+        val topFabs = arrayOf( fab_rot_l )//, fab_resetView, fab_rot_l, fab_rot_r, fab_setB, fab_setC )
+
+        topFabs.forEach {
+            adjustFabPosition(it, tableHeight)
+        }
+    }
+
+    fun adjustFabPosition(fab: FloatingActionButton, tableHeight: Int) {
+        val layoutParams = fab.layoutParams as? CoordinatorLayout.LayoutParams
+        if (layoutParams != null) {
+            layoutParams.bottomMargin = tableHeight + resources.getDimensionPixelSize(R.dimen.fab_margin)
+            fab.layoutParams = layoutParams
+        } else {
+            Log.e("FAB Error", "Layout parameters are not of the expected type")
+        }
+    }
+
     private fun autosave() {
         isCSVsavedToPrivate = false
         isCSVsavedToPrivate = saveCSVtoPrivate()
     }
 
     val BLINKSECOND = 1
-
-
 
     private fun setCommonFabListener(fab: FloatingActionButton, isSaveCSV: Boolean = true, action: () -> Unit) {
         fab.setOnClickListener {
@@ -1472,6 +1490,11 @@ class MainActivity : AppCompatActivity(),
         }
 
         setCommonFabListener(fab_resetView,false) {
+            val viewModel = ViewModelProvider(this).get(SharedViewModel::class.java)
+            viewModel.tableHeight.observe(this, { height ->
+                adjustFabPositions(height)
+            })
+
             try{
                 if(!deductionMode) myview.resetViewToLastTapTriangle()
                 else if( myDeductionList.size() > 0 )  myview.resetViewToCurrentDeduction()
