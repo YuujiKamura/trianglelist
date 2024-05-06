@@ -16,6 +16,8 @@ import android.graphics.Color
 import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.OpenableColumns
 import android.text.Editable
 import android.text.InputFilter
@@ -1278,13 +1280,13 @@ class MainActivity : AppCompatActivity(),
     private fun setCommonFabListener(fab: FloatingActionButton, isSaveCSV: Boolean = true, action: () -> Unit) {
         fab.setOnClickListener {
             blinkFAB(fab, BLINKSECOND)
-            action()
-
             // contentDescriptionからToastメッセージを取得し表示
             fab.contentDescription?.let {
                 showToast(fab.contentDescription.toString())
                 //Toast.makeText(fab.context, it, Toast.LENGTH_SHORT).show()
             }
+
+            action()
 
             if (!isSaveCSV) return@setOnClickListener
             autosave()
@@ -1307,12 +1309,39 @@ class MainActivity : AppCompatActivity(),
     }
 
 
+    var deleteFlag = 0
+    fun performDelete(){
+        val listLength = getList(deductionMode).size()
+        if (listLength > 0) {
+            trilistUndo = trianglelist.clone()
+
+            var eraseNum = listLength
+            if(!deductionMode) eraseNum = trianglelist.lastTapNumber
+
+            getList(deductionMode).remove(eraseNum)
+
+            myview.setDeductionList(myDeductionList, viewscale)
+            myview.setTriangleList(trianglelist, viewscale)
+
+            editorResetBy(getList(deductionMode))
+        }
+        deleteFlag = 0
+        bindingMain.fabMinus.backgroundTintList = getColorStateList(R.color.colorAccent)
+    }
+
+    fun finalizeUI(){
+        printDebugConsole()
+        colorMovementFabs()
+        myview.resetViewToLastTapTriangle()
+        setTitles()
+    }
+
     private fun fabController(){
 
         val mainViewModel = MainViewModel()
 
         setCommonFabListener(fab_replace) {
-            fabReplace(parameter, false)
+            fabReplace()
         }
 
         setCommonFabListener(fab_flag) {
@@ -1338,35 +1367,25 @@ class MainActivity : AppCompatActivity(),
             }
         }
 
-        var deleteWarning = 0
         setCommonFabListener(fab_minus) {
-            val listLength = getList(deductionMode).size()
-
-            if(listLength > 0 && deleteWarning == 0) {
-                deleteWarning = 1
-                bindingMain.fabMinus.backgroundTintList = getColorStateList(R.color.colorTT2)
-            }
-            else {
-                if (listLength > 0) {
-                    trilistUndo = trianglelist.clone()
-
-                    var eraseNum = listLength
-                    if(!deductionMode) eraseNum = trianglelist.lastTapNumber
-
-                    getList(deductionMode).remove(eraseNum)
-
-                    myview.setDeductionList(myDeductionList, viewscale)
-                    myview.setTriangleList(trianglelist, viewscale)
-
-                    editorResetBy(getList(deductionMode))
-                }
-                deleteWarning = 0
+            val handler = Handler(Looper.getMainLooper())
+            val runnable = Runnable {
+                deleteFlag = 0
                 bindingMain.fabMinus.backgroundTintList = getColorStateList(R.color.colorAccent)
             }
-            printDebugConsole()
-            colorMovementFabs()
-            myview.resetViewToLastTapTriangle()
-            setTitles()
+
+            if (deleteFlag == 0) {
+                deleteFlag = 1
+                // 3秒後にdeleteFlagをリセット
+                handler.postDelayed(runnable, 3000)
+                bindingMain.fabMinus.backgroundTintList = getColorStateList(R.color.colorTT2)
+            } else {
+                // リストから削除のロジックをここに実装
+                handler.removeCallbacks(runnable) // タイマーをキャンセル
+                deleteFlag = 0
+                performDelete()
+            }
+            finalizeUI()
         }
 
         setCommonFabListener(fab_undo){
@@ -1446,7 +1465,7 @@ class MainActivity : AppCompatActivity(),
         }
 
         setCommonFabListener(fab_deduction,false) {
-            deleteWarning = 0
+            deleteFlag = 0
             fab_minus.backgroundTintList = getColorStateList(R.color.colorAccent)
             flipDeductionMode()
             colorMovementFabs()
@@ -1505,9 +1524,9 @@ class MainActivity : AppCompatActivity(),
 
         setCommonFabListener(fab_testbasic,false) {
             findViewById<TextView>(R.id.editLengthB1).text = "" // reset
-            fabReplace(InputParameter("", "", 1, 7f, 7f, 7f, 0, 0), true)
+            fabReplace(InputParameter("", "", 1, 7f, 7f, 7f, 0, 0) )
             findViewById<TextView>(R.id.editLengthB1).text = 0.6f.toString()//"6f" // add
-            fabReplace(InputParameter("", "", 2, 7f, 6f, 6f, 1, 2), true)
+            fabReplace(InputParameter("", "", 2, 7f, 6f, 6f, 1, 2) )
 
             findViewById<TextView>(R.id.editLengthA1).text = 0.23f.toString()//"0.23f" // add
             deductionMode = true
@@ -1519,7 +1538,7 @@ class MainActivity : AppCompatActivity(),
                         0f,
                         0f
                     )
-                ), true
+                )
             )
             deductionMode = false
 
@@ -1622,55 +1641,94 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    fun fabReplace(params: InputParameter = parameter, useit: Boolean = false ){
-        //val editor = myEditor
+    data class InputLines(val add:InputParameter, val edit:InputParameter)
+    data class StrAddLine( val a:String, val b:String, val c:String )
+
+    fun getStrAddLineFromActivity(activity: Activity): StrAddLine {
+        return StrAddLine(
+            a = activity.findViewById<TextView>(R.id.editLengthA1).text.toString(),
+            b = activity.findViewById<TextView>(R.id.editLengthB1).text.toString(),
+            c = activity.findViewById<TextView>(R.id.editLengthC1).text.toString()
+        )
+    }
+
+    fun fabReplace(forceParameter: InputParameter? = null ){
         trilistSaving(trianglelist)
         val dedMode = deductionMode
 
-        var readedFirst  = InputParameter()
-        var readedSecond = InputParameter()
-        myEditor.readLineTo(readedFirst, editorline1)
-        myEditor.readLineTo(readedSecond, editorLine2)
-        if(useit){
-            readedFirst = params
-            readedSecond = params
-        }
-        val strTopA = findViewById<TextView>(R.id.editLengthA1).text.toString()
-        val strTopB = findViewById<TextView>(R.id.editLengthB1).text.toString()
-        val strTopC = findViewById<TextView>(R.id.editLengthC1).text.toString()
+        val inputLines = preloadInputLines( forceParameter )
 
-        if (!dedMode) {
-            if (strTopB == "") {
-                resetTrianglesBy(readedSecond)
-            } else if (strTopC == "" && !useit) {
-                return
-            } else {
-                addTriangleBy(readedFirst)
-            }
-        } else { // if in deduction mode
-            if (strTopA == "") {
-                resetDeductionsBy(readedSecond)
-                myview.myDeductionList[readedSecond.number].point
-            } else {
-                addDeductionBy(readedFirst)
-                myview.myDeductionList[readedFirst.number].point
-            }
-            findViewById<EditText>(R.id.editName1).requestFocus()
+        // 使用するActivityまたはFragmentに適した参照を渡す
+        val strAddLine = getStrAddLineFromActivity(this)  // この`this`はActivityのインスタンスを指す
+
+        when(dedMode){
+            false -> processTriEditMode( strAddLine.b, strAddLine.c, inputLines.add, inputLines.edit )
+            true  -> processDedEditMode( strAddLine.a, inputLines.add, inputLines.edit )
         }
 
+        finalizeReplace()
+    }
+
+    fun preloadInputLines( forceParameter: InputParameter? = null ):InputLines {
+
+        var inputLineAdd  = InputParameter()
+        var inputLineEdit = InputParameter()
+        myEditor.readLineTo(inputLineAdd, editorline1)
+        myEditor.readLineTo(inputLineEdit, editorLine2)
+
+        // 主にデバッグ用
+        if( forceParameter != null ){
+            inputLineAdd = forceParameter
+            inputLineEdit = forceParameter
+        }
+
+        return InputLines( inputLineAdd, inputLineEdit )
+    }
+
+    fun finalizeReplace(){
         myview.setTriangleList(trianglelist, viewscale)
         setListAndResetView( { whenTriDed( {myview.resetView(myview.toLastTapTriangle())}, {myview.invalidate()} ) } )
         setTitles()
 
-
         myview.trianglelist.isDoubleTap = false
         myview.trianglelist.lastTapSide = 0
-
-        //logListCurrent()
         logFabController()
-
     }
 
+    private fun processTriEditMode(strAddLineB: String, strAddLineC: String, inputLineAdd: InputParameter, inputLineEdit: InputParameter) {
+        when {
+            strAddLineB.isEmpty() -> {
+                resetTrianglesBy( inputLineEdit )
+                showToast("Rewrite Triangle")
+            }
+            strAddLineC.isEmpty() -> return
+            else -> {
+                addTriangleBy( inputLineAdd )
+                showToast("Add Triangle")
+            }
+        }
+    }
+
+    private fun processDedEditMode(strTopA: String, readedFirst: InputParameter, readedSecond: InputParameter ) {
+        when {
+            strTopA.isEmpty() -> {
+                resetDeductionsBy(readedSecond)
+                showToast("Rewrite Deduction")
+                logDeductionPoint(readedSecond.number)
+            }
+            else -> {
+                addDeductionBy(readedFirst)
+                showToast("Add Deduction")
+                logDeductionPoint(readedFirst.number)
+            }
+        }
+        findViewById<EditText>(R.id.editName1).requestFocus()
+    }
+
+    private fun logDeductionPoint(number: Int) {
+        val point = myview.myDeductionList[number].point
+        println("Deduction point: $point")  // ここで何らかのログ出力や処理を行う
+    }
 
     private fun moveTrilist(){
         myview.getTriangleList().changeSelectedNumber(trianglelist.retrieveCurrent())
@@ -1746,7 +1804,6 @@ class MainActivity : AppCompatActivity(),
         return true
 
     }
-
 
     private fun flagDeduction(params: InputParameter): Deduction?{//Params {
         params.point = myview.pressedInModel
@@ -1866,9 +1923,7 @@ class MainActivity : AppCompatActivity(),
         else false
     }
 
-
-//endregion
-
+    //endregion
 
     //region TapEvent
 
@@ -1908,7 +1963,8 @@ class MainActivity : AppCompatActivity(),
                 2 to "C"
                 // 他の数値と文字の対応を追加可能
             )
-            showToast("Connect to ${numToLetterMap[sideindex]}")
+            val actionWord = if (isDoubleTap()) "Edit" else "Connect"
+            showToast("$actionWord - length ${numToLetterMap[sideindex]}")
             myview.trianglelist.isDoubleTap = true
 
             focusTo.requestFocus()
@@ -1916,7 +1972,6 @@ class MainActivity : AppCompatActivity(),
             val inputMethodManager: InputMethodManager =
                 getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
             inputMethodManager.showSoftInput(focusTo, 0)
-
 
         }
         myview.resetViewToLastTapTriangle()
@@ -2302,11 +2357,11 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun viewDxf() {
-        ClipCsv(this).copyCSVToClipboard(::writeCSV )
         LocalFileViewer(this).view(::saveDxfToPrivate, PRIVATE_FILENAME_DXF, ::getAppLocalFile,"application/dxf" )
     }
 
     private fun viewXlsx(){
+       //ClipCsv(this).copyCSVToClipboard(::writeCSV )
         val PRIVATE_FILENAME_XLSX = "privateTrilist.xlsx"
         LocalFileViewer(this).view(::saveXlsxToPrivate, PRIVATE_FILENAME_XLSX, ::getAppLocalFile,"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     }
