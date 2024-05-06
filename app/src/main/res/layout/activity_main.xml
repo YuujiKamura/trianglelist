@@ -32,11 +32,11 @@
             android:id="@+id/fab_rot_l"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="top|start"
             android:layout_marginStart="76dp"
+            app:layout_anchor="@id/toolbarLayout"
+            app:layout_anchorGravity="top|start"
             android:layout_marginTop="@dimen/top_btn"
             app:fabSize="mini"
-            app:layout_constraintStart_toEndOf="@+id/editTextLayout"
             app:srcCompat="@drawable/rot_l"
             android:contentDescription="@string/rotate_to_left" />
 

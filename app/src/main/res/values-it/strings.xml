@@ -23,16 +23,6 @@
     <string name = "menseki_koujimei"> Nome di costruzione: </string>
     <string name = "menseki_syoukei"> subtotale </string>
     <string name = "menseki_goukei"> totale </string>
-    <string name = "editor_number">numero</string>
-    <string name = "editor_name">nome</string>
-    <string name = "editor_sokuten">stazio</string>
-    <string name = "editor_lA">Lung A</string>
-    <string name = "editor_lB">Lung B</string>
-    <string name = "editor_lC">Lung C</string>
-    <string name = "editor_parent">genitor</string>
-    <string name = "editor_setuzoku">connet</string>
-    <string name = "editor_syozoku">appart</string>
-    <string name = "editor_form">forma</string>
     <string name = "editor_koujyo"> deduzione </string>
     <string name = "credit">http://trianglelist.home.blog</string>
 

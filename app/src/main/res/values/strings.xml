@@ -25,16 +25,15 @@
     <string name="menseki_koujimei">工事名：</string>
     <string name="menseki_syoukei"> 小計</string>
     <string name="menseki_goukei">合計</string>
-    <string name="editor_number">番号</string>
-    <string name="editor_name">名称</string>
-    <string name="editor_sokuten">測点</string>
-    <string name="editor_lA">辺長Ａ</string>
-    <string name="editor_lB">辺長Ｂ</string>
-    <string name="editor_lC">辺長Ｃ</string>
-    <string name="editor_parent">親</string>
-    <string name="editor_setuzoku">接続</string>
-    <string name="editor_syozoku">所属</string>
-    <string name="editor_form">形状</string>
+    <string name="editor_name" translatable="false">名称</string>
+    <string name="editor_sokuten" translatable="false">測点</string>
+    <string name="editor_lA" translatable="false">辺A</string>
+    <string name="editor_lB" translatable="false">辺B</string>
+    <string name="editor_lC" translatable="false">辺C</string>
+    <string name="editor_parent" translatable="false">親</string>
+    <string name="editor_setuzoku" translatable="false">接</string>
+    <string name="editor_syozoku" translatable="false">親</string>
+    <string name="editor_form" translatable="false">形</string>
     <string name="editor_koujyo">控除</string>
     <string name="credit">http://trianglelist.home.blog</string>
 
@@ -61,7 +60,7 @@
 
     <string name="hello_first_fragment">三角形の辺長ＡＢＣを入力</string>
     <string name="hello_second_fragment">select a form to connection. Arg: %1$s</string>
-    <string name="title">title</string>
+    <string name="title" translatable="false">title</string>
 
     <string-array name="TriNumList">
         <item>1</item>
@@ -115,4 +114,7 @@
     <string name="trilist_number_reverse" translatable="false">List Reverse (Dedmode Only)</string>
     <string name="view_dxf" translatable="false">View DXF (need JW cad viewer)</string>
     <string name="share_files" translatable="false" >Share Files</string>
+    <string name="rosenname_hint" translatable="false">input rosenname</string>
+    <string name="editor_number" translatable="false">　</string>
+
 </resources>
