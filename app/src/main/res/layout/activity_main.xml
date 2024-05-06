@@ -26,16 +26,26 @@
 
         </com.google.android.material.appbar.AppBarLayout>
 
-        <include layout="@layout/fragment_first" />
+        <fragment
+            android:id="@+id/nav_host_fragment"
+            android:name="androidx.navigation.fragment.NavHostFragment"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="40dp"
+            app:defaultNavHost="true"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:navGraph="@navigation/nav_graph" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_rot_l"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="76dp"
-            app:layout_anchor="@id/toolbarLayout"
-            app:layout_anchorGravity="top|start"
             android:layout_marginTop="@dimen/top_btn"
+            android:layout_gravity="top|start"
+            app:layout_constraintStart_toEndOf="@+id/nav_host_fragment"
             app:fabSize="mini"
             app:srcCompat="@drawable/rot_l"
             android:contentDescription="@string/rotate_to_left" />
