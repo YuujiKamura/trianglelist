@@ -112,7 +112,7 @@
     <string name="flag_up_a_information_text" translatable="false">Flag Up</string>
     <string name="change_deduction_mode" translatable="false">Change Edit Mode</string>
     <string name="delete_a_shape_tap_twice" translatable="false">Delete last, when tap twice</string>
-    <string name="trilist_number_reverse" translatable="false">Reverse</string>
-    <string name="view_dxf" translatable="false">View DXF</string>
+    <string name="trilist_number_reverse" translatable="false">List Reverse (Dedmode Only)</string>
+    <string name="view_dxf" translatable="false">View DXF (need JW cad viewer)</string>
     <string name="share_files" translatable="false" >Share Files</string>
 </resources>
