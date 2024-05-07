@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <TableLayout
+        android:id="@+id/editTextLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:importantForAutofill="noExcludeDescendants"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TableRow
+            android:id="@+id/LRosenName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:padding="1dp">
+            <!--release version using autosize text max-->
+            <EditText
+                style="@style/TextEditorBorderW1"
+                android:id="@+id/rosenname"
+                android:inputType="text"
+                android:maxLength="30"
+                android:text="@string/rosenname"
+                android:hint="@string/rosenname_hint" />
+        </TableRow>
+
+        <TableRow
+            android:id="@+id/LL1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/border_green"
+            android:gravity="center_horizontal"
+            android:padding="1dp">
+
+            <TextView
+                style="@style/TextEditorW1"
+                android:id="@+id/TV_NUM"
+                android:text="@string/editor_number" />
+            <TextView
+                style="@style/TextEditorW2"
+                android:id="@+id/TV_Name"
+                android:text="@string/editor_sokuten" />
+            <TextView
+                style="@style/TextEditorW2"
+                android:id="@+id/TV_A"
+                android:ems="2"
+                android:text="@string/editor_lA" />
+            <TextView
+                style="@style/TextEditorW2"
+                android:id="@+id/TV_B"
+                android:text="@string/editor_lB" />
+            <TextView
+                style="@style/TextEditorW2"
+                android:id="@+id/TV_C"
+                android:text="@string/editor_lC" />
+            <TextView
+                style="@style/TextEditorW1"
+                android:id="@+id/TV_PN"
+                android:text="@string/editor_parent" />
+            <TextView
+                style="@style/TextEditorW1"
+                android:id="@+id/TV_PL"
+                android:text="@string/editor_setuzoku" />
+        </TableRow>
+
+        <TableRow
+            android:id="@+id/LL2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:padding="1dp">
+
+            <EditText
+                style="@style/TextEditorBorderW1"
+                android:id="@+id/editNumber2"
+                android:inputType="number"
+                android:maxLength="5"
+                android:text="@string/first" />
+            <AutoCompleteTextView
+                style="@style/TextEditorBorderW2"
+                android:id="@+id/editName2"
+                android:inputType="textAutoComplete|textAutoCorrect"
+                android:maxLength="15"
+                android:text="" />
+            <EditText
+                style="@style/TextEditorBorderW2"
+                android:id="@+id/editLengthA2"
+                android:inputType="numberDecimal"
+                android:maxLength="5"
+                android:nextFocusDown="@+id/editLengthB2"
+                android:selectAllOnFocus="true"
+                android:text="@string/zero" />
+            <EditText
+                style="@style/TextEditorBorderW2"
+                android:id="@+id/editLengthB2"
+                android:inputType="numberDecimal"
+                android:maxLength="5"
+                android:nextFocusDown="@+id/editLengthC2"
+                android:selectAllOnFocus="true"
+                android:text="@string/zero" />
+            <EditText
+                style="@style/TextEditorBorderW2"
+                android:id="@+id/editLengthC2"
+                android:inputType="numberDecimal"
+                android:maxLength="5"
+                android:selectAllOnFocus="true"
+                android:text="@string/zero" />
+            <EditText
+                style="@style/TextEditorBorderW1"
+                android:id="@+id/editParentNumber2"
+                android:inputType="number"
+                android:maxLength="5"
+                android:selectAllOnFocus="true"
+                android:text="@string/zero" />
+            <Spinner
+                style="@style/TextEditorBorderW1"
+                android:id="@+id/editParentConnect2"
+                android:entries="@array/ParentList"
+                android:maxLength="5"
+                android:spinnerMode="dropdown" />
+        </TableRow>
+
+        <TableRow
+            android:id="@+id/LL3"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:padding="1dp">
+
+            <EditText
+                style="@style/TextEditorBorderW1"
+                android:id="@+id/editNumber1"
+                android:inputType="number"
+                android:maxLength="5"
+                android:text="@string/second" />
+            <AutoCompleteTextView
+                style="@style/TextEditorBorderW2"
+                android:id="@+id/editName1"
+                android:inputType="textAutoComplete|textAutoCorrect"
+                android:maxLength="15"
+                android:selectAllOnFocus="true"
+                android:text="" />
+            <EditText
+                style="@style/TextEditorBorderW2"
+                android:id="@+id/editLengthA1"
+                android:inputType="numberDecimal"
+                android:maxLength="5"
+                android:nextFocusDown="@+id/editLengthB1"
+                android:selectAllOnFocus="true"
+                android:text="@string/zero">
+                <requestFocus />
+            </EditText>
+            <EditText
+                style="@style/TextEditorBorderW2"
+                android:id="@+id/editLengthB1"
+                android:inputType="numberDecimal"
+                android:maxLength="5"
+                android:nextFocusDown="@+id/editLengthC1"
+                android:selectAllOnFocus="true"
+                android:text="@string/zero" />
+            <EditText
+                style="@style/TextEditorBorderW2"
+                android:id="@+id/editLengthC1"
+                android:inputType="numberDecimal"
+                android:maxLength="5"
+                android:nextFocusDown="@+id/editParentNumber1"
+                android:selectAllOnFocus="true"
+                android:text="@string/zero" />
+            <EditText
+                style="@style/TextEditorBorderW1"
+                android:id="@+id/editParentNumber1"
+                android:inputType="number"
+                android:maxLength="5"
+                android:nextFocusDown="@+id/editParentConnect1"
+                android:selectAllOnFocus="true"
+                android:text="@string/first" />
+            <Spinner
+                style="@style/TextEditorBorderW1"
+                android:id="@+id/editParentConnect1"
+                android:entries="@array/ParentList"
+                android:maxLength="5"
+                android:nextFocusDown="@+id/editLengthA1"
+                android:spinnerMode="dropdown" />
+        </TableRow>
+
+        <TableRow
+            android:id="@+id/LL4"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:gravity="center_horizontal"
+            android:padding="1dp">
+
+            <EditText
+                style="@style/TextEditorBorderW1"
+                android:id="@+id/editNumber3"
+                android:inputType="number"
+                android:maxLength="5"
+                android:text="@string/first" />
+            <AutoCompleteTextView
+                style="@style/TextEditorBorderW2"
+                android:id="@+id/editName3"
+                android:inputType="textAutoComplete|textAutoCorrect"
+                android:maxLength="15"
+                android:selectAllOnFocus="true"
+                android:text="" />
+            <EditText
+                style="@style/TextEditorBorderW2"
+                android:id="@+id/editLengthA3"
+                android:inputType="numberDecimal"
+                android:maxLength="5"
+                android:nextFocusDown="@+id/editLengthB3"
+                android:selectAllOnFocus="true"
+                android:text="@string/zero" />
+            <EditText
+                style="@style/TextEditorBorderW2"
+                android:id="@+id/editLengthB3"
+                android:inputType="numberDecimal"
+                android:maxLength="5"
+                android:nextFocusDown="@+id/editLengthC3"
+                android:selectAllOnFocus="true"
+                android:text="@string/zero" />
+            <EditText
+                style="@style/TextEditorBorderW2"
+                android:id="@+id/editLengthC3"
+                android:inputType="numberDecimal"
+                android:maxLength="5"
+                android:selectAllOnFocus="true"
+                android:text="@string/zero" />
+            <EditText
+                style="@style/TextEditorBorderW1"
+                android:id="@+id/editParentNumber3"
+                android:inputType="number"
+                android:maxLength="5"
+                android:selectAllOnFocus="true"
+                android:text="@string/zero" />
+            <Spinner
+                style="@style/TextEditorBorderW1"
+                android:id="@+id/editParentConnect3"
+                android:entries="@array/ParentList"
+                android:maxLength="5"
+                android:spinnerMode="dropdown" />
+        </TableRow>
+    </TableLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
