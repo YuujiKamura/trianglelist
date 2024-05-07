@@ -73,7 +73,7 @@
                 android:layout_height="match_parent"
                 android:layout_weight="@dimen/w2"
                 android:layout_gravity="center_horizontal"
-                android:ems="4"
+                android:ems="3"
                 android:gravity="center"
                 android:padding="0dp"
                 android:text="@string/editor_sokuten"
