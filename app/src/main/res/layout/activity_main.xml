@@ -26,7 +26,16 @@
 
         </com.google.android.material.appbar.AppBarLayout>
 
-        <fragment
+        <include
+            layout="@layout/editor_table"
+            android:id="@+id/editor_table"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@id/toolbarLayout"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"/>
+
+        <androidx.fragment.app.FragmentContainerView
             android:id="@+id/nav_host_fragment"
             android:name="androidx.navigation.fragment.NavHostFragment"
             android:layout_width="wrap_content"
@@ -35,18 +44,63 @@
             app:defaultNavHost="true"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/editor_table"
             app:navGraph="@navigation/nav_graph" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_setB"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignEnd="@id/editor_table"
+            android:layout_gravity="top|end"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="@dimen/top_btn"
+            android:layout_marginEnd="136dp"
+            app:fabSize="mini"
+            app:layout_constraintTop_toBottomOf="parent"
+            app:srcCompat="@drawable/set_b"
+            android:contentDescription="@string/connect_to_b_length_in_parent"/>
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_setC"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignEnd="@id/editor_table"
+            android:layout_gravity="top|end"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="@dimen/top_btn"
+            android:layout_marginEnd="76dp"
+            android:contentDescription="@string/connect_to_c_length_in_parent"
+            app:fabSize="mini"
+            app:layout_constraintTop_toBottomOf="parent"
+            app:srcCompat="@drawable/set_c" />
+
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_replace"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignEnd="@id/editor_table"
+            android:layout_gravity="top|end"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="@dimen/top_btn"
+            android:layout_marginEnd="16dp"
+            android:scaleType="fitCenter"
+            app:fabSize="mini"
+            app:layout_constraintTop_toBottomOf="parent"
+            app:srcCompat="@android:drawable/ic_menu_edit"
+            android:contentDescription="@string/rewrite_shape"/>
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_rot_l"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="76dp"
-            android:layout_marginTop="@dimen/top_btn"
             android:layout_gravity="top|start"
-            app:layout_constraintStart_toEndOf="@+id/nav_host_fragment"
+            android:layout_alignEnd="@id/editor_table"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="@dimen/top_btn"
             app:fabSize="mini"
+            app:layout_constraintTop_toBottomOf="parent"
             app:srcCompat="@drawable/rot_l"
             android:contentDescription="@string/rotate_to_left" />
 
@@ -55,10 +109,11 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="top|start"
-            android:layout_marginStart="136dp"
+            android:layout_alignEnd="@id/editor_table"
+            android:layout_marginStart="16dp"
             android:layout_marginTop="@dimen/top_btn"
             app:fabSize="mini"
-            app:layout_constraintStart_toEndOf="@+id/fab_up"
+            app:layout_constraintTop_toBottomOf="parent"
             app:srcCompat="@drawable/rot_r"
             android:contentDescription="@string/rotate_to_right" />
 
@@ -67,11 +122,12 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="top|start"
-            android:layout_marginStart="186dp"
+            android:layout_alignEnd="@id/editor_table"
+            android:layout_marginStart="16dp"
             android:layout_marginTop="@dimen/top_btn"
             android:visibility="invisible"
             app:fabSize="mini"
-            app:layout_constraintStart_toEndOf="@+id/rot_r"
+            app:layout_constraintTop_toBottomOf="parent"
             app:srcCompat="@drawable/ic_trilist_playstore"
             android:contentDescription="@string/test_run_basic_senario" />
 
@@ -84,7 +140,7 @@
             android:layout_marginTop="@dimen/top_btn"
             android:visibility="visible"
             app:fabSize="mini"
-            app:layout_constraintTop_toBottomOf="@id/toolbarLayout"
+            app:layout_constraintTop_toBottomOf="parent"
             app:srcCompat="@android:drawable/ic_menu_mylocation"
             android:contentDescription="@string/reset_view"/>
 
@@ -228,49 +284,6 @@
             app:srcCompat="@drawable/mail"
             android:contentDescription="@string/send_email_to" />
 
-
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_setB"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignEnd="@id/toolbarLayout"
-            android:layout_gravity="top|end"
-            android:layout_marginTop="@dimen/top_btn"
-            android:layout_marginEnd="136dp"
-            app:fabSize="mini"
-            app:layout_constraintTop_toBottomOf="@+id/fab"
-            app:srcCompat="@drawable/set_b"
-            android:contentDescription="@string/connect_to_b_length_in_parent"/>
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_setC"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignEnd="@id/toolbarLayout"
-            android:layout_gravity="top|end"
-            android:layout_marginTop="@dimen/top_btn"
-            android:layout_marginEnd="76dp"
-            android:contentDescription="@string/connect_to_c_length_in_parent"
-            app:fabSize="mini"
-            app:layout_constraintTop_toBottomOf="@+id/fab_setB"
-            app:srcCompat="@drawable/set_c" />
-
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_replace"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignEnd="@id/toolbarLayout"
-            android:layout_gravity="top|end"
-            android:layout_marginTop="@dimen/top_btn"
-            android:layout_marginEnd="16dp"
-            android:scaleType="fitCenter"
-            app:fabSize="mini"
-            app:layout_constraintTop_toBottomOf="parent"
-            app:srcCompat="@android:drawable/ic_menu_edit"
-            android:contentDescription="@string/rewrite_shape"/>
-
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_undo"
             android:layout_width="wrap_content"
@@ -405,7 +418,6 @@
             app:fabSize="mini"
             app:srcCompat="@drawable/fab_dxf"
             android:contentDescription="@string/view_dxf"/>
-
 
         <ProgressBar
             android:id="@+id/indeterminateBar"
