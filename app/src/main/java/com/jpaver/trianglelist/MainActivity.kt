@@ -1240,10 +1240,10 @@ class MainActivity : AppCompatActivity(),
         fab_testbasic = bindingMain.fabTable.fabTestbasic
         fab_pdfview =   bindingMain.fabTable.fabPdf
         fab_dxfview =   bindingMain.fabTable.fabDxfview
+        fab_xlsx = bindingMain.fabTable.fabXlsx
         fab_share =     bindingMain.fabTable.fabShare
         fab_mail =      bindingMain.fabTable.fabMail
         fab_numreverse = bindingMain.fabTable.fabNumreverse
-        fab_xlsx = bindingMain.fabTable.fabXlsx
     }
 
     private fun autosave() {
