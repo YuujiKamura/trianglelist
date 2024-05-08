@@ -74,18 +74,9 @@
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         style="@style/Fab"
-        android:id="@+id/fab_xlsx"
-        app:fabSize="mini"
-        app:layout_constraintTop_toBottomOf="@id/fab_down"
-        app:layout_constraintStart_toStartOf="parent"
-        app:srcCompat="@drawable/xlsx"
-        android:contentDescription="@string/show_xlsx"/>
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        style="@style/Fab"
         android:id="@+id/fab_texplus"
         app:fabSize="mini"
-        app:layout_constraintTop_toBottomOf="@id/fab_xlsx"
+        app:layout_constraintTop_toBottomOf="@id/fab_down"
         app:layout_constraintStart_toStartOf="parent"
         app:srcCompat="@drawable/texplus"
         android:contentDescription="@string/increase_text_size"/>
@@ -101,28 +92,37 @@
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         style="@style/Fab"
-        android:id="@+id/fab_debug"
-        android:layout_alignTop="@id/fab_texminus"
+        android:id="@+id/fab_xlsx"
         app:fabSize="mini"
         app:layout_constraintTop_toBottomOf="@id/fab_texminus"
         app:layout_constraintStart_toStartOf="parent"
-        app:srcCompat="@android:drawable/ic_menu_info_details"
-        android:contentDescription="@string/show_debug_string"/>
+        app:srcCompat="@drawable/xlsx"
+        android:contentDescription="@string/show_xlsx"/>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         style="@style/Fab"
         android:id="@+id/fab_pdf"
         app:fabSize="mini"
-        app:layout_constraintTop_toBottomOf="@id/fab_texminus"
+        app:layout_constraintTop_toBottomOf="@id/fab_xlsx"
         app:layout_constraintStart_toStartOf="parent"
         app:srcCompat="@drawable/pdf"
         android:contentDescription="@string/view_pdf"/>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         style="@style/Fab"
+        android:id="@+id/fab_dxfview"
+        app:layout_constraintTop_toBottomOf="@+id/fab_pdf"
+        app:layout_constraintStart_toStartOf="parent"
+        app:backgroundTint="@color/colorAccent"
+        app:fabSize="mini"
+        app:srcCompat="@drawable/fab_dxf"
+        android:contentDescription="@string/view_dxf"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        style="@style/Fab"
         android:id="@+id/fab_share"
         app:fabSize="mini"
-        app:layout_constraintTop_toBottomOf="@id/fab_pdf"
+        app:layout_constraintTop_toBottomOf="@id/fab_dxfview"
         app:layout_constraintStart_toStartOf="parent"
         app:srcCompat="@android:drawable/ic_menu_share"
         android:contentDescription="@string/share_files"/>
@@ -244,12 +244,11 @@
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         style="@style/Fab"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:id="@+id/fab_dxfview"
-        app:layout_constraintTop_toBottomOf="@+id/fab_numreverse"
-        app:backgroundTint="@color/colorAccent"
+        android:id="@+id/fab_debug"
         app:fabSize="mini"
-        app:srcCompat="@drawable/fab_dxf"
-        android:contentDescription="@string/view_dxf"/>
+        app:layout_constraintTop_toBottomOf="@id/fab_numreverse"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:srcCompat="@android:drawable/ic_menu_info_details"
+        android:contentDescription="@string/show_debug_string"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
