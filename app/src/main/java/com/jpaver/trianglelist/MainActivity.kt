@@ -928,7 +928,7 @@ class MainActivity : AppCompatActivity(),
     }
     private fun turnToBlankTrilistUndo(){
         trilistUndo = TriangleList() // reset
-        bindingMain.fabUndo.backgroundTintList = getColorStateList(R.color.colorPrimary)
+        bindingMain.fabTable.fabUndo.backgroundTintList = getColorStateList(R.color.colorPrimary)
     }
 
     private fun typeToInt(type: String) :Int{
@@ -1218,32 +1218,32 @@ class MainActivity : AppCompatActivity(),
 
     //region FabController
     private fun initFabs(){
-        fab_replace =   bindingMain.fabReplace
-        fab_flag =      bindingMain.fabFlag
-        fab_dimsidew =  bindingMain.fabDimsidew
-        fab_dimsideh =  bindingMain.fabDimsideh
-        fab_nijyuualign = bindingMain.fabNijyuualign
-        fab_minus =     bindingMain.fabMinus
-        fab_undo =      bindingMain.fabUndo
-        fab_fillcolor = bindingMain.fabFillcolor
-        fab_texplus =   bindingMain.fabTexplus
-        fab_texminus =  bindingMain.fabTexminus
-        fab_setB =      bindingMain.fabSetB
-        fab_setC =      bindingMain.fabSetC
-        fab_rot_l =     bindingMain.fabRotL
-        fab_rot_r =     bindingMain.fabRotR
-        fab_deduction = bindingMain.fabDeduction
-        fab_resetView = bindingMain.fabResetView
-        fab_up =        bindingMain.fabUp
-        fab_down =      bindingMain.fabDown
-        fab_debug =     bindingMain.fabDebug
-        fab_testbasic = bindingMain.fabTestbasic
-        fab_pdfview =   bindingMain.fabPdf
-        fab_dxfview =   bindingMain.fabDxfview
-        fab_share =     bindingMain.fabShare
-        fab_mail =      bindingMain.fabMail
-        fab_numreverse = bindingMain.fabNumreverse
-        fab_xlsx = bindingMain.fabXlsx
+        fab_replace =   bindingMain.fabTable.fabReplace
+        fab_flag =      bindingMain.fabTable.fabFlag
+        fab_dimsidew =  bindingMain.fabTable.fabDimsidew
+        fab_dimsideh =  bindingMain.fabTable.fabDimsideh
+        fab_nijyuualign = bindingMain.fabTable.fabNijyuualign
+        fab_minus =     bindingMain.fabTable.fabMinus
+        fab_undo =      bindingMain.fabTable.fabUndo
+        fab_fillcolor = bindingMain.fabTable.fabFillcolor
+        fab_texplus =   bindingMain.fabTable.fabTexplus
+        fab_texminus =  bindingMain.fabTable.fabTexminus
+        fab_setB =      bindingMain.fabTable.fabSetB
+        fab_setC =      bindingMain.fabTable.fabSetC
+        fab_rot_l =     bindingMain.fabTable.fabRotL
+        fab_rot_r =     bindingMain.fabTable.fabRotR
+        fab_deduction = bindingMain.fabTable.fabDeduction
+        fab_resetView = bindingMain.fabTable.fabResetView
+        fab_up =        bindingMain.fabTable.fabUp
+        fab_down =      bindingMain.fabTable.fabDown
+        fab_debug =     bindingMain.fabTable.fabDebug
+        fab_testbasic = bindingMain.fabTable.fabTestbasic
+        fab_pdfview =   bindingMain.fabTable.fabPdf
+        fab_dxfview =   bindingMain.fabTable.fabDxfview
+        fab_share =     bindingMain.fabTable.fabShare
+        fab_mail =      bindingMain.fabTable.fabMail
+        fab_numreverse = bindingMain.fabTable.fabNumreverse
+        fab_xlsx = bindingMain.fabTable.fabXlsx
     }
 
     private fun autosave() {
@@ -1302,7 +1302,7 @@ class MainActivity : AppCompatActivity(),
             editorResetBy(getList(deductionMode))
         }
         deleteFlag = 0
-        bindingMain.fabMinus.backgroundTintList = getColorStateList(R.color.colorAccent)
+        bindingMain.fabTable.fabMinus.backgroundTintList = getColorStateList(R.color.colorAccent)
     }
 
     fun finalizeUI(){
@@ -1347,14 +1347,14 @@ class MainActivity : AppCompatActivity(),
             val handler = Handler(Looper.getMainLooper())
             val runnable = Runnable {
                 deleteFlag = 0
-                bindingMain.fabMinus.backgroundTintList = getColorStateList(R.color.colorAccent)
+                bindingMain.fabTable.fabMinus.backgroundTintList = getColorStateList(R.color.colorAccent)
             }
 
             if (deleteFlag == 0) {
                 deleteFlag = 1
                 // 3秒後にdeleteFlagをリセット
                 handler.postDelayed(runnable, 3000)
-                bindingMain.fabMinus.backgroundTintList = getColorStateList(R.color.colorTT2)
+                bindingMain.fabTable.fabMinus.backgroundTintList = getColorStateList(R.color.colorTT2)
             } else {
                 // リストから削除のロジックをここに実装
                 handler.removeCallbacks(runnable) // タイマーをキャンセル
@@ -1373,7 +1373,7 @@ class MainActivity : AppCompatActivity(),
 
                 trilistUndo.trilist.clear()
 
-                bindingMain.fabUndo.backgroundTintList = getColorStateList(R.color.colorPrimary)
+                bindingMain.fabTable.fabUndo.backgroundTintList = getColorStateList(R.color.colorPrimary)
                 editorResetBy(getList(deductionMode))
                 setTitles()
             }
@@ -1385,7 +1385,7 @@ class MainActivity : AppCompatActivity(),
 
                 colorindex ++
                 if(colorindex == resColors.size) colorindex = 0
-                bindingMain.fabFillcolor.backgroundTintList = getColorStateList(resColors[colorindex])
+                bindingMain.fabTable.fabFillcolor.backgroundTintList = getColorStateList(resColors[colorindex])
 
                 trianglelist.get(myview.trianglelist.selectedNumber).mycolor = colorindex
 
@@ -1431,11 +1431,13 @@ class MainActivity : AppCompatActivity(),
 
         //ここからはビュー操作用とファイルシェア用のFAB、図形を書き換えないのでオートセーブの対象外
         setCommonFabListener(fab_setB,false) {
+            myview.trianglelist.isDoubleTap = false
             autoConnection(1)
             findViewById<EditText>(R.id.editLengthB1).requestFocus()
         }
 
         setCommonFabListener(fab_setC,false) {
+            myview.trianglelist.isDoubleTap = false
             autoConnection(2)
             findViewById<EditText>(R.id.editLengthB1).requestFocus()
         }

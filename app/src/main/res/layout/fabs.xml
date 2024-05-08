@@ -1,6 +1,255 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-             android:layout_width="match_parent"
-             android:layout_height="match_parent">
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:layout_constraintTop_toBottomOf="parent"
+    app:layout_constraintStart_toEndOf="parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        style="@style/Fab"
+        android:id="@+id/fab_rot_l"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/fab_resetView"
+        app:fabSize="mini"
+        app:srcCompat="@drawable/rot_l"
+        android:contentDescription="@string/rotate_to_left" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        style="@style/Fab"
+        android:id="@+id/fab_rot_r"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/fab_rot_l"
+        app:fabSize="mini"
+        app:srcCompat="@drawable/rot_r"
+        android:contentDescription="@string/rotate_to_right" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        style="@style/Fab"
+        android:id="@+id/fab_testbasic"
+        android:visibility="invisible"
+        app:fabSize="mini"
+        app:layout_constraintTop_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="parent"
+        app:srcCompat="@drawable/ic_trilist_playstore"
+        android:contentDescription="@string/test_run_basic_senario" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        style="@style/Fab"
+        android:id="@+id/fab_resetView"
+        app:fabSize="mini"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:srcCompat="@android:drawable/ic_menu_mylocation"
+        android:contentDescription="@string/reset_view"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        style="@style/Fab"
+        android:id="@+id/fab_up"
+        app:fabSize="mini"
+        app:layout_constraintTop_toBottomOf="@id/fab_resetView"
+        app:layout_constraintStart_toStartOf="parent"
+        app:srcCompat="@drawable/up"
+        android:contentDescription="@string/list_to_up"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        style="@style/Fab"
+        android:id="@+id/fab_down"
+        app:fabSize="mini"
+        app:layout_constraintTop_toBottomOf="@id/fab_up"
+        app:layout_constraintStart_toStartOf="parent"
+        app:srcCompat="@drawable/down"
+        android:contentDescription="@string/list_to_down"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        style="@style/Fab"
+        android:id="@+id/fab_fillcolor"
+        android:visibility="invisible"
+        app:fabSize="mini"
+        app:layout_constraintTop_toBottomOf="@id/fab_down"
+        app:layout_constraintStart_toStartOf="parent"
+        app:srcCompat="@drawable/fillcolor"
+        android:contentDescription="@string/fill_color"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        style="@style/Fab"
+        android:id="@+id/fab_xlsx"
+        app:fabSize="mini"
+        app:layout_constraintTop_toBottomOf="@id/fab_down"
+        app:layout_constraintStart_toStartOf="parent"
+        app:srcCompat="@drawable/xlsx"
+        android:contentDescription="@string/show_xlsx"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        style="@style/Fab"
+        android:id="@+id/fab_texplus"
+        app:fabSize="mini"
+        app:layout_constraintTop_toBottomOf="@id/fab_xlsx"
+        app:layout_constraintStart_toStartOf="parent"
+        app:srcCompat="@drawable/texplus"
+        android:contentDescription="@string/increase_text_size"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        style="@style/Fab"
+        android:id="@+id/fab_texminus"
+        app:fabSize="mini"
+        app:layout_constraintTop_toBottomOf="@id/fab_texplus"
+        app:layout_constraintStart_toStartOf="parent"
+        app:srcCompat="@drawable/texminus"
+        android:contentDescription="@string/decrease_text_size"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        style="@style/Fab"
+        android:id="@+id/fab_debug"
+        android:layout_alignTop="@id/fab_texminus"
+        app:fabSize="mini"
+        app:layout_constraintTop_toBottomOf="@id/fab_texminus"
+        app:layout_constraintStart_toStartOf="parent"
+        app:srcCompat="@android:drawable/ic_menu_info_details"
+        android:contentDescription="@string/show_debug_string"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        style="@style/Fab"
+        android:id="@+id/fab_pdf"
+        app:fabSize="mini"
+        app:layout_constraintTop_toBottomOf="@id/fab_texminus"
+        app:layout_constraintStart_toStartOf="parent"
+        app:srcCompat="@drawable/pdf"
+        android:contentDescription="@string/view_pdf"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        style="@style/Fab"
+        android:id="@+id/fab_share"
+        app:fabSize="mini"
+        app:layout_constraintTop_toBottomOf="@id/fab_pdf"
+        app:layout_constraintStart_toStartOf="parent"
+        app:srcCompat="@android:drawable/ic_menu_share"
+        android:contentDescription="@string/share_files"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        style="@style/Fab"
+        android:id="@+id/fab_mail"
+        app:fabSize="mini"
+        app:layout_constraintTop_toBottomOf="@id/fab_share"
+        app:layout_constraintStart_toStartOf="parent"
+        app:srcCompat="@drawable/mail"
+        android:contentDescription="@string/send_email_to" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        style="@style/Fab"
+        android:id="@+id/fab_setB"
+        app:fabSize="mini"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/fab_setC"
+        app:srcCompat="@drawable/set_b"
+        android:contentDescription="@string/connect_to_b_length_in_parent"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        style="@style/Fab"
+        android:id="@+id/fab_setC"
+        app:fabSize="mini"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/fab_replace"
+        app:srcCompat="@drawable/set_c"
+        android:contentDescription="@string/connect_to_c_length_in_parent"
+        />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        style="@style/Fab"
+        android:id="@+id/fab_replace"
+        app:fabSize="mini"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:srcCompat="@android:drawable/ic_menu_edit"
+        android:contentDescription="@string/rewrite_shape"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        style="@style/Fab"
+        android:id="@+id/fab_undo"
+        app:backgroundTint="@color/colorAccent"
+        app:fabSize="mini"
+        app:layout_constraintTop_toBottomOf="@+id/fab_replace"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:srcCompat="@android:drawable/ic_menu_revert"
+        android:contentDescription="@string/undo"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        style="@style/Fab"
+        android:id="@+id/fab_dimsidew"
+        app:backgroundTint="@color/colorAccent"
+        app:fabSize="mini"
+        app:layout_constraintTop_toBottomOf="@+id/fab_undo"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:srcCompat="@drawable/textright"
+        android:contentDescription="@string/flip_dimension_text_in_horizontal" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        style="@style/Fab"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:id="@+id/fab_dimsideh"
+        app:backgroundTint="@color/colorAccent"
+        app:fabSize="mini"
+        app:layout_constraintTop_toBottomOf="@+id/fab_dimsidew"
+        app:srcCompat="@drawable/textoutside"
+        android:contentDescription="@string/flip_dimension_text_in_vertical"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        style="@style/Fab"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:id="@+id/fab_nijyuualign"
+        app:layout_constraintTop_toBottomOf="@+id/fab_dimsideh"
+        app:backgroundTint="@color/colorAccent"
+        app:fabSize="mini"
+        app:srcCompat="@drawable/nijyuu"
+        android:contentDescription="@string/flip_connect_point_in_horizontal"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        style="@style/Fab"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:id="@+id/fab_flag"
+        app:layout_constraintTop_toBottomOf="@+id/fab_nijyuualign"
+        app:srcCompat="@drawable/flag_b"
+        app:fabSize="mini"
+        android:contentDescription="@string/flag_up_a_information_text"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        style="@style/Fab"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:id="@+id/fab_deduction"
+        app:layout_constraintTop_toBottomOf="@+id/fab_flag"
+        app:fabSize="mini"
+        app:srcCompat="@drawable/deduction"
+        android:contentDescription="@string/change_deduction_mode" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        style="@style/Fab"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:id="@+id/fab_minus"
+        app:layout_constraintTop_toBottomOf="@+id/fab_deduction"
+        app:backgroundTint="@color/colorAccent"
+        app:fabSize="mini"
+        app:srcCompat="@android:drawable/ic_menu_close_clear_cancel"
+        android:contentDescription="@string/delete_a_shape_tap_twice"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        style="@style/Fab"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:id="@+id/fab_numreverse"
+        app:layout_constraintTop_toBottomOf="@+id/fab_minus"
+        app:backgroundTint="@color/colorAccent"
+        app:fabSize="mini"
+        app:srcCompat="@android:drawable/ic_popup_sync"
+        android:contentDescription="@string/trilist_number_reverse"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        style="@style/Fab"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:id="@+id/fab_dxfview"
+        app:layout_constraintTop_toBottomOf="@+id/fab_numreverse"
+        app:backgroundTint="@color/colorAccent"
+        app:fabSize="mini"
+        app:srcCompat="@drawable/fab_dxf"
+        android:contentDescription="@string/view_dxf"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
