@@ -12,6 +12,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.drawable.Icon
 import android.net.Uri
@@ -79,6 +80,7 @@ import java.io.Writer
 import java.time.LocalDate
 import kotlin.math.roundToInt
 
+@Suppress("DEPRECATED_IDENTITY_EQUALS")
 class MainActivity : AppCompatActivity(),
         MyDialogFragment.NoticeDialogListener {
 
@@ -670,6 +672,21 @@ class MainActivity : AppCompatActivity(),
         // 上部のOptionsMenuの表示　Inflate the menu; this adds items to the action bar if it is present.
         menuInflater.inflate(R.menu.menu_main, menu)
         return true
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+
+        // 現在の画面の向きをチェック
+        if (newConfig.orientation === Configuration.ORIENTATION_LANDSCAPE) {
+            // 画面が横向きの場合、ツールバーを非表示にする
+            bindingMain.editorTable.rosenname.setVisibility(View.GONE)
+            bindingMain.toolbarLayout.setVisibility(View.GONE)
+        } else if (newConfig.orientation === Configuration.ORIENTATION_PORTRAIT) {
+            // 画面が縦向きの場合、ツールバーを表示する
+            bindingMain.editorTable.rosenname.setVisibility(View.VISIBLE)
+            bindingMain.toolbarLayout.setVisibility(View.VISIBLE)
+        }
     }
 //endregion
 

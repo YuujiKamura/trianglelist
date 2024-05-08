@@ -10,14 +10,13 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:importantForAutofill="noExcludeDescendants"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
         <TableRow
             android:id="@+id/LRosenName"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_horizontal"
-            android:padding="1dp">
+            style="@style/TableRow">
+
             <EditText
                 android:id="@+id/rosenname"
                 style="@style/TextEditorBorderW1"
@@ -29,11 +28,8 @@
 
         <TableRow
             android:id="@+id/LL1"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/border_green"
-            android:gravity="center_horizontal"
-            android:padding="1dp">
+            style="@style/TableRow"
+            android:background="@drawable/border_green">
 
             <TextView
                 android:id="@+id/TV_NUM"
@@ -74,10 +70,7 @@
 
         <TableRow
             android:id="@+id/LL2"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_horizontal"
-            android:padding="1dp">
+            style="@style/TableRow">
 
             <EditText
                 android:id="@+id/editNumber2"
@@ -137,10 +130,7 @@
 
         <TableRow
             android:id="@+id/LL3"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_horizontal"
-            android:padding="1dp">
+            style="@style/TableRow">
 
             <EditText
                 android:id="@+id/editNumber1"
