@@ -6,7 +6,6 @@
     app:layout_constraintStart_toEndOf="parent"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         style="@style/Fab"
         android:id="@+id/fab_rot_l"
@@ -24,16 +23,6 @@
         app:fabSize="mini"
         app:srcCompat="@drawable/rot_r"
         android:contentDescription="@string/rotate_to_right" />
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        style="@style/Fab"
-        android:id="@+id/fab_testbasic"
-        android:visibility="invisible"
-        app:fabSize="mini"
-        app:layout_constraintTop_toBottomOf="parent"
-        app:layout_constraintStart_toEndOf="parent"
-        app:srcCompat="@drawable/ic_trilist_playstore"
-        android:contentDescription="@string/test_run_basic_senario" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         style="@style/Fab"
@@ -64,19 +53,28 @@
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         style="@style/Fab"
-        android:id="@+id/fab_fillcolor"
-        android:visibility="invisible"
+        android:id="@+id/fab_share"
         app:fabSize="mini"
         app:layout_constraintTop_toBottomOf="@id/fab_down"
         app:layout_constraintStart_toStartOf="parent"
-        app:srcCompat="@drawable/fillcolor"
-        android:contentDescription="@string/fill_color"/>
+        app:srcCompat="@android:drawable/ic_menu_share"
+        android:contentDescription="@string/share_files"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        style="@style/Fab"
+        android:id="@+id/fab_mail"
+        app:fabSize="mini"
+        app:layout_constraintTop_toBottomOf="@id/fab_share"
+        app:layout_constraintStart_toStartOf="parent"
+        app:srcCompat="@drawable/mail"
+        android:contentDescription="@string/send_email_to" />
+
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         style="@style/Fab"
         android:id="@+id/fab_texplus"
         app:fabSize="mini"
-        app:layout_constraintTop_toBottomOf="@id/fab_down"
+        app:layout_constraintTop_toBottomOf="@id/fab_mail"
         app:layout_constraintStart_toStartOf="parent"
         app:srcCompat="@drawable/texplus"
         android:contentDescription="@string/increase_text_size"/>
@@ -118,23 +116,6 @@
         app:srcCompat="@drawable/fab_dxf"
         android:contentDescription="@string/view_dxf"/>
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        style="@style/Fab"
-        android:id="@+id/fab_share"
-        app:fabSize="mini"
-        app:layout_constraintTop_toBottomOf="@id/fab_dxfview"
-        app:layout_constraintStart_toStartOf="parent"
-        app:srcCompat="@android:drawable/ic_menu_share"
-        android:contentDescription="@string/share_files"/>
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        style="@style/Fab"
-        android:id="@+id/fab_mail"
-        app:fabSize="mini"
-        app:layout_constraintTop_toBottomOf="@id/fab_share"
-        app:layout_constraintStart_toStartOf="parent"
-        app:srcCompat="@drawable/mail"
-        android:contentDescription="@string/send_email_to" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         style="@style/Fab"
@@ -197,18 +178,8 @@
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         style="@style/Fab"
         app:layout_constraintEnd_toEndOf="parent"
-        android:id="@+id/fab_nijyuualign"
-        app:layout_constraintTop_toBottomOf="@+id/fab_dimsideh"
-        app:backgroundTint="@color/colorAccent"
-        app:fabSize="mini"
-        app:srcCompat="@drawable/nijyuu"
-        android:contentDescription="@string/flip_connect_point_in_horizontal"/>
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        style="@style/Fab"
-        app:layout_constraintEnd_toEndOf="parent"
         android:id="@+id/fab_flag"
-        app:layout_constraintTop_toBottomOf="@+id/fab_nijyuualign"
+        app:layout_constraintTop_toBottomOf="@+id/fab_dimsideh"
         app:srcCompat="@drawable/flag_b"
         app:fabSize="mini"
         android:contentDescription="@string/flag_up_a_information_text"/>
@@ -225,8 +196,18 @@
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         style="@style/Fab"
         app:layout_constraintEnd_toEndOf="parent"
-        android:id="@+id/fab_minus"
+        android:id="@+id/fab_nijyuualign"
         app:layout_constraintTop_toBottomOf="@+id/fab_deduction"
+        app:backgroundTint="@color/colorAccent"
+        app:fabSize="mini"
+        app:srcCompat="@drawable/nijyuu"
+        android:contentDescription="@string/flip_connect_point_in_horizontal"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        style="@style/Fab"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:id="@+id/fab_minus"
+        app:layout_constraintTop_toBottomOf="@+id/fab_nijyuualign"
         app:backgroundTint="@color/colorAccent"
         app:fabSize="mini"
         app:srcCompat="@android:drawable/ic_menu_close_clear_cancel"
@@ -250,5 +231,25 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:srcCompat="@android:drawable/ic_menu_info_details"
         android:contentDescription="@string/show_debug_string"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        style="@style/Fab"
+        android:id="@+id/fab_fillcolor"
+        android:visibility="invisible"
+        app:fabSize="mini"
+        app:layout_constraintTop_toBottomOf="@id/fab_down"
+        app:layout_constraintStart_toStartOf="parent"
+        app:srcCompat="@drawable/fillcolor"
+        android:contentDescription="@string/fill_color"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        style="@style/Fab"
+        android:id="@+id/fab_testbasic"
+        android:visibility="invisible"
+        app:fabSize="mini"
+        app:layout_constraintTop_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="parent"
+        app:srcCompat="@drawable/ic_trilist_playstore"
+        android:contentDescription="@string/test_run_basic_senario" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

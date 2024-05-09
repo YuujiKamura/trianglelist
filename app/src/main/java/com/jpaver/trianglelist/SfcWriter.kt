@@ -183,10 +183,10 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
     fun writeDedRect( color: Int, ded: Deduction){
         ded.shapeAngle = -ded.shapeAngle // 逆回転
         ded.setBox( 1000f )
-        writeLine(ded.plt, ded.plb, color)
-        writeLine(ded.plt, ded.prt, color)
-        writeLine(ded.prt, ded.prb, color)
-        writeLine(ded.plb, ded.prb, color)
+        writeLine(ded.pLTop, ded.pLBtm, color)
+        writeLine(ded.pLTop, ded.pRTop, color)
+        writeLine(ded.pRTop, ded.pRBtm, color)
+        writeLine(ded.pLBtm, ded.pRBtm, color)
     }
 
     fun alignVByVector(num: Int, p1: PointXY, p2: PointXY): Int{
