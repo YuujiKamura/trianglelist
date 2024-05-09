@@ -898,10 +898,10 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
     fun drawDedRect(canvas: Canvas, dd: Deduction, paint: Paint){
         dd.setBox( dd.myscale )
-        drawLine(canvas, dd.plt, dd.plb, 1f, 1f, paint)
-        drawLine(canvas, dd.plt, dd.prt, 1f, 1f, paint)
-        drawLine(canvas, dd.plb, dd.prb, 1f, 1f, paint)
-        drawLine(canvas, dd.prt, dd.prb, 1f, 1f, paint)
+        drawLine(canvas, dd.pLTop, dd.pLBtm, 1f, 1f, paint)
+        drawLine(canvas, dd.pLTop, dd.pRTop, 1f, 1f, paint)
+        drawLine(canvas, dd.pLBtm, dd.pRBtm, 1f, 1f, paint)
+        drawLine(canvas, dd.pRTop, dd.pRBtm, 1f, 1f, paint)
     }
 
 

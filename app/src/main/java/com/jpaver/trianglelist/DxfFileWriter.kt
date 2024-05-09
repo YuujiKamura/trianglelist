@@ -323,10 +323,10 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         val color = 1
         ded.shapeAngle = -ded.shapeAngle // 逆回転
         ded.setBox( 1f )
-        writeLine( ded.plt, ded.plb, color)
-        writeLine( ded.plt, ded.prt, color)
-        writeLine( ded.prt, ded.prb, color)
-        writeLine( ded.plb, ded.prb, color)
+        writeLine( ded.pLTop, ded.pLBtm, color)
+        writeLine( ded.pLTop, ded.pRTop, color)
+        writeLine( ded.pRTop, ded.pRBtm, color)
+        writeLine( ded.pLBtm, ded.pRBtm, color)
     }
 
     override fun writeEntities(){

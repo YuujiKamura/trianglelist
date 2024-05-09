@@ -55,10 +55,10 @@ class Deduction(var num: Int = 0,
 
     var myscale = 1f
     var shapeAngle = 0f
-    lateinit var plt: PointXY
-    lateinit var plb: PointXY
-    lateinit var prt: PointXY
-    lateinit var prb: PointXY
+    lateinit var pLTop: PointXY
+    lateinit var pLBtm: PointXY
+    lateinit var pRTop: PointXY
+    lateinit var pRBtm: PointXY
     var infoStr: String
     var typestring: String
     var typenum: Int
@@ -75,10 +75,10 @@ class Deduction(var num: Int = 0,
             typestring = "円"
             typenum = 1
 
-            plt = PointXY(0f, 0f)
-            plb = PointXY(0f, 0f)
-            prt = PointXY(0f, 0f)
-            prb = PointXY(0f, 0f)
+            pLTop = PointXY(0f, 0f)
+            pLBtm = PointXY(0f, 0f)
+            pRTop = PointXY(0f, 0f)
+            pRBtm = PointXY(0f, 0f)
         }
 
         //tri?.let { isCollide(it) } //旗上げ処理
@@ -87,23 +87,16 @@ class Deduction(var num: Int = 0,
     }
 
     fun setBox(scale: Float){
+        //val rect = Rectangle()
+        val mx = point.x - lengthX * myscale * 0.5f
+        val my = point.y - lengthY * myscale * 0.5f
+        val px = point.x + lengthX * myscale * 0.5f
+        val py = point.y + lengthY * myscale * 0.5f
         myscale = scale
-        plt = PointXY(
-            point.x - lengthX * myscale * 0.5f,
-            point.y - lengthY * myscale * 0.5f
-        ).rotate(point, shapeAngle)
-        plb = PointXY(
-            point.x - lengthX * myscale * 0.5f,
-            point.y + lengthY * myscale * 0.5f
-        ).rotate(point, shapeAngle)
-        prt = PointXY(
-            point.x + lengthX * myscale * 0.5f,
-            point.y - lengthY * myscale * 0.5f
-        ).rotate(point, shapeAngle)
-        prb = PointXY(
-            point.x + lengthX * myscale * 0.5f,
-            point.y + lengthY * myscale * 0.5f
-        ).rotate(point, shapeAngle)
+        pLTop = PointXY( mx,my ).rotate(point, shapeAngle)
+        pLBtm = PointXY( mx,py ).rotate(point, shapeAngle)
+        pRTop = PointXY( px,my ).rotate(point, shapeAngle)
+        pRBtm = PointXY( px,py ).rotate(point, shapeAngle)
     }
 
     override fun clone(): Deduction {
@@ -119,10 +112,10 @@ class Deduction(var num: Int = 0,
             b.point = point
             b.pointFlag = pointFlag
             b.myscale = myscale
-            b.plt = plt
-            b.plb = plb
-            b.prt = prt
-            b.prb = prb
+            b.pLTop = pLTop
+            b.pLBtm = pLBtm
+            b.pRTop = pRTop
+            b.pRBtm = pRBtm
             b.shapeAngle = shapeAngle
             b.sameDedcount = sameDedcount
             b.infoStr = infoStr
@@ -188,10 +181,6 @@ class Deduction(var num: Int = 0,
     fun move(to: PointXY){
         point.add(to)
         pointFlag.add(to)
-        //plt.add(to)
-        //plb.add(to)
-        //prt.add(to)
-        //prb.add(to)
     }
 
     fun scale(basepoint: PointXY, sx: Float, sy: Float) {
@@ -200,10 +189,10 @@ class Deduction(var num: Int = 0,
         myscale = sx
 
         if(type == "Box"){
-            plt = plt.scale( basepoint, sx, sy )
-            plb = plb.scale( basepoint, sx, sy )
-            prt = prt.scale( basepoint, sx, sy )
-            prb = prb.scale( basepoint, sx, sy )
+            pLTop = pLTop.scale( basepoint, sx, sy )
+            pLBtm = pLBtm.scale( basepoint, sx, sy )
+            pRTop = pRTop.scale( basepoint, sx, sy )
+            pRBtm = pRBtm.scale( basepoint, sx, sy )
         }
      //   lengthX *= scale
        // lengthY *= scale
@@ -219,10 +208,10 @@ class Deduction(var num: Int = 0,
 
     fun rotateShape(bp: PointXY, degree: Float ){
         if(type == "Box"){
-            plt = plt.rotate(bp, degree)
-            plb = plb.rotate(bp, degree)
-            prt = prt.rotate(bp, degree)
-            prb = prb.rotate(bp, degree)
+            pLTop = pLTop.rotate(bp, degree)
+            pLBtm = pLBtm.rotate(bp, degree)
+            pRTop = pRTop.rotate(bp, degree)
+            pRBtm = pRBtm.rotate(bp, degree)
             shapeAngle += degree
         }
     }

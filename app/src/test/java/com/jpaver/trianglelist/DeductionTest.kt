@@ -63,7 +63,7 @@ class DeductionTest {
             PointXY(0f, 0f)
         )
         ded.rotateShape(ded.point, 45f)
-        assertEquals(-0.707, ded.plb.x.toDouble(), 0.001)
+        assertEquals(-0.707, ded.pLBtm.x.toDouble(), 0.001)
     }
 
     @Test
