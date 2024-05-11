@@ -473,15 +473,14 @@ class TriangleList : EditList {
     }
 
     override fun remove(num: Int) {
-        //number = lastTapNum_;
+        //トップ以外は消せないことにする
+        if ( num != trilist.size ) return
+        trilist.removeAt(num -1)
 
-        //トップ以外は消せないことにする?
-        if (num != trilist.size) return
-        //if (num <= 1 || num > trilist.size ) return
-        val i = num -1
-        val target = trilist[i]
-        target.nodeA!!.removeNode(target) //removeTheirNode();
-        trilist.removeAt(i)
+        val target = trilist[num -1]
+
+        if( target.nodeA == null ) return
+        target.nodeA = null
 
         //ひとつ前の三角形を基準にして
         val parentTriangle = trilist[target.parentnumber -1]//trilist_[number - 2]
@@ -492,7 +491,6 @@ class TriangleList : EditList {
         lastTapNumber = num - 1
         lastTapSide = -1
 
-        //this.cloneByScale(basepoint, myScale);
     }
 
     fun rotateCurrentTriLCR(): ConnParam? {

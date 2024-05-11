@@ -1009,17 +1009,14 @@ class MainActivity : AppCompatActivity(),
                 // 特定のアイテムが選択されたときの処理
                 when (selectedItem) {
                     "辺B" -> showToast("editMode Triangle")
-                    "延長L" -> showToast("eitMode Rectangle")
+                    "延長L" -> showToast("editMode Rectangle")
                 }
             }
-
             override fun onNothingSelected(parent: AdapterView<*>) {
                 // アイテムが選択されなかった時の処理
             }
         }
-
     }
-
 
     fun setHeaderTable(titleParams: TitleParams){
         // 入力テーブルの見かけの変更、タイトル行の文字列とカラー
