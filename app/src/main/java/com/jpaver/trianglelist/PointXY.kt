@@ -243,11 +243,11 @@ class PointXY :Cloneable<PointXY> {
     }
 
     // 直交方向へのオフセット p2 is base line, p3 is cross vector align
-    fun crossOffset(p2: PointXY, movement: Float): PointXY {
+    fun crossOffset(p2: PointXY, movement: Float, clockwise:Float=-90f): PointXY {
         //PointXY normalizedVector = vectorTo(p2).normalize();
 
         // 一行にいろいろ書いてみる
-        return PointXY(this.minus(vectorTo(p2.rotate(this, -90f)).normalize().scale(movement)))
+        return PointXY(this.minus(vectorTo(p2.rotate(this, clockwise )).normalize().scale(movement)))
         //return new PointXY(this.minus(normalizedVector.scale(movement)));
         //return new PointXY( X-(normalizedVector.getX()*movement), Y-(normalizedVector.getY()*movement) );
     }

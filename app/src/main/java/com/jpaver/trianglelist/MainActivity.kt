@@ -1021,7 +1021,7 @@ class MainActivity : AppCompatActivity(),
     }
 
 
-    fun setHeaderTable(){
+    fun setHeaderTable(titleParams: TitleParams){
         // 入力テーブルの見かけの変更、タイトル行の文字列とカラー
         myEditor.setHeaderTable(
             findViewById(R.id.TV_NUM),
@@ -1032,7 +1032,7 @@ class MainActivity : AppCompatActivity(),
             findViewById(R.id.TV_C),
             findViewById(R.id.TV_PN),
             findViewById(R.id.TV_PL),
-            titleDed
+            titleParams
         )
     }
 
@@ -1051,7 +1051,7 @@ class MainActivity : AppCompatActivity(),
             //showToast("Edit Mode : Area Deductions")
             //Toast.makeText(this, "Edit Mode : Area Deductions", Toast.LENGTH_LONG).show()
 
-            setHeaderTable()
+            setHeaderTable(titleTri)
 
             findViewById<TableRow>(R.id.LL1).setBackgroundColor(Color.rgb(255, 165, 155))
 
@@ -1091,7 +1091,7 @@ class MainActivity : AppCompatActivity(),
             //showToast("Edit Mode : Triangles")
             //Toast.makeText(this, "Edit Mode : Triangles", Toast.LENGTH_LONG).show()
             // 入力テーブルの見かけの変更、タイトル行の文字列とカラー
-            setHeaderTable()
+            setHeaderTable(titleDed)
             findViewById<TableRow>(R.id.LL1).setBackgroundColor(Color.rgb(185, 255, 185))
 
             //　fab群の見かけの変更
