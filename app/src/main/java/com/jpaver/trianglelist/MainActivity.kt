@@ -687,12 +687,12 @@ class MainActivity : AppCompatActivity(),
         if (newConfig.orientation === Configuration.ORIENTATION_LANDSCAPE) {
             // 画面が横向きの場合、ツールバーを非表示にする
             bindingMain.editorTable.rosenname.setVisibility(View.GONE)
-            bindingMain.editorTable.LL2.setVisibility(View.GONE)
+            //bindingMain.editorTable.LL2.setVisibility(View.GONE)
             bindingMain.toolbarLayout.setVisibility(View.GONE)
         } else if (newConfig.orientation === Configuration.ORIENTATION_PORTRAIT) {
             // 画面が縦向きの場合、ツールバーを表示する
             bindingMain.editorTable.rosenname.setVisibility(View.VISIBLE)
-            bindingMain.editorTable.LL2.setVisibility(View.VISIBLE)
+            //bindingMain.editorTable.LL2.setVisibility(View.VISIBLE)
             bindingMain.toolbarLayout.setVisibility(View.VISIBLE)
         }
     }
