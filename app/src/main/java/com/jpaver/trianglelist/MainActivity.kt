@@ -28,6 +28,7 @@ import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.InputMethodManager
+import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.EditText
@@ -996,8 +997,44 @@ class MainActivity : AppCompatActivity(),
         findViewById<Spinner>(R.id.editParentConnect1).adapter = spinnerArrayAdapter
         findViewById<Spinner>(R.id.editParentConnect2).adapter = spinnerArrayAdapter
         findViewById<Spinner>(R.id.editParentConnect3).adapter = spinnerArrayAdapter
+        val tvBSpinner = findViewById<Spinner>(R.id.TV_B)
+        //tvBSpinner.adapter = spinnerArrayAdapter
+
+        // TV_B Spinnerの値が変更されたことを検出するリスナーを設定
+        tvBSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, view: View, position: Int, id: Long) {
+                // 選択されたアイテムを取得
+                val selectedItem = parent.getItemAtPosition(position) as String
+
+                // 特定のアイテムが選択されたときの処理
+                when (selectedItem) {
+                    "辺B" -> showToast("editMode Triangle")
+                    "延長L" -> showToast("eitMode Rectangle")
+                }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>) {
+                // アイテムが選択されなかった時の処理
+            }
+        }
+
     }
 
+
+    fun setHeaderTable(){
+        // 入力テーブルの見かけの変更、タイトル行の文字列とカラー
+        myEditor.setHeaderTable(
+            findViewById(R.id.TV_NUM),
+            findViewById(R.id.TV_Name),
+            findViewById(R.id.TV_A),
+            TextView(this),
+            //findViewById(R.id.TV_B),
+            findViewById(R.id.TV_C),
+            findViewById(R.id.TV_PN),
+            findViewById(R.id.TV_PL),
+            titleDed
+        )
+    }
 
     private fun flipDeductionMode() {
         myDeductionList.current = myDeductionList.size()
@@ -1014,17 +1051,8 @@ class MainActivity : AppCompatActivity(),
             //showToast("Edit Mode : Area Deductions")
             //Toast.makeText(this, "Edit Mode : Area Deductions", Toast.LENGTH_LONG).show()
 
-            // 入力テーブルの見かけの変更、タイトル行の文字列とカラー
-            myEditor.setHeaderTable(
-                findViewById(R.id.TV_NUM),
-                findViewById(R.id.TV_Name),
-                findViewById(R.id.TV_A),
-                findViewById(R.id.TV_B),
-                findViewById(R.id.TV_C),
-                findViewById(R.id.TV_PN),
-                findViewById(R.id.TV_PL),
-                titleDed
-            )
+            setHeaderTable()
+
             findViewById<TableRow>(R.id.LL1).setBackgroundColor(Color.rgb(255, 165, 155))
 
             //　fab群の見かけの変更
@@ -1063,16 +1091,7 @@ class MainActivity : AppCompatActivity(),
             //showToast("Edit Mode : Triangles")
             //Toast.makeText(this, "Edit Mode : Triangles", Toast.LENGTH_LONG).show()
             // 入力テーブルの見かけの変更、タイトル行の文字列とカラー
-            myEditor.setHeaderTable(
-                findViewById(R.id.TV_NUM),
-                findViewById(R.id.TV_Name),
-                findViewById(R.id.TV_A),
-                findViewById(R.id.TV_B),
-                findViewById(R.id.TV_C),
-                findViewById(R.id.TV_PN),
-                findViewById(R.id.TV_PL),
-                titleTri
-            )
+            setHeaderTable()
             findViewById<TableRow>(R.id.LL1).setBackgroundColor(Color.rgb(185, 255, 185))
 
             //　fab群の見かけの変更
@@ -1657,14 +1676,14 @@ class MainActivity : AppCompatActivity(),
 
     fun fabReplace(forceParameter: InputParameter? = null ){
         trilistSaving(trianglelist)
-        val dedMode = deductionMode
+        val editmode = deductionMode
 
         val inputLines = preloadInputLines( forceParameter )
 
         // 使用するActivityまたはFragmentに適した参照を渡す
         val strAddLine = getStrAddLineFromActivity(this)  // この`this`はActivityのインスタンスを指す
 
-        when(dedMode){
+        when(editmode){
             false -> processTriEditMode( strAddLine.b, strAddLine.c, inputLines.add, inputLines.edit )
             true  -> processDedEditMode( strAddLine.a, inputLines.add, inputLines.edit )
         }

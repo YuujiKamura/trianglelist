@@ -44,13 +44,13 @@
             <TextView
                 android:id="@+id/TV_A"
                 style="@style/TextEditorW2"
-                android:ems="2"
-                android:text="@string/editor_lA" />
+                android:text="@string/editor_lA"/>
 
-            <TextView
+            <Spinner
                 android:id="@+id/TV_B"
-                style="@style/TextEditorW2"
-                android:text="@string/editor_lB" />
+                style="@style/TextEditorBorderW2"
+                android:entries="@array/EditModeList"
+                android:spinnerMode="dropdown" />
 
             <TextView
                 android:id="@+id/TV_C"
