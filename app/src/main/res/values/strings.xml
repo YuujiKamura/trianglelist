@@ -66,6 +66,11 @@
         <item>1</item>
     </string-array>
 
+    <string-array name="EditModeList">
+        <item>辺B</item>
+        <item>延長L</item>
+    </string-array>
+
     <string-array name="DeductionFormList">
         <item>-</item>
         <item>Box</item>
