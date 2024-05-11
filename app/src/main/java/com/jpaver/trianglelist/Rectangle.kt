@@ -1,20 +1,18 @@
 package com.jpaver.trianglelist
 
-data class Line( val left:PointXY= PointXY(0f,0f), val right:PointXY=PointXY(0f,0f) ){
-    fun calcPoint(length: Float):Line{
-        return Line( left, left.offset( PointXY(length,0f), length ) )
-    }
-}
+data class Line( val left:PointXY= PointXY(0f,0f), val right:PointXY=PointXY(0f,0f) )
 
 data class Rectangle(
-    var length: Float = 0f,
-    var widthA: Float = 0f,
-    var widthB: Float = 0f,
-    var base: Line = Line().calcPoint(widthA),
+    val length: Float,
+    val widthA: Float,
+    val widthB: Float,
+    val angle:Float,
+    val base: PointXY = PointXY(0f,0f),
 ) : EditObject(){
     fun calcPoint():Line{
-        val leftB  = base.left.crossOffset( base.right, length )
-        val rightB = leftB.crossOffset( base.left, widthB )
-        return Line(leftB,rightB)
+        val leftB  = base.crossOffset( base.offset( base.plus(widthA,0f), widthA ), length )
+        val rightB = leftB.crossOffset( base, widthB )
+        val rotatedRightB = rightB.rotate( base, angle )
+        return Line(leftB,rotatedRightB)
     }
 }
