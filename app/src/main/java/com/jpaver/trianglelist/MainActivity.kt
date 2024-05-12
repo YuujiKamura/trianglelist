@@ -493,11 +493,29 @@ class MainActivity : AppCompatActivity(),
 
         super.onAttachedToWindow()
 
-        //bMyView = FragmentFirstBinding.bind( findViewById(R.id.my_view) )//inflate(layoutInflater)
         myview = findViewById(R.id.my_view)//bMyView.myView
         Log.d("myView", "Instance check in MainActivity: " + myview )
         Log.d("MainActivityLifeCyce", "onAttachedToWindow")
 
+        loadTitleParameters()
+
+        resumeCSV()
+
+        checkPermission()
+
+        loadEditTable()
+        colorMovementFabs()
+        fab_replace.backgroundTintList = getColorStateList(R.color.colorLime)
+        setEditNameAdapter(sNumberList)
+        setEditorTableTextWatcher()
+
+        isViewAttached = true
+        Log.d("MainActivity", "OnAttachedToWindow Process Done.")
+
+        adShowInterStitial()
+    }
+
+    fun loadTitleParameters(){
         rStr = ZumenInfo(
             getString(R.string.tenkai_title),
             getString(R.string.rosen1),
@@ -558,26 +576,9 @@ class MainActivity : AppCompatActivity(),
                 titleDed.pn
             ), getString(titleDed.pl)
         )
+    }
 
-        val filepath = this.filesDir.absolutePath + "/" + PrivateCSVFileName
-        val file = File(filepath)
-        if(file.exists()) {
-            resumeCSV()
-
-        }
-        else{
-            createNew()
-            showToast("The PrivateCSV file does not exist.")
-        }
-
-        loadEditTable()
-        colorMovementFabs()
-        //fab.setBackgroundTintList(getColorStateList(R.color.colorLime))
-        fab_replace.backgroundTintList = getColorStateList(R.color.colorLime)
-        setEditNameAdapter(sNumberList)
-
-        checkPermission()
-
+    fun setEditorTableTextWatcher(){
         ela1 = findViewById<EditText>(R.id.editLengthA1)
         editorline1_lengthB = findViewById<EditText>(R.id.editLengthB1)
         elc1 = findViewById<EditText>(R.id.editLengthC1)
@@ -615,7 +616,6 @@ class MainActivity : AppCompatActivity(),
             }
         })
 
-
         editorline2_lengthB.addTextChangedListener(object : CustomTextWatcher {
             override fun afterTextChanged(p0: Editable?) {
                 myview.watchedB2_ = p0.toString()
@@ -629,12 +629,6 @@ class MainActivity : AppCompatActivity(),
                 myview.invalidate()
             }
         })
-
-        isViewAttached = true
-        Log.d("MainActivity", "OnAttachedToWindow Process Done.")
-
-        adShowInterStitial()
-
     }
 
     override fun onDetachedFromWindow() {
@@ -2899,6 +2893,14 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun resumeCSV() {
+        val filepath = this.filesDir.absolutePath + "/" + PrivateCSVFileName
+        val file = File(filepath)
+        if( !file.exists() ) {
+            createNew()
+            showToast("The PrivateCSV file does not exist.")
+            return
+        }
+
         StringBuilder()
         try {
             val reader = openFileAsBufferedReader(PrivateCSVFileName)
