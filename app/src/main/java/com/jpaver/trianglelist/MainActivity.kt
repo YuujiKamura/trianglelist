@@ -505,7 +505,6 @@ class MainActivity : AppCompatActivity(),
 
         loadEditTable()
         colorMovementFabs()
-        fab_replace.backgroundTintList = getColorStateList(R.color.colorLime)
         setEditNameAdapter(sNumberList)
         setEditorTableTextWatcher()
 
@@ -1774,6 +1773,7 @@ class MainActivity : AppCompatActivity(),
     }
 
     fun colorFabs(){
+        colorFab(fab_replace, R.color.colorLime)
         colorFab(fab_resetView, R.color.colorSky)
         colorFab(fab_fillcolor, resColors[colorindex])
         colorFab(fab_share, R.color.colorLime)
