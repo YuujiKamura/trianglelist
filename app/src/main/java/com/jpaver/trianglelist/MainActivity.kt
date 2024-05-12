@@ -1214,7 +1214,6 @@ class MainActivity : AppCompatActivity(),
             )
         Log.d("EditorTable", "Load Success.")
 
-
     }
 
     private fun validDeduction(dp: InputParameter): Boolean {
@@ -1751,33 +1750,39 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun colorMovementFabs() : Int{
-    val max: Int = getList(deductionMode).size()
-    val current: Int = getList(deductionMode).retrieveCurrent()
-    val min = 1
-    var movable = 0
-    //fab_zoomin.setBackgroundTintList(getColorStateList(R.color.colorSky))
-    //fab_zoomout.setBackgroundTintList(getColorStateList(R.color.colorSky))
-    fab_resetView.backgroundTintList = getColorStateList(R.color.colorSky)
-    //色
-    fab_fillcolor.backgroundTintList = getColorStateList(resColors[colorindex])
 
-    fab_share.backgroundTintList = getColorStateList(R.color.colorLime)
+        colorFabs()
 
+        val listMax: Int = getList(deductionMode).size()
+        val listMin = 1
+        val current: Int = getList(deductionMode).retrieveCurrent()
+        var counter = 0
 
-    if(max > current) {
-        fab_down.backgroundTintList = getColorStateList(R.color.colorSky)
-        movable++
+        if(listMax > current) {
+            colorFab( fab_down, R.color.colorSky )
+            counter++
+        }
+        else colorFab( fab_down, R.color.colorAccent)
+
+        if(listMin < current){
+            colorFab( fab_up, R.color.colorSky )
+            counter += 2
+        }
+        else colorFab( fab_up, R.color.colorAccent)
+
+        return counter
     }
-    else fab_down.backgroundTintList = getColorStateList(R.color.colorAccent)
 
-    if(min < current){
-        fab_up.backgroundTintList = getColorStateList(R.color.colorSky)
-        movable += 2
+    fun colorFabs(){
+        colorFab(fab_resetView, R.color.colorSky)
+        colorFab(fab_fillcolor, resColors[colorindex])
+        colorFab(fab_share, R.color.colorLime)
     }
-    else fab_up.backgroundTintList = getColorStateList(R.color.colorAccent)
 
-    return movable
-}
+    fun colorFab( fab:FloatingActionButton, color:Int ){
+        fab.backgroundTintList = getColorStateList(color)
+    }
+
     // Params インスタンスの中身をログに出力する関数
     private fun logParams(params: InputParameter, tag: String = "ParamsLog") {
         val paramsContents = with(params) {
