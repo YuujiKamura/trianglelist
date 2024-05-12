@@ -475,9 +475,11 @@ open class TriangleList : EditList {
     override fun remove(num: Int) {
         //トップ以外は消せないことにする
         if ( num != trilist.size ) return
-        trilist.removeAt(num -1)
+        val index = num-1
 
-        val target = trilist[num -1]
+        val target = trilist[index] //コピーを作る。内部参照は元の対象を指す
+
+        trilist.removeAt(index)
 
         if( target.nodeA == null ) return
         target.nodeA = null

@@ -10,28 +10,15 @@ data class Rectangle(
     var angle:Float=0f,
     var basepoint: PointXY = PointXY(0f,0f),
     var nodeA: Rectangle? = null,
-    var nodeC: Rectangle? = null
+    var side: Int=1
 ) : EditObject(){
-
-    fun setNode( node:Rectangle, side:Int=0){
-        when(side){
-            0 -> {
-                node.nodeC = this
-                nodeA = node
-            }
-            1 -> {
-                node.nodeA = this
-                nodeC = node
-            }
-        }
-    }
 
     fun calcPoint( parent:Rectangle?=nodeA ):Rect{
         if(parent!=null){
             basepoint = parent.calcPoint().b.left
             widthA = parent.widthB
             angle = parent.angle
-            parent.setNode(this,1)
+            parent.setNode2(this,side)
         }
 
         val rightA = basepoint.plus(widthA,0f).rotate( basepoint, angle )
