@@ -28,7 +28,27 @@ open class EditList: Cloneable<EditList> {
     }
 }
 
-open class EditObject {
+data class Node(var a:EditObject?=null, var b:EditObject?=null, var c:EditObject?=null )
+
+open class EditObject() {
+    var node = Node()
+    open fun setNode2( target:EditObject, side:Int=0, side2:Int=1 ){
+        when(side){
+            0 -> {
+                target.setNode2(this, side2 )
+                node.a = target
+            }
+            1 -> {
+                target.node.a = this
+                node.b = target
+            }
+            2 -> {
+                target.node.a = this
+                node.c = target
+            }
+        }
+    }
+
     open fun getParams() : InputParameter { return InputParameter() }
     open fun getArea(): Float { return 0f }
 
