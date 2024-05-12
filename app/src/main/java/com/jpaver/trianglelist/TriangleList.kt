@@ -15,7 +15,7 @@ fun print_trilist(tl: TriangleList, callername:String = "undefined caller") {
     Log.d("TriangleList", "") // To add the newline effect, although Logcat naturally separates logs
 }
 
-class TriangleList : EditList {
+open class TriangleList : EditList {
 
     fun rotate(
         basepoint: PointXY,
@@ -386,7 +386,7 @@ class TriangleList : EditList {
         return add(Triangle(get(pnum), pbc, B, C), true)
     }
 
-    fun add(nextTriangle: Triangle, numbering: Boolean): Boolean {
+    fun add(nextTriangle: Triangle, numbering: Boolean= true): Boolean {
         if (!validTriangle(nextTriangle)) return false
 
         // 番号を受け取る
