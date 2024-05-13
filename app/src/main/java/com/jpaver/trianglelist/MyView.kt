@@ -22,24 +22,6 @@ import com.jpaver.trianglelist.util.ViewTranslateManager
 import java.util.*
 import kotlin.math.roundToInt
 
-// region utilities why this?
-fun Float?.formattedString(fractionDigits: Int): String{
-    // nullの場合は空文字
-    if(this == null) return ""
-
-    // 小数点以下の末尾ゼロに基づいてfractionDigitsを調整
-    val smart_fractionDigits = if ((this * 100).toInt() % 10 == 0) 1 else fractionDigits
-
-    val format = "%.${smart_fractionDigits}f"
-    val spaced_format = spaced_by(smart_fractionDigits) + format.format(this)
-    return spaced_format
-}
-
-fun spaced_by(number: Int): String{
-    return " ".repeat( 2 - number )
-}
-
-//endregion utilities exist!
 
 class MyView(context: Context, attrs: AttributeSet?) :
     View(context, attrs),

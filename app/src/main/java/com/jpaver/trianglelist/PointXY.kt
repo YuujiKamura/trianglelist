@@ -1,6 +1,7 @@
 package com.jpaver.trianglelist
 import com.jpaver.trianglelist.util.Cloneable
 import kotlin.math.acos
+import kotlin.math.atan2
 
 class PointXY :Cloneable<PointXY> {
     private var _x: Float = 0.0f
@@ -175,6 +176,19 @@ class PointXY :Cloneable<PointXY> {
              outerProduct < 0 && angleDegree >  180f ) {
              return  360f - angleDegree
         }
+        return angleDegree
+    }
+
+    fun calcAngleWithXAxis(p2: PointXY): Float {
+        val deltaX = p2.x - x
+        val deltaY = p2.y - y
+        val angleRadian = atan2(deltaY, deltaX)  // deltaY/deltaX の角度をラジアンで計算
+        var angleDegree = (angleRadian * 180 / Math.PI).toFloat()  // ラジアンを度数に変換
+
+        if (angleDegree < 0) {
+            angleDegree += 360f  // 負の角度の場合、360度を加えて正の範囲に修正
+        }
+
         return angleDegree
     }
 
