@@ -23,6 +23,20 @@ open class EditObject() {
         }
     }
 
+    fun initByParent(parent: EditObject, side: Int):Line{
+        var baseline = Line()
+        when{
+            ( parent is Rectangle ) -> {
+                baseline = parent.calcPoint().b
+            }
+            ( parent is Triangle ) -> {
+                baseline = parent.getLine(side)
+            }
+        }
+        parent.setNode2(this,side)
+        return baseline
+    }
+
     open fun getParams() : InputParameter { return InputParameter() }
     open fun getArea(): Float { return 0f }
 

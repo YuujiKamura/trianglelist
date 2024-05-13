@@ -15,29 +15,18 @@ data class Rectangle(
     var side: Int=1
 ) : EditObject(){
 
-    fun initByParent(parent: EditObject){
-        var baseline = Line()
-        when{
-            ( parent is Rectangle ) -> {
-                baseline = parent.calcPoint().b
-            }
-            ( parent is Triangle ) -> {
-                baseline = parent.getLine(side)
-            }
+    fun calcPoint():Line2{
+        var baseline = Line( basepoint, basepoint.moveX(widthA,angle) )
+
+        nodeA?.let {
+            baseline = initByParent(it, side)
+            basepoint = baseline.left
+            angle = baseline.getAngle()
         }
 
-        basepoint = baseline.left
-        angle = baseline.getAngle()
-        parent.setNode2(this,side)
-    }
-
-    fun calcPoint():Line2{
-        nodeA?.let { initByParent(it) }
-
-        val rightA = basepoint.plus(widthA,0f).rotate( basepoint, angle )
-        val leftB  = basepoint.crossOffset( rightA, length )
+        val leftB  = basepoint.crossOffset( baseline.right, length )
         val rightB = leftB.crossOffset( basepoint, widthB )
 
-        return Line2( Line(basepoint,rightA), Line(leftB, rightB) )
+        return Line2( baseline, Line(leftB, rightB) )
     }
 }
