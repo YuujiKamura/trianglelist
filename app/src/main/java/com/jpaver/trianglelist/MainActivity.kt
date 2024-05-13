@@ -209,13 +209,7 @@ class MainActivity : AppCompatActivity(),
             R.color.colorSky     //4
     )
 
-
     private var TAG = "MainActivity"
-    //private val isAdTEST_ = true
-    //private val TestAdID_ = "ca-app-pub-3940256099942544/6300978111"
-    //private val UnitAdID_ = "ca-app-pub-6982449551349060/2369695624"
-
-
 
     private var fileType: String = "notyet"
     private var filename = "notyet"
