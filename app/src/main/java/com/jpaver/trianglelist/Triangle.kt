@@ -27,7 +27,6 @@ fun spaced_by(number: Int): String{
 
 //endregion utilities exist!
 
-
 @Suppress("NAME_SHADOWING")
 class Triangle : EditObject, Cloneable<Triangle> {
 
@@ -155,7 +154,6 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
     var pointNumber = PointNumberManager()
-
 
     //Deductionからも呼ばれている
     fun pointUnconnectedSide(
