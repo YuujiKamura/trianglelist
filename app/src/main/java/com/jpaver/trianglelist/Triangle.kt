@@ -8,6 +8,26 @@ import kotlin.math.cos
 import kotlin.math.pow
 import kotlin.math.sin
 
+// region utilities why this?
+fun Float?.formattedString(fractionDigits: Int): String{
+    // nullの場合は空文字
+    if(this == null) return ""
+
+    // 小数点以下の末尾ゼロに基づいてfractionDigitsを調整
+    val smart_fractionDigits = if ((this * 100).toInt() % 10 == 0) 1 else fractionDigits
+
+    val format = "%.${smart_fractionDigits}f"
+    val spaced_format = spaced_by(smart_fractionDigits) + format.format(this)
+    return spaced_format
+}
+
+fun spaced_by(number: Int): String{
+    return " ".repeat( 2 - number )
+}
+
+//endregion utilities exist!
+
+
 @Suppress("NAME_SHADOWING")
 class Triangle : EditObject, Cloneable<Triangle> {
 
@@ -538,6 +558,15 @@ class Triangle : EditObject, Cloneable<Triangle> {
     fun getForceLength(i: Int): Float {
         if (i == 1) return lengthNotSized[1]
         return if (i == 2) lengthNotSized[2] else 0f
+    }
+
+    fun getLine(side:Int):Line {
+        when(side){
+            0 -> return Line(point[0],pointAB)
+            1 -> return Line(pointAB,pointBC)
+            2 -> return Line(pointBC,point[0])
+        }
+        return Line()
     }
 
     fun getPointBySide(i: Int): PointXY? {
