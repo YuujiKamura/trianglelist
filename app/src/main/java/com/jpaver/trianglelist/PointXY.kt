@@ -192,6 +192,10 @@ class PointXY :Cloneable<PointXY> {
         return angleDegree
     }
 
+    fun moveX(length:Float,angle:Float):PointXY{
+        return this.plus(length,0f).rotate(this, angle )
+    }
+
     fun set(sp: PointXY) {
         x = sp.x
         y = sp.y
