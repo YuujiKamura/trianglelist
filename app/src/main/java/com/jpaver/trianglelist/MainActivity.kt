@@ -684,7 +684,7 @@ class MainActivity : AppCompatActivity(),
             bindingMain.toolbarLayout.setVisibility(View.VISIBLE)
         }
     }
-//endregion ActivityLifeCycle
+    //endregion ActivityLifeCycle
 
     //region File Intent
     fun launchViewIntent(file: Uri) {
@@ -769,12 +769,10 @@ class MainActivity : AppCompatActivity(),
         return true
     }
 
-
     private fun launchCreateDocumentIntent(fileType: String, mimeType: String, fileExtension: String) {
         this.fileType = fileType
         saveContent.launch(Pair(mimeType, strDateRosenname(fileExtension)))
     }
-
 
     private fun showDialogInputZumenTitles( title: String, onComplete: () -> Unit ) {
         // 入力に関する情報をリストで管理
@@ -861,42 +859,9 @@ class MainActivity : AppCompatActivity(),
         saveContent.launch( Pair( "application/pdf", strDateRosenname(".pdf") ) )
     }
 
-    //endregion
-
-
+    //endregion File Intent
 
     //region editorTable Controll
-
-    private fun printDebugConsole(){
-        /*val tvd: TextView = findViewById(R.id.debugconsole)
-        //面積(控除なし): ${myTriangleList.getArea()}㎡　(控除あり):${myTriangleList.getArea()-myDeductionList.getArea()}㎡
-        tvd.text = """ myView.Center: ${my_view.myTriangleList.center.x} ${my_view.myTriangleList.center.y}
-                        |TriCurrent: ${my_view.getTriangleList().getCurrent()} T1.color ${
-            my_view.getTriangleList().get(
-                1
-            ).color_
-        } ${myTriangleList.get(1).color_}
-                        |TapTL: ${my_view.tapTL_} , lastTapNum: ${my_view.getTriangleList().lastTapNumber_}, lastTapSide: ${my_view.getTriangleList().lastTapSide_}
-                        |viewX: ${my_view.getViewSize().x}, viewY ${my_view.getViewSize().y}, zoomsize: ${my_view.zoomSize}
-                        |mtsX: ${
-            myTriangleList.measureMostLongLine().x
-        } , mtsY: ${
-            myTriangleList.measureMostLongLine().y
-        }  mtcX: ${myTriangleList.center.x} , mtcY: ${
-            myTriangleList.center.y
-        }
-                        |mtscl: ${myTriangleList.scale} , mtc: ${myTriangleList.getCurrent()}  mdl: ${myDeductionList.size()} , mdc: ${myDeductionList.getCurrent()}
-                        |currentname: ${
-            myTriangleList.get(myTriangleList.size()).getMyName_()
-        }  cur-1name: ${
-            myTriangleList.get(
-                myTriangleList.size() - 1
-            ).getMyName_()
-        }
-                        |myAngle: ${myTriangleList.myAngle}
-            """.trimMargin()*/
-    }
-
 
     private fun setEditNameAdapter(namelist: List<String>){
         val textView =
@@ -915,30 +880,21 @@ class MainActivity : AppCompatActivity(),
         textView2.threshold = 1
         textView3.threshold = 1
         textView.addTextChangedListener(DeductionNameTextWatcher(editorline1, lastParams))
-
     }
-    private fun setTitles(){
-        rosenname = findViewById<EditText>(R.id.rosenname).text.toString()
-        //findViewById<EditText>(R.id.rosenname).setText(rosenname)
 
+    private fun setTitles(){
         val dedArea = myDeductionList.getArea()
         val triArea = trianglelist.getArea()
         val totalArea = roundByUnderTwo(triArea - dedArea).formattedString(2)
         title = rStr.menseki_ + ": $totalArea m^2"
-
-        /*if( myTriangleList.lastTapNumber_ > 0 ){
-            val coloredArea = myTriangleList.getAreaC( myTriangleList.lastTapNumber_ )
-            val colorStr = arrayOf( "red: ", "orange: ", "yellow: ", "green: ", "blue: " )
-            val tapped = myTriangleList.get( myTriangleList.lastTapNumber_ )
-            title = rStr.menseki_ + ": ${ totalArea } m^2" + " ( ${ colorStr[tapped.color_]+coloredArea } m^2 )"
-        }*/
-
+        rosenname = findViewById<EditText>(R.id.rosenname).text.toString()
     }
 
     private fun roundByUnderTwo(fp: Float) :Float {
         val ip: Int = ( fp * 100f ).roundToInt()
         return ip * 0.01f
     }
+
     private fun turnToBlankTrilistUndo(){
         trilistUndo = TriangleList() // reset
         bindingMain.fabTable.fabUndo.backgroundTintList = getColorStateList(R.color.colorPrimary)
@@ -991,13 +947,13 @@ class MainActivity : AppCompatActivity(),
         tvBSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View, position: Int, id: Long) {
                 // 選択されたアイテムを取得
-                val selectedItem = parent.getItemAtPosition(position) as String
+                //val selectedItem = parent.getItemAtPosition(position) as String
 
                 // 特定のアイテムが選択されたときの処理
-                when (selectedItem) {
-                    "辺B" -> showToast("editMode Triangle")
-                    "延長L" -> showToast("editMode Rectangle")
-                }
+                //when (selectedItem) {
+                    //"辺B" -> showToast("editMode Triangle")
+                    //"延長L" -> showToast("editMode Rectangle")
+                //}
             }
             override fun onNothingSelected(parent: AdapterView<*>) {
                 // アイテムが選択されなかった時の処理
@@ -1145,33 +1101,6 @@ class MainActivity : AppCompatActivity(),
         )
     }
 
-    fun isValid(dp: InputParameter) : Boolean{
-        if (dp.a <= 0.0f || dp.b <= 0.0f || dp.c <= 0.0f) return false
-        if (dp.a + dp.b <= dp.c ){
-            Toast.makeText(this, "Invalid!! : C > A + B", Toast.LENGTH_LONG).show()
-            return false
-        }
-        if (dp.b + dp.c <= dp.a ){
-            Toast.makeText(this, "Invalid!! : A > B + C", Toast.LENGTH_LONG).show()
-            return false
-        }
-        if (dp.c + dp.a <= dp.b ){
-            Toast.makeText(this, "Invalid!! : B > C + A", Toast.LENGTH_LONG).show()
-            return false
-        }
-
-        if ( dp.pn > trianglelist.size() || ( dp.pn < 1 && dp.number != 1 )) {
-            Toast.makeText(this, "Invalid!! : number of parent", Toast.LENGTH_LONG).show()
-            return false
-        }
-        if (  dp.pl < 1 && dp.number != 1  ) {
-            Toast.makeText(this, "Invalid!! : connection in parent", Toast.LENGTH_LONG).show()
-            return false
-        }
-
-        return true
-    }
-
     private fun loadEditTable(){
         editorline1 =
             EditTextViewLine(
@@ -1206,21 +1135,6 @@ class MainActivity : AppCompatActivity(),
                     findViewById(R.id.editParentConnect3)
             )
         Log.d("EditorTable", "Load Success.")
-
-    }
-
-    private fun validDeduction(dp: InputParameter): Boolean {
-        return isValidName(dp.name) && isValidDimensions(dp)
-    }
-
-    private fun isValidName(name: String): Boolean {
-        return name.isNotEmpty()
-    }
-
-    private fun isValidDimensions(dp: InputParameter): Boolean {
-        if (dp.a < 0.1f) return false
-        if (dp.type == "Box" && dp.b < 0.1f) return false
-        return true
     }
 
     private fun getList(dMode: Boolean) : EditList {
@@ -1241,7 +1155,50 @@ class MainActivity : AppCompatActivity(),
         elsc2 = toString( editorline2_lengthC )
     }
 
-    //endregion
+    //endregion editor table control
+
+    //region validation
+    data class ValidationRule(val condition: (InputParameter) -> Boolean, val message: String){
+        fun isValid(params: InputParameter, showToast:(String,Boolean) ->Unit ):Boolean{
+            if (condition(params)) {
+                showToast(message, false)
+                return false
+            }
+            return true
+        }
+    }
+
+    private fun isParamsValid(params: InputParameter): Boolean {
+        val rules = listOf(
+            ValidationRule({ it.a <= 0.0f || it.b <= 0.0f || it.c <= 0.0f }, "Invalid!! : Negative or zero side length"),
+            ValidationRule({ it.a + it.b <= it.c }, "Invalid!! : C > A + B"),
+            ValidationRule({ it.b + it.c <= it.a }, "Invalid!! : A > B + C"),
+            ValidationRule({ it.c + it.a <= it.b }, "Invalid!! : B > C + A"),
+            ValidationRule({ it.pn > trianglelist.size() || (it.pn < 1 && it.number != 1) }, "Invalid!! : number of parent"),
+            ValidationRule({ it.pl < 1 && it.number != 1 }, "Invalid!! : connection in parent")
+        )
+
+        for (rule in rules) {
+            if(!rule.isValid(params,::showToast)) return false
+        }
+        return true
+    }
+
+
+    private fun validDeduction(dp: InputParameter): Boolean {
+        return isValidName(dp.name) && isValidDimensions(dp)
+    }
+
+    private fun isValidName(name: String): Boolean {
+        return name.isNotEmpty()
+    }
+
+    private fun isValidDimensions(dp: InputParameter): Boolean {
+        if (dp.a < 0.1f) return false
+        if (dp.type == "Box" && dp.b < 0.1f) return false
+        return true
+    }
+//endregion validation
 
     //region FabController
     private fun initFabs(){
@@ -1333,7 +1290,6 @@ class MainActivity : AppCompatActivity(),
     }
 
     fun finalizeUI(){
-        printDebugConsole()
         colorMovementFabs()
         myview.resetViewToLastTapTriangle()
         setTitles()
@@ -1495,7 +1451,6 @@ class MainActivity : AppCompatActivity(),
                 myview.resetViewToCurrentDeduction()
             }
             colorMovementFabs()
-            printDebugConsole()
             setTitles()
         }
 
@@ -1508,7 +1463,6 @@ class MainActivity : AppCompatActivity(),
                 myview.resetViewToCurrentDeduction()
             }
             colorMovementFabs()
-            printDebugConsole()
             setTitles()
         }
 
@@ -1589,8 +1543,6 @@ class MainActivity : AppCompatActivity(),
         editorResetBy(getList(deductionMode))
         setListByDedMode( moveCenter )
         resetViewMethod()
-        printDebugConsole()
-        //saveCSVtoPrivate()
     }
 
     fun setDeductionlist(){
@@ -1911,7 +1863,7 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun addTriangleBy(params: InputParameter) : Boolean {
-        if ( isValid( params ) ) {
+        if ( isParamsValid( params ) ) {
 
             trilistSaving( trianglelist )
             trilistAdd( params, trianglelist )
@@ -1924,7 +1876,7 @@ class MainActivity : AppCompatActivity(),
 
     private fun resetTrianglesBy(params: InputParameter) : Boolean {
 
-        return if (isValid(params)){
+        return if (isParamsValid(params)){
             trilistUndo = trianglelist.clone()
             fab_undo.backgroundTintList = getColorStateList(R.color.colorLime)
 
@@ -2131,7 +2083,6 @@ class MainActivity : AppCompatActivity(),
     fun setTriangleDetails(myTriangleList: TriangleList) {
         colorindex = myTriangleList.get(myTriangleList.lastTapNumber).mycolor // タップされた三角形の色を取得
         colorMovementFabs() // 色の設定を更新
-        printDebugConsole() // デバッグコンソールに情報を出力
         setTitles() // タイトルを設定
     }
 
@@ -2683,7 +2634,6 @@ class MainActivity : AppCompatActivity(),
 
         fab_fillcolor.backgroundTintList = getColorStateList(resColors[colorindex])
 
-        printDebugConsole()
         editorResetBy(getList(deductionMode))
 
     }
@@ -2920,11 +2870,13 @@ class MainActivity : AppCompatActivity(),
 
     // region logs and Toast
     var currentToast: Toast? = null
-    fun showToast(message: String) {
-        currentToast?.cancel() // 現在表示されているToastがあればキャンセル
-        currentToast = Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).apply { show() }
+    fun showToast(message: String, isOverwrite:Boolean=true ) {
+        if(isOverwrite){
+            currentToast?.cancel() // 現在表示されているToastがあればキャンセル
+            currentToast = Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).apply { show() }
+        }
+        else Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).apply { show() }
     }
-
 
     fun Context.logFilePreview(filePath: String, callerMethodName: String = "UnknownCaller") {
         val file = File(this.filesDir, filePath)
