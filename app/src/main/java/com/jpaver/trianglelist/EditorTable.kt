@@ -26,14 +26,8 @@ data class InputParameter(var name: String = "",
                           var c: Float = 0f,
                           var pn: Int = 0,
                           var pl: Int = 0,
-                          var point: PointXY = PointXY(
-                      0f,
-                      0f
-                  ),
-                          var pointflag: PointXY = PointXY(
-                      0f,
-                      0f
-                  )
+                          var point: PointXY = PointXY(0f, 0f),
+                          var pointflag: PointXY = PointXY(0f, 0f)
 )
 
 class EditorTable {
