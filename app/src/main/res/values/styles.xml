@@ -72,6 +72,12 @@
         <item name="android:layout_weight">@dimen/w2</item>
     </style>
 
+    <style name="TextEditorBorderW3" parent="TextEditor">
+        <item name="android:background">@drawable/border_transparent</item>
+        <item name="android:layout_weight">@dimen/w2</item>
+    </style>
+
+
     <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
 
     <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
