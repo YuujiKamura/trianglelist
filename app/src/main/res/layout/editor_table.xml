@@ -29,7 +29,7 @@
         <TableRow
             android:id="@+id/LL1"
             style="@style/TableRow"
-            android:background="@drawable/border_green">
+            android:background="@drawable/border_transparent">
 
             <TextView
                 android:id="@+id/TV_NUM"
@@ -48,8 +48,10 @@
 
             <Spinner
                 android:id="@+id/TV_B"
-                style="@style/TextEditorBorderW2"
+                style="@style/TextEditorBorderW3"
                 android:entries="@array/EditModeList"
+                android:gravity="center"
+                android:textAlignment="center"
                 android:spinnerMode="dropdown" />
 
             <TextView
