@@ -1608,17 +1608,12 @@ class MainActivity : AppCompatActivity(),
     }
 
     fun preloadInputLines( forceParameter: InputParameter? = null ):InputLines {
+        if(forceParameter != null) return InputLines( forceParameter, forceParameter)
 
-        var inputLineAdd  = InputParameter()
-        var inputLineEdit = InputParameter()
+        val inputLineAdd  = InputParameter()
+        val inputLineEdit = InputParameter()
         myEditor.read(inputLineAdd, editorline1)
         myEditor.read(inputLineEdit, editorLine2)
-
-        // 主にデバッグ用
-        if( forceParameter != null ){
-            inputLineAdd = forceParameter
-            inputLineEdit = forceParameter
-        }
 
         return InputLines( inputLineAdd, inputLineEdit )
     }
