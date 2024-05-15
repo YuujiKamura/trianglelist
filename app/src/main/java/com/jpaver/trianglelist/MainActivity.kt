@@ -1154,36 +1154,17 @@ class MainActivity : AppCompatActivity(),
         elsb2 = toString( editorline2_lengthB )
         elsc2 = toString( editorline2_lengthC )
     }
-
     //endregion editor table control
 
     //region validation
-    data class ValidationRule(val condition: (InputParameter) -> Boolean, val message: String){
-        fun isValid(params: InputParameter, showToast:(String,Boolean) ->Unit ):Boolean{
-            if (condition(params)) {
-                showToast(message, false)
-                return false
-            }
-            return true
-        }
-    }
-
     private fun isParamsValid(params: InputParameter): Boolean {
-        val rules = listOf(
-            ValidationRule({ it.a <= 0.0f || it.b <= 0.0f || it.c <= 0.0f }, "Invalid!! : Negative or zero side length"),
-            ValidationRule({ it.a + it.b <= it.c }, "Invalid!! : C > A + B"),
-            ValidationRule({ it.b + it.c <= it.a }, "Invalid!! : A > B + C"),
-            ValidationRule({ it.c + it.a <= it.b }, "Invalid!! : B > C + A"),
-            ValidationRule({ it.pn > trianglelist.size() || (it.pn < 1 && it.number != 1) }, "Invalid!! : number of parent"),
-            ValidationRule({ it.pl < 1 && it.number != 1 }, "Invalid!! : connection in parent")
-        )
+        val rules = rules_triangle
 
         for (rule in rules) {
             if(!rule.isValid(params,::showToast)) return false
         }
         return true
     }
-
 
     private fun validDeduction(dp: InputParameter): Boolean {
         return isValidName(dp.name) && isValidDimensions(dp)
@@ -1198,7 +1179,7 @@ class MainActivity : AppCompatActivity(),
         if (dp.type == "Box" && dp.b < 0.1f) return false
         return true
     }
-//endregion validation
+    //endregion validation
 
     //region FabController
     private fun initFabs(){
