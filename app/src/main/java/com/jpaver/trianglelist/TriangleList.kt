@@ -192,11 +192,11 @@ open class TriangleList : EditList {
             S_500 to 0.5f,
             S_400 to 0.4f,
             S_300 to 0.35f,
-            S_250 to 0.3f,
-            S_200 to 0.3f,
+            S_250 to 0.35f,
+            S_200 to 0.35f,
             S_150 to 0.25f,
-            S_100 to 0.2f,
-            S_50 to 0.2f
+            S_100 to 0.25f,
+            S_50 to 0.25f
         )
         return mapOf(
             "dxf" to textScaleMapCAD,
