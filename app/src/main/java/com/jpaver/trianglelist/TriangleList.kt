@@ -145,30 +145,10 @@ class TriangleList : EditList {
             return 0
         }
 
+    private val textScaleCalculator = TextScaleCalculator()
+
     fun getPrintTextScale(drawingScale: Float, exportFileType: String): Float {
-        val textScaleMapPDF: MutableMap<Float, Float> = HashMap()
-        textScaleMapPDF[45f] = 3f
-        textScaleMapPDF[40f] = 5f
-        textScaleMapPDF[25f] = 6f
-        textScaleMapPDF[20f] = 8f
-        textScaleMapPDF[15f] = 8f
-        val textScaleMapDXF: MutableMap<Float, Float> = HashMap()
-        textScaleMapDXF[15f] = 0.35f
-        textScaleMapDXF[5f] = 0.25f
-        val exportFileTypeMap: MutableMap<String, Map<Float, Float>> = HashMap()
-        exportFileTypeMap["dxf"] = textScaleMapDXF
-        exportFileTypeMap["sfc"] = textScaleMapDXF
-        exportFileTypeMap["pdf"] = textScaleMapPDF
-        val defaultTextScaleMap: MutableMap<String, Float> = HashMap()
-        defaultTextScaleMap["dxf"] = 0.45f
-        defaultTextScaleMap["sfc"] = 0.45f
-        defaultTextScaleMap["pdf"] = 10f
-        val defaultValue = Optional.ofNullable(defaultTextScaleMap[exportFileType]).orElse(10f)
-        val selectedMap = Optional.ofNullable(
-            exportFileTypeMap[exportFileType]
-        ).orElse(textScaleMapDXF)
-        return Optional.ofNullable(selectedMap[getPrintScale(drawingScale) * 10])
-            .orElse(defaultValue)
+        return textScaleCalculator.getTextScale(drawingScale, exportFileType)
     }
 
     fun getPrintScale(drawingScale: Float): Float { // ex. 1/100 is w40m h27m drawing in range.
@@ -527,7 +507,7 @@ class TriangleList : EditList {
         //me.setNode( trilist_.get( ));
 
 
-        // 浮いてる場合、さらに自己番が最後でない場合、一個前の三角形の位置と角度を自分の変化にあわせて動かしたい。
+        // 浮いてる場合、さらに自己番が最後でない場合、一個前の三角形の位置と角度を自分の変化���あわせて動かしたい。
         if (curtri.parentnumber <= 0 && trilist.size != number && notHave(curtri.nodeTriangleA_)) {
             curtri.resetByChild(trilist[number])
         }
@@ -901,7 +881,7 @@ class TriangleList : EditList {
                     me.setNode(next, 0)
 
                     //たとえば次がB辺接続だった場合、自分のB辺がA辺となるように全体の辺長配置を時計回りに回す。
-                    //それから、次の接続辺指定を自身に移植する。
+                    //それから、次の接続辺指定を自身に���植する。
                     //このとき、二重断面指定はたぶん逆になる。
                     //次がB辺接続だったとしても、そのまた次もB辺接続だったら、次のやつの辺長が配置換えされるので、接続がおかしくなる
                     //次のやつのB辺はC辺にあった。
