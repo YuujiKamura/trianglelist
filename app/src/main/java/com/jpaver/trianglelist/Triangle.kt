@@ -1062,34 +1062,22 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
     private fun calculatePointBC(basepoint: PointXY): PointXY {
-        val theta = atan2( (basepoint.y - pointAB.y).toDouble(), (basepoint.x - pointAB.x).toDouble() )
-        val powA = length[0].pow(2.0f).toDouble()
-        val powB = length[1].pow(2.0f).toDouble()
-        val powC = length[2].pow(2.0f).toDouble()
-        val alpha = acos((powA + powB - powC) / (2 * length[0] * length[1]))
-        val angle = theta + alpha
-        val offset_x = ( length[1] * cos( angle ) ).toFloat()
-        val offset_y = ( length[1] * sin( angle ) ).toFloat()
-        return pointAB.plus( offset_x, offset_y )
+        return TriangleCalculator.calculatePoint(
+            basepoint,
+            pointAB,
+            length // すでにfloatArrayなので直接渡せる
+        )
     }
 
     private fun calculateInternalAngles() {
-        angleAB = calculateInternalAngle(point[0], pointAB, pointBC).toFloat()
-        angleBC = calculateInternalAngle(pointAB, pointBC, point[0]).toFloat()
-        angleCA = calculateInternalAngle(pointBC, point[0], pointAB).toFloat()
+        val angles = TriangleCalculator.calculateInternalAngles(point[0], pointAB, pointBC)
+        angleAB = angles.first
+        angleBC = angles.second
+        angleCA = angles.third
     }
 
-    fun calculateInternalAngle(p1: PointXY, p2: PointXY, p3: PointXY): Double {
-        val v1 = p1.subtract(p2)
-        val v2 = p3.subtract(p2)
-        val angleRadian = acos(v1.innerProduct(v2) / (v1.magnitude() * v2.magnitude()))
-        return angleRadian * 180 / Math.PI
-    }
-
-    private fun calculatePointCenter() :PointXY{
-        val averageX = ( pointAB.x + pointBC.x + point[0].x ) / 3
-        val averageY = ( pointAB.y + pointBC.y + point[0].y ) / 3
-        pointcenter = PointXY( averageX, averageY )
+    private fun calculatePointCenter(): PointXY {
+        pointcenter = TriangleCalculator.calculateCenter(arrayOf(point[0], pointAB, pointBC))
         return pointcenter
     }
 
