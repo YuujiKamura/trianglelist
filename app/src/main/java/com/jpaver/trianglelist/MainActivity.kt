@@ -54,9 +54,9 @@ import com.google.android.gms.ads.RequestConfiguration
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.android.play.core.appupdate.AppUpdateManagerFactory
-import com.google.android.play.core.install.model.AppUpdateType
-import com.google.android.play.core.install.model.UpdateAvailability
+//import com.google.android.play.core.appupdate.AppUpdateManagerFactory
+//import com.google.android.play.core.install.model.AppUpdateType
+//import com.google.android.play.core.install.model.UpdateAvailability
 import com.jpaver.trianglelist.databinding.ActivityMainBinding
 import com.jpaver.trianglelist.dataclass.ZumenInfo
 import com.jpaver.trianglelist.filemanager.XlsxWriter
@@ -448,6 +448,8 @@ class MainActivity : AppCompatActivity(),
 
         val tArray = resources.getStringArray(R.array.ParentList)
         initSpinner(tArray)
+
+/*
         val appUpdateManager = AppUpdateManagerFactory.create(this)
 
         // Returns an intent object that you use to check for an update.
@@ -473,7 +475,7 @@ class MainActivity : AppCompatActivity(),
             }
             else Log.d( "AppUpdate", "Update is not Available.")
         }
-
+*/
         adMobInit()
 
         prefSetting = PreferenceManager.getDefaultSharedPreferences(this)

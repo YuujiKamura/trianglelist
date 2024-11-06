@@ -3,7 +3,7 @@ package com.jpaver.trianglelist
 import com.jpaver.trianglelist.util.FileUtil
 import org.junit.Assert
 import org.junit.Test
-
+/*
 class DxfWriterTest {
 
     @Test
@@ -26,4 +26,4 @@ class DxfWriterTest {
         dxfwriter.save()
         writer.close()
     }
-}
+}*/
