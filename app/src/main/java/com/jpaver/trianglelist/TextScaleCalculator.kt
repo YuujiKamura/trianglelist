@@ -2,44 +2,54 @@ package com.jpaver.trianglelist
 
 class TextScaleCalculator {
     companion object {
-        const val S_500 = 50f
-        const val S_400 = 40f
-        const val S_300 = 30f
-        const val S_250 = 25f
-        const val S_200 = 20f
-        const val S_150 = 15f
-        const val S_100 = 10f
-        const val S_50 = 5f
+        // スケール定数
+        private const val S_500 = 50f
+        private const val S_400 = 40f
+        private const val S_300 = 25f
+        private const val S_250 = 25f
+        private const val S_200 = 20f
+        private const val S_150 = 15f
+        private const val S_100 = 10f
+        private const val S_50 = 5f
+
+        private val fileTypeMap: Map<String, Map<Float, Float>> = initializeFileTypeMap()
+        
+        private fun initializeFileTypeMap(): Map<String, Map<Float, Float>> {
+            val textScaleMapPDF = mapOf(
+                S_500 to 3f,
+                S_400 to 4f,
+                S_300 to 5f,
+                S_250 to 6f,
+                S_200 to 8f,
+                S_150 to 8f
+            )
+            val textScaleMapCAD = mapOf(
+                S_500 to 0.5f,
+                S_400 to 0.4f,
+                S_300 to 0.35f,
+                S_250 to 0.35f,
+                S_200 to 0.35f,
+                S_150 to 0.25f,
+                S_100 to 0.25f,
+                S_50 to 0.25f
+            )
+            return mapOf(
+                "dxf" to textScaleMapCAD,
+                "sfc" to textScaleMapCAD,
+                "pdf" to textScaleMapPDF
+            )
+        }
+
+        private val defaultScaleMap: Map<String, Float> = mapOf(
+            "dxf" to 0.25f,
+            "sfc" to 0.25f,
+            "pdf" to 8f
+        )
     }
 
-    fun getTextScale(scale: Float, fileType: String): Float {
-        return when (fileType.lowercase()) {
-            "dxf", "sfc" -> getDxfTextScale(scale)
-            "pdf" -> getPdfTextScale(scale)
-            else -> getPdfTextScale(scale)  // 未知のファイルタイプの場合はPDFのマッピングを使用
-        }
-    }
-
-    private fun getDxfTextScale(scale: Float): Float {
-        return when (scale) {
-            S_500 -> 0.45f
-            S_400 -> 0.40f
-            S_300 -> 0.35f
-            S_250 -> 0.35f
-            S_200 -> 0.30f
-            S_100, S_50 -> 0.25f
-            else -> 0.25f  // デフォルト値
-        }
-    }
-
-    private fun getPdfTextScale(scale: Float): Float {
-        return when (scale) {
-            S_500 -> 3f
-            S_400 -> 5f 
-            S_300 -> 5f
-            S_250 -> 6f
-            S_200, S_150, S_100, S_50 -> 8f
-            else -> 8f  // デフォルト値
-        }
+    fun getTextScale(printScale: Float, exportFileType: String): Float {
+        val defaultValue = defaultScaleMap.getOrDefault(exportFileType, 5f)
+        val selectedMap = fileTypeMap.getOrDefault(exportFileType, mapOf())
+        return selectedMap.getOrDefault(printScale, defaultValue)
     }
 } 
