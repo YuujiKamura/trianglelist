@@ -155,32 +155,59 @@ open class TriangleList : EditList {
             return 0
         }
 
+
     fun getPrintTextScale(drawingScale: Float, exportFileType: String): Float {
         val exportFileTypeMap = initializeFileTypeMap()
         val defaultTextScaleMap = initializeDefaultScaleMap()
 
         val defaultValue = defaultTextScaleMap.getOrDefault(exportFileType, 5f)
-        val selectedMap = exportFileTypeMap.getOrDefault(exportFileType, initializeDXFMap())
+        val selectedMap = exportFileTypeMap.getOrDefault(exportFileType, mapOf())
 
         val printScale = getPrintScale(drawingScale) * 10
         return selectedMap.getOrDefault(printScale, defaultValue)
     }
 
+    // スケール定数をクラス内に定義
+    companion object {
+        private const val S_500 = 50f
+        private const val S_400 = 40f
+        private const val S_300 = 25f
+        private const val S_250 = 25f
+        private const val S_200 = 20f
+        private const val S_150 = 15f
+        private const val S_100 = 10f
+        private const val S_50 = 5f
+    }
+
     private fun initializeFileTypeMap(): Map<String, Map<Float, Float>> {
-        val textScaleMapPDF = mapOf(45f to 3f, 40f to 5f, 25f to 6f, 20f to 8f, 15f to 8f)
-        val textScaleMapDXF = mapOf(15f to 0.35f, 10f to 0.30f, 5f to 0.25f)
+        val textScaleMapPDF = mapOf(
+            S_500 to 3f,
+            S_400 to 5f,
+            S_250 to 6f,
+            S_200 to 8f,
+            S_150 to 8f
+        )
+        val textScaleMapCAD = mapOf(
+            S_500 to 0.45f,
+            S_400 to 0.45f,
+            S_250 to 0.35f,
+            S_200 to 0.35f,
+            S_150 to 0.25f,
+            S_100 to 0.25f,
+            S_50 to 0.25f
+        )
         return mapOf(
-            "dxf" to textScaleMapDXF,
-            "sfc" to textScaleMapDXF,
+            "dxf" to textScaleMapCAD,
+            "sfc" to textScaleMapCAD,
             "pdf" to textScaleMapPDF
         )
     }
 
     private fun initializeDefaultScaleMap(): Map<String, Float> {
         return mapOf(
-            "dxf" to 0.45f,
-            "sfc" to 0.45f,
-            "pdf" to 10f
+            "dxf" to 0.25f,
+            "sfc" to 0.25f,
+            "pdf" to 8f
         )
     }
 
@@ -970,7 +997,7 @@ open class TriangleList : EditList {
             }
         }
 
-        // 逆順にソートし、新規に足していく。リビルドした方が考え方が楽。
+        // 逆順にソートし、新��に足していく。リビルドした方が考え方が楽。
         val rev = clone()
         rev.trilist.clear()
         for (i in trilist.size - 1 downTo -1 + 1) {
