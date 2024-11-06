@@ -157,64 +157,9 @@ open class TriangleList : EditList {
 
 
     fun getPrintTextScale(drawingScale: Float, exportFileType: String): Float {
-        val exportFileTypeMap = initializeFileTypeMap()
-        val defaultTextScaleMap = initializeDefaultScaleMap()
-
-        val defaultValue = defaultTextScaleMap.getOrDefault(exportFileType, 5f)
-        val selectedMap = exportFileTypeMap.getOrDefault(exportFileType, mapOf())
-
+        val calculator = TextScaleCalculator()
         val printScale = getPrintScale(drawingScale) * 10
-        return selectedMap.getOrDefault(printScale, defaultValue)
-    }
-
-    // スケール定数をクラス内に定義
-    companion object {
-        private const val S_500 = 50f
-        private const val S_400 = 40f
-        private const val S_300 = 25f
-        private const val S_250 = 25f
-        private const val S_200 = 20f
-        private const val S_150 = 15f
-        private const val S_100 = 10f
-        private const val S_50 = 5f
-    }
-
-    private fun initializeFileTypeMap(): Map<String, Map<Float, Float>> {
-        val textScaleMapPDF = mapOf(
-            S_500 to 3f,
-            S_400 to 4f,
-            S_300 to 5f,
-            S_250 to 6f,
-            S_200 to 8f,
-            S_150 to 8f
-        )
-        val textScaleMapCAD = mapOf(
-            S_500 to 0.5f,
-            S_400 to 0.4f,
-            S_300 to 0.35f,
-            S_250 to 0.35f,
-            S_200 to 0.35f,
-            S_150 to 0.25f,
-            S_100 to 0.25f,
-            S_50 to 0.25f
-        )
-        return mapOf(
-            "dxf" to textScaleMapCAD,
-            "sfc" to textScaleMapCAD,
-            "pdf" to textScaleMapPDF
-        )
-    }
-
-    private fun initializeDefaultScaleMap(): Map<String, Float> {
-        return mapOf(
-            "dxf" to 0.25f,
-            "sfc" to 0.25f,
-            "pdf" to 8f
-        )
-    }
-
-    private fun initializeDXFMap(): Map<Float, Float> {
-        return mapOf(15f to 0.35f, 5f to 0.25f)
+        return calculator.getTextScale(printScale, exportFileType)
     }
 
     fun getPrintScale(drawingScale: Float): Float {
@@ -661,7 +606,7 @@ open class TriangleList : EditList {
     }
 
 
-    // オブジェクトポインタを返す。
+    // オブジェ��トポインタを返す。
     fun getBy(number: Int): Triangle {
         return if (number < 1 || number > trilist.size) Triangle() //under 0 is empty. cant hook null. can hook lenA is not 0.
         else trilist[number - 1]
@@ -999,7 +944,7 @@ open class TriangleList : EditList {
             }
         }
 
-        // 逆順にソートし、新��に足していく。リビルドした方が考え方が楽。
+        // 逆順にソートし、新に足していく。リビルドした方が考え方が楽。
         val rev = clone()
         rev.trilist.clear()
         for (i in trilist.size - 1 downTo -1 + 1) {

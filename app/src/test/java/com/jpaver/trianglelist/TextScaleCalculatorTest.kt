@@ -1,7 +1,7 @@
 package com.jpaver.trianglelist
 
-import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.junit.Assert.assertEquals
 
 class TextScaleCalculatorTest {
     private val calculator = TextScaleCalculator()
@@ -10,13 +10,13 @@ class TextScaleCalculatorTest {
     @Test
     fun `DXFファイルの場合、スケールに応じて適切なテキストスケールを返す`() {
         val testCases = mapOf(
-            TextScaleCalculator.S_500 to 0.45f,
-            TextScaleCalculator.S_400 to 0.40f,
-            TextScaleCalculator.S_300 to 0.35f,
-            TextScaleCalculator.S_250 to 0.35f,
-            TextScaleCalculator.S_200 to 0.30f,
-            TextScaleCalculator.S_100 to 0.25f,
-            TextScaleCalculator.S_50 to 0.25f
+            50f to 0.5f,    // 1/500
+            40f to 0.4f,    // 1/400
+            25f to 0.35f,   // 1/250
+            20f to 0.35f,   // 1/200
+            15f to 0.25f,   // 1/150
+            10f to 0.25f,   // 1/100
+            5f to 0.25f     // 1/50
         )
         
         testCases.forEach { (scale, expectedTextScale) ->
@@ -32,14 +32,12 @@ class TextScaleCalculatorTest {
     @Test
     fun `PDFファイルの場合、スケールに応じて適切なテキストスケールを返す`() {
         val testCases = mapOf(
-            TextScaleCalculator.S_500 to 3f,
-            TextScaleCalculator.S_400 to 5f,
-            TextScaleCalculator.S_300 to 5f,
-            TextScaleCalculator.S_250 to 6f,
-            TextScaleCalculator.S_200 to 8f,
-            TextScaleCalculator.S_150 to 8f,
-            TextScaleCalculator.S_100 to 8f,
-            TextScaleCalculator.S_50 to 8f
+            50f to 3f,    // 1/500
+            40f to 4f,    // 1/400
+            25f to 6f,    // 1/250
+            20f to 8f,    // 1/200
+            15f to 8f,    // 1/150
+            10f to 8f     // 1/100
         )
         
         testCases.forEach { (scale, expectedTextScale) ->
@@ -54,7 +52,6 @@ class TextScaleCalculatorTest {
 
     @Test
     fun `定義されていないスケールの場合、デフォルト値を返す`() {
-        // DXFの場合
         assertEquals(
             "DXFで未定義のスケール",
             0.25f,
@@ -62,7 +59,6 @@ class TextScaleCalculatorTest {
             DELTA
         )
 
-        // PDFの場合
         assertEquals(
             "PDFで未定義のスケール",
             8f,
@@ -72,12 +68,12 @@ class TextScaleCalculatorTest {
     }
 
     @Test
-    fun `未知のファイルタイプの場合、PDFのマッピングを使用する`() {
+    fun `未知のファイルタイプの場合、デフォルト値を返す`() {
         assertEquals(
             "未知のファイルタイプ",
-            8f,
-            calculator.getTextScale(TextScaleCalculator.S_200, "unknown"),
+            5f,  // デフォルトのデフォルト値
+            calculator.getTextScale(20f, "unknown"),
             DELTA
         )
     }
-}
+} 
