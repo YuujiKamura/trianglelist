@@ -1,5 +1,6 @@
 package com.jpaver.trianglelist
 
+import android.util.Log
 import com.jpaver.trianglelist.util.InputParameter
 
 class DeductionList : EditList() {
@@ -134,11 +135,16 @@ class DeductionList : EditList() {
         dedlist_[parameter.number-1].set(parameter)
     }
 
-    fun replace(index: Int, ded: Deduction?) {
-        if ( ded== null ) return
-        dedlist_[index - 1] = ded
-    }
+    fun replace(number: Int, ded: Deduction?) {
+        if (ded == null) return
 
+        if (number in 1..dedlist_.size) {
+            dedlist_[number - 1] = ded
+        } else {
+            // インデックスが範囲外の場合の処理
+            Log.e("DeductionList", "Index out of bounds: index=$number, size=${dedlist_.size}")
+        }
+    }
 
     override fun reverse(): DeductionList {
         val rev = DeductionList()

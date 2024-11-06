@@ -9,9 +9,9 @@ android {
     defaultConfig {
         applicationId "com.jpaver.myapplication"
         minSdk 26
-        targetSdk 35
-        versionCode 1334
-        versionName "7.42"
+        targetSdk 34
+        versionCode 1337
+        versionName "7.46"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
     }
@@ -50,21 +50,21 @@ android {
             // English string-resources and xxhdpi screen-density resources.
             dimension "mode"
             applicationId "com.jpaver.myapplication"
-            targetSdk 35
+            targetSdk 34
         }
 
         free {
             // Assigns this product flavor to the "mode" flavor dimension.
             dimension "mode"
             applicationId "com.jpaver.myapplication"
-            targetSdk 35
+            targetSdk 34
         }
 
 
         full {
             dimension "mode"
             applicationId "com.paver.myapplication"
-            targetSdk 35
+            targetSdk 34
         }
     }
 // To inline the bytecode built with JVM target 1.8 into

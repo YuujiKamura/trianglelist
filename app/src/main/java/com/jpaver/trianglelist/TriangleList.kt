@@ -155,7 +155,7 @@ open class TriangleList : EditList {
             return 0
         }
 
-
+    // テキストスケールを計算する
     fun getPrintTextScale(drawingScale: Float, exportFileType: String): Float {
         val calculator = TextScaleCalculator()
         val printScale = getPrintScale(drawingScale) * 10
