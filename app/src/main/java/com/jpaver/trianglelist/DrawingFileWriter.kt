@@ -41,7 +41,7 @@ open class DrawingFileWriter {
         return Triple(nagasaA, nagasaB, nagasaC)
     }
 
-    fun xyPointXYTriple(tri: Triangle): Triple<PointXY, PointXY, PointXY> {
+    fun xyPointXYTriple(tri: Triangle): Triple<com.example.trilib.PointXY, com.example.trilib.PointXY, com.example.trilib.PointXY> {
         val pca = tri.pointCA
         val pab = tri.pointAB
         val pbc = tri.pointBC
@@ -55,7 +55,7 @@ open class DrawingFileWriter {
         writeLine( tri.pointBC, tri.point[0], color)
     }
 
-    fun writeTextSwitch( str: String, point: PointXY, ts:Float, color:Int, align1: Int, align2:Int, angle: Float ){
+    fun writeTextSwitch(str: String, point: com.example.trilib.PointXY, ts:Float, color:Int, align1: Int, align2:Int, angle: Float ){
         //引数の数でテキスト描画関数を変える
         when(align2){
             -1   -> writeTextA9( str, point, color, ts, align1, angle, 1f)
@@ -127,10 +127,10 @@ open class DrawingFileWriter {
 
     open fun writeTriangle(tri: Triangle){}
 
-    open fun writeLine(p1: PointXY, p2: PointXY, color: Int, scale: Float = 1f ){
+    open fun writeLine(p1: com.example.trilib.PointXY, p2: com.example.trilib.PointXY, color: Int, scale: Float = 1f ){
     }
 
-    open fun writeRect(point: PointXY, sizeX: Float, sizeY: Float, color: Int, scale: Float = 1f ){
+    open fun writeRect(point: com.example.trilib.PointXY, sizeX: Float, sizeY: Float, color: Int, scale: Float = 1f ){
         val sizex: Float = sizeX/2
         val sizey: Float = sizeY/2
         writeLine( point.plus(-sizex, -sizey), point.plus(sizex, -sizey), color)
@@ -139,18 +139,18 @@ open class DrawingFileWriter {
         writeLine( point.plus(sizex, -sizey), point.plus(sizex, sizey), color)
     }
 
-    open fun writeCircle(point: PointXY, size: Float, color: Int, scale: Float = 1f ){
+    open fun writeCircle(point: com.example.trilib.PointXY, size: Float, color: Int, scale: Float = 1f ){
 
     }
 
-    open fun writeText(str: String, point: PointXY, scale: Float, color: Int, size: Float, align: Int){
+    open fun writeText(str: String, point: com.example.trilib.PointXY, scale: Float, color: Int, size: Float, align: Int){
 
     }
 
     // align tenkey ( ex 8 is top and center ) in sfc
     open fun writeTextA9(
         text: String,
-        point: PointXY,
+        point: com.example.trilib.PointXY,
         color: Int = 8,
         tsy: Float,
         align: Int = 2,
@@ -162,7 +162,7 @@ open class DrawingFileWriter {
     // Align H and V ( 0 is center, 1 is left/top, 3 is right/bottom ) in dxf
     open fun writeTextHV(
         text: String,
-        point: PointXY,
+        point: com.example.trilib.PointXY,
         color: Int,
         textsize: Float,
         alignH: Int,
@@ -179,27 +179,27 @@ open class DrawingFileWriter {
 
     open fun writeDeduction( ded: Deduction){}
 
-    open fun writeTextAndLine(st: String, p1: PointXY, p2: PointXY, textsize: Float, scale: Float) {}
+    open fun writeTextAndLine(st: String, p1: com.example.trilib.PointXY, p2: com.example.trilib.PointXY, textsize: Float, scale: Float) {}
 
     fun writeOuterFrame(scale: Float = 1f){
         // 外枠描画
-        writeRect(PointXY(21f, 14.85f, scale), 40f * scale, 27f * scale,  WHITE, scale)
+        writeRect(com.example.trilib.PointXY(21f, 14.85f, scale), 40f * scale, 27f * scale,  WHITE, scale)
 
     }
 
     fun writeTopTitle(scale: Float = 1f, textsize: Float ){
         // 上のタイトル
         writeTextHV(zumeninfo.zumentitle,
-            PointXY(21f, 27.1f, scale),  WHITE, textsize, 1, 1, 0f, scale)
+            com.example.trilib.PointXY(21f, 27.1f, scale),  WHITE, textsize, 1, 1, 0f, scale)
         writeTextHV(rosenname_,
-            PointXY(21f, 26f, scale), WHITE, textsize, 1, 1, 0f, scale)
+            com.example.trilib.PointXY(21f, 26f, scale), WHITE, textsize, 1, 1, 0f, scale)
 
         writeLine(
-            PointXY(19f, 27f, scale),
-            PointXY(23f, 27f, scale), WHITE, scale)
+            com.example.trilib.PointXY(19f, 27f, scale),
+            com.example.trilib.PointXY(23f, 27f, scale), WHITE, scale)
         writeLine(
-            PointXY(19f, 26.9f, scale),
-            PointXY(23f, 26.9f, scale), WHITE, scale)
+            com.example.trilib.PointXY(19f, 26.9f, scale),
+            com.example.trilib.PointXY(23f, 26.9f, scale), WHITE, scale)
 
     }
 
@@ -212,36 +212,36 @@ open class DrawingFileWriter {
 
         //右下のタイトル枠
         writeLine(
-            PointXY(31f, 7.35f, scale),
-            PointXY(41f, 7.35f, scale), WHITE ) //yoko
+            com.example.trilib.PointXY(31f, 7.35f, scale),
+            com.example.trilib.PointXY(41f, 7.35f, scale), WHITE ) //yoko
         writeLine(
-            PointXY(31f, 1.35f, scale),
-            PointXY(31f, 7.35f, scale), WHITE ) //tate
+            com.example.trilib.PointXY(31f, 1.35f, scale),
+            com.example.trilib.PointXY(31f, 7.35f, scale), WHITE ) //tate
         writeLine(
-            PointXY(33f, 1.35f, scale),
-            PointXY(33f, 7.35f, scale), WHITE ) //uchi-tate
+            com.example.trilib.PointXY(33f, 1.35f, scale),
+            com.example.trilib.PointXY(33f, 7.35f, scale), WHITE ) //uchi-tate
 
         writeLine(
-            PointXY(31f, 6.35f, scale),
-            PointXY(41f, 6.35f, scale), WHITE )
+            com.example.trilib.PointXY(31f, 6.35f, scale),
+            com.example.trilib.PointXY(41f, 6.35f, scale), WHITE )
         writeLine(
-            PointXY(31f, 5.35f, scale),
-            PointXY(41f, 5.35f, scale), WHITE )
+            com.example.trilib.PointXY(31f, 5.35f, scale),
+            com.example.trilib.PointXY(41f, 5.35f, scale), WHITE )
         writeLine(
-            PointXY(31f, 4.35f, scale),
-            PointXY(41f, 4.35f, scale), WHITE )
+            com.example.trilib.PointXY(31f, 4.35f, scale),
+            com.example.trilib.PointXY(41f, 4.35f, scale), WHITE )
         writeLine(
-            PointXY(31f, 3.35f, scale),
-            PointXY(41f, 3.35f, scale), WHITE )
+            com.example.trilib.PointXY(31f, 3.35f, scale),
+            com.example.trilib.PointXY(41f, 3.35f, scale), WHITE )
         writeLine(
-            PointXY(31f, 2.35f, scale),
-            PointXY(41f, 2.35f, scale), WHITE )
+            com.example.trilib.PointXY(31f, 2.35f, scale),
+            com.example.trilib.PointXY(41f, 2.35f, scale), WHITE )
         writeLine(
-            PointXY(36f, 2.35f, scale),
-            PointXY(36f, 3.35f, scale), WHITE )
+            com.example.trilib.PointXY(36f, 2.35f, scale),
+            com.example.trilib.PointXY(36f, 3.35f, scale), WHITE )
         writeLine(
-            PointXY(38f, 2.35f, scale),
-            PointXY(38f, 3.35f, scale), WHITE )
+            com.example.trilib.PointXY(38f, 2.35f, scale),
+            com.example.trilib.PointXY(38f, 3.35f, scale), WHITE )
 
         val st = printscale_*100f
         val strx = 33.5f * scale
@@ -251,21 +251,21 @@ open class DrawingFileWriter {
 
         // 題字(工事名　路線名　など）
         writeTextHV(zumeninfo.koujiname,
-            PointXY(32f, 6.7f, scale), WHITE, frameTextSize, 1, 0, 0f, 1f)
+            com.example.trilib.PointXY(32f, 6.7f, scale), WHITE, frameTextSize, 1, 0, 0f, 1f)
         writeTextHV(zumeninfo.tDtype_,
-            PointXY(32f, 5.7f, scale), WHITE, frameTextSize, 1, 0, 0f, 1f)
+            com.example.trilib.PointXY(32f, 5.7f, scale), WHITE, frameTextSize, 1, 0, 0f, 1f)
         writeTextHV(zumeninfo.tDname_,
-            PointXY(32f, 4.7f, scale), WHITE, frameTextSize, 1, 0, 0f, 1f)
+            com.example.trilib.PointXY(32f, 4.7f, scale), WHITE, frameTextSize, 1, 0, 0f, 1f)
         writeTextHV(zumeninfo.tDateHeader_,
-            PointXY(32f, 3.7f, scale), WHITE, frameTextSize, 1, 0, 0f, 1f)
+            com.example.trilib.PointXY(32f, 3.7f, scale), WHITE, frameTextSize, 1, 0, 0f, 1f)
         writeTextHV(zumeninfo.tScale_,
-            PointXY(32f, 2.7f, scale), WHITE, frameTextSize, 1, 0, 0f, 1f)
+            com.example.trilib.PointXY(32f, 2.7f, scale), WHITE, frameTextSize, 1, 0, 0f, 1f)
         writeTextHV(zumeninfo.tNum_,
-            PointXY(37f, 2.7f, scale), WHITE, frameTextSize, 1, 0, 0f, 1f)
+            com.example.trilib.PointXY(37f, 2.7f, scale), WHITE, frameTextSize, 1, 0, 0f, 1f)
         writeTextHV(zumeninfo.tAname_,
-            PointXY(32f, 1.7f, scale), WHITE, frameTextSize, 1, 0, 0f, 1f)
+            com.example.trilib.PointXY(32f, 1.7f, scale), WHITE, frameTextSize, 1, 0, 0f, 1f)
         writeTextHV(zumeninfo.tCredit_,
-            PointXY(8f, 1f, scale), WHITE, frameTextSize, 1, 0, 0f, 1f)
+            com.example.trilib.PointXY(8f, 1f, scale), WHITE, frameTextSize, 1, 0, 0f, 1f)
 
         // 内容
         // 工事名
@@ -277,17 +277,17 @@ open class DrawingFileWriter {
         val nengappi = LocalDate.now().year.toString() + " 年 " + LocalDate.now().monthValue.toString() + " 月 " + LocalDate.now().dayOfMonth.toString() + " 日"
 
         writeTextHV(zumeninfo.zumentitle,
-            PointXY(strx, 5.7f * scale), WHITE, frameTextSize, 0, 0, 0f, 1f)
+            com.example.trilib.PointXY(strx, 5.7f * scale), WHITE, frameTextSize, 0, 0, 0f, 1f)
         writeTextHV(rosenname_,
-            PointXY(strx, 4.7f * scale), WHITE, frameTextSize, 0, 0, 0f, 1f)
+            com.example.trilib.PointXY(strx, 4.7f * scale), WHITE, frameTextSize, 0, 0, 0f, 1f)
         writeTextHV(nengappi,
-            PointXY(strx, 3.7f * scale), WHITE, frameTextSize, 0, 0, 0f, 1f)
+            com.example.trilib.PointXY(strx, 3.7f * scale), WHITE, frameTextSize, 0, 0, 0f, 1f)
         writeTextHV("1/${st.toInt()} (A3)",
-            PointXY(34.5f, 2.7f, scale), WHITE, frameTextSize, 1, 0, 0f, 1f)
+            com.example.trilib.PointXY(34.5f, 2.7f, scale), WHITE, frameTextSize, 1, 0, 0f, 1f)
         writeTextHV(zumennum_,
-            PointXY(39.5f, 2.7f, scale), WHITE, frameTextSize, 1, 0, 0f, 1f)
+            com.example.trilib.PointXY(39.5f, 2.7f, scale), WHITE, frameTextSize, 1, 0, 0f, 1f)
         writeTextHV(gyousyaname_,
-            PointXY(strx, 1.7f * scale), WHITE, frameTextSize, 0, 0, 0f, 1f)
+            com.example.trilib.PointXY(strx, 1.7f * scale), WHITE, frameTextSize, 0, 0, 0f, 1f)
 
         //myDXFscale = 1000f  // 1:1
     }
@@ -297,7 +297,7 @@ open class DrawingFileWriter {
         if (str.length > iKaigyou ) {
             splitAndWriteText(str, iKaigyou, xr, yb, yo, iColor, textsize)
         } else {
-            writeTextHV(str, PointXY(xr, yb), iColor, textsize, 0, 0,0f, 1f)
+            writeTextHV(str, com.example.trilib.PointXY(xr, yb), iColor, textsize, 0, 0,0f, 1f)
         }
     }
 
@@ -309,10 +309,11 @@ open class DrawingFileWriter {
             listOf(str.substring(0, iKaigyou), str.substring(iKaigyou))
         }
 
-        writeTextHV(parts[0], PointXY(xr, yb + yo), iColor, textsize, 0, 0,0f, 1f)
+        writeTextHV(parts[0], com.example.trilib.PointXY(xr, yb + yo), iColor, textsize, 0, 0,0f, 1f)
         // Check if there is a second part to avoid IndexOutOfBoundsException
         if (parts.size > 1) {
-            writeTextHV(parts[1], PointXY(xr, yb - yo), iColor, textsize, 0, 0,0f, 1f)
+            writeTextHV(parts[1],
+                com.example.trilib.PointXY(xr, yb - yo), iColor, textsize, 0, 0,0f, 1f)
         }
     }
 
@@ -384,10 +385,10 @@ open class DrawingFileWriter {
 
         mutable_baseY -= yoffset
         writeTextHV(zumeninfo.mGoukei_,
-            PointXY(baseX, mutable_baseY), WHITE, textsize, 1, 1, 0f, scale)
+            com.example.trilib.PointXY(baseX, mutable_baseY), WHITE, textsize, 1, 1, 0f, scale)
         writeTextHV(
             ( trilist_.getArea() - dedlist_.getArea() ).formattedString(2),
-            PointXY(baseX + xoffset * 4, mutable_baseY),
+            com.example.trilib.PointXY(baseX + xoffset * 4, mutable_baseY),
             WHITE,
             textsize,
             1,
@@ -414,20 +415,20 @@ open class DrawingFileWriter {
         val bottom = mutable_baseY + yspacer
         // top left right
         writeLine(
-            PointXY( left, top ),
-            PointXY( right, top ), WHITE, scale)
+            com.example.trilib.PointXY(left, top),
+            com.example.trilib.PointXY(right, top), WHITE, scale)
         // bottom left right
         writeLine(
-            PointXY( left, bottom ),
-            PointXY( right, bottom ),WHITE, scale)
+            com.example.trilib.PointXY(left, bottom),
+            com.example.trilib.PointXY(right, bottom),WHITE, scale)
         // left middle bottom
         writeLine(
-            PointXY( left, middle ),
-            PointXY( left, bottom ),WHITE, scale)
+            com.example.trilib.PointXY(left, middle),
+            com.example.trilib.PointXY(left, bottom),WHITE, scale)
         // right middle bottom
         writeLine(
-            PointXY( right, middle ),
-            PointXY( right, bottom ),WHITE, scale)
+            com.example.trilib.PointXY(right, middle),
+            com.example.trilib.PointXY(right, bottom),WHITE, scale)
     }
 
     fun writeHalfBox(baseX: Float,
@@ -437,29 +438,29 @@ open class DrawingFileWriter {
                      yoffset: Float,
                      scale: Float ){
         writeLine(
-            PointXY(
+            com.example.trilib.PointXY(
                 baseX - xoffset * 0.5f,
                 basey + yspacer
             ),
-            PointXY(
+            com.example.trilib.PointXY(
                 baseX + xoffset * 4.5f,
                 basey + yspacer
             ),WHITE, scale)
         writeLine(
-            PointXY(
+            com.example.trilib.PointXY(
                 baseX - xoffset * 0.5f,
                 basey + yoffset + yspacer
             ),
-            PointXY(
+            com.example.trilib.PointXY(
                 baseX - xoffset * 0.5f,
                 basey + yspacer
             ),WHITE, scale)
         writeLine(
-            PointXY(
+            com.example.trilib.PointXY(
                 baseX + xoffset * 4.5f,
                 basey + yoffset + yspacer
             ),
-            PointXY(
+            com.example.trilib.PointXY(
                 baseX + xoffset * 4.5f,
                 basey + yspacer
             ),WHITE, scale)
@@ -487,10 +488,10 @@ open class DrawingFileWriter {
 
         if( editList is TriangleList) {
             writeTextHV(titleParamStr.n,
-                PointXY(baseX, basey), color, ts, 1, 1, 0f, scale)
+                com.example.trilib.PointXY(baseX, basey), color, ts, 1, 1, 0f, scale)
             writeTextHV(
                 titleParamStr.c+"(m)",
-                PointXY(baseX + xoffset * 3, basey),
+                com.example.trilib.PointXY(baseX + xoffset * 3, basey),
                 color,
                 ts,
                 1,
@@ -501,10 +502,10 @@ open class DrawingFileWriter {
         }
         if( editList is DeductionList) {
             writeTextHV(titleParamStr.name,
-                PointXY(baseX, basey), color, ts, 1, 1, 0f, scale)
+                com.example.trilib.PointXY(baseX, basey), color, ts, 1, 1, 0f, scale)
             writeTextHV(
                 titleParamStr.pl,
-                PointXY(baseX + xoffset * 3, basey),
+                com.example.trilib.PointXY(baseX + xoffset * 3, basey),
                 color,
                 ts,
                 1,
@@ -514,10 +515,10 @@ open class DrawingFileWriter {
             )
         }
         writeTextHV(titleParamStr.a+"(m)",
-            PointXY(baseX + xoffset, basey), color, ts, 1, 1, 0f, scale)
+            com.example.trilib.PointXY(baseX + xoffset, basey), color, ts, 1, 1, 0f, scale)
         writeTextHV(
             titleParamStr.b+"(m)",
-            PointXY(baseX + xoffset * 2, basey),
+            com.example.trilib.PointXY(baseX + xoffset * 2, basey),
             color,
             ts,
             1,
@@ -527,7 +528,7 @@ open class DrawingFileWriter {
         )
         writeTextHV(
             titleParamStr.type+"(m2)",
-            PointXY(baseX + xoffset * 4, basey),
+            com.example.trilib.PointXY(baseX + xoffset * 4, basey),
             color,
             ts,
             1,
@@ -546,10 +547,10 @@ open class DrawingFileWriter {
         }
 
         writeTextHV(zumeninfo.mSyoukei_+"("+syokeiNum+")",
-            PointXY(baseX, basey), color, ts, 1, 1, 0f, scale)
+            com.example.trilib.PointXY(baseX, basey), color, ts, 1, 1, 0f, scale)
         writeTextHV(
             editList.getArea().formattedString(2),
-            PointXY(baseX + xoffset * 4, basey),
+            com.example.trilib.PointXY(baseX + xoffset * 4, basey),
             color,
             ts,
             1,
@@ -580,10 +581,10 @@ open class DrawingFileWriter {
 
         if( editObject is Triangle) {
             writeTextHV(param.number.toString(),
-                PointXY(baseX, baseY), color, ts, 1, 1, 0f, scale)
+                com.example.trilib.PointXY(baseX, baseY), color, ts, 1, 1, 0f, scale)
             writeTextHV(
                 param.b.formattedString(2),
-                PointXY(baseX + xoffset * 2, baseY),
+                com.example.trilib.PointXY(baseX + xoffset * 2, baseY),
                 color,
                 ts,
                 1,
@@ -593,7 +594,7 @@ open class DrawingFileWriter {
             )
             writeTextHV(
                 param.c.formattedString(2),
-                PointXY(baseX + xoffset * 3, baseY),
+                com.example.trilib.PointXY(baseX + xoffset * 3, baseY),
                 color,
                 ts,
                 1,
@@ -604,10 +605,10 @@ open class DrawingFileWriter {
         }
         if( editObject is Deduction){
             writeTextHV(param.name,
-                PointXY(baseX, baseY), color, ts, 1, 1, 0f, scale)
+                com.example.trilib.PointXY(baseX, baseY), color, ts, 1, 1, 0f, scale)
             writeTextHV(
                     param.type,
-                PointXY(baseX + xoffset * 3, baseY),
+                com.example.trilib.PointXY(baseX + xoffset * 3, baseY),
                 color,
                 ts,
                 1,
@@ -618,7 +619,7 @@ open class DrawingFileWriter {
         }
         if( param.type =="Box" )      writeTextHV(
             param.b.formattedString(2),
-            PointXY(baseX + xoffset * 2, baseY),
+            com.example.trilib.PointXY(baseX + xoffset * 2, baseY),
             color,
             ts,
             1,
@@ -629,7 +630,7 @@ open class DrawingFileWriter {
 
         writeTextHV(
             param.a.formattedString(2),
-            PointXY(baseX + xoffset, baseY),
+            com.example.trilib.PointXY(baseX + xoffset, baseY),
             color,
             ts,
             1,
@@ -639,7 +640,7 @@ open class DrawingFileWriter {
         )
         writeTextHV(
             editObject.getArea().formattedString(2),
-            PointXY(baseX + xoffset * 4, baseY),
+            com.example.trilib.PointXY(baseX + xoffset * 4, baseY),
             color,
             ts,
             1,

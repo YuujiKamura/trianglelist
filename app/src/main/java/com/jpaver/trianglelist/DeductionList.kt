@@ -8,7 +8,7 @@ class DeductionList : EditList() {
     var current = 0
     var lastTapIndex_ = -1
     var myAngle = 0f
-    fun scale(basepoint: PointXY?, sx: Float, sy: Float) {
+    fun scale(basepoint: com.example.trilib.PointXY?, sx: Float, sy: Float) {
         for (i in dedlist_.indices) {
             dedlist_[i].scale(basepoint!!, sx, sy)
         }
@@ -26,11 +26,11 @@ class DeductionList : EditList() {
     }
 
     // scale関数はdoSomethingを使って定義
-    fun scale(basepoint: PointXY, s: Float) {
+    fun scale(basepoint: com.example.trilib.PointXY, s: Float) {
         doSomething(dedlist_) { it.scale(basepoint, s, s) }
     }
 
-    fun move(to: PointXY?) {
+    fun move(to: com.example.trilib.PointXY?) {
         for (i in dedlist_.indices) {
             dedlist_[i].move(to!!)
         }
@@ -40,7 +40,7 @@ class DeductionList : EditList() {
         const val INVALID_INDEX = -11
     }
 
-    fun getTapIndex(tapP: PointXY?): Int {
+    fun getTapIndex(tapP: com.example.trilib.PointXY?): Int {
         tapP ?: return INVALID_INDEX.also { lastTapIndex_ = it }
 
         dedlist_.forEachIndexed { index, deduction ->
@@ -60,7 +60,7 @@ class DeductionList : EditList() {
         return b
     }
 
-    fun rotate(bp: PointXY?, angle: Float) {
+    fun rotate(bp: com.example.trilib.PointXY?, angle: Float) {
         myAngle += angle
         for (i in dedlist_.indices) {
             dedlist_[i].rotate(bp!!, angle)

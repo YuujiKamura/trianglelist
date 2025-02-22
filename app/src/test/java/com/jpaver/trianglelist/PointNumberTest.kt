@@ -24,20 +24,20 @@ class PointNumberTest {
     @Test
     fun testRotatePointNumber() {
         val t1 = Triangle(5.0f, 5.0f, 5.0f)
-        t1.setPointNumber(PointXY(0f,2.5f), true)
+        t1.setPointNumber(com.example.trilib.PointXY(0f, 2.5f), true)
 
         //参照を排除したpointnumber
-        t1.pointnumber = t1.pointnumber.rotate(PointXY(0f,0f), 90f)
+        t1.pointnumber = t1.pointnumber.rotate(com.example.trilib.PointXY(0f, 0f), 90f)
         Assert.assertEquals(-2.5f, t1.pointnumber.x, 0.01f)
         Assert.assertEquals(0.0f, t1.pointnumber.y, 0.01f)
 
         //一様に回転する
-        t1.pointnumber = t1.pointnumber.rotate(PointXY(0f,0f), 90f)
+        t1.pointnumber = t1.pointnumber.rotate(com.example.trilib.PointXY(0f, 0f), 90f)
         Assert.assertEquals(0f, t1.pointnumber.x, 0.01f)
         Assert.assertEquals(-2.5f, t1.pointnumber.y, 0.01f)
 
         //更新される
-        t1.control_rotate(PointXY(0f,0f), 90f)
+        t1.control_rotate(com.example.trilib.PointXY(0f, 0f), 90f)
         Assert.assertEquals(2.5f, t1.pointnumber.x, 0.01f)
         Assert.assertEquals(0.0f, t1.pointnumber.y, 0.01f)
 

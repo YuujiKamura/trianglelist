@@ -19,11 +19,11 @@ class Deduction(var num: Int = 0,
                 var overlap_to: Int = 0,
                 var type: String = "",
                 var angle: Float = 0f,
-                var point: PointXY = PointXY(
+                var point: com.example.trilib.PointXY = com.example.trilib.PointXY(
                     0f,
                     0f
                 ),
-                var pointFlag: PointXY = PointXY(
+                var pointFlag: com.example.trilib.PointXY = com.example.trilib.PointXY(
                     0f,
                     0f
                 )
@@ -55,10 +55,10 @@ class Deduction(var num: Int = 0,
 
     var myscale = 1f
     var shapeAngle = 0f
-    lateinit var pLTop: PointXY
-    lateinit var pLBtm: PointXY
-    lateinit var pRTop: PointXY
-    lateinit var pRBtm: PointXY
+    lateinit var pLTop: com.example.trilib.PointXY
+    lateinit var pLBtm: com.example.trilib.PointXY
+    lateinit var pRTop: com.example.trilib.PointXY
+    lateinit var pRBtm: com.example.trilib.PointXY
     var infoStr: String
     var typestring: String
     var typenum: Int
@@ -75,10 +75,10 @@ class Deduction(var num: Int = 0,
             typestring = "円"
             typenum = 1
 
-            pLTop = PointXY(0f, 0f)
-            pLBtm = PointXY(0f, 0f)
-            pRTop = PointXY(0f, 0f)
-            pRBtm = PointXY(0f, 0f)
+            pLTop = com.example.trilib.PointXY(0f, 0f)
+            pLBtm = com.example.trilib.PointXY(0f, 0f)
+            pRTop = com.example.trilib.PointXY(0f, 0f)
+            pRBtm = com.example.trilib.PointXY(0f, 0f)
         }
 
         //tri?.let { isCollide(it) } //旗上げ処理
@@ -93,10 +93,10 @@ class Deduction(var num: Int = 0,
         val px = point.x + lengthX * myscale * 0.5f
         val py = point.y + lengthY * myscale * 0.5f
         myscale = scale
-        pLTop = PointXY( mx,my ).rotate(point, shapeAngle)
-        pLBtm = PointXY( mx,py ).rotate(point, shapeAngle)
-        pRTop = PointXY( px,my ).rotate(point, shapeAngle)
-        pRBtm = PointXY( px,py ).rotate(point, shapeAngle)
+        pLTop = com.example.trilib.PointXY(mx, my).rotate(point, shapeAngle)
+        pLBtm = com.example.trilib.PointXY(mx, py).rotate(point, shapeAngle)
+        pRTop = com.example.trilib.PointXY(px, my).rotate(point, shapeAngle)
+        pRBtm = com.example.trilib.PointXY(px, py).rotate(point, shapeAngle)
     }
 
     override fun clone(): Deduction {
@@ -139,7 +139,7 @@ class Deduction(var num: Int = 0,
         infoStr = getInfo()
     }
 
-    fun getTap( tapP: PointXY): Boolean{
+    fun getTap( tapP: com.example.trilib.PointXY): Boolean{
 
         val range = 0.5f * myscale
         if( tapP.nearBy(point, lengthX*myscale) || tapP.nearBy(pointFlag, range) ) return true
@@ -178,12 +178,12 @@ class Deduction(var num: Int = 0,
         infoStr = getInfo()
     }
 
-    fun move(to: PointXY){
+    fun move(to: com.example.trilib.PointXY){
         point.add(to)
         pointFlag.add(to)
     }
 
-    fun scale(basepoint: PointXY, sx: Float, sy: Float) {
+    fun scale(basepoint: com.example.trilib.PointXY, sx: Float, sy: Float) {
         point = point.scale(basepoint, sx, sy)
         pointFlag = pointFlag.scale(basepoint, sx, sy)
         myscale = sx
@@ -198,7 +198,7 @@ class Deduction(var num: Int = 0,
        // lengthY *= scale
     }
 
-    fun rotate(bp: PointXY, degree: Float){
+    fun rotate(bp: com.example.trilib.PointXY, degree: Float){
         rotateShape( bp, degree )
 
         point = point.rotate(bp, degree)
@@ -206,7 +206,7 @@ class Deduction(var num: Int = 0,
 
     }
 
-    fun rotateShape(bp: PointXY, degree: Float ){
+    fun rotateShape(bp: com.example.trilib.PointXY, degree: Float ){
         if(type == "Box"){
             pLTop = pLTop.rotate(bp, degree)
             pLBtm = pLBtm.rotate(bp, degree)

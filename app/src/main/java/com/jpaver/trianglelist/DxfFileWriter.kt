@@ -13,7 +13,7 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
 ): DrawingFileWriter() {
     //region parameters
     lateinit var writer: BufferedWriter
-    lateinit var drawingLength: PointXY // = drawingLength
+    lateinit var drawingLength: com.example.trilib.PointXY // = drawingLength
 
     var isDebug = false
 
@@ -42,7 +42,7 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
 
     }
 
-    fun verticalFromBaseline(vertical: Int, p1: PointXY, p2: PointXY): Int{
+    fun verticalFromBaseline(vertical: Int, p1: com.example.trilib.PointXY, p2: com.example.trilib.PointXY): Int{
         // 垂直方向の文字位置合わせタイプ(省略可能、既定 = 0): 整数コード(ビットコードではありません):
         // 0 = 基準線、1 = 下、2 = 中央、3 = 上
         // ベクトルの方向でB,Cを表現するなら
@@ -118,13 +118,13 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         //return Triple(dimverticalD, dimverticalE, dimverticalF)
     }
 
-    private fun writeTextDimension(verticalAlign: Int, len: String, p1: PointXY, angle: Float){
+    private fun writeTextDimension(verticalAlign: Int, len: String, p1: com.example.trilib.PointXY, angle: Float){
         writeTextHV(len, p1, 7, textscale_, 1, verticalAlign, angle, 1f)
     }
 
     override fun writeTextHV(
         text: String,
-        point: PointXY,
+        point: com.example.trilib.PointXY,
         color: Int,
         textsize: Float,
         alignH: Int,
@@ -195,7 +195,7 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         writer.newLine()
     }
 
-    override fun writeLine(p1: PointXY, p2: PointXY, color: Int, scale: Float ) {
+    override fun writeLine(p1: com.example.trilib.PointXY, p2: com.example.trilib.PointXY, color: Int, scale: Float ) {
         val ax = p1.x *unitscale_
         val ay = p1.y *unitscale_
         val bx = p2.x *unitscale_
@@ -238,7 +238,7 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         writer.newLine()
     }
 
-    override fun writeCircle(point: PointXY, size: Float, color: Int, scale: Float){
+    override fun writeCircle(point: com.example.trilib.PointXY, size: Float, color: Int, scale: Float){
         val x = point.x *unitscale_
         val y = point.y *unitscale_
         val s = size * unitscale_
@@ -276,8 +276,8 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
 
     override fun writeTextAndLine(
         st: String,
-        p1: PointXY,
-        p2: PointXY,
+        p1: com.example.trilib.PointXY,
+        p2: com.example.trilib.PointXY,
         textsize: Float,
         scale: Float
     ){
@@ -344,21 +344,21 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         val myDXFDedList = dedlist_.clone()
 
         // Ｙ軸方向反転、かつビュースケールで割り戻して大きさをtriListと揃える。
-        myDXFDedList.scale(PointXY(0f, 0f),1/ viewscale_,-1/ viewscale_)
+        myDXFDedList.scale(com.example.trilib.PointXY(0f, 0f),1/ viewscale_,-1/ viewscale_)
 
-        val center = PointXY(
+        val center = com.example.trilib.PointXY(
             21f * printscale_,
             14.85f * printscale_
         )
         val tricenter = myDXFTriList.center
         myDXFDedList.move(
-            PointXY(
+            com.example.trilib.PointXY(
                 center.x - tricenter.x,
                 center.y - tricenter.y
             )
         )
         myDXFTriList.move(
-            PointXY(
+            com.example.trilib.PointXY(
                 center.x - tricenter.x,
                 center.y - tricenter.y
             )
@@ -457,7 +457,7 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
 
     private fun writeDXFTriHatch(
         wrtr: BufferedWriter,
-        array: ArrayList<PointXY>,
+        array: ArrayList<com.example.trilib.PointXY>,
         color: Int,
         sixtytwo: Int
     ){
@@ -537,7 +537,7 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
 
     }
 
-    private fun writeDXFTriOutlines(wrtr: BufferedWriter, array: ArrayList<PointXY> ) {
+    private fun writeDXFTriOutlines(wrtr: BufferedWriter, array: ArrayList<com.example.trilib.PointXY> ) {
 
         //writeDXFTriHatch( wrtr, array )
 

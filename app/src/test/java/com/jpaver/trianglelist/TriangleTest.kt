@@ -10,6 +10,7 @@ import kotlin.math.acos
 import kotlin.math.atan2
 import kotlin.math.pow
 import kotlin.reflect.full.memberProperties
+import com.example.trilib.PointXY
 
 fun compare(target1: Any, target2:Any ){
     println("target1: ${target1.hashCode()}, $target1")
@@ -18,7 +19,6 @@ fun compare(target1: Any, target2:Any ){
 //@RunWith(PowerMockRunner.class)
 //@PrepareForTest(Log.class)
 class TriangleTest {
-
 
     //連結したときに寸法配置はどう変わる？
     @Test
@@ -39,8 +39,6 @@ class TriangleTest {
 
         compare(triangle.dimOnPath[0].dimpoint,triangle2.dimOnPath[0].dimpoint)
     }
-
-
 
     //dimpointの相互干渉を検出するテスト
     @Test
@@ -133,7 +131,10 @@ class TriangleTest {
     @Test
     fun testSetPointersFromCParams() {
         val one =
-            Triangle(InputParameter("", "", 1, 5f, 5f, 5f, -1, -1, PointXY(0f, 0f), PointXY(0f, 0f)), 0f)
+            Triangle(InputParameter("", "", 1, 5f, 5f, 5f, -1, -1,
+                com.example.trilib.PointXY(0f, 0f),
+                com.example.trilib.PointXY(0f, 0f)
+            ), 0f)
         val connection = ConnParam(1, 0, 0, 5f)
         val two = Triangle(one, connection, 6f, 6f)
 
@@ -154,9 +155,15 @@ class TriangleTest {
     @Test
     fun testSetPointersFromParams() {
         val one =
-            Triangle(InputParameter("", "", 1, 5f, 5f, 5f, -1, -1, PointXY(0f, 0f), PointXY(0f, 0f)), 0f)
+            Triangle(InputParameter("", "", 1, 5f, 5f, 5f, -1, -1,
+                com.example.trilib.PointXY(0f, 0f),
+                com.example.trilib.PointXY(0f, 0f)
+            ), 0f)
         val two =
-            Triangle(one, InputParameter("", "", 2, 5f, 5f, 5f, 1, 1, PointXY(0f, 0f), PointXY(0f, 0f)))
+            Triangle(one, InputParameter("", "", 2, 5f, 5f, 5f, 1, 1,
+                com.example.trilib.PointXY(0f, 0f),
+                com.example.trilib.PointXY(0f, 0f)
+            ))
 
         // 内容の一致
         Assert.assertEquals(one.mynumber.toLong(), two.nodeA!!.mynumber.toLong())
@@ -174,7 +181,7 @@ class TriangleTest {
 
     @Test
     fun testSetObjectPointers() {
-        val one = Triangle(5f, 5f, 5f, PointXY(0f, 0f), 0f)
+        val one = Triangle(5f, 5f, 5f, com.example.trilib.PointXY(0f, 0f), 0f)
         val two = Triangle(one, 1, 5f, 5f)
 
         // 内容の一致
@@ -224,9 +231,9 @@ class TriangleTest {
         Assert.assertEquals(1, tri1.dim.horizontal.a)
         tri1.setDimPoint()
         Assert.assertEquals(-1.8f, tri1.dimpoint.a.x, 0.001f)
-        var dim = PointXY(-1.5f, 0f)
-        val offsetLeft = PointXY(-3f, 0f)
-        val offsetRight = PointXY(0f, 0f)
+        var dim = com.example.trilib.PointXY(-1.5f, 0f)
+        val offsetLeft = com.example.trilib.PointXY(-3f, 0f)
+        val offsetRight = com.example.trilib.PointXY(0f, 0f)
         var haba = dim.lengthTo(offsetLeft) * 0.5f
         Assert.assertEquals(0.75f, haba, 0.001f)
         haba = dim.lengthTo(offsetRight) * 0.5f
@@ -255,18 +262,21 @@ class TriangleTest {
     fun testTriBounds() {
         val myT = Triangle(3f, 4f, 5f)
         Assert.assertEquals(4f, myT.myBP_.top, 0.001f)
-        myT.move(PointXY(5f, 5f))
+        myT.move(com.example.trilib.PointXY(5f, 5f))
         Assert.assertEquals(9f, myT.myBP_.top, 0.001f)
         val myDParam =
-            InputParameter("集水桝", "Box", 3, 0.8f, 0.8f, 0f, 0, 0, PointXY(0.5f, 0.5f), PointXY(0f, 0f))
+            InputParameter("集水桝", "Box", 3, 0.8f, 0.8f, 0f, 0, 0,
+                com.example.trilib.PointXY(0.5f, 0.5f),
+                com.example.trilib.PointXY(0f, 0f)
+            )
         val myD = Deduction(myDParam)
-        myD.move(PointXY(5f, 5f))
+        myD.move(com.example.trilib.PointXY(5f, 5f))
         Assert.assertEquals(5.5f, myD.point.x, 0.001f)
     }
 
     @Test
     fun testCalcAngleOfLength() {
-        val mytri = Triangle(3.0f, 4.0f, 5.0f, PointXY(0f, 0f), 180.0f)
+        val mytri = Triangle(3.0f, 4.0f, 5.0f, com.example.trilib.PointXY(0f, 0f), 180.0f)
         Assert.assertEquals(0.0, mytri.point[0].calcDimAngle(mytri.pointAB_()).toDouble(), 0.001)
         Assert.assertEquals(
             -1.5,
@@ -277,13 +287,13 @@ class TriangleTest {
 
     @Test
     fun testSuccess() {
-        val mytri1 = Triangle(3.0f, 4.0f, 5.0f, PointXY(0f, 0f), 180.0f)
+        val mytri1 = Triangle(3.0f, 4.0f, 5.0f, com.example.trilib.PointXY(0f, 0f), 180.0f)
         MatcherAssert.assertThat(mytri1, CoreMatchers.`is`(mytri1))
     }
 
     @Test
     fun testTrianglePoint() {
-        val myXY0 = PointXY(0.0f, 0.0f)
+        val myXY0 = com.example.trilib.PointXY(0.0f, 0.0f)
         val myTriangle = Triangle(3.0f, 4.0f, 5.0f, myXY0, 180.0f)
         Assert.assertEquals(myTriangle.point[0].x.toDouble(), myXY0.x.toDouble(), 0.001)
         Assert.assertEquals(myTriangle.point[0].y.toDouble(), myXY0.y.toDouble(), 0.001)
@@ -293,13 +303,13 @@ class TriangleTest {
 
     @Test
     fun testInvalidTriangle() {
-        val myTriT = Triangle(3.0f, 4.0f, 5.0f, PointXY(0f, 0f), 180.0f)
-        val myTriT2 = Triangle(1.111f, 4.0f, 5.0f, PointXY(0f, 0f), 180.0f)
-        val myTriF = Triangle(0.0f, 4.0f, 5.0f, PointXY(0f, 0f), 180.0f)
-        val myTriF2 = Triangle(0.999f, 4.0f, 5.0f, PointXY(0f, 0f), 180.0f)
-        val myTriF3 = Triangle(1.0f, 4.0f, 5.0f, PointXY(0f, 0f), 180.0f)
-        val myTriF4 = Triangle(4.0f, 5.0f, 1.0f, PointXY(0f, 0f), 180.0f)
-        val myTriF5 = Triangle(4.0f, 1.0f, 5.0f, PointXY(0f, 0f), 180.0f)
+        val myTriT = Triangle(3.0f, 4.0f, 5.0f, com.example.trilib.PointXY(0f, 0f), 180.0f)
+        val myTriT2 = Triangle(1.111f, 4.0f, 5.0f, com.example.trilib.PointXY(0f, 0f), 180.0f)
+        val myTriF = Triangle(0.0f, 4.0f, 5.0f, com.example.trilib.PointXY(0f, 0f), 180.0f)
+        val myTriF2 = Triangle(0.999f, 4.0f, 5.0f, com.example.trilib.PointXY(0f, 0f), 180.0f)
+        val myTriF3 = Triangle(1.0f, 4.0f, 5.0f, com.example.trilib.PointXY(0f, 0f), 180.0f)
+        val myTriF4 = Triangle(4.0f, 5.0f, 1.0f, com.example.trilib.PointXY(0f, 0f), 180.0f)
+        val myTriF5 = Triangle(4.0f, 1.0f, 5.0f, com.example.trilib.PointXY(0f, 0f), 180.0f)
         Assert.assertTrue(myTriT.isValid)
         Assert.assertTrue(myTriT2.isValid)
         Assert.assertFalse(myTriF.isValid)
@@ -317,7 +327,7 @@ class TriangleTest {
 
     @Test
     fun testCalcThetaAlpha() {
-        val pCA = PointXY(0.0f, 0.0f)
+        val pCA = com.example.trilib.PointXY(0.0f, 0.0f)
         val myTriangle = Triangle(3.0f, 4.0f, 5.0f, pCA, 180.0f)
 
         // atan2( y, x );
@@ -337,7 +347,7 @@ class TriangleTest {
 
     @Test
     fun testNewCalcPointB_CParam() {
-        val tri1 = Triangle(3f, 5f, 4f, PointXY(0f, 0f), 0.0f)
+        val tri1 = Triangle(3f, 5f, 4f, com.example.trilib.PointXY(0f, 0f), 0.0f)
         val tri2 = Triangle(tri1, 3, 6f, 5f, 4f)
         // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
         Assert.assertTrue(tri1.point[0].equals(0f, 0f))
@@ -354,7 +364,7 @@ class TriangleTest {
 
     @Test
     fun testNewCalcPointC() {
-        val tri1 = Triangle(3f, 4f, 5f, PointXY(0f, 0f), 0.0f)
+        val tri1 = Triangle(3f, 4f, 5f, com.example.trilib.PointXY(0f, 0f), 0.0f)
         val tri2 = Triangle(tri1, 2, 3f, 4f)
         Assert.assertTrue(tri1.point[0].equals(0f, 0f))
         Assert.assertTrue(tri1.pointAB.equals(3f, 0f))
@@ -367,7 +377,7 @@ class TriangleTest {
 
     @Test
     fun testNewCalcPointB() {
-        val tri1 = Triangle(3f, 5f, 4f, PointXY(0f, 0f), 0.0f)
+        val tri1 = Triangle(3f, 5f, 4f, com.example.trilib.PointXY(0f, 0f), 0.0f)
         val tri2 = Triangle(tri1, 1, 4f, 3f)
         Assert.assertTrue(tri1.point[0].equals(0f, 0f))
         Assert.assertTrue(tri1.pointAB.equals(3f, 0f))
@@ -380,7 +390,7 @@ class TriangleTest {
 
     @Test
     fun testCalcPoint() {
-        val myXY0 = PointXY(0.0f, 0.0f)
+        val myXY0 = com.example.trilib.PointXY(0.0f, 0.0f)
         val myTriangle = Triangle(3.0f, 4.0f, 5.0f, myXY0, 90.0f)
         Assert.assertEquals(myTriangle.pointAB_().x.toDouble(), 0.0, 0.001)
         Assert.assertEquals(myTriangle.pointAB_().y.toDouble(), 3.0, 0.001)

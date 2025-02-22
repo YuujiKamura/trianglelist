@@ -1,6 +1,6 @@
 package com.jpaver.trianglelist.model
 /*
-import com.jpaver.trianglelist.PointXY
+import com.example.trilib.PointXY
 import kotlin.math.cos
 import kotlin.math.sin
 

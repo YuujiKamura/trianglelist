@@ -1,9 +1,8 @@
 package com.jpaver.trianglelist.geometry
 
-import com.jpaver.trianglelist.PointXY
+import com.example.trilib.PointXY
 import org.junit.Test
 import org.junit.Assert.*
-import kotlin.math.abs
 
 class TriangleCalculatorTest {
     
@@ -11,8 +10,8 @@ class TriangleCalculatorTest {
 
     @Test
     fun calculatePoint_正三角形の頂点を計算() {
-        val basepoint = PointXY(0f, 0f)
-        val pointAB = PointXY(100f, 0f)
+        val basepoint = com.example.trilib.PointXY(0f, 0f)
+        val pointAB = com.example.trilib.PointXY(100f, 0f)
         val lengths = floatArrayOf(100f, 100f, 100f)
 
         val result = TriangleCalculator.calculatePoint(basepoint, pointAB, lengths)
@@ -27,9 +26,9 @@ class TriangleCalculatorTest {
 
     @Test
     fun calculateInternalAngle_直角三角形のテスト() {
-        val p1 = PointXY(0f, 0f)
-        val p2 = PointXY(100f, 0f)
-        val p3 = PointXY(100f, 100f)
+        val p1 = com.example.trilib.PointXY(0f, 0f)
+        val p2 = com.example.trilib.PointXY(100f, 0f)
+        val p3 = com.example.trilib.PointXY(100f, 100f)
 
         val angle = TriangleCalculator.calculateInternalAngle(p1, p2, p3)
         
@@ -42,9 +41,9 @@ class TriangleCalculatorTest {
     @Test
     fun calculateCenter_正三角形の重心テスト() {
         val points = arrayOf(
-            PointXY(0f, 0f),
-            PointXY(100f, 0f),
-            PointXY(50f, 86.6f)  // Y座標を正の値に
+            com.example.trilib.PointXY(0f, 0f),
+            com.example.trilib.PointXY(100f, 0f),
+            com.example.trilib.PointXY(50f, 86.6f)  // Y座標を正の値に
         )
 
         val center = TriangleCalculator.calculateCenter(points)
@@ -55,9 +54,9 @@ class TriangleCalculatorTest {
 
     @Test
     fun calculateInternalAngles_正三角形のテスト() {
-        val p1 = PointXY(0f, 0f)
-        val p2 = PointXY(100f, 0f)
-        val p3 = PointXY(50f, 86.6f)  // Y座標を正の値に
+        val p1 = com.example.trilib.PointXY(0f, 0f)
+        val p2 = com.example.trilib.PointXY(100f, 0f)
+        val p3 = com.example.trilib.PointXY(50f, 86.6f)  // Y座標を正の値に
 
         val (angle1, angle2, angle3) = TriangleCalculator.calculateInternalAngles(p1, p2, p3)
 
@@ -69,9 +68,9 @@ class TriangleCalculatorTest {
 
     @Test
     fun calculateInternalAngles_直角三角形のテスト() {
-        val p1 = PointXY(0f, 0f)
-        val p2 = PointXY(100f, 0f)
-        val p3 = PointXY(100f, 100f)
+        val p1 = com.example.trilib.PointXY(0f, 0f)
+        val p2 = com.example.trilib.PointXY(100f, 0f)
+        val p3 = com.example.trilib.PointXY(100f, 100f)
 
         val (angle1, angle2, angle3) = TriangleCalculator.calculateInternalAngles(p1, p2, p3)
 

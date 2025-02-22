@@ -169,7 +169,7 @@ class MainActivity : AppCompatActivity(),
 
     private var myEditor: EditorTable = EditorTable()
     private var parameter: InputParameter = InputParameter("", "", 0, 0f, 0f, 0f, 0, 0,
-        PointXY(0f, 0f)
+        com.example.trilib.PointXY(0f, 0f)
     )
     private var lastParams: InputParameter = parameter
 
@@ -446,8 +446,7 @@ class MainActivity : AppCompatActivity(),
         loadContent =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult(), ::handleLoadContentResult)
 
-        val tArray = resources.getStringArray(R.array.ParentList)
-        initSpinner(tArray)
+
 
 /*
         val appUpdateManager = AppUpdateManagerFactory.create(this)
@@ -508,6 +507,9 @@ class MainActivity : AppCompatActivity(),
         Log.d("MainActivity", "OnAttachedToWindow Process Done.")
 
         adShowInterStitial()
+
+        val tArray = resources.getStringArray(R.array.ParentList)
+        initSpinner(tArray)
     }
 
     fun loadTitleParameters(){
@@ -1083,7 +1085,7 @@ class MainActivity : AppCompatActivity(),
                         0f,
                         elist.size(),
                         0,
-                    PointXY(0f, 0f)
+                    com.example.trilib.PointXY(0f, 0f)
                 ), editorline1
         )
         myEditor.write(eo.getParams(), editorLine2)
@@ -1098,7 +1100,7 @@ class MainActivity : AppCompatActivity(),
                         0f,
                         0,
                         0,
-                    PointXY(0f, 0f)
+                    com.example.trilib.PointXY(0f, 0f)
                 ), myELThird
         )
     }
@@ -1475,8 +1477,8 @@ class MainActivity : AppCompatActivity(),
             fabReplace(
                 InputParameter(
                     "仕切弁", "Circle", 1, 0.23f, 0f, 0f, 1, 0,
-                    PointXY(1f, 0f),
-                    PointXY(
+                    com.example.trilib.PointXY(1f, 0f),
+                    com.example.trilib.PointXY(
                         0f,
                         0f
                     )
@@ -1548,7 +1550,7 @@ class MainActivity : AppCompatActivity(),
 
     fun flagTriangle(){
         val triangle = trianglelist.get(parameter.number)
-        val tappoint = myview.pressedInModel.scale(PointXY(0f, 0f), 1 / viewscale, -1 / viewscale)
+        val tappoint = myview.pressedInModel.scale(com.example.trilib.PointXY(0f, 0f), 1 / viewscale, -1 / viewscale)
         triangle.setPointNumber( tappoint, true )
         setTrianglelist()
     }
@@ -1564,8 +1566,8 @@ class MainActivity : AppCompatActivity(),
 
     fun fabRotate(degrees: Float, bSeparateFreeMode: Boolean, isRotateDedBoxShape: Boolean = true ){
         if(!deductionMode) {
-            trianglelist.rotate(PointXY(0f, 0f), degrees, trianglelist.lastTapNumber, bSeparateFreeMode )
-            myDeductionList.rotate(PointXY(0f, 0f), -degrees )
+            trianglelist.rotate(com.example.trilib.PointXY(0f, 0f), degrees, trianglelist.lastTapNumber, bSeparateFreeMode )
+            myDeductionList.rotate(com.example.trilib.PointXY(0f, 0f), -degrees )
             myview.setTriangleList(trianglelist, viewscale)
             myview.setDeductionList(myDeductionList, viewscale)
             myview.invalidate()//resetViewToLSTP()
@@ -1749,7 +1751,7 @@ class MainActivity : AppCompatActivity(),
 
     private fun flagDeduction(params: InputParameter): Deduction?{//Params {
         params.point = myview.pressedInModel
-        if (params.point == PointXY(0f, 0f)) return null
+        if (params.point == com.example.trilib.PointXY(0f, 0f)) return null
 
         //形状の自動判定
         if( params.b > 0f ) params.type = "Box"
@@ -1758,7 +1760,7 @@ class MainActivity : AppCompatActivity(),
         // 所属する三角形の判定処理
         params.pn = myview.trianglelist.isCollide(
             params.point.scale(
-                PointXY(
+                com.example.trilib.PointXY(
                     1f,
                     -1f
                 )
@@ -1796,20 +1798,40 @@ class MainActivity : AppCompatActivity(),
         //return params
     }
 
-    private fun resetDeductionsBy(params: InputParameter) : Boolean {
+    private fun resetDeductionsBy(params: InputParameter): Boolean {
         if (!validDeduction(params)) {
-            Log.d( "Deduction", "invalid parameters" )
+            Log.d("Deduction", "invalid parameters")
             logParams(params, "reset Dedution")
             return false
         }
 
-        //myTriangleList.current = params.pn
-
         val ded = flagDeduction(params)
-        if( ded == null ) return false
+        //flagDeductionでnullが返ってくる可能性を考慮
+        if (ded == null) {
+            Log.w("resetDeductionsBy", "flagDeduction returned null. Cannot proceed.")
+            return false
+        }
 
-        // 所属する三角形の判定処理
-        myDeductionList.replace(params.number, ded )
+        // リストが空の場合、新しい要素を追加する
+        if (myDeductionList.dedlist_.isEmpty()) {
+            Log.d("resetDeductionsBy", "myDeductionList is empty. Adding new deduction.")
+            myDeductionList.add(ded)
+        } else {
+            //params.numberを正しく管理します。
+            val index = params.number
+
+            // インデックスが範囲内であることを確認
+            if (index >= 0 && index < myDeductionList.size()) {
+                // リスト内の該当するインデックスを置換
+                myDeductionList.replace(index, ded)
+            } else {
+                // indexが範囲外の場合、エラーログを記録して終了する
+                Log.e("resetDeductionsBy", "Invalid index: $index for list of size ${myDeductionList.size()}")
+                //リストの最後の要素を置き換える例
+                myDeductionList.replace(myDeductionList.size() -1, ded)
+                //return false
+            }
+        }
         myview.trianglelist.dedmapping(myDeductionList, -1)
         return true
     }
@@ -1880,8 +1902,8 @@ class MainActivity : AppCompatActivity(),
             parameter.c,
             triangle.mynumber,
             sideindex,
-            PointXY(0f, 0f),
-            PointXY(0f, 0f)
+            com.example.trilib.PointXY(0f, 0f),
+            com.example.trilib.PointXY(0f, 0f)
         )
     }
 
@@ -1934,7 +1956,7 @@ class MainActivity : AppCompatActivity(),
             parameter.c,
             parameter.pn,
             sideindex,
-            PointXY(
+            com.example.trilib.PointXY(
                 0f,
                 0f
             )
@@ -1989,8 +2011,12 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    fun getShadowTap(pressedpoint:PointXY, range: Float):Int { return myview.shadowTri_.getTapLength(pressedpoint, range ) }
-    fun getPressedInModel():PointXY { return myview.pressedInModel.scale(PointXY(0f, 0f), 1f, -1f) }
+    fun getShadowTap(pressedpoint: com.example.trilib.PointXY, range: Float):Int { return myview.shadowTri_.getTapLength(pressedpoint, range ) }
+    fun getPressedInModel(): com.example.trilib.PointXY { return myview.pressedInModel.scale(
+        com.example.trilib.PointXY(
+            0f,
+            0f
+        ), 1f, -1f) }
 
     fun shadowTapMode(zoomsize: Float): Boolean {
         val RANGE = 0.8f / zoomsize
@@ -2485,10 +2511,24 @@ class MainActivity : AppCompatActivity(),
         shareUris.clear()
         // ファイル名のリストをループして各ファイルのURIを取得
         for (fileName in fileNames) {
-            val uri = saveFileAndGetUri(fileName)
-            shareUris.add(uri)
-            uris.add(uri)
-            Log.d("ShareFiles", "$fileName saved and URI obtained.")
+            //ファイルが保存されているか確認し、正しくない場合保存を行う。
+            val newFile = File(filesDir, fileName)
+            if(!newFile.exists())
+            {
+                saveToPrivate(fileName)
+            }
+            if(newFile.exists())
+            {
+                val uri = getAppLocalFile(this, fileName)
+                shareUris.add(uri)
+                uris.add(uri)
+                Log.d("ShareFiles", "$fileName saved and URI obtained.")
+            }
+            else
+            {
+                Log.d("ShareFiles", "$fileName save failed")
+            }
+
         }
         return uris
     }
@@ -2590,7 +2630,7 @@ class MainActivity : AppCompatActivity(),
     //region File Private Save and Load
     private fun createNew(){
         val tri = Triangle(5f, 5f, 5f,
-            PointXY(0f, 0f), 0f)
+            com.example.trilib.PointXY(0f, 0f), 0f)
 
         val trilist = TriangleList(tri)
         trianglelist = trilist
@@ -2617,6 +2657,7 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun savePdfToPrivate(filename: String = "privateTrilist.pdf"){
+        Log.d("FileSave", "savePdfToPrivate: filename=$filename")
         try {
             savePDF(openFileOutput(filename, MODE_PRIVATE))
         } catch (e: IOException) {
@@ -2625,6 +2666,7 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun saveXlsxToPrivate(filename: String = "privateTrilist.xlsx"){
+        Log.d("FileSave", "saveXlsxToPrivate: filename=$filename")
         try {
             XlsxWriter().write( openFileOutput(filename, MODE_PRIVATE ), trianglelist, myDeductionList, rosenname )
         } catch (e: IOException) {
@@ -2633,17 +2675,44 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun saveToPrivate(filename: String) {
+        Log.d("FileSave", "saveToPrivate: filename=$filename")
         // ファイル名から拡張子を取得
         val extension = filename.substringAfterLast('.', "")
 
         when (extension) {
-            "xlsx" -> XlsxWriter().write( openFileOutput(filename, MODE_PRIVATE ), trianglelist, myDeductionList, rosenname )
-            "pdf" -> savePdfToPrivate(filename)
-            "dxf" -> saveDxfToPrivate(filename)
-            "sfc" -> saveSfcToPrivate(filename)
-            "csv" -> saveCSVtoPrivate(filename)
+            "xlsx" -> {
+                Log.d("FileSave", "saveToPrivate: saving as xlsx")
+                saveXlsxToPrivate(filename)
+            }
+            "pdf" -> {
+                Log.d("FileSave", "saveToPrivate: saving as pdf")
+                savePdfToPrivate(filename)
+            }
+            "dxf" -> {
+                Log.d("FileSave", "saveToPrivate: saving as dxf")
+                saveDxfToPrivate(filename)
+            }
+            "sfc" -> {
+                Log.d("FileSave", "saveToPrivate: saving as sfc")
+                saveSfcToPrivate(filename)
+            }
+            "csv" -> {
+                Log.d("FileSave", "saveToPrivate: saving as csv")
+                //CSVのみファイル名がずれてしまうので修正
+                //拡張子を付与する
+                val file = File(filesDir,filename)
+                if(!filename.endsWith(".csv"))
+                {
+                    val fileRename = File(filesDir, filename+".csv")
+                    file.renameTo(fileRename)
+                }
+                saveCSVtoPrivate(filename)
+            }
             // その他のファイル形式に対応する処理を追加
-            else -> throw IllegalArgumentException("Unsupported file format: $extension")
+            else -> {
+                Log.e("FileSave", "saveToPrivate: Unsupported file format: $extension")
+                throw IllegalArgumentException("Unsupported file format: $extension")
+            }
         }
     }
 
@@ -2667,7 +2736,7 @@ class MainActivity : AppCompatActivity(),
             // 三角形リストのデータをCSVファイルに書き込み
             for (index in 1..trianglelist.size()) {
                 val mt: Triangle = trianglelist.getBy(index)
-                val pointnumber: PointXY = mt.pointnumber
+                val pointnumber: com.example.trilib.PointXY = mt.pointnumber
                 val cp = parentBCtoCParam(mt.connectionSide, mt.lengthNotSized[0], mt.cParam_)
 
                 writer.write("${mt.mynumber},${mt.lengthA_},${mt.lengthB_},${mt.lengthC_}," +
@@ -2697,8 +2766,8 @@ class MainActivity : AppCompatActivity(),
             // 減算リストのデータをCSVファイルに書き込み
             for (index in 1..myDeductionList.size()) {
                 val dd: Deduction = myDeductionList.get(index)
-                val pointAtRealscale = dd.point.scale(PointXY(0f, 0f), 1 / viewscale, -1 / viewscale)
-                val pointFlagAtRealscale = dd.pointFlag.scale(PointXY(0f, 0f), 1 / viewscale, -1 / viewscale)
+                val pointAtRealscale = dd.point.scale(com.example.trilib.PointXY(0f, 0f), 1 / viewscale, -1 / viewscale)
+                val pointFlagAtRealscale = dd.pointFlag.scale(com.example.trilib.PointXY(0f, 0f), 1 / viewscale, -1 / viewscale)
 
                 writer.write("Deduction,${dd.num},${dd.name},${dd.lengthX},${dd.lengthY},${dd.overlap_to},${dd.type},${dd.angle},${pointAtRealscale.x},${pointAtRealscale.y},${pointFlagAtRealscale.x},${pointFlagAtRealscale.y},${dd.shapeAngle}")
                 writer.write("\n")
@@ -2723,20 +2792,25 @@ class MainActivity : AppCompatActivity(),
     val PrivateCSVFileName = "privateTrilist.csv"
 
     private fun saveCSVtoPrivate(filename: String = PrivateCSVFileName): Boolean{
-        if( isCSVsavedToPrivate ) return true //既に保存済み
+        Log.d("CSVWrite", "saveCSVtoPrivate: filename=$filename")
+
+        if( isCSVsavedToPrivate ) {
+            Log.d("CSVWrite", "saveCSVtoPrivate: $filename already saved")
+            //return true
+        } //既に保存済み
         return try {
             setTitles()
 
             val writer = BufferedWriter(
                 OutputStreamWriter(openFileOutput(filename, MODE_PRIVATE), "Shift-JIS"))
+            val isSaved =  writeCSV(writer)
+            if(isSaved)isCSVsavedToPrivate=true
+            return isSaved
 
-            writeCSV(writer)
-
-            true
         } catch (e: IOException) {
             e.printStackTrace()
             showToast("saveCSVToPrivate: IOException")
-            false
+            return false
         }
     }
 
@@ -2802,7 +2876,7 @@ class MainActivity : AppCompatActivity(),
         myDeductionList = dedlist
         turnToBlankTrilistUndo()
 
-        trilist.recoverState(PointXY(0f, 0f))
+        trilist.recoverState(com.example.trilib.PointXY(0f, 0f))
 
         myview.setDeductionList(dedlist, viewscale)
         myview.setTriangleList(trilist, viewscale)

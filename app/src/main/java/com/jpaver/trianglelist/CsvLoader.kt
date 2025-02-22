@@ -2,6 +2,7 @@ package com.jpaver.trianglelist
 
 import com.jpaver.trianglelist.util.InputParameter
 import java.io.BufferedReader
+import com.example.trilib.PointXY
 
 class CsvLoader {
 
@@ -66,7 +67,7 @@ class CsvLoader {
 
         //非接続というか１番目
         if( connectiontype < 1 ){
-            val pt = PointXY(0f, 0f)
+            val pt = com.example.trilib.PointXY(0f, 0f)
             trilist.add(
                 Triangle(
                     chunks[1].toFloat(),
@@ -127,7 +128,7 @@ class CsvLoader {
 
     fun readPointNumber(chunks: List<String>, mt:Triangle){
         mt.setPointNumber(
-            PointXY(
+            com.example.trilib.PointXY(
                 chunks[7].toFloat(),
                 chunks[8].toFloat()
             ),
@@ -190,11 +191,11 @@ class CsvLoader {
                         chunks[2], chunks[6], chunks[1].toInt(),
                         chunks[3].toFloat(), chunks[4].toFloat(), 0f,
                         chunks[5].toInt(), typeToInt(chunks[6]),
-                        PointXY(
+                        com.example.trilib.PointXY(
                             chunks[8].toFloat(),
                             -chunks[9].toFloat()
                         ).scale(viewscale),
-                        PointXY(
+                        com.example.trilib.PointXY(
                             chunks[10].toFloat(),
                             -chunks[11].toFloat()
                         ).scale(viewscale)
@@ -214,7 +215,7 @@ class CsvLoader {
                 return true
             }
             "ListScale" -> {
-                trilist.setScale(PointXY(0f, 0f), chunks[1].toFloat())
+                trilist.setScale(com.example.trilib.PointXY(0f, 0f), chunks[1].toFloat())
                 return true
             }
             "TextSize"  -> {

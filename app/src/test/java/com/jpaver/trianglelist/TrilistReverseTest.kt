@@ -12,7 +12,7 @@ class TrilistReverseTest {
         // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
         tritree.add(
             Triangle(5f, 5f, 5f,
-                PointXY(0f, 0f), 0f), true)
+                com.example.trilib.PointXY(0f, 0f), 0f), true)
         tritree.add(1, 1, 5f, 5f, 5f)
         tritree.add(2, 1, 5f, 5f, 5f)
         tritree.add(3, 2, 5f, 5f, 5f)
@@ -32,7 +32,7 @@ class TrilistReverseTest {
         // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
         tritree.add(
             Triangle(5f, 5f, 5f,
-                PointXY(0f, 0f), 0f), true)
+                com.example.trilib.PointXY(0f, 0f), 0f), true)
         tritree.add(1, 1, 5f, 5f, 5f)
         tritree.add(2, 1, 5f, 5f, 5f)
         tritree.add(2, 2, 5f, 5f, 5f)

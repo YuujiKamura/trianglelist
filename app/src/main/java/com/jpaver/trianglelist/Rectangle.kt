@@ -1,6 +1,10 @@
 package com.jpaver.trianglelist
 
-data class Line( val left:PointXY= PointXY(0f,0f), val right:PointXY=PointXY(0f,0f) ){
+data class Line(val left: com.example.trilib.PointXY = com.example.trilib.PointXY(0f, 0f), val right: com.example.trilib.PointXY = com.example.trilib.PointXY(
+    0f,
+    0f
+)
+){
     fun getAngle():Float = left.calcAngleWithXAxis(right)
 }
 data class Line2(val a:Line=Line(), val b:Line=Line() )
@@ -10,7 +14,7 @@ data class Rectangle(
     var widthA: Float,
     var widthB: Float,
     var angle:Float=0f,
-    var basepoint: PointXY = PointXY(0f,0f),
+    var basepoint: com.example.trilib.PointXY = com.example.trilib.PointXY(0f, 0f),
     var nodeA: EditObject? = null,
     var side: Int=1
 ) : EditObject(){

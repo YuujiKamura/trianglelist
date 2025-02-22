@@ -8,7 +8,7 @@ class TrilistDimTest {
     fun testDimAlign() {
         val mytri1 = Triangle(
             2.0f, 2.3f, 1.2f,
-            PointXY(0f, 0f), 180.0f
+            com.example.trilib.PointXY(0f, 0f), 180.0f
         )
         val myTrilist = TriangleList(mytri1)
         myTrilist.add(Triangle(mytri1, 3, 2.5f, 1.1f, 2.0f), true) //2
