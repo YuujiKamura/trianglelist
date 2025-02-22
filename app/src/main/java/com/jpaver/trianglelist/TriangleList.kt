@@ -18,7 +18,7 @@ fun print_trilist(tl: TriangleList, callername:String = "undefined caller") {
 open class TriangleList : EditList {
 
     fun rotate(
-        basepoint: PointXY,
+        basepoint: com.example.trilib.PointXY,
         angle: Float,
         startnumber: Int,
         separationFreeMode: Boolean = false
@@ -41,7 +41,7 @@ open class TriangleList : EditList {
     // region parameters
     var trilist: ArrayList<Triangle>
     var trilistStored_: ArrayList<Triangle>
-    var outlineList_: ArrayList<ArrayList<PointXY>>? = null
+    var outlineList_: ArrayList<ArrayList<com.example.trilib.PointXY>>? = null
     var lastTapNumber = 0
     var lastTapSide = -1
     var lastTapCollideNum_ = 0
@@ -49,8 +49,8 @@ open class TriangleList : EditList {
     var scale = 1f
     var angle = 0f
     var myBounds = Bounds(0f, 0f, 0f, 0f)
-    var myCenter = PointXY(0f, 0f)
-    var myLength = PointXY(0f, 0f)
+    var myCenter = com.example.trilib.PointXY(0f, 0f)
+    var myLength = com.example.trilib.PointXY(0f, 0f)
     var outlineStr_ = ""
     var isDoubleTap = false
 
@@ -164,11 +164,11 @@ open class TriangleList : EditList {
 
     fun getPrintScale(drawingScale: Float): Float {
         // 最初にスケーリングして最長辺を測定
-        scale(PointXY(0f, 0f), 1 / drawingScale)
+        scale(com.example.trilib.PointXY(0f, 0f), 1 / drawingScale)
         val longestLine = measureMostLongLine()
         val longsidex = longestLine.x
         val longsidey = longestLine.y
-        scale(PointXY(0f, 0f), drawingScale) // 元のスケールに戻す
+        scale(com.example.trilib.PointXY(0f, 0f), drawingScale) // 元のスケールに戻す
 
         // ペーパーサイズ
         val paperWidth = 38f
@@ -198,20 +198,20 @@ open class TriangleList : EditList {
         return myBounds
     }
 
-    val center: PointXY
+    val center: com.example.trilib.PointXY
         get() {
             calcBounds()
             myCenter[(myBounds.right + myBounds.left) / 2] = (myBounds.top + myBounds.bottom) / 2
             return myCenter
         }
 
-    fun measureMostLongLine(): PointXY {
+    fun measureMostLongLine(): com.example.trilib.PointXY {
         calcBounds()
         myLength[myBounds.right - myBounds.left] = myBounds.top - myBounds.bottom
         return myLength
     }
 
-    fun measureLongLineNotScaled(): PointXY {
+    fun measureLongLineNotScaled(): com.example.trilib.PointXY {
         return measureMostLongLine().scale(1 / scale)
     }
 
@@ -257,13 +257,13 @@ open class TriangleList : EditList {
         selectedNumber = trilist.size
     }
 
-    fun setScale(bp: PointXY, sc: Float) {
+    fun setScale(bp: com.example.trilib.PointXY, sc: Float) {
         scale = sc
         basepoint = bp.clone()
         //        this.cloneByScale(basepoint, myScale);
     }
 
-    fun scale(basepoint: PointXY, scale: Float) {
+    fun scale(basepoint: com.example.trilib.PointXY, scale: Float) {
         this.scale *= scale
         forEach { triangle ->
             triangle.scale(basepoint, scale)
@@ -280,7 +280,7 @@ open class TriangleList : EditList {
     }
 
     fun attachToTheView(
-        basepoint: PointXY = PointXY(0f, 0f),
+        basepoint: com.example.trilib.PointXY = com.example.trilib.PointXY(0f, 0f),
         scale: Float = this.scale,
         ts: Float = 5f,
         isArrangeDims: Boolean = true,
@@ -321,7 +321,7 @@ open class TriangleList : EditList {
         if (target.nodeC == null) target.dim.vertical.c = 1 else if (target.nodeC!!.connectionSide > 2 ) target.dim.vertical.c = 3
     }
 
-    fun recoverState(bp: PointXY= PointXY(0f,0f)) {
+    fun recoverState(bp: com.example.trilib.PointXY = com.example.trilib.PointXY(0f, 0f)) {
         basepoint = bp.clone()
         trilist.map {
             it.recover_rotate(basepoint, angle - 180)
@@ -661,7 +661,7 @@ open class TriangleList : EditList {
         }
     }
 
-    fun trace(olp: ArrayList<PointXY>, tri: Triangle?, first: Boolean?): ArrayList<PointXY> {
+    fun trace(olp: ArrayList<com.example.trilib.PointXY>, tri: Triangle?, first: Boolean?): ArrayList<com.example.trilib.PointXY> {
         if (tri == null) return olp
         if ((tri.getIsFloating || tri.getIsColored) && !first!!) return olp
         addOlp(tri.pointAB, "ab,", olp, tri)
@@ -673,7 +673,7 @@ open class TriangleList : EditList {
         return olp
     }
 
-    fun addOlp(pt: PointXY, str: String, olp: ArrayList<PointXY>, node: Triangle) {
+    fun addOlp(pt: com.example.trilib.PointXY, str: String, olp: ArrayList<com.example.trilib.PointXY>, node: Triangle) {
         if (notHave(pt, olp)) {
             olp.add(pt)
             outlineStr_ += node.mynumber.toString() + str
@@ -681,13 +681,13 @@ open class TriangleList : EditList {
     }
 
     // 同じポイントは二ついらない
-    private fun notHave(it: PointXY, inthis: ArrayList<PointXY>): Boolean {
+    private fun notHave(it: com.example.trilib.PointXY, inthis: ArrayList<com.example.trilib.PointXY>): Boolean {
         //if( inthis.size() < 1 ) return false;
         for (i in inthis.indices) if (it.nearBy(inthis[i], 0.01f)) return false
         return true
     }
 
-    fun traceOrNot(node: Triangle?, origin: Int, olp: ArrayList<PointXY>) {
+    fun traceOrNot(node: Triangle?, origin: Int, olp: ArrayList<com.example.trilib.PointXY>) {
         if (node != null && !node.getIsFloating && !node.getIsColored) traceOrJumpForward(
             node.mynumber - 1,
             origin,
@@ -696,7 +696,7 @@ open class TriangleList : EditList {
         )
     }
 
-    fun branchOrNot(t: Triangle, origin: Int, olp: ArrayList<PointXY>) {
+    fun branchOrNot(t: Triangle, origin: Int, olp: ArrayList<com.example.trilib.PointXY>) {
         if (t.nodeB != null && t.nodeC != null) if (notHave(
                 t.nodeC!!.point[0],
                 olp
@@ -704,7 +704,7 @@ open class TriangleList : EditList {
         ) traceOrJumpForward(t.nodeC!!.mynumber - 1, origin, olp, t.nodeC!!)
     }
 
-    fun isCollide(tapP: PointXY): Int {
+    fun isCollide(tapP: com.example.trilib.PointXY): Int {
         for (i in trilist.indices) {
             if (trilist[i].isCollide(tapP)) return i + 1.also { lastTapCollideNum_ = it }
         }
@@ -724,7 +724,12 @@ open class TriangleList : EditList {
     private fun processDeduction(deduction: Deduction, axisY: Int) {
         trilist.forEach { tri ->
             // スケールされた点での衝突判定
-            val isCol = tri.isCollide(deduction.point.scale(PointXY(1f, axisY.toFloat())))
+            val isCol = tri.isCollide(deduction.point.scale(
+                com.example.trilib.PointXY(
+                    1f,
+                    axisY.toFloat()
+                )
+            ))
             if (isCol) {
                 tri.dedcount++
                 deduction.overlap_to = tri.mynumber
@@ -733,7 +738,7 @@ open class TriangleList : EditList {
         }
     }
 
-    fun getTapIndexArray(tapP: PointXY): IntArray {
+    fun getTapIndexArray(tapP: com.example.trilib.PointXY): IntArray {
         val tapIndexArray = IntArray(trilist.size)
         for (i in trilist.indices) {
             tapIndexArray[i] = trilist[i].getTapLength(tapP, 0.6f)
@@ -741,7 +746,7 @@ open class TriangleList : EditList {
         return tapIndexArray
     }
 
-    fun getTapHitCount(tapP: PointXY): Int {
+    fun getTapHitCount(tapP: com.example.trilib.PointXY): Int {
         var hitC = 0
         for (i in trilist.indices) {
             if (trilist[i].getTapLength(tapP, 0.6f) != -1) hitC++
@@ -749,7 +754,7 @@ open class TriangleList : EditList {
         return hitC
     }
 
-    fun getTapNumber(tapP: PointXY, rangeRadius: Float): Int {
+    fun getTapNumber(tapP: com.example.trilib.PointXY, rangeRadius: Float): Int {
         val ltn = lastTapNumber + lastTapSide
         isCollide(tapP)
         for (i in trilist.indices) {
@@ -768,7 +773,7 @@ open class TriangleList : EditList {
         return lastTapNumber
     }
 
-    fun move(to: PointXY): ArrayList<Triangle> {
+    fun move(to: com.example.trilib.PointXY): ArrayList<Triangle> {
         for (i in trilist.indices) {
             trilist[i].move(to)
         }
@@ -786,8 +791,8 @@ open class TriangleList : EditList {
             0f,
             0,
             0,
-            PointXY(0f, 0f),
-            PointXY(0f, 0f)
+            com.example.trilib.PointXY(0f, 0f),
+            com.example.trilib.PointXY(0f, 0f)
         )
         val t = trilist[num - 1]
         return InputParameter(
@@ -812,7 +817,7 @@ open class TriangleList : EditList {
         return (Math.round(area * 100.0) * 0.01).toFloat()
     }
 
-    fun addOutlinePoint(pt: PointXY, str: String, olp: ArrayList<PointXY>, node: Triangle?) {
+    fun addOutlinePoint(pt: com.example.trilib.PointXY, str: String, olp: ArrayList<com.example.trilib.PointXY>, node: Triangle?) {
         if (node != null && notHave(pt, olp)) {
             olp.add(pt)
             outlineStr_ += node.mynumber.toString() + str
@@ -822,9 +827,9 @@ open class TriangleList : EditList {
     fun traceOrJumpForward(
         startindex: Int,
         origin: Int,
-        olp: ArrayList<PointXY>,
+        olp: ArrayList<com.example.trilib.PointXY>,
         node: Triangle
-    ): ArrayList<PointXY>? {
+    ): ArrayList<com.example.trilib.PointXY>? {
         if (startindex < 0 || startindex >= trilist.size) return null
 
         // AB点を取る。すでにあったらキャンセル
@@ -844,7 +849,7 @@ open class TriangleList : EditList {
         return olp
     }
 
-    fun traceOrJumpBackward(origin: Int, olp: ArrayList<PointXY>, node: Triangle) {
+    fun traceOrJumpBackward(origin: Int, olp: ArrayList<com.example.trilib.PointXY>, node: Triangle) {
 
         // 派生（ふたつとも接続）していたらそっちに伸びる、フロート接続だったり、すでに持っている点を見つけたらスルー
         branchOrNot(node, origin, olp)

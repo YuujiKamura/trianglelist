@@ -166,19 +166,19 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
     // region pointNumber
 
-    var pointnumber = PointXY(0f, 0f)
+    var pointnumber = com.example.trilib.PointXY(0f, 0f)
 
     init{
-        pointnumber = PointXY(0f,0f)
+        pointnumber = com.example.trilib.PointXY(0f, 0f)
     }
 
     var pointNumber = PointNumberManager()
 
     //Deductionからも呼ばれている
     fun pointUnconnectedSide(
-        point: PointXY,
+        point: com.example.trilib.PointXY,
         clockwise: Float
-    ): PointXY {
+    ): com.example.trilib.PointXY {
         if (nodeC == null)
             return point.mirroredAndScaledPoint(this.point[0], pointBC, clockwise)
         if (nodeB == null)
@@ -192,7 +192,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         return -angleMpAB
     }
 
-    fun setPointNumber(p: PointXY, is_user:Boolean = true ) {
+    fun setPointNumber(p: com.example.trilib.PointXY, is_user:Boolean = true ) {
         pointnumber = pointNumber.setPointByUser(p, this, is_user )
     }
     //endregion pointNumber
@@ -243,18 +243,30 @@ class Triangle : EditObject, Cloneable<Triangle> {
     var strLengthB = ""
     var strLengthC = ""
 
-    var point = arrayOf(PointXY(0f,0f),PointXY(0f,0f),PointXY(0f,0f))
+    var point = arrayOf(
+        com.example.trilib.PointXY(0f, 0f),
+        com.example.trilib.PointXY(0f, 0f),
+        com.example.trilib.PointXY(0f, 0f)
+    )
         private set
-    var pointAB: PointXY = PointXY(0f, 0f)
+    var pointAB: com.example.trilib.PointXY = com.example.trilib.PointXY(0f, 0f)
         private set
-    var pointBC: PointXY = PointXY(0f, 0f)
+    var pointBC: com.example.trilib.PointXY = com.example.trilib.PointXY(0f, 0f)
         private set
-    var pointcenter = PointXY(0f, 0f)//autoAlignPointNumber();
+    var pointcenter = com.example.trilib.PointXY(0f, 0f)
+        //autoAlignPointNumber();
         private set
 
     var dimOnPath: Array<DimOnPath> = Array(3) { DimOnPath() }
-    data class Dimpoint(var a:PointXY= PointXY(0f,0f), var b:PointXY=PointXY(0f,0f), var c:PointXY=PointXY(0f,0f), var s:PointXY=PointXY(0f,0f),var name:PointXY=PointXY(0f,0f)){
-        fun toArray(): Array<PointXY>{
+    data class Dimpoint(var a: com.example.trilib.PointXY = com.example.trilib.PointXY(0f, 0f), var b: com.example.trilib.PointXY = com.example.trilib.PointXY(
+        0f,
+        0f
+    ), var c: com.example.trilib.PointXY = com.example.trilib.PointXY(0f, 0f), var s: com.example.trilib.PointXY = com.example.trilib.PointXY(
+        0f,
+        0f
+    ), var name: com.example.trilib.PointXY = com.example.trilib.PointXY(0f, 0f)
+    ){
+        fun toArray(): Array<com.example.trilib.PointXY>{
             return arrayOf(a,b,c)
         }
     }
@@ -304,22 +316,22 @@ class Triangle : EditObject, Cloneable<Triangle> {
         get() = lengthNotSized[1]
     val lengthCforce: Float
         get() = lengthNotSized[2]
-    val pointCA: PointXY
+    val pointCA: com.example.trilib.PointXY
         get() = point[0].clone()
 
-    fun pointAB_(): PointXY {
-        return PointXY(pointAB)
+    fun pointAB_(): com.example.trilib.PointXY {
+        return com.example.trilib.PointXY(pointAB)
     }
 
-    fun pointBC_(): PointXY {
-        return PointXY(pointBC)
+    fun pointBC_(): com.example.trilib.PointXY {
+        return com.example.trilib.PointXY(pointBC)
     }
 
     //endregion
 
     //region constructor
     // set argument methods
-    private fun initBasicArguments(A: Float, B: Float, C: Float, pCA: PointXY?, angle: Float) {
+    private fun initBasicArguments(A: Float, B: Float, C: Float, pCA: com.example.trilib.PointXY?, angle: Float) {
         length[0] = A
         length[1] = B
         length[2] = C
@@ -327,10 +339,10 @@ class Triangle : EditObject, Cloneable<Triangle> {
         lengthNotSized[1] = B
         lengthNotSized[2] = C
         valid_ = isValid
-        point[0] = PointXY(pCA!!.x, pCA.y)
-        pointAB = PointXY(0.0f, 0.0f)
-        pointBC = PointXY(0.0f, 0.0f)
-        pointcenter = PointXY(0.0f, 0.0f)
+        point[0] = com.example.trilib.PointXY(pCA!!.x, pCA.y)
+        pointAB = com.example.trilib.PointXY(0.0f, 0.0f)
+        pointBC = com.example.trilib.PointXY(0.0f, 0.0f)
+        pointcenter = com.example.trilib.PointXY(0.0f, 0.0f)
         //this.pointNumber_ = new PointXY(0.0f, 0.0f);
         this.angle = angle
         angleCA = 0f
@@ -346,7 +358,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
     internal constructor(A: Float, B: Float, C: Float) {
         setNumber(1)
-        point[0] = PointXY(0f, 0f)
+        point[0] = com.example.trilib.PointXY(0f, 0f)
         angle = 180f
         initBasicArguments(A, B, C, point[0], angle)
         if(A <= 0.0 ) return
@@ -355,7 +367,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
     //for first triangle.
-    internal constructor(A: Float, B: Float, C: Float, pCA: PointXY, angle: Float) {
+    internal constructor(A: Float, B: Float, C: Float, pCA: com.example.trilib.PointXY, angle: Float) {
         setNumber(1)
         initBasicArguments(A, B, C, pCA, angle)
         calcPoints(pCA, angle)
@@ -404,24 +416,24 @@ class Triangle : EditObject, Cloneable<Triangle> {
         }
     }
 
-    fun getPointByCParam(cparam: ConnParam, prnt: Triangle?): PointXY? {
-        if (prnt == null) return PointXY(0f, 0f)
+    fun getPointByCParam(cparam: ConnParam, prnt: Triangle?): com.example.trilib.PointXY? {
+        if (prnt == null) return com.example.trilib.PointXY(0f, 0f)
         val cside = cparam.side
         //pp.add( getPointBy( pp, length[0], clcr ) );
         return getPointBySide(cside)
     }
 
-    fun getPointByBackSide(i: Int): PointXY? {
+    fun getPointByBackSide(i: Int): com.example.trilib.PointXY? {
         if (getSideByIndex(i) == "B") return pointAB_()
         return if (getSideByIndex(i) == "C") pointBC_() else null
     }
 
-    fun getParentPointByType(cParam: ConnParam): PointXY {
+    fun getParentPointByType(cParam: ConnParam): com.example.trilib.PointXY {
         return getParentPointByType(cParam.side, cParam.type, cParam.lcr)
     }
 
-    fun getParentPointByType(pbc: Int, pct: Int, lcr: Int): PointXY {
-        return if (nodeA == null) PointXY(0f, 0f)
+    fun getParentPointByType(pbc: Int, pct: Int, lcr: Int): com.example.trilib.PointXY {
+        return if (nodeA == null) com.example.trilib.PointXY(0f, 0f)
         else when (pct) {
             1 -> getParentPointByLCR(pbc, lcr)
             2 -> getParentPointByLCR(pbc, lcr).crossOffset(
@@ -441,8 +453,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
         }
     }
 
-    fun getParentPointByLCR(pbc: Int, lcr: Int): PointXY {
-        if (nodeA == null) return PointXY(0f, 0f)
+    fun getParentPointByLCR(pbc: Int, lcr: Int): com.example.trilib.PointXY {
+        if (nodeA == null) return com.example.trilib.PointXY(0f, 0f)
         when (pbc) {
             1 -> when (lcr) {
                 0 -> return nodeA!!.pointAB.offset(
@@ -464,7 +476,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
                 2 -> return nodeA!!.point[0].clone()
             }
         }
-        return PointXY(0f, 0f)
+        return com.example.trilib.PointXY(0f, 0f)
     }
 
     fun getNode(pbc: Int): Triangle {
@@ -477,8 +489,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
         }
     }
 
-    fun getParentOffsetPointBySide(pbc: Int): PointXY {
-        return if (nodeA == null) PointXY(0f, 0f) else when (pbc) {
+    fun getParentOffsetPointBySide(pbc: Int): com.example.trilib.PointXY {
+        return if (nodeA == null) com.example.trilib.PointXY(0f, 0f) else when (pbc) {
             1 -> nodeA!!.pointAB.offset(
                 nodeA!!.pointBC, nodeA!!.lengthB * 0.5f + length[0] * 0.5f
             )
@@ -511,7 +523,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         return name
     }
 
-    fun getTapLength(tapP: PointXY, rangeRadius: Float): Int {
+    fun getTapLength(tapP: com.example.trilib.PointXY, rangeRadius: Float): Int {
         setDimPoint()
         val range = rangeRadius * scaleFactror
         val result = when {
@@ -527,8 +539,8 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
 
-    fun pointCenter_(): PointXY {
-        return PointXY(pointcenter)
+    fun pointCenter_(): com.example.trilib.PointXY {
+        return com.example.trilib.PointXY(pointcenter)
     }
 
 
@@ -537,11 +549,11 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
     private fun setBoundaryBox() {
-        val lb: PointXY
+        val lb: com.example.trilib.PointXY
         lb = pointAB.min(pointBC)
         myBP_.left = lb.x
         myBP_.bottom = lb.y
-        val rt: PointXY
+        val rt: com.example.trilib.PointXY
         rt = pointAB.max(pointBC)
         myBP_.right = rt.x
         myBP_.top = rt.y
@@ -586,7 +598,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         return Line()
     }
 
-    fun getPointBySide(i: Int): PointXY? {
+    fun getPointBySide(i: Int): com.example.trilib.PointXY? {
         if (getSideByIndex(i) == "B") return pointBC_()
         return if (getSideByIndex(i) == "C") point[0] else null
     }
@@ -697,7 +709,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
                 connectionSide = 0
                 length[0] = 0f
                 lengthNotSized[0] = 0f
-                point[0] = PointXY(0f, 0f)
+                point[0] = com.example.trilib.PointXY(0f, 0f)
                 angle = 180f
             }
         }
@@ -793,7 +805,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
                 connectionSide = 0
                 length[0] = 0f
                 lengthNotSized[0] = 0f
-                point[0] = PointXY(0f, 0f)
+                point[0] = com.example.trilib.PointXY(0f, 0f)
                 angle = 180f
             }
         }
@@ -802,14 +814,14 @@ class Triangle : EditObject, Cloneable<Triangle> {
         if (!isValid) return null
         calcPoints(point[0], angle)
         if (connectionSide == 4) {
-            val vector = PointXY(
+            val vector = com.example.trilib.PointXY(
                 parent.pointAB_().x - pointAB.x,
                 parent.pointAB_().y - pointAB.y
             )
             move(vector)
         }
         if (connectionSide == 6) {
-            val vector = PointXY(
+            val vector = com.example.trilib.PointXY(
                 parent.pointBC_().x - pointAB.x,
                 parent.pointBC_().y - pointAB.y
             )
@@ -913,7 +925,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         setDimAlignByChild()
     }
 
-    fun setBasePoint(cParam: ConnParam): PointXY {
+    fun setBasePoint(cParam: ConnParam): com.example.trilib.PointXY {
         point[0] = getParentPointByType(cParam.side, cParam.type, cParam.lcr)
         connectionType_ = cParam.type
         connectionLCR_ = cParam.lcr
@@ -921,7 +933,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         return point[0]
     }
 
-    fun setBasePoint(pbc: Int, pct: Int, lcr: Int): PointXY {
+    fun setBasePoint(pbc: Int, pct: Int, lcr: Int): com.example.trilib.PointXY {
         val cParam = ConnParam(pbc, pct, lcr, lengthA_)
         return setBasePoint(cParam)
     }
@@ -1101,7 +1113,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     //endregion node and boundaries
 
     //region calculater
-    fun calcPoints(basepoint: PointXY = point[0], _angle: Float = angle, isArrangeDims: Boolean = false) {
+    fun calcPoints(basepoint: com.example.trilib.PointXY = point[0], _angle: Float = angle, isArrangeDims: Boolean = false) {
         pointAB = basepoint.offset(length[0], _angle)
         pointBC = calculatePointBC( basepoint )
         calculateInternalAngles()
@@ -1111,7 +1123,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         setBoundaryBox()
     }
 
-    private fun calculatePointBC(basepoint: PointXY): PointXY {
+    private fun calculatePointBC(basepoint: com.example.trilib.PointXY): com.example.trilib.PointXY {
         val theta = atan2( (basepoint.y - pointAB.y).toDouble(), (basepoint.x - pointAB.x).toDouble() )
         val powA = length[0].pow(2.0f).toDouble()
         val powB = length[1].pow(2.0f).toDouble()
@@ -1129,23 +1141,23 @@ class Triangle : EditObject, Cloneable<Triangle> {
         angleCA = calculateInternalAngle(pointBC, point[0], pointAB).toFloat()
     }
 
-    fun calculateInternalAngle(p1: PointXY, p2: PointXY, p3: PointXY): Double {
+    fun calculateInternalAngle(p1: com.example.trilib.PointXY, p2: com.example.trilib.PointXY, p3: com.example.trilib.PointXY): Double {
         val v1 = p1.subtract(p2)
         val v2 = p3.subtract(p2)
         val angleRadian = acos(v1.innerProduct(v2) / (v1.magnitude() * v2.magnitude()))
         return angleRadian * 180 / Math.PI
     }
 
-    private fun calculatePointCenter() :PointXY{
+    private fun calculatePointCenter() : com.example.trilib.PointXY {
         val averageX = ( pointAB.x + pointBC.x + point[0].x ) / 3
         val averageY = ( pointAB.y + pointBC.y + point[0].y ) / 3
-        pointcenter = PointXY( averageX, averageY )
+        pointcenter = com.example.trilib.PointXY(averageX, averageY)
         return pointcenter
     }
 
     fun calcPoints(ref: Triangle?, refside: Int) {
         setNode(ref, refside)
-        val plist: Array<PointXY?>
+        val plist: Array<com.example.trilib.PointXY?>
         val llist: FloatArray
         val powlist: FloatArray
         val angle: Float
@@ -1194,7 +1206,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     //endregion calcurator
 
     //region scale and translate
-    fun scale(basepoint: PointXY, scale_: Float, isArrangeDims: Boolean = false) {
+    fun scale(basepoint: com.example.trilib.PointXY, scale_: Float, isArrangeDims: Boolean = false) {
         scaleFactror = scaleFactror * scale_
         point[0].change_scale(basepoint, scale_)
         length[0] *= scale_
@@ -1205,7 +1217,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         calcPoints(point[0], angle, isArrangeDims)
     }
 
-    fun move(to: PointXY) {
+    fun move(to: com.example.trilib.PointXY) {
         pointAB = pointAB.plus(to)
         pointBC = pointBC.plus(to)
         point[0]= point[0].plus(to)
@@ -1228,7 +1240,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     // endregion scale and translate
 
     //region rotater
-    fun control_rotate(basepoint: PointXY, addDegree: Float) {
+    fun control_rotate(basepoint: com.example.trilib.PointXY, addDegree: Float) {
         angleInLocal_ += addDegree
 
         rotate_body(basepoint,addDegree)
@@ -1236,7 +1248,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         pointnumber = pointnumber.rotate(basepoint,addDegree)
     }
 
-    fun recover_rotate(basepoint: PointXY, addDegree: Float){
+    fun recover_rotate(basepoint: com.example.trilib.PointXY, addDegree: Float){
         angleInLocal_ = addDegree
 
         rotate_body(basepoint,addDegree)
@@ -1244,7 +1256,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         if (!pointNumber.flag.isMovedByUser) pointnumber = pointnumber.rotate(basepoint,addDegree)
     }
 
-    fun rotate_body(basepoint: PointXY, addDegree: Float){
+    fun rotate_body(basepoint: com.example.trilib.PointXY, addDegree: Float){
         point[0] = point[0].rotate(basepoint, addDegree)
         angle += addDegree
         calcPoints(point[0], angle)
@@ -1257,7 +1269,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         //Triangle this = this.clone();
         var pf: Float
         var temp: Int
-        var pp: PointXY
+        var pp: com.example.trilib.PointXY
         if (side == 1) { // B to A
             pf = length[0]
             length[0] = length[1]
@@ -1335,7 +1347,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         return this
     }
 
-    fun rotateLCR(): PointXY {
+    fun rotateLCR(): com.example.trilib.PointXY {
         //if(myParentBC_ < 3) return new PointXY(0f,0f);
         connectionLCR_--
         if (connectionLCR_ < 0) connectionLCR_ = 2
@@ -1397,7 +1409,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
     val isCollide: Boolean = false
 
-    fun isCollide(p: PointXY): Boolean {
+    fun isCollide(p: com.example.trilib.PointXY): Boolean {
         return p.isCollide(pointAB, pointBC, point[0])
     }
 

@@ -5,9 +5,9 @@ import android.widget.EditText
 import android.widget.Spinner
 import android.widget.TextView
 import com.jpaver.trianglelist.EditList
-import com.jpaver.trianglelist.PointXY
+import com.example.trilib.PointXY
 
-data class DeductionParams(var num: Int, var name: String, var lengthX: Float, var lengthY: Float, var parentNum: Int, var type: String, var angle: Float, var point: PointXY)
+data class DeductionParams(var num: Int, var name: String, var lengthX: Float, var lengthY: Float, var parentNum: Int, var type: String, var angle: Float, var point: com.example.trilib.PointXY)
 
 data class TitleParams(var type: Int, var n: Int, var name: Int, var a: Int, var b: Int, var c: Int, var pn: Int, var pl: Int)
 
@@ -26,8 +26,14 @@ data class InputParameter(var name: String = "",
                           var c: Float = 0f,
                           var pn: Int = 0,
                           var pl: Int = 0,
-                          var point: PointXY = PointXY(0f, 0f),
-                          var pointflag: PointXY = PointXY(0f, 0f)
+                          var point: com.example.trilib.PointXY = com.example.trilib.PointXY(
+                              0f,
+                              0f
+                          ),
+                          var pointflag: com.example.trilib.PointXY = com.example.trilib.PointXY(
+                              0f,
+                              0f
+                          )
 )
 
 class EditorTable {
@@ -56,8 +62,8 @@ class EditorTable {
             if(current == 1) {
                 write(
                     InputParameter("","",0,0f,0f,0f,0,0,
-                    PointXY(0f, 0f),
-                    PointXY(0f, 0f)
+                        com.example.trilib.PointXY(0f, 0f),
+                        com.example.trilib.PointXY(0f, 0f)
                 ), thirdly)
             }
             else {

@@ -29,12 +29,12 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
         // printscale
         printscale_ = trilist_.getPrintScale(1f)
 
-        trilist_.scale(PointXY(0f, 0f), unitscale_ )
-        dedlist_.scale(PointXY(0f, 0f), unitscale_/viewscale_, -unitscale_/viewscale_ )
+        trilist_.scale(com.example.trilib.PointXY(0f, 0f), unitscale_ )
+        dedlist_.scale(com.example.trilib.PointXY(0f, 0f), unitscale_/viewscale_, -unitscale_/viewscale_ )
         // アプリの画面に合わせて拡大されているのを戻し、Y軸も反転
 
         //シートの中心へ動かす
-        val center = PointXY(
+        val center = com.example.trilib.PointXY(
             21000f * printscale_,
             14850f * printscale_
         )
@@ -66,7 +66,7 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
         if( isReverse_ == true ) {
             trilistNumbered = trilistNumbered.reverse()
         }
-        trilistNumbered.scale(PointXY(0f, 0f), 1/unitscale_ )
+        trilistNumbered.scale(com.example.trilib.PointXY(0f, 0f), 1/unitscale_ )
         writeCalcSheet(1000f, textscale_/unitscale_, trilistNumbered, dedlist_ )
 
     }
@@ -111,15 +111,15 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
         return
     }
 
-    fun moveCenterTri(center:PointXY,tricenter:PointXY ){
+    fun moveCenterTri(center: com.example.trilib.PointXY, tricenter: com.example.trilib.PointXY){
         dedlist_.move(
-            PointXY(
+            com.example.trilib.PointXY(
                 center.x - tricenter.x,
                 center.y - tricenter.y
             )
         )
         trilist_.move(
-            PointXY(
+            com.example.trilib.PointXY(
                 center.x - tricenter.x,
                 center.y - tricenter.y
             )
@@ -168,8 +168,8 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
 
     override fun writeTextAndLine(
         st: String,
-        p1: PointXY,
-        p2: PointXY,
+        p1: com.example.trilib.PointXY,
+        p2: com.example.trilib.PointXY,
         textsize: Float,
         scale: Float
     ){
@@ -189,7 +189,7 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
         writeLine(ded.pLBtm, ded.pRBtm, color)
     }
 
-    fun alignVByVector(num: Int, p1: PointXY, p2: PointXY): Int{
+    fun alignVByVector(num: Int, p1: com.example.trilib.PointXY, p2: com.example.trilib.PointXY): Int{
         // 垂直方向の文字位置合わせタイプ(省略可能、既定 = 0): 整数コード(ビットコードではありません):
         // 0 = 基準線、2 = 下、5 = 中央、8 = 上
         // ベクトルの方向でB,Cを表現するなら
@@ -255,12 +255,12 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
 
 
 
-    override fun writeCircle(point: PointXY, size: Float, color: Int, scale: Float){
+    override fun writeCircle(point: com.example.trilib.PointXY, size: Float, color: Int, scale: Float){
         adas( "circle_feature('1','${color}','1','1','${point.x}','${point.y}','${size}')" )
         //レイヤ、２番目がプリセット色指定(８が白、４が青、２が赤)、続いて、線種、線幅、座標XYと、半径
     }
 
-    override fun writeLine(p1: PointXY, p2: PointXY, color: Int, scale: Float ){
+    override fun writeLine(p1: com.example.trilib.PointXY, p2: com.example.trilib.PointXY, color: Int, scale: Float ){
         adas("line_feature('1','${color}','1','1','${p1.x}','${p1.y}','${p2.x}','${p2.y}')" )
         //レイヤ、色、線種、線幅、始点ＸＹ、終点ＸＹ SXF*/
     }
@@ -274,7 +274,7 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
     //0 = 基準線、1 = 下、2 = 中央、3 = 上
     override fun writeTextHV(
         text: String,
-        point: PointXY,
+        point: com.example.trilib.PointXY,
         color: Int,
         textsize: Float,
         alignH: Int,
@@ -294,7 +294,7 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
 
     override fun writeTextA9(
         text: String,
-        point: PointXY,
+        point: com.example.trilib.PointXY,
         color: Int,
         tsy: Float,
         align: Int,

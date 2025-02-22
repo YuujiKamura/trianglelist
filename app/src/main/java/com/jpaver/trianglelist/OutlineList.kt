@@ -4,13 +4,13 @@ class OutlineList(var trianglelist: TriangleList) :Cloneable{
 
     val trilist = trianglelist.trilist
     var outlineStr_ = ArrayList<String>()
-    val pointlist = ArrayList<PointXY>()
+    val pointlist = ArrayList<com.example.trilib.PointXY>()
     var outlineIndex = ArrayList<Int>()
 
     init{
     }
 
-    fun compare(_target1: PointXY, _target2: PointXY): PointXY {
+    fun compare(_target1: com.example.trilib.PointXY, _target2: com.example.trilib.PointXY): com.example.trilib.PointXY {
         if (trilist.isEmpty()) {
             println("outlinelist.compare: trilist is empty, returning _target1")
             return _target1
@@ -50,7 +50,7 @@ class OutlineList(var trianglelist: TriangleList) :Cloneable{
     }
 
 
-    fun calcAngle(target: PointXY): Float {
+    fun calcAngle(target: com.example.trilib.PointXY): Float {
         val result = find(target) ?: return 0f
         val index = pointlist.indexOf(result)
 
@@ -71,13 +71,13 @@ class OutlineList(var trianglelist: TriangleList) :Cloneable{
         return prevPoint.calcAngle360( result, nextPoint)
     }
 
-    fun find(target: PointXY): PointXY? {
+    fun find(target: com.example.trilib.PointXY): com.example.trilib.PointXY? {
         return pointlist.firstOrNull { pointXY ->
             target.nearBy( pointXY, 0.05f)
         }
     }
 
-    fun traceForward(startindex: Int, origin: Int, triangle: Triangle): ArrayList<PointXY>?
+    fun traceForward(startindex: Int, origin: Int, triangle: Triangle): ArrayList<com.example.trilib.PointXY>?
     {
         if (startindex < 0 || startindex >= trilist.size) return null
         // AB点を取る。
@@ -93,7 +93,7 @@ class OutlineList(var trianglelist: TriangleList) :Cloneable{
         return pointlist
     }
 
-    fun addPoint(pt: PointXY, strSide: String, pointlist: ArrayList<PointXY>, triangle: Triangle?) {
+    fun addPoint(pt: com.example.trilib.PointXY, strSide: String, pointlist: ArrayList<com.example.trilib.PointXY>, triangle: Triangle?) {
         if (triangle != null && notHave(pt, pointlist)) {
             pointlist.add(pt)
             outlineStr_.add(triangle.mynumber.toString() + strSide)
@@ -102,7 +102,7 @@ class OutlineList(var trianglelist: TriangleList) :Cloneable{
     }
 
     // 同じポイントは二ついらない
-    private fun notHave(target: PointXY, pointarray: ArrayList<PointXY>): Boolean {
+    private fun notHave(target: com.example.trilib.PointXY, pointarray: ArrayList<com.example.trilib.PointXY>): Boolean {
         for (i in pointarray.indices){
             if( target.nearBy(pointarray[i], 0.005f) ) return false
         }
@@ -115,7 +115,7 @@ class OutlineList(var trianglelist: TriangleList) :Cloneable{
     }
 
 
-    fun traceBackward(origin: Int, pointlist: ArrayList<PointXY>, triangle: Triangle)
+    fun traceBackward(origin: Int, pointlist: ArrayList<com.example.trilib.PointXY>, triangle: Triangle)
     {
         // 派生（ふたつとも接続）していたらそっちに伸びる、フロート接続だったり、すでに持っている点を見つけたらスルー
         branchOrNot(triangle, origin, pointlist)
@@ -131,7 +131,7 @@ class OutlineList(var trianglelist: TriangleList) :Cloneable{
             traceBackward(origin, pointlist, triangle.nodeA!!)
     }
 
-    fun branchOrNot(triangle: Triangle, origin: Int, olp: ArrayList<PointXY>) {
+    fun branchOrNot(triangle: Triangle, origin: Int, olp: ArrayList<com.example.trilib.PointXY>) {
         if (triangle.nodeB != null && triangle.nodeC != null)
             if (notHave(triangle.nodeC!!.point[0], olp)
                 && !triangle.nodeC!!.getIsFloating

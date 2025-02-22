@@ -7,7 +7,7 @@ open class EditList: Cloneable<EditList> {
 
     private var list :MutableList<EditObject?> = ArrayList()
 
-    open var basepoint = PointXY(0f, 0f)
+    open var basepoint = com.example.trilib.PointXY(0f, 0f)
 
     open fun retrieveCurrent() :Int { return 0 }
     //open fun setCurrent(i: Int) {}

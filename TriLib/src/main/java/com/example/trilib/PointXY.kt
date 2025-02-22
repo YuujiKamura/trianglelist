@@ -1,5 +1,4 @@
-package com.jpaver.trianglelist
-import com.jpaver.trianglelist.util.Cloneable
+package com.example.trilib
 import kotlin.math.acos
 import kotlin.math.atan2
 
@@ -148,7 +147,7 @@ class PointXY :Cloneable<PointXY> {
         return this
     }
 
-    fun isVectorToRight(p2:PointXY): Boolean {
+    fun isVectorToRight(p2: PointXY): Boolean {
         return if ( vectorTo(p2).x > 0 ) true else false
     }
 
@@ -192,7 +191,7 @@ class PointXY :Cloneable<PointXY> {
         return angleDegree
     }
 
-    fun moveX(length:Float,angle:Float):PointXY{
+    fun moveX(length:Float,angle:Float): PointXY {
         return this.plus(length,0f).rotate(this, angle )
     }
 
@@ -255,7 +254,7 @@ class PointXY :Cloneable<PointXY> {
         return this + toVector(angle).scale(distance)
     }
 
-    fun toVector(angle: Float): PointXY{
+    fun toVector(angle: Float): PointXY {
         val angleInRadians = Math.toRadians(angle.toDouble())
         return PointXY(Math.cos(angleInRadians).toFloat(), Math.sin(angleInRadians).toFloat())
     }
@@ -343,6 +342,10 @@ class PointXY :Cloneable<PointXY> {
                 y > target.y - range && y < target.y + range
     }
 
+    fun sign(p1: PointXY, p2: PointXY, p3: PointXY): Float {
+        return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y)
+    }
+
     fun isCollide(ab: PointXY, bc: PointXY, ca: PointXY): Boolean {
         val b1: Boolean
         val b2: Boolean
@@ -351,10 +354,6 @@ class PointXY :Cloneable<PointXY> {
         b2 = sign(this, bc, ca) < 0.0f
         b3 = sign(this, ca, ab) < 0.0f
         return b1 == b2 && b2 == b3
-    }
-
-    fun sign(p1: PointXY, p2: PointXY, p3: PointXY): Float {
-        return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y)
     }
 
     // isCollideメソッドはlengthToを使用して距離を計算
@@ -372,11 +371,6 @@ class PointXY :Cloneable<PointXY> {
 
     fun distancesTo(targets: Array<PointXY>): List<Float> {
         return targets.map { this.lengthTo(it) }
-    }
-
-
-    fun isCollide(tri: Triangle): Boolean {
-        return isCollide(tri.pointAB, tri.pointBC, tri.point[0]) //Inside Triangle
     }
 
     fun subtract(point: PointXY): PointXY {

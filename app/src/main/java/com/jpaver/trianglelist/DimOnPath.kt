@@ -2,16 +2,16 @@ package com.jpaver.trianglelist
 
 data class DimOnPath(
     private var scale: Float = 1.0f,
-    var leftP: PointXY = PointXY(10f,10f),
-    var rightP: PointXY = PointXY(10f,10f),
+    var leftP: com.example.trilib.PointXY = com.example.trilib.PointXY(10f, 10f),
+    var rightP: com.example.trilib.PointXY = com.example.trilib.PointXY(10f, 10f),
     var vertical: Int = 1,
     var horizontal: Int = 0,
     private var dimheight: Float = 0.05f
 ) {
 
-    var pointA: PointXY = PointXY(0f,0f)
-    var pointB: PointXY = PointXY(0f,0f)
-    var dimpoint: PointXY = PointXY(0f,0f)
+    var pointA: com.example.trilib.PointXY = com.example.trilib.PointXY(0f, 0f)
+    var pointB: com.example.trilib.PointXY = com.example.trilib.PointXY(0f, 0f)
+    var dimpoint: com.example.trilib.PointXY = com.example.trilib.PointXY(0f, 0f)
     var offsetV = 0f
     var offsetH = 0f
     var textSpacer = 5f
@@ -38,7 +38,7 @@ data class DimOnPath(
         dimpoint = pointA.calcMidPoint(pointB).offset(pointB, offsetH)
     }
 
-    fun initSoktenNamePath(p1: PointXY, p2: PointXY){
+    fun initSoktenNamePath(p1: com.example.trilib.PointXY, p2: com.example.trilib.PointXY){
 
         // -だと線の左側、というか進行方向の左側
         val SIDE = horizontal
@@ -60,7 +60,7 @@ data class DimOnPath(
         if( pointA.y < pointB.y ) pointA.flip( pointB )
     }
 
-    fun initDimPoint(leftP: PointXY, rightP: PointXY){
+    fun initDimPoint(leftP: com.example.trilib.PointXY, rightP: com.example.trilib.PointXY){
 
         val lineLength = leftP.lengthTo(rightP)
         val HABAYOSE = lineLength*0.1f
@@ -111,7 +111,7 @@ data class DimOnPath(
         }
     }
 
-    fun initPointsOuter(leftP: PointXY, rightP: PointXY, lineLength: Float){
+    fun initPointsOuter(leftP: com.example.trilib.PointXY, rightP: com.example.trilib.PointXY, lineLength: Float){
         val SUKIMA = 0.5f*scale
         val movement = SUKIMA+lineLength
         val HATAAGE = -3*scale
@@ -122,12 +122,12 @@ data class DimOnPath(
         offsetH = HABAYOSE
     }
 
-    fun move(to: PointXY){
+    fun move(to: com.example.trilib.PointXY){
         pointA.add(to)
         pointB.add(to)
     }
 
-    private fun setPointAB(p1: PointXY, p2: PointXY){
+    private fun setPointAB(p1: com.example.trilib.PointXY, p2: com.example.trilib.PointXY){
         pointA = p1
         pointB = p2
     }

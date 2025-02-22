@@ -17,7 +17,7 @@ class CsvloaderTest {
         val charset = StandardCharsets.UTF_8
         val reader =  BufferedReader(InputStreamReader(FileInputStream(path), charset))
         val showToast = mockk<(String) -> Unit>()
-        val addTriangle = mockk<(TriangleList, List<String?>, PointXY, Float) -> Unit>()
+        val addTriangle = mockk<(TriangleList, List<String?>, com.example.trilib.PointXY, Float) -> Unit>()
         val setAllTextSize = mockk<(Float) -> Unit>()
         val typeToInt = mockk<(String) -> Int>()
         val csvLoader = CsvLoader()

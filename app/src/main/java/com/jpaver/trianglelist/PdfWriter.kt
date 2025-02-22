@@ -47,7 +47,7 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
     val pdfPageList = ArrayList<PdfDocument.Page>()
     lateinit var currentCanvas_: Canvas// = page_.canvas
     // トランスレート位置の保存
-    var viewPointer_ = PointXY(0f, 0f)
+    var viewPointer_ = com.example.trilib.PointXY(0f, 0f)
 
     init{
         // 最初のページを作る。環境依存がありユニットテストできないので外す
@@ -89,7 +89,7 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
         viewPointer_.add( sizeX_/2f,sizeY_/2f )
     }
 
-    fun setScale(drawingLength: PointXY) :Float{
+    fun setScale(drawingLength: com.example.trilib.PointXY) :Float{
         //1/200　x:80m~40m
         var scale = 2f
         paintTexS_.textSize = 2.5f
@@ -177,12 +177,12 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
         val tt = uw-5f // テキスト開始位置x
         val ht = 110f // タイトル枠の高さ
         val hp = 20f // 仕切り横線のピッチ
-        val lt = PointXY(xr - sw, yb - ht)
-        val lb = PointXY(xr - sw, yb)
-        val rt = PointXY(xr, yb - ht)
-        PointXY(xr, yb)
-        val ut = PointXY(xr - uw, yb - ht)
-        val ub = PointXY(xr - uw, yb)
+        val lt = com.example.trilib.PointXY(xr - sw, yb - ht)
+        val lb = com.example.trilib.PointXY(xr - sw, yb)
+        val rt = com.example.trilib.PointXY(xr, yb - ht)
+        com.example.trilib.PointXY(xr, yb)
+        val ut = com.example.trilib.PointXY(xr - uw, yb - ht)
+        val ub = com.example.trilib.PointXY(xr - uw, yb)
         zumeninfo.tCredit_
         val centerX = sizeX_ / 2
         sizeY_ / 2
@@ -201,26 +201,26 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
         writeLine( ut, ub, 1f,7)
         //uchi
         writeLine(
-            PointXY(xr - uw2, yb - 40f),
-            PointXY(xr - uw2, yb - 20f),1f,7)
+            com.example.trilib.PointXY(xr - uw2, yb - 40f),
+            com.example.trilib.PointXY(xr - uw2, yb - 20f),1f,7)
         writeLine(
-            PointXY(xr - uw3, yb - 40f),
-            PointXY(xr - uw3, yb - 20f),1f,7)
+            com.example.trilib.PointXY(xr - uw3, yb - 40f),
+            com.example.trilib.PointXY(xr - uw3, yb - 20f),1f,7)
 
         //yoko
         writeLine( lt, rt, 1f,7)
         writeLine(
-            PointXY(xr - sw, yb - (hp * 1)),
-            PointXY(xr, yb - (hp * 1)),1f,7)
+            com.example.trilib.PointXY(xr - sw, yb - (hp * 1)),
+            com.example.trilib.PointXY(xr, yb - (hp * 1)),1f,7)
         writeLine(
-            PointXY(xr - sw, yb - (hp * 2)),
-            PointXY(xr, yb - (hp * 2)),1f,7)
+            com.example.trilib.PointXY(xr - sw, yb - (hp * 2)),
+            com.example.trilib.PointXY(xr, yb - (hp * 2)),1f,7)
         writeLine(
-            PointXY(xr - sw, yb - (hp * 3)),
-            PointXY(xr, yb - (hp * 3)),1f,7)
+            com.example.trilib.PointXY(xr - sw, yb - (hp * 3)),
+            com.example.trilib.PointXY(xr, yb - (hp * 3)),1f,7)
         writeLine(
-            PointXY(xr - sw, yb - (hp * 4)),
-            PointXY(xr, yb - (hp * 4)),1f,7)
+            com.example.trilib.PointXY(xr - sw, yb - (hp * 4)),
+            com.example.trilib.PointXY(xr, yb - (hp * 4)),1f,7)
 
         //writeRuler(canvas)
 /*
@@ -249,30 +249,30 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
 
         // titleline
         writeLine(
-            PointXY(centerX - 50f, 52f),
-            PointXY(centerX + 50f, 52f),1f,7)
+            com.example.trilib.PointXY(centerX - 50f, 52f),
+            com.example.trilib.PointXY(centerX + 50f, 52f),1f,7)
         writeLine(
-            PointXY(centerX - 50f, 50f),
-            PointXY(centerX + 50f, 50f),1f,7)
+            com.example.trilib.PointXY(centerX - 50f, 50f),
+            com.example.trilib.PointXY(centerX + 50f, 50f),1f,7)
         writeText( zumeninfo.zumentitle,
-            PointXY(centerX, 45f), 1f, 7, 16f, 1 )
+            com.example.trilib.PointXY(centerX, 45f), 1f, 7, 16f, 1 )
         writeText( rosenname_ + " A=" + Utils.formattedString( triangleList_.getArea() - deductionList_.getArea() ) + "m^2",
-            PointXY(centerX, 70f), 1f, 7, 16f, 1 )
+            com.example.trilib.PointXY(centerX, 70f), 1f, 7, 16f, 1 )
 
         writeText( zumeninfo.koujiname,
-            PointXY(xr - kt, yb - 95f + ofs), 1f, 7, 8f, 1 )
+            com.example.trilib.PointXY(xr - kt, yb - 95f + ofs), 1f, 7, 8f, 1 )
         writeText( zumeninfo.tDtype_,
-            PointXY(xr - kt, yb - 70f + ofs), 1f, 7, 8f, 1 )
+            com.example.trilib.PointXY(xr - kt, yb - 70f + ofs), 1f, 7, 8f, 1 )
         writeText( zumeninfo.tDname_,
-            PointXY(xr - kt, yb - 50f + ofs), 1f, 7, 8f, 1 )
+            com.example.trilib.PointXY(xr - kt, yb - 50f + ofs), 1f, 7, 8f, 1 )
         writeText( zumeninfo.tScale_,
-            PointXY(xr - kt, yb - 30f + ofs), 1f, 7, 8f, 1 )
+            com.example.trilib.PointXY(xr - kt, yb - 30f + ofs), 1f, 7, 8f, 1 )
         writeText( zumeninfo.tNum_,
-            PointXY(xr - 75, yb - 30f + ofs), 1f, 7, 8f, 1 )
+            com.example.trilib.PointXY(xr - 75, yb - 30f + ofs), 1f, 7, 8f, 1 )
         writeText( zumeninfo.tAname_,
-            PointXY(xr - kt, yb - 10f + ofs), 1f, 7, 8f, 1 )
+            com.example.trilib.PointXY(xr - kt, yb - 10f + ofs), 1f, 7, 8f, 1 )
         writeText( zumeninfo.tCredit_,
-            PointXY(50f, yb + 10f), 1f, 7, 7f, 0 )
+            com.example.trilib.PointXY(50f, yb + 10f), 1f, 7, 7f, 0 )
 
 /*
         if( koujiname_.length > 17 ) {
@@ -301,17 +301,17 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
         drawTextWithLineBreak(koujiname_, xr, yb, tt)
 
         writeText(zumeninfo.zumentitle,
-            PointXY(xr - tt, yb - 70f + ofs), 1f, 7, 8f, 0 )
+            com.example.trilib.PointXY(xr - tt, yb - 70f + ofs), 1f, 7, 8f, 0 )
         writeText(rosenname_,
-            PointXY(xr - tt, yb - 50f + ofs), 1f, 7, 8f, 0 )
+            com.example.trilib.PointXY(xr - tt, yb - 50f + ofs), 1f, 7, 8f, 0 )
         val ust = (uw-uw2)/2+uw2
         val usst = uw3/2
         writeText("1/${st.toInt()} (A3)",
-            PointXY(xr - ust, yb - 30f + ofs), 1f, 7, 8f, 1 )
+            com.example.trilib.PointXY(xr - ust, yb - 30f + ofs), 1f, 7, 8f, 1 )
         writeText( zumennum_,
-            PointXY(xr - usst, yb - 30f + ofs), 1f, 7, 8f, 1 )
+            com.example.trilib.PointXY(xr - usst, yb - 30f + ofs), 1f, 7, 8f, 1 )
         writeText( gyousyaname_,
-            PointXY(xr - tt, yb - 10f + ofs), 1f, 7, 8f, 0 )
+            com.example.trilib.PointXY(xr - tt, yb - 10f + ofs), 1f, 7, 8f, 0 )
 
         currentCanvas_.translate(sizeX_/2f,sizeY_/2f)
         //  translateCenter()
@@ -323,19 +323,22 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
         if (text.length > MAX_LENGTH) {
             splitAndDrawText(text, xr, yb, tt)
         } else {
-            writeText(text, PointXY(xr - tt, yb + SINGLE_LINE_OFFSET), 1f, 7, 8f, 0)
+            writeText(text,
+                com.example.trilib.PointXY(xr - tt, yb + SINGLE_LINE_OFFSET), 1f, 7, 8f, 0)
         }
     }
 
     private fun splitAndDrawText(text: String, xr: Float, yb: Float, tt: Float) {
         val splitText = if (text.contains(" ")) text.split(' ', limit = 2) else listOf(text.take(MAX_LENGTH), text.drop(MAX_LENGTH))
-        writeText( splitText[0], PointXY(xr - tt, yb + FIRST_LINE_OFFSET), 1f, 7, 8f, 0)
+        writeText( splitText[0],
+            com.example.trilib.PointXY(xr - tt, yb + FIRST_LINE_OFFSET), 1f, 7, 8f, 0)
         if (splitText.size > 1) {
-            writeText( splitText[1], PointXY(xr - tt, yb + SECOND_LINE_OFFSET), 1f, 7, 8f, 0)
+            writeText( splitText[1],
+                com.example.trilib.PointXY(xr - tt, yb + SECOND_LINE_OFFSET), 1f, 7, 8f, 0)
         }
     }
 
-    fun writeRect(point: PointXY, sizeX: Float, sizeY: Float, scale: Float, color: Int){
+    fun writeRect(point: com.example.trilib.PointXY, sizeX: Float, sizeY: Float, scale: Float, color: Int){
         val sizex = sizeX/2
         val sizey = sizeY/2
         writeLine(point.plus(-sizex, -sizey), point.plus(sizex, -sizey), scale, color)
@@ -344,15 +347,15 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
         writeLine(point.plus(sizex, -sizey), point.plus(sizex, sizey), scale,  color)
     }
 
-    fun writeLine(p1: PointXY, p2: PointXY, scale: Float, color: Int){
+    fun writeLine(p1: com.example.trilib.PointXY, p2: com.example.trilib.PointXY, scale: Float, color: Int){
         currentCanvas_.drawLine(p1.x*scale, p1.y*scale, p2.x*scale, p2.y*scale, setPaint(color, 5f, 1))
     }
 
-    override fun writeLine(p1: PointXY, p2: PointXY, color: Int, scale: Float ){
+    override fun writeLine(p1: com.example.trilib.PointXY, p2: com.example.trilib.PointXY, color: Int, scale: Float ){
         currentCanvas_.drawLine(p1.x, p1.y, p2.x, p2.y, setPaint(color, 5f, 1))
     }
 
-    override fun writeText(str: String, point: PointXY, scale: Float, color: Int, size: Float, align: Int){
+    override fun writeText(str: String, point: com.example.trilib.PointXY, scale: Float, color: Int, size: Float, align: Int){
 
         this.setPaint(color, size, align)
         currentCanvas_.drawText(str, point.x*scale, point.y*scale ,setPaint(color, size, align))
@@ -375,8 +378,8 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
 */
     }
 
-    fun getCenter(): PointXY {
-        return PointXY(sizeX_ / 2f, sizeY_ / 2f)
+    fun getCenter(): com.example.trilib.PointXY {
+        return com.example.trilib.PointXY(sizeX_ / 2f, sizeY_ / 2f)
     }
 
     fun setPaint(color: Int, size: Float, align: Int): Paint {

@@ -13,7 +13,7 @@ class PointNumberManager( ): Cloneable {
 
     // region pointNumber
 
-    fun setPointByUser(to: PointXY, triangle: Triangle, is_user:Boolean = true ):PointXY {
+    fun setPointByUser(to: com.example.trilib.PointXY, triangle: Triangle, is_user:Boolean = true ): com.example.trilib.PointXY {
         val BORDER = 20f * triangle.scaleFactror
         val length = to.lengthTo(triangle.pointcenter)
         if( length > BORDER ) return triangle.pointnumber// あまり遠い時はスルー
@@ -34,7 +34,7 @@ class PointNumberManager( ): Cloneable {
 
     val BORDER_AREA = 4f
     val BORDER_LENGTH = 1.0f
-    fun autoAlign( triangle: Triangle, outlineList: OutlineList? = null) : PointXY {
+    fun autoAlign( triangle: Triangle, outlineList: OutlineList? = null) : com.example.trilib.PointXY {
         if(flag.isMovedByUser || flag.isAutoAligned ) return triangle.pointnumber
 
         val length = arrayOf(triangle.lengthAforce, triangle.lengthBforce, triangle.lengthCforce)
@@ -51,7 +51,7 @@ class PointNumberManager( ): Cloneable {
     }
 
     //pointNumberだけ使う
-    fun pointUnconnectedSide( triangle: Triangle, outlineList: OutlineList?=null ): PointXY {
+    fun pointUnconnectedSide( triangle: Triangle, outlineList: OutlineList?=null ): com.example.trilib.PointXY {
         //外側に出すと実行時エラーになる
         val KEISUU = 0.7f
         val FLAG_LENGTH_B = triangle.lengthB*KEISUU
@@ -73,7 +73,7 @@ class PointNumberManager( ): Cloneable {
         return weightedMidpoint(triangle, WEIGHT)
     }
 
-    fun getPointByOuterAngle( triangle: Triangle, angle1:Float, angle2:Float, point1:PointXY, point2:PointXY, outlineList: OutlineList? ):PointXY{
+    fun getPointByOuterAngle(triangle: Triangle, angle1:Float, angle2:Float, point1: com.example.trilib.PointXY, point2: com.example.trilib.PointXY, outlineList: OutlineList? ): com.example.trilib.PointXY {
         //val number = triangle.mynumber
 
         println("getPointByOuterAngle triangle${triangle.mynumber} $angle1 $angle2 $point1 $point2")
@@ -83,12 +83,12 @@ class PointNumberManager( ): Cloneable {
         return outlineList.compare(point1,point2)
     }
 
-    fun getPointByAngle(angle1:Float, angle2:Float, point1:PointXY, point2:PointXY):PointXY{
+    fun getPointByAngle(angle1:Float, angle2:Float, point1: com.example.trilib.PointXY, point2: com.example.trilib.PointXY): com.example.trilib.PointXY {
         if( angle1 > angle2 ) return point1
         return point2
     }
 
-    fun weightedMidpoint(triangle: Triangle, bias: Float): PointXY {
+    fun weightedMidpoint(triangle: Triangle, bias: Float): com.example.trilib.PointXY {
 
         // 角度が大きいほど重みを大きくするための調整
         var weight1 = triangle.angleAB + bias // 角度が大きいほど重みが大きくなる
@@ -107,7 +107,7 @@ class PointNumberManager( ): Cloneable {
         // 重み付き座標の計算
         val weightedX = p1.x * weight1 + p2.x * weight2 + p3.x * weight3
         val weightedY = p1.y * weight1 + p2.y * weight2 + p3.y * weight3
-        return PointXY(weightedX, weightedY)
+        return com.example.trilib.PointXY(weightedX, weightedY)
     }
 
     //endregion pointNumber

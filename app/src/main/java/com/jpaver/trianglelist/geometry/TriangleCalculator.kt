@@ -1,6 +1,6 @@
 // 必要なインポートを追加
 import kotlin.math.* // 数学関数用
-import com.jpaver.trianglelist.PointXY // PointXYクラス用（パスは実際の場所に合わせて調整してください）
+import com.example.trilib.PointXY // PointXYクラス用（パスは実際の場所に合わせて調整してください）
 
 /**
  * 三角形の幾何学的計算を行うユーティリティクラス
@@ -12,10 +12,10 @@ object TriangleCalculator {
      * 三角形の頂点を計算
      */
     fun calculatePoint(
-        basepoint: PointXY,
-        pointAB: PointXY,
+        basepoint: com.example.trilib.PointXY,
+        pointAB: com.example.trilib.PointXY,
         lengths: FloatArray
-    ): PointXY {
+    ): com.example.trilib.PointXY {
         val theta = atan2(
             (basepoint.y - pointAB.y).toDouble(),
             (basepoint.x - pointAB.x).toDouble()
@@ -31,7 +31,7 @@ object TriangleCalculator {
     /**
      * 内角の計算
      */
-    fun calculateInternalAngle(p1: PointXY, p2: PointXY, p3: PointXY): Double {
+    fun calculateInternalAngle(p1: com.example.trilib.PointXY, p2: com.example.trilib.PointXY, p3: com.example.trilib.PointXY): Double {
         val v1 = p1.subtract(p2)
         val v2 = p3.subtract(p2)
         val angleRadian = acos(v1.innerProduct(v2) / (v1.magnitude() * v2.magnitude()))
@@ -41,10 +41,10 @@ object TriangleCalculator {
     /**
      * 重心の計算
      */
-    fun calculateCenter(points: Array<PointXY>): PointXY {
+    fun calculateCenter(points: Array<com.example.trilib.PointXY>): com.example.trilib.PointXY {
         val averageX = points.map { it.x }.average().toFloat()
         val averageY = points.map { it.y }.average().toFloat()
-        return PointXY(averageX, averageY)
+        return com.example.trilib.PointXY(averageX, averageY)
     }
 
     private fun calculateAlpha(lengths: FloatArray): Double {
@@ -54,7 +54,7 @@ object TriangleCalculator {
         return acos((powA + powB - powC) / (2 * lengths[0] * lengths[1]))
     }
 
-    fun calculateInternalAngles(p1: PointXY, p2: PointXY, p3: PointXY): Triple<Float, Float, Float> {
+    fun calculateInternalAngles(p1: com.example.trilib.PointXY, p2: com.example.trilib.PointXY, p3: com.example.trilib.PointXY): Triple<Float, Float, Float> {
         return Triple(
             calculateInternalAngle(p1, p2, p3).toFloat(),
             calculateInternalAngle(p2, p3, p1).toFloat(),

@@ -66,7 +66,7 @@ class TrilistOutlineTest {
     @Test
     fun testTrilistTrace() {
         val trilist = TriangleList()
-        val olp = ArrayList<PointXY>()
+        val olp = ArrayList<com.example.trilib.PointXY>()
 
         trilist.add(Triangle(3f, 4f, 5f), true)
         trilist.add(Triangle(trilist[1], 2, 3f, 4f), true)
@@ -127,7 +127,7 @@ class TrilistOutlineTest {
         // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
         trilist.add(Triangle(8f, 6f, 8f), true)//1
 
-        val op = ArrayList<PointXY>()
+        val op = ArrayList<com.example.trilib.PointXY>()
         val tlop = trilist.trace(op, trilist[1], false) //OrJumpForward(0, 0, op, trilist[1] ) //getOutLinePoints( 0 )
         junit.framework.Assert.assertEquals(1, trilist.size())
         junit.framework.Assert.assertEquals(3, tlop.size)
@@ -143,7 +143,7 @@ class TrilistOutlineTest {
     @Test
     fun testTriListOutline(){
         val trilist = setupTrilist()
-        ArrayList<PointXY>()
+        ArrayList<com.example.trilib.PointXY>()
         val outlinelist = OutlineList(trilist)
         val pointlist = outlinelist.traceForward(0, 0, trilist[1])
         val strExpected = "1ab,1bc,3bc,4bc,8bc,10bc,10ca,11bc,11ca,7bc,7ca,5ca,2bc,2ca,"

@@ -1,14 +1,13 @@
 package com.jpaver.trianglelist.util
 
 import android.graphics.Canvas
-import android.graphics.Point
-import com.jpaver.trianglelist.PointXY
+import com.example.trilib.PointXY
 
 class ViewTranslateManager() {
 
-    var baseInView = PointXY(0f, 0f)
-    var centerInModel = PointXY(0f, 0f)
-    var pressedInModel = PointXY(0f, 0f)
+    var baseInView = com.example.trilib.PointXY(0f, 0f)
+    var centerInModel = com.example.trilib.PointXY(0f, 0f)
+    var pressedInModel = com.example.trilib.PointXY(0f, 0f)
 
     var zoomSize: Float = 1.0f
 
@@ -19,14 +18,14 @@ class ViewTranslateManager() {
         canvas.translate(-centerInModel.x, centerInModel.y)
     }
 
-    fun setParameters( _baseInView: PointXY, _zoomSize: Float, _centerInModel: PointXY, _pressedInModel: PointXY ){
+    fun setParameters(_baseInView: com.example.trilib.PointXY, _zoomSize: Float, _centerInModel: com.example.trilib.PointXY, _pressedInModel: com.example.trilib.PointXY){
         baseInView = _baseInView
         zoomSize = _zoomSize
         centerInModel = _centerInModel
         pressedInModel = _pressedInModel
     }
 
-    fun pressedInViewToModel(pressedInView: PointXY): PointXY{
+    fun pressedInViewToModel(pressedInView: com.example.trilib.PointXY): com.example.trilib.PointXY {
         return pressedInView.translateAndScale(
             baseInView,
             centerInModel,
@@ -37,8 +36,8 @@ class ViewTranslateManager() {
 }
 
 class SynchronizedPoint(){
-    var pModel = PointXY(0f,0f)
-    var pView  = PointXY(0f,0f)
+    var pModel = com.example.trilib.PointXY(0f, 0f)
+    var pView  = com.example.trilib.PointXY(0f, 0f)
     var viewSize: Float = 1.0f
 
 }
