@@ -761,7 +761,7 @@ class MainActivity : AppCompatActivity(),
                 sendMail()
             }
             R.id.action_usage, R.id.action_privacy -> {
-                val url = if (item.itemId == R.id.action_usage) "https://trianglelist.home.blog" else "https://drive.google.com/file/d/1C7xlXZGvabeQoNEjmVpOCAxQGrFCXS60/view?usp=sharing"
+                val url = if (item.itemId == R.id.action_usage) "https://trianglelist.home.blog" else "https://trianglelist.home.blog/2023/06/28/%e3%83%97%e3%83%a9%e3%82%a4%e3%83%90%e3%82%b7%e3%83%bc%e3%83%9d%e3%83%aa%e3%82%b7%e3%83%bc%e3%81%ab%e3%81%a4%e3%81%84%e3%81%a6/"
                 launchViewIntent(Uri.parse(url))
             }
             else -> return super.onOptionsItemSelected(item)
