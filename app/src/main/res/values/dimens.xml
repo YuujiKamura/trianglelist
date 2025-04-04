@@ -6,6 +6,7 @@
     <dimen name="top_btn">180dp</dimen>
     <dimen name="ts">15sp</dimen>
     <dimen name="w1">1</dimen>
+    <dimen name="w1.5">1.2</dimen>
     <dimen name="w2">2</dimen>
 
 </resources>

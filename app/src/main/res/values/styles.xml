@@ -58,6 +58,10 @@
         <item name="android:layout_weight">@dimen/w1</item>
     </style>
 
+    <style name="TextEditorW1.5" parent="TextEditor">
+        <item name="android:layout_weight">@dimen/w1.5</item>
+    </style>
+
     <style name="TextEditorW2" parent="TextEditor">
         <item name="android:layout_weight">@dimen/w2</item>
     </style>
@@ -66,6 +70,12 @@
         <item name="android:background">@drawable/border</item>
         <item name="android:layout_weight">@dimen/w1</item>
     </style>
+
+    <style name="TextEditorBorderW1.5" parent="TextEditor">
+        <item name="android:background">@drawable/border</item>
+        <item name="android:layout_weight">@dimen/w1.5</item>
+    </style>
+
 
     <style name="TextEditorBorderW2" parent="TextEditor">
         <item name="android:background">@drawable/border</item>

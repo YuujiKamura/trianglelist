@@ -15,6 +15,9 @@ fun print_trilist(tl: TriangleList, callername:String = "undefined caller") {
     Log.d("TriangleList", "") // To add the newline effect, although Logcat naturally separates logs
 }
 
+class LastTapNumberValidationException(message: String) : Exception(message)
+class EmptyTriListException(message: String) : Exception(message)
+
 open class TriangleList : EditList {
 
     fun rotate(
@@ -612,9 +615,24 @@ open class TriangleList : EditList {
         else trilist[number - 1]
     }
 
-    fun getLastTriangle(): Triangle{
-        if(lastTapNumber<1) return trilist[trilist.size-1]
-        return trilist[lastTapNumber-1]
+    fun getLastTriangle(): Triangle {
+        // リストが空の場合は、即座に例外をスローする
+        if (trilist.isEmpty()) {
+            throw EmptyTriListException("trilist is empty")
+        }
+
+        // lastTapNumber が 0 以下の場合、リストの最後の要素を返す
+        if (lastTapNumber <= 0) {
+            return trilist.last()
+        }
+
+        // lastTapNumber がリストのサイズを超える場合は、例外をスローする
+        if (lastTapNumber > trilist.size) {
+            throw LastTapNumberValidationException("lastTapNumber is out of range ($lastTapNumber > ${trilist.size})")
+        }
+
+        // lastTapNumber が有効な範囲内にある場合、対応する要素を返す
+        return trilist[lastTapNumber - 1]
     }
 
     // by number start 1, not index start 0.
