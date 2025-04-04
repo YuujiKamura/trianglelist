@@ -14,6 +14,7 @@ import android.view.MotionEvent
 import android.view.MotionEvent.ACTION_UP
 import android.view.ScaleGestureDetector
 import android.view.View
+import com.example.trilib.PointXY
 import com.jpaver.trianglelist.util.MyScaleGestureListener
 import com.jpaver.trianglelist.util.RotateGestureDetector
 import com.jpaver.trianglelist.util.ScaleGestureCallback
@@ -78,26 +79,16 @@ class MyView(context: Context, attrs: AttributeSet?) :
     var deductionMode = false
 
     //var drawPoint: PointXY = PointXY(0f, 0f)
-    var pressedInView: com.example.trilib.PointXY =
-        com.example.trilib.PointXY(0f, 0f)
-    var lastCPoint: com.example.trilib.PointXY =
-        com.example.trilib.PointXY(0f, 0f)
-    var moveVector: com.example.trilib.PointXY =
-        com.example.trilib.PointXY(0f, 0f)
-    var translatePoint: com.example.trilib.PointXY =
-        com.example.trilib.PointXY(0f, 0f)
-
-    var viewSize: com.example.trilib.PointXY =
-        com.example.trilib.PointXY(0f, 0f)
-    var centerInView: com.example.trilib.PointXY =
-        com.example.trilib.PointXY(0f, 0f)
-    var centerInModel: com.example.trilib.PointXY =
-        com.example.trilib.PointXY(0f, 0f)
-    var baseInView: com.example.trilib.PointXY =
-        com.example.trilib.PointXY(0f, 0f)
+    var pressedInView = PointXY(0f, 0f)
+    var lastCPoint = PointXY(0f, 0f)
+    var moveVector = PointXY(0f, 0f)
+    var translatePoint = PointXY(0f, 0f)
+    var viewSize = PointXY(0f, 0f)
+    var centerInView = PointXY(0f, 0f)
+    var centerInModel = PointXY(0f, 0f)
+    var baseInView = PointXY(0f, 0f)
     var transOnce: Boolean = true
-    var pressedInModel: com.example.trilib.PointXY =
-        com.example.trilib.PointXY(0f, 0f)
+    var pressedInModel = PointXY(0f, 0f)
 
     var zoomSize: Float = 1.0f
     var mFocusX = 0f
@@ -118,17 +109,6 @@ class MyView(context: Context, attrs: AttributeSet?) :
     var watchedA2_ = ""
     var watchedB2_ = ""
     var watchedC2_ = ""
-
-    var pointerCount = 0
-        private set
-
-    fun setPointerCountForTest(count: Int) {
-        pointerCount = count
-    }
-
-    fun getPointerCountForTest(): Int {
-        return pointerCount
-    }
 
     fun setWatchedStrings(sa1:String,sb1:String,sc1:String,sa2:String,sb2:String,sc2:String ){
         watchedA1_ = sa1
@@ -318,7 +298,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         }
 
         pressedInViewToModel(
-            com.example.trilib.PointXY(
+            PointXY(
                 focusX,
                 focusY
             )
@@ -326,13 +306,12 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
     }
 
-    fun pressedInViewToModel(pressedInView: com.example.trilib.PointXY){
-        translatePoint = baseInView //why this?
+    private fun pressedInViewToModel(pressedInView: PointXY){
         viewTranslateManager.setParameters( baseInView, zoomSize, centerInModel, pressedInModel )
         pressedInModel = viewTranslateManager.pressedInViewToModel(pressedInView)
     }
 
-    fun setPressEvent(x: Float, y: Float){
+    private fun setPressEvent(x: Float, y: Float){
         pressedInView.set(x, y)
         lastCPoint.set(x, y)
         pressedInViewToModel(pressedInView)
@@ -425,7 +404,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         myScale = setscale    // 描画倍率は外から指定する
         trianglelist = editlist.clone()
         trianglelist.attachToTheView(
-            com.example.trilib.PointXY(
+            PointXY(
                 0f,
                 0f
             ), setscale, paintTexS.textSize )
@@ -457,10 +436,16 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
 // region resetview
     fun setCenterInModelToLastTappedTriNumber() {
-        centerInModel = trianglelist.getLastTriangle().pointcenter
+        try {
+            centerInModel = trianglelist.getLastTriangle().pointcenter
+        } catch (e: EmptyTriListException) {
+            //なにもしません～♪
+        } catch (e: LastTapNumberValidationException){
+            //なにもしません～♪
+        }
     }
 
-    fun resetView( pt: com.example.trilib.PointXY){
+    fun resetView( pt: PointXY){
         centerInModel = pt.clone()
         //drawPoint = pt.clone()
         resetPointToZero()
@@ -472,10 +457,16 @@ class MyView(context: Context, attrs: AttributeSet?) :
         resetView( toLastTapTriangle() )
     }
 
-
     val INDEXCENTER = 3
-    fun toLastTapTriangle(sideIndex: Int=INDEXCENTER): com.example.trilib.PointXY {
-        val triangle = trianglelist.getLastTriangle()
+    fun toLastTapTriangle(sideIndex: Int=INDEXCENTER): PointXY {
+        val triangle = try {
+            trianglelist.getLastTriangle()
+        } catch (e: EmptyTriListException) {
+            return PointXY(0f,0f)
+        } catch (e: LastTapNumberValidationException){
+            return PointXY(0f,0f)
+        }
+
         when(sideIndex){
             0 -> return triangle.dimpoint.a
             1 -> return triangle.dimpoint.b
@@ -488,7 +479,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
     fun resetViewToCurrentDeduction(){
         resetView( myDeductionList.get(myDeductionList.current).point.scale(
-            com.example.trilib.PointXY(
+            PointXY(
                 1f,
                 -1f
             )
@@ -749,7 +740,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
     }
 
-    fun drawCrossLines(canvas: Canvas, point: com.example.trilib.PointXY, paint: Paint){
+    fun drawCrossLines(canvas: Canvas, point: PointXY, paint: Paint){
         if(point.x != 0f){
             canvas.drawLine(
                 point.x - 20f, point.y,
@@ -764,7 +755,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
     }
 
-    fun drawLine(start: com.example.trilib.PointXY, end: com.example.trilib.PointXY, paint:Paint, canvas: Canvas ){
+    fun drawLine(start: PointXY, end: PointXY, paint:Paint, canvas: Canvas ){
         canvas.drawLine( start.x, -start.y,end.x, -end.y, paint )
     }
 
@@ -773,7 +764,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
         val tri = myTriangleList.get( myTriangleList.lastTapNumber )
 
-        var line:Pair<com.example.trilib.PointXY, com.example.trilib.PointXY>? = null
+        var line:Pair<PointXY, PointXY>? = null
         when(myTriangleList.lastTapSide){
             0 -> line = Pair( tri.pointCA,tri.pointAB )
             1 -> line = Pair( tri.pointAB,tri.pointBC )
@@ -795,7 +786,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
     }
 
-    fun drawLine(canvas: Canvas, p1: com.example.trilib.PointXY, p2: com.example.trilib.PointXY, sx: Float, sy: Float, paint: Paint){
+    fun drawLine(canvas: Canvas, p1: PointXY, p2: PointXY, sx: Float, sy: Float, paint: Paint){
         canvas.drawLine(p1.x * sx, p1.y * sy, p2.x * sx, p2.y * sy, paint)
     }
 
@@ -877,7 +868,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         }
     }
 
-    fun drawDedText(canvas: Canvas, st: String, p1: com.example.trilib.PointXY, p2: com.example.trilib.PointXY, paint: Paint){
+    fun drawDedText(canvas: Canvas, st: String, p1: PointXY, p2: PointXY, paint: Paint){
         val pt = p1.plus(textSpacer_*2, -textSpacer_) //オフセット
         canvas.drawText(st, pt.x, pt.y, paint)
         canvas.drawLine(p1.x, p1.y, p2.x, p2.y, paint)
@@ -953,7 +944,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         paintRed: Paint,
         textscale: Float,
         experience: Float
-    ): com.example.trilib.PointXY { // 追跡されたcanvasの移動ベクトルを返す
+    ): PointXY { // 追跡されたcanvasの移動ベクトルを返す
         this.paintBlue.textSize = textscale
         this.paintBlue.strokeWidth = 0.05f
 
@@ -968,14 +959,14 @@ class MyView(context: Context, attrs: AttributeSet?) :
         val scaleFactor = 1.19f * writer.kaizoudo_ *(2.0f/experience/printScale)// - (myScale/100)
         myScale *= scaleFactor
 
-        trianglelist.attachToTheView(com.example.trilib.PointXY(0f, 0f), scaleFactor, paintTex.textSize )
+        trianglelist.attachToTheView(PointXY(0f, 0f), scaleFactor, paintTex.textSize )
 
-        myDeductionList.scale(com.example.trilib.PointXY(0f, 0f), scaleFactor)
+        myDeductionList.scale(PointXY(0f, 0f), scaleFactor)
         myDeductionList.setScale( myScale )
 
         // 分割描画処理（使ってない）
         // canvasの動きが複雑になるためデバッグ用に追跡する
-        val printPoint = com.example.trilib.PointXY(0f, 0f)
+        val printPoint = PointXY(0f, 0f)
         drawSeparatedPDF(false, printPoint, canvas, paintTex )
 
         // リストの中心座標にキャンバスを動かす、Xはマイナス、Yはプラス
@@ -995,9 +986,9 @@ class MyView(context: Context, attrs: AttributeSet?) :
         myScale /= scaleFactor
 
         // pointNumberの旗揚げがリセットされる
-        trianglelist.attachToTheView(com.example.trilib.PointXY(0f, 0f), 1 / scaleFactor, paintTexS.textSize )
+        trianglelist.attachToTheView(PointXY(0f, 0f), 1 / scaleFactor, paintTexS.textSize )
 
-        myDeductionList.scale(com.example.trilib.PointXY(0f, 0f), 1 / scaleFactor)
+        myDeductionList.scale(PointXY(0f, 0f), 1 / scaleFactor)
         myDeductionList.setScale(myScale)
 
         isPrintPDF_ = false
@@ -1006,8 +997,8 @@ class MyView(context: Context, attrs: AttributeSet?) :
         textSpacer_ = 5f
     }
 
-    fun drawSeparatedPDF(useit:Boolean = false, printPoint: com.example.trilib.PointXY, canvas: Canvas, paintTex: Paint ): com.example.trilib.PointXY {
-        if(!useit) return com.example.trilib.PointXY(0f, 0f)
+    fun drawSeparatedPDF(useit:Boolean = false, printPoint: PointXY, canvas: Canvas, paintTex: Paint ): PointXY {
+        if(!useit) return PointXY(0f, 0f)
 
         //ここから横長図形の分割処理
         val printScale = trianglelist.getPrintScale(myScale)

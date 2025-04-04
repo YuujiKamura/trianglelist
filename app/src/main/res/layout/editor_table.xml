@@ -46,13 +46,10 @@
                 style="@style/TextEditorW2"
                 android:text="@string/editor_lA"/>
 
-            <Spinner
+            <TextView
                 android:id="@+id/TV_B"
-                style="@style/TextEditorBorderW3"
-                android:entries="@array/EditModeList"
-                android:gravity="center"
-                android:textAlignment="center"
-                android:spinnerMode="dropdown" />
+                style="@style/TextEditorW2"
+                android:text="@string/editor_lB"/>
 
             <TextView
                 android:id="@+id/TV_C"
@@ -66,7 +63,7 @@
 
             <TextView
                 android:id="@+id/TV_PL"
-                style="@style/TextEditorW1"
+                style="@style/TextEditorW1.5"
                 android:text="@string/editor_setuzoku" />
         </TableRow>
 
@@ -124,7 +121,7 @@
 
             <Spinner
                 android:id="@+id/editParentConnect2"
-                style="@style/TextEditorBorderW1"
+                style="@style/TextEditorBorderW1.5"
                 android:entries="@array/ParentList"
                 android:maxLength="5"
                 android:spinnerMode="dropdown" />
@@ -190,7 +187,7 @@
 
             <Spinner
                 android:id="@+id/editParentConnect1"
-                style="@style/TextEditorBorderW1"
+                style="@style/TextEditorBorderW1.5"
                 android:entries="@array/ParentList"
                 android:maxLength="5"
                 android:nextFocusDown="@+id/editLengthA1"
@@ -262,7 +259,7 @@
 
             <Spinner
                 android:id="@+id/editParentConnect3"
-                style="@style/TextEditorBorderW1"
+                style="@style/TextEditorBorderW1.5"
                 android:layout_height="0dp"
                 android:entries="@array/ParentList"
                 android:maxLength="5"

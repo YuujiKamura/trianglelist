@@ -28,7 +28,6 @@ import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.InputMethodManager
-import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.EditText
@@ -80,6 +79,7 @@ import java.io.OutputStreamWriter
 import java.io.Writer
 import java.time.LocalDate
 import kotlin.math.roundToInt
+import androidx.core.net.toUri
 
 @Suppress("DEPRECATED_IDENTITY_EQUALS")
 class MainActivity : AppCompatActivity(),
@@ -446,35 +446,6 @@ class MainActivity : AppCompatActivity(),
         loadContent =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult(), ::handleLoadContentResult)
 
-
-
-/*
-        val appUpdateManager = AppUpdateManagerFactory.create(this)
-
-        // Returns an intent object that you use to check for an update.
-        val appUpdateInfoTask = appUpdateManager.appUpdateInfo
-
-        // Checks that the platform will allow the specified type of update.
-        appUpdateInfoTask.addOnSuccessListener { appUpdateInfo ->
-            if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
-                // This example applies an immediate update. To apply a flexible update
-                // instead, pass in AppUpdateType.FLEXIBLE
-                && appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)
-            ) {
-                // Request the update.
-                appUpdateManager.startUpdateFlowForResult(
-                    // Pass the intent that is returned by 'getAppUpdateInfo()'.
-                    appUpdateInfo,
-                    // Or 'AppUpdateType.FLEXIBLE' for flexible updates.
-                    AppUpdateType.FLEXIBLE,
-                    // The current activity making the update request.
-                    this,
-                    // Include a request code to later monitor this update request.
-                    1 )
-            }
-            else Log.d( "AppUpdate", "Update is not Available.")
-        }
-*/
         adMobInit()
 
         prefSetting = PreferenceManager.getDefaultSharedPreferences(this)
@@ -762,7 +733,7 @@ class MainActivity : AppCompatActivity(),
             }
             R.id.action_usage, R.id.action_privacy -> {
                 val url = if (item.itemId == R.id.action_usage) "https://trianglelist.home.blog" else "https://trianglelist.home.blog/2023/06/28/%e3%83%97%e3%83%a9%e3%82%a4%e3%83%90%e3%82%b7%e3%83%bc%e3%83%9d%e3%83%aa%e3%82%b7%e3%83%bc%e3%81%ab%e3%81%a4%e3%81%84%e3%81%a6/"
-                launchViewIntent(Uri.parse(url))
+                launchViewIntent(url.toUri())
             }
             else -> return super.onOptionsItemSelected(item)
         }
@@ -944,25 +915,6 @@ class MainActivity : AppCompatActivity(),
         findViewById<Spinner>(R.id.editParentConnect1).adapter = spinnerArrayAdapter
         findViewById<Spinner>(R.id.editParentConnect2).adapter = spinnerArrayAdapter
         findViewById<Spinner>(R.id.editParentConnect3).adapter = spinnerArrayAdapter
-        val tvBSpinner = findViewById<Spinner>(R.id.TV_B)
-        //tvBSpinner.adapter = spinnerArrayAdapter
-
-        // TV_B Spinnerの値が変更されたことを検出するリスナーを設定
-        tvBSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>, view: View, position: Int, id: Long) {
-                // 選択されたアイテムを取得
-                //val selectedItem = parent.getItemAtPosition(position) as String
-
-                // 特定のアイテムが選択されたときの処理
-                //when (selectedItem) {
-                    //"辺B" -> showToast("editMode Triangle")
-                    //"延長L" -> showToast("editMode Rectangle")
-                //}
-            }
-            override fun onNothingSelected(parent: AdapterView<*>) {
-                // アイテムが選択されなかった時の処理
-            }
-        }
     }
 
     fun setHeaderTable(titleParams: TitleParams){
@@ -971,8 +923,7 @@ class MainActivity : AppCompatActivity(),
             findViewById(R.id.TV_NUM),
             findViewById(R.id.TV_Name),
             findViewById(R.id.TV_A),
-            TextView(this),
-            //findViewById(R.id.TV_B),
+            findViewById(R.id.TV_B),
             findViewById(R.id.TV_C),
             findViewById(R.id.TV_PN),
             findViewById(R.id.TV_PL),
@@ -981,92 +932,112 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun flipDeductionMode() {
-        myDeductionList.current = myDeductionList.size()
-        trianglelist.changeSelectedNumber(trianglelist.size())
-        //printDebugConsole()
-        colorMovementFabs()
+        changeDeductionMode()
+        setDeductionList()
+        updateFabAppearance()
+        updateTableAppearance()
+        updateAutoComplete()
+        setEditor()
+    }
 
-        val inputMethodManager: InputMethodManager =
-            getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
-
-        if(!deductionMode) {
-            deductionMode = true
-            myview.deductionMode = true
-            //showToast("Edit Mode : Area Deductions")
-            //Toast.makeText(this, "Edit Mode : Area Deductions", Toast.LENGTH_LONG).show()
-
-            setHeaderTable(titleTri)
-
-            findViewById<TableRow>(R.id.LL1).setBackgroundColor(Color.rgb(255, 165, 155))
-
-            //　fab群の見かけの変更
-            //fab.setBackgroundTintList(getColorStateList(R.color.colorTT2))
-            fab_replace.backgroundTintList = getColorStateList(R.color.colorTT2)
-            fab_resetView.backgroundTintList = getColorStateList(R.color.colorTT2)
-            fab_up.backgroundTintList = getColorStateList(R.color.colorTT2)
-            fab_down.backgroundTintList = getColorStateList(R.color.colorTT2)
-            fab_numreverse.backgroundTintList = getColorStateList(R.color.colorTT2)
-            fab_deduction.backgroundTintList = getColorStateList(R.color.colorWhite)
-            fab_flag.backgroundTintList = getColorStateList(R.color.colorWhite)
-            val iconB: Icon = Icon.createWithResource(this, R.drawable.box)
-            val iconC: Icon = Icon.createWithResource(this, R.drawable.circle)
-            val iconF: Icon = Icon.createWithResource(this, R.drawable.flag)
-            val iconRL: Icon = Icon.createWithResource(this, R.drawable.rot_dl)
-            val iconRR: Icon = Icon.createWithResource(this, R.drawable.rot_dr)
-            fab_setB.setImageIcon(iconB)
-            fab_setC.setImageIcon(iconC)
-            fab_flag.setImageIcon(iconF)
-            fab_rot_l.setImageIcon(iconRL)
-            fab_rot_r.setImageIcon(iconRR)
-
-            //　入力テーブルのオートコンプリート候補の変更、名前入力列にフォーカス、ソフトキーボード表示
+    private fun updateAutoComplete() {
+        if (deductionMode) {
+            // 領域削減モードの場合の処理
             val dArray = resources.getStringArray(R.array.DeductionFormList)
             initSpinner(dArray)
-            findViewById<EditText>(R.id.editName1).requestFocus()
-            inputMethodManager.showSoftInput(findViewById(R.id.editName1), 0)
             setEditNameAdapter(dedNameListC)
-
-            //クロスヘアラインを画面中央に描画
-//            my_view.drawCrossHairLine()
-
         } else {
-            deductionMode = false
-            myview.deductionMode = false
-            //showToast("Edit Mode : Triangles")
-            //Toast.makeText(this, "Edit Mode : Triangles", Toast.LENGTH_LONG).show()
-            // 入力テーブルの見かけの変更、タイトル行の文字列とカラー
-            setHeaderTable(titleDed)
-            findViewById<TableRow>(R.id.LL1).setBackgroundColor(Color.rgb(185, 255, 185))
-
-            //　fab群の見かけの変更
-            //fab.setBackgroundTintList(getColorStateList(R.color.colorLime))
-            fab_replace.backgroundTintList = getColorStateList(R.color.colorLime)
-            fab_resetView.backgroundTintList = getColorStateList(R.color.colorSky)
-            fab_up.backgroundTintList = getColorStateList(R.color.colorSky)
-            fab_down.backgroundTintList = getColorStateList(R.color.colorSky)
-            fab_numreverse.backgroundTintList = getColorStateList(R.color.colorAccent)
-            fab_deduction.backgroundTintList = getColorStateList(R.color.colorAccent)
-            fab_flag.backgroundTintList = getColorStateList(R.color.colorAccent)
-            val iconB: Icon = Icon.createWithResource(this, R.drawable.set_b)
-            val iconC: Icon = Icon.createWithResource(this, R.drawable.set_c)
-            val iconF: Icon = Icon.createWithResource(this, R.drawable.flag_b)
-            val iconRL: Icon = Icon.createWithResource(this, R.drawable.rot_l)
-            val iconRR: Icon = Icon.createWithResource(this, R.drawable.rot_r)
-            fab_setB.setImageIcon(iconB)
-            fab_setC.setImageIcon(iconC)
-            fab_flag.setImageIcon(iconF)
-            fab_rot_l.setImageIcon(iconRL)
-            fab_rot_r.setImageIcon(iconRR)
-
-            //　入力テーブルのオートコンプリート候補の変更、名前入力列にフォーカス、ソフトキーボードは出さない
+            // 三角形モードの場合の処理
             val tArray = resources.getStringArray(R.array.ParentList)
             initSpinner(tArray)
-            findViewById<EditText>(R.id.editLengthA2).requestFocus()
             setEditNameAdapter(sNumberList)
         }
-        editorResetBy(getList(deductionMode))
-        //inputMethodManager.hideSoftInputFromWindow(this.getCurrentFocus().getWindowToken(), 0)
+    }
 
+    private fun setEditor() {
+        val inputMethodManager: InputMethodManager =
+            getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+
+        if (deductionMode) {
+            // 領域削減モードの場合の処理
+            findViewById<EditText>(R.id.editName1).requestFocus()
+            inputMethodManager.showSoftInput(findViewById(R.id.editName1), 0)
+        } else {
+            // 三角形モードの場合の処理
+            findViewById<EditText>(R.id.editLengthA2).requestFocus()
+        }
+        editorResetBy(getList(deductionMode))
+    }
+
+    private fun changeDeductionMode() {
+        deductionMode = !deductionMode
+        myview.deductionMode = deductionMode
+    }
+
+    private fun setDeductionList(){
+        myDeductionList.current = myDeductionList.size()
+        trianglelist.changeSelectedNumber(trianglelist.size())
+    }
+
+    private fun updateFabAppearance() {
+        if (deductionMode) {
+            setDeductionFab()
+        } else {
+            setTriangleFab()
+        }
+        colorMovementFabs()
+    }
+
+    private fun setDeductionFab(){
+        //　fab群の見かけの変更
+        fab_replace.backgroundTintList = getColorStateList(R.color.colorTT2)
+        fab_resetView.backgroundTintList = getColorStateList(R.color.colorTT2)
+        fab_up.backgroundTintList = getColorStateList(R.color.colorTT2)
+        fab_down.backgroundTintList = getColorStateList(R.color.colorTT2)
+        fab_numreverse.backgroundTintList = getColorStateList(R.color.colorTT2)
+        fab_deduction.backgroundTintList = getColorStateList(R.color.colorWhite)
+        fab_flag.backgroundTintList = getColorStateList(R.color.colorWhite)
+        val iconB: Icon = Icon.createWithResource(this, R.drawable.box)
+        val iconC: Icon = Icon.createWithResource(this, R.drawable.circle)
+        val iconF: Icon = Icon.createWithResource(this, R.drawable.flag)
+        val iconRL: Icon = Icon.createWithResource(this, R.drawable.rot_dl)
+        val iconRR: Icon = Icon.createWithResource(this, R.drawable.rot_dr)
+        fab_setB.setImageIcon(iconB)
+        fab_setC.setImageIcon(iconC)
+        fab_flag.setImageIcon(iconF)
+        fab_rot_l.setImageIcon(iconRL)
+        fab_rot_r.setImageIcon(iconRR)
+    }
+
+    private fun setTriangleFab(){
+        //　fab群の見かけの変更
+        fab_replace.backgroundTintList = getColorStateList(R.color.colorLime)
+        fab_resetView.backgroundTintList = getColorStateList(R.color.colorSky)
+        fab_up.backgroundTintList = getColorStateList(R.color.colorSky)
+        fab_down.backgroundTintList = getColorStateList(R.color.colorSky)
+        fab_numreverse.backgroundTintList = getColorStateList(R.color.colorAccent)
+        fab_deduction.backgroundTintList = getColorStateList(R.color.colorAccent)
+        fab_flag.backgroundTintList = getColorStateList(R.color.colorAccent)
+        val iconB: Icon = Icon.createWithResource(this, R.drawable.set_b)
+        val iconC: Icon = Icon.createWithResource(this, R.drawable.set_c)
+        val iconF: Icon = Icon.createWithResource(this, R.drawable.flag_b)
+        val iconRL: Icon = Icon.createWithResource(this, R.drawable.rot_l)
+        val iconRR: Icon = Icon.createWithResource(this, R.drawable.rot_r)
+        fab_setB.setImageIcon(iconB)
+        fab_setC.setImageIcon(iconC)
+        fab_flag.setImageIcon(iconF)
+        fab_rot_l.setImageIcon(iconRL)
+        fab_rot_r.setImageIcon(iconRR)
+    }
+
+    private fun updateTableAppearance() {
+        if (deductionMode) {
+            setHeaderTable(titleTri)
+            findViewById<TableRow>(R.id.LL1).setBackgroundColor(Color.rgb(255, 165, 155))
+        } else {
+            setHeaderTable(titleDed)
+            findViewById<TableRow>(R.id.LL1).setBackgroundColor(Color.rgb(185, 255, 185))
+        }
     }
 
     private fun editorResetBy(elist: EditList){
@@ -2361,15 +2332,6 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-
-    private fun saveFileAndGetUri(filename: String): Uri {
-        // ファイルをプライベート領域に保存
-        saveToPrivate(filename)
-
-        // プライベート領域からファイルのContent URIを取得
-        return getAppLocalFile(this, filename)
-    }
-
     private fun sendMail(){
         Log.d("SendMail", "begin" )
 
@@ -2791,22 +2753,21 @@ class MainActivity : AppCompatActivity(),
 
     val PrivateCSVFileName = "privateTrilist.csv"
 
-    private fun saveCSVtoPrivate(filename: String = PrivateCSVFileName): Boolean{
+    private fun saveCSVtoPrivate(filename: String = PrivateCSVFileName): Boolean {
         Log.d("CSVWrite", "saveCSVtoPrivate: filename=$filename")
 
-        if( isCSVsavedToPrivate ) {
+        if (isCSVsavedToPrivate) {
             Log.d("CSVWrite", "saveCSVtoPrivate: $filename already saved")
-            //return true
-        } //既に保存済み
-        return try {
+            return true // 既に保存済みなら、ここで処理を終了する
+        }
+
+        try {
             setTitles()
-
-            val writer = BufferedWriter(
-                OutputStreamWriter(openFileOutput(filename, MODE_PRIVATE), "Shift-JIS"))
-            val isSaved =  writeCSV(writer)
-            if(isSaved)isCSVsavedToPrivate=true
-            return isSaved
-
+            BufferedWriter(OutputStreamWriter(openFileOutput(filename, MODE_PRIVATE), "Shift-JIS")).use { writer ->
+                val isSaved = writeCSV(writer)
+                if (isSaved) isCSVsavedToPrivate = true
+                return isSaved
+            }
         } catch (e: IOException) {
             e.printStackTrace()
             showToast("saveCSVToPrivate: IOException")
