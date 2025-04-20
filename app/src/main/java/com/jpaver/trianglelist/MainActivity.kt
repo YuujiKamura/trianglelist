@@ -1046,7 +1046,7 @@ class MainActivity : AppCompatActivity(),
         val eob = elist.get(currentNum - 1)
 
         loadEditTable()
-        myEditor.write(
+        myEditor.lineRewrite(
                 InputParameter(
                         "",
                         "",
@@ -1059,9 +1059,9 @@ class MainActivity : AppCompatActivity(),
                     com.example.trilib.PointXY(0f, 0f)
                 ), editorline1
         )
-        myEditor.write(eo.getParams(), editorLine2)
-        if(currentNum > 1) myEditor.write(eob.getParams(), myELThird)
-        if(currentNum == 1) myEditor.write(
+        myEditor.lineRewrite(eo.getParams(), editorLine2)
+        if(currentNum > 1) myEditor.lineRewrite(eob.getParams(), myELThird)
+        if(currentNum == 1) myEditor.lineRewrite(
                 InputParameter(
                         "",
                         "",
@@ -1527,7 +1527,7 @@ class MainActivity : AppCompatActivity(),
     }
 
     fun fabFlag(){
-        parameter = myEditor.read(parameter, editorLine2)
+        parameter = myEditor.readLineTo(parameter, editorLine2)
 
         if(deductionMode) flagDeduction()
         else flagTriangle()
@@ -1587,8 +1587,8 @@ class MainActivity : AppCompatActivity(),
 
         val inputLineAdd  = InputParameter()
         val inputLineEdit = InputParameter()
-        myEditor.read(inputLineAdd, editorline1)
-        myEditor.read(inputLineEdit, editorLine2)
+        myEditor.readLineTo(inputLineAdd, editorline1)
+        myEditor.readLineTo(inputLineEdit, editorLine2)
 
         return InputLines( inputLineAdd, inputLineEdit )
     }
@@ -1890,7 +1890,7 @@ class MainActivity : AppCompatActivity(),
             if(sideindex == 2) focusTo = editorline2_lengthC
         }
 
-        myEditor.write( getTriangleParameter(sideindex), editorline1 )
+        myEditor.lineRewrite( getTriangleParameter(sideindex), editorline1 )
 
         if(myview.trianglelist.lastTapSide != -1){
             val numToLetterMap = mapOf(
@@ -1914,7 +1914,7 @@ class MainActivity : AppCompatActivity(),
 
     fun connectDeduction(sideindex: Int){
         setFabSetBC(sideindex)
-        myEditor.write( setupDedParameter(sideindex), editorline1 )
+        myEditor.lineRewrite( setupDedParameter(sideindex), editorline1 )
     }
 
     fun setupDedParameter(sideindex: Int): InputParameter{
@@ -1941,7 +1941,7 @@ class MainActivity : AppCompatActivity(),
     private fun autoConnection(sideindex: Int){
         setTriListNumber()
         myview.trianglelist.lastTapSide = sideindex
-        parameter = myEditor.read(parameter, editorline1) //keep them
+        parameter = myEditor.readLineTo(parameter, editorline1) //keep them
 
         if(!deductionMode)
             connectTriangle(sideindex)

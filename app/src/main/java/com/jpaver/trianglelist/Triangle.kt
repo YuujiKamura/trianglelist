@@ -266,9 +266,6 @@ class Triangle : EditObject, Cloneable<Triangle> {
         0f
     ), var name: com.example.trilib.PointXY = com.example.trilib.PointXY(0f, 0f)
     ){
-        fun toArray(): Array<com.example.trilib.PointXY>{
-            return arrayOf(a,b,c)
-        }
     }
 
     // 固定長配列の初期化
@@ -1144,12 +1141,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     fun getVertexAngles(): Triple<Float,Float,Float> {
         // まず最新の point 配置で内部角を再計算
         calculateInternalAngles()
-        // ∠A + ∠B + ∠C = 180° かつ
-        // angleAB = ∠B + ∠C,  angleBC = ∠C + ∠A,  angleCA = ∠A + ∠B
-        val A = 180f - (angleAB)         // = 180 - (∠B+∠C)
-        val B = 180f - (angleBC)         // = 180 - (∠C+∠A)
-        val C = 180f - (angleCA)         // = 180 - (∠A+∠B)
-        return Triple(A, B, C)
+        return Triple(angleCA, angleAB, angleBC)
     }
 
     fun calculateInternalAngle(p1: com.example.trilib.PointXY, p2: com.example.trilib.PointXY, p3: com.example.trilib.PointXY): Double {
