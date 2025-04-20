@@ -205,9 +205,6 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
     var path: Array<PathAndOffset> = Array(3) { PathAndOffset() }
     data class Dimpoint(var a:PointXY= PointXY(0f,0f), var b:PointXY=PointXY(0f,0f), var c:PointXY=PointXY(0f,0f), var name:PointXY=PointXY(0f,0f)){
-        fun toArray(): Array<PointXY>{
-            return arrayOf(a,b,c)
-        }
     }
 
     // 固定長配列の初期化
@@ -1076,6 +1073,17 @@ class Triangle : EditObject, Cloneable<Triangle> {
         angleCA = angles.third
     }
 
+    fun getVertexAngles(): Triple<Float,Float,Float> {
+        // まず最新の point 配置で内部角を再計算
+        calculateInternalAngles()
+        // ∠A + ∠B + ∠C = 180° かつ
+        // angleAB = ∠B + ∠C,  angleBC = ∠C + ∠A,  angleCA = ∠A + ∠B
+        val A = 180f - (angleAB)         // = 180 - (∠B+∠C)
+        val B = 180f - (angleBC)         // = 180 - (∠C+∠A)
+        val C = 180f - (angleCA)         // = 180 - (∠A+∠B)
+        return Triple(A, B, C)
+    }
+
     private fun calculatePointCenter(): PointXY {
         pointcenter = TriangleCalculator.calculateCenter(arrayOf(point[0], pointAB, pointBC))
         return pointcenter
@@ -1196,7 +1204,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         path[0].move(to)
         path[1].move(to)
         path[2].move(to)
-        pathS_!!.move(to)
+        pathS_?.move(to)
     }
 
     // endregion scale and translate

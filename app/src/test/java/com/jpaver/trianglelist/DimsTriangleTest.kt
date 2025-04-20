@@ -1,104 +1,112 @@
 package com.jpaver.trianglelist
 
 import org.junit.Assert.*
+import org.junit.Before
 import org.junit.Test
 
-/** 簡易生成ヘルパー */
-private fun tri(a: Float = 3f, b: Float = 4f, c: Float = 5f) = Triangle(a, b, c)
+class DimsTest {
 
-class DimsTriangleTest {
+    private lateinit var tri: Triangle
+    private lateinit var dims: Dims
 
-    // ---------- clone ------------------------------
+    @Before
+    fun setUp() {
+        // テスト毎に初期化する
+        tri = Triangle(20f, 2f, 19f)
+        dims = Dims(tri)
+    }
 
     @Test
     fun clone_makesIndependentFlagArray() {
-        val dims = tri().dim
         dims.flag[1].isMovedByUser = true
 
-        val cloned = dims.clone()
+        val clone = dims.clone()
 
-        assertNotSame(dims.flag, cloned.flag)           // 配列自体は別
-        assertTrue(cloned.flag[1].isMovedByUser)        // 値はコピー済み
+        // flag 配列そのものは別インスタンス
+        assertNotSame(dims.flag, clone.flag)
+        // 値はコピー済み
+        assertTrue(clone.flag[1].isMovedByUser)
 
-        // 元を変更しても clone 側は変わらない
+        // 元を書き換えてもクローン側に影響しない
         dims.flag[1].isMovedByUser = false
-        assertTrue(cloned.flag[1].isMovedByUser)
-    }
-
-    // ---------- autoDimVertical --------------------
-
-    @Test
-    fun sideA_connectionTypeLessThan3_returnsOUTER() {
-        val d = tri().dim
-        assertEquals(d.OUTER, d.autoDimVertical(d.SIDEA))
+        assertTrue(clone.flag[1].isMovedByUser)
     }
 
     @Test
-    fun sideB_noChild_returnsOUTER() {
-        val d = tri().dim
-        assertEquals(d.OUTER, d.autoDimVertical(d.SIDEB))
+    fun autoDimHorizontal_skipsWhenNotSharp() {
+        // 長さ比 B/A=5/3>0.1 かつ C/A=5/3>0.1 なら自動配置しない
+        tri = Triangle(3f, 5f, 5f)
+        dims = Dims(tri)
+
+        dims.horizontal.b = 0
+        dims.horizontal.c = 0
+
+        dims.autoDimHorizontal()
+
+        assertEquals(0, dims.horizontal.b)
+        assertEquals(0, dims.horizontal.c)
     }
 
     @Test
-    fun sideB_childAreaLarger_returnsOUTER() {
-        val parent = tri()                  // 面積 6
-        val big    = Triangle(6f, 8f, 10f)  // 面積 24
-        parent.nodeTriangleB = big
+    fun autoDimHorizontal_setsC_whenBAngleIsSmallAndCIsLargest() {
+        // ratioB=2/20=0.1, ratioC=19/20=0.95 -> 自動処理実行
+        // ∠B~6°, ∠C~58° → C側を選択
+        tri = Triangle(20f, 2f, 19f)
+        dims = Dims(tri)
 
-        assertEquals(parent.dim.OUTER,
-            parent.dim.autoDimVertical(parent.dim.SIDEB))
+        // nodeTriangleC==null なので OUTERRIGHT = 3
+        tri.nodeTriangleC = null
+
+        dims.horizontal.b = 0
+        dims.horizontal.c = 0
+        dims.autoDimHorizontal()
+
+        assertEquals(3, dims.horizontal.c)
+        assertTrue(dims.flag[2].isAutoAligned)
+        assertEquals(0, dims.horizontal.b)
     }
 
     @Test
-    fun sideB_childAreaSmaller_returnsINNER() {
-        val parent = Triangle(6f, 8f, 10f)  // 面積 24
-        val small  = tri()                  // 面積 6
-        parent.nodeTriangleB = small
+    fun autoDimHorizontal_usesLeftWhenNodeCExists() {
+        // nodeTriangleC != null により OUTERLEFT = 4 を使用
+        tri = Triangle(20f, 2f, 19f)
+        dims = Dims(tri)
+        tri.nodeTriangleC = Triangle(3f,4f,5f)
 
-        assertEquals(parent.dim.INNER,
-            parent.dim.autoDimVertical(parent.dim.SIDEB))
-    }
+        dims.horizontal.c = 0
+        dims.autoDimHorizontal()
 
-    // ---------- ユーティリティ ----------------------
-
-    @Test
-    fun cycleIncrement_wrapsAroundMax() {
-        val d = tri().dim
-        assertEquals(0, d.cycleIncrement(d.HORIZONTAL_OPTIONMAX))
+        assertEquals(4, dims.horizontal.c)
     }
 
     @Test
-    fun flipVertical_invertsValue() {
-        val d = tri().dim
-        assertEquals(d.INNER, d.flipVertical(d.OUTER))
-        assertEquals(d.OUTER, d.flipVertical(d.INNER))
-    }
+    fun autoDimHorizontal_skipsIfUserMovedTargetSide() {
+        // C側ターゲットがユーザー操作済の場合 スキップ
+        tri = Triangle(20f, 2f, 19f)
+        dims = Dims(tri)
 
-    // ---------- controlVertical --------------------
+        // C側が選択されるケース
+        dims.flag[2].isMovedByUser = true
 
-    @Test
-    fun controlVertical_setsFlagAndFlips() {
-        val t = tri()
-        val before = t.dim.vertical.c
+        dims.horizontal.c = 0
+        dims.autoDimHorizontal()
 
-        t.controlDimVertical(t.dim.SIDEC)
-
-        assertTrue(t.dim.flag[2].isMovedByUser)
-        assertEquals(t.dim.flipVertical(before), t.dim.vertical.c)
-    }
-
-    // ---------- getunconnectedSide -----------------
-
-    @Test
-    fun getunconnectedSide_noNodeC_returnsOuterRight() {
-        val d = tri().dim
-        assertEquals(3, d.getunconnectedSide(3, 4))
+        assertEquals(0, dims.horizontal.c)
     }
 
     @Test
-    fun getunconnectedSide_withNodeC_returnsOuterLeft() {
-        val p = tri()
-        p.nodeTriangleC = tri()
-        assertEquals(4, p.dim.getunconnectedSide(3, 4))
+    fun autoDimHorizontal_doesNotTouchSmallSideForThinTriangle() {
+        // 「20:2:20」のような細長い三角形では、小さいB側は動かない
+        tri = Triangle(20f, 2f, 20f)
+        dims = Dims(tri)
+
+        // nodeTriangleC==null で C側が選ばれる
+        tri.nodeTriangleC = null
+
+        dims.horizontal.b = 0
+        dims.autoDimHorizontal()
+
+        // B側(小辺)は変更しない
+        assertEquals(0, dims.horizontal.b)
     }
 }

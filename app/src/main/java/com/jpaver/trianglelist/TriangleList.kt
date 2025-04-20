@@ -1,7 +1,6 @@
 package com.jpaver.trianglelist
 
 import com.jpaver.trianglelist.util.Params
-import java.util.Optional
 
 class TriangleList : EditList {
 
@@ -335,7 +334,7 @@ class TriangleList : EditList {
         return add(Triangle(get(pnum), pbc, B, C), true)
     }
 
-    fun add(nextTriangle: Triangle, numbering: Boolean): Boolean {
+    fun add(nextTriangle: Triangle, numbering: Boolean = true): Boolean {
         if (!validTriangle(nextTriangle)) return false
 
         // 番号を受け取る
@@ -956,6 +955,8 @@ class TriangleList : EditList {
             ti.mynumber = start + i
             rev.trilist.add(ti)
         }
+        // ← ここでノードの再接続！
+        rev.resetAllNodes()
         return rev
     }
 } // end of class

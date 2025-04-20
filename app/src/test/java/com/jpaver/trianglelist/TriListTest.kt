@@ -42,8 +42,8 @@ class TriListTest {
 
     @Test
     fun testTrilistTrace() {
-        val trilist = TriangleList()
         val olp = ArrayList<PointXY>()
+        val trilist = TriangleList()
 
         trilist.add(Triangle(3f, 4f, 5f), true)
         trilist.add(Triangle(trilist[1], 2, 3f, 4f), true)
