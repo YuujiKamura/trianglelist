@@ -8,7 +8,7 @@ data class DimAligns(var a: Int = 1, var b: Int = 1, var c: Int = 1, var s: Int 
 class Dims(val triangle: Triangle) : Cloneable<Dims> {
     // ──────────────────────────────
     // 一時的に自動水平配置を無効化するフラグ（必要なら使えます）
-    var enableAutoHorizontal = false
+    var enableAutoHorizontal = true
     // ──────────────────────────────
 
     // region properties and clone
@@ -24,7 +24,8 @@ class Dims(val triangle: Triangle) : Cloneable<Dims> {
         b.vertical = vertical.copy()
         b.horizontal = horizontal.copy()
         b.height = height
-        b.flag = flag.copyOf()
+        // Flags を要素ごとにコピー
+        b.flag = Array(flag.size) { idx -> flag[idx].copy() }
         b.flagS = flagS.copy()
         b.scale = scale
         return b
@@ -33,8 +34,6 @@ class Dims(val triangle: Triangle) : Cloneable<Dims> {
 
     // region constants
     val SIDE_SOKUTEN = 4
-    val BORDERDISTANCE = 0.8f
-    val SELFDISTANCE = 0f
     val HORIZONTAL_OPTIONMAX = 4
 
     // 内外判定
@@ -50,7 +49,7 @@ class Dims(val triangle: Triangle) : Cloneable<Dims> {
      * 寸法配置を一気に実行
      */
     fun arrangeDims(isVertical: Boolean = false, isHorizontal: Boolean = true) {
-        if (isHorizontal && enableAutoHorizontal ) autoDimHorizontal(0)
+        if (isHorizontal && enableAutoHorizontal ) autoDimHorizontalByAngle()
         if (isVertical) {
             vertical.a = autoDimVertical(0)
             vertical.b = autoDimVertical(1)
@@ -60,45 +59,27 @@ class Dims(val triangle: Triangle) : Cloneable<Dims> {
 
     // region horizontal
 
-    companion object {
-        private const val OBtuseThreshold = 90f
-        private const val SHARP_THRESHOLD = 2f / 20f  // 0.1f
-        private const val OUTERRIGHT = 3
-        private const val OUTERLEFT  = 4
-    }
-
-    /**
-     * 条件を満たさなければ即リターン。
-     * 鋭角判定も早期リターンで書く。
-     */
-    fun autoDimHorizontal(selfSide: Int) {
-        val (a, b, c) = triangle.lengthNotSized
-        if (a == 0f) return   // 防御
-
-        val ratioB = b / a
-        val ratioC = c / a
-        if (ratioB > SHARP_THRESHOLD && ratioC > SHARP_THRESHOLD) return
-
-        autoDimHorizontalByAngle()
-    }
+    val SHARP_THRESHOLD = 20f
+    // どっちをみて右？三角形の内側？
+    val OUTERRIGHT = 3
+    val OUTERLEFT  = 4
 
     /**
      * 接続の手動操作が入っていたらスキップ、
-     * 90°超判定 ・ 大きい方判定 も早期リターン中心で。
      */
     private fun autoDimHorizontalByAngle() {
         // ユーザーが両端とも動かしていたら何もしない
+        if (triangle.getArea()>5f) return
         if (flag[SIDEB].isMovedByUser && flag[SIDEC].isMovedByUser) return
 
         // 各頂点の内角を取得
-        val (_, angleB, angleC) = triangle.getVertexAngles()
+        val (angleCA, angleAB, angleBC) = triangle.getVertexAngles()
 
-        // 鈍角（>=90）を優先、なければ大きいほう
+        // 鋭角はどれだ
         val targetSide = when {
-            angleB >= OBtuseThreshold && angleB >= angleC -> SIDEB
-            angleC >= OBtuseThreshold && angleC >  angleB -> SIDEC
-            angleB >= angleC                             -> SIDEB
-            else                                          -> SIDEC
+            angleBC <= SHARP_THRESHOLD -> SIDEB
+            angleCA <= SHARP_THRESHOLD -> SIDEC
+            else                       -> SIDEA
         }
 
         // ユーザー操作済みならそこにも何もしない
@@ -107,19 +88,22 @@ class Dims(val triangle: Triangle) : Cloneable<Dims> {
         // 実際の配置
         when (targetSide) {
             SIDEB -> {
-                horizontal.b = getunconnectedSide(OUTERRIGHT, OUTERLEFT)
+                horizontal.b = getNotSharpenSide( angleAB, angleBC )
                 flag[1].isAutoAligned = true
             }
             SIDEC -> {
-                horizontal.c = getunconnectedSide(OUTERRIGHT, OUTERLEFT)
+                horizontal.c = getNotSharpenSide( angleBC, angleCA )
                 flag[2].isAutoAligned = true
             }
         }
     }
 
-    private fun getunconnectedSide(outerleft: Int, outerright: Int): Int {
-        // nodeC がなければ右（外側）、あれば左
-        return if (triangle.nodeC == null) outerright else outerleft
+    /**
+     * 鋭角頂点を挟む辺のうち、より広い角度（鈍角側）方向を返す
+     * 三角形の向き（頂点の順序）で右・左は変わる
+     */
+    private fun getNotSharpenSide(leftAngle:Float, rightAngle:Float): Int {
+        return if ( leftAngle <= rightAngle ) OUTERLEFT else OUTERRIGHT
     }
 
     /**

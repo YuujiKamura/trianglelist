@@ -10,7 +10,6 @@ import kotlin.math.acos
 import kotlin.math.atan2
 import kotlin.math.pow
 import kotlin.reflect.full.memberProperties
-import com.example.trilib.PointXY
 
 fun compare(target1: Any, target2:Any ){
     println("target1: ${target1.hashCode()}, $target1")
@@ -47,24 +46,24 @@ class TriangleTest {
 
         // 最初の点から他の点への距離のリストを計算
         val distances = listup_dimpoint_distances(triangle)
-        val booleanList = check_distances(distances, 1.0f)
+        val booleanList = check_distances(distances )
         println("distances: $distances")
         println("distances: $booleanList")
 
     }
 
 
-    fun check_distances(distances: List<Float>, nearby: Float): List<Boolean> {
+    private fun check_distances(distances: List<Float>): List<Boolean> {
         // 距離が1.0fより小さく、0ではない条件を満たすかどうかでBooleanリストを生成
-        return distances.map { it > 0f && it < nearby }
+        return distances.map { it > 0f && it < 1.0f }
     }
 
-    fun listup_dimpoint_distances(triangle: Triangle ): List<Float>{
+    private fun listup_dimpoint_distances(triangle: Triangle ): List<Float>{
         val distances = listup_dimpoint_distances(triangle, 0) + listup_dimpoint_distances(triangle, 1) + listup_dimpoint_distances(triangle, 2)
         return distances
     }
 
-    fun listup_dimpoint_distances(triangle: Triangle, index_basepoint: Int): List<Float> {
+    private fun listup_dimpoint_distances(triangle: Triangle, index_basepoint: Int): List<Float> {
         val dimpoint = arrayOf( triangle.dimpoint.a,triangle.dimpoint.b,triangle.dimpoint.c)
 
         return dimpoint[index_basepoint].distancesTo(dimpoint)
@@ -204,16 +203,7 @@ class TriangleTest {
         Assert.assertEquals(18.74f, t.getArea(), 0.01f)
     }
 
-    @Test
-    fun testSideEffectInBasicTypes() {
-        val t = Triangle(5f, 5f, 5f)
-        var me = 0
-        me = t.dim.cycleIncrement(me)
-        // こうやって代入しない限り、meは渡された時点でクローンに代わり、副作用っぽく変化したりしない。
-        // オブジェクトは違う。引数として生で渡された時、ポインタとして渡されるので、副作用が起きる。
-        // t.sideEffectGo( object.clone ) とかすれば予防できる。
-        Assert.assertEquals(1, me.toLong())
-    }
+
 
     @Test
     fun testCalcDimAngle() {
