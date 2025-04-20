@@ -7,6 +7,11 @@ data class DimAligns(var a:Int=1, var b:Int=1, var c:Int=1)
 
 class Dims( val triangle: Triangle ) : Cloneable<Dims> {
 
+    // ──────────────────────────────
+    // 一時的に自動水平配置を無効化するフラグ
+    var enableAutoHorizontal = false
+    // ──────────────────────────────
+
     //region propaties and clone
     var vertical = DimAligns(1,1,1 )
     var horizontal = DimAligns(0,0,0 )
@@ -27,8 +32,6 @@ class Dims( val triangle: Triangle ) : Cloneable<Dims> {
 
     // region constant parameters
     val SIDE_SOKUTEN = 4
-    val BORDERDISTANCE = 1f
-    val SELFDISTANCE = 0f
     val HORIZONTAL_OPTIONMAX = 4
 
     //夾角の、1:外 　3:内
@@ -41,7 +44,7 @@ class Dims( val triangle: Triangle ) : Cloneable<Dims> {
     //endregion const
 
     fun arrangeDims(isVertical:Boolean=false, isHorizontal:Boolean=true ) {
-        if(isHorizontal) autoDimHorizontal(0)
+        if(isHorizontal) autoDimHorizontal()
         if(isVertical){
             vertical.a = autoDimVertical(0)
             vertical.b = autoDimVertical(1)
@@ -50,34 +53,61 @@ class Dims( val triangle: Triangle ) : Cloneable<Dims> {
     }
 
     //region horizontal
+    companion object {
+        private const val OBtuseThreshold = 90f
+        private const val SHARP_THRESHOLD = 2f / 20f  // 0.1f
+        private const val OUTERRIGHT = 3
+        private const val OUTERLEFT  = 4
+    }
 
-    fun autoDimHorizontal(selfside_index: Int ) {
-        makeflags_dim_distances(selfside_index).forEachIndexed { targetside_index, result ->
-            if ( result == true ) outerDimHorizontal(targetside_index)
+    /**
+     * 条件を満たさなければ即リターン。
+     * 鋭角判定も早期リターンで書く。
+     */
+    fun autoDimHorizontal() {
+        if (!enableAutoHorizontal) return   // ← 無効化されていたら何もしない
+
+        val (a, b, c) = triangle.lengthNotSized
+        if (a == 0f) return   // 防御
+
+        val ratioB = b / a
+        val ratioC = c / a
+        if (ratioB > SHARP_THRESHOLD && ratioC > SHARP_THRESHOLD) return
+
+        autoDimHorizontalByAngle()
+    }
+
+    /**
+     * 接続の手動操作が入っていたらスキップ、
+     * 90°超判定 ・ 大きい方判定 も早期リターン中心で。
+     */
+    private fun autoDimHorizontalByAngle() {
+        // ユーザーが両端とも動かしていたら何もしない
+        if (flag[SIDEB].isMovedByUser && flag[SIDEC].isMovedByUser) return
+
+        // 各頂点の内角を取得
+        val (_, angleB, angleC) = triangle.getVertexAngles()
+
+        // 鈍角（>=90）を優先、なければ大きいほう
+        val targetSide = when {
+            angleB >= OBtuseThreshold && angleB >= angleC -> SIDEB
+            angleC >= OBtuseThreshold && angleC >  angleB -> SIDEC
+            angleB >= angleC                             -> SIDEB
+            else                                          -> SIDEC
         }
-    }
 
-    fun makeflags_dim_distances(selfside: Int ): List<Boolean> {
-        val dimpoint = triangle.dimpoint.toArray()
-        return dimpoint[selfside].distancesTo(dimpoint).map { it < BORDERDISTANCE && it > SELFDISTANCE }
-    }
+        // ユーザー操作済みならそこにも何もしない
+        if (flag[targetSide].isMovedByUser) return
 
-    //つかうの難しい？
-    fun outerDimHorizontal(targetindex: Int){
-        val OUTERRIGHT = 3
-        val OUTERLEFT = 4
-        when (targetindex) {
-            SIDEC -> {
-                if(!flag[2].isMovedByUser )
-                    horizontal.c = getunconnectedSide(OUTERRIGHT,OUTERLEFT)
-                flag[2].isAutoAligned = true
-                return
-            }
+        // 実際の配置
+        when (targetSide) {
             SIDEB -> {
-                if(!flag[1].isMovedByUser )
-                    horizontal.b = getunconnectedSide(OUTERRIGHT,OUTERLEFT)
+                horizontal.b = getunconnectedSide(OUTERRIGHT, OUTERLEFT)
                 flag[1].isAutoAligned = true
-                return
+            }
+            SIDEC -> {
+                horizontal.c = getunconnectedSide(OUTERRIGHT, OUTERLEFT)
+                flag[2].isAutoAligned = true
             }
         }
     }
