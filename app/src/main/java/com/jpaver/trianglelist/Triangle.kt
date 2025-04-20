@@ -1141,6 +1141,17 @@ class Triangle : EditObject, Cloneable<Triangle> {
         angleCA = calculateInternalAngle(pointBC, point[0], pointAB).toFloat()
     }
 
+    fun getVertexAngles(): Triple<Float,Float,Float> {
+        // まず最新の point 配置で内部角を再計算
+        calculateInternalAngles()
+        // ∠A + ∠B + ∠C = 180° かつ
+        // angleAB = ∠B + ∠C,  angleBC = ∠C + ∠A,  angleCA = ∠A + ∠B
+        val A = 180f - (angleAB)         // = 180 - (∠B+∠C)
+        val B = 180f - (angleBC)         // = 180 - (∠C+∠A)
+        val C = 180f - (angleCA)         // = 180 - (∠A+∠B)
+        return Triple(A, B, C)
+    }
+
     fun calculateInternalAngle(p1: com.example.trilib.PointXY, p2: com.example.trilib.PointXY, p3: com.example.trilib.PointXY): Double {
         val v1 = p1.subtract(p2)
         val v2 = p3.subtract(p2)
