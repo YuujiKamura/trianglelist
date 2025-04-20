@@ -19,7 +19,7 @@ class Dims( val triangle: Triangle ) : Cloneable<Dims> {
         b.vertical = vertical.copy()
         b.horizontal = horizontal.copy()
         b.height = height
-        b.flag = flag.copyOf()
+        b.flag = Array(flag.size) { idx -> flag[idx].copy() } //b.flag = flag.copyOf()
         b.scale = scale
         return b
     }
