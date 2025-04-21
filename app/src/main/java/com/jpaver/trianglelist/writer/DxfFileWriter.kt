@@ -1,5 +1,9 @@
-package com.jpaver.trianglelist
+package com.jpaver.trianglelist.writer
 
+import com.jpaver.trianglelist.Deduction
+import com.jpaver.trianglelist.DeductionList
+import com.jpaver.trianglelist.Triangle
+import com.jpaver.trianglelist.TriangleList
 import com.jpaver.trianglelist.dataclass.ZumenInfo
 import com.jpaver.trianglelist.util.TitleParamStr
 import java.io.BufferedWriter
@@ -419,7 +423,7 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
     }
 
 
-    fun writeSpritTrilist(myDXFTriList:TriangleList,trilistNumbered:TriangleList, color: Array<Int>, sixtytwo:Array<Int> ){
+    fun writeSpritTrilist(myDXFTriList: TriangleList, trilistNumbered: TriangleList, color: Array<Int>, sixtytwo:Array<Int> ){
         val spritByColors = myDXFTriList.spritByColors()
         for( index in 0 until spritByColors.size ){
 

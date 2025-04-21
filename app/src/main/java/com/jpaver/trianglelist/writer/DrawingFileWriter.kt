@@ -1,5 +1,11 @@
-package com.jpaver.trianglelist
+package com.jpaver.trianglelist.writer
 
+import com.jpaver.trianglelist.Deduction
+import com.jpaver.trianglelist.DeductionList
+import com.jpaver.trianglelist.EditList
+import com.jpaver.trianglelist.EditObject
+import com.jpaver.trianglelist.Triangle
+import com.jpaver.trianglelist.TriangleList
 import com.jpaver.trianglelist.dataclass.ZumenInfo
 import com.jpaver.trianglelist.util.TitleParamStr
 import java.time.LocalDate
@@ -48,7 +54,7 @@ open class DrawingFileWriter {
         return Triple(pca, pab, pbc)
     }
 
-    fun writeTriangleLines(tri: Triangle,color: Int){
+    fun writeTriangleLines(tri: Triangle, color: Int){
 
         writeLine( tri.point[0], tri.pointAB, color)
         writeLine( tri.pointAB, tri.pointBC, color)
@@ -63,7 +69,7 @@ open class DrawingFileWriter {
         }
     }
 
-    fun writePointNumber( tri: Triangle, ts:Float, color:Int, align1: Int, align2:Int, circleSize:Float ){
+    fun writePointNumber(tri: Triangle, ts:Float, color:Int, align1: Int, align2:Int, circleSize:Float ){
         val pn = tri.pointnumber
         val pc = tri.pointcenter
         // 本体
@@ -82,7 +88,7 @@ open class DrawingFileWriter {
         }
     }
 
-    fun writeSokuten(tri:Triangle, normalizedvector:Int, ts:Float, color:Int, align1:Int, align2:Int ){
+    fun writeSokuten(tri: Triangle, normalizedvector:Int, ts:Float, color:Int, align1:Int, align2:Int ){
         tri.setDimPath()
         tri.setDimPoint()
         val pa = tri.pathS.pointA

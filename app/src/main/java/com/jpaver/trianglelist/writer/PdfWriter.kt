@@ -1,8 +1,10 @@
-package com.jpaver.trianglelist
+package com.jpaver.trianglelist.writer
 
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
+import com.jpaver.trianglelist.DeductionList
+import com.jpaver.trianglelist.TriangleList
 import com.jpaver.trianglelist.util.Utils
 import java.io.OutputStream
 
@@ -89,31 +91,7 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
         viewPointer_.add( sizeX_/2f,sizeY_/2f )
     }
 
-    fun setScale(drawingLength: com.example.trilib.PointXY) :Float{
-        //1/200　x:80m~40m
-        var scale = 2f
-        paintTexS_.textSize = 2.5f
-
-        //1/250 (x:80m以上
-        if(drawingLength.x > 80 || drawingLength.y > 55 ) {
-            scale = 2.5f
-            paintTexS_.textSize = 2f
-        }
-
-        //1/350 (x:120m以上
-        if(drawingLength.x > 40*3 || drawingLength.y > 27*3 ) {
-            scale = 3.5f
-            paintTexS_.textSize = 0.5f
-        }
-
-        //1/150 (x:40m以下
-        if(drawingLength.x < 50 && drawingLength.y < 30 ){
-            scale = 1.5f
-            paintTexS_.textSize = 50f
-        }
-        return scale
-    }
-//endregion canvas trans and textscaling
+    //endregion canvas trans and textscaling
 
 //region page management
     fun startNewPage(sizeX: Int, sizeY: Int, pageIndex: Int){
@@ -319,7 +297,12 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
 
 
 
-    private fun drawTextWithLineBreak(text: String, xr: Float, yb: Float, tt: Float = 150.0f ) {
+    private fun drawTextWithLineBreak(
+        text: String,
+        xr: Float,
+        yb: Float,
+        tt: Float = 150.0f
+    ) {
         if (text.length > MAX_LENGTH) {
             splitAndDrawText(text, xr, yb, tt)
         } else {

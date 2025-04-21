@@ -1,6 +1,7 @@
 package com.jpaver.trianglelist
 
 import com.jpaver.trianglelist.util.TitleParamStr
+import com.jpaver.trianglelist.writer.DxfFileWriter
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Rule

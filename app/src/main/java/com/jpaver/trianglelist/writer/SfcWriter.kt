@@ -1,5 +1,9 @@
-package com.jpaver.trianglelist
+package com.jpaver.trianglelist.writer
 
+import com.jpaver.trianglelist.Deduction
+import com.jpaver.trianglelist.DeductionList
+import com.jpaver.trianglelist.Triangle
+import com.jpaver.trianglelist.TriangleList
 import java.io.BufferedOutputStream
 import java.nio.charset.Charset
 

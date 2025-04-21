@@ -2,6 +2,7 @@
 
 package com.jpaver.trianglelist
 
+import com.jpaver.trianglelist.writer.DxfFileWriter
 import junit.framework.Assert.assertEquals
 import org.junit.Test
 import java.io.BufferedOutputStream

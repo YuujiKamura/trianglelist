@@ -71,8 +71,8 @@ java.lang.RuntimeException:
 Caused by: java.lang.ArrayIndexOutOfBoundsException:
   at java.util.ArrayList.get (ArrayList.java:439)
   at com.jpaver.trianglelist.TriangleList.setChildsToAllParents (TriangleList.java:492)
-  at com.jpaver.trianglelist.DxfFileWriter.writeEntities (DxfFileWriter.kt:394)
-  at com.jpaver.trianglelist.DxfFileWriter.save (DxfFileWriter.kt:40)
+  at com.jpaver.trianglelist.writer.DxfFileWriter.writeEntities (DxfFileWriter.kt:394)
+  at com.jpaver.trianglelist.writer.DxfFileWriter.save (DxfFileWriter.kt:40)
   at com.jpaver.trianglelist.MainActivity.saveDXF (MainActivity.kt:1924)
   at com.jpaver.trianglelist.MainActivity.onActivityResult (MainActivity.kt:1751)
   at android.app.Activity.dispatchActivityResult (Activity.java:7759)
