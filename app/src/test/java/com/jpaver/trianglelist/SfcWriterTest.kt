@@ -3,6 +3,7 @@ package com.jpaver.trianglelist
 import com.jpaver.trianglelist.dataclass.ZumenInfo
 import com.jpaver.trianglelist.util.FileUtil
 import com.jpaver.trianglelist.util.TitleParamStr
+import com.jpaver.trianglelist.writer.SfcWriter
 import org.junit.Assert
 import org.junit.Test
 import java.io.File

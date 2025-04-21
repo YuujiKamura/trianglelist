@@ -19,6 +19,7 @@ import com.jpaver.trianglelist.util.MyScaleGestureListener
 import com.jpaver.trianglelist.util.RotateGestureDetector
 import com.jpaver.trianglelist.util.ScaleGestureCallback
 import com.jpaver.trianglelist.util.ViewTranslateManager
+import com.jpaver.trianglelist.writer.PdfWriter
 
 import java.util.*
 import kotlin.math.roundToInt

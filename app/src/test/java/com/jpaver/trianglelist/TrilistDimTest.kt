@@ -1,5 +1,6 @@
 package com.jpaver.trianglelist
 
+import com.jpaver.trianglelist.writer.DxfFileWriter
 import org.junit.Assert
 import org.junit.Test
 

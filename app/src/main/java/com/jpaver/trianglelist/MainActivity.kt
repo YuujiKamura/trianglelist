@@ -80,6 +80,9 @@ import java.io.Writer
 import java.time.LocalDate
 import kotlin.math.roundToInt
 import androidx.core.net.toUri
+import com.jpaver.trianglelist.writer.DxfFileWriter
+import com.jpaver.trianglelist.writer.PdfWriter
+import com.jpaver.trianglelist.writer.SfcWriter
 
 @Suppress("DEPRECATED_IDENTITY_EQUALS")
 class MainActivity : AppCompatActivity(),
