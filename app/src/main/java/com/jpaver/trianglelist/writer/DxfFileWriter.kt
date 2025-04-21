@@ -25,12 +25,12 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
     override var printscale_ = trilist_.getPrintScale(1f)//setScale(drawingLength)
     override var sizeX_ = 42000f * printscale_
     override var sizeY_ = 29700f * printscale_
-    private val vpCenterX = sizeX_ * 0.5f
-    private val vpCenterY = sizeY_ * 0.5f
+    //private val vpCenterX = sizeX_ * 0.5f
+    //private val vpCenterY = sizeY_ * 0.5f
 
     private var entityHandle = 100
 
-    override var WHITE = 7
+    override var WHITE = 256
     override var BLUE = 5
     override var RED = 1
 
@@ -83,7 +83,7 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         val textSize2: Float = textscale_
 
         // TriLines
-        writeTriangleLines(tri,7)
+        writeTriangleLines(tri,WHITE)
 
         if(isDebug){
             la += "A$dimverticalA"
@@ -98,14 +98,14 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         writeTextDimension(dimverticalC, lc, tri.dimpoint.c, pca.calcDimAngle(pbc))
 
         //DimFlags
-        writeDimFlags(tri, 7)
+        writeDimFlags(tri, WHITE)
 
         // 番号
-        writePointNumber(tri, textSize,5,1,2, textSize*0.85f )
+        writePointNumber(tri, textSize,BLUE,1,2, textSize*0.85f )
 
         // 測点
         if(tri.myName_() != "") {
-            writeSokuten(tri, trilist_.sokutenListVector, textSize2, 5, 1, 1)
+            writeSokuten(tri, trilist_.sokutenListVector, textSize2, BLUE, 1, 1)
         }
     }
 
@@ -123,7 +123,7 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
     }
 
     private fun writeTextDimension(verticalAlign: Int, len: String, p1: com.example.trilib.PointXY, angle: Float){
-        writeTextHV(len, p1, 7, textscale_, 1, verticalAlign, angle, 1f)
+        writeTextHV(len, p1, WHITE, textscale_, 1, verticalAlign, angle, 1f)
     }
 
     override fun writeTextHV(
@@ -222,7 +222,7 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
                 100
                 AcDbLine
                 370
-                13
+                -3
                 10
                 $ax
                 20
@@ -300,7 +300,7 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         if( ded.type == "Box" ) textOffsetX = -0.5f
 
         if(point.x <= pointFlag.x) {  //ptFlag is RIGHT from pt
-            writeLine( point, pointFlag, 1)
+            writeLine( point, pointFlag, RED)
             writeTextAndLine(
                 ded.infoStr,
                 pointFlag,
@@ -309,7 +309,7 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
                 1f
             )
         } else {                     //ptFlag is LEFT from pt
-            writeLine( point, pointFlag, 1)
+            writeLine( point, pointFlag, RED)
             writeTextAndLine(
                 ded.infoStr,
                 pointFlag.plus(-ded.getInfo().length*textSize - textOffsetX,0f),
@@ -319,12 +319,12 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
             )
         }
 
-        if(ded.type == "Circle") writeCircle(point, ded.lengthX/2, 1, 1f)
+        if(ded.type == "Circle") writeCircle(point, ded.lengthX/2, RED, 1f)
         if(ded.type == "Box")    writeDedRect(ded)//writeDXFRect(writer, point, ded.lengthX, ded.lengthY, 1)
     }
 
     private fun writeDedRect(ded: Deduction){
-        val color = 1
+        val color = RED
         ded.shapeAngle = -ded.shapeAngle // 逆回転
         ded.setBox( 1f )
         writeLine( ded.pLTop, ded.pLBtm, color)
@@ -587,126 +587,6 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
             SECTION
               2
             TABLES
-              0
-            TABLE
-              2
-            VPORT
-              5
-            8
-            330
-            0
-            100
-            AcDbSymbolTable
-             70
-                 1
-              0
-            VPORT
-              5
-            3A
-            330
-            8
-            100
-            AcDbSymbolTableRecord
-            100
-            AcDbViewportTableRecord
-              2
-            *ACTIVE
-             70
-                 0
-             10
-            0.0
-             20
-            0.0
-             11
-            1.0
-             21
-            1.0
-             12
-            $vpCenterX
-             22
-            ${(vpCenterY*0.1f)}
-             13
-            0.0
-             23
-            0.0
-             14
-            1.0
-             24
-            1.0
-             15
-            0.0
-             25
-            0.0
-             16
-            0.0
-             26
-            0.0
-             36
-            1.0
-             17
-            0.0
-             27
-            0.0
-             37
-            0.0
-             40
-            ${(sizeX_*0.006f)}
-             41
-            ${(sizeY_*0.006f)}
-             42
-            50.0
-             43
-            0.0
-             44
-            0.0
-             50
-            0.0
-             51
-            0.0
-             71
-                 0
-             72
-               100
-             73
-                 1
-             74
-                 1
-             75
-                 0
-             76
-                 0
-             77
-                 0
-             78
-                 0
-            281
-                 0
-             65
-                 1
-            110
-            0.0
-            120
-            0.0
-            130
-            0.0
-            111
-            1.0
-            121
-            0.0
-            131
-            0.0
-            112
-            0.0
-            122
-            1.0
-            132
-            0.0
-             79
-                 0
-            146
-            0.0
-              0
-            ENDTAB
               0
             TABLE
               2
@@ -1191,6 +1071,10 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
             ${'$'}ACADVER
               1
             AC1015
+              9
+            ${'$'}INSUNITS
+             70
+              6             ; ミリメートル
               9
             ${'$'}ACADMAINTVER
              70
