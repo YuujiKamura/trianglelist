@@ -438,6 +438,9 @@ class MainActivity : AppCompatActivity(),
         setContentView(view)
         Log.d("MainActivityLifeCycle", "setContentView")
 
+        myview = findViewById(R.id.my_view)//bMyView.myView
+        Log.d("myView", "Instance check in MainActivity: " + myview )
+
         sendMailLauncher =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult(), ::handleSendMailResult)
 
@@ -462,8 +465,6 @@ class MainActivity : AppCompatActivity(),
 
         super.onAttachedToWindow()
 
-        myview = findViewById(R.id.my_view)//bMyView.myView
-        Log.d("myView", "Instance check in MainActivity: " + myview )
         Log.d("MainActivityLifeCyce", "onAttachedToWindow")
 
         loadTitleParameters()
@@ -625,6 +626,15 @@ class MainActivity : AppCompatActivity(),
         Log.d("MainActivityLifeCycle", "OnResume")
         adMobDisable()
 
+        loadTitleParameters()
+
+        resumeCSV()
+
+        loadEditTable()
+        colorMovementFabs()
+        setEditNameAdapter(sNumberList)
+        setEditorTableTextWatcher()
+
         //my_view.setScreenSize() //スクリーンサイズの更新
     }
 
@@ -646,8 +656,17 @@ class MainActivity : AppCompatActivity(),
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
+        Log.d("ConfigChange", "onConfigurationChangedが呼ばれました")
+        Log.d("ConfigChange", "画面の向き: ${newConfig.orientation}")
+        Log.d("ConfigChange", "最小画面幅 (dp): ${newConfig.smallestScreenWidthDp}")
+        Log.d("ConfigChange", "現在の画面幅 (dp): ${newConfig.screenWidthDp}")
+        Log.d("ConfigChange", "現在の画面高さ (dp): ${newConfig.screenHeightDp}")
+        Log.d("ConfigChange", "画面レイアウト: ${newConfig.screenLayout}")
 
-        if( isTablet(this) ) return
+        if( isTablet(this) ) {
+            Log.d("ConfigChange", "タブレットと判定されました")
+            return
+        }
 
         // 現在の画面の向きをチェック
         if (newConfig.orientation === Configuration.ORIENTATION_LANDSCAPE) {
@@ -1392,6 +1411,7 @@ class MainActivity : AppCompatActivity(),
         }
 
         setCommonFabListener(fab_resetView,false) {
+            myview.setTriangleList(trianglelist, viewscale)
             try{
                 if(!deductionMode) myview.resetViewToLastTapTriangle()
                 else if( myDeductionList.size() > 0 )  myview.resetViewToCurrentDeduction()
@@ -2820,10 +2840,13 @@ class MainActivity : AppCompatActivity(),
             viewscale
         )
 
+        Log.d("CSVParser", "parseCSV: filename=$returnValues")
         if(returnValues == null ) return false
 
         setEditLists( returnValues.trilist, returnValues.dedlist )
         parseHeaderValues( returnValues.headerValues )
+        isCSVsavedToPrivate = false
+        saveCSVtoPrivate()
         return true
     }
 

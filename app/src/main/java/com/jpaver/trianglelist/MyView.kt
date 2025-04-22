@@ -463,8 +463,10 @@ class MyView(context: Context, attrs: AttributeSet?) :
         val triangle = try {
             trianglelist.getLastTriangle()
         } catch (e: EmptyTriListException) {
+            Log.d("MyView", "EmptyTriListException" )
             return PointXY(0f,0f)
         } catch (e: LastTapNumberValidationException){
+            Log.d("MyView", "LastTapNumberValidationException" )
             return PointXY(0f,0f)
         }
 
