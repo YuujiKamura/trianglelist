@@ -179,11 +179,14 @@ open class TriangleList : EditList {
 
         // スケールの倍数と倍率の配列
         val scales = arrayOf(0.5f, 1.0f, 1.5f, 2.0f, 2.5f, 3.0f, 4.0f, 4.5f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 15f)
-        val limits = arrayOf(0.5f, 1.0f, 1.4f, 1.9f, 2.5f, 3.0f, 4.0f, 4.5f, 5.0f, 5.0f, 5.0f, 5.0f, 5.0f, 10.0f)
+        val limits = arrayOf(0.5f, 1.0f, 1.4f, 1.9f, 2.5f, 3.0f, 4.0f, 4.5f, 5.0f, 5.0f, 5.0f, 5.0f, 5.0f, 10.0f, 15f)
 
         // 適切なスケールを見つける
-        for ((index, scale) in scales.withIndex()) {
-            if (longsidex <= paperWidth * scale && longsidey <= paperHeight * limits[index]) {
+        val minLength = minOf(scales.size, limits.size)
+        for (index in 0 until minLength) {
+            val scale = scales[index]
+            val limit = limits[index]
+            if (longsidex <= paperWidth * scale && longsidey <= paperHeight * limit) {
                 return scale
             }
         }
