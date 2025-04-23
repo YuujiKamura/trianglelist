@@ -22,18 +22,14 @@ class PointNumberManager( ): Cloneable {
         return to
     }
 
-    fun isFlagOn():Boolean{
-        return flag.isMovedByUser || flag.isAutoAligned
-    }
-
     val WEIGHT = 35f
 
     fun resetAutoFlag(isAuto: Boolean = false){
         flag.isAutoAligned = isAuto
     }
 
-    val BORDER_AREA = 4f
-    val BORDER_LENGTH = 1.0f
+    val BORDER_AREA = 3f
+    val BORDER_LENGTH = 0.5f
     fun autoAlign( triangle: Triangle, outlineList: OutlineList? = null) : com.example.trilib.PointXY {
         if(flag.isMovedByUser || flag.isAutoAligned ) return triangle.pointnumber
 

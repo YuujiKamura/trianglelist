@@ -8,7 +8,7 @@ data class DimAligns(var a: Int = 1, var b: Int = 1, var c: Int = 1, var s: Int 
 class Dims(val triangle: Triangle) : Cloneable<Dims> {
     // ──────────────────────────────
     // 一時的に自動水平配置を無効化するフラグ（必要なら使えます）
-    var enableAutoHorizontal = true
+    var enableAutoHorizontal = false
     // ──────────────────────────────
 
     // region properties and clone

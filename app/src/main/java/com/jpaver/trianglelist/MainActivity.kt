@@ -548,6 +548,8 @@ class MainActivity : AppCompatActivity(),
                 titleDed.pn
             ), getString(titleDed.pl)
         )
+
+        myview.resetView(myview.toLastTapTriangle())
     }
 
     fun setEditorTableTextWatcher(){
@@ -1411,7 +1413,6 @@ class MainActivity : AppCompatActivity(),
         }
 
         setCommonFabListener(fab_resetView,false) {
-            myview.setTriangleList(trianglelist, viewscale)
             try{
                 if(!deductionMode) myview.resetViewToLastTapTriangle()
                 else if( myDeductionList.size() > 0 )  myview.resetViewToCurrentDeduction()
