@@ -258,6 +258,11 @@ class MyView(context: Context, attrs: AttributeSet?) :
         when( touchCounter ){
             1 -> {
                 if(!isViewScaling){
+                    if (event.actionMasked == MotionEvent.ACTION_DOWN && BuildConfig.DEBUG) {
+                        Log.d("DBG.DOWN",
+                            "base=(${baseInView.x},${baseInView.y}) " +
+                                    "centerM=(${centerInModel.x},${centerInModel.y})")
+                    }
                     isViewScrolling = true
                     mDetector.onTouchEvent(event)
                     setPressEvent(event.x, event.y)
@@ -319,21 +324,35 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun onScroll(
-        p0: MotionEvent?,
-        p1: MotionEvent,
+        e1: MotionEvent?,               // ← 名前を分かりやすく変更
+        e2: MotionEvent,
         distanceX: Float,
         distanceY: Float
     ): Boolean {
-        if( isViewScaling == true ) return false
 
-        pressedInView.set(p1.x, p1.y)
-        moveVector = pressedInView.addminus( lastCPoint )
-        baseInView = translatePoint.add( moveVector )
-        moveVector.set(0f, 0f)
+        if (isViewScaling) return false     // ピンチ中はスクロールしない
 
+        /* ── 1. タッチ位置を更新 ───────────────────────── */
+        pressedInView.set(e2.x, e2.y)
+
+        /* ── 2. 今回の移動量を求める（現在値 − 前回値） ── */
+        moveVector = pressedInView.addminus(lastCPoint)
+
+        /* ── 3. ビュー全体の平行移動量を累積 ─────────── */
+        baseInView = translatePoint.add(moveVector)
+        translatePoint.set(baseInView)      // ★累積値を保存
+        lastCPoint.set(pressedInView)       // ★次回の差分計算用
+
+        /* ── 4. モデル座標も最新に更新 ───────────────── */
+        pressedInViewToModel(pressedInView) // ★ここを忘れると pIM が (0,0) のまま
+
+        /* ── 5. 再描画 ───────────────────────────── */
+        invalidate()
         return true
     }
+
 
     override fun onDown(event: MotionEvent): Boolean {
 
@@ -411,7 +430,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
             ), setscale, paintTexS.textSize )
 
         if( moveCenter ) setCenterInModelToLastTappedTriNumber() //画面を動かしてしまうので注意
-
+        transOnce = true
         print_trilist(trianglelist, "myview.setTriangleList")
 
         watchedB1_ = ""
@@ -498,13 +517,13 @@ class MyView(context: Context, attrs: AttributeSet?) :
         pressedInModel.set(0f, 0f)
     }
 
-    fun viewResetToCenter(){
-        viewSize.set( this.width.toFloat(), this.height.toFloat())
-        centerInView.set( viewSize.x * 0.5f, viewSize.y * 0.25f )
-        baseInView.set( centerInView.x, centerInView.y )
+    fun viewResetToCenter() {
+        viewSize.set(width.toFloat(), height.toFloat())
+        centerInView.set(viewSize.x * 0.5f, viewSize.y * 0.25f)
+
+        baseInView.set(centerInView)        // ★平行移動量を初期化
+        translatePoint.set(baseInView)      // ★これを忘れていた
     }
-
-
 
     fun onceTransViewToLastTapTriangle(){
         if(transOnce == true) {

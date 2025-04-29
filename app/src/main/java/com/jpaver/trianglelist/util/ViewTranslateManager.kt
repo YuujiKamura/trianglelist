@@ -1,7 +1,6 @@
 package com.jpaver.trianglelist.util
 
 import android.graphics.Canvas
-import com.example.trilib.PointXY
 
 class ViewTranslateManager() {
 

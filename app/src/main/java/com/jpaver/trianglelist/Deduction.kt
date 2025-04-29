@@ -87,12 +87,12 @@ class Deduction(var num: Int = 0,
     }
 
     fun setBox(scale: Float){
-        //val rect = Rectangle()
-        val mx = point.x - lengthX * myscale * 0.5f
-        val my = point.y - lengthY * myscale * 0.5f
-        val px = point.x + lengthX * myscale * 0.5f
-        val py = point.y + lengthY * myscale * 0.5f
+
         myscale = scale
+        val mx = point.x - lengthX * scale * 0.5f
+        val my = point.y - lengthY * scale * 0.5f
+        val px = point.x + lengthX * scale * 0.5f
+        val py = point.y + lengthY * scale * 0.5f
         pLTop = com.example.trilib.PointXY(mx, my).rotate(point, shapeAngle)
         pLBtm = com.example.trilib.PointXY(mx, py).rotate(point, shapeAngle)
         pRTop = com.example.trilib.PointXY(px, my).rotate(point, shapeAngle)
