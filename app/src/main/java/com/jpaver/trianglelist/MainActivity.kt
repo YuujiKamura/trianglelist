@@ -1629,7 +1629,11 @@ class MainActivity : AppCompatActivity(),
 
     private fun processTriEditMode(strAddLineB: String, strAddLineC: String, inputLineAdd: InputParameter, inputLineEdit: InputParameter) {
         when {
-            strAddLineB.isEmpty() -> {
+            strAddLineB.isEmpty() -> { // Edit attempt
+                if (trianglelist.size() == 0) {
+                    showToast("Cannot edit: The list is empty. Add a triangle first.")
+                    return // Exit early
+                }
                 resetTrianglesBy( inputLineEdit )
                 showToast("Rewrite Triangle")
             }
@@ -1871,6 +1875,14 @@ class MainActivity : AppCompatActivity(),
 
     private fun resetTrianglesBy(params: InputParameter) : Boolean {
 
+        if (trianglelist.size() == 0) {
+            showToast("Cannot edit: The list is empty. Add a triangle first.")
+            return false
+        }
+        if (params.number <= 0 || params.number > trianglelist.size()) {
+            showToast("Cannot edit: Invalid triangle number ${params.number}.")
+            return false
+        }
         return if (isParamsValid(params)){
             trilistUndo = trianglelist.clone()
             fab_undo.backgroundTintList = getColorStateList(R.color.colorLime)
