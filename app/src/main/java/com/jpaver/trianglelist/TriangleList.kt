@@ -508,7 +508,15 @@ open class TriangleList : EditList {
     }
 
     fun resetFromParam(prms: InputParameter): Boolean {
+        if (trilist.isEmpty()) {
+            Log.e("TriangleList", "resetFromParam: trilist is empty. Cannot reset.")
+            return false
+        }
         val ci = prms.number - 1
+        if (ci < 0 || ci >= trilist.size) {
+            Log.e("TriangleList", "resetFromParam: Index ci (${prms.number}-1) is out of bounds for trilist size ${trilist.size()}.")
+            return false
+        }
         val tri = trilist[ci]
 
         // 親番号が書き換わっている時は入れ替える。ただし現在のリストの範囲外の番号は除く。
