@@ -30,7 +30,7 @@ open class TriangleList : EditList {
         var startindex = startnumber - 1
 
         // 0番からすべて回転させる場合
-        if (!(startnumber > 1 && trilist[startindex].connectionSide >= 9) || !separationFreeMode) {
+        if (!(startnumber > 1 && (trilist[startindex].sideEnum == ConnectionSide.FB || trilist[startindex].sideEnum == ConnectionSide.FC)) || !separationFreeMode) {
             this.angle += angle
             this.basepoint = basepoint.clone()
             startindex = 0
@@ -323,8 +323,8 @@ open class TriangleList : EditList {
     fun setDimsUnconnectedSideToOuter(target: Triangle?) {
         if(target == null ) return
         if (target.nodeA == null) target.dim.vertical.a = 1 else target.dim.vertical.a = 3
-        if (target.nodeB == null) target.dim.vertical.b = 1 else if (target.nodeB!!.connectionSide > 2 ) target.dim.vertical.b = 3
-        if (target.nodeC == null) target.dim.vertical.c = 1 else if (target.nodeC!!.connectionSide > 2 ) target.dim.vertical.c = 3
+        if (target.nodeB == null) target.dim.vertical.b = 1 else if (target.nodeB!!.sideEnum.code > 2 ) target.dim.vertical.b = 3
+        if (target.nodeC == null) target.dim.vertical.c = 1 else if (target.nodeC!!.sideEnum.code > 2 ) target.dim.vertical.c = 3
     }
 
     fun recoverState(bp: com.example.trilib.PointXY = com.example.trilib.PointXY(0f, 0f)) {
@@ -508,7 +508,12 @@ open class TriangleList : EditList {
     }
 
     fun resetFromParam(prms: InputParameter): Boolean {
+        // ガード: リストが空、または要求番号が範囲外なら何もしない
+        if (trilist.isEmpty()) return false
+
         val ci = prms.number - 1
+        if (ci !in trilist.indices) return false
+
         val tri = trilist[ci]
 
         // 親番号が書き換わっている時は入れ替える。ただし現在のリストの範囲外の番号は除く。
@@ -612,7 +617,7 @@ open class TriangleList : EditList {
     }
 
 
-    // オブジェ��トポインタを返す。
+    // オブジェクトポインタを返す。
     fun getBy(number: Int): Triangle {
         return if (number < 1 || number > trilist.size) Triangle() //under 0 is empty. cant hook null. can hook lenA is not 0.
         else trilist[number - 1]
@@ -945,10 +950,10 @@ open class TriangleList : EditList {
                         if (next.parentSide == nextnext.parentSide) me.setReverseDefSide(
                             next.connectionSide,
                             true
-                        ) else if (i + 2 != nextnext.parentnumber && next.connectionSide != 1) me.setReverseDefSide(
-                            -next.connectionSide + 3,
+                        ) else if (i + 2 != nextnext.parentnumber && next.sideEnum != ConnectionSide.B) me.setReverseDefSide(
+                            -next.sideEnum.code + 3,
                             false
-                        ) else me.setReverseDefSide(next.connectionSide, false)
+                        ) else me.setReverseDefSide(next.sideEnum.code, false)
                     } else me.setReverseDefSide(next.connectionSide, false)
                     next.setNode(me, me.parentSide)
                 } else {

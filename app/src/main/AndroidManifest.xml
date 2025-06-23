@@ -26,6 +26,9 @@
                 <action android:name="android.intent.action.SEND_MULTIPLE" />
                 <action android:name="android.intent.action.EDIT" />
                 <category android:name="android.intent.category.OPENABLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/csv" />
+                <data android:mimeType="text/*" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>

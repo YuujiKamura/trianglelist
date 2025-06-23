@@ -14,7 +14,7 @@ class PointNumberManager( ): Cloneable {
     // region pointNumber
 
     fun setPointByUser(to: com.example.trilib.PointXY, triangle: Triangle, is_user:Boolean = true ): com.example.trilib.PointXY {
-        val BORDER = 20f * triangle.scaleFactror
+        val BORDER = 20f * triangle.scaleFactor
         val length = to.lengthTo(triangle.pointcenter)
         if( length > BORDER ) return triangle.pointnumber// あまり遠い時はスルー
         flag.isMovedByUser = is_user

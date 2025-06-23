@@ -16,6 +16,7 @@ import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.drawable.Icon
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -436,6 +437,8 @@ class MainActivity : AppCompatActivity(),
 
         setSupportActionBar(bindingMain.toolbar)
         setContentView(view)
+        // 共有インテントからのCSV受信を処理
+        handleIncomingIntent(intent)
         Log.d("MainActivityLifeCycle", "setContentView")
 
         myview = findViewById(R.id.my_view)//bMyView.myView
@@ -2776,11 +2779,13 @@ class MainActivity : AppCompatActivity(),
     }
 
     val PrivateCSVFileName = "privateTrilist.csv"
+    private var lastSavedCsvName: String = ""
 
     private fun saveCSVtoPrivate(filename: String = PrivateCSVFileName): Boolean {
         Log.d("CSVWrite", "saveCSVtoPrivate: filename=$filename")
 
-        if (isCSVsavedToPrivate) {
+        // 同じファイルを連続で保存する場合のみスキップする。
+        if (filename == lastSavedCsvName && isCSVsavedToPrivate) {
             Log.d("CSVWrite", "saveCSVtoPrivate: $filename already saved")
             return true // 既に保存済みなら、ここで処理を終了する
         }
@@ -2789,7 +2794,10 @@ class MainActivity : AppCompatActivity(),
             setTitles()
             BufferedWriter(OutputStreamWriter(openFileOutput(filename, MODE_PRIVATE), "Shift-JIS")).use { writer ->
                 val isSaved = writeCSV(writer)
-                if (isSaved) isCSVsavedToPrivate = true
+                if (isSaved) {
+                    isCSVsavedToPrivate = true
+                    lastSavedCsvName = filename
+                }
                 return isSaved
             }
         } catch (e: IOException) {
@@ -2948,5 +2956,45 @@ class MainActivity : AppCompatActivity(),
     }
 
     //endregion
+
+    // ---------------------------------------------
+    // Share / View インテントで渡された CSV の読み込み処理
+    private fun handleIncomingIntent(incoming: Intent?) {
+        incoming ?: return
+        when (incoming.action) {
+            Intent.ACTION_SEND -> {
+                val uri: Uri? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    incoming.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+                } else {
+                    @Suppress("DEPRECATION")
+                    incoming.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+                }
+                uri?.let { processCsvUri(it) }
+            }
+            Intent.ACTION_VIEW -> {
+                incoming.data?.let { processCsvUri(it) }
+            }
+        }
+    }
+
+    private fun processCsvUri(uri: Uri) {
+        // CSV ファイル以外は無視
+        val fileName = getFileName(uri)
+        if (!fileName.endsWith(".csv", ignoreCase = true)) return
+        try {
+            loadFileWithEncoding(uri) { reader ->
+                parseCSV(reader)
+                setTitles()
+            }
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIncomingIntent(intent)
+    }
+    // ---------------------------------------------
 
 } // end of class
