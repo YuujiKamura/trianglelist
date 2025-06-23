@@ -1,14 +1,9 @@
 package com.jpaver.trianglelist
 
+import android.util.Log
 import com.jpaver.trianglelist.util.Cloneable
 import com.jpaver.trianglelist.util.InputParameter
-import kotlin.math.acos
-import kotlin.math.atan2
-import kotlin.math.cos
-import kotlin.math.pow
-import kotlin.math.sin
 import kotlin.math.roundToInt
-import android.util.Log
 
 // Utilities have been moved to Utils.kt
 
@@ -129,8 +124,6 @@ class Triangle : EditObject, Cloneable<Triangle> {
     var dimpoint = Dimpoint()
 
     var nameAlign_ = 0
-    protected var theta = 0.0
-    protected var alpha = 0.0
     var angleCA = 0f
     var angleAB = 0f
     var angleBC = 0f
