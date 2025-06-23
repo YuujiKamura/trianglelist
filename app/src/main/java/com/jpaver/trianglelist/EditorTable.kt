@@ -6,6 +6,7 @@ import android.widget.Spinner
 import android.widget.TextView
 import com.example.trilib.PointXY
 import com.jpaver.trianglelist.EditList
+import com.jpaver.trianglelist.formattedString
 
 data class DeductionParams(var num: Int, var name: String, var lengthX: Float, var lengthY: Float, var parentNum: Int, var type: String, var angle: Float, var point: PointXY)
 
@@ -57,13 +58,6 @@ class EditorTable {
             }
         }
 }
-
-    fun Float?.formattedString(fractionDigits:Int): String{
-        // nullの場合は空文字
-        if(this == null) return ""
-        val format = "%.${fractionDigits}f"
-        return format.format(this)
-    }
 
     fun lineRewrite(prm: InputParameter, line: EditTextViewLine){
 

@@ -1,5 +1,6 @@
 package com.jpaver.trianglelist.writer
 
+import com.jpaver.trianglelist.*
 import com.jpaver.trianglelist.Deduction
 import com.jpaver.trianglelist.DeductionList
 import com.jpaver.trianglelist.EditList
@@ -9,6 +10,8 @@ import com.jpaver.trianglelist.TriangleList
 import com.jpaver.trianglelist.dataclass.ZumenInfo
 import com.jpaver.trianglelist.util.TitleParamStr
 import java.time.LocalDate
+import com.jpaver.trianglelist.formattedString
+import com.jpaver.trianglelist.isCollide
 
 open class DrawingFileWriter {
     //region parameter
@@ -120,13 +123,6 @@ open class DrawingFileWriter {
     fun setStartNumber( num: Int ) :Int{
         if( num > 1 ) startTriNumber_ = num
         return startTriNumber_
-    }
-
-    fun Float?.formattedString(fractionDigits:Int): String{
-        // nullの場合は空文字
-        if(this == null) return ""
-        val format = "%.${fractionDigits}f"
-        return format.format(this)
     }
 
     open fun save(){}
