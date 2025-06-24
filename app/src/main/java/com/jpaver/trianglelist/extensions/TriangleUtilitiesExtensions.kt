@@ -1,7 +1,5 @@
 package com.jpaver.trianglelist
 
-import kotlin.math.pow
-
 fun Triangle.toStrings(
     ispoints: Boolean = true,
     islength: Boolean = true,
@@ -110,7 +108,7 @@ fun Triangle.getTapLength(tapP: com.example.trilib.PointXY, rangeRadius: Float):
 
 fun Triangle.pointCenter_(): com.example.trilib.PointXY = com.example.trilib.PointXY(pointcenter)
 
-fun Triangle.collision(): Boolean = true
+fun collision(): Boolean = true
 
 fun Triangle.setBoundaryBox() {
     val lb = pointAB.min(pointBC)
@@ -119,17 +117,6 @@ fun Triangle.setBoundaryBox() {
     val rt = pointAB.max(pointBC)
     myBP_.right = rt.x
     myBP_.top = rt.y
-}
-
-fun Triangle.getArea(): Float {
-    val sumABC = lengthNotSized.sum()
-    val heron = sumABC * 0.5f * (sumABC * 0.5f - lengthNotSized[0]) * (sumABC * 0.5f - lengthNotSized[1]) * (sumABC * 0.5f - lengthNotSized[2])
-    return roundByUnderTwo(heron.pow(0.5f))
-}
-
-fun roundByUnderTwo(fp: Float): Float {
-    val ip = fp * 100f
-    return kotlin.math.round(ip) / 100f
 }
 
 fun Triangle.getLengthByIndex(i: Int): Float = when (i) {
@@ -154,7 +141,7 @@ fun Triangle.getLine(side: Int): Line = when (side) {
 fun Triangle.getPointBySide(i: Int): com.example.trilib.PointXY? = pointBySide(i)
 fun Triangle.getAngleBySide(i: Int): Float = angleBySide(i)
 
-fun Triangle.getSideByIndex(i: Int): String = when (i) {
+fun getSideByIndex(i: Int): String = when (i) {
     1, 3, 4, 7, 9 -> "B"
     2, 5, 6, 8, 10 -> "C"
     0 -> "not connected"

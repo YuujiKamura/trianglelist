@@ -589,7 +589,7 @@ class TriangleListTest {
     @Test
     fun testCollision() {
         val tri = Triangle(3f, 4f, 5f)
-        Assert.assertEquals(true, tri.collision())
+        Assert.assertEquals(true, collision())
         Assert.assertEquals(false, com.example.trilib.PointXY(-2f, -2f)
             .isCollide(tri.pointAB, tri.pointBC, tri.point[0]) )
         Assert.assertEquals(true, com.example.trilib.PointXY(-2f, 2f).isCollide(tri.pointAB, tri.pointBC, tri.point[0]) )
