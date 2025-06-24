@@ -128,7 +128,7 @@ fun Triangle.setColor(num: Int) { mycolor = num; isColored = true }
 
 fun Triangle.setChild(newChild: Triangle, cbc: Int) {
     childSide_ = cbc
-    if (newChild.getPbc(cbc) == 1) nodeB = newChild else if (newChild.getPbc(cbc) == 2) nodeC = newChild
+    if (getPbc(cbc) == 1) nodeB = newChild else if (getPbc(cbc) == 2) nodeC = newChild
     setDimAlignByChild()
 }
 

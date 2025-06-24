@@ -155,7 +155,7 @@ val Triangle.parentSide: Int
         else -> 0
     }
 
-fun Triangle.getPbc(pbc: Int): Int = when (ConnectionSide.fromCode(pbc)) {
+fun getPbc(pbc: Int): Int = when (ConnectionSide.fromCode(pbc)) {
     ConnectionSide.B, ConnectionSide.BR, ConnectionSide.BL, ConnectionSide.BC, ConnectionSide.FB -> 1
     ConnectionSide.C, ConnectionSide.CR, ConnectionSide.CL, ConnectionSide.CC, ConnectionSide.FC -> 2
     else -> 0
