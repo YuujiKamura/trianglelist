@@ -127,14 +127,10 @@ fun Triangle.getArea(): Float {
     return roundByUnderTwo(heron.pow(0.5f))
 }
 
-fun Triangle.roundByUnderTwo(fp: Float): Float {
+fun roundByUnderTwo(fp: Float): Float {
     val ip = fp * 100f
     return kotlin.math.round(ip) / 100f
 }
-
-val Triangle.lengthA: Float get() = length[0]
-val Triangle.lengthB: Float get() = length[1]
-val Triangle.lengthC: Float get() = length[2]
 
 fun Triangle.getLengthByIndex(i: Int): Float = when (i) {
     1 -> length[1]
