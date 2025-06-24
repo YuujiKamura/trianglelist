@@ -5,8 +5,11 @@ import java.io.BufferedWriter
 class DxfHeader {
 
     fun header(writer: BufferedWriter, printscale:Float){
-        val scaleX = 42000*printscale
-        val scaleY = 29700*printscale
+        val printscaleOneHandred = printscale * 100
+        val pextMaxX = 420f            // A3 横（mm）
+        val pextMaxY = 297f            // A3 縦（mm）
+        val extMaxX = pextMaxX * printscaleOneHandred
+        val extMaxY = pextMaxY * printscaleOneHandred
 
         writer.write("""
              0
@@ -39,19 +42,19 @@ class DxfHeader {
             0.0
               9
             ${'$'}EXTMIN
-            10
+             10
             0.0
-            20
+             20
             0.0
-            30
+             30
             0.0
-            9
+              9
             ${'$'}EXTMAX
-            10
-            $scaleX
-            20
-            $scaleY
-            30
+             10
+            $extMaxX
+             20
+            $extMaxY
+             30
             0.0
             9
             ${'$'}LIMMIN
@@ -62,9 +65,9 @@ class DxfHeader {
             9
             ${'$'}LIMMAX
             10
-            ${scaleX*1.2}
+            ${extMaxX*1.2}
             20
-            ${scaleY*1.2}
+            ${extMaxY*1.2}
             9
             ${'$'}ORTHOMODE
              70
@@ -128,7 +131,7 @@ class DxfHeader {
               9
             ${'$'}DIMSCALE
              40
-            1.0
+            $printscaleOneHandred
               9
             ${'$'}DIMASZ
              40
@@ -792,19 +795,19 @@ class DxfHeader {
               9
             ${'$'}PEXTMIN
              10
-            1.000000000000000E+20
+            0.0
              20
-            1.000000000000000E+20
+            0.0
              30
-            1.000000000000000E+20
+            0.0
               9
             ${'$'}PEXTMAX
              10
-            -1.000000000000000E+20
+            $pextMaxX
              20
-            -1.000000000000000E+20
+            $pextMaxY
              30
-            -1.000000000000000E+20
+            0.0
               9
             ${'$'}PLIMMIN
              10
@@ -872,10 +875,6 @@ class DxfHeader {
               9
             ${'$'}LWDISPLAY
             290
-                 0
-              9
-            ${'$'}INSUNITS
-             70
                  0
               9
             ${'$'}HYPERLINKBASE
