@@ -10,8 +10,8 @@ android {
         applicationId "com.jpaver.myapplication"
         minSdk 26
         targetSdk 35
-        versionCode 1344
-        versionName "7.56"
+        versionCode 1345
+        versionName "7.57"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
     }
