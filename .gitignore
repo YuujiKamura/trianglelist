@@ -1,4 +1,7 @@
 *.iml
+*.bin
+*.dex
+*.class
 .gradle
 /local.properties
 /.idea/caches
@@ -12,3 +15,8 @@
 /captures
 .externalNativeBuild
 .cxx
+/app/build
+/app/free
+/app/full
+/app/release
+/app/testSfc

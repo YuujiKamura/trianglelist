@@ -2,14 +2,46 @@ package com.jpaver.trianglelist.writer
 
 import java.io.BufferedWriter
 
-class DxfHeader {
+class DxfHeader(private val handles: HandleGen) {
 
-    fun header(writer: BufferedWriter, printscale:Float){
-        val printscaleOneHandred = printscale * 100
-        val pextMaxX = 420f            // A3 横（mm）
-        val pextMaxY = 297f            // A3 縦（mm）
-        val extMaxX = pextMaxX * printscaleOneHandred
-        val extMaxY = pextMaxY * printscaleOneHandred
+    fun header(writer: BufferedWriter, paper: Paper, printScale: PrintScale){
+        // Reserve first handle value so that $HANDSEED points **after** the highest in-use
+        // handle.  DXF spec: "$HANDSEED shall contain a handle that is greater than any
+        // handle currently in the database."  We consume one handle here to avoid duplicating
+        // the very first real object handle (often 40) that gets assigned in TABLES.
+        val reservedForSeed = handles.new()
+
+        // Calculate scale factor for DIMSCALE (typically 1/50 = 50.0)
+        val scaleForDimScale = printScale.paper / printScale.model
+        // EXTMAX should reflect actual model space content, but limited to reasonable size
+        // Use paper size * scale factor, but cap at reasonable maximum
+        val modelSpaceX = paper.width * scaleForDimScale
+        val modelSpaceY = paper.height * scaleForDimScale
+        val extMaxX = minOf(modelSpaceX, paper.width * 100) // Cap at 100x paper size
+        val extMaxY = minOf(modelSpaceY, paper.height * 100)
+
+        // ログ出力：計算値を確認（テスト時は出力しない）
+        try {
+            android.util.Log.d("DxfHeader", "=== DXFヘッダー計算値 ===")
+            android.util.Log.d("DxfHeader", "reservedForSeed: $reservedForSeed")
+            android.util.Log.d("DxfHeader", "scaleForDimScale: $scaleForDimScale (${printScale.paper}/${printScale.model})")
+            android.util.Log.d("DxfHeader", "extMaxX: $extMaxX (${paper.width} * $scaleForDimScale)")
+            android.util.Log.d("DxfHeader", "extMaxY: $extMaxY (${paper.height} * $scaleForDimScale)")
+            android.util.Log.d("DxfHeader", "PEXTMAX: ${paper.width} x ${paper.height}")
+        } catch (e: Exception) {
+            // ユニットテスト環境では標準出力に出力
+            println("=== DXFヘッダー計算値 ===")
+            println("reservedForSeed: $reservedForSeed")
+            println("scaleForDimScale: $scaleForDimScale (${printScale.paper}/${printScale.model})")
+            println("extMaxX: $extMaxX (${paper.width} * $scaleForDimScale)")
+            println("extMaxY: $extMaxY (${paper.height} * $scaleForDimScale)")
+            println("PEXTMAX: ${paper.width} x ${paper.height}")
+        }
+        try {
+            android.util.Log.d("DxfHeader", "LIMMAX: ${extMaxX*1.2} x ${extMaxY*1.2}")
+        } catch (e: Exception) {
+            println("LIMMAX: ${extMaxX*1.2} x ${extMaxY*1.2}")
+        }
 
         writer.write("""
              0
@@ -56,6 +88,14 @@ class DxfHeader {
             $extMaxY
              30
             0.0
+              9
+            ${'$'}PEXTMAX
+             10
+            ${paper.width}
+             20
+            ${paper.height}
+             30
+            0.0
             9
             ${'$'}LIMMIN
             10
@@ -65,9 +105,9 @@ class DxfHeader {
             9
             ${'$'}LIMMAX
             10
-            ${extMaxX*1.2}
+            ${extMaxX}
             20
-            ${extMaxY*1.2}
+            ${extMaxY}
             9
             ${'$'}ORTHOMODE
              70
@@ -131,7 +171,7 @@ class DxfHeader {
               9
             ${'$'}DIMSCALE
              40
-            $printscaleOneHandred
+            $scaleForDimScale
               9
             ${'$'}DIMASZ
              40
@@ -523,7 +563,7 @@ class DxfHeader {
               9
             ${'$'}HANDSEED
               5
-            88
+            ${handles.current()}
               9
             ${'$'}SURFTAB1
              70
@@ -803,9 +843,9 @@ class DxfHeader {
               9
             ${'$'}PEXTMAX
              10
-            $pextMaxX
+            ${paper.width}
              20
-            $pextMaxY
+            ${paper.height}
              30
             0.0
               9
@@ -817,9 +857,9 @@ class DxfHeader {
               9
             ${'$'}PLIMMAX
              10
-            12.0
+            ${paper.width}
              20
-            9.0
+            ${paper.height}
               9
             ${'$'}UNITMODE
              70
@@ -917,110 +957,6 @@ class DxfHeader {
             290
                  0
             0
-            ENDSEC
-            0
-            SECTION
-              2
-            CLASSES
-              0
-            CLASS
-              1
-            ACDBDICTIONARYWDFLT
-              2
-            AcDbDictionaryWithDefault
-              3
-            ObjectDBX Classes
-             90
-                    0
-            280
-                 0
-            281
-                 0
-              0
-            CLASS
-              1
-            MATERIAL
-              2
-            AcDbMaterial
-              3
-            ObjectDBX Classes
-             90
-                 1024
-            280
-                 0
-            281
-                 0
-              0
-            CLASS
-              1
-            VISUALSTYLE
-              2
-            AcDbVisualStyle
-              3
-            ObjectDBX Classes
-             90
-                 4095
-            280
-                 0
-            281
-                 0
-              0
-            CLASS
-              1
-            TABLESTYLE
-              2
-            AcDbTableStyle
-              3
-            ObjectDBX Classes
-             90
-                 4095
-            280
-                 0
-            281
-                 0
-              0
-            CLASS
-              1
-            DICTIONARYVAR
-              2
-            AcDbDictionaryVar
-              3
-            ObjectDBX Classes
-             90
-                    0
-            280
-                 0
-            281
-                 0
-              0
-            CLASS
-              1
-            ACDBPLACEHOLDER
-              2
-            AcDbPlaceHolder
-              3
-            ObjectDBX Classes
-             90
-                    0
-            280
-                 0
-            281
-                 0
-              0
-            CLASS
-              1
-            LAYOUT
-              2
-            AcDbLayout
-              3
-            ObjectDBX Classes
-             90
-                    0
-            280
-                 0
-            281
-                 0
-              0
             ENDSEC
         """.trimIndent())
         writer.newLine()
