@@ -2,7 +2,6 @@ package com.jpaver.trianglelist
 
 import com.jpaver.trianglelist.util.TitleParamStr
 import com.jpaver.trianglelist.writer.DxfFileWriter
-import com.jpaver.trianglelist.writer.DxfFileWriterLegacy
 import com.jpaver.trianglelist.writer.DxfValidator
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -35,29 +34,12 @@ class DxfFileWriterTest {
     }
 
     @Test
-    fun writeDxf_toBuildOutputFolder_legacy() {
-        // プロジェクトの build 以下に出力フォルダを作成
-        val projectDir = System.getProperty("user.dir")?.let { File(it) }
-        val outDir = File(projectDir, "build/dxf-output").apply { mkdirs() }
-        val outFile = File(outDir, "test-legacy.dxf")
-
-        writer.legacyMode = true
-        writer.saveTo(outFile)
-
-        assertTrue("DXF ファイルが正しく書き出されている", outFile.exists() && outFile.length() > 0)
-
-        // レガシーモードは既知の問題があるため、バリデーションをスキップ
-        println("→ Legacy DXF written (validation skipped): ${outFile.absolutePath}")
-    }
-
-    @Test
     fun writeDxf_newBuilderMode() {
         // プロジェクトの build 以下に出力フォルダを作成
         val projectDir = System.getProperty("user.dir")?.let { File(it) }
         val outDir = File(projectDir, "build/dxf-output").apply { mkdirs() }
         val outFile = File(outDir, "test-new.dxf")
 
-        writer.legacyMode = false  // 新しいビルダーモードを使用
         writer.saveTo(outFile)
 
         assertTrue("DXF ファイルが正しく書き出されている", outFile.exists() && outFile.length() > 0)
@@ -68,22 +50,25 @@ class DxfFileWriterTest {
         // assertTrue("DXF validation failed", result.ok)
 
         // IDE から簡単に参照できるようにパスを出力
-        println("→ New DXF written to build output folder: ${outFile.absolutePath}")
+        println("→ DXF written to build output folder: ${outFile.absolutePath}")
     }
 
     @Test
-    fun writeDxf_legacyMode_toBuildOutputFolder() {
+    fun writeDxf_withPaperAndScale() {
         // プロジェクトの build 以下に出力フォルダを作成
         val projectDir = System.getProperty("user.dir")?.let { File(it) }
         val outDir = File(projectDir, "build/dxf-output").apply { mkdirs() }
-        val outFile = File(outDir, "test-legacy-original.dxf")
+        val outFile = File(outDir, "test-a3-scale50.dxf")
 
-        val legacyWriter = DxfFileWriterLegacy(triList, DeductionList(), writer.zumeninfo, writer.titleTri_, writer.titleDed_)
-        legacyWriter.saveTo(outFile)
+        // A3横、1/50縮尺でDXF生成
+        writer.saveTo(outFile)
 
         assertTrue("DXF ファイルが正しく書き出されている", outFile.exists() && outFile.length() > 0)
 
+        val result = DxfValidator.validate(outFile)
+        result.errors.forEach { println("DXF validation error: $it") }
+
         // IDE から簡単に参照できるようにパスを出力
-        println("→ Legacy DXF written to build output folder: ${outFile.absolutePath}")
+        println("→ A3 Scale 1/50 DXF written: ${outFile.absolutePath}")
     }
 }
