@@ -32,9 +32,6 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
     // Entity handle management - use HandleGen for consistency
     // private var entityHandle = 100
 
-    // --- legacy output flag (use old hard-coded templates) -------------------
-    var legacyMode: Boolean = false
-
     // Minimal TABLES / OBJECTS builders
     private val tablesBuilder = TablesBuilder()
     private val objectsBuilder = ObjectsBuilder(handleGen)
@@ -53,8 +50,8 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
     var activeLayer = "0"
 
     // 用紙サイズと縮尺の設定（外部から変更可能）
-    var paper: Paper = Paper.A3_LAND  // デフォルトA3横
-    var customPrintScale: PrintScale? = null  // nullの場合は従来のprintscale_を使用
+    var paper: Paper = Paper.A3_LAND
+    var customPrintScale: PrintScale? = null
 
     //endregion parameters
 
