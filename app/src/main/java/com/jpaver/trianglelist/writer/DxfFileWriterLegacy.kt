@@ -5,16 +5,16 @@ import com.jpaver.trianglelist.DeductionList
 import com.jpaver.trianglelist.Triangle
 import com.jpaver.trianglelist.TriangleList
 import com.jpaver.trianglelist.dataclass.ZumenInfo
-import com.jpaver.trianglelist.formattedString
-import com.jpaver.trianglelist.myName_
 import com.jpaver.trianglelist.util.TitleParamStr
+import com.jpaver.trianglelist.myName_
+import com.jpaver.trianglelist.formattedString
 import java.io.BufferedWriter
 import java.io.FileOutputStream
 import java.io.OutputStreamWriter
 import java.nio.charset.Charset
 
 
-class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
+class DxfFileWriterLegacy(override var trilist_: TriangleList = TriangleList(),
                     override var dedlist_: DeductionList = DeductionList(),
                     override var zumeninfo: ZumenInfo = ZumenInfo(),
                     override var titleTri_: TitleParamStr = TitleParamStr(),
@@ -22,29 +22,18 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
 ): DrawingFileWriter() {
     //region parameters
     lateinit var writer: BufferedWriter
+    @Suppress("unused")
     lateinit var drawingLength: com.example.trilib.PointXY // = drawingLength
 
     var isDebug = false
 
-    // Shared handle generator for the whole DXF
-    private val handleGen = HandleGen(100)  // Same starting point as legacy version
-    
-    // Entity handle management - use HandleGen for consistency
-    // private var entityHandle = 100
-
-    // --- legacy output flag (use old hard-coded templates) -------------------
-    var legacyMode: Boolean = false
-
-    // Minimal TABLES / OBJECTS builders
-    private val tablesBuilder = TablesBuilder()
-    private val objectsBuilder = ObjectsBuilder(handleGen)
-    val dxfheader = DxfHeader(handleGen)
-
     override var textscale_ = trilist_.getPrintTextScale( 1f , "dxf")
-    override var printscale_ = trilist_.getPrintScale(1f)//setScale(drawingLength) 
-    // 注意: printscale_は縮尺分母の逆数 (0.5 = 1/50, 0.04 = 1/25など)
+    override var printscale_ = trilist_.getPrintScale(1f)//setScale(drawingLength)
     override var sizeX_ = 42000f * printscale_
     override var sizeY_ = 29700f * printscale_
+
+    private var entityHandle = 100
+    private val handleGen = HandleGen(0x40)
 
     override var WHITE = 256
     override var BLUE = 5
@@ -52,49 +41,14 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
 
     var activeLayer = "0"
 
-    // 用紙サイズと縮尺の設定（外部から変更可能）
-    var paper: Paper = Paper.A3_LAND  // デフォルトA3横
-    var customPrintScale: PrintScale? = null  // nullの場合は従来のprintscale_を使用
-
     //endregion parameters
 
     override fun save(){
-        // Use configured paper and print scale
-        // printscale_=0.5は1/50を意味するので、50 = 1/(printscale_*0.02) または別の変換式が必要
-        val actualScale = if (printscale_ == 0.5f) 50f else 1f/printscale_  // 0.5→50への特別変換
-        val printScale = customPrintScale ?: PrintScale(1f, actualScale)  // カスタム設定 or 従来値(0.5=1/50)から変換
 
-        // ログ出力：設定値を確認（テスト時は出力しない）
-        try {
-            android.util.Log.d("DxfFileWriter", "=== DXF生成設定 ===")
-            android.util.Log.d("DxfFileWriter", "用紙: ${paper.name} (${paper.width}×${paper.height}mm)")
-            android.util.Log.d("DxfFileWriter", "縮尺: 1/${printScale.paper.toInt()} (model=${printScale.model}, paper=${printScale.paper})")
-            android.util.Log.d("DxfFileWriter", "printscale_: $printscale_")
-            android.util.Log.d("DxfFileWriter", "customPrintScale: $customPrintScale")
-            android.util.Log.d("DxfFileWriter", "unitscale_: $unitscale_")
-        } catch (e: Exception) {
-            // ユニットテスト環境では標準出力に出力
-            println("=== DXF生成設定 ===")
-            println("用紙: ${paper.name} (${paper.width}×${paper.height}mm)")
-            println("縮尺: 1/${printScale.paper.toInt()} (model=${printScale.model}, paper=${printScale.paper})")
-            println("printscale_: $printscale_")
-            println("customPrintScale: $customPrintScale")
-            println("unitscale_: $unitscale_")
-        }
-        try {
-            android.util.Log.d("DxfFileWriter", "textscale_: $textscale_")
-            android.util.Log.d("DxfFileWriter", "sizeX_: $sizeX_")
-            android.util.Log.d("DxfFileWriter", "sizeY_: $sizeY_")
-        } catch (e: Exception) {
-            println("textscale_: $textscale_")
-            println("sizeX_: $sizeX_")
-            println("sizeY_: $sizeY_")
-        }
-
-        DxfHeader(handleGen).header(writer, paper, printScale)  // ← 引数化対応
-        tablesBuilder.writeMinimalTables(writer, listOf("0", "C-COL-COL1", "C-TTL-FRAM"))  // ← ビルダー版
+        DxfHeader(handleGen).header(writer, Paper.A3_LAND, PrintScale(1f, printscale_))
+        DxfTable().tables(writer)
         writeEntities()
-        objectsBuilder.writeCompleteObjects(writer, paper, printScale, "32")  // ← ビルダー版
+        DxfObject().dxfobject(writer)
 
     }
 
@@ -106,6 +60,7 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         }
     }
 
+    @Suppress("unused")
     fun verticalFromBaseline(vertical: Int, p1: com.example.trilib.PointXY, p2: com.example.trilib.PointXY): Int{
         // 垂直方向の文字位置合わせタイプ(省略可能、既定 = 0): 整数コード(ビットコードではありません):
         // 0 = 基準線、1 = 下、2 = 中央、3 = 上
@@ -175,11 +130,7 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         val dimverticalA = tri.dimOnPath[0].verticalDxf()//verticalFromBaseline(tri.dim.vertical.a, pca, pab)
         val dimverticalB = tri.dimOnPath[1].verticalDxf()//verticalFromBaseline(tri.dim.vertical.b, pab, pbc)
         val dimverticalC = tri.dimOnPath[2].verticalDxf()//verticalFromBaseline(tri.dim.vertical.c, pbc, pca)
-        //val dimverticalD = verticalFromBaseline(tri.dim.vertical.a, pca, pab)
-        //val dimverticalE = verticalFromBaseline(tri.dim.vertical.b, pab, pbc)
-        //val dimverticalF = verticalFromBaseline(tri.dim.vertical.c, pbc, pca)
         return Triple(dimverticalA, dimverticalB, dimverticalC)
-        //return Triple(dimverticalD, dimverticalE, dimverticalF)
     }
 
     private fun writeTextDimension(verticalAlign: Int, len: String, p1: com.example.trilib.PointXY, angle: Float){
@@ -208,13 +159,13 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
             }
         }
 
-        val handle = nextHandle()
+        entityHandle += 1
 
         writer.write("""
             0
             TEXT
             5
-            $handle
+            $entityHandle
             330
             36
             100
@@ -265,14 +216,14 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         val bx = p2.x *unitscale_
         val by = p2.y *unitscale_
 
-        val handle = nextHandle()
+        entityHandle += 1
 
         writer.write(
                 """
                 0
                 LINE
                 5
-                $handle
+                $entityHandle
                 330
                 36
                 100
@@ -307,13 +258,13 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         val y = point.y *unitscale_
         val s = size * unitscale_
 
-        val handle = nextHandle()
+        entityHandle += 1
 
         writer.write("""
             0
             CIRCLE
             5
-            $handle
+            $entityHandle
             330
             36
             100
@@ -525,13 +476,13 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         color: Int,
         sixtytwo: Int
     ){
-        val handle = nextHandle()
+        entityHandle += 1
 
         wrtr.write("""
             0
             HATCH
             5
-            $handle
+            $entityHandle
             100
             AcDbEntity
             8
@@ -605,13 +556,13 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
 
         //writeDXFTriHatch( wrtr, array )
 
-        val handle = nextHandle()
+        entityHandle += 1
 
         wrtr.write("""
             0
             LWPOLYLINE
             5
-            $handle
+            $entityHandle
             100
             AcDbEntity
             8
@@ -642,19 +593,13 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
     }
 
     override fun writeHeader(){
-        val printScale = customPrintScale ?: PrintScale(1f, printscale_)
-        dxfheader.header(writer, paper, printScale)
     }
 
     override fun writeFooter(){
-        // Always use the original DxfObject that works with CAD software
-        DxfObject().dxfobject(writer)
     }
 
     override fun PolymorphFunctionB(): String {
         return "IAMOVERRIDED."
     }
-
-    private fun nextHandle(): String = handleGen.new()
 
 }
