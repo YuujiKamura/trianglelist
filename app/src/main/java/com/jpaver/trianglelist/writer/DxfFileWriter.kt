@@ -36,6 +36,9 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
     private val tablesBuilder = TablesBuilder()
     private val objectsBuilder = ObjectsBuilder(handleGen)
     val dxfheader = DxfHeader(handleGen)
+    
+    // Entity writer
+    private lateinit var dxfEntity: DxfEntity
 
     override var textscale_ = trilist_.getPrintTextScale( 1f , "dxf")
     override var printscale_ = trilist_.getPrintScale(1f)//setScale(drawingLength) 
@@ -56,6 +59,9 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
     //endregion parameters
 
     override fun save(){
+        // Initialize entity writer
+        dxfEntity = DxfEntity(handleGen, unitscale_, textscale_, activeLayer)
+        
         // Use configured paper and print scale
         // printscale_=0.5は1/50を意味するので、50 = 1/(printscale_*0.02) または別の変換式が必要
         val actualScale = if (printscale_ == 0.5f) 50f else 1f/printscale_  // 0.5→50への特別変換
@@ -193,146 +199,15 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         angle: Float,
         scale: Float
     ){
-        var x = point.x *unitscale_ //- ( alignV * 30 - 60 )// a offset when V is 3 to 1. V is 1 to -1.
-        var y = point.y *unitscale_ //- ( alignV * 30 - 60 )
-        val ts = textsize * unitscale_
-
-        // its not effective..?
-        if( alignV == 3) {
-            if( angle < 0 ){
-                x -= 50f
-                y -= 50f
-            }
-        }
-
-        val handle = nextHandle()
-
-        writer.write("""
-            0
-            TEXT
-            5
-            $handle
-            330
-            36
-            100
-            AcDbEntity
-            8
-            $activeLayer
-            62
-            $color
-            100
-            AcDbText
-            10
-            $x
-            20
-            $y
-            30
-            0.0
-            40
-            ${ts.formattedString(0)}
-            1
-            $text
-            41
-            1.00
-            7
-            DimStandard
-            72
-            $alignH
-            11
-            $x
-            21
-            $y
-            31
-            0.0
-            50
-            $angle
-            51
-            0.0
-            100
-            AcDbText
-            73
-            $alignV
-        """.trimIndent())
-        writer.newLine()
+        dxfEntity.writeTextHV(writer, text, point, color, textsize, alignH, alignV, angle, scale)
     }
 
     override fun writeLine(p1: com.example.trilib.PointXY, p2: com.example.trilib.PointXY, color: Int, scale: Float ) {
-        val ax = p1.x *unitscale_
-        val ay = p1.y *unitscale_
-        val bx = p2.x *unitscale_
-        val by = p2.y *unitscale_
-
-        val handle = nextHandle()
-
-        writer.write(
-                """
-                0
-                LINE
-                5
-                $handle
-                330
-                36
-                100
-                AcDbEntity
-                8
-                $activeLayer
-                100
-                AcDbLine
-                370
-                -3
-                10
-                $ax
-                20
-                $ay
-                30
-                0.0
-                11
-                $bx
-                21
-                $by
-                31
-                0.0
-                62
-                $color
-            """.trimIndent()
-        )
-        writer.newLine()
+        dxfEntity.writeLine(writer, p1, p2, color, scale)
     }
 
     override fun writeCircle(point: com.example.trilib.PointXY, size: Float, color: Int, scale: Float){
-        val x = point.x *unitscale_
-        val y = point.y *unitscale_
-        val s = size * unitscale_
-
-        val handle = nextHandle()
-
-        writer.write("""
-            0
-            CIRCLE
-            5
-            $handle
-            330
-            36
-            100
-            AcDbEntity
-            8
-            $activeLayer
-            62
-            $color
-            370
-            13
-            100
-            AcDbCircle
-            10
-            $x
-            20
-            $y
-            30
-            0.0
-            40
-            $s 
-        """.trimIndent())
-        writer.newLine()
+        dxfEntity.writeCircle(writer, point, size, color, scale)
     }
 
     override fun writeTextAndLine(
@@ -342,8 +217,7 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         textsize: Float,
         scale: Float
     ){
-        writeTextHV(st, p1.plus(textsize,textsize*0.2f), 1, textsize, 0, 1, 0f, 1f)
-        writeLine( p1, p2, 1)
+        dxfEntity.writeTextAndLine(writer, st, p1, p2, textsize, scale)
     }
 
     override fun writeDeduction( ded: Deduction){
@@ -460,9 +334,12 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
 
         unitscale_ *= printscale_
         activeLayer = "C-TTL-FRAM"
+        dxfEntity.setUnitScale(unitscale_)
+        dxfEntity.setActiveLayer(activeLayer)
         writeDrawingFrame(textsize = textscale_)
         writeTopTitle(textsize = textscale_)
         unitscale_ = 1000f
+        dxfEntity.setUnitScale(unitscale_)
 
         if(isReverse_) {
             trilistNumbered = trilistNumbered.reverse()
@@ -490,7 +367,7 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
                 for( index2 in 0 until outlineLists.size){
 
                     if( outlineLists[index2].size > 0 ){
-                        writeDXFTriHatch(writer, outlineLists[index2], color[index], sixtytwo[index] )
+                        dxfEntity.writeDXFTriHatch(writer, outlineLists[index2], color[index], sixtytwo[index] )
                         //writeDXFTriOutlines( writer, outlineLists[index2] )
                     }
                 }
@@ -509,134 +386,14 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
                 for( index2 in 0 until outlineLists.size){
 
                     if( outlineLists[index2].size > 0 ){
-                        writeDXFTriOutlines( writer, outlineLists[index2] )
+                        dxfEntity.writeDXFTriOutlines( writer, outlineLists[index2] )
                     }
                 }
             }
         }
     }
 
-    private fun writeDXFTriHatch(
-        wrtr: BufferedWriter,
-        array: ArrayList<com.example.trilib.PointXY>,
-        color: Int,
-        sixtytwo: Int
-    ){
-        val handle = nextHandle()
 
-        wrtr.write("""
-            0
-            HATCH
-            5
-            $handle
-            100
-            AcDbEntity
-            8
-            C-COL-COL1
-            62
-            $sixtytwo
-            420
-            $color
-            370
-            -3
-            100
-            AcDbHatch
-            10
-            0.0
-            20
-            0.0
-            30
-            0.0
-            2
-            SOLID
-            70
-            1
-            71
-            0
-            91
-            1
-            92
-            1
-            93
-            ${array.size}
-            
-        """.trimIndent())
-
-        for( index in 0 until array.size){
-            if( index + 1 < array.size ){
-                wrtr.write("""
-                72
-                1
-                10
-                ${array[index].x*unitscale_}
-                20
-                ${( array[index].y*unitscale_ )}                
-                11
-                ${( array[index + 1].x*unitscale_ )}
-                21
-                ${( array[index + 1].y*unitscale_ )}                
-            """.trimIndent())
-                wrtr.newLine()
-            }
-        }
-
-        wrtr.write("""
-            97
-            0
-            75
-            0
-            76
-            1
-            98
-            1
-            10
-            0.0
-            20
-            0.0
-            
-        """.trimIndent())
-
-    }
-
-    private fun writeDXFTriOutlines(wrtr: BufferedWriter, array: ArrayList<com.example.trilib.PointXY> ) {
-
-        //writeDXFTriHatch( wrtr, array )
-
-        val handle = nextHandle()
-
-        wrtr.write("""
-            0
-            LWPOLYLINE
-            5
-            $handle
-            100
-            AcDbEntity
-            8
-            C-COL-COL1
-            100
-            AcDbPolyline
-            370
-            13
-            90
-            ${array.size}
-            70
-            1
-            43
-            0.0
-        """.trimIndent())
-        wrtr.newLine()
-
-        for( index in 0 until array.size){
-            wrtr.write("""
-                10
-                ${( array[index].x*unitscale_ )}
-                20
-                ${( array[index].y*unitscale_ )}                
-            """.trimIndent())
-            wrtr.newLine()
-        }
-
-    }
 
     override fun writeHeader(){
         val printScale = customPrintScale ?: PrintScale(1f, printscale_)
@@ -653,5 +410,4 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
     }
 
     private fun nextHandle(): String = handleGen.new()
-
 }
