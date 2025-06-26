@@ -5,7 +5,6 @@ import com.jpaver.trianglelist.DeductionList
 import com.jpaver.trianglelist.Triangle
 import com.jpaver.trianglelist.TriangleList
 import com.jpaver.trianglelist.dataclass.ZumenInfo
-import com.jpaver.trianglelist.formattedString
 import com.jpaver.trianglelist.myName_
 import com.jpaver.trianglelist.util.TitleParamStr
 import java.io.BufferedWriter
@@ -60,7 +59,7 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
 
     override fun save(){
         // Initialize entity writer
-        dxfEntity = DxfEntity(handleGen, unitscale_, textscale_, activeLayer)
+        dxfEntity = DxfEntity(handleGen, unitscale_, activeLayer)
         
         // Use configured paper and print scale
         // printscale_=0.5は1/50を意味するので、50 = 1/(printscale_*0.02) または別の変換式が必要
@@ -199,15 +198,15 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         angle: Float,
         scale: Float
     ){
-        dxfEntity.writeTextHV(writer, text, point, color, textsize, alignH, alignV, angle, scale)
+        dxfEntity.writeTextHV(writer, text, point, color, textsize, alignH, alignV, angle)
     }
 
     override fun writeLine(p1: com.example.trilib.PointXY, p2: com.example.trilib.PointXY, color: Int, scale: Float ) {
-        dxfEntity.writeLine(writer, p1, p2, color, scale)
+        dxfEntity.writeLine(writer, p1, p2, color)
     }
 
     override fun writeCircle(point: com.example.trilib.PointXY, size: Float, color: Int, scale: Float){
-        dxfEntity.writeCircle(writer, point, size, color, scale)
+        dxfEntity.writeCircle(writer, point, size, color)
     }
 
     override fun writeTextAndLine(
@@ -217,7 +216,7 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         textsize: Float,
         scale: Float
     ){
-        dxfEntity.writeTextAndLine(writer, st, p1, p2, textsize, scale)
+        dxfEntity.writeTextAndLine(writer, st, p1, p2, textsize)
     }
 
     override fun writeDeduction( ded: Deduction){
@@ -409,5 +408,4 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         return "IAMOVERRIDED."
     }
 
-    private fun nextHandle(): String = handleGen.new()
 }
