@@ -1,31 +1,24 @@
 package com.jpaver.trianglelist.writer
 
-import com.jpaver.trianglelist.Deduction
-import com.jpaver.trianglelist.Triangle
+import com.example.trilib.PointXY
 import com.jpaver.trianglelist.formattedString
-import com.jpaver.trianglelist.myName_
 import java.io.BufferedWriter
 
 class DxfEntity(
     private val handleGen: HandleGen,
     private var unitscale_: Float,
-    private var textscale_: Float,
     private var activeLayer: String = "0"
 ) {
-    private var WHITE = 256
-    private var BLUE = 5
-    private var RED = 1
 
     fun writeTextHV(
         writer: BufferedWriter,
         text: String,
-        point: com.example.trilib.PointXY,
+        point: PointXY,
         color: Int,
         textsize: Float,
         alignH: Int,
         alignV: Int,
-        angle: Float,
-        scale: Float
+        angle: Float
     ) {
         var x = point.x * unitscale_
         var y = point.y * unitscale_
@@ -92,10 +85,9 @@ class DxfEntity(
 
     fun writeLine(
         writer: BufferedWriter,
-        p1: com.example.trilib.PointXY,
-        p2: com.example.trilib.PointXY,
-        color: Int,
-        scale: Float = 1f
+        p1: PointXY,
+        p2: PointXY,
+        color: Int
     ) {
         val ax = p1.x * unitscale_
         val ay = p1.y * unitscale_
@@ -139,10 +131,9 @@ class DxfEntity(
 
     fun writeCircle(
         writer: BufferedWriter,
-        point: com.example.trilib.PointXY,
+        point: PointXY,
         size: Float,
-        color: Int,
-        scale: Float = 1f
+        color: Int
     ) {
         val x = point.x * unitscale_
         val y = point.y * unitscale_
@@ -182,18 +173,17 @@ class DxfEntity(
     fun writeTextAndLine(
         writer: BufferedWriter,
         st: String,
-        p1: com.example.trilib.PointXY,
-        p2: com.example.trilib.PointXY,
-        textsize: Float,
-        scale: Float = 1f
+        p1: PointXY,
+        p2: PointXY,
+        textsize: Float
     ) {
-        writeTextHV(writer, st, p1.plus(textsize, textsize * 0.2f), 1, textsize, 0, 1, 0f, 1f)
+        writeTextHV(writer, st, p1.plus(textsize, textsize * 0.2f), 1, textsize, 0, 1, 0f)
         writeLine(writer, p1, p2, 1)
     }
 
     fun writeDXFTriHatch(
         writer: BufferedWriter,
-        array: ArrayList<com.example.trilib.PointXY>,
+        array: ArrayList<PointXY>,
         color: Int,
         sixtytwo: Int
     ) {
@@ -274,7 +264,7 @@ class DxfEntity(
 
     fun writeDXFTriOutlines(
         writer: BufferedWriter,
-        array: ArrayList<com.example.trilib.PointXY>
+        array: ArrayList<PointXY>
     ) {
         val handle = handleGen.new()
 
@@ -314,10 +304,6 @@ class DxfEntity(
     // Setter methods for updating values
     fun setUnitScale(unitscale: Float) {
         this.unitscale_ = unitscale
-    }
-
-    fun setTextScale(textscale: Float) {
-        this.textscale_ = textscale
     }
 
     fun setActiveLayer(layer: String) {
