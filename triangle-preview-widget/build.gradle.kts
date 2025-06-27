@@ -18,16 +18,38 @@ kotlin {
         withJava()
     }
     
+    js(IR) {
+        browser {
+            commonWebpackConfig {
+                outputFileName = "cadview.js"
+            }
+        }
+        binaries.executable()
+    }
+    
     sourceSets {
-        val jvmMain by getting {
+        val commonMain by getting {
             dependencies {
-                implementation(compose.desktop.currentOs)
                 implementation(compose.runtime)
                 implementation(compose.foundation)
                 implementation(compose.material)
                 implementation(compose.ui)
             }
         }
+        
+        val jvmMain by getting {
+            dependencies {
+                implementation(compose.desktop.currentOs)
+            }
+        }
+        
+        val jsMain by getting {
+            dependencies {
+                implementation(compose.web.core)
+                implementation(compose.web.svg)
+            }
+        }
+        
         val jvmTest by getting
     }
 }
