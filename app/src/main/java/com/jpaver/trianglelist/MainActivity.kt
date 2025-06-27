@@ -80,6 +80,8 @@ import com.jpaver.trianglelist.viewmodel.LocalFileViewer
 import com.jpaver.trianglelist.viewmodel.MainViewModel
 import com.jpaver.trianglelist.viewmodel.TitleParamStr
 import com.jpaver.trianglelist.viewmodel.TitleParams
+import com.jpaver.trianglelist.viewmodel.formattedString
+import com.jpaver.trianglelist.viewmodel.rules_triangle
 import java.io.BufferedOutputStream
 import java.io.BufferedReader
 import java.io.BufferedWriter

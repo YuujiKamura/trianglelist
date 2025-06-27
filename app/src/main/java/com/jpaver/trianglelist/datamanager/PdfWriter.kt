@@ -5,7 +5,6 @@ import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
 import com.jpaver.trianglelist.editmodel.DeductionList
 import com.jpaver.trianglelist.editmodel.TriangleList
-import com.jpaver.trianglelist.viewmodel.Utils
 import java.io.OutputStream
 
 

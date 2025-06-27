@@ -1,4 +1,4 @@
-package com.jpaver.trianglelist.nodemodel
+package com.jpaver.trianglelist.editmodel
 /*
 open class GraphNode<T>(val value: T) {
     open val neighbors: MutableList<GraphNode<T>> = mutableListOf()

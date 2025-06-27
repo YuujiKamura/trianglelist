@@ -1,4 +1,4 @@
-package com.jpaver.trianglelist.nodemodel
+package com.jpaver.trianglelist.editmodel
 /*
 import com.example.trilib.PointXY
 import kotlin.math.cos

@@ -31,6 +31,7 @@ import com.jpaver.trianglelist.editmodel.TriangleList
 import com.jpaver.trianglelist.editmodel.isCollide
 import com.jpaver.trianglelist.editmodel.print_trilist
 import com.jpaver.trianglelist.editmodel.setScale
+import com.jpaver.trianglelist.viewmodel.formattedString
 
 import java.util.*
 import kotlin.math.roundToInt

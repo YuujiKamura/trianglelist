@@ -1,6 +1,4 @@
-package com.jpaver.trianglelist
-
-import com.jpaver.trianglelist.viewmodel.InputParameter
+package com.jpaver.trianglelist.viewmodel
 
 // Utility functions and validation rules extracted from Triangle.kt
 
