@@ -1,7 +1,7 @@
 package com.jpaver.trianglelist
 
 import com.jpaver.trianglelist.editmodel.ZumenInfo
-import com.jpaver.trianglelist.viewmodel.FileUtil
+import com.jpaver.trianglelist.datamanager.FileUtil
 import com.jpaver.trianglelist.viewmodel.TitleParamStr
 import com.jpaver.trianglelist.datamanager.SfcWriter
 import org.junit.Assert

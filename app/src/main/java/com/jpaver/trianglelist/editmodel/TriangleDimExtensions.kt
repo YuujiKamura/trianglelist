@@ -2,6 +2,7 @@ package com.jpaver.trianglelist
 
 import com.jpaver.trianglelist.editmodel.DimOnPath
 import com.jpaver.trianglelist.editmodel.Triangle
+import com.jpaver.trianglelist.viewmodel.formattedString
 
 private const val SIDE_SOKUTEN = 4
 

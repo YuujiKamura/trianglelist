@@ -10,7 +10,7 @@ import com.jpaver.trianglelist.editmodel.TriangleList
 import com.jpaver.trianglelist.editmodel.ZumenInfo
 import com.jpaver.trianglelist.viewmodel.TitleParamStr
 import java.time.LocalDate
-import com.jpaver.trianglelist.formattedString
+import com.jpaver.trianglelist.viewmodel.formattedString
 import com.jpaver.trianglelist.editmodel.isCollide
 
 open class DrawingFileWriter {

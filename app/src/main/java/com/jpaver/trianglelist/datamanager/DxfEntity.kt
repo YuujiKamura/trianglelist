@@ -1,7 +1,7 @@
 package com.jpaver.trianglelist.datamanager
 
 import com.example.trilib.PointXY
-import com.jpaver.trianglelist.formattedString
+import com.jpaver.trianglelist.viewmodel.formattedString
 import java.io.BufferedWriter
 
 class DxfEntity(

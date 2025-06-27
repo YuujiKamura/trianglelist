@@ -1,4 +1,4 @@
-package com.jpaver.trianglelist.viewmodel
+package com.jpaver.trianglelist.datamanager
 import java.io.BufferedOutputStream
 import java.io.BufferedWriter
 import java.io.File
