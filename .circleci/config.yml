@@ -9,7 +9,7 @@ orbs:
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/jobs-steps/#jobs-overview & https://circleci.com/docs/configuration-reference/#jobs
 jobs:
-  quick_check:
+  test:
     # Specify the execution environment. You can specify an image from Docker Hub or use one of our convenience images from CircleCI's Developer Hub.
     # See: https://circleci.com/docs/executor-intro/ & https://circleci.com/docs/configuration-reference/#executor-job
     docker:
@@ -18,15 +18,14 @@ jobs:
         auth:
           username: $DOCKERHUB_USERNAME  # 環境変数を参照
           password: $DOCKERHUB_PASSWORD  # 環境変数を参照
-    parallelism: 1  # 並列処理を削減（4→1）
+    parallelism: 4
     environment:
       JAVA_HOME: /path/to/java-17
     steps:
       - checkout
       - restore_cache:
           keys:
-            - gradle-cache-v2-{{ checksum "**/*.gradle*" }}
-            - gradle-cache-v2-
+            - gradle-cache-{{ checksum "build.gradle" }}
       - run:
           name: Add Google Cloud SDK repo key
           command: |
@@ -47,108 +46,45 @@ jobs:
           name: Set executable permission for gradlew
           command: chmod +x ./gradlew
       - run:
-          name: Run quick lint check (Dev flavor only)
+          name: Run tests in parallel
           command: |
-            ./gradlew lintDevDebug --daemon --parallel --build-cache
-      - run:
-          name: Run essential tests only (Dev flavor)
-          command: |
-            ./gradlew testDevDebugUnitTest --daemon --parallel --build-cache
+            TEST_FILES=$(find ./app/src/test/java/com/jpaver -name "*Test*.kt" | circleci tests split --split-by=timings)
+            ./gradlew test
       - store_test_results:
-          path: app/build/test-results
+          path: /tmp/test-results
       - save_cache:
           paths:
             - ~/.gradle
-            - ~/.android
-          key: gradle-cache-v2-{{ checksum "**/*.gradle*" }}
-  
-  full_test:
-    docker:
-      - image: cimg/android:2024.01
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_PASSWORD
-    parallelism: 2  # フルテスト時のみ並列処理
-    environment:
-      JAVA_HOME: /path/to/java-17
-    steps:
-      - checkout
-      - restore_cache:
-          keys:
-            - gradle-cache-v2-{{ checksum "**/*.gradle*" }}
-            - gradle-cache-v2-
-      - run:
-          name: Install JDK
-          command: |
-            wget https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.2%2B8/OpenJDK17U-jdk_x64_linux_hotspot_17.0.2_8.tar.gz -O jdk-17.tar.gz
-            sudo tar -xzf jdk-17.tar.gz -C /opt
-            echo 'export JAVA_HOME=/opt/jdk-17.0.2+8' >> $BASH_ENV
-            echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
-      - run:
-          name: Set executable permission for gradlew
-          command: chmod +x ./gradlew
-      - run:
-          name: Run all tests
-          command: |
-            ./gradlew test --daemon --parallel --build-cache
-      - store_test_results:
-          path: app/build/test-results
-      - save_cache:
-          paths:
-            - ~/.gradle
-            - ~/.android
-          key: gradle-cache-v2-{{ checksum "**/*.gradle*" }}
-
+          key: gradle-cache-{{ checksum "build.gradle" }}
   build:
     docker:
-      - image: cimg/android:2024.01
+      - image: cimg/base:current
     steps:
       - checkout
-      - restore_cache:
-          keys:
-            - gradle-cache-v2-{{ checksum "**/*.gradle*" }}
+      # Replace this with steps to build a package, or executable
       - run:
-          name: Build Dev APK only
-          command: |
-            chmod +x ./gradlew
-            ./gradlew assembleDevDebug --daemon --build-cache
+          name: Build an artifact
+          command: touch example.txt
       - store_artifacts:
-          path: app/build/outputs/apk
-  
+          path: example.txt
   deploy:
     docker:
       - image: cimg/base:current
     steps:
+      # Replace this with steps to deploy to users
       - run:
           name: deploy
-          command: echo "Deploy completed"
+          command: "#e.g. ./deploy.sh"
 
 # Orchestrate jobs using workflows
 # See: https://circleci.com/docs/workflows/ & https://circleci.com/docs/configuration-reference/#workflows
 workflows:
-  # 通常のpush時は軽量チェックのみ
-  commit_check:
+  example:
     jobs:
-      - quick_check
+      - test
       - build:
           requires:
-            - quick_check
-          filters:
-            branches:
-              only: 
-                - main
-                - develop
-  
-  # PR時やタグ時はフルテスト
-  full_check:
-    jobs:
-      - full_test:
-          filters:
-            branches:
-              only: /pull\/.*/
+            - test
       - deploy:
           requires:
-            - full_test
-          filters:
-            tags:
-              only: /^v.*/
+            - test
