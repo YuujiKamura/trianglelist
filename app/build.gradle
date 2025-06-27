@@ -67,40 +67,6 @@ android {
             targetSdk 34
         }
     }
-
-    // Lint設定を軽量化
-    lint {
-        // エラーで停止しない
-        abortOnError false
-        
-        // 警告を無視
-        ignoreWarnings true
-        
-        // リリースビルド時のチェックを無効化
-        checkReleaseBuilds false
-        
-        // テストソースのチェックを無効化
-        ignoreTestSources true
-        
-        // 重いチェックを無効化
-        disable 'ContentDescription', 'HardcodedText', 'SpUsage', 'IconMissingDensityFolder',
-                'GoogleAppIndexingWarning', 'UnusedResources', 'IconDensities', 'IconDuplicates'
-        
-        // 静かにする
-        quiet true
-        
-        // HTMLレポートのみ（XMLは無効化）
-        htmlReport true
-        xmlReport false
-        textReport false
-        
-        // デフォルトのチェックセットを使用（軽量）
-        checkAllWarnings false
-        
-        // ベースライン使用でインクリメンタル分析（作成される場合）
-        // baseline file("lint-baseline.xml")
-    }
-
 // To inline the bytecode built with JVM target 1.8 into
 // bytecode that is being built with JVM target 1.6. (e.g. navArgs)
 
