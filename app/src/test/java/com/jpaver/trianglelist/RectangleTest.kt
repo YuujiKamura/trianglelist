@@ -1,5 +1,9 @@
 package com.jpaver.trianglelist
 
+import com.jpaver.trianglelist.editmodel.EditObject
+import com.jpaver.trianglelist.editmodel.Rectangle
+import com.jpaver.trianglelist.editmodel.RectriangleList
+import com.jpaver.trianglelist.editmodel.Triangle
 import org.junit.Assert
 import org.junit.Test
 
@@ -14,7 +18,7 @@ class RectangleTest {
     fun testList(){
         val rectrilist = RectriangleList()
         rectrilist.add(rect345)
-        rectrilist.add( tri1 as EditObject )
+        rectrilist.add( tri1 as EditObject)
         Assert.assertEquals(2, rectrilist.list.size)
     }
 

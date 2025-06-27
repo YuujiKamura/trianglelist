@@ -3,7 +3,26 @@
 package com.jpaver.trianglelist
 
 //import com.jpaver.trianglelist.model.*
-import com.jpaver.trianglelist.util.InputParameter
+import com.example.trilib.PointXY
+import com.jpaver.trianglelist.editmodel.ConnParam
+import com.jpaver.trianglelist.editmodel.Deduction
+import com.jpaver.trianglelist.editmodel.DeductionList
+import com.jpaver.trianglelist.editmodel.Triangle
+import com.jpaver.trianglelist.editmodel.TriangleList
+import com.jpaver.trianglelist.editmodel.alreadyHaveChild
+import com.jpaver.trianglelist.editmodel.control_rotate
+import com.jpaver.trianglelist.editmodel.hasChildIn
+import com.jpaver.trianglelist.editmodel.isCollide
+import com.jpaver.trianglelist.editmodel.reset
+import com.jpaver.trianglelist.editmodel.resetByParent
+import com.jpaver.trianglelist.editmodel.resetElegant
+import com.jpaver.trianglelist.editmodel.resetLength
+import com.jpaver.trianglelist.editmodel.rotateLCR
+import com.jpaver.trianglelist.editmodel.rotateLCRandGet
+import com.jpaver.trianglelist.editmodel.setBasePoint
+import com.jpaver.trianglelist.editmodel.setNumber
+import com.jpaver.trianglelist.editmodel.setOn
+import com.jpaver.trianglelist.viewmodel.InputParameter
 import junit.framework.Assert.assertEquals
 import org.junit.Assert
 import org.junit.Test
@@ -50,7 +69,7 @@ class TriangleListTest {
 
         // もとの三角形のハッシュを参照していないか試してみる
         val trilist2 = trilist.clone()//.attachToTheView(PointXY(0f,0f),47.0f)
-        trilist2.attachToTheView(com.example.trilib.PointXY(0f, 0f),47.0f)
+        trilist2.attachToTheView(PointXY(0f, 0f),47.0f)
 
         val triangle2_1 = trilist2.get(1)
         val triangle2_2 = trilist2.get(2)
@@ -76,12 +95,12 @@ class TriangleListTest {
 
         val dedlist = DeductionList()
         dedlist.add( Deduction(1,"test",0.5f,0f,0,"Circle",0f,
-            com.example.trilib.PointXY(-2.5f, -2.5f),
-            com.example.trilib.PointXY(0f, 0f)
+            PointXY(-2.5f, -2.5f),
+            PointXY(0f, 0f)
         ) )
         dedlist.add( Deduction(2,"test2",0.5f,0f,0,"Circle",0f,
-            com.example.trilib.PointXY(-5.0f, -2.5f),
-            com.example.trilib.PointXY(0f, 0f)
+            PointXY(-5.0f, -2.5f),
+            PointXY(0f, 0f)
         ) )
 
         trilist.dedmapping(dedlist, -1)
@@ -397,13 +416,13 @@ class TriangleListTest {
         trilist.add(tri2, true)
         trilist.add(tri3, true)
         Assert.assertEquals(3, trilist.getTapIndexArray(
-            com.example.trilib.PointXY(
+            PointXY(
                 -3f,
                 2f
             )
         ).size.toLong())
         Assert.assertEquals(2, trilist.getTapHitCount(
-            com.example.trilib.PointXY(
+            PointXY(
                 -3f,
                 2f
             )
@@ -430,7 +449,7 @@ class TriangleListTest {
         Assert.assertEquals(true, tri5.pointCA.equals(0f, 0f))
         val tri8 =
             Triangle(tri1, InputParameter("", "", 2, 3f, 3f, 5f, 2, 5, tri1.pointCA,
-                com.example.trilib.PointXY(0f, 0f)
+                PointXY(0f, 0f)
             )
             )
         Assert.assertEquals(true, tri8.pointCA.equals(0f, 0f))
@@ -438,7 +457,7 @@ class TriangleListTest {
         Assert.assertEquals(true, tri6.pointCA.equals(-1.1999f, 1.5999f))
         val tri7 =
             Triangle(tri1, InputParameter("", "", 2, 3f, 3f, 5f, 2, 6, tri1.pointCA,
-                com.example.trilib.PointXY(0f, 0f)
+                PointXY(0f, 0f)
             )
             )
         Assert.assertEquals(true, tri7.pointCA.equals(-1.1999f, 1.5999f))
@@ -507,7 +526,7 @@ class TriangleListTest {
         val trilist = TriangleList(tri1)
         trilist.add(tri2, true)
         Assert.assertEquals(3.8971f, trilist[2].rotateLCR().y, 0.001f)
-        trilist.scale(com.example.trilib.PointXY(0f, 0f), 2f)
+        trilist.scale(PointXY(0f, 0f), 2f)
         Assert.assertEquals(6.928f, trilist[2].rotateLCR().y, 0.001f)
         Assert.assertEquals(8.046f, trilist[2].pointBC.y, 0.001f)
     }
@@ -530,7 +549,7 @@ class TriangleListTest {
         trilist.add(Triangle(trilist[2], 2, 5f, 5f), true)
 
         Assert.assertEquals(2, trilist.getTapNumber(
-            com.example.trilib.PointXY(-5f, 4.33f), 0.6f))
+            PointXY(-5f, 4.33f), 0.6f))
 
     }
 
@@ -539,7 +558,7 @@ class TriangleListTest {
         val trilist = TriangleList(Triangle(80f, 40f, 50f))
         Assert.assertEquals(2.5, trilist.getPrintScale(1.0f).toDouble(), 0.1)
         val scalefactor = 12.5f
-        trilist.scale(com.example.trilib.PointXY(0f, 0f), scalefactor)
+        trilist.scale(PointXY(0f, 0f), scalefactor)
         Assert.assertEquals(2.5, trilist.getPrintScale(12.5f).toDouble(), 0.1)
     }
 
@@ -580,9 +599,9 @@ class TriangleListTest {
         var myList2 = TriangleList(Triangle(3f, 4f, 5f))
         myList2.add(Triangle(mytlist[1], 2, 6f, 5f), true)
         myList2.add(Triangle(mytlist[2], 2, 5f, 6f), true)
-        myList2.scale(com.example.trilib.PointXY(0f, 0f), 5f)
+        myList2.scale(PointXY(0f, 0f), 5f)
         myList2 = mytlist.clone()
-        myList2.scale(com.example.trilib.PointXY(0f, 0f), 5f)
+        myList2.scale(PointXY(0f, 0f), 5f)
         Assert.assertEquals(4f, mytlist.measureMostLongLine().y, 0.001f)
     }
 
@@ -590,11 +609,11 @@ class TriangleListTest {
     fun testCollision() {
         val tri = Triangle(3f, 4f, 5f)
         Assert.assertEquals(true, collision())
-        Assert.assertEquals(false, com.example.trilib.PointXY(-2f, -2f)
+        Assert.assertEquals(false, PointXY(-2f, -2f)
             .isCollide(tri.pointAB, tri.pointBC, tri.point[0]) )
-        Assert.assertEquals(true, com.example.trilib.PointXY(-2f, 2f).isCollide(tri.pointAB, tri.pointBC, tri.point[0]) )
+        Assert.assertEquals(true, PointXY(-2f, 2f).isCollide(tri.pointAB, tri.pointBC, tri.point[0]) )
         Assert.assertEquals(true, tri.isCollide(
-            com.example.trilib.PointXY(
+            PointXY(
                 -2f,
                 2f
             )
@@ -604,13 +623,13 @@ class TriangleListTest {
         trilist.add(tri2, true)
         Assert.assertEquals(4f, tri2.pointBC.y, 0.001f)
         Assert.assertEquals(2, trilist.isCollide(
-            com.example.trilib.PointXY(
+            PointXY(
                 -1f,
                 3f
             )
         ).toLong())
         Assert.assertEquals(1, trilist.isCollide(
-            com.example.trilib.PointXY(
+            PointXY(
                 -2f,
                 2f
             )
@@ -622,7 +641,7 @@ class TriangleListTest {
         //val p1 = PointXY(0f, 0f)
         //val p2 = p1.clone()
         val mytri1 = Triangle(3.0f, 4.0f, 5.0f,
-            com.example.trilib.PointXY(0f, 0f), 180.0f)
+            PointXY(0f, 0f), 180.0f)
         val t2 = mytri1.clone()
         mytri1.setNumber(10)
         Assert.assertEquals(10, mytri1.mynumber.toLong())
@@ -643,7 +662,7 @@ class TriangleListTest {
         //setDimAlign();
 
         val t1 = Triangle(3.0f, 4.0f, 5.0f,
-            com.example.trilib.PointXY(0f, 0f), 180.0f )
+            PointXY(0f, 0f), 180.0f )
         val t2 = Triangle( t1, 9, 4f, 3.0f, 5.0f )
         val trilist = TriangleList( t1 )
         trilist.add(t2, true)
@@ -651,7 +670,7 @@ class TriangleListTest {
 
         printTriangle( t2 )
 
-        trilist.rotate(com.example.trilib.PointXY(0f, 0f), -90f, 2, false)
+        trilist.rotate(PointXY(0f, 0f), -90f, 2, false)
         System.out.println( "Trilist rotate t2.")
 
         printTriangle( t2 )
@@ -660,7 +679,7 @@ class TriangleListTest {
         Assert.assertEquals(7f, t2.pointBC.y, 0.001f)
 
         trilist.resetTriangles(1, Triangle(3.0f, 4.0f, 5.0f,
-            com.example.trilib.PointXY(0f, 0f), 180.0f) )
+            PointXY(0f, 0f), 180.0f) )
         System.out.println( "Trilist reset t1.")
 
         printTriangle( t2 )
@@ -676,13 +695,13 @@ class TriangleListTest {
         //PowerMockito.mockStatic(Log::class.java)
 
         val mytri1 = Triangle(3.0f, 4.0f, 5.0f,
-            com.example.trilib.PointXY(5f, 5f), 180.0f)
+            PointXY(5f, 5f), 180.0f)
         val myTrilist = TriangleList(mytri1)
         myTrilist.add(Triangle(mytri1, 2, 3.0f, 4.0f), true)
-        mytri1.control_rotate(com.example.trilib.PointXY(0f, 0f), -90f)
-        mytri1.control_rotate(com.example.trilib.PointXY(0f, 0f), -90f)
-        mytri1.control_rotate(com.example.trilib.PointXY(0f, 0f), -90f)
-        mytri1.control_rotate(com.example.trilib.PointXY(0f, 0f), -90f)
+        mytri1.control_rotate(PointXY(0f, 0f), -90f)
+        mytri1.control_rotate(PointXY(0f, 0f), -90f)
+        mytri1.control_rotate(PointXY(0f, 0f), -90f)
+        mytri1.control_rotate(PointXY(0f, 0f), -90f)
         Assert.assertEquals(5f, mytri1.pointCA.x, 0.00001f)
         Assert.assertEquals(5f, mytri1.pointCA.y, 0.00001f)
     }
@@ -690,17 +709,17 @@ class TriangleListTest {
     @Test
     fun testScale() {
         val mytri1 = Triangle(3.0f, 4.0f, 5.0f,
-            com.example.trilib.PointXY(0f, 0f), 180.0f)
+            PointXY(0f, 0f), 180.0f)
         val myTrilist = TriangleList(mytri1)
         myTrilist.add(Triangle(mytri1, 2, 3.0f, 4.0f), true)
-        myTrilist.setScale(com.example.trilib.PointXY(0f, 0f), 5f)
+        myTrilist.setScale(PointXY(0f, 0f), 5f)
         Assert.assertEquals(4f, myTrilist.getBy(1).pointBC_().y, 0.001f)
     }
 
     @Test
     fun testGetTriangle() {
         val mytri1 = Triangle(3.0f, 4.0f, 5.0f,
-            com.example.trilib.PointXY(0f, 0f), 180.0f)
+            PointXY(0f, 0f), 180.0f)
         val myTrilist = TriangleList()
         myTrilist.add(mytri1, true)
         Assert.assertEquals(3.0f, myTrilist.getBy(1).lengthA, 0.001f)
@@ -712,7 +731,7 @@ class TriangleListTest {
         val trilist = TriangleList()
         trilist.add(
             Triangle(5.0f, 5.0f, 5.0f,
-                com.example.trilib.PointXY(0f, 0f), 180.0f), true)
+                PointXY(0f, 0f), 180.0f), true)
         trilist.add(Triangle(trilist.get(1), 2, 5f, 5f), true)
 
         // 新しい三角形を作って渡すと連動しないので、ポインタを取得してリセットする。
@@ -728,7 +747,7 @@ class TriangleListTest {
     @Test
     fun testReplace() {
         val mytri1 = Triangle(3.0f, 4.0f, 5.0f,
-            com.example.trilib.PointXY(0f, 0f), 180.0f)
+            PointXY(0f, 0f), 180.0f)
         val myTrilist = TriangleList(mytri1)
         myTrilist.add(Triangle(mytri1, 2, 3f, 4f), true)
         myTrilist.add(Triangle(mytri1, 1, 3f, 5f), true)
@@ -748,7 +767,7 @@ class TriangleListTest {
     @Test
     fun testTriangleArea() {
         val mytrilist = TriangleList(Triangle(3.0f, 4.0f, 5.0f,
-            com.example.trilib.PointXY(0f, 0f), 180.0f))
+            PointXY(0f, 0f), 180.0f))
         mytrilist.add(Triangle(mytrilist.getBy(1), 2, 3f, 4f), true)
         Assert.assertEquals(12f, mytrilist.getArea(), 0.01f)
     }
@@ -756,7 +775,7 @@ class TriangleListTest {
     @Test
     fun testTriangleList() {
         val mytri1 = Triangle(3.0f, 4.0f, 5.0f,
-            com.example.trilib.PointXY(0f, 0f), 180.0f)
+            PointXY(0f, 0f), 180.0f)
         val myTrilist = TriangleList(mytri1)
         myTrilist.add(Triangle(mytri1, 2, 3.0f, 4.0f), true)
         myTrilist.add(Triangle(myTrilist.getBy(myTrilist.size()), 1, 4.0f, 5.0f), true)

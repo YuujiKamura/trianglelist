@@ -1,6 +1,6 @@
 package com.jpaver.trianglelist
 
-import com.jpaver.trianglelist.util.InputParameter
+import com.jpaver.trianglelist.viewmodel.InputParameter
 
 // Utility functions and validation rules extracted from Triangle.kt
 
@@ -33,5 +33,3 @@ val rules_triangle = listOf(
     ValidationRule({ it.pl < 1 && it.number != 1 }, "Invalid!! : connection in parent")
 )
 
-// camelCase 名前も残しておく（後方互換）
-val rulesTriangle = rules_triangle 

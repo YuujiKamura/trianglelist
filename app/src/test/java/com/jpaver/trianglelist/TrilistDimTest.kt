@@ -1,6 +1,9 @@
 package com.jpaver.trianglelist
 
-import com.jpaver.trianglelist.writer.DxfFileWriter
+import com.example.trilib.PointXY
+import com.jpaver.trianglelist.datamanager.DxfFileWriter
+import com.jpaver.trianglelist.editmodel.Triangle
+import com.jpaver.trianglelist.editmodel.TriangleList
 import org.junit.Assert
 import org.junit.Test
 
@@ -9,7 +12,7 @@ class TrilistDimTest {
     fun testDimAlign() {
         val mytri1 = Triangle(
             2.0f, 2.3f, 1.2f,
-            com.example.trilib.PointXY(0f, 0f), 180.0f
+            PointXY(0f, 0f), 180.0f
         )
         val myTrilist = TriangleList(mytri1)
         myTrilist.add(Triangle(mytri1, 3, 2.5f, 1.1f, 2.0f), true) //2

@@ -9,7 +9,7 @@ import android.widget.TableLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.jpaver.trianglelist.R
-import com.jpaver.trianglelist.SharedViewModel
+import com.jpaver.trianglelist.viewmodel.SharedViewModel
 import com.jpaver.trianglelist.databinding.FragmentFirstBinding
 
 /**

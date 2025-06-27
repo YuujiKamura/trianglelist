@@ -1,6 +1,5 @@
 package com.jpaver.trianglelist
 
-import LocalFileViewer
 import android.Manifest
 import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
@@ -43,8 +42,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider.getUriForFile
 import androidx.core.content.edit
+import androidx.core.net.toUri
 import androidx.fragment.app.DialogFragment
 import androidx.preference.PreferenceManager
+import com.example.trilib.PointXY
 import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
@@ -54,21 +55,31 @@ import com.google.android.gms.ads.RequestConfiguration
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-//import com.google.android.play.core.appupdate.AppUpdateManagerFactory
-//import com.google.android.play.core.install.model.AppUpdateType
-//import com.google.android.play.core.install.model.UpdateAvailability
 import com.jpaver.trianglelist.databinding.ActivityMainBinding
-import com.jpaver.trianglelist.dataclass.ZumenInfo
-import com.jpaver.trianglelist.filemanager.XlsxWriter
+import com.jpaver.trianglelist.datamanager.CsvLoader
+import com.jpaver.trianglelist.datamanager.DxfFileWriter
+import com.jpaver.trianglelist.datamanager.HeaderValues
+import com.jpaver.trianglelist.datamanager.PdfWriter
+import com.jpaver.trianglelist.datamanager.SfcWriter
+import com.jpaver.trianglelist.datamanager.XlsxWriter
+import com.jpaver.trianglelist.editmodel.ConnParam
+import com.jpaver.trianglelist.editmodel.Deduction
+import com.jpaver.trianglelist.editmodel.DeductionList
+import com.jpaver.trianglelist.editmodel.EditList
+import com.jpaver.trianglelist.editmodel.Triangle
+import com.jpaver.trianglelist.editmodel.TriangleList
+import com.jpaver.trianglelist.editmodel.ZumenInfo
 import com.jpaver.trianglelist.fragment.MyDialogFragment
-import com.jpaver.trianglelist.util.AdInitializer
-import com.jpaver.trianglelist.util.AdInitializerFactory
-import com.jpaver.trianglelist.util.AdManager
-import com.jpaver.trianglelist.util.EditTextViewLine
-import com.jpaver.trianglelist.util.EditorTable
-import com.jpaver.trianglelist.util.InputParameter
-import com.jpaver.trianglelist.util.TitleParamStr
-import com.jpaver.trianglelist.util.TitleParams
+import com.jpaver.trianglelist.viewmodel.AdManager
+import com.jpaver.trianglelist.viewmodel.CustomTextWatcher
+import com.jpaver.trianglelist.viewmodel.DeductionNameTextWatcher
+import com.jpaver.trianglelist.viewmodel.EditTextViewLine
+import com.jpaver.trianglelist.viewmodel.EditorTable
+import com.jpaver.trianglelist.viewmodel.InputParameter
+import com.jpaver.trianglelist.viewmodel.LocalFileViewer
+import com.jpaver.trianglelist.viewmodel.MainViewModel
+import com.jpaver.trianglelist.viewmodel.TitleParamStr
+import com.jpaver.trianglelist.viewmodel.TitleParams
 import java.io.BufferedOutputStream
 import java.io.BufferedReader
 import java.io.BufferedWriter
@@ -80,10 +91,6 @@ import java.io.OutputStreamWriter
 import java.io.Writer
 import java.time.LocalDate
 import kotlin.math.roundToInt
-import androidx.core.net.toUri
-import com.jpaver.trianglelist.writer.DxfFileWriter
-import com.jpaver.trianglelist.writer.PdfWriter
-import com.jpaver.trianglelist.writer.SfcWriter
 
 @Suppress("DEPRECATED_IDENTITY_EQUALS")
 class MainActivity : AppCompatActivity(),
@@ -173,7 +180,7 @@ class MainActivity : AppCompatActivity(),
 
     private var myEditor: EditorTable = EditorTable()
     private var parameter: InputParameter = InputParameter("", "", 0, 0f, 0f, 0f, 0, 0,
-        com.example.trilib.PointXY(0f, 0f)
+        PointXY(0f, 0f)
     )
     private var lastParams: InputParameter = parameter
 
@@ -318,11 +325,9 @@ class MainActivity : AppCompatActivity(),
     private lateinit var mAdView : AdView
     val adManager = AdManager()
     private var mInterstitialAd: InterstitialAd? = null
-    val adInitializer: AdInitializer = AdInitializerFactory.create()
+
     val USEADMOB = false
     private fun adMobInit() {
-
-        adInitializer.initialize()
 
         if ( !USEADMOB ){
             Log.d("AdMob", "adMobInit() cancelled.")
@@ -378,7 +383,6 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun adMobDisable() {
-        adInitializer.disableBannerAd()
 
         if ( !USEADMOB ){
             Log.d("AdMob", "adMobDisable() cancelled.")
@@ -394,7 +398,6 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun adShowInterStitial() {
-        adInitializer.showInterstitialAd()
 
         if ( !USEADMOB ){
             Log.d("AdMob", "adShowInterStitial() cancelled.")
@@ -1083,7 +1086,7 @@ class MainActivity : AppCompatActivity(),
                         0f,
                         elist.size(),
                         0,
-                    com.example.trilib.PointXY(0f, 0f)
+                    PointXY(0f, 0f)
                 ), editorline1
         )
         myEditor.lineRewrite(eo.getParams(), editorLine2)
@@ -1098,7 +1101,7 @@ class MainActivity : AppCompatActivity(),
                         0f,
                         0,
                         0,
-                    com.example.trilib.PointXY(0f, 0f)
+                    PointXY(0f, 0f)
                 ), myELThird
         )
     }
@@ -1475,8 +1478,8 @@ class MainActivity : AppCompatActivity(),
             fabReplace(
                 InputParameter(
                     "仕切弁", "Circle", 1, 0.23f, 0f, 0f, 1, 0,
-                    com.example.trilib.PointXY(1f, 0f),
-                    com.example.trilib.PointXY(
+                    PointXY(1f, 0f),
+                    PointXY(
                         0f,
                         0f
                     )
@@ -1548,7 +1551,7 @@ class MainActivity : AppCompatActivity(),
 
     fun flagTriangle(){
         val triangle = trianglelist.get(parameter.number)
-        val tappoint = myview.pressedInModel.scale(com.example.trilib.PointXY(0f, 0f), 1 / viewscale, -1 / viewscale)
+        val tappoint = myview.pressedInModel.scale(PointXY(0f, 0f), 1 / viewscale, -1 / viewscale)
         triangle.setPointNumber( tappoint, true )
         setTrianglelist()
     }
@@ -1564,8 +1567,8 @@ class MainActivity : AppCompatActivity(),
 
     fun fabRotate(degrees: Float, bSeparateFreeMode: Boolean, isRotateDedBoxShape: Boolean = true ){
         if(!deductionMode) {
-            trianglelist.rotate(com.example.trilib.PointXY(0f, 0f), degrees, trianglelist.lastTapNumber, bSeparateFreeMode )
-            myDeductionList.rotate(com.example.trilib.PointXY(0f, 0f), -degrees )
+            trianglelist.rotate(PointXY(0f, 0f), degrees, trianglelist.lastTapNumber, bSeparateFreeMode )
+            myDeductionList.rotate(PointXY(0f, 0f), -degrees )
             myview.setTriangleList(trianglelist, viewscale)
             myview.setDeductionList(myDeductionList, viewscale)
             myview.invalidate()//resetViewToLSTP()
@@ -1753,7 +1756,7 @@ class MainActivity : AppCompatActivity(),
 
     private fun flagDeduction(params: InputParameter): Deduction?{//Params {
         params.point = myview.pressedInModel
-        if (params.point == com.example.trilib.PointXY(0f, 0f)) return null
+        if (params.point == PointXY(0f, 0f)) return null
 
         //形状の自動判定
         if( params.b > 0f ) params.type = "Box"
@@ -1762,7 +1765,7 @@ class MainActivity : AppCompatActivity(),
         // 所属する三角形の判定処理
         params.pn = myview.trianglelist.isCollide(
             params.point.scale(
-                com.example.trilib.PointXY(
+                PointXY(
                     1f,
                     -1f
                 )
@@ -1842,10 +1845,10 @@ class MainActivity : AppCompatActivity(),
         fab.backgroundTintList = getColorStateList( colorIndex )
     }
 
-    private fun trilistSaving( from: TriangleList ){
+    private fun trilistSaving( from: TriangleList){
         trilistUndo = from.clone()
     }
-    private fun createNewTriangle(params: InputParameter, parentTri: Triangle ): Triangle{
+    private fun createNewTriangle(params: InputParameter, parentTri: Triangle): Triangle {
         val newTri = Triangle(
             parentTri,
             params
@@ -1854,7 +1857,7 @@ class MainActivity : AppCompatActivity(),
         return newTri
     }
 
-    private fun trilistAdd(params: InputParameter, triList: TriangleList ){
+    private fun trilistAdd(params: InputParameter, triList: TriangleList){
         val newTri = createNewTriangle( params, triList.getBy(params.pn) )
         triList.add(newTri, true)
         triList.lastTapNumber = triList.size()
@@ -1912,8 +1915,8 @@ class MainActivity : AppCompatActivity(),
             parameter.c,
             triangle.mynumber,
             sideindex,
-            com.example.trilib.PointXY(0f, 0f),
-            com.example.trilib.PointXY(0f, 0f)
+            PointXY(0f, 0f),
+            PointXY(0f, 0f)
         )
     }
 
@@ -1966,7 +1969,7 @@ class MainActivity : AppCompatActivity(),
             parameter.c,
             parameter.pn,
             sideindex,
-            com.example.trilib.PointXY(
+            PointXY(
                 0f,
                 0f
             )
@@ -2021,9 +2024,9 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    fun getShadowTap(pressedpoint: com.example.trilib.PointXY, range: Float):Int { return myview.shadowTri_.getTapLength(pressedpoint, range ) }
-    fun getPressedInModel(): com.example.trilib.PointXY { return myview.pressedInModel.scale(
-        com.example.trilib.PointXY(
+    fun getShadowTap(pressedpoint: PointXY, range: Float):Int { return myview.shadowTri_.getTapLength(pressedpoint, range ) }
+    fun getPressedInModel(): PointXY { return myview.pressedInModel.scale(
+        PointXY(
             0f,
             0f
         ), 1f, -1f) }
@@ -2631,7 +2634,7 @@ class MainActivity : AppCompatActivity(),
     //region File Private Save and Load
     private fun createNew(){
         val tri = Triangle(5f, 5f, 5f,
-            com.example.trilib.PointXY(0f, 0f), 0f)
+            PointXY(0f, 0f), 0f)
 
         val trilist = TriangleList(tri)
         trianglelist = trilist
@@ -2737,7 +2740,7 @@ class MainActivity : AppCompatActivity(),
             // 三角形リストのデータをCSVファイルに書き込み
             for (index in 1..trianglelist.size()) {
                 val mt: Triangle = trianglelist.getBy(index)
-                val pointnumber: com.example.trilib.PointXY = mt.pointnumber
+                val pointnumber: PointXY = mt.pointnumber
                 val cp = parentBCtoCParam(mt.connectionSide, mt.lengthNotSized[0], mt.cParam_)
 
                 writer.write("${mt.mynumber},${mt.lengthA_},${mt.lengthB_},${mt.lengthC_}," +
@@ -2767,8 +2770,8 @@ class MainActivity : AppCompatActivity(),
             // 減算リストのデータをCSVファイルに書き込み
             for (index in 1..myDeductionList.size()) {
                 val dd: Deduction = myDeductionList.get(index)
-                val pointAtRealscale = dd.point.scale(com.example.trilib.PointXY(0f, 0f), 1 / viewscale, -1 / viewscale)
-                val pointFlagAtRealscale = dd.pointFlag.scale(com.example.trilib.PointXY(0f, 0f), 1 / viewscale, -1 / viewscale)
+                val pointAtRealscale = dd.point.scale(PointXY(0f, 0f), 1 / viewscale, -1 / viewscale)
+                val pointFlagAtRealscale = dd.pointFlag.scale(PointXY(0f, 0f), 1 / viewscale, -1 / viewscale)
 
                 writer.write("Deduction,${dd.num},${dd.name},${dd.lengthX},${dd.lengthY},${dd.overlap_to},${dd.type},${dd.angle},${pointAtRealscale.x},${pointAtRealscale.y},${pointFlagAtRealscale.x},${pointFlagAtRealscale.y},${dd.shapeAngle}")
                 writer.write("\n")
@@ -2879,12 +2882,12 @@ class MainActivity : AppCompatActivity(),
         findViewById<EditText>(R.id.rosenname).setText(rosenname)
     }
 
-    private fun setEditLists(trilist: TriangleList, dedlist:DeductionList ){
+    private fun setEditLists(trilist: TriangleList, dedlist: DeductionList){
         trianglelist = trilist
         myDeductionList = dedlist
         turnToBlankTrilistUndo()
 
-        trilist.recoverState(com.example.trilib.PointXY(0f, 0f))
+        trilist.recoverState(PointXY(0f, 0f))
 
         myview.setDeductionList(dedlist, viewscale)
         myview.setTriangleList(trilist, viewscale)

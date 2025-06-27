@@ -1,6 +1,6 @@
 package com.jpaver.trianglelist
 
-import com.jpaver.trianglelist.writer.HandleGen
+import com.jpaver.trianglelist.datamanager.HandleGen
 import org.junit.Test
 
 class HandleGenTest {
