@@ -40,7 +40,7 @@ class DxfFileWriterTest {
     fun writeDxf_newBuilderMode() {
         // プロジェクトの build 以下に出力フォルダを作成
         val projectDir = System.getProperty("user.dir")?.let { File(it) }
-        val outDir = File(projectDir, "build/dxf-output").apply { mkdirs() }
+        val outDir = File(projectDir, "build/test-output").apply { mkdirs() }
         val outFile = File(outDir, "test-new.dxf")
 
         writer.saveTo(outFile)
@@ -60,7 +60,7 @@ class DxfFileWriterTest {
     fun writeDxf_withPaperAndScale() {
         // プロジェクトの build 以下に出力フォルダを作成
         val projectDir = System.getProperty("user.dir")?.let { File(it) }
-        val outDir = File(projectDir, "build/dxf-output").apply { mkdirs() }
+        val outDir = File(projectDir, "build/test-output").apply { mkdirs() }
         val outFile = File(outDir, "test-a3-scale50.dxf")
 
         // A3横、1/50縮尺でDXF生成
