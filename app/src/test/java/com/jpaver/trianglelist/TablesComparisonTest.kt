@@ -42,7 +42,8 @@ class TablesComparisonTest {
         }
 
         // ファイルに出力
-        java.io.File("build/tables-comparison.txt").writeText("""
+        java.io.File("build/test-output").mkdirs()
+        java.io.File("build/test-output/tables-comparison.txt").writeText("""
 === オリジナル版 ===
 ${originalLines.mapIndexed { index, line -> "${index + 1}: $line" }.joinToString("\n")}
 
@@ -60,6 +61,6 @@ ${(0 until maxOf(originalLines.size, builderLines.size)).mapNotNull { i ->
 ビルダー版行数: ${builderLines.size}
         """.trimIndent())
 
-        println("比較結果をbuild/tables-comparison.txtに出力しました")
+        println("比較結果をbuild/test-output/tables-comparison.txtに出力しました")
     }
 } 
