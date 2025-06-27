@@ -1,3 +1,4 @@
+/*
 import android.util.Log
 import com.jpaver.trianglelist.util.AdInitializer
 
@@ -20,3 +21,4 @@ class AdInitializerImpl: AdInitializer {
 
     }
 }
+*/
