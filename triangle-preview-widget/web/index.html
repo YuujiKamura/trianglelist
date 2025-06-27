@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CADView - Web版</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 25px;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        
+        .panel {
+            border: 1px solid #ccc;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .preview-panel {
+            border-color: #007bff;
+        }
+        
+        .info-panel {
+            border-color: #28a745;
+        }
+        
+        .controls-panel {
+            border-color: #ffc107;
+        }
+        
+        svg {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #fafafa;
+            display: block;
+            margin: 10px auto;
+        }
+        
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background-color: #0056b3;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .triangle-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .triangle-info h4 {
+            margin: 0 0 10px 0;
+            color: #007bff;
+        }
+        
+        .triangle-info p {
+            margin: 5px 0;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CADView - Web版</h1>
+        <p style="text-align: center; color: #666;">
+            三角形プレビューウィジェット（デバッグ用）
+        </p>
+        
+        <div class="panel preview-panel">
+            <h3>📐 図面プレビューエリア</h3>
+            <p>三角形の描画とプレビュー</p>
+            
+            <svg width="600" height="400" id="cadCanvas">
+                <!-- 背景グリッド -->
+                <defs>
+                    <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e0e0e0" stroke-width="1"/>
+                    </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#grid)" />
+                
+                <!-- 三角形1 -->
+                <polygon points="150,200 250,200 200,100" 
+                         fill="none" 
+                         stroke="#007bff" 
+                         stroke-width="2" 
+                         id="triangle1"/>
+                
+                <!-- 三角形2 -->
+                <polygon points="250,200 350,200 300,250" 
+                         fill="none" 
+                         stroke="#28a745" 
+                         stroke-width="2" 
+                         id="triangle2"/>
+                
+                <!-- 三角形3 -->
+                <polygon points="350,200 450,200 400,150" 
+                         fill="none" 
+                         stroke="#dc3545" 
+                         stroke-width="2" 
+                         id="triangle3"/>
+                
+                <!-- 頂点 -->
+                <circle cx="150" cy="200" r="4" fill="#007bff" class="vertex"/>
+                <circle cx="250" cy="200" r="4" fill="#007bff" class="vertex"/>
+                <circle cx="200" cy="100" r="4" fill="#007bff" class="vertex"/>
+                
+                <circle cx="350" cy="200" r="4" fill="#28a745" class="vertex"/>
+                <circle cx="300" cy="250" r="4" fill="#28a745" class="vertex"/>
+                
+                <circle cx="450" cy="200" r="4" fill="#dc3545" class="vertex"/>
+                <circle cx="400" cy="150" r="4" fill="#dc3545" class="vertex"/>
+                
+                <!-- 寸法線 -->
+                <line x1="150" y1="220" x2="250" y2="220" stroke="#666" stroke-width="1"/>
+                <text x="200" y="235" text-anchor="middle" font-size="12" fill="#666">100.0</text>
+            </svg>
+        </div>
+        
+        <div class="panel info-panel">
+            <h3>📊 三角形情報</h3>
+            <div class="info-grid">
+                <div class="triangle-info">
+                    <h4>三角形 1 (青)</h4>
+                    <p>辺A: 100.0</p>
+                    <p>辺B: 111.8</p>
+                    <p>辺C: 111.8</p>
+                    <p>面積: 5000.0</p>
+                    <p>周長: 323.6</p>
+                </div>
+                
+                <div class="triangle-info">
+                    <h4>三角形 2 (緑)</h4>
+                    <p>辺A: 100.0</p>
+                    <p>辺B: 70.7</p>
+                    <p>辺C: 70.7</p>
+                    <p>面積: 2500.0</p>
+                    <p>周長: 241.4</p>
+                </div>
+                
+                <div class="triangle-info">
+                    <h4>三角形 3 (赤)</h4>
+                    <p>辺A: 100.0</p>
+                    <p>辺B: 70.7</p>
+                    <p>辺C: 70.7</p>
+                    <p>面積: 2500.0</p>
+                    <p>周長: 241.4</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="panel controls-panel">
+            <h3>🎛️ コントロール</h3>
+            <button onclick="zoomIn()">🔍 拡大</button>
+            <button onclick="zoomOut()">🔍 縮小</button>
+            <button onclick="resetView()">🔄 リセット</button>
+            <button onclick="exportSVG()">💾 SVG出力</button>
+            <button onclick="addTriangle()">➕ 三角形追加</button>
+            
+            <div style="margin-top: 15px;">
+                <span>クリック回数: </span>
+                <span id="clickCount">0</span>
+                <button onclick="incrementCounter()">カウント</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let clickCount = 0;
+        let scale = 1;
+        
+        function incrementCounter() {
+            clickCount++;
+            document.getElementById('clickCount').textContent = clickCount;
+        }
+        
+        function zoomIn() {
+            scale *= 1.2;
+            updateScale();
+        }
+        
+        function zoomOut() {
+            scale /= 1.2;
+            updateScale();
+        }
+        
+        function resetView() {
+            scale = 1;
+            updateScale();
+        }
+        
+        function updateScale() {
+            const svg = document.getElementById('cadCanvas');
+            svg.style.transform = `scale(${scale})`;
+            svg.style.transformOrigin = 'center';
+        }
+        
+        function exportSVG() {
+            const svg = document.getElementById('cadCanvas');
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const blob = new Blob([svgData], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'cadview-export.svg';
+            a.click();
+            
+            URL.revokeObjectURL(url);
+        }
+        
+        function addTriangle() {
+            const svg = document.getElementById('cadCanvas');
+            const randomColor = `hsl(${Math.random() * 360}, 70%, 50%)`;
+            const x = Math.random() * 400 + 100;
+            const y = Math.random() * 200 + 150;
+            
+            const triangle = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+            triangle.setAttribute('points', `${x},${y} ${x+50},${y} ${x+25},${y-50}`);
+            triangle.setAttribute('fill', 'none');
+            triangle.setAttribute('stroke', randomColor);
+            triangle.setAttribute('stroke-width', '2');
+            
+            svg.appendChild(triangle);
+        }
+        
+        // SVGの頂点をクリック可能にする
+        document.querySelectorAll('.vertex').forEach(vertex => {
+            vertex.addEventListener('click', function() {
+                this.style.fill = this.style.fill === 'red' ? this.getAttribute('fill') : 'red';
+                incrementCounter();
+            });
+        });
+        
+        console.log('CADView Web版が起動しました！');
+    </script>
+</body>
+</html> 
