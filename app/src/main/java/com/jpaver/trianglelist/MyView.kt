@@ -15,11 +15,22 @@ import android.view.MotionEvent.ACTION_UP
 import android.view.ScaleGestureDetector
 import android.view.View
 import com.example.trilib.PointXY
-import com.jpaver.trianglelist.util.MyScaleGestureListener
-import com.jpaver.trianglelist.util.RotateGestureDetector
-import com.jpaver.trianglelist.util.ScaleGestureCallback
-import com.jpaver.trianglelist.util.ViewTranslateManager
-import com.jpaver.trianglelist.writer.PdfWriter
+import com.jpaver.trianglelist.viewmodel.MyScaleGestureListener
+import com.jpaver.trianglelist.viewmodel.RotateGestureDetector
+import com.jpaver.trianglelist.viewmodel.ScaleGestureCallback
+import com.jpaver.trianglelist.viewmodel.ViewTranslateManager
+import com.jpaver.trianglelist.datamanager.PdfWriter
+import com.jpaver.trianglelist.editmodel.Deduction
+import com.jpaver.trianglelist.editmodel.DeductionList
+import com.jpaver.trianglelist.editmodel.DimOnPath
+import com.jpaver.trianglelist.editmodel.EditList
+import com.jpaver.trianglelist.editmodel.EmptyTriListException
+import com.jpaver.trianglelist.editmodel.LastTapNumberValidationException
+import com.jpaver.trianglelist.editmodel.Triangle
+import com.jpaver.trianglelist.editmodel.TriangleList
+import com.jpaver.trianglelist.editmodel.isCollide
+import com.jpaver.trianglelist.editmodel.print_trilist
+import com.jpaver.trianglelist.editmodel.setScale
 
 import java.util.*
 import kotlin.math.roundToInt

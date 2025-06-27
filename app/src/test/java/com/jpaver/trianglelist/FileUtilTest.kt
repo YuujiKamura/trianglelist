@@ -1,4 +1,4 @@
-import com.jpaver.trianglelist.util.FileUtil
+import com.jpaver.trianglelist.viewmodel.FileUtil
 import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Before

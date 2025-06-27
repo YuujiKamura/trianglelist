@@ -1,5 +1,9 @@
 package com.jpaver.trianglelist
 
+import com.jpaver.trianglelist.editmodel.OutlineList
+import com.jpaver.trianglelist.editmodel.Triangle
+import com.jpaver.trianglelist.editmodel.TriangleList
+import com.jpaver.trianglelist.editmodel.setColor
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertTrue
 import org.junit.Assert
@@ -7,7 +11,7 @@ import org.junit.Test
 
 @Suppress("DEPRECATION")
 class TrilistOutlineTest {
-    fun setupTrilist(): TriangleList{
+    fun setupTrilist(): TriangleList {
         val trilist = TriangleList()
         // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
         trilist.add(Triangle(8f, 6f, 8f), true)//1
@@ -25,7 +29,7 @@ class TrilistOutlineTest {
         return trilist
     }
 
-    fun pattern2(): TriangleList{
+    fun pattern2(): TriangleList {
         val trilist = TriangleList()
         trilist.add(Triangle(5f, 5f, 5f), true)//1
         trilist.add(1, 1, 5f, 5f)//2

@@ -1,17 +1,22 @@
 package com.jpaver.trianglelist
 
+import com.jpaver.trianglelist.editmodel.OutlineList
+import com.jpaver.trianglelist.editmodel.Triangle
+import com.jpaver.trianglelist.editmodel.TriangleList
+import com.jpaver.trianglelist.editmodel.calcPoints
+import com.jpaver.trianglelist.editmodel.control_rotate
 import org.junit.Assert
 import org.junit.Test
 
 class PointNumberTest {
-    fun pattern1( triangle: Triangle ): TriangleList{
+    fun pattern1( triangle: Triangle): TriangleList {
         val trilist = TriangleList()
         trilist.add(triangle, true)//1
         trilist.add(1, 1, 5f, 5f)//2
         return trilist
     }
 
-    fun testCase1( pattern: () -> TriangleList ){
+    fun testCase1( pattern: () -> TriangleList){
         val trilist = pattern()
         val outlinelist = OutlineList(trilist) // OutlineList インスタンスを作成
 

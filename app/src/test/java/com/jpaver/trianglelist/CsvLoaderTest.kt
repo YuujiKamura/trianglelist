@@ -1,4 +1,7 @@
 package com.jpaver.trianglelist
+import com.jpaver.trianglelist.datamanager.CsvLoader
+import com.jpaver.trianglelist.datamanager.ReturnValues
+import com.jpaver.trianglelist.editmodel.TriangleList
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just

@@ -1,8 +1,8 @@
 package com.jpaver.trianglelist
 
-import com.jpaver.trianglelist.writer.DxfTable
-import com.jpaver.trianglelist.writer.TablesBuilder
-import com.jpaver.trianglelist.writer.HandleGen
+import com.jpaver.trianglelist.datamanager.DxfTable
+import com.jpaver.trianglelist.datamanager.TablesBuilder
+import com.jpaver.trianglelist.datamanager.HandleGen
 import org.junit.Test
 import java.io.StringWriter
 import java.io.BufferedWriter

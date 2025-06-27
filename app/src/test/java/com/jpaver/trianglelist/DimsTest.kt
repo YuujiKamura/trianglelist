@@ -1,4 +1,6 @@
 package com.jpaver.trianglelist
+import com.jpaver.trianglelist.editmodel.Dims
+import com.jpaver.trianglelist.editmodel.Triangle
 import org.junit.Assert.*
 import org.junit.Test
 

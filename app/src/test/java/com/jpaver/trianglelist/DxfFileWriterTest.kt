@@ -1,8 +1,11 @@
 package com.jpaver.trianglelist
 
-import com.jpaver.trianglelist.util.TitleParamStr
-import com.jpaver.trianglelist.writer.DxfFileWriter
-import com.jpaver.trianglelist.writer.DxfValidator
+import com.jpaver.trianglelist.viewmodel.TitleParamStr
+import com.jpaver.trianglelist.datamanager.DxfFileWriter
+import com.jpaver.trianglelist.datamanager.DxfValidator
+import com.jpaver.trianglelist.editmodel.DeductionList
+import com.jpaver.trianglelist.editmodel.Triangle
+import com.jpaver.trianglelist.editmodel.TriangleList
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
