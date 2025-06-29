@@ -13,7 +13,7 @@ repositories {
 }
 
 dependencies {
-    implementation(project(":TriLib"))
+    implementation(project(":common"))
     implementation(compose.desktop.currentOs)
 }
 

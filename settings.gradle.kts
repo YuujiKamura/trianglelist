@@ -27,5 +27,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "TriangleList"
 include(":app")
-include(":TriLib")
 include(":desktop")
+include(":common")
