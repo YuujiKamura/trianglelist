@@ -1,42 +1,51 @@
 package com.jpaver.trianglelist.parser
 
-import com.example.trilib.PointXY
-
 /**
  * DXFファイル解析クラス
  * Android版DxfFileWriterの出力に対応した読み込み機能を提供
  */
 class DxfParser {
     
-    private val errors = mutableListOf<DxfParseError>()
-    private val warnings = mutableListOf<String>()
-    private var lineNumber = 0
-    
     /**
      * DXFテキストを解析してDxfParseResultを返す
      */
     fun parse(dxfText: String): DxfParseResult {
-        val startTime = System.currentTimeMillis()
-        errors.clear()
-        warnings.clear()
-        lineNumber = 0
-        
         try {
             val lines = dxfText.lines()
             val iterator = lines.iterator()
             
-            val result = parseDxfContent(iterator)
-            val parseTime = System.currentTimeMillis() - startTime
-            
-            if (errors.any { it.severity == ErrorSeverity.FATAL }) {
-                throw DxfParseException("Fatal error during parsing", errors)
-            }
-            
-            return result
+            return parseDxfContent(iterator)
             
         } catch (e: Exception) {
-            addError("Parse failed: ${e.message}", "GENERAL", ErrorSeverity.FATAL)
-            throw DxfParseException("DXF parsing failed", errors, e)
+            // エラーが発生した場合は空の結果を返す
+            return DxfParseResult()
+        }
+    }
+    
+    /**
+     * 先読み可能なイテレータ
+     */
+    class PeekableIterator<T>(private val iterator: Iterator<T>) : Iterator<T> {
+        private var peeked: T? = null
+        private var hasPeeked = false
+
+        fun peek(): T? {
+            if (!hasPeeked && iterator.hasNext()) {
+                peeked = iterator.next()
+                hasPeeked = true
+            }
+            return peeked
+        }
+
+        override fun hasNext(): Boolean = hasPeeked || iterator.hasNext()
+
+        override fun next(): T {
+            return if (hasPeeked) {
+                hasPeeked = false
+                peeked!!
+            } else {
+                iterator.next()
+            }
         }
     }
     
@@ -44,6 +53,7 @@ class DxfParser {
      * DXFコンテンツの解析メイン処理
      */
     private fun parseDxfContent(iterator: Iterator<String>): DxfParseResult {
+        val peekableIterator = PeekableIterator(iterator)
         var currentSection: String? = null
         var header: DxfHeader? = null
         val lines = mutableListOf<DxfLine>()
@@ -51,48 +61,48 @@ class DxfParser {
         val lwPolylines = mutableListOf<DxfLwPolyline>()
         val texts = mutableListOf<DxfText>()
         
-        while (iterator.hasNext()) {
-            val (code, value) = readGroupCodePair(iterator) ?: continue
+        while (peekableIterator.hasNext()) {
+            val (code, value) = readGroupCodePair(peekableIterator) ?: continue
             
             when (code) {
                 0 -> {
                     when (value) {
                         "SECTION" -> {
-                            currentSection = readSectionName(iterator)
+                            currentSection = readSectionName(peekableIterator)
                         }
                         "ENDSEC" -> {
                             currentSection = null
                         }
                         "TEXT" -> {
                             if (currentSection == "ENTITIES") {
-                                parseTextEntity(iterator)?.let { texts.add(it) }
+                                parseTextEntity(peekableIterator)?.let { texts.add(it) }
                             }
                         }
                         "LINE" -> {
                             if (currentSection == "ENTITIES") {
-                                parseLineEntity(iterator)?.let { lines.add(it) }
+                                parseLineEntity(peekableIterator)?.let { lines.add(it) }
                             }
                         }
                         "CIRCLE" -> {
                             if (currentSection == "ENTITIES") {
-                                parseCircleEntity(iterator)?.let { circles.add(it) }
+                                parseCircleEntity(peekableIterator)?.let { circles.add(it) }
                             }
                         }
                         "LWPOLYLINE" -> {
                             if (currentSection == "ENTITIES") {
-                                parseLwPolylineEntity(iterator)?.let { lwPolylines.add(it) }
+                                parseLwPolylineEntity(peekableIterator)?.let { lwPolylines.add(it) }
                             }
                         }
                         "HATCH" -> {
                             if (currentSection == "ENTITIES") {
                                 // HATCHは読み飛ばす（表示用のため）
-                                skipEntity(iterator)
+                                skipEntity(peekableIterator)
                             }
                         }
                         else -> {
                             // 未対応エンティティは読み飛ばす
                             if (currentSection == "ENTITIES") {
-                                skipEntity(iterator)
+                                skipEntity(peekableIterator)
                             }
                         }
                     }
@@ -101,7 +111,7 @@ class DxfParser {
                     // ヘッダー変数（$で始まる）
                     if (currentSection == "HEADER" && value.startsWith("$")) {
                         if (header == null) header = DxfHeader()
-                        // 必要に応じてヘッダー情報を解析
+                        header = parseHeaderVariable(peekableIterator, header, value)
                     }
                 }
             }
@@ -117,9 +127,9 @@ class DxfParser {
     }
     
     /**
-     * セクション名を読み取り
+     * セクション名の読み取り
      */
-    private fun readSectionName(iterator: Iterator<String>): String? {
+    private fun readSectionName(iterator: PeekableIterator<String>): String? {
         val (code, value) = readGroupCodePair(iterator) ?: return null
         return if (code == 2) value else null
     }
@@ -127,228 +137,208 @@ class DxfParser {
     /**
      * TEXTエンティティの解析
      */
-    private fun parseTextEntity(iterator: Iterator<String>): DxfText? {
-        var text = ""
-        var insertionX = 0.0
-        var insertionY = 0.0
-        var height = 0.2
-        var rotation = 0.0
-        var horizontalAlign = 0
-        var verticalAlign = 0
-        var color = 0
-        var layer = "0"
-        var handle = ""
-        var textStyle = "DIMSTANDARD"
+    private fun parseTextEntity(iterator: PeekableIterator<String>): DxfText? {
+        var x: Double? = null
+        var y: Double? = null
+        var text: String? = null
+        var height: Double = 1.0
+        var rotation: Double = 0.0
+        var color = 7 // デフォルト色（白/黒）
         
         while (iterator.hasNext()) {
-            val (code, value) = readGroupCodePair(iterator) ?: break
+            // 次のエンティティの開始をチェック
+            val nextCode = iterator.peek()
+            if (nextCode == "0") break
+            
+            val (code, value) = readGroupCodePair(iterator) ?: continue
             
             when (code) {
-                0 -> {
-                    // 次のエンティティの開始なので、イテレータを戻す必要があるが、
-                    // 簡単のため現在のエンティティを完了として扱う
-                    break
-                }
+                10 -> x = value.toDoubleOrNull()
+                20 -> y = value.toDoubleOrNull()
                 1 -> text = value
-                5 -> handle = value
-                7 -> textStyle = value
-                8 -> layer = value
-                10 -> insertionX = value.toDoubleOrNull() ?: 0.0
-                20 -> insertionY = value.toDoubleOrNull() ?: 0.0
-                40 -> height = value.toDoubleOrNull() ?: 0.2
-                50 -> rotation = Math.toRadians(value.toDoubleOrNull() ?: 0.0)
-                62 -> color = value.toIntOrNull() ?: 0
-                72 -> horizontalAlign = value.toIntOrNull() ?: 0
-                73 -> verticalAlign = value.toIntOrNull() ?: 0
+                40 -> height = value.toDoubleOrNull() ?: 1.0
+                50 -> rotation = value.toDoubleOrNull() ?: 0.0
+                62 -> color = value.toIntOrNull() ?: 7
             }
         }
         
-        return if (text.isNotEmpty()) {
-            DxfText(
-                text = text,
-                insertionPoint = PointXY(insertionX.toFloat(), insertionY.toFloat()),
-                height = height,
-                rotationAngle = rotation,
-                horizontalAlignment = horizontalAlign,
-                verticalAlignment = verticalAlign,
-                color = color,
-                layer = layer,
-                handle = handle,
-                textStyle = textStyle
-            )
+        return if (x != null && y != null && text != null) {
+            DxfText(x, y, text, height, rotation, color)
         } else null
     }
     
     /**
      * LINEエンティティの解析
      */
-    private fun parseLineEntity(iterator: Iterator<String>): DxfLine? {
-        var startX = 0.0
-        var startY = 0.0
-        var endX = 0.0
-        var endY = 0.0
-        var color = 0
-        var layer = "0"
-        var handle = ""
+    private fun parseLineEntity(iterator: PeekableIterator<String>): DxfLine? {
+        var x1: Double? = null
+        var y1: Double? = null
+        var x2: Double? = null
+        var y2: Double? = null
+        var color = 7 // デフォルト色（白/黒）
         
         while (iterator.hasNext()) {
-            val (code, value) = readGroupCodePair(iterator) ?: break
+            // 次のエンティティの開始をチェック
+            val nextCode = iterator.peek()
+            if (nextCode == "0") break
+            
+            val (code, value) = readGroupCodePair(iterator) ?: continue
             
             when (code) {
-                0 -> break // 次のエンティティ
-                5 -> handle = value
-                8 -> layer = value
-                10 -> startX = value.toDoubleOrNull() ?: 0.0
-                20 -> startY = value.toDoubleOrNull() ?: 0.0
-                11 -> endX = value.toDoubleOrNull() ?: 0.0
-                21 -> endY = value.toDoubleOrNull() ?: 0.0
-                62 -> color = value.toIntOrNull() ?: 0
+                10 -> x1 = value.toDoubleOrNull()
+                20 -> y1 = value.toDoubleOrNull()
+                11 -> x2 = value.toDoubleOrNull()
+                21 -> y2 = value.toDoubleOrNull()
+                62 -> color = value.toIntOrNull() ?: 7
             }
         }
         
-        return DxfLine(
-            start = PointXY(startX.toFloat(), startY.toFloat()),
-            end = PointXY(endX.toFloat(), endY.toFloat()),
-            color = color,
-            layer = layer,
-            handle = handle
-        )
+        return if (x1 != null && y1 != null && x2 != null && y2 != null) {
+            DxfLine(x1, y1, x2, y2, color)
+        } else null
     }
     
     /**
      * CIRCLEエンティティの解析
      */
-    private fun parseCircleEntity(iterator: Iterator<String>): DxfCircle? {
-        var centerX = 0.0
-        var centerY = 0.0
-        var radius = 0.0
-        var color = 0
-        var layer = "0"
-        var handle = ""
+    private fun parseCircleEntity(iterator: PeekableIterator<String>): DxfCircle? {
+        var centerX: Double? = null
+        var centerY: Double? = null
+        var radius: Double? = null
+        var color = 7 // デフォルト色（白/黒）
         
         while (iterator.hasNext()) {
-            val (code, value) = readGroupCodePair(iterator) ?: break
+            // 次のエンティティの開始をチェック
+            val nextCode = iterator.peek()
+            if (nextCode == "0") break
+            
+            val (code, value) = readGroupCodePair(iterator) ?: continue
             
             when (code) {
-                0 -> break // 次のエンティティ
-                5 -> handle = value
-                8 -> layer = value
-                10 -> centerX = value.toDoubleOrNull() ?: 0.0
-                20 -> centerY = value.toDoubleOrNull() ?: 0.0
-                40 -> radius = value.toDoubleOrNull() ?: 0.0
-                62 -> color = value.toIntOrNull() ?: 0
+                10 -> centerX = value.toDoubleOrNull()
+                20 -> centerY = value.toDoubleOrNull()
+                40 -> radius = value.toDoubleOrNull()
+                62 -> color = value.toIntOrNull() ?: 7
             }
         }
         
-        return DxfCircle(
-            center = PointXY(centerX.toFloat(), centerY.toFloat()),
-            radius = radius,
-            color = color,
-            layer = layer,
-            handle = handle
-        )
+        return if (centerX != null && centerY != null && radius != null) {
+            DxfCircle(centerX, centerY, radius, color)
+        } else null
     }
     
     /**
      * LWPOLYLINEエンティティの解析
      */
-    private fun parseLwPolylineEntity(iterator: Iterator<String>): DxfLwPolyline? {
-        val vertices = mutableListOf<PointXY>()
-        var closed = false
-        var color = 0
-        var layer = "0"
-        var handle = ""
-        var vertexCount = 0
-        var currentX = 0.0
-        var currentY = 0.0
-        var expectingY = false
+    private fun parseLwPolylineEntity(iterator: PeekableIterator<String>): DxfLwPolyline? {
+        val vertices = mutableListOf<Pair<Double, Double>>()
+        var isClosed = false
+        var color = 7 // デフォルト色（白/黒）
+        var currentX: Double? = null
         
         while (iterator.hasNext()) {
-            val (code, value) = readGroupCodePair(iterator) ?: break
+            // 次のエンティティの開始をチェック
+            val nextCode = iterator.peek()
+            if (nextCode == "0") break
+            
+            val (code, value) = readGroupCodePair(iterator) ?: continue
             
             when (code) {
-                0 -> break // 次のエンティティ
-                5 -> handle = value
-                8 -> layer = value
-                10 -> {
-                    currentX = value.toDoubleOrNull() ?: 0.0
-                    expectingY = true
-                }
+                70 -> isClosed = (value.toIntOrNull() ?: 0) and 1 != 0
+                10 -> currentX = value.toDoubleOrNull()
                 20 -> {
-                    if (expectingY) {
-                        currentY = value.toDoubleOrNull() ?: 0.0
-                        vertices.add(PointXY(currentX.toFloat(), currentY.toFloat()))
-                        expectingY = false
+                    val y = value.toDoubleOrNull()
+                    if (currentX != null && y != null) {
+                        vertices.add(Pair(currentX!!, y))
+                        currentX = null
                     }
                 }
-                62 -> color = value.toIntOrNull() ?: 0
-                70 -> closed = (value.toIntOrNull() ?: 0) and 1 != 0
-                90 -> vertexCount = value.toIntOrNull() ?: 0
+                62 -> color = value.toIntOrNull() ?: 7
             }
         }
         
         return if (vertices.isNotEmpty()) {
-            DxfLwPolyline(
-                vertices = vertices,
-                closed = closed,
-                color = color,
-                layer = layer,
-                handle = handle
-            )
+            DxfLwPolyline(vertices, isClosed, color)
         } else null
     }
     
     /**
-     * 未対応エンティティをスキップ
+     * 未対応エンティティの読み飛ばし
      */
-    private fun skipEntity(iterator: Iterator<String>) {
+    private fun skipEntity(iterator: PeekableIterator<String>) {
         while (iterator.hasNext()) {
-            val (code, _) = readGroupCodePair(iterator) ?: break
-            if (code == 0) break // 次のエンティティまたはセクション終了
+            // 次のエンティティの開始をチェック
+            val nextCode = iterator.peek()
+            if (nextCode == "0") break
+            
+            // グループコードペアを読み飛ばし
+            readGroupCodePair(iterator)
         }
     }
     
     /**
      * グループコードと値のペアを読み取り
      */
-    private fun readGroupCodePair(iterator: Iterator<String>): Pair<Int, String>? {
+    private fun readGroupCodePair(iterator: PeekableIterator<String>): Pair<Int, String>? {
         if (!iterator.hasNext()) return null
-        val codeLine = iterator.next().trim()
-        lineNumber++
-        
+        val codeStr = iterator.next().trim()
         if (!iterator.hasNext()) return null
-        val valueLine = iterator.next().trim()
-        lineNumber++
+        val value = iterator.next().trim()
         
-        val code = codeLine.toIntOrNull()
-        if (code == null) {
-            addWarning("Invalid group code: $codeLine at line $lineNumber")
-            return null
+        val code = codeStr.toIntOrNull() ?: return null
+        return Pair(code, value)
+    }
+    
+    /**
+     * ヘッダー変数の解析
+     */
+    private fun parseHeaderVariable(iterator: PeekableIterator<String>, currentHeader: DxfHeader, varName: String): DxfHeader {
+        return when (varName) {
+            "\$ACADVER" -> {
+                val (_, value) = readGroupCodePair(iterator) ?: return currentHeader
+                currentHeader.copy(acadVer = value)
+            }
+            "\$INSUNITS" -> {
+                val (_, value) = readGroupCodePair(iterator) ?: return currentHeader
+                currentHeader.copy(insUnits = value.toIntOrNull() ?: 6)
+            }
+            "\$EXTMIN" -> {
+                val x = readGroupCodePair(iterator)?.second?.toDoubleOrNull() ?: 0.0
+                val y = readGroupCodePair(iterator)?.second?.toDoubleOrNull() ?: 0.0 
+                val z = readGroupCodePair(iterator)?.second?.toDoubleOrNull() ?: 0.0
+                currentHeader.copy(extMin = Triple(x, y, z))
+            }
+            "\$EXTMAX" -> {
+                val x = readGroupCodePair(iterator)?.second?.toDoubleOrNull() ?: 0.0
+                val y = readGroupCodePair(iterator)?.second?.toDoubleOrNull() ?: 0.0
+                val z = readGroupCodePair(iterator)?.second?.toDoubleOrNull() ?: 0.0
+                currentHeader.copy(extMax = Triple(x, y, z))
+            }
+            "\$LIMMIN" -> {
+                val x = readGroupCodePair(iterator)?.second?.toDoubleOrNull() ?: 0.0
+                val y = readGroupCodePair(iterator)?.second?.toDoubleOrNull() ?: 0.0
+                currentHeader.copy(limMin = Pair(x, y))
+            }
+            "\$LIMMAX" -> {
+                val x = readGroupCodePair(iterator)?.second?.toDoubleOrNull() ?: 0.0
+                val y = readGroupCodePair(iterator)?.second?.toDoubleOrNull() ?: 0.0
+                currentHeader.copy(limMax = Pair(x, y))
+            }
+            "\$INSBASE" -> {
+                val x = readGroupCodePair(iterator)?.second?.toDoubleOrNull() ?: 0.0
+                val y = readGroupCodePair(iterator)?.second?.toDoubleOrNull() ?: 0.0
+                val z = readGroupCodePair(iterator)?.second?.toDoubleOrNull() ?: 0.0
+                currentHeader.copy(insBase = Triple(x, y, z))
+            }
+            "\$DIMSCALE" -> {
+                val (_, value) = readGroupCodePair(iterator) ?: return currentHeader
+                currentHeader.copy(dimScale = value.toDoubleOrNull() ?: 1.0)
+            }
+            else -> {
+                // 未対応のヘッダー変数は読み飛ばす
+                readGroupCodePair(iterator)
+                currentHeader
+            }
         }
-        
-        return Pair(code, valueLine)
-    }
-    
-    /**
-     * エラーを追加
-     */
-    private fun addError(message: String, entityType: String = "", severity: ErrorSeverity = ErrorSeverity.ERROR) {
-        errors.add(DxfParseError(lineNumber, message, entityType, severity))
-    }
-    
-    /**
-     * 警告を追加
-     */
-    private fun addWarning(message: String) {
-        warnings.add("Line $lineNumber: $message")
     }
 }
-
-/**
- * DXF解析例外
- */
-class DxfParseException(
-    message: String,
-    val parseErrors: List<DxfParseError> = emptyList(),
-    cause: Throwable? = null
-) : Exception(message, cause)

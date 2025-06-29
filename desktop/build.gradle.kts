@@ -15,6 +15,7 @@ repositories {
 dependencies {
     implementation(project(":common"))
     implementation(compose.desktop.currentOs)
+    implementation(compose.ui)
 }
 
 compose.desktop {
