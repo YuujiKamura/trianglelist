@@ -16,11 +16,13 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import kotlin.math.min
 import com.jpaver.trianglelist.parser.DxfHeader
 import com.jpaver.trianglelist.parser.DxfParseResult
 import com.jpaver.trianglelist.common.DxfColor
+import com.jpaver.trianglelist.adapter.CADViewRenderer
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class)
 @Composable
@@ -30,11 +32,14 @@ fun CADView(
 ) {
     var scale by remember { mutableStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
+    val textMeasurer = rememberTextMeasurer()
+    val renderer = remember { CADViewRenderer() }
     
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val density = LocalDensity.current
         LaunchedEffect(parseResult, maxWidth, maxHeight) {
-            if (parseResult.lines.isEmpty() && parseResult.circles.isEmpty() && parseResult.lwPolylines.isEmpty()) return@LaunchedEffect
+            if (parseResult.lines.isEmpty() && parseResult.circles.isEmpty() && 
+                parseResult.lwPolylines.isEmpty() && parseResult.texts.isEmpty()) return@LaunchedEffect
             
             val canvasW = with(density) { maxWidth.toPx() }
             val canvasH = with(density) { maxHeight.toPx() }
@@ -45,54 +50,8 @@ fun CADView(
             println("density: ${density.density}")
             println("======================")
             
-            // ヘッダーの図面範囲を優先的に使用
-            val header = parseResult.header
-            val (minX, maxX, minY, maxY) = if (header != null && 
-                header.extMax.first > header.extMin.first && 
-                header.extMax.second > header.extMin.second) {
-                // ヘッダーの図面範囲を使用
-                println("Using header drawing extents: ${header.extMin} to ${header.extMax}")
-                listOf(
-                    header.extMin.first.toFloat(),
-                    header.extMax.first.toFloat(), 
-                    header.extMin.second.toFloat(),
-                    header.extMax.second.toFloat()
-                )
-            } else {
-                // エンティティから図面範囲を計算
-                val allPoints = mutableListOf<Offset>()
-                
-                // 線分の点を追加
-                parseResult.lines.forEach { line ->
-                    allPoints.add(Offset(line.x1.toFloat(), line.y1.toFloat()))
-                    allPoints.add(Offset(line.x2.toFloat(), line.y2.toFloat()))
-                }
-                
-                // 円の境界を追加
-                parseResult.circles.forEach { circle ->
-                    allPoints.add(Offset((circle.centerX - circle.radius).toFloat(), (circle.centerY - circle.radius).toFloat()))
-                    allPoints.add(Offset((circle.centerX + circle.radius).toFloat(), (circle.centerY + circle.radius).toFloat()))
-                }
-                
-                // ポリラインの頂点を追加
-                parseResult.lwPolylines.forEach { polyline ->
-                    polyline.vertices.forEach { (x, y) ->
-                        allPoints.add(Offset(x.toFloat(), y.toFloat()))
-                    }
-                }
-                
-                println("Using calculated drawing extents from entities")
-                if (allPoints.isEmpty()) {
-                    listOf(0f, 100f, 0f, 100f)
-                } else {
-                    listOf(
-                        allPoints.minOf { it.x },
-                        allPoints.maxOf { it.x },
-                        allPoints.minOf { it.y },
-                        allPoints.maxOf { it.y }
-                    )
-                }
-            }
+            // 新しい境界計算クラスを使用
+            val (minX, maxX, minY, maxY) = renderer.calculateDrawingBounds(parseResult, textMeasurer, scale)
 
             val width = maxX - minX
             val height = maxY - minY
@@ -160,51 +119,8 @@ fun CADView(
                 strokeWidth = 2f / scale
             )
 
-            // 線分を描画
-            parseResult.lines.forEach { line ->
-                val color = ColorConverter.aciToColor(line.color)
-                drawLine(
-                    color = color,
-                    start = Offset(line.x1.toFloat(), line.y1.toFloat()),
-                    end = Offset(line.x2.toFloat(), line.y2.toFloat()),
-                    strokeWidth = 1f / scale
-                )
-            }
-            
-            // 円を描画
-            parseResult.circles.forEach { circle ->
-                val color = ColorConverter.aciToColor(circle.color)
-                drawCircle(
-                    color = color,
-                    radius = circle.radius.toFloat(),
-                    center = Offset(circle.centerX.toFloat(), circle.centerY.toFloat()),
-                    style = Stroke(width = 1f / scale)
-                )
-            }
-            
-            // ポリラインを描画
-            parseResult.lwPolylines.forEach { polyline ->
-                if (polyline.vertices.size >= 2) {
-                    val color = ColorConverter.aciToColor(polyline.color)
-                    val path = androidx.compose.ui.graphics.Path()
-                    val firstVertex = polyline.vertices.first()
-                    path.moveTo(firstVertex.first.toFloat(), firstVertex.second.toFloat())
-                    
-                    polyline.vertices.drop(1).forEach { vertex ->
-                        path.lineTo(vertex.first.toFloat(), vertex.second.toFloat())
-                    }
-                    
-                    if (polyline.isClosed && polyline.vertices.size > 2) {
-                        path.close()
-                    }
-                    
-                    drawPath(
-                        path = path,
-                        color = color,
-                        style = Stroke(width = 1f / scale)
-                    )
-                }
-            }
+            // 新しい描画統合クラスを使用してすべてのエンティティを描画
+            renderer.drawAllEntities(this, parseResult, scale, textMeasurer)
             
             drawContext.canvas.restore()
         }
