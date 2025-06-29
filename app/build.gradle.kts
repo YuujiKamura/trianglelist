@@ -63,6 +63,10 @@ android {
         buildConfig = true
         viewBinding = true
     }
+    
+    lint {
+        baseline = file("lint-baseline.xml")
+    }
 }
 
 dependencies {
@@ -86,6 +90,7 @@ dependencies {
     testImplementation("org.mockito:mockito-inline:5.2.0")
     testImplementation("org.robolectric:robolectric:4.14.1")
     implementation(project(":common"))
+    implementation(project(":core"))
     testImplementation(project(":common"))
     androidTestImplementation("androidx.test:rules:1.6.1")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
