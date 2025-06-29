@@ -19,18 +19,13 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import kotlin.math.min
 import com.jpaver.trianglelist.parser.DxfHeader
-
-sealed class ColoredShape {
-    data class Line(val x1: Double, val y1: Double, val x2: Double, val y2: Double, val color: Color) : ColoredShape()
-    data class Circle(val centerX: Double, val centerY: Double, val radius: Double, val color: Color) : ColoredShape()
-    data class Polyline(val vertices: List<Pair<Double, Double>>, val isClosed: Boolean, val color: Color) : ColoredShape()
-}
+import com.jpaver.trianglelist.parser.DxfParseResult
+import com.jpaver.trianglelist.common.DxfColor
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class)
 @Composable
 fun CADView(
-    shapes: List<ColoredShape>,
-    header: DxfHeader? = null,
+    parseResult: DxfParseResult,
     modifier: Modifier = Modifier
 ) {
     var scale by remember { mutableStateOf(1f) }
@@ -38,8 +33,8 @@ fun CADView(
     
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val density = LocalDensity.current
-        LaunchedEffect(shapes, header, maxWidth, maxHeight) {
-            if (shapes.isEmpty()) return@LaunchedEffect
+        LaunchedEffect(parseResult, maxWidth, maxHeight) {
+            if (parseResult.lines.isEmpty() && parseResult.circles.isEmpty() && parseResult.lwPolylines.isEmpty()) return@LaunchedEffect
             
             val canvasW = with(density) { maxWidth.toPx() }
             val canvasH = with(density) { maxHeight.toPx() }
@@ -51,6 +46,7 @@ fun CADView(
             println("======================")
             
             // ヘッダーの図面範囲を優先的に使用
+            val header = parseResult.header
             val (minX, maxX, minY, maxY) = if (header != null && 
                 header.extMax.first > header.extMin.first && 
                 header.extMax.second > header.extMin.second) {
@@ -64,28 +60,38 @@ fun CADView(
                 )
             } else {
                 // エンティティから図面範囲を計算
-                val allPoints = shapes.flatMap { shape ->
-                    when (shape) {
-                        is ColoredShape.Line -> listOf(
-                            Offset(shape.x1.toFloat(), shape.y1.toFloat()),
-                            Offset(shape.x2.toFloat(), shape.y2.toFloat())
-                        )
-                        is ColoredShape.Circle -> listOf(
-                            Offset((shape.centerX - shape.radius).toFloat(), (shape.centerY - shape.radius).toFloat()),
-                            Offset((shape.centerX + shape.radius).toFloat(), (shape.centerY + shape.radius).toFloat())
-                        )
-                        is ColoredShape.Polyline -> shape.vertices.map { (x, y) ->
-                            Offset(x.toFloat(), y.toFloat())
-                        }
+                val allPoints = mutableListOf<Offset>()
+                
+                // 線分の点を追加
+                parseResult.lines.forEach { line ->
+                    allPoints.add(Offset(line.x1.toFloat(), line.y1.toFloat()))
+                    allPoints.add(Offset(line.x2.toFloat(), line.y2.toFloat()))
+                }
+                
+                // 円の境界を追加
+                parseResult.circles.forEach { circle ->
+                    allPoints.add(Offset((circle.centerX - circle.radius).toFloat(), (circle.centerY - circle.radius).toFloat()))
+                    allPoints.add(Offset((circle.centerX + circle.radius).toFloat(), (circle.centerY + circle.radius).toFloat()))
+                }
+                
+                // ポリラインの頂点を追加
+                parseResult.lwPolylines.forEach { polyline ->
+                    polyline.vertices.forEach { (x, y) ->
+                        allPoints.add(Offset(x.toFloat(), y.toFloat()))
                     }
                 }
+                
                 println("Using calculated drawing extents from entities")
-                listOf(
-                    allPoints.minOf { it.x },
-                    allPoints.maxOf { it.x },
-                    allPoints.minOf { it.y },
-                    allPoints.maxOf { it.y }
-                )
+                if (allPoints.isEmpty()) {
+                    listOf(0f, 100f, 0f, 100f)
+                } else {
+                    listOf(
+                        allPoints.minOf { it.x },
+                        allPoints.maxOf { it.x },
+                        allPoints.minOf { it.y },
+                        allPoints.maxOf { it.y }
+                    )
+                }
             }
 
             val width = maxX - minX
@@ -136,7 +142,7 @@ fun CADView(
         ) {
             drawContext.canvas.save()
             // Y軸反転＋図面の高さ分だけY方向に平行移動
-            drawContext.transform.translate(offset.x, offset.y + height * scale)
+            drawContext.transform.translate(offset.x, offset.y + size.height * scale)
             drawContext.transform.scale(scale, -scale) // Y flip
 
             // 描画原点(0,0)にクロスラインを描画
@@ -154,45 +160,49 @@ fun CADView(
                 strokeWidth = 2f / scale
             )
 
-            shapes.forEach { shape ->
-                when (shape) {
-                    is ColoredShape.Line -> {
-                        drawLine(
-                            color = shape.color,
-                            start = Offset(shape.x1.toFloat(), shape.y1.toFloat()),
-                            end = Offset(shape.x2.toFloat(), shape.y2.toFloat()),
-                            strokeWidth = 1f / scale
-                        )
+            // 線分を描画
+            parseResult.lines.forEach { line ->
+                val color = ColorConverter.aciToColor(line.color)
+                drawLine(
+                    color = color,
+                    start = Offset(line.x1.toFloat(), line.y1.toFloat()),
+                    end = Offset(line.x2.toFloat(), line.y2.toFloat()),
+                    strokeWidth = 1f / scale
+                )
+            }
+            
+            // 円を描画
+            parseResult.circles.forEach { circle ->
+                val color = ColorConverter.aciToColor(circle.color)
+                drawCircle(
+                    color = color,
+                    radius = circle.radius.toFloat(),
+                    center = Offset(circle.centerX.toFloat(), circle.centerY.toFloat()),
+                    style = Stroke(width = 1f / scale)
+                )
+            }
+            
+            // ポリラインを描画
+            parseResult.lwPolylines.forEach { polyline ->
+                if (polyline.vertices.size >= 2) {
+                    val color = ColorConverter.aciToColor(polyline.color)
+                    val path = androidx.compose.ui.graphics.Path()
+                    val firstVertex = polyline.vertices.first()
+                    path.moveTo(firstVertex.first.toFloat(), firstVertex.second.toFloat())
+                    
+                    polyline.vertices.drop(1).forEach { vertex ->
+                        path.lineTo(vertex.first.toFloat(), vertex.second.toFloat())
                     }
-                    is ColoredShape.Circle -> {
-                        drawCircle(
-                            color = shape.color,
-                            radius = shape.radius.toFloat(),
-                            center = Offset(shape.centerX.toFloat(), shape.centerY.toFloat()),
-                            style = Stroke(width = 1f / scale)
-                        )
+                    
+                    if (polyline.isClosed && polyline.vertices.size > 2) {
+                        path.close()
                     }
-                    is ColoredShape.Polyline -> {
-                        if (shape.vertices.size >= 2) {
-                            val path = androidx.compose.ui.graphics.Path()
-                            val firstVertex = shape.vertices.first()
-                            path.moveTo(firstVertex.first.toFloat(), firstVertex.second.toFloat())
-                            
-                            shape.vertices.drop(1).forEach { vertex ->
-                                path.lineTo(vertex.first.toFloat(), vertex.second.toFloat())
-                            }
-                            
-                            if (shape.isClosed && shape.vertices.size > 2) {
-                                path.close()
-                            }
-                            
-                            drawPath(
-                                path = path,
-                                color = shape.color,
-                                style = Stroke(width = 1f / scale)
-                            )
-                        }
-                    }
+                    
+                    drawPath(
+                        path = path,
+                        color = color,
+                        style = Stroke(width = 1f / scale)
+                    )
                 }
             }
             
@@ -201,25 +211,4 @@ fun CADView(
     }
 }
 
-fun aciToColor(aciColor: Int): Color {
-    return when (aciColor) {
-        0 -> Color.Black // ByBlock - 通常は親エンティティの色、ここでは黒
-        1 -> Color.Red
-        2 -> Color.Yellow
-        3 -> Color.Green
-        4 -> Color.Cyan
-        5 -> Color.Blue
-        6 -> Color.Magenta
-        7 -> Color.Black // 白背景なので黒で表示（背景色の反転）
-        8 -> Color.Gray
-        9 -> Color.LightGray
-        10 -> Color.Red
-        11 -> Color(0xFFFF7F7F) // Light Red
-        12 -> Color(0xFFFFFF7F) // Light Yellow
-        13 -> Color(0xFF7FFF7F) // Light Green
-        14 -> Color(0xFF7FFFFF) // Light Cyan
-        15 -> Color(0xFF7F7FFF) // Light Blue
-        16 -> Color(0xFFFF7FFF) // Light Magenta
-        else -> Color.Black // 未定義色は黒
-    }
-} 
+ 
