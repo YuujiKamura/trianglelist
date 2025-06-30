@@ -50,7 +50,9 @@ data class DxfText(
     val text: String,
     val height: Double = 1.0,
     val rotation: Double = 0.0,
-    val color: Int = 7
+    val color: Int = 7,
+    val alignH: Int = 0, // 水平アライメント（0=左、1=中央、2=右）
+    val alignV: Int = 0  // 垂直アライメント（0=ベースライン、1=下、2=中央、3=上）
 )
 
 /**
@@ -65,4 +67,4 @@ data class DxfHeader(
     val limMax: Pair<Double, Double> = Pair(0.0, 0.0), // 図面制限最大値
     val insBase: Triple<Double, Double, Double> = Triple(0.0, 0.0, 0.0), // 挿入基点
     val dimScale: Double = 1.0 // 寸法尺度
-) 
+)

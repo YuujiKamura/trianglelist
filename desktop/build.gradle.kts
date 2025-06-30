@@ -8,7 +8,7 @@ plugins {
 
 dependencies {
     implementation(project(":common"))
-    implementation(project(":core"))
+    // implementation(project(":core"))  // 一時的にコメントアウト
     implementation(compose.desktop.currentOs)
     implementation(compose.ui)
     
@@ -35,4 +35,13 @@ tasks.test {
     testLogging {
         events("passed", "skipped", "failed")
     }
+}
+
+// テストモード用のカスタムタスク
+tasks.register<JavaExec>("runTest") {
+    group = "application"
+    description = "テキストジオメトリテストウィンドウを起動"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("MainKt")
+    args("--test")
 }

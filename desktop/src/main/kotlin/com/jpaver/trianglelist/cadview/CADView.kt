@@ -2,11 +2,16 @@ package com.jpaver.trianglelist.cadview
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -18,6 +23,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlin.math.min
 import com.jpaver.trianglelist.dxf.DxfHeader
 import com.jpaver.trianglelist.dxf.DxfParseResult
@@ -28,7 +34,8 @@ import com.jpaver.trianglelist.adapter.CADViewRenderer
 @Composable
 fun CADView(
     parseResult: DxfParseResult,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    debugMode: Boolean = false
 ) {
     var scale by remember { mutableStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
@@ -100,9 +107,9 @@ fun CADView(
                 }
         ) {
             drawContext.canvas.save()
-            // Y軸反転＋図面の高さ分だけY方向に平行移動
-            drawContext.transform.translate(offset.x, offset.y + size.height * scale)
-            drawContext.transform.scale(scale, -scale) // Y flip
+            // キャンバス全体のフリップを廃止し、単純にスケーリングとオフセットのみ適用
+            drawContext.transform.translate(offset.x, offset.y)
+            drawContext.transform.scale(scale, scale)
 
             // 描画原点(0,0)にクロスラインを描画
             val crossSize = 100f / scale  // スケールに応じたクロスサイズ
@@ -120,11 +127,28 @@ fun CADView(
             )
 
             // 新しい描画統合クラスを使用してすべてのエンティティを描画
-            renderer.drawAllEntities(this, parseResult, scale, textMeasurer)
+            renderer.drawAllEntities(this, parseResult, scale, textMeasurer, debugMode)
             
             drawContext.canvas.restore()
+        }
+        
+        // デバッグ情報オーバーレイを追加
+        if (debugMode) {
+            androidx.compose.foundation.layout.Box(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                androidx.compose.material.Text(
+                    text = "デバッグモード ON\nテキスト数: ${parseResult.texts.size}\nスケール: ${"%.2f".format(scale)}",
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(16.dp)
+                        .background(Color.Black.copy(alpha = 0.7f), androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
+                        .padding(8.dp),
+                    color = Color.White,
+                    fontSize = 12.sp
+                )
+            }
         }
     }
 }
 
- 

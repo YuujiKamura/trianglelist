@@ -144,6 +144,8 @@ class DxfParser {
         var height: Double = 1.0
         var rotation: Double = 0.0
         var color = 7 // デフォルト色（白/黒）
+        var alignH = 0 // 水平アライメント
+        var alignV = 0 // 垂直アライメント
         
         while (iterator.hasNext()) {
             // 次のエンティティの開始をチェック
@@ -159,11 +161,13 @@ class DxfParser {
                 40 -> height = value.toDoubleOrNull() ?: 1.0
                 50 -> rotation = value.toDoubleOrNull() ?: 0.0
                 62 -> color = value.toIntOrNull() ?: 7
+                72 -> alignH = value.toIntOrNull() ?: 0
+                73 -> alignV = value.toIntOrNull() ?: 0
             }
         }
         
         return if (x != null && y != null && text != null) {
-            DxfText(x, y, text, height, rotation, color)
+            DxfText(x, y, text, height, rotation, color, alignH, alignV)
         } else null
     }
     
