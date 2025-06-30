@@ -3,7 +3,7 @@ package com.jpaver.trianglelist.adapter
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.text.TextMeasurer
-import com.jpaver.trianglelist.parser.DxfParseResult
+import com.jpaver.trianglelist.dxf.DxfParseResult
 import com.jpaver.trianglelist.cadview.ColorConverter
 
 /**

@@ -1,7 +1,9 @@
 package com.jpaver.trianglelist.adapter
 
-import com.jpaver.trianglelist.parser.DxfParser
-import com.jpaver.trianglelist.parser.DxfText
+import com.jpaver.trianglelist.dxf.DxfParser
+import com.jpaver.trianglelist.dxf.DxfText
+import com.jpaver.trianglelist.dxf.alignH
+import com.jpaver.trianglelist.dxf.alignV
 import org.junit.Test
 import org.junit.Assert.*
 import java.io.File

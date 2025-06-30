@@ -1,7 +1,7 @@
 package com.jpaver.trianglelist.cadview
 
 import androidx.compose.ui.graphics.Color
-import com.jpaver.trianglelist.common.DxfColor
+import com.jpaver.trianglelist.dxf.DxfColor
 
 /**
  * DxfColorをCompose.Colorに変換するデスクトップ固有の実装

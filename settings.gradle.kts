@@ -29,4 +29,4 @@ rootProject.name = "TriangleList"
 include(":app")
 include(":desktop")
 include(":common")
-include(":core")
+// include(":core")  // 一時的にコメントアウト

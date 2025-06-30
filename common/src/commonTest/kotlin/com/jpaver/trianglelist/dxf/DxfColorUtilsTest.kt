@@ -1,4 +1,4 @@
-package com.jpaver.trianglelist.common
+package com.jpaver.trianglelist.dxf
 
 import kotlin.test.*
 

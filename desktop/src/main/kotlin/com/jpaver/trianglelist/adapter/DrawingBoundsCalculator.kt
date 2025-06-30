@@ -2,8 +2,8 @@ package com.jpaver.trianglelist.adapter
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.TextMeasurer
-import com.jpaver.trianglelist.parser.DxfParseResult
-import com.jpaver.trianglelist.parser.DxfText
+import com.jpaver.trianglelist.dxf.DxfParseResult
+import com.jpaver.trianglelist.dxf.DxfText
 
 /**
  * 図面の境界を計算するクラス
