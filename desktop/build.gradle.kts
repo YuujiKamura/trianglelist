@@ -14,8 +14,7 @@ dependencies {
     
     // テスト依存関係
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.mockito:mockito-core:5.8.0")
-    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
+    testImplementation(kotlin("test"))
 }
 
 compose.desktop {
@@ -26,14 +25,6 @@ compose.desktop {
             packageName = "TriangleListDesktop"
             packageVersion = "1.0.0"
         }
-    }
-}
-
-// テストタスクの明示的な設定
-tasks.test {
-    useJUnit()
-    testLogging {
-        events("passed", "skipped", "failed")
     }
 }
 
