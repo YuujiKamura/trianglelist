@@ -5,7 +5,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.unit.sp
-import com.jpaver.trianglelist.parser.DxfText
+import com.jpaver.trianglelist.dxf.DxfText
+import com.jpaver.trianglelist.dxf.alignH
+import com.jpaver.trianglelist.dxf.alignV
 import com.jpaver.trianglelist.cadview.ColorConverter
 
 /**

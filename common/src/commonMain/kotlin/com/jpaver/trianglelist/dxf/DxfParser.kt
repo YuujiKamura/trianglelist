@@ -1,4 +1,4 @@
-package com.jpaver.trianglelist.parser
+package com.jpaver.trianglelist.dxf
 
 /**
  * DXFファイル解析クラス

@@ -19,9 +19,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import kotlin.math.min
-import com.jpaver.trianglelist.parser.DxfHeader
-import com.jpaver.trianglelist.parser.DxfParseResult
-import com.jpaver.trianglelist.common.DxfColor
+import com.jpaver.trianglelist.dxf.DxfHeader
+import com.jpaver.trianglelist.dxf.DxfParseResult
+import com.jpaver.trianglelist.dxf.DxfColor
 import com.jpaver.trianglelist.adapter.CADViewRenderer
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class)

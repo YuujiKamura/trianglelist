@@ -7,12 +7,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import com.jpaver.trianglelist.cadview.CADView
-import com.jpaver.trianglelist.cadview.ColoredShape
-import com.jpaver.trianglelist.cadview.aciToColor
-import com.jpaver.trianglelist.parser.DxfHeader
-import com.jpaver.trianglelist.parser.DxfParseResult
-import com.jpaver.trianglelist.parser.DxfParser
-import kotlinx.coroutines.launch
+import com.jpaver.trianglelist.dxf.DxfParseResult
+import com.jpaver.trianglelist.dxf.DxfParser
 import java.awt.FileDialog
 import java.awt.Frame
 import java.io.File
@@ -22,10 +18,8 @@ fun main() = application {
         onCloseRequest = ::exitApplication,
         title = "CAD Viewer"
     ) {
-        var shapes by remember { mutableStateOf<List<ColoredShape>>(emptyList()) }
+        var parseResult by remember { mutableStateOf<DxfParseResult?>(null) }
         var showDialog by remember { mutableStateOf(false) }
-        var dxfHeader by remember { mutableStateOf<DxfHeader?>(null) }
-        val scope = rememberCoroutineScope()
 
         if (showDialog) {
             LaunchedEffect(Unit) {
@@ -58,25 +52,7 @@ fun main() = application {
                             println("-------------------------")
                         }
                         
-                        val newShapes = mutableListOf<ColoredShape>()
-                        
-                        // LWPOLYLINEを追加
-                        result.lwPolylines.forEach { 
-                            newShapes.add(ColoredShape.Polyline(it.vertices, it.isClosed, aciToColor(it.color)))
-                        }
-                        
-                        // LINEを追加
-                        result.lines.forEach { 
-                            newShapes.add(ColoredShape.Line(it.x1, it.y1, it.x2, it.y2, aciToColor(it.color)))
-                        }
-                        
-                        // CIRCLEを追加
-                        result.circles.forEach { circle ->
-                            newShapes.add(ColoredShape.Circle(circle.centerX, circle.centerY, circle.radius, aciToColor(circle.color)))
-                        }
-
-                        shapes = newShapes
-                        dxfHeader = result.header
+                        parseResult = result
                         
                     } catch (e: Exception) {
                         println("Error loading DXF file: ${e.message}")
@@ -100,52 +76,10 @@ fun main() = application {
                 Text("DXFファイルを開く")
             }
             
-            if (shapes.isNotEmpty()) {
-                CADView(shapes = shapes, header = dxfHeader)
+            parseResult?.let { result ->
+                CADView(parseResult = result)
             }
         }
     }
 }
 
-// DXFファイルを解析してCADViewに表示する図形に変換
-private fun convertToColoredShapes(parseResult: DxfParseResult): List<ColoredShape> {
-    val shapes = mutableListOf<ColoredShape>()
-    
-    // 線分を変換
-    parseResult.lines.forEach { line ->
-        shapes.add(
-            ColoredShape.Line(
-                x1 = line.x1,
-                y1 = line.y1,
-                x2 = line.x2,
-                y2 = line.y2,
-                color = aciToColor(line.color)
-            )
-        )
-    }
-    
-    // 円を変換
-    parseResult.circles.forEach { circle ->
-        shapes.add(
-            ColoredShape.Circle(
-                centerX = circle.centerX,
-                centerY = circle.centerY,
-                radius = circle.radius,
-                color = aciToColor(circle.color)
-            )
-        )
-    }
-    
-    // ポリラインを変換
-    parseResult.lwPolylines.forEach { polyline ->
-        shapes.add(
-            ColoredShape.Polyline(
-                vertices = polyline.vertices,
-                isClosed = polyline.isClosed,
-                color = aciToColor(polyline.color)
-            )
-        )
-    }
-    
-    return shapes
-} 

@@ -1,4 +1,4 @@
-package com.jpaver.trianglelist.common
+package com.jpaver.trianglelist.dxf
 
 /**
  * DXF固有のACI色番号システムの定義
@@ -36,4 +36,10 @@ data class DxfColor(
             else -> DxfColor(aciIndex, "Unknown", false) // 未定義色
         }
     }
-} 
+}
+
+/**
+ * ACI色番号をプラットフォーム固有の色型に変換
+ * expect/actualパターンで各プラットフォームで実装
+ */
+expect fun aciToColor(aciIndex: Int): Any
