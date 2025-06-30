@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.text.TextMeasurer
 import com.jpaver.trianglelist.dxf.DxfParseResult
+import com.jpaver.trianglelist.util.CanvasUtil
 import com.jpaver.trianglelist.cadview.ColorConverter
 
 /**
@@ -20,15 +21,19 @@ class CADViewRenderer {
      * @param parseResult DXF解析結果
      * @param scale 現在のスケール
      * @param textMeasurer テキスト測定器
+     * @param debugMode デバッグモード（true時にテキストの描画起点・範囲をボックス表示）
      */
     fun drawAllEntities(
         drawScope: DrawScope,
         parseResult: DxfParseResult,
         scale: Float,
-        textMeasurer: TextMeasurer
+        textMeasurer: TextMeasurer,
+        debugMode: Boolean = false
     ) {
+        // 事前にY軸反転したデータを取得
+        val data = CanvasUtil.flipYAxis(parseResult)
         // 線分を描画
-        parseResult.lines.forEach { line ->
+        data.lines.forEach { line ->
             val color = ColorConverter.aciToColor(line.color)
             drawScope.drawLine(
                 color = color,
@@ -39,7 +44,7 @@ class CADViewRenderer {
         }
         
         // 円を描画
-        parseResult.circles.forEach { circle ->
+        data.circles.forEach { circle ->
             val color = ColorConverter.aciToColor(circle.color)
             drawScope.drawCircle(
                 color = color,
@@ -50,7 +55,7 @@ class CADViewRenderer {
         }
         
         // ポリラインを描画
-        parseResult.lwPolylines.forEach { polyline ->
+        data.lwPolylines.forEach { polyline ->
             if (polyline.vertices.size >= 2) {
                 val color = ColorConverter.aciToColor(polyline.color)
                 val path = Path()
@@ -74,8 +79,8 @@ class CADViewRenderer {
         }
         
         // テキストを描画
-        parseResult.texts.forEach { text ->
-            textRenderer.drawText(drawScope, text, scale, textMeasurer)
+        data.texts.forEach { text ->
+            textRenderer.drawText(drawScope, text, scale, textMeasurer, debugMode)
         }
     }
     
@@ -91,13 +96,15 @@ class CADViewRenderer {
         textMeasurer: TextMeasurer,
         scale: Float = 1.0f
     ): List<Float> {
+        // 事前にY軸反転したデータを使用
+        val flipped = CanvasUtil.flipYAxis(parseResult)
         // ヘッダー情報を優先
-        val headerBounds = boundsCalculator.getBoundsFromHeader(parseResult)
+        val headerBounds = boundsCalculator.getBoundsFromHeader(flipped)
         if (headerBounds != null) {
             return headerBounds
         }
         
         // エンティティから計算
-        return boundsCalculator.calculateBounds(parseResult, textMeasurer, scale)
+        return boundsCalculator.calculateBounds(flipped, textMeasurer, scale)
     }
-} 
+}
