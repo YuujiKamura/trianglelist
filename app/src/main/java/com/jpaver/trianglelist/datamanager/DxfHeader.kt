@@ -1,5 +1,6 @@
 package com.jpaver.trianglelist.datamanager
 
+import com.jpaver.trianglelist.dxf.DxfConstants
 import java.io.BufferedWriter
 
 class DxfHeader(private val handles: HandleGen) {
@@ -51,11 +52,11 @@ class DxfHeader(private val handles: HandleGen) {
               9
             ${'$'}ACADVER
               1
-            AC1015
+            ${DxfConstants.Version.AC1015}
               9
             ${'$'}INSUNITS
              70
-              6             ; ミリメートル
+              ${DxfConstants.Units.MILLIMETER}             ; ミリメートル
               9
             ${'$'}ACADMAINTVER
              70

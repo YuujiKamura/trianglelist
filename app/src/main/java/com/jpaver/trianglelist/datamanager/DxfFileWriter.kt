@@ -1,5 +1,6 @@
 package com.jpaver.trianglelist.datamanager
 
+import com.jpaver.trianglelist.dxf.DxfConstants
 import com.jpaver.trianglelist.editmodel.Deduction
 import com.jpaver.trianglelist.editmodel.DeductionList
 import com.jpaver.trianglelist.editmodel.Triangle
@@ -45,9 +46,9 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
     override var sizeX_ = 42000f * printscale_
     override var sizeY_ = 29700f * printscale_
 
-    override var WHITE = 256
-    override var BLUE = 5
-    override var RED = 1
+    override var WHITE = DxfConstants.Colors.WHITE
+    override var BLUE = DxfConstants.Colors.BLUE
+    override var RED = DxfConstants.Colors.RED
 
     var activeLayer = "0"
 

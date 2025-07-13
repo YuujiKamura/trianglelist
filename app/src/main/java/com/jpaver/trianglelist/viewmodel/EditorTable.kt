@@ -77,7 +77,7 @@ class EditorTable {
     }
 
     fun toFloatIgnoreDot(str: String ): Float {
-        if( str == "." ) return 0f
+        if( str == "." || str.isEmpty() ) return 0f
         return str.toFloat()
     }
 
