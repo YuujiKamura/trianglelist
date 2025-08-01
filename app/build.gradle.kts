@@ -32,17 +32,17 @@ android {
         create("dev") {
             dimension = "mode"
             applicationId = "com.jpaver.myapplication"
-            targetSdk = 34
+            targetSdk = 35
         }
         create("free") {
             dimension = "mode"
             applicationId = "com.jpaver.myapplication"
-            targetSdk = 34
+            targetSdk = 35
         }
         create("full") {
             dimension = "mode"
             applicationId = "com.paver.myapplication"
-            targetSdk = 34
+            targetSdk = 35
         }
     }
 
