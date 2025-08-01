@@ -66,6 +66,8 @@ android {
     
     lint {
         baseline = file("lint-baseline.xml")
+        abortOnError = true
+        warningsAsErrors = false
     }
 }
 
@@ -95,4 +97,15 @@ dependencies {
     androidTestImplementation("androidx.test:rules:1.6.1")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
-} 
+}
+
+// カスタムタスク: コミット前チェック
+tasks.register("preCommitChecks") {
+    group = "verification"
+    description = "コミット前の全チェックを実行"
+    dependsOn("lintDevDebug", "testDevDebugUnitTest")
+    
+    doLast {
+        println("✅ 全てのpre-commitチェックが完了しました！")
+    }
+}
