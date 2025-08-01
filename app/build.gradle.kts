@@ -12,8 +12,8 @@ android {
         applicationId = "com.jpaver.myapplication"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1345
-        versionName = "7.57"
+        versionCode = 1346
+        versionName = "7.58"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled = true
     }
@@ -107,5 +107,45 @@ tasks.register("preCommitChecks") {
     
     doLast {
         println("✅ 全てのpre-commitチェックが完了しました！")
+    }
+}
+
+// カスタムタスク: リリース準備
+tasks.register("prepareRelease") {
+    group = "release"
+    description = "リリース準備: versionCode自動更新"
+    
+    doLast {
+        val buildFile = file("build.gradle.kts")
+        val content = buildFile.readText()
+        
+        // 現在のバージョン取得
+        val currentVersionCode = Regex("versionCode = (\\d+)").find(content)?.groupValues?.get(1)?.toInt()
+        val currentVersionName = Regex("versionName = \"([^\"]+)\"").find(content)?.groupValues?.get(1)
+        
+        println("📱 現在のバージョン:")
+        println("   versionCode: $currentVersionCode")
+        println("   versionName: $currentVersionName")
+        println("")
+        
+        if (currentVersionCode != null) {
+            val newVersionCode = currentVersionCode + 1
+            
+            // versionCodeのみ自動更新
+            val newContent = content.replace(
+                Regex("versionCode = \\d+"),
+                "versionCode = $newVersionCode"
+            )
+            buildFile.writeText(newContent)
+            
+            println("🔄 versionCode を $currentVersionCode → $newVersionCode に更新しました")
+            println("⚠️  versionName は手動で確認・変更してください")
+            println("")
+            println("次の手順:")
+            println("1. versionName を手動で更新")
+            println("2. ./gradlew assembleRelease でビルド")
+        } else {
+            println("❌ versionCode の取得に失敗しました")
+        }
     }
 }
