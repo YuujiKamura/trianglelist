@@ -65,8 +65,8 @@ android {
     }
     
     lint {
-        baseline = file("lint-baseline.xml")
-        abortOnError = true
+        // baseline = file("lint-baseline.xml")  // 一時的に無効化して全警告を確認
+        abortOnError = false  // 警告調査のため一時的にfalse
         warningsAsErrors = false
     }
 }
@@ -76,27 +76,27 @@ dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("androidx.activity:activity-ktx:1.10.1")
-    implementation("androidx.navigation:navigation-fragment-ktx:2.9.0")
-    implementation("androidx.navigation:navigation-ui-ktx:2.9.0")
+    implementation("androidx.navigation:navigation-fragment-ktx:2.9.3")
+    implementation("androidx.navigation:navigation-ui-ktx:2.9.3")
     implementation("androidx.constraintlayout:constraintlayout:2.2.1")
     implementation("com.google.android.material:material:1.12.0")
-    implementation("com.google.android.gms:play-services-ads:24.4.0")
+    implementation("com.google.android.gms:play-services-ads:24.5.0")
     implementation("androidx.preference:preference-ktx:1.2.1")
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar", "*.jar"))))
     implementation("org.apache.poi:poi-ooxml:5.4.1")
     testImplementation("junit:junit:4.13.2")
-    testImplementation("io.mockk:mockk:1.14.0")
+    testImplementation("io.mockk:mockk:1.14.5")
     testImplementation("org.powermock:powermock-module-junit4:2.0.9")
     testImplementation("org.powermock:powermock-api-mockito:1.7.4")
-    testImplementation("org.mockito:mockito-core:5.17.0")
+    testImplementation("org.mockito:mockito-core:5.18.0")
     testImplementation("org.mockito:mockito-inline:5.2.0")
-    testImplementation("org.robolectric:robolectric:4.14.1")
+    testImplementation("org.robolectric:robolectric:4.15.1")
     implementation(project(":common"))
     // implementation(project(":core"))  // 一時的にコメントアウト (lint警告確認用)
     testImplementation(project(":common"))
-    androidTestImplementation("androidx.test:rules:1.6.1")
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+    androidTestImplementation("androidx.test:rules:1.7.0")
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
 }
 
 // カスタムタスク: コミット前チェック
