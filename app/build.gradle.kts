@@ -90,7 +90,7 @@ dependencies {
     testImplementation("org.mockito:mockito-inline:5.2.0")
     testImplementation("org.robolectric:robolectric:4.14.1")
     implementation(project(":common"))
-    // implementation(project(":core"))  // 一時的にコメントアウト
+    // implementation(project(":core"))  // 一時的にコメントアウト (lint警告確認用)
     testImplementation(project(":common"))
     androidTestImplementation("androidx.test:rules:1.6.1")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
