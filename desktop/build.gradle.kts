@@ -36,3 +36,11 @@ tasks.register<JavaExec>("runTest") {
     mainClass.set("MainKt")
     args("--test")
 }
+
+// テストタスクの設定
+tasks.test {
+    useJUnitPlatform()
+    testLogging {
+        events("passed", "skipped", "failed")
+    }
+}
