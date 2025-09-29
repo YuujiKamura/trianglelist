@@ -77,8 +77,8 @@ class EditorTable {
     }
 
     fun toFloatIgnoreDot(str: String ): Float {
-        if( str == "." || str.isEmpty() ) return 0f
-        return str.toFloat()
+        val sanitized = str.trim()
+        return sanitized.toFloatOrNull() ?: 0f
     }
 
     fun readLineTo(prm: InputParameter, line: EditTextViewLine) : InputParameter {

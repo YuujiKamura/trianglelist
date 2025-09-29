@@ -12,8 +12,8 @@ android {
         applicationId = "com.jpaver.myapplication"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1346
-        versionName = "7.58"
+        versionCode = 1348
+        versionName = "7.60"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled = true
     }
@@ -114,6 +114,7 @@ tasks.register("preCommitChecks") {
 tasks.register("prepareRelease") {
     group = "release"
     description = "リリース準備: versionCode自動更新"
+    notCompatibleWithConfigurationCache("Modifies version fields in build script at execution time")
     
     doLast {
         val buildFile = file("build.gradle.kts")
