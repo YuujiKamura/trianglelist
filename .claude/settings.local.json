@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git fetch:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git merge:*)",
+      "Bash(git pull:*)",
+      "Bash(adb version:*)",
+      "Bash(adb devices:*)",
+      "Bash(where:*)",
+      "Bash(./gradlew:*)",
+      "Bash(/c/Users/yuuji/AppData/Local/Android/Sdk/platform-tools/adb.exe devices)",
+      "Bash(/c/Users/yuuji/AppData/Local/Android/Sdk/platform-tools/adb.exe shell ip addr show wlan0)",
+      "Bash(/c/Users/yuuji/AppData/Local/Android/Sdk/platform-tools/adb.exe tcpip:*)",
+      "Bash(/c/Users/yuuji/AppData/Local/Android/Sdk/platform-tools/adb.exe connect:*)",
+      "WebSearch",
+      "WebFetch(domain:mvnrepository.com)",
+      "Bash(/c/Users/yuuji/AppData/Local/Android/Sdk/platform-tools/adb.exe install -r app/build/outputs/apk/dev/debug/app-dev-debug.apk)",
+      "Bash(/c/Users/yuuji/AppData/Local/Android/Sdk/platform-tools/adb.exe shell am start -n com.jpaver.myapplication/com.jpaver.trianglelist.MainActivity)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
