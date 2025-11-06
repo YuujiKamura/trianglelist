@@ -5,6 +5,7 @@ import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
 import com.jpaver.trianglelist.editmodel.DeductionList
 import com.jpaver.trianglelist.editmodel.TriangleList
+import com.jpaver.trianglelist.viewmodel.formattedString
 import java.io.OutputStream
 
 
@@ -233,7 +234,12 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
             com.example.trilib.PointXY(centerX + 50f, 50f),1f,7)
         writeText( zumeninfo.zumentitle,
             com.example.trilib.PointXY(centerX, 45f), 1f, 7, 16f, 1 )
-        writeText( rosenname_ + " A=" + Utils.formattedString() + "m^2",
+        val areaText = try {
+            triangleList_.getArea().formattedString(2)
+        } catch (e: Exception) {
+            "N/A"
+        }
+        writeText( rosenname_ + " A=" + areaText + "m^2",
             com.example.trilib.PointXY(centerX, 70f), 1f, 7, 16f, 1 )
 
         writeText( zumeninfo.koujiname,
