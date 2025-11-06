@@ -442,6 +442,19 @@ class MainActivity : AppCompatActivity(),
 
         setSupportActionBar(bindingMain.toolbar)
         setContentView(view)
+
+        // Android 15 edge-to-edge: ステータスバーアイコンを暗色に設定
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.insetsController?.setSystemBarsAppearance(
+                android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
+                android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility = window.decorView.systemUiVisibility or
+                android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+        }
+
         // 共有インテントからのCSV受信を処理
         handleIncomingIntent(intent)
         Log.d("MainActivityLifeCycle", "setContentView")
