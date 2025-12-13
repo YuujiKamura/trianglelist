@@ -14,6 +14,8 @@ import com.jpaver.trianglelist.cadview.CADView
 import com.jpaver.trianglelist.cadview.ViewStateManager
 import com.jpaver.trianglelist.dxf.DxfParseResult
 import com.jpaver.trianglelist.dxf.DxfParser
+import com.jpaver.trianglelist.dxf.CrosswalkGenerator
+import com.jpaver.trianglelist.dxf.DxfText
 import com.jpaver.trianglelist.test.TextGeometryTestWidget
 import java.awt.FileDialog
 import java.awt.Frame
@@ -224,6 +226,37 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                 }
             ) {
                 Text(if (hotReload) "自動更新ON" else "自動更新OFF")
+            }
+
+            // 横断歩道追加ボタン
+            parseResult?.let { result ->
+                Button(
+                    onClick = {
+                        val generator = CrosswalkGenerator()
+                        val centerlines = generator.filterCenterlinesByLayer(result.lines, "中心")
+                            .ifEmpty { result.lines }
+                        if (centerlines.isNotEmpty()) {
+                            val crosswalkLines = generator.generateCrosswalk(
+                                centerlineLines = centerlines,
+                                startOffset = 11000.0,
+                                length = 4000.0,
+                                stripeWidth = 450.0,
+                                stripeCount = 7,
+                                stripeSpacing = 450.0,
+                                layer = "横断歩道"
+                            )
+                            val label = DxfText(13000.0, 3500.0, "横断歩道", 300.0, 0.0, 5, 1, 0, "横断歩道")
+                            parseResult = result.copy(
+                                lines = result.lines + crosswalkLines,
+                                texts = result.texts + label
+                            )
+                            println("横断歩道追加: " + crosswalkLines.size.toString() + "本")
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(backgroundColor = androidx.compose.ui.graphics.Color.Cyan)
+                ) {
+                    Text("横断歩道")
+                }
             }
         }
 

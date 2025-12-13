@@ -146,6 +146,7 @@ class DxfParser {
         var height: Double = 1.0
         var rotation: Double = 0.0
         var color = 7 // デフォルト色（白/黒）
+        var layer = "0" // レイヤー
         var alignH = 0 // 水平アライメント
         var alignV = 0 // 垂直アライメント
         
@@ -157,6 +158,7 @@ class DxfParser {
             val (code, value) = readGroupCodePair(iterator) ?: continue
             
             when (code) {
+                8 -> layer = value
                 10 -> x = value.toDoubleOrNull()
                 20 -> y = value.toDoubleOrNull()
                 11 -> x2 = value.toDoubleOrNull()
@@ -176,7 +178,7 @@ class DxfParser {
         val finalY = if (useSecondPoint) y2 else y
         
         return if (finalX != null && finalY != null && text != null) {
-            DxfText(finalX, finalY, text, height, rotation, color, alignH, alignV)
+            DxfText(finalX, finalY, text, height, rotation, color, alignH, alignV, layer)
         } else null
     }
     
@@ -189,6 +191,7 @@ class DxfParser {
         var x2: Double? = null
         var y2: Double? = null
         var color = 7 // デフォルト色（白/黒）
+        var layer = "0" // レイヤー
         
         while (iterator.hasNext()) {
             // 次のエンティティの開始をチェック
@@ -198,6 +201,7 @@ class DxfParser {
             val (code, value) = readGroupCodePair(iterator) ?: continue
             
             when (code) {
+                8 -> layer = value
                 10 -> x1 = value.toDoubleOrNull()
                 20 -> y1 = value.toDoubleOrNull()
                 11 -> x2 = value.toDoubleOrNull()
@@ -207,7 +211,7 @@ class DxfParser {
         }
         
         return if (x1 != null && y1 != null && x2 != null && y2 != null) {
-            DxfLine(x1, y1, x2, y2, color)
+            DxfLine(x1, y1, x2, y2, color, layer)
         } else null
     }
     
@@ -219,6 +223,7 @@ class DxfParser {
         var centerY: Double? = null
         var radius: Double? = null
         var color = 7 // デフォルト色（白/黒）
+        var layer = "0" // レイヤー
         
         while (iterator.hasNext()) {
             // 次のエンティティの開始をチェック
@@ -228,6 +233,7 @@ class DxfParser {
             val (code, value) = readGroupCodePair(iterator) ?: continue
             
             when (code) {
+                8 -> layer = value
                 10 -> centerX = value.toDoubleOrNull()
                 20 -> centerY = value.toDoubleOrNull()
                 40 -> radius = value.toDoubleOrNull()
@@ -236,7 +242,7 @@ class DxfParser {
         }
         
         return if (centerX != null && centerY != null && radius != null) {
-            DxfCircle(centerX, centerY, radius, color)
+            DxfCircle(centerX, centerY, radius, color, layer)
         } else null
     }
     
@@ -247,6 +253,7 @@ class DxfParser {
         val vertices = mutableListOf<Pair<Double, Double>>()
         var isClosed = false
         var color = 7 // デフォルト色（白/黒）
+        var layer = "0" // レイヤー
         var currentX: Double? = null
         
         while (iterator.hasNext()) {
@@ -257,6 +264,7 @@ class DxfParser {
             val (code, value) = readGroupCodePair(iterator) ?: continue
             
             when (code) {
+                8 -> layer = value
                 70 -> isClosed = (value.toIntOrNull() ?: 0) and 1 != 0
                 10 -> currentX = value.toDoubleOrNull()
                 20 -> {
@@ -271,7 +279,7 @@ class DxfParser {
         }
         
         return if (vertices.isNotEmpty()) {
-            DxfLwPolyline(vertices, isClosed, color)
+            DxfLwPolyline(vertices, isClosed, color, layer)
         } else null
     }
     
