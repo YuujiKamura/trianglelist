@@ -24,8 +24,9 @@ import kotlinx.coroutines.delay
 fun main(args: Array<String>) = application {
     // コマンドライン引数を処理
     val isTestMode = args.contains("--test") || args.contains("-t")
-    // DXFファイルパスを取得（--test/-t以外の引数）
-    val dxfFilePath = args.firstOrNull { it != "--test" && it != "-t" && it.endsWith(".dxf", ignoreCase = true) }
+    val isDebugMode = args.contains("--debug") || args.contains("-d")
+    // DXFファイルパスを取得（オプション以外の引数）
+    val dxfFilePath = args.firstOrNull { !it.startsWith("-") && it.endsWith(".dxf", ignoreCase = true) }
 
     // デスクトップサイズを取得して左下1/4に配置
     val screenSize = Toolkit.getDefaultToolkit().screenSize
@@ -49,16 +50,16 @@ fun main(args: Array<String>) = application {
             TextGeometryTestWidget()
         } else {
             // 通常のCADビューアモード
-            CADViewerApp(initialFilePath = dxfFilePath)
+            CADViewerApp(initialFilePath = dxfFilePath, initialDebugMode = isDebugMode)
         }
     }
 }
 
 @Composable
-private fun CADViewerApp(initialFilePath: String? = null) {
+private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Boolean = false) {
     var parseResult by remember { mutableStateOf<DxfParseResult?>(null) }
     var showDialog by remember { mutableStateOf(false) }
-    var debugMode by remember { mutableStateOf(false) }
+    var debugMode by remember { mutableStateOf(initialDebugMode) }
     var hotReload by remember { mutableStateOf(true) }
     var currentFile by remember { mutableStateOf<File?>(null) }
     var lastModified by remember { mutableStateOf(0L) }

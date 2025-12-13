@@ -140,6 +140,8 @@ class DxfParser {
     private fun parseTextEntity(iterator: PeekableIterator<String>): DxfText? {
         var x: Double? = null
         var y: Double? = null
+        var x2: Double? = null
+        var y2: Double? = null
         var text: String? = null
         var height: Double = 1.0
         var rotation: Double = 0.0
@@ -149,7 +151,7 @@ class DxfParser {
         
         while (iterator.hasNext()) {
             // 次のエンティティの開始をチェック
-            val nextCode = iterator.peek()
+            val nextCode = iterator.peek()?.trim()
             if (nextCode == "0") break
             
             val (code, value) = readGroupCodePair(iterator) ?: continue
@@ -157,6 +159,8 @@ class DxfParser {
             when (code) {
                 10 -> x = value.toDoubleOrNull()
                 20 -> y = value.toDoubleOrNull()
+                11 -> x2 = value.toDoubleOrNull()
+                21 -> y2 = value.toDoubleOrNull()
                 1 -> text = value
                 40 -> height = value.toDoubleOrNull() ?: 1.0
                 50 -> rotation = value.toDoubleOrNull() ?: 0.0
@@ -166,8 +170,13 @@ class DxfParser {
             }
         }
         
-        return if (x != null && y != null && text != null) {
-            DxfText(x, y, text, height, rotation, color, alignH, alignV)
+        // alignHまたはalignVが0でない場合、第2挿入点を使用
+        val useSecondPoint = (alignH != 0 || alignV != 0) && x2 != null && y2 != null
+        val finalX = if (useSecondPoint) x2 else x
+        val finalY = if (useSecondPoint) y2 else y
+        
+        return if (finalX != null && finalY != null && text != null) {
+            DxfText(finalX, finalY, text, height, rotation, color, alignH, alignV)
         } else null
     }
     
@@ -183,7 +192,7 @@ class DxfParser {
         
         while (iterator.hasNext()) {
             // 次のエンティティの開始をチェック
-            val nextCode = iterator.peek()
+            val nextCode = iterator.peek()?.trim()
             if (nextCode == "0") break
             
             val (code, value) = readGroupCodePair(iterator) ?: continue
@@ -213,7 +222,7 @@ class DxfParser {
         
         while (iterator.hasNext()) {
             // 次のエンティティの開始をチェック
-            val nextCode = iterator.peek()
+            val nextCode = iterator.peek()?.trim()
             if (nextCode == "0") break
             
             val (code, value) = readGroupCodePair(iterator) ?: continue
@@ -242,7 +251,7 @@ class DxfParser {
         
         while (iterator.hasNext()) {
             // 次のエンティティの開始をチェック
-            val nextCode = iterator.peek()
+            val nextCode = iterator.peek()?.trim()
             if (nextCode == "0") break
             
             val (code, value) = readGroupCodePair(iterator) ?: continue
@@ -272,7 +281,7 @@ class DxfParser {
     private fun skipEntity(iterator: PeekableIterator<String>) {
         while (iterator.hasNext()) {
             // 次のエンティティの開始をチェック
-            val nextCode = iterator.peek()
+            val nextCode = iterator.peek()?.trim()
             if (nextCode == "0") break
             
             // グループコードペアを読み飛ばし
