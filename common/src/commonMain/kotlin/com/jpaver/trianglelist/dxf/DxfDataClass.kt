@@ -19,7 +19,8 @@ data class DxfLine(
     val y1: Double,
     val x2: Double,
     val y2: Double,
-    val color: Int = 7
+    val color: Int = 7,
+    val layer: String = "0"
 )
 
 /**
@@ -29,7 +30,8 @@ data class DxfCircle(
     val centerX: Double,
     val centerY: Double,
     val radius: Double,
-    val color: Int = 7
+    val color: Int = 7,
+    val layer: String = "0"
 )
 
 /**
@@ -38,7 +40,8 @@ data class DxfCircle(
 data class DxfLwPolyline(
     val vertices: List<Pair<Double, Double>>,
     val isClosed: Boolean = false,
-    val color: Int = 7
+    val color: Int = 7,
+    val layer: String = "0"
 )
 
 /**
@@ -52,7 +55,8 @@ data class DxfText(
     val rotation: Double = 0.0,
     val color: Int = 7,
     val alignH: Int = 0, // 水平アライメント（0=左、1=中央、2=右）
-    val alignV: Int = 0  // 垂直アライメント（0=ベースライン、1=下、2=中央、3=上）
+    val alignV: Int = 0, // 垂直アライメント（0=ベースライン、1=下、2=中央、3=上）
+    val layer: String = "0"
 )
 
 /**
