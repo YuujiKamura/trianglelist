@@ -4,19 +4,16 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
@@ -25,9 +22,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.min
-import com.jpaver.trianglelist.dxf.DxfHeader
 import com.jpaver.trianglelist.dxf.DxfParseResult
-import com.jpaver.trianglelist.dxf.DxfColor
 import com.jpaver.trianglelist.adapter.CADViewRenderer
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class)
@@ -35,28 +30,41 @@ import com.jpaver.trianglelist.adapter.CADViewRenderer
 fun CADView(
     parseResult: DxfParseResult,
     modifier: Modifier = Modifier,
-    debugMode: Boolean = false
+    debugMode: Boolean = false,
+    initialScale: Float? = null,
+    initialOffset: Offset? = null,
+    onViewStateChanged: ((Float, Offset) -> Unit)? = null
 ) {
-    var scale by remember { mutableStateOf(1f) }
-    var offset by remember { mutableStateOf(Offset.Zero) }
+    var scale by remember { mutableStateOf(initialScale ?: 1f) }
+    var offset by remember { mutableStateOf(initialOffset ?: Offset.Zero) }
+    var isInitialized by remember { mutableStateOf(initialScale != null && initialOffset != null) }
     val textMeasurer = rememberTextMeasurer()
     val renderer = remember { CADViewRenderer() }
-    
+
+    // ビューステートが変更されたら通知
+    LaunchedEffect(scale, offset) {
+        if (isInitialized) {
+            onViewStateChanged?.invoke(scale, offset)
+        }
+    }
+
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val density = LocalDensity.current
+        // parseResultが変わっても、初回のみスケール・オフセットを計算（ホットリロード時は保持）
         LaunchedEffect(parseResult, maxWidth, maxHeight) {
-            if (parseResult.lines.isEmpty() && parseResult.circles.isEmpty() && 
+            if (isInitialized) return@LaunchedEffect
+            if (parseResult.lines.isEmpty() && parseResult.circles.isEmpty() &&
                 parseResult.lwPolylines.isEmpty() && parseResult.texts.isEmpty()) return@LaunchedEffect
-            
+
             val canvasW = with(density) { maxWidth.toPx() }
             val canvasH = with(density) { maxHeight.toPx() }
-            
+
             println("=== View Size Debug ===")
             println("maxWidth: $maxWidth, maxHeight: $maxHeight")
             println("canvasW: $canvasW, canvasH: $canvasH")
             println("density: ${density.density}")
             println("======================")
-            
+
             // 新しい境界計算クラスを使用
             val (minX, maxX, minY, maxY) = renderer.calculateDrawingBounds(parseResult, textMeasurer, scale)
 
@@ -66,24 +74,28 @@ fun CADView(
 
             // 図面のサイズに合わせてスケールを計算（余裕を持たせる）
             val newScale = min(canvasW / width, canvasH / height) * 0.9f
-            
+
             // 図面の中心座標を計算
             val drawingCenterX = (minX + maxX) / 2f
             val drawingCenterY = (minY + maxY) / 2f
-            
+
             // 画面の中心座標を計算
             val screenCenterX = canvasW / 2f
             val screenCenterY = canvasH / 2f
 
             scale = newScale
-            // オフセットを完全に0に固定
-            offset = Offset(0f, 0f)
-            
+            offset = Offset(
+                screenCenterX - drawingCenterX * newScale,
+                screenCenterY - drawingCenterY * newScale
+            )
+
             println("Drawing bounds: ($minX, $minY) to ($maxX, $maxY)")
             println("Drawing size: ${width} x ${height}")
             println("Drawing center: ($drawingCenterX, $drawingCenterY)")
             println("Screen center: ($screenCenterX, $screenCenterY)")
-            println("Scale: $newScale, Offset: $offset (FORCE ZERO)")
+            println("Scale: $newScale, Offset: $offset")
+
+            isInitialized = true
         }
 
         Canvas(
@@ -96,23 +108,29 @@ fun CADView(
                     }
                 }
                 .onPointerEvent(PointerEventType.Scroll) {
-                    val zoomFactor = if (it.changes.first().scrollDelta.y > 0) 0.8f else 1.25f
-                    val newScale = (scale * zoomFactor).coerceIn(0.01f, 100f)
-                    val pos = it.changes.first().position
-                    offset = Offset(
-                        offset.x - pos.x * (newScale / scale - 1f),
-                        offset.y - pos.y * (newScale / scale - 1f)
+                    val zoomFactor = if (it.changes.first().scrollDelta.y > 0) 0.9f else 1.1f
+                    val newScale = (scale * zoomFactor).coerceIn(0.0001f, 100f)
+
+                    val centerX = size.width / 2f
+                    val centerY = size.height / 2f
+
+                    val worldX = (centerX - offset.x) / scale
+                    val worldY = (centerY - offset.y) / scale
+
+                    val newOffset = Offset(
+                        centerX - worldX * newScale,
+                        centerY - worldY * newScale
                     )
+
+                    offset = newOffset
                     scale = newScale
                 }
         ) {
             drawContext.canvas.save()
-            // キャンバス全体のフリップを廃止し、単純にスケーリングとオフセットのみ適用
             drawContext.transform.translate(offset.x, offset.y)
             drawContext.transform.scale(scale, scale)
 
-            // 描画原点(0,0)にクロスラインを描画
-            val crossSize = 100f / scale  // スケールに応じたクロスサイズ
+            val crossSize = 100f / scale
             drawLine(
                 color = Color.Red,
                 start = Offset(-crossSize, 0f),
@@ -126,19 +144,17 @@ fun CADView(
                 strokeWidth = 2f / scale
             )
 
-            // 新しい描画統合クラスを使用してすべてのエンティティを描画
             renderer.drawAllEntities(this, parseResult, scale, textMeasurer, debugMode)
-            
+
             drawContext.canvas.restore()
         }
-        
-        // デバッグ情報オーバーレイを追加
+
         if (debugMode) {
             androidx.compose.foundation.layout.Box(
                 modifier = Modifier.fillMaxSize()
             ) {
                 androidx.compose.material.Text(
-                    text = "デバッグモード ON\nテキスト数: ${parseResult.texts.size}\nスケール: ${"%.2f".format(scale)}",
+                    text = "デバッグモード ON\nテキスト数: " + parseResult.texts.size + "\nスケール: " + "%.2f".format(scale),
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(16.dp)
@@ -151,4 +167,3 @@ fun CADView(
         }
     }
 }
-
