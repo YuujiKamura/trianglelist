@@ -74,7 +74,7 @@ class TextRenderer {
         
         // デバッグモード時に描画起点とテキスト範囲をボックスで可視化
         if (debugMode) {
-            drawDebugBoxes(drawScope, text, adjustedPosition, textWidth, textHeight)
+            drawDebugBoxes(drawScope, text, adjustedPosition, textWidth, textHeight, textMeasurer)
         }
         
         // 回転を復元
@@ -180,7 +180,8 @@ class TextRenderer {
         text: DxfText,
         adjustedPosition: Offset,
         textWidth: Float,
-        textHeight: Float
+        textHeight: Float,
+        textMeasurer: androidx.compose.ui.text.TextMeasurer
     ) {
         // 1. 描画起点（DXFの基準点）を小さい赤いボックスで表示
         val originSize = 10f
@@ -228,7 +229,20 @@ class TextRenderer {
             )
         }
         
-        // 4. デバッグ情報をコンソールに出力
+        // 4. alignH/alignVラベルをテキストの上に表示
+        val labelStyle = TextStyle(
+            color = Color.Magenta,
+            fontSize = (text.height * 0.5).sp
+        )
+        val labelText = "H${text.alignH}V${text.alignV}"
+        val labelLayout = textMeasurer.measure(labelText, labelStyle)
+        val labelHeight = labelLayout.size.height.toFloat()
+        drawScope.drawText(
+            textLayoutResult = labelLayout,
+            topLeft = Offset(adjustedPosition.x, adjustedPosition.y - labelHeight - 20f)
+        )
+        
+        // 5. デバッグ情報をコンソールに出力
         println("=== Text Debug Info ===")
         println("Text: '${text.text}'")
         println("DXF Position: (${text.x}, ${text.y})")
