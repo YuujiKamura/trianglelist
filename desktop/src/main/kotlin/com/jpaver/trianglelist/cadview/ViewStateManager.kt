@@ -84,4 +84,22 @@ class ViewStateManager {
         val key = java.util.Base64.getEncoder().encodeToString(normalizedPath.toByteArray())
         return properties.containsKey(key)
     }
+
+    /**
+     * 最後に開いたファイルパスを保存
+     */
+    fun saveLastOpenedFile(filePath: String) {
+        properties.setProperty("lastOpenedFile", filePath)
+        saveProperties()
+        println("Last opened file saved: $filePath")
+    }
+
+    /**
+     * 最後に開いたファイルパスを取得
+     */
+    fun getLastOpenedFile(): String? {
+        return properties.getProperty("lastOpenedFile")?.also {
+            println("Last opened file: $it")
+        }
+    }
 }
