@@ -2,6 +2,113 @@
 
 DXFファイルにエンティティを追加・編集する際の注意点と手順。
 
+## 絶対禁止事項
+
+**テキスト操作（文字列置換・挿入）でDXFを編集してはいけない。**
+
+テキスト操作は以下の問題を引き起こす:
+- ENDSECの欠落
+- 無効なハンドル（例: CW00, CW01 - Wは16進数ではない）
+- グループコードの破損
+- セクション構造の破綻
+
+**必ずezdxfライブラリを使用すること。**
+
+## ezdxfによる安全な編集
+
+### 基本パターン
+
+```python
+import ezdxf
+from ezdxf import recover
+
+# 読み込み（リカバリ対応）
+def load_dxf_safe(path):
+    try:
+        return ezdxf.readfile(path), []
+    except ezdxf.DXFStructureError:
+        doc, aud = recover.readfile(path)
+        return doc, [e.message for e in aud.errors]
+
+# エンティティ追加
+doc, _ = load_dxf_safe('file.dxf')
+msp = doc.modelspace()
+
+# LINE追加
+msp.add_line((0, 0), (100, 100), dxfattribs={'layer': 'MyLayer', 'color': 7})
+
+# LWPOLYLINE追加（閉じた矩形）
+pts = [(0, 0), (100, 0), (100, 50), (0, 50)]
+msp.add_lwpolyline(pts, close=True, dxfattribs={'layer': 'MyLayer'})
+
+# 保存
+doc.saveas('file.dxf')
+```
+
+### バリデーション
+
+```python
+from ezdxf.lldxf.types import is_valid_handle
+
+class DxfValidator:
+    def __init__(self):
+        self.errors, self.warnings = [], []
+
+    def validate(self, doc):
+        # 1. ezdxf audit（構造・参照整合性）
+        auditor = doc.audit()
+        for err in auditor.errors:
+            self.errors.append(f"Audit: {err}")
+
+        # 2. ハンドル検証
+        seen = set()
+        for ent in doc.entitydb.values():
+            if not ent.is_alive: continue
+            h = ent.dxf.get("handle")
+            if h:
+                if not is_valid_handle(h):
+                    self.errors.append(f"無効ハンドル: {h}")
+                if h in seen:
+                    self.errors.append(f"重複ハンドル: {h}")
+                seen.add(h)
+
+        # 3. 必須セクション
+        if not doc.modelspace():
+            self.errors.append("MODELSPACEが存在しない")
+
+        return len(self.errors) == 0
+```
+
+### 既存エンティティの削除
+
+```python
+# 特定レイヤーのエンティティを削除
+for e in list(msp):  # list()でコピーしてから削除
+    if '区画線' in e.dxf.layer:
+        msp.delete_entity(e)
+```
+
+## シート→DXF同期パイプライン
+
+### スクリプト
+```
+cursor_tools/scripts/sync_sheet_markings_to_dxf.py
+```
+
+### 処理フロー
+1. [1/7] DXF読み込み（recover対応）
+2. [2/7] 入力検証（audit + ハンドル検証）
+3. [3/7] レイヤー準備
+4. [4/7] 既存区画線削除（重複防止）
+5. [5/7] エンティティ生成（ezdxf API）
+6. [6/7] 保存前検証
+7. [7/7] 保存・出力検証
+
+### 重要: ユーザーが指定したデータのみ追加
+
+シートにユーザーが入力したデータのみをDXFに反映する。
+自動抽出したデータを勝手に追加してはいけない。
+
 ## エンティティハンドル（重要）
 
 DXFファイル内の各エンティティは一意のハンドル（グループコード5）を持つ。
