@@ -36,7 +36,13 @@ class DrawingBoundsCalculator {
             allPoints.add(Offset((circle.centerX - circle.radius).toFloat(), (circle.centerY - circle.radius).toFloat()))
             allPoints.add(Offset((circle.centerX + circle.radius).toFloat(), (circle.centerY + circle.radius).toFloat()))
         }
-        
+
+        // 円弧の境界を追加（簡易的に円全体の境界を使用）
+        parseResult.arcs.forEach { arc ->
+            allPoints.add(Offset((arc.centerX - arc.radius).toFloat(), (arc.centerY - arc.radius).toFloat()))
+            allPoints.add(Offset((arc.centerX + arc.radius).toFloat(), (arc.centerY + arc.radius).toFloat()))
+        }
+
         // ポリラインの頂点を追加
         parseResult.lwPolylines.forEach { polyline ->
             polyline.vertices.forEach { (x, y) ->

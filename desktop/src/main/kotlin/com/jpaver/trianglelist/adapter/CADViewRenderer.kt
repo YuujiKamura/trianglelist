@@ -53,7 +53,36 @@ class CADViewRenderer {
                 style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1f / scale)
             )
         }
-        
+
+        // 円弧を描画
+        data.arcs.forEach { arc ->
+            val color = ColorConverter.aciToColor(arc.color)
+            val radius = arc.radius.toFloat()
+            val centerX = arc.centerX.toFloat()
+            val centerY = arc.centerY.toFloat()
+
+            // DXFの角度（反時計回り）をComposeの角度に変換
+            // ComposeのdrawArcは時計回りが正、0度は3時方向
+            // DXFはY軸反転後なので、角度も反転させる必要がある
+            val startAngle = -arc.startAngle.toFloat()
+            val endAngle = -arc.endAngle.toFloat()
+
+            // スイープ角度を計算（endAngle - startAngle、反転後）
+            var sweepAngle = endAngle - startAngle
+            // 負の場合は360度足す
+            if (sweepAngle > 0) sweepAngle -= 360f
+
+            drawScope.drawArc(
+                color = color,
+                startAngle = startAngle,
+                sweepAngle = sweepAngle,
+                useCenter = false,
+                topLeft = androidx.compose.ui.geometry.Offset(centerX - radius, centerY - radius),
+                size = androidx.compose.ui.geometry.Size(radius * 2, radius * 2),
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1f / scale)
+            )
+        }
+
         // ポリラインを描画
         data.lwPolylines.forEach { polyline ->
             if (polyline.vertices.size >= 2) {

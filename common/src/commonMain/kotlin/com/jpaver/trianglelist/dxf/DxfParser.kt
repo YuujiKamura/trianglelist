@@ -5,21 +5,82 @@ package com.jpaver.trianglelist.dxf
  * Android版DxfFileWriterの出力に対応した読み込み機能を提供
  */
 class DxfParser {
-    
+
+    // スキップ対象のエンティティタイプ（巨大なバイナリデータを含むもの）
+    private val skipEntityTypes = setOf(
+        "OLE2FRAME",  // 埋め込みOLEオブジェクト（画像など）
+        "IMAGE",      // 埋め込み画像
+        "WIPEOUT"     // ワイプアウト領域
+    )
+
     /**
      * DXFテキストを解析してDxfParseResultを返す
      */
     fun parse(dxfText: String): DxfParseResult {
         try {
-            val lines = dxfText.lines()
+            // 巨大エンティティを事前除去してから解析
+            val filteredText = removeHeavyEntities(dxfText)
+            val lines = filteredText.lines()
             val iterator = lines.iterator()
-            
+
             return parseDxfContent(iterator)
-            
+
         } catch (e: Exception) {
             // エラーが発生した場合は空の結果を返す
             return DxfParseResult()
         }
+    }
+
+    /**
+     * OLE2FRAMEなど巨大なエンティティを事前除去
+     * パース前に除去することで大幅な高速化を実現
+     */
+    private fun removeHeavyEntities(dxfText: String): String {
+        val lines = dxfText.lines()
+        val result = StringBuilder()
+        var removedCount = 0
+        var removedBytes = 0L
+        var skipMode = false
+
+        var i = 0
+        while (i < lines.size) {
+            val line = lines[i]
+            val trimmedLine = line.trim()
+
+            // グループコード0を検出（エンティティの区切り）
+            if (trimmedLine == "0" && i + 1 < lines.size) {
+                val nextLine = lines[i + 1].trim()
+                // エンティティタイプは大文字アルファベットで構成される（数字のみは除外）
+                val isEntityType = nextLine.matches(Regex("^[A-Z][A-Z0-9_]*$"))
+
+                if (nextLine in skipEntityTypes) {
+                    // スキップ対象エンティティの開始
+                    skipMode = true
+                    removedCount++
+                    // "0" と エンティティタイプ の分も加算
+                    removedBytes += lines[i].length + 1 + lines[i + 1].length + 1
+                    i += 2  // "0" と エンティティタイプ をスキップ
+                    continue
+                } else if (skipMode && isEntityType) {
+                    // スキップ終了（次の有効なエンティティ開始）
+                    skipMode = false
+                }
+            }
+
+            if (skipMode) {
+                // スキップ中は何も出力しない
+                removedBytes += line.length + 1  // +1 for newline
+            } else {
+                result.appendLine(line)
+            }
+            i++
+        }
+
+        if (removedCount > 0) {
+            println("DxfParser: Skipped $removedCount heavy entities (${removedBytes / 1024} KB)")
+        }
+
+        return result.toString()
     }
     
     /**
@@ -58,6 +119,7 @@ class DxfParser {
         var header: DxfHeader? = null
         val lines = mutableListOf<DxfLine>()
         val circles = mutableListOf<DxfCircle>()
+        val arcs = mutableListOf<DxfArc>()
         val lwPolylines = mutableListOf<DxfLwPolyline>()
         val texts = mutableListOf<DxfText>()
         
@@ -86,6 +148,11 @@ class DxfParser {
                         "CIRCLE" -> {
                             if (currentSection == "ENTITIES") {
                                 parseCircleEntity(peekableIterator)?.let { circles.add(it) }
+                            }
+                        }
+                        "ARC" -> {
+                            if (currentSection == "ENTITIES") {
+                                parseArcEntity(peekableIterator)?.let { arcs.add(it) }
                             }
                         }
                         "LWPOLYLINE" -> {
@@ -120,6 +187,7 @@ class DxfParser {
         return DxfParseResult(
             lines = lines,
             circles = circles,
+            arcs = arcs,
             lwPolylines = lwPolylines,
             texts = texts,
             header = header
@@ -245,7 +313,41 @@ class DxfParser {
             DxfCircle(centerX, centerY, radius, color, layer)
         } else null
     }
-    
+
+    /**
+     * ARCエンティティの解析
+     */
+    private fun parseArcEntity(iterator: PeekableIterator<String>): DxfArc? {
+        var centerX: Double? = null
+        var centerY: Double? = null
+        var radius: Double? = null
+        var startAngle: Double = 0.0
+        var endAngle: Double = 360.0
+        var color = 7
+        var layer = "0"
+
+        while (iterator.hasNext()) {
+            val nextCode = iterator.peek()?.trim()
+            if (nextCode == "0") break
+
+            val (code, value) = readGroupCodePair(iterator) ?: continue
+
+            when (code) {
+                8 -> layer = value
+                10 -> centerX = value.toDoubleOrNull()
+                20 -> centerY = value.toDoubleOrNull()
+                40 -> radius = value.toDoubleOrNull()
+                50 -> startAngle = value.toDoubleOrNull() ?: 0.0
+                51 -> endAngle = value.toDoubleOrNull() ?: 360.0
+                62 -> color = value.toIntOrNull() ?: 7
+            }
+        }
+
+        return if (centerX != null && centerY != null && radius != null) {
+            DxfArc(centerX, centerY, radius, startAngle, endAngle, color, layer)
+        } else null
+    }
+
     /**
      * LWPOLYLINEエンティティの解析
      */
