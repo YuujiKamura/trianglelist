@@ -862,7 +862,7 @@ def get_centerline_angle(x: float, centerlines: list) -> float:
 
 | 車線指定 | 意味 | Y座標 |
 |---------|------|-------|
-| 左車線 | 左車線（対向） | CENTER_Y + 1500mm |
+| 左車線 | 左車線 | CENTER_Y + 1500mm |
 | 右車線 | 右車線 | CENTER_Y - 1500mm |
 | 中央 | 中央線上 | CENTER_Y |
 
@@ -882,7 +882,7 @@ def get_centerline_angle(x: float, centerlines: list) -> float:
 
 | 車線指定 | 意味 | Y座標 |
 |---------|------|-------|
-| 左車線 | 左車線（対向） | CENTER_Y + 1500mm |
+| 左車線 | 左車線 | CENTER_Y + 1500mm |
 | 右車線右折 | 右折レーン中央 | CENTER_Y - 1250mm (2500/2) |
 | 右車線第一 | 第一走行帯中央 | CENTER_Y - 2500 - 残り幅/2 |
 | 右車線右折/右車線第一 | 車線分離線の位置 | CENTER_Y - 2500mm |
