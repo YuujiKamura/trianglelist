@@ -864,7 +864,7 @@ def get_centerline_angle(x: float, centerlines: list) -> float:
 |---------|------|-------|
 | 左車線 | 左車線（対向） | CENTER_Y + 1500mm |
 | 右車線 | 右車線 | CENTER_Y - 1500mm |
-| (空欄) | 中央線上 | CENTER_Y |
+| 中央 | 中央線上 | CENTER_Y |
 
 ### 右折レーンがある道路
 
