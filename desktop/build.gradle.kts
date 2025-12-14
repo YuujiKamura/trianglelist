@@ -53,6 +53,14 @@ tasks.register<JavaExec>("fixCrosswalk") {
     mainClass.set("DxfCrosswalkFixerKt")
 }
 
+// DXF区画線抽出ツール
+tasks.register<JavaExec>("extractMarkings") {
+    group = "application"
+    description = "DXFから区画線を抽出"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("DxfMarkingSyncToolKt")
+}
+
 // テストタスクの設定
 tasks.test {
     useJUnitPlatform()
