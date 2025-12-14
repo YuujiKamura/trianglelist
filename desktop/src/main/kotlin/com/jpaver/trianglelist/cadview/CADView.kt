@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import kotlin.math.min
 import com.jpaver.trianglelist.dxf.DxfParseResult
 import com.jpaver.trianglelist.adapter.CADViewRenderer
+import androidx.compose.ui.graphics.Matrix
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class)
 @Composable
@@ -122,13 +123,36 @@ fun CADView(
                         centerY - worldY * newScale
                     )
 
+                    println("=== Zoom Debug ===")
+                    println("size: ${size.width} x ${size.height}")
+                    println("center: ($centerX, $centerY)")
+                    println("offset: $offset → $newOffset")
+                    println("scale: $scale → $newScale")
+                    println("worldPivot: ($worldX, $worldY)")
+                    println("==================")
+
                     offset = newOffset
                     scale = newScale
                 }
         ) {
+            // 背景グリッド（変換前に描画）
+            val gridSpacing = 50f
+            val gridColor = Color.LightGray.copy(alpha = 0.3f)
+            for (x in 0..((size.width / gridSpacing).toInt())) {
+                drawLine(gridColor, Offset(x * gridSpacing, 0f), Offset(x * gridSpacing, size.height), 1f)
+            }
+            for (y in 0..((size.height / gridSpacing).toInt())) {
+                drawLine(gridColor, Offset(0f, y * gridSpacing), Offset(size.width, y * gridSpacing), 1f)
+            }
+
             drawContext.canvas.save()
-            drawContext.transform.translate(offset.x, offset.y)
-            drawContext.transform.scale(scale, scale)
+            // 単一の変換行列: screenPos = worldPos * scale + offset
+            // translate → scale の順で適用（行列は Translate * Scale となる）
+            val viewMatrix = Matrix().apply {
+                translate(offset.x, offset.y)
+                scale(scale, scale)
+            }
+            drawContext.transform.transform(viewMatrix)
 
             val crossSize = 100f / scale
             drawLine(
