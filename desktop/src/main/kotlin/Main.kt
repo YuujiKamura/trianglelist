@@ -122,7 +122,10 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
     }
 
     LaunchedEffect(initialFilePath) {
-        initialFilePath?.let { path ->
+        // コマンドライン引数 or 最後に開いたファイル
+        val pathToOpen = initialFilePath ?: viewStateManager.getLastOpenedFile()
+
+        pathToOpen?.let { path ->
             val file = File(path)
             if (file.exists()) {
                 // 保存されたビューステートを読み込む
@@ -135,6 +138,8 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                     parseResult = result
                     currentFile = file
                     lastModified = file.lastModified()
+                    // 最後に開いたファイルを保存
+                    viewStateManager.saveLastOpenedFile(file.absolutePath)
                 }
             } else {
                 println("File not found: $path")
@@ -235,6 +240,8 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                     parseResult = result
                     currentFile = selectedFile
                     lastModified = selectedFile.lastModified()
+                    // 最後に開いたファイルを保存
+                    viewStateManager.saveLastOpenedFile(selectedFile.absolutePath)
                 }
             }
             dialog.dispose()
