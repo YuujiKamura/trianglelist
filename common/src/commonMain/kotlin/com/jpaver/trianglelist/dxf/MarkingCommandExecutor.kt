@@ -1,5 +1,8 @@
 package com.jpaver.trianglelist.dxf
 
+// 4つの値を返すためのヘルパークラス
+private data class Quadruple<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
+
 /**
  * 区画線コマンド実行エンジン
  * エージェントからのコマンドを解釈して区画線を生成
@@ -10,10 +13,11 @@ class MarkingCommandExecutor {
     /**
      * コマンドを実行し、生成された線とテキストを返す
      */
-    fun execute(command: MarkingCommand, parseResult: DxfParseResult): ExecutionResult {
+    fun execute(command: MarkingCommand, parseResult: DxfParseResult, dxfPath: String? = null): ExecutionResult {
         return when (command.type.lowercase()) {
             "crosswalk" -> executeCrosswalk(command, parseResult)
             "info" -> executeInfo(parseResult)
+            "analyze" -> executeAnalyze(dxfPath)
             else -> ExecutionResult(
                 lines = emptyList(),
                 texts = emptyList(),
@@ -32,6 +36,25 @@ class MarkingCommandExecutor {
             lines = emptyList(),
             texts = emptyList(),
             message = "DXF info printed to console"
+        )
+    }
+
+    /**
+     * DXFサイズ分析
+     */
+    private fun executeAnalyze(dxfPath: String?): ExecutionResult {
+        if (dxfPath == null) {
+            return ExecutionResult(
+                lines = emptyList(),
+                texts = emptyList(),
+                message = "DXFパスが指定されていません"
+            )
+        }
+        DxfAnalyzer.analyzeFile(dxfPath)?.print()
+        return ExecutionResult(
+            lines = emptyList(),
+            texts = emptyList(),
+            message = "DXF analysis printed to console"
         )
     }
 
@@ -59,9 +82,16 @@ class MarkingCommandExecutor {
             )
         }
 
-        // startOffsetを決定
-        val startOffset: Double = when {
-            // 測点名指定の場合
+        // パラメータのデフォルト値
+        val stripeLength = params["stripeLength"]?.toDoubleOrNull() ?: 4000.0
+        val defaultStripeWidth = 450.0
+        val defaultStripeSpacing = 450.0
+        val layer = params["layer"] ?: "横断歩道"
+        val anchor = params["anchor"] ?: "center"
+
+        // 測点指定に応じてオフセットとストライプ数を決定
+        val (startOffset, stripeCount, stripeWidth, stripeSpacing) = when {
+            // fromStation + toStation: 2点間の区間全体をカバー
             params["fromStation"] != null && params["toStation"] != null -> {
                 val from = index.getStationCoord(params["fromStation"]!!)
                 val to = index.getStationCoord(params["toStation"]!!)
@@ -72,15 +102,31 @@ class MarkingCommandExecutor {
                         message = "測点が見つかりません: fromStation=${params["fromStation"]}, toStation=${params["toStation"]}"
                     )
                 }
-                // 中間点のX座標を中心線始点からのオフセットとして計算
-                val midX = (from.first + to.first) / 2
+
                 val centerlineStartX = centerlines.first().x1
-                println("測点配置: from=${params["fromStation"]}(${from.first}), to=${params["toStation"]}(${to.first})")
-                println("中間点X: $midX, 中心線始点X: $centerlineStartX")
-                println("計算オフセット: ${midX - centerlineStartX}")
-                midX - centerlineStartX
+                // fromStation を起点とする
+                val offset = from.first - centerlineStartX
+                // 2点間の距離 = 横断歩道の幅
+                val distance = kotlin.math.abs(to.first - from.first)
+
+                // 距離に合わせてストライプ数を計算
+                // distance = n * width + (n-1) * spacing = n * (width + spacing) - spacing
+                // n = (distance + spacing) / (width + spacing)
+                val width = params["stripeWidth"]?.toDoubleOrNull() ?: defaultStripeWidth
+                val spacing = params["stripeSpacing"]?.toDoubleOrNull() ?: defaultStripeSpacing
+                val calculatedCount = ((distance + spacing) / (width + spacing)).toInt().coerceAtLeast(1)
+
+                println("測点配置: from=${params["fromStation"]}(${from.first}) → to=${params["toStation"]}(${to.first})")
+                println("区間距離: ${distance}mm, ストライプ数: $calculatedCount")
+
+                // 横断歩道の中心位置にオフセットを調整
+                val actualWidth = calculatedCount * width + (calculatedCount - 1) * spacing
+                val adjustedOffset = offset + actualWidth / 2
+
+                Quadruple(adjustedOffset, calculatedCount, width, spacing)
             }
-            // 単一測点指定の場合
+
+            // 単一測点: 測点を起点として指定長さ分
             params["station"] != null -> {
                 val station = index.getStationCoord(params["station"]!!)
                 if (station == null) {
@@ -91,19 +137,31 @@ class MarkingCommandExecutor {
                     )
                 }
                 val centerlineStartX = centerlines.first().x1
-                station.first - centerlineStartX
-            }
-            // 直接オフセット指定
-            else -> params["startOffset"]?.toDoubleOrNull() ?: 11000.0
-        }
+                val offset = station.first - centerlineStartX
 
-        // その他のパラメータ
-        val stripeLength = params["stripeLength"]?.toDoubleOrNull() ?: 4000.0
-        val stripeWidth = params["stripeWidth"]?.toDoubleOrNull() ?: 450.0
-        val stripeCount = params["stripeCount"]?.toIntOrNull() ?: 7
-        val stripeSpacing = params["stripeSpacing"]?.toDoubleOrNull() ?: 450.0
-        val layer = params["layer"] ?: "横断歩道"
-        val anchor = params["anchor"] ?: "center"
+                val width = params["stripeWidth"]?.toDoubleOrNull() ?: defaultStripeWidth
+                val spacing = params["stripeSpacing"]?.toDoubleOrNull() ?: defaultStripeSpacing
+                val count = params["stripeCount"]?.toIntOrNull() ?: 5  // デフォルト5本で約4m
+
+                // 測点を起点にするため、横断歩道幅の半分を加算
+                val totalWidth = count * width + (count - 1) * spacing
+                val adjustedOffset = offset + totalWidth / 2
+
+                println("測点配置: station=${params["station"]}(${station.first})")
+                println("横断歩道幅: ${totalWidth}mm (${count}本)")
+
+                Quadruple(adjustedOffset, count, width, spacing)
+            }
+
+            // 直接オフセット指定
+            else -> {
+                val offset = params["startOffset"]?.toDoubleOrNull() ?: 11000.0
+                val width = params["stripeWidth"]?.toDoubleOrNull() ?: defaultStripeWidth
+                val spacing = params["stripeSpacing"]?.toDoubleOrNull() ?: defaultStripeSpacing
+                val count = params["stripeCount"]?.toIntOrNull() ?: 7
+                Quadruple(offset, count, width, spacing)
+            }
+        }
 
         // 横断歩道を生成
         val crosswalkLines = crosswalkGenerator.generateCrosswalk(

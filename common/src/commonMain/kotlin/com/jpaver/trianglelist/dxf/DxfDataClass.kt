@@ -6,6 +6,7 @@ package com.jpaver.trianglelist.dxf
 data class DxfParseResult(
     val lines: List<DxfLine> = emptyList(),
     val circles: List<DxfCircle> = emptyList(),
+    val arcs: List<DxfArc> = emptyList(),
     val lwPolylines: List<DxfLwPolyline> = emptyList(),
     val texts: List<DxfText> = emptyList(),
     val header: DxfHeader? = null
@@ -30,6 +31,21 @@ data class DxfCircle(
     val centerX: Double,
     val centerY: Double,
     val radius: Double,
+    val color: Int = 7,
+    val layer: String = "0"
+)
+
+/**
+ * DXF ARC エンティティ
+ * 円弧：中心点、半径、開始角度、終了角度で定義
+ * 角度は度数法（0-360）、反時計回りが正
+ */
+data class DxfArc(
+    val centerX: Double,
+    val centerY: Double,
+    val radius: Double,
+    val startAngle: Double,  // 開始角度（度）
+    val endAngle: Double,    // 終了角度（度）
     val color: Int = 7,
     val layer: String = "0"
 )

@@ -102,7 +102,7 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
             val result = parser.parse(dxfContent)
 
             println("=== DXF Loaded: ${file.name} (${file.absolutePath}) ===")
-            println("Lines: ${result.lines.size}, Circles: ${result.circles.size}, Polylines: ${result.lwPolylines.size}, Texts: ${result.texts.size}")
+            println("Lines: ${result.lines.size}, Circles: ${result.circles.size}, Arcs: ${result.arcs.size}, Polylines: ${result.lwPolylines.size}, Texts: ${result.texts.size}")
 
             result.lwPolylines.forEachIndexed { idx, poly ->
                 val xs = poly.vertices.map { it.first }
@@ -191,7 +191,7 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                 parseResult?.let { currentResult ->
                                     var updatedResult = currentResult
                                     for (cmd in commands) {
-                                        val result = commandExecutor.execute(cmd, updatedResult)
+                                        val result = commandExecutor.execute(cmd, updatedResult, currentFile?.absolutePath)
                                         println("Command executed: ${result.message}")
                                         updatedResult = updatedResult.copy(
                                             lines = updatedResult.lines + result.lines,

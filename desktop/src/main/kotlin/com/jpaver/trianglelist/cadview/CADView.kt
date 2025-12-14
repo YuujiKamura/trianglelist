@@ -55,7 +55,7 @@ fun CADView(
         LaunchedEffect(parseResult, maxWidth, maxHeight) {
             if (isInitialized) return@LaunchedEffect
             if (parseResult.lines.isEmpty() && parseResult.circles.isEmpty() &&
-                parseResult.lwPolylines.isEmpty() && parseResult.texts.isEmpty()) return@LaunchedEffect
+                parseResult.arcs.isEmpty() && parseResult.lwPolylines.isEmpty() && parseResult.texts.isEmpty()) return@LaunchedEffect
 
             val canvasW = with(density) { maxWidth.toPx() }
             val canvasH = with(density) { maxHeight.toPx() }

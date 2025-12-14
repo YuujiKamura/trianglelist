@@ -3,6 +3,7 @@ package com.jpaver.trianglelist.util
 import com.jpaver.trianglelist.dxf.DxfParseResult
 import com.jpaver.trianglelist.dxf.DxfLine
 import com.jpaver.trianglelist.dxf.DxfCircle
+import com.jpaver.trianglelist.dxf.DxfArc
 import com.jpaver.trianglelist.dxf.DxfLwPolyline
 import com.jpaver.trianglelist.dxf.DxfText
 
@@ -17,6 +18,7 @@ object CanvasUtil {
     fun flipYAxis(parseResult: DxfParseResult): DxfParseResult = parseResult.copy(
         lines = parseResult.lines.map { it.copy(y1 = -it.y1, y2 = -it.y2) },
         circles = parseResult.circles.map { it.copy(centerY = -it.centerY) },
+        arcs = parseResult.arcs.map { it.copy(centerY = -it.centerY) },
         lwPolylines = parseResult.lwPolylines.map { poly ->
             poly.copy(vertices = poly.vertices.map { (x, y) -> x to -y })
         },
