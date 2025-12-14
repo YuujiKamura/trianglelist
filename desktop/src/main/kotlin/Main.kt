@@ -16,6 +16,8 @@ import com.jpaver.trianglelist.dxf.DxfParseResult
 import com.jpaver.trianglelist.dxf.DxfParser
 import com.jpaver.trianglelist.dxf.CrosswalkGenerator
 import com.jpaver.trianglelist.dxf.DxfText
+import com.jpaver.trianglelist.dxf.MarkingCommand
+import com.jpaver.trianglelist.dxf.MarkingCommandExecutor
 import com.jpaver.trianglelist.test.TextGeometryTestWidget
 import java.awt.FileDialog
 import java.awt.Frame
@@ -160,6 +162,53 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
         }
     }
 
+    // コマンドファイル監視（エージェントからの区画線追加用）
+    val commandExecutor = remember { MarkingCommandExecutor() }
+    var commandFileModified by remember { mutableStateOf(0L) }
+
+    LaunchedEffect(currentFile) {
+        if (currentFile != null) {
+            val commandFile = File(currentFile!!.parent, ".cadview_commands.json")
+            println("Watching command file: ${commandFile.absolutePath}")
+
+            while (true) {
+                delay(500)  // 0.5秒間隔で監視
+                if (commandFile.exists()) {
+                    val newModified = commandFile.lastModified()
+                    if (newModified > commandFileModified) {
+                        commandFileModified = newModified
+                        try {
+                            val content = commandFile.readText()
+                            if (content.isNotBlank()) {
+                                println("Command file detected: $content")
+                                val commands = MarkingCommand.listFromJson(content)
+
+                                parseResult?.let { currentResult ->
+                                    var updatedResult = currentResult
+                                    for (cmd in commands) {
+                                        val result = commandExecutor.execute(cmd, updatedResult)
+                                        println("Command executed: ${result.message}")
+                                        updatedResult = updatedResult.copy(
+                                            lines = updatedResult.lines + result.lines,
+                                            texts = updatedResult.texts + result.texts
+                                        )
+                                    }
+                                    parseResult = updatedResult
+                                }
+
+                                // コマンド実行後、ファイルを削除
+                                commandFile.delete()
+                                println("Command file processed and deleted")
+                            }
+                        } catch (e: Exception) {
+                            println("Error processing command file: ${e.message}")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     if (showDialog) {
         LaunchedEffect(Unit) {
             val frame = Frame()
@@ -226,37 +275,6 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                 }
             ) {
                 Text(if (hotReload) "自動更新ON" else "自動更新OFF")
-            }
-
-            // 横断歩道追加ボタン
-            parseResult?.let { result ->
-                Button(
-                    onClick = {
-                        val generator = CrosswalkGenerator()
-                        val centerlines = generator.filterCenterlinesByLayer(result.lines, "中心")
-                            .ifEmpty { result.lines }
-                        if (centerlines.isNotEmpty()) {
-                            val crosswalkLines = generator.generateCrosswalk(
-                                centerlineLines = centerlines,
-                                startOffset = 11000.0,
-                                stripeLength = 4000.0,
-                                stripeWidth = 450.0,
-                                stripeCount = 7,
-                                stripeSpacing = 450.0,
-                                layer = "横断歩道"
-                            )
-                            val label = DxfText(13000.0, 3500.0, "横断歩道", 300.0, 0.0, 5, 1, 0, "横断歩道")
-                            parseResult = result.copy(
-                                lines = result.lines + crosswalkLines,
-                                texts = result.texts + label
-                            )
-                            println("横断歩道追加: " + crosswalkLines.size.toString() + "本")
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(backgroundColor = androidx.compose.ui.graphics.Color.Cyan)
-                ) {
-                    Text("横断歩道")
-                }
             }
         }
 

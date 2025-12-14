@@ -26,6 +26,7 @@ class CrosswalkGenerator {
      * @param stripeCount ストライプ本数
      * @param stripeSpacing ストライプ間隔（道路方向、mm）
      * @param layer 出力レイヤー名
+     * @param anchor 配置基準点（center, top, bottom, left, right, top-left, top-right, bottom-left, bottom-right）
      * @return 横断歩道を構成するLINEエンティティのリスト
      */
     fun generateCrosswalk(
@@ -35,7 +36,8 @@ class CrosswalkGenerator {
         stripeWidth: Double,
         stripeCount: Int,
         stripeSpacing: Double,
-        layer: String = "横断歩道"
+        layer: String = "横断歩道",
+        anchor: String = "center"
     ): List<DxfLine> {
         if (centerlineLines.isEmpty()) return emptyList()
 
@@ -66,7 +68,53 @@ class CrosswalkGenerator {
             result.addAll(stripeLines)
         }
 
-        return result
+        // アンカーに応じてオフセットを適用
+        return applyAnchorOffset(result, anchor)
+    }
+
+    /**
+     * アンカーポイントに応じてオフセットを適用
+     *
+     * 9方向のアンカー:
+     * top-left    | top    | top-right
+     * ------------|--------|------------
+     * left        | center | right
+     * ------------|--------|------------
+     * bottom-left | bottom | bottom-right
+     */
+    private fun applyAnchorOffset(lines: List<DxfLine>, anchor: String): List<DxfLine> {
+        if (lines.isEmpty() || anchor == "center") return lines
+
+        // バウンディングボックスを計算
+        val minX = lines.minOf { minOf(it.x1, it.x2) }
+        val maxX = lines.maxOf { maxOf(it.x1, it.x2) }
+        val minY = lines.minOf { minOf(it.y1, it.y2) }
+        val maxY = lines.maxOf { maxOf(it.y1, it.y2) }
+
+        val width = maxX - minX
+        val height = maxY - minY
+
+        // アンカーに応じたオフセットを計算
+        val (offsetX, offsetY) = when (anchor.lowercase()) {
+            "top" -> Pair(0.0, -height / 2)
+            "bottom" -> Pair(0.0, height / 2)
+            "left" -> Pair(width / 2, 0.0)
+            "right" -> Pair(-width / 2, 0.0)
+            "top-left" -> Pair(width / 2, -height / 2)
+            "top-right" -> Pair(-width / 2, -height / 2)
+            "bottom-left" -> Pair(width / 2, height / 2)
+            "bottom-right" -> Pair(-width / 2, height / 2)
+            else -> Pair(0.0, 0.0)
+        }
+
+        // オフセットを適用
+        return lines.map { line ->
+            DxfLine(
+                line.x1 + offsetX, line.y1 + offsetY,
+                line.x2 + offsetX, line.y2 + offsetY,
+                line.color, line.layer
+            )
+        }
     }
 
     private fun buildCenterlinePath(lines: List<DxfLine>): List<Pair<Double, Double>> {
