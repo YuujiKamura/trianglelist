@@ -202,7 +202,19 @@ class CsvLoader {
         // 接続
         else {
             val ptri = trilist.getBy(parent)
-            val cp = readCParamSafe(chunks)
+            // 6カラム形式ではCONNECTION_TYPEから接続パラメータを生成
+            val cp = if (chunks.has(TriangleColumn.CONN_PARAM_LCR)) {
+                readCParamSafe(chunks)  // 完全形式
+            } else {
+                // 最小形式: CONNECTION_TYPE(1=B辺, 2=C辺)をそのまま使用
+                // getParentPointByLCRはpbc=1(B辺), pbc=2(C辺)のみ対応
+                ConnParam(
+                    side = connectionType,      // 1→B辺, 2→C辺
+                    type = 0,
+                    lcr = 2,                    // Center（デフォルト）
+                    lenA = lengthA              // 共有辺の長さ
+                )
+            }
             trilist.add(
                 Triangle(ptri, cp, lengthB, lengthC),
                 true
