@@ -66,10 +66,38 @@ class CsvloaderTest {
         println("=== Connected format (6 columns) ===")
         println("Triangle count: ${result!!.trilist.size()}")
         print_trilist(result.trilist)
-        assert(result.trilist.size() == 3) { "Should have 3 triangles" }
+        assert(result.trilist.size() == 10) { "Should have 10 triangles" }
 
-        // 接続の確認
-        val tri2 = result.trilist.getBy(2)
-        println("Triangle 2 parent: ${tri2.parentnumber}")
+        // 全三角形の接続情報を出力・検証
+        for (i in 1..10) {
+            val tri = result.trilist.getBy(i)
+            println("Triangle $i: parent=${tri.parentnumber}, connectionSide=${tri.connectionSide}, area=${tri.getArea()}")
+            assert(tri.getArea() > 0) { "Triangle $i should have positive area" }
+        }
+
+        // 各接続タイプの検証
+        // 三角形1: 独立
+        val tri1 = result.trilist.getBy(1)
+        assert(tri1.connectionSide == -1) { "Triangle 1 should be independent" }
+
+        // 三角形2-4: 三角形1からの各辺接続
+        assert(result.trilist.getBy(2).connectionSide == 1) { "Triangle 2: A edge from 1" }
+        assert(result.trilist.getBy(3).connectionSide == 2) { "Triangle 3: B edge from 1" }
+        assert(result.trilist.getBy(4).connectionSide == 3) { "Triangle 4: C edge from 1" }
+
+        // 三角形5-7: 三角形2からの各辺接続
+        assert(result.trilist.getBy(5).connectionSide == 1) { "Triangle 5: A edge from 2" }
+        assert(result.trilist.getBy(6).connectionSide == 2) { "Triangle 6: B edge from 2" }
+        assert(result.trilist.getBy(7).connectionSide == 3) { "Triangle 7: C edge from 2" }
+
+        // 三角形8-10: 三角形3からの各辺接続
+        assert(result.trilist.getBy(8).connectionSide == 1) { "Triangle 8: A edge from 3" }
+        assert(result.trilist.getBy(9).connectionSide == 2) { "Triangle 9: B edge from 3" }
+        assert(result.trilist.getBy(10).connectionSide == 3) { "Triangle 10: C edge from 3" }
+
+        // 面積計算が可能か確認（図形生成の成功を確認）
+        val totalArea = result.trilist.getArea()
+        println("Total area: $totalArea")
+        assert(totalArea > 0) { "Total area should be positive" }
     }
 }
