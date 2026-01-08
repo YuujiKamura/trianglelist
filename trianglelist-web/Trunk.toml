@@ -1,0 +1,25 @@
+# Trunk ビルド設定
+# https://trunkrs.dev/configuration/
+
+[build]
+# ビルド対象のHTMLファイル
+target = "index.html"
+# 出力ディレクトリ
+dist = "dist"
+
+[watch]
+# ファイル変更監視対象
+watch = ["src", "index.html", "Trunk.toml"]
+# 無視するパターン
+ignore = ["dist"]
+
+[serve]
+# 開発サーバー設定
+address = "127.0.0.1"
+port = 8080
+# ファイル変更時に自動リロード
+open = false
+
+[clean]
+# クリーン時に削除するディレクトリ
+dist = "dist"
