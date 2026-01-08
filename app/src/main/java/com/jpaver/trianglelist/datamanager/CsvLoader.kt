@@ -13,6 +13,116 @@ import com.jpaver.trianglelist.setPointNumber
 import com.jpaver.trianglelist.viewmodel.InputParameter
 import java.io.BufferedReader
 
+/**
+ * 三角形CSVのカラム定義
+ *
+ * 最小形式: NUMBER, LENGTH_A, LENGTH_B, LENGTH_C の4カラム
+ * 接続形式: + PARENT_NUMBER, CONNECTION_TYPE で6カラム
+ * 完全形式: 28カラム（レイアウト情報含む）
+ */
+object TriangleColumn {
+    // === 必須（図形生成に必要） ===
+    /** 三角形の通し番号 */
+    const val NUMBER = 0
+    /** 辺Aの長さ（底辺、接続時は共有辺） */
+    const val LENGTH_A = 1
+    /** 辺Bの長さ */
+    const val LENGTH_B = 2
+    /** 辺Cの長さ */
+    const val LENGTH_C = 3
+
+    // === 接続情報 ===
+    /** 接続先の三角形番号（-1 = 非接続） */
+    const val PARENT_NUMBER = 4
+    /** 接続タイプ（1=A辺, 2=B辺, 3=C辺, -1=非接続） */
+    const val CONNECTION_TYPE = 5
+
+    // === 表示情報 ===
+    /** 三角形の名前（T1, T2など） */
+    const val NAME = 6
+    /** 点番号のX座標（表示位置） */
+    const val POINT_NUMBER_X = 7
+    /** 点番号のY座標（表示位置） */
+    const val POINT_NUMBER_Y = 8
+    /** 点番号をユーザーが手動移動したか */
+    const val POINT_NUMBER_MOVED = 9
+    /** 表示色（1-8のカラーパレット番号） */
+    const val COLOR = 10
+
+    // === 寸法線の配置 ===
+    /** 水平寸法のA辺配置 */
+    const val DIM_HORIZONTAL_A = 11
+    /** 水平寸法のB辺配置 */
+    const val DIM_HORIZONTAL_B = 12
+    /** 水平寸法のC辺配置 */
+    const val DIM_HORIZONTAL_C = 13
+    /** 垂直寸法のA辺配置 */
+    const val DIM_VERTICAL_A = 14
+    /** 垂直寸法のB辺配置 */
+    const val DIM_VERTICAL_B = 15
+    /** 垂直寸法のC辺配置 */
+    const val DIM_VERTICAL_C = 16
+
+    // === 接続パラメータ詳細 ===
+    /** 接続辺（どの辺で繋がるか） */
+    const val CONN_PARAM_SIDE = 17
+    /** 接続タイプ詳細 */
+    const val CONN_PARAM_TYPE = 18
+    /** 接続位置（Left/Center/Right） */
+    const val CONN_PARAM_LCR = 19
+
+    // === 寸法フラグ ===
+    /** 寸法1がユーザー移動済みか */
+    const val DIM_FLAG_1_MOVED = 20
+    /** 寸法2がユーザー移動済みか */
+    const val DIM_FLAG_2_MOVED = 21
+
+    // === 角度・座標 ===
+    /** 三角形の角度 */
+    const val ANGLE = 22
+    /** CA点のX座標 */
+    const val POINT_CA_X = 23
+    /** CA点のY座標 */
+    const val POINT_CA_Y = 24
+    /** ローカル角度 */
+    const val ANGLE_LOCAL = 25
+
+    // === 測点 ===
+    /** 水平寸法の測点 */
+    const val DIM_HORIZONTAL_S = 26
+    /** 測点フラグがユーザー移動済みか */
+    const val DIM_FLAG_S_MOVED = 27
+
+    // === カラム数の定義 ===
+    /** 独立三角形の最小カラム数 */
+    const val MIN_REQUIRED = 4
+    /** 接続情報付きのカラム数 */
+    const val WITH_CONNECTION = 6
+    /** 完全形式のカラム数 */
+    const val FULL = 28
+}
+
+// === List<String>用の拡張関数 ===
+
+/** 指定インデックスのInt値を取得（なければdefault） */
+fun List<String>.intAt(index: Int, default: Int = 0): Int =
+    getOrNull(index)?.toIntOrNull() ?: default
+
+/** 指定インデックスのFloat値を取得（なければdefault） */
+fun List<String>.floatAt(index: Int, default: Float = 0f): Float =
+    getOrNull(index)?.toFloatOrNull() ?: default
+
+/** 指定インデックスのBoolean値を取得（なければdefault） */
+fun List<String>.boolAt(index: Int, default: Boolean = false): Boolean =
+    getOrNull(index)?.lowercase()?.toBooleanStrictOrNull() ?: default
+
+/** 指定インデックスのString値を取得（なければdefault） */
+fun List<String>.stringAt(index: Int, default: String = ""): String =
+    getOrNull(index)?.takeIf { it.isNotBlank() } ?: default
+
+/** 指定インデックスが存在するか */
+fun List<String>.has(index: Int): Boolean = size > index && getOrNull(index)?.isNotBlank() == true
+
 class CsvLoader {
 
     fun parseCSV(
@@ -65,43 +175,41 @@ class CsvLoader {
         return true
     }
 
-    val SIZE_CHUNKS_TRI = 26
-
     fun buildTriangle(
         trilist: TriangleList,
         chunks: List<String>
     ){
-        if( chunks.size < SIZE_CHUNKS_TRI ) return
-        val connectiontype = chunks[5].toInt()
+        // 最低4カラム必要（番号, 辺A, 辺B, 辺C）
+        if (chunks.size < TriangleColumn.MIN_REQUIRED) return
 
-        //非接続というか１番目
-        if( connectiontype < 1 ){
-            val pt = PointXY(0f, 0f)
+        // 数値でない行（ListAngle等）はスキップ
+        val number = chunks.intAt(TriangleColumn.NUMBER, -1)
+        if (number < 0) return
+
+        val lengthA = chunks.floatAt(TriangleColumn.LENGTH_A)
+        val lengthB = chunks.floatAt(TriangleColumn.LENGTH_B)
+        val lengthC = chunks.floatAt(TriangleColumn.LENGTH_C)
+        val parent = chunks.intAt(TriangleColumn.PARENT_NUMBER, -1)
+        val connectionType = chunks.intAt(TriangleColumn.CONNECTION_TYPE, -1)
+
+        // 非接続（独立三角形）
+        if (connectionType < 1) {
             trilist.add(
-                Triangle(
-                    chunks[1].toFloat(),
-                    chunks[2].toFloat(),
-                    chunks[3].toFloat(),
-                    pt, 180f
-                ),
+                Triangle(lengthA, lengthB, lengthC, PointXY(0f, 0f), 180f),
                 true
             )
         }
-        //接続
+        // 接続
         else {
-            val ptri = trilist.getBy(chunks[4].toInt())
-            val cp = readCParam(chunks)
+            val ptri = trilist.getBy(parent)
+            val cp = readCParamSafe(chunks)
             trilist.add(
-                Triangle(
-                    ptri, cp,
-                    chunks[2].toFloat(),
-                    chunks[3].toFloat()
-                ),
+                Triangle(ptri, cp, lengthB, lengthC),
                 true
             )
         }
 
-        finalizeBuildTriangle(chunks, trilist.getBy(trilist.size()) )
+        finalizeBuildTriangle(chunks, trilist.getBy(trilist.size()))
     }
 
     // 0-3 ${mt.mynumber}, ${mt.lengthA_}, ${mt.lengthB_}, ${mt.lengthC_},
@@ -120,14 +228,59 @@ class CsvLoader {
 
 
     fun finalizeBuildTriangle(chunks: List<String>, mt: Triangle){
-        mt.connectionSide = chunks[5].toInt()
-        mt.name = chunks[6]
-        if( chunks[9] == "true" ) readPointNumber( chunks, mt)
-        if( chunks.size > 10 ) mt.setColor(chunks[10].toInt())
-        if( chunks.size > 11 ) readDimAligns(chunks, mt)
-        if( chunks.size > 17 ) mt.cParam_ = readCParam(chunks)
-        if( chunks.size > 20 ) mt.dim.flag = readDimFlag(chunks)
-        if( chunks.size > 26 ) readDimSokuten( chunks, mt)
+        // 接続タイプ
+        if (chunks.has(TriangleColumn.CONNECTION_TYPE)) {
+            mt.connectionSide = chunks.intAt(TriangleColumn.CONNECTION_TYPE, -1)
+        }
+
+        // 名前
+        if (chunks.has(TriangleColumn.NAME)) {
+            mt.name = chunks.stringAt(TriangleColumn.NAME)
+        }
+
+        // 点番号位置（ユーザー移動時のみ）
+        if (chunks.boolAt(TriangleColumn.POINT_NUMBER_MOVED)) {
+            mt.setPointNumber(
+                PointXY(
+                    chunks.floatAt(TriangleColumn.POINT_NUMBER_X),
+                    chunks.floatAt(TriangleColumn.POINT_NUMBER_Y)
+                ),
+                true
+            )
+        }
+
+        // 色
+        if (chunks.has(TriangleColumn.COLOR)) {
+            mt.setColor(chunks.intAt(TriangleColumn.COLOR, 4))
+        }
+
+        // 寸法配置
+        if (chunks.has(TriangleColumn.DIM_VERTICAL_C)) {
+            mt.setDimAligns(
+                chunks.intAt(TriangleColumn.DIM_HORIZONTAL_A),
+                chunks.intAt(TriangleColumn.DIM_HORIZONTAL_B),
+                chunks.intAt(TriangleColumn.DIM_HORIZONTAL_C),
+                chunks.intAt(TriangleColumn.DIM_VERTICAL_A),
+                chunks.intAt(TriangleColumn.DIM_VERTICAL_B),
+                chunks.intAt(TriangleColumn.DIM_VERTICAL_C)
+            )
+        }
+
+        // 接続パラメータ
+        if (chunks.has(TriangleColumn.CONN_PARAM_LCR)) {
+            mt.cParam_ = readCParamSafe(chunks)
+        }
+
+        // 寸法フラグ
+        if (chunks.has(TriangleColumn.DIM_FLAG_2_MOVED)) {
+            mt.dim.flag = readDimFlagSafe(chunks)
+        }
+
+        // 測点
+        if (chunks.has(TriangleColumn.DIM_FLAG_S_MOVED)) {
+            mt.dim.horizontal.s = chunks.intAt(TriangleColumn.DIM_HORIZONTAL_S)
+            mt.dim.flagS.isMovedByUser = chunks.boolAt(TriangleColumn.DIM_FLAG_S_MOVED)
+        }
     }
 
     fun readDimSokuten(chunks: List<String>, mt: Triangle){
@@ -152,22 +305,20 @@ class CsvLoader {
             )
     }
 
-    fun readDimFlag( chunks: List<String>):Array<Flags>{
-
+    fun readDimFlagSafe(chunks: List<String>): Array<Flags> {
         val flags = arrayOf(Flags(), Flags(), Flags())
-        flags[1].isMovedByUser = chunks[20].toBoolean()
-        flags[2].isMovedByUser = chunks[21].toBoolean()
+        flags[1].isMovedByUser = chunks.boolAt(TriangleColumn.DIM_FLAG_1_MOVED)
+        flags[2].isMovedByUser = chunks.boolAt(TriangleColumn.DIM_FLAG_2_MOVED)
         return flags
-
     }
 
-    fun readCParam( chunks:List<String> ): ConnParam {
-            return ConnParam(
-            chunks[17].toInt(),
-            chunks[18].toInt(),
-            chunks[19].toInt(),
-            chunks[1].toFloat()
-            )
+    fun readCParamSafe(chunks: List<String>): ConnParam {
+        return ConnParam(
+            chunks.intAt(TriangleColumn.CONN_PARAM_SIDE),
+            chunks.intAt(TriangleColumn.CONN_PARAM_TYPE),
+            chunks.intAt(TriangleColumn.CONN_PARAM_LCR),
+            chunks.floatAt(TriangleColumn.LENGTH_A)
+        )
     }
 
     private fun readCsvHeaderLines(
