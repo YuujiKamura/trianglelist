@@ -135,16 +135,6 @@ fun CADView(
                     scale = newScale
                 }
         ) {
-            // 背景グリッド（変換前に描画）
-            val gridSpacing = 50f
-            val gridColor = Color.LightGray.copy(alpha = 0.3f)
-            for (x in 0..((size.width / gridSpacing).toInt())) {
-                drawLine(gridColor, Offset(x * gridSpacing, 0f), Offset(x * gridSpacing, size.height), 1f)
-            }
-            for (y in 0..((size.height / gridSpacing).toInt())) {
-                drawLine(gridColor, Offset(0f, y * gridSpacing), Offset(size.width, y * gridSpacing), 1f)
-            }
-
             drawContext.canvas.save()
             // 単一の変換行列: screenPos = worldPos * scale + offset
             // translate → scale の順で適用（行列は Translate * Scale となる）
@@ -153,6 +143,28 @@ fun CADView(
                 scale(scale, scale)
             }
             drawContext.transform.transform(viewMatrix)
+
+            // 1000mm固定グリッド（ワールド座標）
+            val gridSpacing = 1000f  // 1000mm = 1m
+            val gridColor = Color.LightGray.copy(alpha = 0.3f)
+            // 可視範囲をワールド座標で計算
+            val worldMinX = -offset.x / scale
+            val worldMinY = -offset.y / scale
+            val worldMaxX = (size.width - offset.x) / scale
+            val worldMaxY = (size.height - offset.y) / scale
+            // グリッド線の範囲
+            val startX = (worldMinX / gridSpacing).toInt() * gridSpacing
+            val startY = (worldMinY / gridSpacing).toInt() * gridSpacing
+            var gx = startX
+            while (gx <= worldMaxX) {
+                drawLine(gridColor, Offset(gx, worldMinY), Offset(gx, worldMaxY), 1f / scale)
+                gx += gridSpacing
+            }
+            var gy = startY
+            while (gy <= worldMaxY) {
+                drawLine(gridColor, Offset(worldMinX, gy), Offset(worldMaxX, gy), 1f / scale)
+                gy += gridSpacing
+            }
 
             val crossSize = 100f / scale
             drawLine(

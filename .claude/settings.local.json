@@ -17,7 +17,14 @@
       "WebSearch",
       "WebFetch(domain:mvnrepository.com)",
       "Bash(/c/Users/yuuji/AppData/Local/Android/Sdk/platform-tools/adb.exe install -r app/build/outputs/apk/dev/debug/app-dev-debug.apk)",
-      "Bash(/c/Users/yuuji/AppData/Local/Android/Sdk/platform-tools/adb.exe shell am start -n com.jpaver.myapplication/com.jpaver.trianglelist.MainActivity)"
+      "Bash(/c/Users/yuuji/AppData/Local/Android/Sdk/platform-tools/adb.exe shell am start -n com.jpaver.myapplication/com.jpaver.trianglelist.MainActivity)",
+      "Bash(powershell -Command:*)",
+      "Bash(cmd.exe /c \"dir /s C:\\\\Users\\\\yuuji\\\\AppData\\\\Local\\\\Android\\\\Sdk 2>nul | findstr \"\"ファイルの合計 個のディレクトリ\"\"\")",
+      "Bash(cmd.exe /c \"dir /s C:\\\\Users\\\\yuuji\\\\.gradle 2>nul | findstr \"\"ファイルの合計 個のディレクトリ\"\"\")",
+      "Bash(cmd.exe /c \"dir C:\\\\Users\\\\yuuji\\\\.android\\\\avd 2>nul\")",
+      "Bash(du:*)",
+      "Bash(echo:*)",
+      "Bash(cmd.exe:*)"
     ],
     "deny": [],
     "ask": []

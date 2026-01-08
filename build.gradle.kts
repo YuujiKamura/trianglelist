@@ -7,4 +7,19 @@ plugins {
     id("org.jetbrains.kotlin.android") apply false
     id("org.jetbrains.kotlin.jvm") apply false
     id("org.jetbrains.kotlin.multiplatform") apply false
+}
+
+// 一括ビルド＆テストタスク
+tasks.register("buildAndTest") {
+    group = "verification"
+    description = "ビルドとテストを一括実行"
+    
+    dependsOn(":app:assembleDevDebug")
+    dependsOn(":app:testDevDebugUnitTest")
+    dependsOn(":common:testDebugUnitTest")
+    dependsOn(":desktop:test")
+    
+    doLast {
+        println("✅ ビルドとテストが完了しました")
+    }
 } 

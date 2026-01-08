@@ -3,3 +3,4 @@
     <background android:drawable="@color/ic_trilist_b_background"/>
     <foreground android:drawable="@mipmap/ic_trilist_b_foreground"/>
 </adaptive-icon>
+
