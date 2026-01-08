@@ -19,3 +19,22 @@ fun DxfParseResult.addPolylines(newPolylines: List<DxfLwPolyline>): DxfParseResu
 fun DxfParseResult.addTexts(newTexts: List<DxfText>): DxfParseResult {
     return this.copy(texts = this.texts + newTexts)
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
