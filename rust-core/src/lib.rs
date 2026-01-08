@@ -4,5 +4,7 @@
 //! the functionality in the Kotlin codebase.
 
 pub mod geometry;
+pub mod model;
 
 pub use geometry::*;
+pub use model::{Alignment, ConnParam, ConnectionSide};
