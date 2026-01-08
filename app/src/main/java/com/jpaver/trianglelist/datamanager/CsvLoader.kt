@@ -19,6 +19,19 @@ import java.io.BufferedReader
  * 最小形式: NUMBER, LENGTH_A, LENGTH_B, LENGTH_C の4カラム
  * 接続形式: + PARENT_NUMBER, CONNECTION_TYPE で6カラム
  * 完全形式: 28カラム（レイアウト情報含む）
+ *
+ * ## 接続の仕様（重要）
+ *
+ * 三角形の辺には役割がある:
+ * - A辺: 親との共有辺（接続辺）。子の生成時に親の辺と一致する
+ * - B辺/C辺: 自由辺。他の三角形が接続可能
+ *
+ * CONNECTION_TYPEの値:
+ * - -1: 独立（接続なし）
+ * -  1: 親のB辺に接続
+ * -  2: 親のC辺に接続
+ *
+ * A辺への接続は設計上存在しない（親のA辺は既にその親と共有済みのため）
  */
 object TriangleColumn {
     // === 必須（図形生成に必要） ===
@@ -34,7 +47,7 @@ object TriangleColumn {
     // === 接続情報 ===
     /** 接続先の三角形番号（-1 = 非接続） */
     const val PARENT_NUMBER = 4
-    /** 接続タイプ（1=A辺, 2=B辺, 3=C辺, -1=非接続） */
+    /** 接続タイプ（1=親のB辺, 2=親のC辺, -1=非接続）※A辺接続は存在しない */
     const val CONNECTION_TYPE = 5
 
     // === 表示情報 ===
