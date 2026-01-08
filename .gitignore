@@ -33,4 +33,7 @@ reports/
 # Rust/Cargo build artifacts
 trianglelist-web/target/
 rust-renderer/target/
+rust-core/target/
+rust-dxf/target/
+target/
 Cargo.lock
