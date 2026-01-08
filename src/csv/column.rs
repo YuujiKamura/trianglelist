@@ -119,18 +119,19 @@ impl TriangleColumn {
     pub const FULL: usize = 28;
 }
 
-/// Connection type constants
+/// Connection type between triangles
 ///
 /// Defines the type of connection between triangles.
-pub struct ConnectionType;
-
-impl ConnectionType {
+/// Uses `#[repr(i32)]` for type-safe representation matching CSV values.
+#[repr(i32)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ConnectionType {
     /// Independent triangle (no connection)
-    pub const INDEPENDENT: i32 = -1;
+    Independent = -1,
     /// Connect to parent's B edge
-    pub const PARENT_B_EDGE: i32 = 1;
+    ParentBEdge = 1,
     /// Connect to parent's C edge
-    pub const PARENT_C_EDGE: i32 = 2;
+    ParentCEdge = 2,
 }
 
 #[cfg(test)]
@@ -157,8 +158,8 @@ mod tests {
 
     #[test]
     fn test_connection_type_values() {
-        assert_eq!(ConnectionType::INDEPENDENT, -1);
-        assert_eq!(ConnectionType::PARENT_B_EDGE, 1);
-        assert_eq!(ConnectionType::PARENT_C_EDGE, 2);
+        assert_eq!(ConnectionType::Independent as i32, -1);
+        assert_eq!(ConnectionType::ParentBEdge as i32, 1);
+        assert_eq!(ConnectionType::ParentCEdge as i32, 2);
     }
 }
