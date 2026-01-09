@@ -82,8 +82,9 @@ impl TriangleListApp {
     /// Initialize Canvas 2D text renderer
     ///
     /// Attempts to get the canvas element from the DOM and create a renderer.
-    /// Note: egui uses WebGL internally, so we need to create a separate canvas layer
-    /// for Canvas 2D API text rendering, or use egui's canvas if accessible.
+    /// Initialize Canvas 2D renderer with the text-overlay canvas.
+    /// This uses a separate canvas layer on top of egui's WebGL canvas
+    /// to enable proper text rotation via Canvas 2D API.
     fn init_canvas2d_renderer(&mut self) {
         #[cfg(target_arch = "wasm32")]
         {
@@ -91,26 +92,29 @@ impl TriangleListApp {
 
             if let Some(window) = window() {
                 if let Some(document) = window.document() {
-                    // Try to get the canvas element from DOM
-                    // First try the main canvas element
-                    if let Some(canvas) = document.get_element_by_id("trianglelist-canvas") {
+                    // Use the dedicated text-overlay canvas for Canvas 2D text rendering
+                    if let Some(canvas) = document.get_element_by_id("text-overlay") {
                         if let Ok(canvas_element) = canvas.dyn_into::<web_sys::HtmlCanvasElement>() {
+                            // Sync overlay canvas size with main canvas
+                            if let Some(main_canvas) = document.get_element_by_id("trianglelist-canvas") {
+                                if let Ok(main_element) = main_canvas.dyn_into::<web_sys::HtmlCanvasElement>() {
+                                    canvas_element.set_width(main_element.width());
+                                    canvas_element.set_height(main_element.height());
+                                }
+                            }
+
                             match Canvas2dTextRenderer::new(&canvas_element) {
                                 Ok(renderer) => {
                                     self.canvas2d_text_renderer = Some(renderer);
-                                    log::info!("Canvas 2D text renderer initialized with trianglelist-canvas");
+                                    log::info!("Canvas 2D text renderer initialized with text-overlay canvas");
                                 }
                                 Err(e) => {
                                     log::warn!("Failed to initialize Canvas 2D renderer: {:?}", e);
-                                    // Try to find egui's canvas (usually has id "canvas" or similar)
-                                    self.try_init_with_egui_canvas(&document);
                                 }
                             }
-                        } else {
-                            self.try_init_with_egui_canvas(&document);
                         }
                     } else {
-                        self.try_init_with_egui_canvas(&document);
+                        log::warn!("text-overlay canvas not found");
                     }
                 }
             }
@@ -123,12 +127,62 @@ impl TriangleListApp {
         }
     }
 
-    /// Try to initialize Canvas 2D renderer with egui's canvas element
+    /// Sync text overlay canvas size with main canvas (call on resize)
     #[cfg(target_arch = "wasm32")]
-    fn try_init_with_egui_canvas(&mut self, document: &web_sys::Document) {
+    #[allow(dead_code)]
+    fn sync_overlay_canvas_size(&self) {
+        use web_sys::window;
 
-        // egui usually creates a canvas with id "canvas" or finds the first canvas
-        // Try common canvas element IDs
+        if let Some(window) = window() {
+            if let Some(document) = window.document() {
+                if let Some(overlay) = document.get_element_by_id("text-overlay") {
+                    if let Ok(overlay_element) = overlay.dyn_into::<web_sys::HtmlCanvasElement>() {
+                        if let Some(main) = document.get_element_by_id("trianglelist-canvas") {
+                            if let Ok(main_element) = main.dyn_into::<web_sys::HtmlCanvasElement>() {
+                                overlay_element.set_width(main_element.width());
+                                overlay_element.set_height(main_element.height());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Clear text overlay canvas (call at start of each frame)
+    #[cfg(target_arch = "wasm32")]
+    fn clear_text_overlay(&self) {
+        use web_sys::window;
+
+        if let Some(window) = window() {
+            if let Some(document) = window.document() {
+                if let Some(overlay) = document.get_element_by_id("text-overlay") {
+                    if let Ok(overlay_element) = overlay.dyn_into::<web_sys::HtmlCanvasElement>() {
+                        if let Ok(Some(ctx)) = overlay_element.get_context("2d") {
+                            if let Ok(ctx) = ctx.dyn_into::<web_sys::CanvasRenderingContext2d>() {
+                                ctx.clear_rect(
+                                    0.0, 0.0,
+                                    overlay_element.width() as f64,
+                                    overlay_element.height() as f64
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    fn clear_text_overlay(&self) {
+        // No-op for non-WASM builds
+    }
+
+    /// Try to initialize Canvas 2D renderer with egui's canvas element (legacy fallback)
+    #[cfg(target_arch = "wasm32")]
+    #[allow(dead_code)]
+    fn try_init_with_egui_canvas(&mut self, document: &web_sys::Document) {
+        // Legacy fallback - try common canvas element IDs
         let canvas_ids = ["canvas", "egui_canvas", "trianglelist-canvas"];
 
         for canvas_id in &canvas_ids {
@@ -291,6 +345,9 @@ impl TriangleListApp {
     /// Renders the canvas with triangles
     fn render_canvas(&mut self, ui: &mut egui::Ui) {
         use crate::render::canvas::calculate_all_triangle_positions;
+
+        // Clear text overlay at the start of each frame
+        self.clear_text_overlay();
 
         let (response, painter) = ui.allocate_painter(
             ui.available_size(),
