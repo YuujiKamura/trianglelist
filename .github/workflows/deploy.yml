@@ -46,11 +46,11 @@ jobs:
           crate: trunk
           locked: true
 
-      - name: Build WASM with Trunk (wasm-opt disabled)
+      - name: Build WASM with Trunk
         working-directory: trianglelist-web
         env:
-          # wasm-optを無効化（bulk memory操作との互換性問題のため）
-          TRUNK_TOOLS_WASM_OPT: "off"
+          # 新しいwasm-optバージョンを使用（bulk memoryサポート改善）
+          TRUNK_TOOLS_WASM_OPT: "version_125"
         run: trunk build --release
 
       - name: Setup Pages
