@@ -56,7 +56,7 @@ impl Add for Point {
     }
 }
 
-impl<'a, 'b> Add<&'b Point> for &'a Point {
+impl<'b> Add<&'b Point> for &Point {
     type Output = Point;
 
     fn add(self, other: &'b Point) -> Point {
@@ -85,7 +85,7 @@ impl Sub for Point {
     }
 }
 
-impl<'a, 'b> Sub<&'b Point> for &'a Point {
+impl<'b> Sub<&'b Point> for &Point {
     type Output = Point;
 
     fn sub(self, other: &'b Point) -> Point {
