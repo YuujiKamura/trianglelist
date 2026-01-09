@@ -5,6 +5,7 @@
 
 pub mod app;
 pub mod csv;
+pub mod render;
 
 pub use app::TriangleListApp;
 
