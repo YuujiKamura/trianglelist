@@ -46,10 +46,26 @@ jobs:
           crate: trunk
           locked: true
 
+      - name: Install binaryen and create wasm-opt wrapper
+        run: |
+          # Download and install binaryen
+          wget -q https://github.com/WebAssembly/binaryen/releases/download/version_125/binaryen-version_125-x86_64-linux.tar.gz
+          tar -xzf binaryen-version_125-x86_64-linux.tar.gz
+          REAL_WASM_OPT=$(pwd)/binaryen-version_125/bin/wasm-opt
+
+          # Create Trunk's cache directory structure
+          mkdir -p $HOME/.cache/trunk/wasm-opt-version_125/bin
+
+          # Create wrapper script that adds --enable-bulk-memory
+          cat > $HOME/.cache/trunk/wasm-opt-version_125/bin/wasm-opt << WRAPPER
+          #!/bin/bash
+          exec $REAL_WASM_OPT --enable-bulk-memory "\$@"
+          WRAPPER
+          chmod +x $HOME/.cache/trunk/wasm-opt-version_125/bin/wasm-opt
+
       - name: Build WASM with Trunk
         working-directory: trianglelist-web
         env:
-          # 新しいwasm-optバージョンを使用（bulk memoryサポート改善）
           TRUNK_TOOLS_WASM_OPT: "version_125"
         run: trunk build --release
 
