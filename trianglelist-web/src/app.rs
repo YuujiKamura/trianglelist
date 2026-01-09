@@ -64,6 +64,8 @@ impl Default for TriangleListApp {
     }
 }
 
+const STORAGE_KEY_CSV: &str = "trianglelist_csv_cache";
+
 impl TriangleListApp {
     /// Creates a new TriangleListApp instance.
     ///
@@ -73,10 +75,57 @@ impl TriangleListApp {
     /// # Returns
     /// A new TriangleListApp instance
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
-        // Customize egui style if needed
-        // cc.egui_ctx.set_visuals(egui::Visuals::dark());
+        let mut app = Self::default();
 
-        Self::default()
+        // Try to restore cached CSV data
+        #[cfg(target_arch = "wasm32")]
+        {
+            if let Some(csv_data) = Self::load_csv_from_storage() {
+                log::info!("Restoring cached CSV data ({} bytes)", csv_data.len());
+                app.csv_input = csv_data.clone();
+                let result = parse_csv(&csv_data);
+                app.handle_parse_result(result);
+            }
+        }
+
+        app
+    }
+
+    /// Save CSV data to localStorage
+    #[cfg(target_arch = "wasm32")]
+    fn save_csv_to_storage(csv_data: &str) {
+        use web_sys::window;
+        if let Some(window) = window() {
+            if let Ok(Some(storage)) = window.local_storage() {
+                let _ = storage.set_item(STORAGE_KEY_CSV, csv_data);
+                log::info!("CSV data cached to localStorage");
+            }
+        }
+    }
+
+    /// Load CSV data from localStorage
+    #[cfg(target_arch = "wasm32")]
+    fn load_csv_from_storage() -> Option<String> {
+        use web_sys::window;
+        if let Some(window) = window() {
+            if let Ok(Some(storage)) = window.local_storage() {
+                if let Ok(Some(data)) = storage.get_item(STORAGE_KEY_CSV) {
+                    return Some(data);
+                }
+            }
+        }
+        None
+    }
+
+    /// Clear cached CSV data
+    #[cfg(target_arch = "wasm32")]
+    fn clear_csv_storage() {
+        use web_sys::window;
+        if let Some(window) = window() {
+            if let Ok(Some(storage)) = window.local_storage() {
+                let _ = storage.remove_item(STORAGE_KEY_CSV);
+            }
+        }
     }
 
     /// Initialize Canvas 2D text renderer
@@ -261,6 +310,16 @@ impl TriangleListApp {
         }
     }
 
+    /// Parse CSV and cache to localStorage
+    fn parse_and_cache_csv(&mut self, csv_data: &str) {
+        let result = parse_csv(csv_data);
+        if result.is_ok() {
+            #[cfg(target_arch = "wasm32")]
+            Self::save_csv_to_storage(csv_data);
+        }
+        self.handle_parse_result(result);
+    }
+
     /// Renders the file drop zone
     fn render_drop_zone(&mut self, ui: &mut egui::Ui) {
         let drop_zone_color = if self.is_drop_hover {
@@ -316,8 +375,7 @@ impl TriangleListApp {
 
         ui.horizontal(|ui| {
             if ui.button("Parse CSV").clicked() && !self.csv_input.is_empty() {
-                let result = parse_csv(&self.csv_input);
-                self.handle_parse_result(result);
+                self.parse_and_cache_csv(&self.csv_input.clone());
             }
 
             if ui.button("Clear").clicked() {
@@ -325,6 +383,9 @@ impl TriangleListApp {
                 self.triangles.clear();
                 self.error_message = None;
                 self.warnings.clear();
+                self.show_canvas = false;
+                #[cfg(target_arch = "wasm32")]
+                Self::clear_csv_storage();
             }
 
             if ui.button("Load Sample").clicked() {
@@ -375,9 +436,25 @@ impl TriangleListApp {
             self.mouse_model_pos = None;
         }
 
-        // Handle pan (drag)
+        // Handle pan (drag) or rotation (Shift+drag)
         if response.dragged_by(egui::PointerButton::Primary) {
-            self.view_state.pan += response.drag_delta();
+            let shift_held = ui.input(|i| i.modifiers.shift);
+            if shift_held {
+                // Shift+drag: rotate around canvas center
+                let delta = response.drag_delta();
+                // Horizontal drag controls rotation (0.01 rad per pixel)
+                self.view_state.rotation += delta.x * 0.01;
+            } else {
+                // Normal drag: pan (rotate delta to match view rotation)
+                let delta = response.drag_delta();
+                let cos_r = self.view_state.rotation.cos();
+                let sin_r = self.view_state.rotation.sin();
+                let rotated_delta = egui::Vec2::new(
+                    delta.x * cos_r + delta.y * sin_r,
+                    -delta.x * sin_r + delta.y * cos_r,
+                );
+                self.view_state.pan += rotated_delta;
+            }
         }
 
         // Handle zoom (mouse wheel)
@@ -680,8 +757,8 @@ impl eframe::App for TriangleListApp {
                         };
 
                         if let Some(content) = content {
-                            let result = parse_csv(&content);
-                            self.handle_parse_result(result);
+                            self.csv_input = content.clone();
+                            self.parse_and_cache_csv(&content);
                         } else {
                             self.error_message = Some("ファイルの読み込みに失敗しました。UTF-8またはShift-JISで保存してください。".to_string());
                         }
@@ -718,6 +795,8 @@ impl eframe::App for TriangleListApp {
                             self.error_message = None;
                             self.warnings.clear();
                             self.show_canvas = false;
+                            #[cfg(target_arch = "wasm32")]
+                            Self::clear_csv_storage();
                         }
                     });
                     ui.add_space(10.0);

@@ -201,13 +201,15 @@ pub fn calculate_triangle_points(triangle: &ParsedTriangle) -> [Pos2; 3] {
 /// Padding factor for fit_to_triangles (90% of available space)
 const PADDING_FACTOR: f32 = 0.9;
 
-/// View state for pan and zoom operations
+/// View state for pan, zoom, and rotation operations
 #[derive(Clone, Debug)]
 pub struct ViewState {
     /// Pan offset (translation)
     pub pan: Pos2,
     /// Zoom level (1.0 = 100%)
     pub zoom: f32,
+    /// Rotation angle in radians (around canvas center)
+    pub rotation: f32,
     /// Canvas size (should be updated from UI when available)
     pub canvas_size: Vec2,
 }
@@ -217,7 +219,7 @@ impl Default for ViewState {
         Self {
             pan: Pos2::new(0.0, 0.0),
             zoom: 1.0,
-            // Default size - should be updated from actual canvas size when available
+            rotation: 0.0,
             canvas_size: Vec2::new(800.0, 600.0),
         }
     }
@@ -228,20 +230,53 @@ impl ViewState {
     pub fn set_canvas_size(&mut self, size: Vec2) {
         self.canvas_size = size;
     }
+
+    /// Canvas center point
+    pub fn canvas_center(&self) -> Pos2 {
+        Pos2::new(self.canvas_size.x / 2.0, self.canvas_size.y / 2.0)
+    }
+
     /// Convert model coordinates to screen coordinates
+    /// Applies: zoom -> rotation (around origin) -> pan
     pub fn model_to_screen(&self, model_pos: Pos2) -> Pos2 {
-        Pos2::new(
-            model_pos.x * self.zoom + self.pan.x,
-            model_pos.y * self.zoom + self.pan.y,
-        )
+        // Apply zoom
+        let zoomed_x = model_pos.x * self.zoom;
+        let zoomed_y = model_pos.y * self.zoom;
+
+        // Apply rotation around canvas center
+        let center = self.canvas_center();
+        let cos_r = self.rotation.cos();
+        let sin_r = self.rotation.sin();
+
+        // Translate to center, rotate, translate back
+        let centered_x = zoomed_x + self.pan.x - center.x;
+        let centered_y = zoomed_y + self.pan.y - center.y;
+
+        let rotated_x = centered_x * cos_r - centered_y * sin_r;
+        let rotated_y = centered_x * sin_r + centered_y * cos_r;
+
+        Pos2::new(rotated_x + center.x, rotated_y + center.y)
     }
 
     /// Convert screen coordinates to model coordinates
+    /// Inverse of model_to_screen
     pub fn screen_to_model(&self, screen_pos: Pos2) -> Pos2 {
-        Pos2::new(
-            (screen_pos.x - self.pan.x) / self.zoom,
-            (screen_pos.y - self.pan.y) / self.zoom,
-        )
+        let center = self.canvas_center();
+        let cos_r = self.rotation.cos();
+        let sin_r = self.rotation.sin();
+
+        // Inverse rotation around center
+        let centered_x = screen_pos.x - center.x;
+        let centered_y = screen_pos.y - center.y;
+
+        let unrotated_x = centered_x * cos_r + centered_y * sin_r;
+        let unrotated_y = -centered_x * sin_r + centered_y * cos_r;
+
+        // Inverse pan and zoom
+        let model_x = (unrotated_x + center.x - self.pan.x) / self.zoom;
+        let model_y = (unrotated_y + center.y - self.pan.y) / self.zoom;
+
+        Pos2::new(model_x, model_y)
     }
 
     /// Fit view to show all triangles
