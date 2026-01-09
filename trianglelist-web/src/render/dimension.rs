@@ -4,49 +4,50 @@
 //! Based on Android version: text is drawn along the edge path with offset,
 //! no extension lines or dimension auxiliary lines.
 
-use eframe::egui::{Color32, Painter, Pos2, Vec2};
+use eframe::egui::{Pos2, Vec2};
 use crate::render::canvas::ViewState;
-use crate::render::text::{draw_text_cad_style, TextAlign, HorizontalAlign, VerticalAlign};
+use crate::render::text::{TextAlign, HorizontalAlign, VerticalAlign};
+use crate::render::text_canvas2d::Canvas2dTextRenderer;
 
 /// Dimension style configuration
 #[derive(Debug, Clone)]
 pub struct DimensionStyle {
-    /// Text color
-    pub text_color: Color32,
-    /// Text height in screen pixels
-    pub text_height: f32,
-    /// Vertical offset from edge (positive = outside, negative = inside)
-    pub offset_v: f32,
+    /// Text color (CSS format)
+    pub text_color: String,
+    /// Text height in model units
+    pub text_height: f64,
+    /// Vertical offset from edge in model units (positive = outside)
+    pub offset_v: f64,
 }
 
 impl Default for DimensionStyle {
     fn default() -> Self {
         Self {
-            text_color: Color32::from_rgb(255, 255, 255),
-            text_height: 12.0,
-            offset_v: 12.0, // Outside by default
+            text_color: "white".to_string(),
+            text_height: 3.0,  // Model units
+            offset_v: 2.0,     // Model units
         }
     }
 }
 
-/// Draws a dimension value along a triangle edge
+/// Draws a dimension value along a triangle edge using Canvas 2D API
 ///
 /// Text is positioned at the midpoint of the edge with vertical offset.
 /// Text direction is automatically adjusted to be readable (left to right).
 ///
 /// # Arguments
-/// * `painter` - egui Painter
-/// * `start` - Start point of the edge (screen coordinates)
-/// * `end` - End point of the edge (screen coordinates)
+/// * `renderer` - Canvas 2D text renderer
+/// * `start` - Start point of the edge (model coordinates)
+/// * `end` - End point of the edge (model coordinates)
 /// * `value` - Dimension value to display
-/// * `_view_state` - View state (reserved for future use)
+/// * `view_state` - View state for coordinate transformations
 /// * `style` - Dimension style configuration
 pub fn draw_dimension_value(
-    painter: &Painter,
+    renderer: &Canvas2dTextRenderer,
     start: Pos2,
     end: Pos2,
     value: f64,
-    _view_state: &ViewState,
+    view_state: &ViewState,
     style: &DimensionStyle,
 ) {
     // Calculate edge direction
@@ -60,12 +61,12 @@ pub fn draw_dimension_value(
     // Calculate perpendicular vector for offset
     let perpendicular = Vec2::new(-direction.y, direction.x);
 
-    // Calculate text position (midpoint + offset)
+    // Calculate text position (midpoint + offset) in model coordinates
     let midpoint = Pos2::new(
         (start.x + end.x) * 0.5,
         (start.y + end.y) * 0.5,
     );
-    let text_pos = midpoint + perpendicular * style.offset_v;
+    let text_pos = midpoint + perpendicular * style.offset_v as f32;
 
     // Calculate rotation angle
     let mut angle_rad = direction.y.atan2(direction.x);
@@ -75,35 +76,37 @@ pub fn draw_dimension_value(
     if angle_rad > std::f32::consts::FRAC_PI_2 || angle_rad < -std::f32::consts::FRAC_PI_2 {
         angle_rad += std::f32::consts::PI;
     }
-    let angle_degrees = angle_rad.to_degrees();
+    let angle_degrees = angle_rad.to_degrees() as f64;
 
     // Format dimension value
     let text = format!("{:.2}", value);
 
-    // Draw dimension text
+    // Draw dimension text using Canvas 2D API (supports rotation)
     let align = TextAlign::new(HorizontalAlign::Center, VerticalAlign::Middle);
-    draw_text_cad_style(
-        painter,
+    let _ = renderer.draw_text_cad_style(
         &text,
-        text_pos,
+        text_pos.x as f64,
+        text_pos.y as f64,
         style.text_height,
         angle_degrees,
-        style.text_color,
         align,
+        &style.text_color,
+        view_state,
+        true, // Zoom-dependent size
     );
 }
 
-/// Draws dimension lines for all three sides of a triangle
+/// Draws dimension values for all three sides of a triangle
 ///
 /// # Arguments
-/// * `painter` - egui Painter
-/// * `points` - Three vertices of the triangle (screen coordinates): [CA, AB, BC]
+/// * `renderer` - Canvas 2D text renderer
+/// * `points` - Three vertices of the triangle (model coordinates): [CA, AB, BC]
 /// * `side_lengths` - Lengths of the three sides [A, B, C]
 /// * `view_state` - View state for coordinate transformations
 /// * `style` - Dimension style configuration
 /// * `skip_side_a` - If true, skip drawing dimension for side A (connected edge)
 pub fn draw_triangle_dimensions(
-    painter: &Painter,
+    renderer: &Canvas2dTextRenderer,
     points: [Pos2; 3],
     side_lengths: [f64; 3],
     view_state: &ViewState,
@@ -114,7 +117,7 @@ pub fn draw_triangle_dimensions(
     // Skip if this is a connected edge (shared with parent)
     if !skip_side_a {
         draw_dimension_value(
-            painter,
+            renderer,
             points[0],
             points[1],
             side_lengths[0],
@@ -125,7 +128,7 @@ pub fn draw_triangle_dimensions(
 
     // Side B: AB to BC (points[1] to points[2])
     draw_dimension_value(
-        painter,
+        renderer,
         points[1],
         points[2],
         side_lengths[1],
@@ -135,7 +138,7 @@ pub fn draw_triangle_dimensions(
 
     // Side C: BC to CA (points[2] to points[0])
     draw_dimension_value(
-        painter,
+        renderer,
         points[2],
         points[0],
         side_lengths[2],
