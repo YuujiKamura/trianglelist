@@ -23,7 +23,7 @@
 //! let (lines, texts) = converter.convert(&triangles);
 //!
 //! // Generate DXF content
-//! let writer = dxf::dxf::writer::DxfWriter::new();
+//! let writer = dxf::DxfWriter::new();
 //! let dxf_content = writer.write(&lines, &texts);
 //!
 //! // Download (WASM only)

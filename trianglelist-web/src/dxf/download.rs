@@ -92,7 +92,7 @@ pub fn download_dxf(dxf_content: &str, filename: &str) -> Result<(), JsValue> {
     let array = js_sys::Array::new();
     array.push(&JsValue::from_str(dxf_content));
     let options = {
-        let mut opts = web_sys::BlobPropertyBag::new();
+        let opts = web_sys::BlobPropertyBag::new();
         opts.set_type("text/plain");
         opts
     };
