@@ -129,7 +129,6 @@ impl TriangleListApp {
 
     /// Sync text overlay canvas size with main canvas (call on resize)
     #[cfg(target_arch = "wasm32")]
-    #[allow(dead_code)]
     fn sync_overlay_canvas_size(&self) {
         use web_sys::window;
 
@@ -346,7 +345,9 @@ impl TriangleListApp {
     fn render_canvas(&mut self, ui: &mut egui::Ui) {
         use crate::render::canvas::calculate_all_triangle_positions;
 
-        // Clear text overlay at the start of each frame
+        // Sync and clear text overlay at the start of each frame
+        #[cfg(target_arch = "wasm32")]
+        self.sync_overlay_canvas_size();
         self.clear_text_overlay();
 
         let (response, painter) = ui.allocate_painter(
@@ -643,6 +644,11 @@ impl eframe::App for TriangleListApp {
     /// * `ctx` - The egui context for rendering
     /// * `_frame` - The eframe Frame (unused in WASM)
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // Initialize Canvas 2D renderer on first frame (DOM should be ready by now)
+        if self.canvas2d_text_renderer.is_none() {
+            self.init_canvas2d_renderer();
+        }
+
         // Handle dropped files
         ctx.input(|i| {
             if !i.raw.dropped_files.is_empty() {
