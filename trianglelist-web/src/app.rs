@@ -55,7 +55,7 @@ impl Default for TriangleListApp {
             csv_input: String::new(),
             view_state: ViewState::default(),
             show_canvas: false,
-            show_dimensions: false,
+            show_dimensions: true,
             use_canvas2d_text: false, // Default to egui for now
             canvas2d_text_renderer: None,
             mouse_model_pos: None,
