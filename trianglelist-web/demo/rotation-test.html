@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Canvas 2D Text Rotation Demo</title>
+    <style>
+        body {
+            background: #1a1a1a;
+            color: white;
+            font-family: sans-serif;
+            margin: 20px;
+        }
+        canvas {
+            border: 1px solid #444;
+            background: #2a2a2a;
+        }
+        .controls {
+            margin: 10px 0;
+        }
+        label {
+            margin-right: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Canvas 2D Text Rotation Demo</h1>
+    <div class="controls">
+        <label>Angle: <input type="range" id="angle" min="0" max="360" value="0"> <span id="angleValue">0</span>°</label>
+        <label>Size: <input type="range" id="size" min="10" max="50" value="20"> <span id="sizeValue">20</span>px</label>
+    </div>
+    <canvas id="demo" width="800" height="400"></canvas>
+
+    <script>
+        const canvas = document.getElementById('demo');
+        const ctx = canvas.getContext('2d');
+        const angleSlider = document.getElementById('angle');
+        const sizeSlider = document.getElementById('size');
+        const angleValue = document.getElementById('angleValue');
+        const sizeValue = document.getElementById('sizeValue');
+
+        function drawRotatedText(text, x, y, angleDegrees, fontSize) {
+            const angleRad = angleDegrees * Math.PI / 180;
+
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angleRad);
+            ctx.font = `${fontSize}px monospace`;
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, 0, 0);
+            ctx.restore();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const angle = parseInt(angleSlider.value);
+            const size = parseInt(sizeSlider.value);
+
+            angleValue.textContent = angle;
+            sizeValue.textContent = size;
+
+            // Draw grid
+            ctx.strokeStyle = '#444';
+            ctx.beginPath();
+            for (let x = 0; x <= 800; x += 50) {
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, 400);
+            }
+            for (let y = 0; y <= 400; y += 50) {
+                ctx.moveTo(0, y);
+                ctx.lineTo(800, y);
+            }
+            ctx.stroke();
+
+            // Draw center marker
+            ctx.fillStyle = 'red';
+            ctx.beginPath();
+            ctx.arc(400, 200, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw rotated text at center
+            drawRotatedText("12.34", 400, 200, angle, size);
+
+            // Draw multiple angles for comparison
+            const angles = [0, 30, 45, 60, 90, 120, 150, 180];
+            angles.forEach((a, i) => {
+                const x = 100 + (i % 4) * 150;
+                const y = 50 + Math.floor(i / 4) * 100;
+
+                // Small red dot at position
+                ctx.fillStyle = 'red';
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, Math.PI * 2);
+                ctx.fill();
+
+                drawRotatedText(`${a}°`, x, y, a, 16);
+            });
+
+            // Simulate dimension line with rotated text
+            ctx.strokeStyle = 'lime';
+            ctx.lineWidth = 2;
+
+            // Line from (100, 350) to (700, 300)
+            const x1 = 100, y1 = 350, x2 = 700, y2 = 300;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            // Calculate angle of line
+            const lineAngle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+            const midX = (x1 + x2) / 2;
+            const midY = (y1 + y2) / 2;
+
+            // Draw dimension text along line
+            drawRotatedText("600.00", midX, midY - 15, lineAngle, 18);
+        }
+
+        angleSlider.addEventListener('input', draw);
+        sizeSlider.addEventListener('input', draw);
+        draw();
+    </script>
+</body>
+</html>

@@ -1,11 +1,11 @@
 //! CAD-quality text rendering using Canvas 2D API
 //!
-//! Provides precise text drawing with zoom/pan support, rotation, and DXF-compatible alignment.
-//! This module uses Canvas 2D API directly for native CAD-quality rendering.
+//! Provides precise text drawing with rotation and DXF-compatible alignment.
+//! Uses screen coordinates directly - coordinate transformation should be done
+//! by the caller using ViewState::model_to_screen().
 
 use wasm_bindgen::{JsValue, JsCast};
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
-use crate::render::canvas::ViewState;
 use crate::render::text::{TextAlign, HorizontalAlign, VerticalAlign};
 
 /// CAD-quality text renderer using Canvas 2D API
@@ -24,112 +24,60 @@ impl Canvas2dTextRenderer {
         Ok(Self { ctx })
     }
 
-    /// Draw text with CAD-compatible alignment, rotation, and view transform
+    /// Draw text at screen coordinates with rotation
+    ///
+    /// Simple API matching the working demo. Caller should convert model
+    /// coordinates to screen coordinates using ViewState::model_to_screen().
     ///
     /// # Arguments
     /// * `text` - Text string to draw
-    /// * `model_x` - X position in model coordinates
-    /// * `model_y` - Y position in model coordinates
-    /// * `model_height` - Text height in model coordinates
+    /// * `screen_x` - X position in screen coordinates
+    /// * `screen_y` - Y position in screen coordinates
+    /// * `font_size` - Font size in pixels
     /// * `rotation_degrees` - Rotation angle in degrees (0 = horizontal)
     /// * `align` - Text alignment
-    /// * `color` - Text color (CSS color string, e.g., "white", "#ffffff", "rgb(255,255,255)")
-    /// * `view_state` - View state for zoom/pan transform
-    /// * `zoom_dependent_size` - If true, text size scales with zoom; if false, maintains constant screen size
-    pub fn draw_text_cad_style(
+    /// * `color` - Text color (CSS color string)
+    pub fn draw_text(
         &self,
         text: &str,
-        model_x: f64,
-        model_y: f64,
-        model_height: f64,
+        screen_x: f64,
+        screen_y: f64,
+        font_size: f64,
         rotation_degrees: f64,
         align: TextAlign,
         color: &str,
-        view_state: &ViewState,
-        zoom_dependent_size: bool,
     ) -> Result<(), JsValue> {
-        log::debug!(
-            "Canvas2D draw_text: '{}' at ({}, {}), height={}, rot={}, zoom={}, pan=({}, {})",
-            text, model_x, model_y, model_height, rotation_degrees,
-            view_state.zoom, view_state.pan.x, view_state.pan.y
-        );
         self.ctx.save();
 
-        // Apply view transform (pan and zoom)
-        self.ctx.translate(view_state.pan.x as f64, view_state.pan.y as f64)?;
-        self.ctx.scale(view_state.zoom as f64, view_state.zoom as f64)?;
-
-        // Move to text position in model coordinates
-        self.ctx.translate(model_x, model_y)?;
+        // Move to text position
+        self.ctx.translate(screen_x, screen_y)?;
 
         // Apply rotation
         if rotation_degrees.abs() > 1e-6 {
             self.ctx.rotate(rotation_degrees.to_radians())?;
         }
 
-        // Determine text size
-        // Note: ctx.scale(zoom) is already applied, so text will be scaled automatically
-        let font_size = if zoom_dependent_size {
-            // Let the scale transform handle zooming - just use model height
-            model_height
-        } else {
-            // Counter the scale transform for constant screen size
-            model_height / view_state.zoom as f64
-        };
-
-        // Set font
-        self.ctx.set_font(&format!("{:.2}px monospace", font_size));
-
-        // Set color
+        // Set font and color
+        self.ctx.set_font(&format!("{:.1}px monospace", font_size));
         self.ctx.set_fill_style_str(color);
 
-        // Measure text for alignment
-        let metrics = self.ctx.measure_text(text)?;
-        let text_width = metrics.width();
-        
-        // Estimate text height (Canvas API doesn't provide exact height)
-        // Typical monospace font has aspect ratio of ~1.2 (height/width per character)
-        // For better accuracy, we use font size as base
-        let text_height = font_size * 1.2;
+        // Set alignment using Canvas 2D native properties
+        self.ctx.set_text_align(match align.horizontal {
+            HorizontalAlign::Left => "left",
+            HorizontalAlign::Center => "center",
+            HorizontalAlign::Right => "right",
+        });
+        self.ctx.set_text_baseline(match align.vertical {
+            VerticalAlign::Top => "top",
+            VerticalAlign::Middle => "middle",
+            VerticalAlign::Bottom | VerticalAlign::Baseline => "bottom",
+        });
 
-        // Calculate alignment offset
-        let (offset_x, offset_y) = self.calculate_alignment_offset(align, text_width, text_height);
-
-        // Apply alignment offset
-        self.ctx.translate(offset_x, offset_y)?;
-
-        // Draw text at origin (after all transforms)
+        // Draw text at origin (after transforms)
         self.ctx.fill_text(text, 0.0, 0.0)?;
 
         self.ctx.restore();
         Ok(())
-    }
-
-    /// Calculate alignment offset based on text alignment
-    fn calculate_alignment_offset(
-        &self,
-        align: TextAlign,
-        text_width: f64,
-        text_height: f64,
-    ) -> (f64, f64) {
-        // Horizontal alignment
-        let offset_x = match align.horizontal {
-            HorizontalAlign::Left => 0.0,
-            HorizontalAlign::Center => -text_width / 2.0,
-            HorizontalAlign::Right => -text_width,
-        };
-
-        // Vertical alignment
-        // Canvas 2D API draws text from baseline, so we need to adjust
-        // Baseline is at y=0, text extends upward (negative y) for most characters
-        let offset_y = match align.vertical {
-            VerticalAlign::Baseline => 0.0,
-            VerticalAlign::Bottom => -text_height * 0.8,  // Move down from baseline
-            VerticalAlign::Middle => -text_height * 0.4,  // Move to middle
-            VerticalAlign::Top => -text_height,            // Move to top
-        };
-
-        (offset_x, offset_y)
     }
 
     /// Clear the canvas

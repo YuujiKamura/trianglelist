@@ -8,33 +8,32 @@ use eframe::egui::{Pos2, Vec2};
 use crate::render::canvas::ViewState;
 use crate::render::text::{TextAlign, HorizontalAlign, VerticalAlign};
 use crate::render::text_canvas2d::Canvas2dTextRenderer;
-use wasm_bindgen::JsValue;
 
 /// Dimension style configuration
 #[derive(Debug, Clone)]
 pub struct DimensionStyle {
     /// Text color (CSS format)
     pub text_color: String,
-    /// Text height in model units
-    pub text_height: f64,
-    /// Vertical offset from edge in model units (positive = outside)
-    pub offset_v: f64,
+    /// Font size in screen pixels
+    pub font_size: f64,
+    /// Vertical offset from edge in screen pixels
+    pub offset_pixels: f64,
 }
 
 impl Default for DimensionStyle {
     fn default() -> Self {
         Self {
             text_color: "white".to_string(),
-            text_height: 3.0,  // Model units
-            offset_v: 2.0,     // Model units
+            font_size: 14.0,
+            offset_pixels: 15.0,
         }
     }
 }
 
 /// Draws a dimension value along a triangle edge using Canvas 2D API
 ///
-/// Text is positioned at the midpoint of the edge with vertical offset.
-/// Text direction is automatically adjusted to be readable (left to right).
+/// Coordinates are converted from model to screen using ViewState.
+/// Text is positioned at the midpoint of the edge with perpendicular offset.
 ///
 /// # Arguments
 /// * `renderer` - Canvas 2D text renderer
@@ -51,29 +50,32 @@ pub fn draw_dimension_value(
     view_state: &ViewState,
     style: &DimensionStyle,
 ) {
-    // Calculate edge direction
-    let vec = end - start;
+    // Convert to screen coordinates
+    let start_screen = view_state.model_to_screen(start);
+    let end_screen = view_state.model_to_screen(end);
+
+    // Calculate edge direction in screen space
+    let vec = end_screen - start_screen;
     let length = vec.length();
-    if length < 0.01 {
-        return; // Skip zero-length edges
+    if length < 1.0 {
+        return; // Skip very short edges
     }
     let direction = vec / length;
 
     // Calculate perpendicular vector for offset
     let perpendicular = Vec2::new(-direction.y, direction.x);
 
-    // Calculate text position (midpoint + offset) in model coordinates
+    // Calculate text position (midpoint + offset) in screen coordinates
     let midpoint = Pos2::new(
-        (start.x + end.x) * 0.5,
-        (start.y + end.y) * 0.5,
+        (start_screen.x + end_screen.x) * 0.5,
+        (start_screen.y + end_screen.y) * 0.5,
     );
-    let text_pos = midpoint + perpendicular * style.offset_v as f32;
+    let text_pos = midpoint + perpendicular * style.offset_pixels as f32;
 
     // Calculate rotation angle
     let mut angle_rad = direction.y.atan2(direction.x);
 
     // Auto-adjust text direction to be readable (left to right)
-    // If text would be upside down, flip it 180 degrees
     if angle_rad > std::f32::consts::FRAC_PI_2 || angle_rad < -std::f32::consts::FRAC_PI_2 {
         angle_rad += std::f32::consts::PI;
     }
@@ -82,24 +84,16 @@ pub fn draw_dimension_value(
     // Format dimension value
     let text = format!("{:.2}", value);
 
-    #[cfg(target_arch = "wasm32")]
-    web_sys::console::log_1(&JsValue::from_str(&format!(
-        "Drawing dimension: {} at ({:.1}, {:.1}), angle: {:.1}, zoom: {}",
-        text, text_pos.x, text_pos.y, angle_degrees, view_state.zoom
-    )));
-
-    // Draw dimension text using Canvas 2D API (supports rotation)
+    // Draw using simple screen-coordinate API
     let align = TextAlign::new(HorizontalAlign::Center, VerticalAlign::Middle);
-    let _ = renderer.draw_text_cad_style(
+    let _ = renderer.draw_text(
         &text,
         text_pos.x as f64,
         text_pos.y as f64,
-        style.text_height,
+        style.font_size,
         angle_degrees,
         align,
         &style.text_color,
-        view_state,
-        true, // Zoom-dependent size
     );
 }
 
@@ -121,7 +115,6 @@ pub fn draw_triangle_dimensions(
     skip_side_a: bool,
 ) {
     // Side A: CA to AB (points[0] to points[1])
-    // Skip if this is a connected edge (shared with parent)
     if !skip_side_a {
         draw_dimension_value(
             renderer,
