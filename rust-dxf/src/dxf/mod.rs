@@ -18,11 +18,13 @@
 //!
 //! let writer = DxfWriter::new();
 //! let dxf_content = writer.write(&lines, &texts);
+//! assert!(dxf_content.contains("LINE"));
+//! assert!(dxf_content.contains("TEXT"));
 //! ```
 
 pub mod entities;
 pub mod writer;
 
 // Re-export main types for convenience
-pub use entities::{DxfLine, DxfText};
+pub use entities::{DxfLine, DxfText, HorizontalAlignment, VerticalAlignment};
 pub use writer::DxfWriter;

@@ -4,6 +4,27 @@
 //! - `DxfLine`: LINE entity with coordinates, color, and layer
 //! - `DxfText`: TEXT entity with position, content, styling, and alignment
 
+/// Horizontal text alignment
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[repr(i32)]
+pub enum HorizontalAlignment {
+    #[default]
+    Left = 0,
+    Center = 1,
+    Right = 2,
+}
+
+/// Vertical text alignment
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[repr(i32)]
+pub enum VerticalAlignment {
+    #[default]
+    Baseline = 0,
+    Bottom = 1,
+    Middle = 2,
+    Top = 3,
+}
+
 /// DXF LINE entity
 ///
 /// Represents a line segment with start and end coordinates.
@@ -59,6 +80,18 @@ impl DxfLine {
             layer: layer.to_string(),
         }
     }
+
+    /// Builder: set color
+    pub fn color(mut self, color: i32) -> Self {
+        self.color = color;
+        self
+    }
+
+    /// Builder: set layer
+    pub fn layer(mut self, layer: &str) -> Self {
+        self.layer = layer.to_string();
+        self
+    }
 }
 
 /// DXF TEXT entity
@@ -78,10 +111,10 @@ pub struct DxfText {
     pub rotation: f64,
     /// Color number (default: 7 = white)
     pub color: i32,
-    /// Horizontal alignment (0=left, 1=center, 2=right)
-    pub align_h: i32,
-    /// Vertical alignment (0=baseline, 1=bottom, 2=middle, 3=top)
-    pub align_v: i32,
+    /// Horizontal alignment
+    pub align_h: HorizontalAlignment,
+    /// Vertical alignment
+    pub align_v: VerticalAlignment,
     /// Layer name (default: "0")
     pub layer: String,
 }
@@ -95,8 +128,8 @@ impl Default for DxfText {
             height: 1.0,
             rotation: 0.0,
             color: 7,
-            align_h: 0,
-            align_v: 0,
+            align_h: HorizontalAlignment::Left,
+            align_v: VerticalAlignment::Baseline,
             layer: String::from("0"),
         }
     }
@@ -113,30 +146,40 @@ impl DxfText {
         }
     }
 
-    /// Creates a new DxfText with all parameters
-    #[allow(clippy::too_many_arguments)]
-    pub fn with_style(
-        x: f64,
-        y: f64,
-        text: &str,
-        height: f64,
-        rotation: f64,
-        color: i32,
-        align_h: i32,
-        align_v: i32,
-        layer: &str,
-    ) -> Self {
-        Self {
-            x,
-            y,
-            text: text.to_string(),
-            height,
-            rotation,
-            color,
-            align_h,
-            align_v,
-            layer: layer.to_string(),
-        }
+    /// Builder: set height
+    pub fn height(mut self, height: f64) -> Self {
+        self.height = height;
+        self
+    }
+
+    /// Builder: set rotation
+    pub fn rotation(mut self, rotation: f64) -> Self {
+        self.rotation = rotation;
+        self
+    }
+
+    /// Builder: set color
+    pub fn color(mut self, color: i32) -> Self {
+        self.color = color;
+        self
+    }
+
+    /// Builder: set horizontal alignment
+    pub fn align_h(mut self, align_h: HorizontalAlignment) -> Self {
+        self.align_h = align_h;
+        self
+    }
+
+    /// Builder: set vertical alignment
+    pub fn align_v(mut self, align_v: VerticalAlignment) -> Self {
+        self.align_v = align_v;
+        self
+    }
+
+    /// Builder: set layer
+    pub fn layer(mut self, layer: &str) -> Self {
+        self.layer = layer.to_string();
+        self
     }
 }
 
@@ -178,6 +221,15 @@ mod tests {
     }
 
     #[test]
+    fn test_dxf_line_builder() {
+        let line = DxfLine::new(1.0, 2.0, 3.0, 4.0)
+            .color(5)
+            .layer("Layer1");
+        assert_eq!(line.color, 5);
+        assert_eq!(line.layer, "Layer1");
+    }
+
+    #[test]
     fn test_dxf_text_default() {
         let text = DxfText::default();
         assert_eq!(text.x, 0.0);
@@ -186,8 +238,8 @@ mod tests {
         assert_eq!(text.height, 1.0);
         assert_eq!(text.rotation, 0.0);
         assert_eq!(text.color, 7);
-        assert_eq!(text.align_h, 0);
-        assert_eq!(text.align_v, 0);
+        assert_eq!(text.align_h, HorizontalAlignment::Left);
+        assert_eq!(text.align_v, VerticalAlignment::Baseline);
         assert_eq!(text.layer, "0");
     }
 
@@ -201,17 +253,31 @@ mod tests {
     }
 
     #[test]
-    fn test_dxf_text_with_style() {
-        let text = DxfText::with_style(10.0, 20.0, "Hello", 2.5, 45.0, 3, 1, 2, "TextLayer");
-        assert_eq!(text.x, 10.0);
-        assert_eq!(text.y, 20.0);
-        assert_eq!(text.text, "Hello");
+    fn test_dxf_text_builder() {
+        let text = DxfText::new(10.0, 20.0, "Hello")
+            .height(2.5)
+            .rotation(45.0)
+            .color(3)
+            .align_h(HorizontalAlignment::Center)
+            .align_v(VerticalAlignment::Middle)
+            .layer("TextLayer");
         assert_eq!(text.height, 2.5);
         assert_eq!(text.rotation, 45.0);
         assert_eq!(text.color, 3);
-        assert_eq!(text.align_h, 1);
-        assert_eq!(text.align_v, 2);
+        assert_eq!(text.align_h, HorizontalAlignment::Center);
+        assert_eq!(text.align_v, VerticalAlignment::Middle);
         assert_eq!(text.layer, "TextLayer");
+    }
+
+    #[test]
+    fn test_alignment_values() {
+        assert_eq!(HorizontalAlignment::Left as i32, 0);
+        assert_eq!(HorizontalAlignment::Center as i32, 1);
+        assert_eq!(HorizontalAlignment::Right as i32, 2);
+        assert_eq!(VerticalAlignment::Baseline as i32, 0);
+        assert_eq!(VerticalAlignment::Bottom as i32, 1);
+        assert_eq!(VerticalAlignment::Middle as i32, 2);
+        assert_eq!(VerticalAlignment::Top as i32, 3);
     }
 
     #[test]

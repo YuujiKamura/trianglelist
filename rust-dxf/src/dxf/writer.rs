@@ -3,6 +3,8 @@
 //! This module provides functionality to generate DXF text output
 //! from DxfLine and DxfText entities.
 
+use std::fmt::Write;
+
 use crate::dxf::entities::{DxfLine, DxfText};
 
 /// DXF file writer
@@ -51,93 +53,50 @@ impl DxfWriter {
 
     /// Writes the DXF header section
     fn write_header(&self, output: &mut String) {
-        output.push_str("0\n");
-        output.push_str("SECTION\n");
-        output.push_str("2\n");
-        output.push_str("HEADER\n");
-        output.push_str("9\n");
-        output.push_str("$ACADVER\n");
-        output.push_str("1\n");
-        output.push_str("AC1015\n");
-        output.push_str("9\n");
-        output.push_str("$INSUNITS\n");
-        output.push_str("70\n");
-        output.push_str("4\n"); // 4 = Millimeters
-        output.push_str("0\n");
-        output.push_str("ENDSEC\n");
+        writeln!(output, "0\nSECTION").unwrap();
+        writeln!(output, "2\nHEADER").unwrap();
+        writeln!(output, "9\n$ACADVER").unwrap();
+        writeln!(output, "1\nAC1015").unwrap();
+        writeln!(output, "9\n$INSUNITS").unwrap();
+        writeln!(output, "70\n4").unwrap(); // 4 = Millimeters
+        writeln!(output, "0\nENDSEC").unwrap();
     }
 
     /// Writes the start of the entities section
     fn write_entities_start(&self, output: &mut String) {
-        output.push_str("0\n");
-        output.push_str("SECTION\n");
-        output.push_str("2\n");
-        output.push_str("ENTITIES\n");
+        writeln!(output, "0\nSECTION").unwrap();
+        writeln!(output, "2\nENTITIES").unwrap();
     }
 
     /// Writes a LINE entity
     fn write_line(&self, output: &mut String, line: &DxfLine) {
-        output.push_str("0\n");
-        output.push_str("LINE\n");
-        output.push_str("8\n");
-        output.push_str(&line.layer);
-        output.push('\n');
-        output.push_str("62\n");
-        output.push_str(&line.color.to_string());
-        output.push('\n');
-        output.push_str("10\n");
-        output.push_str(&line.x1.to_string());
-        output.push('\n');
-        output.push_str("20\n");
-        output.push_str(&line.y1.to_string());
-        output.push('\n');
-        output.push_str("11\n");
-        output.push_str(&line.x2.to_string());
-        output.push('\n');
-        output.push_str("21\n");
-        output.push_str(&line.y2.to_string());
-        output.push('\n');
+        writeln!(output, "0\nLINE").unwrap();
+        writeln!(output, "8\n{}", line.layer).unwrap();
+        writeln!(output, "62\n{}", line.color).unwrap();
+        writeln!(output, "10\n{}", line.x1).unwrap();
+        writeln!(output, "20\n{}", line.y1).unwrap();
+        writeln!(output, "11\n{}", line.x2).unwrap();
+        writeln!(output, "21\n{}", line.y2).unwrap();
     }
 
     /// Writes a TEXT entity
     fn write_text(&self, output: &mut String, text: &DxfText) {
-        output.push_str("0\n");
-        output.push_str("TEXT\n");
-        output.push_str("8\n");
-        output.push_str(&text.layer);
-        output.push('\n');
-        output.push_str("62\n");
-        output.push_str(&text.color.to_string());
-        output.push('\n');
-        output.push_str("10\n");
-        output.push_str(&text.x.to_string());
-        output.push('\n');
-        output.push_str("20\n");
-        output.push_str(&text.y.to_string());
-        output.push('\n');
-        output.push_str("40\n");
-        output.push_str(&text.height.to_string());
-        output.push('\n');
-        output.push_str("1\n");
-        output.push_str(&text.text);
-        output.push('\n');
-        output.push_str("50\n");
-        output.push_str(&text.rotation.to_string());
-        output.push('\n');
-        output.push_str("72\n");
-        output.push_str(&text.align_h.to_string());
-        output.push('\n');
-        output.push_str("73\n");
-        output.push_str(&text.align_v.to_string());
-        output.push('\n');
+        writeln!(output, "0\nTEXT").unwrap();
+        writeln!(output, "8\n{}", text.layer).unwrap();
+        writeln!(output, "62\n{}", text.color).unwrap();
+        writeln!(output, "10\n{}", text.x).unwrap();
+        writeln!(output, "20\n{}", text.y).unwrap();
+        writeln!(output, "40\n{}", text.height).unwrap();
+        writeln!(output, "1\n{}", text.text).unwrap();
+        writeln!(output, "50\n{}", text.rotation).unwrap();
+        writeln!(output, "72\n{}", text.align_h as i32).unwrap();
+        writeln!(output, "73\n{}", text.align_v as i32).unwrap();
     }
 
     /// Writes the end of the entities section and EOF
     fn write_end(&self, output: &mut String) {
-        output.push_str("0\n");
-        output.push_str("ENDSEC\n");
-        output.push_str("0\n");
-        output.push_str("EOF\n");
+        writeln!(output, "0\nENDSEC").unwrap();
+        writeln!(output, "0\nEOF").unwrap();
     }
 }
 
@@ -150,6 +109,7 @@ impl Default for DxfWriter {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::dxf::entities::{HorizontalAlignment, VerticalAlignment};
 
     #[test]
     fn test_write_empty() {
@@ -203,11 +163,15 @@ mod tests {
     }
 
     #[test]
-    fn test_write_text_with_style() {
+    fn test_write_text_with_builder() {
         let writer = DxfWriter::new();
-        let texts = vec![DxfText::with_style(
-            10.0, 20.0, "Styled", 2.5, 45.0, 3, 1, 2, "TextLayer",
-        )];
+        let texts = vec![DxfText::new(10.0, 20.0, "Styled")
+            .height(2.5)
+            .rotation(45.0)
+            .color(3)
+            .align_h(HorizontalAlignment::Center)
+            .align_v(VerticalAlignment::Middle)
+            .layer("TextLayer")];
         let output = writer.write(&[], &texts);
 
         assert!(output.contains("TEXT"));
@@ -233,11 +197,11 @@ mod tests {
         let output = writer.write(&lines, &texts);
 
         // Count occurrences of LINE
-        let line_count = output.matches("\n0\nLINE\n").count();
+        let line_count = output.matches("0\nLINE\n").count();
         assert_eq!(line_count, 2);
 
         // Count occurrences of TEXT
-        let text_count = output.matches("\n0\nTEXT\n").count();
+        let text_count = output.matches("0\nTEXT\n").count();
         assert_eq!(text_count, 2);
     }
 
