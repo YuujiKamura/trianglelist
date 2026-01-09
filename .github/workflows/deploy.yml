@@ -48,6 +48,8 @@ jobs:
 
       - name: Build WASM with Trunk
         working-directory: trianglelist-web
+        env:
+          TRUNK_WASM_OPT_ARGS: "--enable-bulk-memory --enable-nontrapping-float-to-int"
         run: trunk build --release
 
       - name: Setup Pages
