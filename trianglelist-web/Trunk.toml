@@ -10,9 +10,6 @@ dist = "dist"
 filehash = true
 # GitHub Pages用のbase URL（リポジトリ名）
 public_url = "/trianglelist/"
-# wasm-optによる最適化を無効化（bulk memory操作のエラー回避）
-# 最適化はRustのLTOで十分に行われる
-no_minify = true
 
 [watch]
 # ファイル変更監視対象
