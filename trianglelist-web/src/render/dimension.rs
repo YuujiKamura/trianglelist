@@ -72,7 +72,8 @@ pub fn draw_dimension_value(
     );
     let text_pos = midpoint + perpendicular * style.offset_pixels as f32;
 
-    // Calculate rotation angle
+    // Calculate rotation angle from screen-space direction
+    // (view rotation is already applied via model_to_screen)
     let mut angle_rad = direction.y.atan2(direction.x);
 
     // Auto-adjust text direction to be readable (left to right)

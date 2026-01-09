@@ -33,6 +33,12 @@ TriangleListは三角形分割による高精度な面積計算と、CAD図面�
 ### 📱 プラットフォーム対応
 - **Android**: メインアプリケーション（面積計算・図面編集）
 - **Desktop**: DXFプレビュー専用ツール
+- **Web**: ブラウザ版ビューア
+
+### 🌐 Web版
+**GitHub Pages**: https://yuujikamura.github.io/trianglelist/
+
+CSVファイルをドラッグ＆ドロップして三角形を表示。回転テキスト対応。
 
 ## 技術スタック
 
@@ -67,6 +73,9 @@ trianglelist/
 ├── desktop/              # DXFプレビュー専用ツール
 │   ├── cadview/          # DXFビューア
 │   └── adapter/          # 描画レンダラー
+├── trianglelist-web/     # Web版 (Rust/WASM)
+│   ├── src/              # Rustソースコード
+│   └── demo/             # Canvas 2Dデモ
 └── doc/                  # プロジェクトドキュメント
 ```
 
