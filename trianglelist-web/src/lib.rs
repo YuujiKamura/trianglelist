@@ -5,12 +5,13 @@
 
 pub mod app;
 pub mod csv;
+pub mod dxf;
 pub mod render;
 
 pub use app::TriangleListApp;
 
 #[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
+use wasm_bindgen::{prelude::*, JsCast};
 #[cfg(target_arch = "wasm32")]
 use web_sys::HtmlCanvasElement;
 
