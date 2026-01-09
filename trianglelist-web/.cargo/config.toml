@@ -1,0 +1,5 @@
+# WASM ターゲット設定
+# bulk memory操作を有効化（wasm-optとの互換性のため）
+
+[target.wasm32-unknown-unknown]
+rustflags = ["-C", "target-feature=+bulk-memory"]
