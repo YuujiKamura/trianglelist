@@ -40,8 +40,11 @@ jobs:
         with:
           workspaces: trianglelist-web -> target
 
-      - name: Install Trunk
-        run: cargo install trunk --locked
+      - name: Install Trunk (cached)
+        uses: baptiste0928/cargo-install@v3
+        with:
+          crate: trunk
+          locked: true
 
       - name: Build WASM with Trunk
         working-directory: trianglelist-web
