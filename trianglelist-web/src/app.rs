@@ -352,21 +352,21 @@ impl TriangleListApp {
                 1.0,
             );
 
-            // Draw dimension values if enabled (using Canvas 2D API for proper rotation)
+            // Draw dimension values if enabled
             if self.show_dimensions {
+                use crate::csv::ConnectionType;
+                let side_lengths = [
+                    positioned.data.side_a,
+                    positioned.data.side_b,
+                    positioned.data.side_c,
+                ];
+                // Skip side A dimension if this triangle is connected to a parent
+                let skip_side_a = positioned.data.connection_type != ConnectionType::Independent;
+
                 if let Some(ref text_renderer) = self.canvas2d_text_renderer {
+                    // Use Canvas 2D API for proper text rotation
                     use crate::render::dimension::{draw_triangle_dimensions, DimensionStyle};
-                    use crate::csv::ConnectionType;
                     let dim_style = DimensionStyle::default();
-                    let side_lengths = [
-                        positioned.data.side_a,
-                        positioned.data.side_b,
-                        positioned.data.side_c,
-                    ];
-                    // Skip side A dimension if this triangle is connected to a parent
-                    // (A-edge is shared with parent, so dimension is already shown by parent)
-                    let skip_side_a = positioned.data.connection_type != ConnectionType::Independent;
-                    // Use model coordinates for Canvas 2D rendering
                     draw_triangle_dimensions(
                         text_renderer,
                         positioned.points,
@@ -375,6 +375,47 @@ impl TriangleListApp {
                         &dim_style,
                         skip_side_a,
                     );
+                } else {
+                    // Fallback: draw dimensions using egui (no rotation)
+                    use crate::render::text::{draw_text_cad_style, TextAlign, HorizontalAlign, VerticalAlign};
+                    let dim_style_color = egui::Color32::WHITE;
+
+                    // Draw each dimension at edge midpoint
+                    let edges = [
+                        (0, 1, side_lengths[0], skip_side_a),  // Side A
+                        (1, 2, side_lengths[1], false),        // Side B
+                        (2, 0, side_lengths[2], false),        // Side C
+                    ];
+
+                    for (i, j, length, skip) in edges {
+                        if skip { continue; }
+                        let p1 = points_screen[i];
+                        let p2 = points_screen[j];
+                        let mid = Pos2::new((p1.x + p2.x) * 0.5, (p1.y + p2.y) * 0.5);
+
+                        // Calculate perpendicular offset
+                        let dir = (p2 - p1).normalized();
+                        let perp = egui::Vec2::new(-dir.y, dir.x);
+                        let text_pos = mid + perp * 12.0;
+
+                        // Calculate angle for text direction adjustment
+                        let mut angle = dir.y.atan2(dir.x);
+                        if angle > std::f32::consts::FRAC_PI_2 || angle < -std::f32::consts::FRAC_PI_2 {
+                            angle += std::f32::consts::PI;
+                        }
+
+                        let text = format!("{:.2}", length);
+                        let align = TextAlign::new(HorizontalAlign::Center, VerticalAlign::Middle);
+                        draw_text_cad_style(
+                            &painter,
+                            &text,
+                            text_pos,
+                            12.0,
+                            angle.to_degrees(),
+                            dim_style_color,
+                            align,
+                        );
+                    }
                 }
             }
 
