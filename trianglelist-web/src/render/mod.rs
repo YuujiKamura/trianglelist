@@ -7,9 +7,11 @@ pub mod canvas;
 pub mod text;
 pub mod text_canvas2d;
 pub mod color;
+pub mod dimension;
 
 pub use canvas::*;
 pub use text::*;
 pub use text_canvas2d::*;
 pub use color::*;
+pub use dimension::*;
 
