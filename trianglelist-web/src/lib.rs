@@ -49,6 +49,15 @@ pub fn start() -> Result<(), JsValue> {
             )
             .await
             .expect("Failed to start eframe");
+
+        // Hide loading screen after eframe starts
+        if let Some(window) = web_sys::window() {
+            if let Ok(hide_loading) = js_sys::Reflect::get(&window, &JsValue::from_str("hideLoading")) {
+                if let Some(func) = hide_loading.dyn_ref::<js_sys::Function>() {
+                    let _ = func.call0(&window);
+                }
+            }
+        }
     });
 
     Ok(())
