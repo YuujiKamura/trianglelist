@@ -563,11 +563,18 @@ impl eframe::App for TriangleListApp {
             if !i.raw.dropped_files.is_empty() {
                 for file in &i.raw.dropped_files {
                     if let Some(bytes) = &file.bytes {
-                        if let Ok(content) = std::str::from_utf8(bytes) {
+                        // Skip UTF-8 BOM if present
+                        let bytes_without_bom = if bytes.starts_with(&[0xEF, 0xBB, 0xBF]) {
+                            &bytes[3..]
+                        } else {
+                            bytes.as_ref()
+                        };
+
+                        if let Ok(content) = std::str::from_utf8(bytes_without_bom) {
                             let result = parse_csv(content);
                             self.handle_parse_result(result);
                         } else {
-                            self.error_message = Some("Failed to read file as UTF-8".to_string());
+                            self.error_message = Some("Failed to read file as UTF-8. Please save the file with UTF-8 encoding.".to_string());
                         }
                     }
                 }
