@@ -570,11 +570,25 @@ impl eframe::App for TriangleListApp {
                             bytes.as_ref()
                         };
 
-                        if let Ok(content) = std::str::from_utf8(bytes_without_bom) {
-                            let result = parse_csv(content);
+                        // Try UTF-8 first
+                        let content = if let Ok(utf8_content) = std::str::from_utf8(bytes_without_bom) {
+                            Some(utf8_content.to_string())
+                        } else {
+                            // Fallback to Shift-JIS (common for Japanese Windows files)
+                            let (decoded, _, had_errors) = encoding_rs::SHIFT_JIS.decode(bytes_without_bom);
+                            if !had_errors {
+                                log::info!("File decoded as Shift-JIS");
+                                Some(decoded.into_owned())
+                            } else {
+                                None
+                            }
+                        };
+
+                        if let Some(content) = content {
+                            let result = parse_csv(&content);
                             self.handle_parse_result(result);
                         } else {
-                            self.error_message = Some("Failed to read file as UTF-8. Please save the file with UTF-8 encoding.".to_string());
+                            self.error_message = Some("ファイルの読み込みに失敗しました。UTF-8またはShift-JISで保存してください。".to_string());
                         }
                     }
                 }

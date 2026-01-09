@@ -54,6 +54,9 @@ js-sys = "0.3"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
+# Encoding conversion (for Japanese Shift-JIS support)
+encoding_rs = "0.8"
+
 # DXF generation
 dxf = { path = "../rust-dxf" }
 
