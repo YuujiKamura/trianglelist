@@ -48,7 +48,7 @@ jobs:
 
       - name: Build WASM with Trunk
         working-directory: trianglelist-web
-        run: trunk build --release --minify false
+        run: trunk build --release
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
