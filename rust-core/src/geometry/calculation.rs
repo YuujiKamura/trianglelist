@@ -23,7 +23,7 @@ impl Point {
     pub fn distance_to(&self, other: &Point) -> f64 {
         let dx = other.x - self.x;
         let dy = other.y - self.y;
-        (dx * dx + dy * dy).sqrt()
+        dx.hypot(dy)
     }
 
     /// Returns a new point offset from this point by the given distance and angle (radians).
@@ -36,7 +36,7 @@ impl Point {
 
     /// Returns the magnitude (length) of this point as a vector.
     pub fn magnitude(&self) -> f64 {
-        (self.x * self.x + self.y * self.y).sqrt()
+        self.x.hypot(self.y)
     }
 
     /// Returns the inner (dot) product with another point.
@@ -102,7 +102,6 @@ impl SubAssign for Point {
         self.y -= other.y;
     }
 }
-
 /// Calculates an angle using the law of cosines given three side lengths.
 ///
 /// Given sides a, b, c, calculates the angle opposite to side c.
@@ -258,17 +257,9 @@ pub fn calculate_point_bc(
     // Calculate alpha using law of cosines: angle at point_ab
     let alpha = cosine_rule_angle(side_a, side_b, side_c);
 
-    // Calculate the angle for point_bc
+    // Calculate the angle for point_bc and use offset method
     let angle = theta + alpha;
-
-    // Calculate offset from point_ab
-    let offset_x = side_b * angle.cos();
-    let offset_y = side_b * angle.sin();
-
-    Point {
-        x: point_ab.x + offset_x,
-        y: point_ab.y + offset_y,
-    }
+    point_ab.offset(side_b, angle)
 }
 
 #[cfg(test)]
