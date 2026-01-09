@@ -352,27 +352,30 @@ impl TriangleListApp {
                 1.0,
             );
 
-            // Draw dimension lines if enabled
+            // Draw dimension values if enabled (using Canvas 2D API for proper rotation)
             if self.show_dimensions {
-                use crate::render::dimension::{draw_triangle_dimensions, DimensionStyle};
-                use crate::csv::ConnectionType;
-                let dim_style = DimensionStyle::default();
-                let side_lengths = [
-                    positioned.data.side_a,
-                    positioned.data.side_b,
-                    positioned.data.side_c,
-                ];
-                // Skip side A dimension if this triangle is connected to a parent
-                // (A-edge is shared with parent, so dimension is already shown by parent)
-                let skip_side_a = positioned.data.connection_type != ConnectionType::Independent;
-                draw_triangle_dimensions(
-                    &painter,
-                    points_screen,
-                    side_lengths,
-                    &self.view_state,
-                    &dim_style,
-                    skip_side_a,
-                );
+                if let Some(ref text_renderer) = self.canvas2d_text_renderer {
+                    use crate::render::dimension::{draw_triangle_dimensions, DimensionStyle};
+                    use crate::csv::ConnectionType;
+                    let dim_style = DimensionStyle::default();
+                    let side_lengths = [
+                        positioned.data.side_a,
+                        positioned.data.side_b,
+                        positioned.data.side_c,
+                    ];
+                    // Skip side A dimension if this triangle is connected to a parent
+                    // (A-edge is shared with parent, so dimension is already shown by parent)
+                    let skip_side_a = positioned.data.connection_type != ConnectionType::Independent;
+                    // Use model coordinates for Canvas 2D rendering
+                    draw_triangle_dimensions(
+                        text_renderer,
+                        positioned.points,
+                        side_lengths,
+                        &self.view_state,
+                        &dim_style,
+                        skip_side_a,
+                    );
+                }
             }
 
             // Draw triangle number at centroid
