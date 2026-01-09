@@ -4,7 +4,8 @@
 # Use the latest 2.1 version of CircleCI pipeline process engine.
 # See: https://circleci.com/docs/configuration-reference
 version: 2.1
-
+orbs:
+  android: circleci/android@1.0.2  # Orbを使って設定を簡単に
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/jobs-steps/#jobs-overview & https://circleci.com/docs/configuration-reference/#jobs
 jobs:
@@ -13,11 +14,18 @@ jobs:
     # See: https://circleci.com/docs/executor-intro/ & https://circleci.com/docs/configuration-reference/#executor-job
     docker:
       # Androidビルド用のイメージを指定
-      - image: circleci/android:api-30-node
+      - image: cimg/android:2024.01
+        auth:
+          username: $DOCKERHUB_USERNAME  # 環境変数を参照
+          password: $DOCKERHUB_PASSWORD  # 環境変数を参照
+    parallelism: 4
     environment:
       JAVA_HOME: /path/to/java-17
     steps:
       - checkout
+      - restore_cache:
+          keys:
+            - gradle-cache-{{ checksum "build.gradle.kts" }}-{{ checksum "settings.gradle.kts" }}
       - run:
           name: Add Google Cloud SDK repo key
           command: |
@@ -38,8 +46,29 @@ jobs:
           name: Set executable permission for gradlew
           command: chmod +x ./gradlew
       - run:
-          name: Run tests
-          command: ./gradlew :app:test -stacktrace
+          name: Run tests in parallel
+          command: |
+            TEST_FILES=$(find ./app/src/test/java/com/jpaver -name "*Test*.kt" | circleci tests split --split-by=timings)
+            if [ -n "$TEST_FILES" ]; then
+              # Convert file paths to Gradle test class names and build --tests arguments
+              TEST_ARGS=""
+              while IFS= read -r test_file; do
+                if [ -n "$test_file" ]; then
+                  # Convert ./app/src/test/java/com/jpaver/trianglelist/SomeTest.kt to com.jpaver.trianglelist.SomeTest
+                  TEST_CLASS=$(echo "$test_file" | sed 's|\./app/src/test/java/||g' | sed 's|/|.|g' | sed 's|\.kt$||')
+                  TEST_ARGS="$TEST_ARGS --tests $TEST_CLASS"
+                fi
+              done <<< "$TEST_FILES"
+              ./gradlew test $TEST_ARGS
+            else
+              echo "No test files found for this parallel job"
+            fi
+      - store_test_results:
+          path: /tmp/test-results
+      - save_cache:
+          paths:
+            - ~/.gradle
+          key: gradle-cache-{{ checksum "build.gradle.kts" }}-{{ checksum "settings.gradle.kts" }}
   build:
     docker:
       - image: cimg/base:current

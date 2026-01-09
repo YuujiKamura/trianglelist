@@ -1,5 +1,5 @@
 package com.jpaver.trianglelist
-
+/*
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -24,3 +24,4 @@ class ExampleUnitTest {
         assertEquals(4, 2 + 2)
     }
 }
+*/

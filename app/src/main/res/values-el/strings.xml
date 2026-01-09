@@ -23,16 +23,6 @@
     <string name = "menseki_koujimei"> Όνομα κατασκευής: </string>
     <string name = "menseki_syoukei"> υποσύνολο </string>
     <string name = "menseki_goukei"> σύνολο </string>
-    <string name = "editor_number">αριθμός</string>
-    <string name = "editor_name">όνομα</string>
-    <string name = "editor_sokuten">σταθμός</string>
-    <string name = "editor_lA">Μήκος A</string>
-    <string name = "editor_lB">Μήκος B</string>
-    <string name = "editor_lC">Μήκος C</string>
-    <string name = "editor_parent">γονέας</string>
-    <string name = "editor_setuzoku">σύνδεση</string>
-    <string name = "editor_syozoku">ανήκει</string>
-    <string name = "editor_form">σχήμα</string>
     <string name = "editor_koujyo">αφαίρεση</string>
     <string name = "credit">http://trianglelist.home.blog</string>
 

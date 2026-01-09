@@ -23,16 +23,6 @@
     <string name = "menseki_koujimei"> Heiti byggingar: </string>
     <string name = "menseki_syoukei"> undirsumma </string>
     <string name = "menseki_goukei"> samtals </string>
-    <string name = "editor_number">númer</string>
-    <string name = "editor_name">nafn</string>
-    <string name = "editor_sokuten">stöð</string>
-    <string name = "editor_lA">lengd A</string>
-    <string name = "editor_lB">lengd B</string>
-    <string name = "editor_lC">lengd C</string>
-    <string name = "editor_parent">foreld</string>
-    <string name = "editor_setuzoku">tengja</string>
-    <string name = "editor_syozoku">tilheyr</string>
-    <string name = "editor_form">lögun</string>
     <string name = "editor_koujyo"> frádráttur </string>
     <string name = "credit">http://trianglelist.home.blog</string>
 
