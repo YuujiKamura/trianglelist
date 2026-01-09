@@ -1,5 +1,6 @@
-package com.jpaver.trianglelist.geometry  // パッケージ宣言が必要
-import com.jpaver.trianglelist.PointXY
+package com.jpaver.trianglelist.geometry
+
+import com.example.trilib.PointXY
 import org.junit.Assert.*
 import org.junit.Test
 import kotlin.math.abs

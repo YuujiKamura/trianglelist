@@ -1,6 +1,0 @@
-└── geometry/
-    ├── calc/
-    │   ├── TriangleCalculator.kt     // 計算関連
-    │   ├── TriangleValidator.kt      // 検証関連
-    │   └── TriangleTransformer.kt    // 変換関連
-    └── Triangle.kt 
