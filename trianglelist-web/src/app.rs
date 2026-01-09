@@ -6,6 +6,7 @@
 use eframe::egui;
 
 use crate::csv::{parse_csv, ParseError, ParseResult, ParsedTriangle};
+<<<<<<< HEAD
 use crate::dxf::{download_dxf, TriangleToDxfConverter};
 use crate::render::{ViewState, draw_triangle, draw_triangle_number};
 use crate::render::color::{default_triangle_fill, DEFAULT_TRIANGLE_STROKE, DEFAULT_TEXT_COLOR};
@@ -13,6 +14,9 @@ use crate::render::text_canvas2d::{Canvas2dTextRenderer, color32_to_css};
 use crate::render::text::{TextAlign, HorizontalAlign, VerticalAlign};
 use eframe::egui::Pos2;
 use wasm_bindgen::JsCast;
+=======
+use crate::render::ViewState;
+>>>>>>> 117a1f878b2ad4e9579df6a8249857d6cdfa0973
 
 /// The main TriangleList application struct.
 ///
