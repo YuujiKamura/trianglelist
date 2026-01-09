@@ -10,6 +10,9 @@ dist = "dist"
 filehash = true
 # GitHub Pages用のbase URL（リポジトリ名）
 public_url = "/trianglelist/"
+# wasm-optによる最適化を無効化（bulk memory操作のエラー回避）
+# 最適化はRustのLTOで十分に行われる
+no_minify = true
 
 [watch]
 # ファイル変更監視対象
@@ -23,14 +26,6 @@ address = "127.0.0.1"
 port = 8080
 # ファイル変更時に自動リロード
 open = false
-
-# =============================================================================
-# wasm-opt settings
-# =============================================================================
-# Trunk 0.21ではwasm-optの追加オプションを直接設定できないため、
-# 環境変数TRUNK_WASM_OPT_ARGSを使用（GitHub Actionsで設定）
-# ローカルビルド時は環境変数を設定するか、wasm-optを無効化
-# 例: export TRUNK_WASM_OPT_ARGS="--enable-bulk-memory --enable-nontrapping-float-to-int"
 
 # =============================================================================
 # Clean settings
