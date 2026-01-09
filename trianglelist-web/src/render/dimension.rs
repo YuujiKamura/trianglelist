@@ -101,22 +101,27 @@ pub fn draw_dimension_value(
 /// * `side_lengths` - Lengths of the three sides [A, B, C]
 /// * `view_state` - View state for coordinate transformations
 /// * `style` - Dimension style configuration
+/// * `skip_side_a` - If true, skip drawing dimension for side A (connected edge)
 pub fn draw_triangle_dimensions(
     painter: &Painter,
     points: [Pos2; 3],
     side_lengths: [f64; 3],
     view_state: &ViewState,
     style: &DimensionStyle,
+    skip_side_a: bool,
 ) {
     // Side A: CA to AB (points[0] to points[1])
-    draw_dimension_value(
-        painter,
-        points[0],
-        points[1],
-        side_lengths[0],
-        view_state,
-        style,
-    );
+    // Skip if this is a connected edge (shared with parent)
+    if !skip_side_a {
+        draw_dimension_value(
+            painter,
+            points[0],
+            points[1],
+            side_lengths[0],
+            view_state,
+            style,
+        );
+    }
 
     // Side B: AB to BC (points[1] to points[2])
     draw_dimension_value(
