@@ -1,7 +1,8 @@
 package com.jpaver.trianglelist
 
-
 import android.Manifest
+import android.animation.ObjectAnimator
+import android.animation.ValueAnimator
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.ActivityNotFoundException
@@ -10,13 +11,17 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.drawable.Icon
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.provider.OpenableColumns
 import android.text.Editable
 import android.text.InputFilter
-import android.text.TextWatcher
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -37,8 +42,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider.getUriForFile
 import androidx.core.content.edit
+import androidx.core.net.toUri
 import androidx.fragment.app.DialogFragment
 import androidx.preference.PreferenceManager
+import com.example.trilib.PointXY
 import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
@@ -48,20 +55,33 @@ import com.google.android.gms.ads.RequestConfiguration
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.android.play.core.appupdate.AppUpdateManagerFactory
-import com.google.android.play.core.install.model.AppUpdateType
-import com.google.android.play.core.install.model.UpdateAvailability
 import com.jpaver.trianglelist.databinding.ActivityMainBinding
-import com.jpaver.trianglelist.filemanager.XlsxWriter
+import com.jpaver.trianglelist.datamanager.CsvLoader
+import com.jpaver.trianglelist.datamanager.DxfFileWriter
+import com.jpaver.trianglelist.datamanager.HeaderValues
+import com.jpaver.trianglelist.datamanager.PdfWriter
+import com.jpaver.trianglelist.datamanager.SfcWriter
+import com.jpaver.trianglelist.datamanager.XlsxWriter
+import com.jpaver.trianglelist.editmodel.ConnParam
+import com.jpaver.trianglelist.editmodel.Deduction
+import com.jpaver.trianglelist.editmodel.DeductionList
+import com.jpaver.trianglelist.editmodel.EditList
+import com.jpaver.trianglelist.editmodel.Triangle
+import com.jpaver.trianglelist.editmodel.TriangleList
+import com.jpaver.trianglelist.editmodel.ZumenInfo
 import com.jpaver.trianglelist.fragment.MyDialogFragment
-import com.jpaver.trianglelist.util.AdInitializer
-import com.jpaver.trianglelist.util.AdInitializerFactory
-import com.jpaver.trianglelist.util.AdManager
-import com.jpaver.trianglelist.util.EditTextViewLine
-import com.jpaver.trianglelist.util.EditorTable
-import com.jpaver.trianglelist.util.Params
-import com.jpaver.trianglelist.util.TitleParamStr
-import com.jpaver.trianglelist.util.TitleParams
+import com.jpaver.trianglelist.viewmodel.AdManager
+import com.jpaver.trianglelist.viewmodel.CustomTextWatcher
+import com.jpaver.trianglelist.viewmodel.DeductionNameTextWatcher
+import com.jpaver.trianglelist.viewmodel.EditTextViewLine
+import com.jpaver.trianglelist.viewmodel.EditorTable
+import com.jpaver.trianglelist.viewmodel.InputParameter
+import com.jpaver.trianglelist.viewmodel.LocalFileViewer
+import com.jpaver.trianglelist.viewmodel.MainViewModel
+import com.jpaver.trianglelist.viewmodel.TitleParamStr
+import com.jpaver.trianglelist.viewmodel.TitleParams
+import com.jpaver.trianglelist.viewmodel.formattedString
+import com.jpaver.trianglelist.viewmodel.rules_triangle
 import java.io.BufferedOutputStream
 import java.io.BufferedReader
 import java.io.BufferedWriter
@@ -70,134 +90,11 @@ import java.io.IOException
 import java.io.InputStreamReader
 import java.io.OutputStream
 import java.io.OutputStreamWriter
+import java.io.Writer
 import java.time.LocalDate
 import kotlin.math.roundToInt
 
-
-data class ResStr(
-        // 文字列リソースをstringに変換して保持する。
-        var tTitle_: String = "",
-        var eRName_: String = "",
-        var tCname_: String = "",
-        var tDtype_: String = "",
-        var tDname_: String = "",
-        var tScale_: String = "",
-        var tNum_: String = "",
-        var tDateHeader_: String = "",
-        var tDate_: String = "",
-        var tAname_: String = "",
-        var menseki_: String = "",
-        var mTitle_: String = "",
-        var mCname_: String = "",
-        var mSyoukei_: String = "",
-        var mGoukei_: String = "",
-        var tCredit_: String = ""
-)
-
-//region TextWatcher
-private class MyTextWatcher(
-    val mELine: EditTextViewLine,
-    var lastParams: Params
-) : TextWatcher {
-    //private val afterTextChanged_: TextView = findViewById<TextView>(R.id.afterTextChanged)
-    //private val beforeTextChanged_: TextView = findViewById<TextView>(R.id.beforeTextChanged)
-    //private val onTextChanged_: TextView = findViewById<TextView>(R.id.onTextChanged)
-    override fun afterTextChanged(s: Editable) {
-        val input = mELine.name.text.toString()
-//            myEditor.LineRewrite(Params(input,"",myDeductionList.length()+1,dP.a, dP.b, dP.c, dP.pn, i, PointXY(0f,0f)), myELFirst)
-
-        if(input == "仕切弁" || input == "ソフト弁" || input == "ドレーン") {
-            mELine.a.setText( 0.23f.toString() )
-            mELine.b.setText("")
-            mELine.pl.setSelection(2)
-        }
-        if(input == "消火栓" || input == "空気弁") {
-            mELine.a.setText( 0.55f.toString() )
-            mELine.b.setText("")
-            mELine.pl.setSelection(2)
-        }
-        if(input == "下水") {
-            mELine.a.setText( 0.72f.toString() )
-            mELine.b.setText("")
-            mELine.pl.setSelection(2)
-        }
-        if(input == "汚水") {
-            mELine.a.setText( 0.67f.toString() )
-            mELine.b.setText("")
-            mELine.pl.setSelection(2)
-        }
-        if(input == "雨水枡" || input == "電柱"){
-            mELine.a.setText( 0.40f.toString() )
-            mELine.b.setText("")
-            mELine.pl.setSelection(2)
-        }
-        if(input == "電気" || input == "NTT"){
-            mELine.a.setText("1.0")
-            mELine.b.setText("")
-            mELine.pl.setSelection(2)
-        }
-        if(input == "基準点"){
-            mELine.a.setText("0.3")
-            mELine.b.setText("")
-            mELine.pl.setSelection(2)
-        }
-        if(input == "消火栓B") {
-            mELine.a.setText( 0.35f.toString() )
-            mELine.b.setText( 0.45f.toString() )
-            mELine.pl.setSelection(1)
-        }
-        if(input == "基礎") {
-            mELine.a.setText( 0.50f.toString() )
-            mELine.b.setText( 0.50f.toString() )
-            mELine.pl.setSelection(1)
-        }
-        if(input == "集水桝") {
-            mELine.a.setText( 0.70f.toString() )
-            mELine.b.setText( 0.70f.toString() )
-            mELine.pl.setSelection(1)
-        }
-
-        // 記憶した控除パラメータの復元
-        if(input == lastParams.name){
-            mELine.a.setText(lastParams.a.toString())
-            mELine.b.setText(lastParams.b.toString())
-            mELine.pl.setSelection(lastParams.pl)
-        }
-    }
-
-    override fun beforeTextChanged(
-        s: CharSequence,
-        start: Int,
-        count: Int,
-        after: Int
-    ) {
-        ("start=" + start
-                + ", count=" + count
-                + ", after=" + after
-                + ", s=" + s.toString())
-        //beforeTextChanged_.text = input
-    }
-
-    override fun onTextChanged(
-        s: CharSequence,
-        start: Int,
-        before: Int,
-        count: Int
-    ) {
-        ("start=" + start
-                + ", before=" + before
-                + ", count=" + count
-                + ", s=" + s.toString())
-        //onTextChanged_.text = input
-    }
-}
-
-interface CustomTextWatcher: TextWatcher{
-    override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {}
-    override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {}
-}
-//endregion
-
+@Suppress("DEPRECATED_IDENTITY_EQUALS")
 class MainActivity : AppCompatActivity(),
         MyDialogFragment.NoticeDialogListener {
 
@@ -228,18 +125,19 @@ class MainActivity : AppCompatActivity(),
     lateinit var fab_down: FloatingActionButton
     lateinit var fab_debug: FloatingActionButton
     lateinit var fab_testbasic: FloatingActionButton
-    lateinit var fab_pdf: FloatingActionButton
+    lateinit var fab_pdfview: FloatingActionButton
+    lateinit var fab_dxfview: FloatingActionButton
     lateinit var fab_share: FloatingActionButton
     lateinit var fab_mail: FloatingActionButton
     lateinit var fab_numreverse: FloatingActionButton
     lateinit var fab_xlsx: FloatingActionButton
 
     lateinit var ela1 : EditText
-    lateinit var elb1 : EditText
+    lateinit var editorline1_lengthB : EditText
     lateinit var elc1 : EditText
     lateinit var ela2 : EditText
-    lateinit var elb2 : EditText
-    lateinit var elc2 : EditText
+    lateinit var editorline2_lengthB : EditText
+    lateinit var editorline2_lengthC : EditText
     lateinit var elsa1 : String
     lateinit var elsb1 : String
     lateinit var elsc1 : String
@@ -250,12 +148,14 @@ class MainActivity : AppCompatActivity(),
 
 
 //region Parameters
+    val PRIVATE_FILENAME_DXF = "privateTrilist.dxf"
+
     var isViewAttached = false
 
     var isCSVsavedToPrivate = false
 
-    private lateinit var myELFirst: EditTextViewLine
-    private lateinit var myELSecond: EditTextViewLine
+    private lateinit var editorline1: EditTextViewLine
+    private lateinit var editorLine2: EditTextViewLine
     private lateinit var myELThird: EditTextViewLine
 
     private val sNumberList = listOf(
@@ -281,20 +181,20 @@ class MainActivity : AppCompatActivity(),
     // val dedmap = MapOf(dedNameList to )
 
     private var myEditor: EditorTable = EditorTable()
-    private var dParams: Params = Params("", "", 0, 0f, 0f, 0f, 0, 0,
+    private var parameter: InputParameter = InputParameter("", "", 0, 0f, 0f, 0f, 0, 0,
         PointXY(0f, 0f)
     )
-    private var lastParams: Params = dParams
+    private var lastParams: InputParameter = parameter
 
     // タイトルパラメータ、stringリソースから構成する
 
-    private lateinit var rStr : ResStr
+    private lateinit var rStr : ZumenInfo
     private lateinit var titleTri: TitleParams//
     private lateinit var titleDed: TitleParams
     private lateinit var titleTriStr : TitleParamStr
     private lateinit var titleDedStr : TitleParamStr
 
-    private lateinit var myTriangleList: TriangleList //= TriangleList(Triangle(0f,0f,0f,PointXY(0f,0f),180f))
+    private lateinit var trianglelist: TriangleList //= TriangleList(Triangle(0f,0f,0f,PointXY(0f,0f),180f))
     private lateinit var myDeductionList: DeductionList
 
     private var trilistUndo: TriangleList = TriangleList()
@@ -304,7 +204,7 @@ class MainActivity : AppCompatActivity(),
     private var mIsCreateNew: Boolean = false
     private val onetohandred = 11.9f
     private val experience = 4f
-    private val mScale = onetohandred*experience
+    private val viewscale = onetohandred*experience
 
     private var koujiname = ""
     private var rosenname = ""
@@ -322,13 +222,7 @@ class MainActivity : AppCompatActivity(),
             R.color.colorSky     //4
     )
 
-
     private var TAG = "MainActivity"
-    //private val isAdTEST_ = true
-    //private val TestAdID_ = "ca-app-pub-3940256099942544/6300978111"
-    //private val UnitAdID_ = "ca-app-pub-6982449551349060/2369695624"
-
-
 
     private var fileType: String = "notyet"
     private var filename = "notyet"
@@ -336,7 +230,7 @@ class MainActivity : AppCompatActivity(),
     private lateinit var shareFilesLauncher: ActivityResultLauncher<Intent>
     private lateinit var loadContent: ActivityResultLauncher<Intent>
 
-    val shareFiles: MutableList<String> = mutableListOf(strDateRosenname(".csv"), strDateRosenname(".xlsx"), strDateRosenname(".dxf"))
+    var shareFiles: MutableList<String> = mutableListOf(strDateRosenname(".csv"), strDateRosenname(".xlsx"), strDateRosenname(".dxf"))
     val shareUris: MutableList<Uri> = mutableListOf()
 
     //endregion
@@ -373,11 +267,16 @@ class MainActivity : AppCompatActivity(),
     private fun handleLoadContentResult(result: ActivityResult) {
         if (result.resultCode == Activity.RESULT_OK && result.data != null) {
             result.data?.data?.let { uri ->
+                // Check the file extension
+                val fileName = getFileName(uri)
+                if (!fileName.endsWith(".csv", ignoreCase = true)) {
+                    Toast.makeText(this, "Selected file is not a CSV file.", Toast.LENGTH_LONG).show()
+                    return  // Stop further processing
+                }
+
                 try {
-                    //showEncodingSelectionDialog(uri)
-                     loadFileWithEncoding(uri) { reader ->
-                        // ここでreaderを使用したファイルの読み込み処理を行う
-                        // 例: CSVファイルの読み込みとパース
+                    loadFileWithEncoding(uri) { reader ->
+                        // Use reader to perform file reading/parsing
                         parseCSV(reader)
                     }
                 } catch (e: IOException) {
@@ -388,31 +287,49 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
+    private fun getFileName(uri: Uri): String {
+        return if (uri.scheme == "content") {
+            getFileNameFromContentUri(uri)
+        } else {
+            getFileNameFromFilePath(uri)
+        }
+    }
+
+    private fun getFileNameFromContentUri(uri: Uri): String {
+        val cursor = contentResolver.query(uri, null, null, null, null)
+        cursor?.use {
+            if (it.moveToFirst()) {
+                return it.getString(it.getColumnIndexOrThrow(OpenableColumns.DISPLAY_NAME))
+            }
+        }
+        return ""
+    }
+
+    private fun getFileNameFromFilePath(uri: Uri): String {
+        return uri.path?.substringAfterLast('/') ?: ""
+    }
+
     private fun loadFileWithEncoding(uri: Uri, encoding: String = "Shift-JIS", onFileLoaded: (BufferedReader) -> Unit) {
         try {
             contentResolver.openInputStream(uri)?.use { inputStream ->
                 val reader = BufferedReader(InputStreamReader(inputStream, encoding))
-                onFileLoaded(reader)  // 選択されたエンコーディングでファイルを読み込んだ後に渡された関数を実行
+                onFileLoaded(reader)  // Execute the passed function with the loaded file
             }
         } catch (e: IOException) {
             e.printStackTrace()
-            // エラーハンドリング
+            // Error handling
         }
     }
 
-
     // endregion
-
 
 //region adMob loading
     private lateinit var mAdView : AdView
     val adManager = AdManager()
     private var mInterstitialAd: InterstitialAd? = null
-    val adInitializer: AdInitializer = AdInitializerFactory.create()
+
     val USEADMOB = false
     private fun adMobInit() {
-
-        adInitializer.initialize()
 
         if ( !USEADMOB ){
             Log.d("AdMob", "adMobInit() cancelled.")
@@ -468,7 +385,6 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun adMobDisable() {
-        adInitializer.disableBannerAd()
 
         if ( !USEADMOB ){
             Log.d("AdMob", "adMobDisable() cancelled.")
@@ -484,7 +400,6 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun adShowInterStitial() {
-        adInitializer.showInterstitialAd()
 
         if ( !USEADMOB ){
             Log.d("AdMob", "adShowInterStitial() cancelled.")
@@ -521,12 +436,31 @@ class MainActivity : AppCompatActivity(),
         setTheme(R.style.AppTheme_NoActionBar) //Note that this should be called before any views are instantiated in the Context (for example before calling Activity.setContentView(View) or LayoutInflater.inflate(int, ViewGroup)).
 
         bindingMain = ActivityMainBinding.inflate(layoutInflater)
+        initFabs()
 
         val view = bindingMain.root
 
         setSupportActionBar(bindingMain.toolbar)
         setContentView(view)
+
+        // Android 15 edge-to-edge: ステータスバーアイコンを暗色に設定
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.insetsController?.setSystemBarsAppearance(
+                android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
+                android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility = window.decorView.systemUiVisibility or
+                android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+        }
+
+        // 共有インテントからのCSV受信を処理
+        handleIncomingIntent(intent)
         Log.d("MainActivityLifeCycle", "setContentView")
+
+        myview = findViewById(R.id.my_view)//bMyView.myView
+        Log.d("myView", "Instance check in MainActivity: " + myview )
 
         sendMailLauncher =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult(), ::handleSendMailResult)
@@ -539,42 +473,12 @@ class MainActivity : AppCompatActivity(),
         loadContent =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult(), ::handleLoadContentResult)
 
-        val tArray = resources.getStringArray(R.array.ParentList)
-        initSpinner(tArray)
-        val appUpdateManager = AppUpdateManagerFactory.create(this)
-
-        // Returns an intent object that you use to check for an update.
-        val appUpdateInfoTask = appUpdateManager.appUpdateInfo
-
-        // Checks that the platform will allow the specified type of update.
-        appUpdateInfoTask.addOnSuccessListener { appUpdateInfo ->
-            if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
-                // This example applies an immediate update. To apply a flexible update
-                // instead, pass in AppUpdateType.FLEXIBLE
-                && appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)
-            ) {
-                // Request the update.
-                appUpdateManager.startUpdateFlowForResult(
-                    // Pass the intent that is returned by 'getAppUpdateInfo()'.
-                    appUpdateInfo,
-                    // Or 'AppUpdateType.FLEXIBLE' for flexible updates.
-                    AppUpdateType.FLEXIBLE,
-                    // The current activity making the update request.
-                    this,
-                    // Include a request code to later monitor this update request.
-                    1 )
-            }
-            else Log.d( "AppUpdate", "Update is not Available.")
-        }
-
         adMobInit()
 
         prefSetting = PreferenceManager.getDefaultSharedPreferences(this)
 
         myDeductionList = DeductionList()
-        //Toast.makeText(this, "Welcome back!", Toast.LENGTH_SHORT).show()
 
-        initFabs()
         fabController()
 
     }
@@ -582,12 +486,30 @@ class MainActivity : AppCompatActivity(),
 
         super.onAttachedToWindow()
 
-        //bMyView = FragmentFirstBinding.bind( findViewById(R.id.my_view) )//inflate(layoutInflater)
-        myview = findViewById(R.id.my_view)//bMyView.myView
-        Log.d("myView", "Instance check in MainActivity: " + myview )
         Log.d("MainActivityLifeCyce", "onAttachedToWindow")
 
-        rStr = ResStr(
+        loadTitleParameters()
+
+        resumeCSV()
+
+        checkPermission()
+
+        loadEditTable()
+        colorMovementFabs()
+        setEditNameAdapter(sNumberList)
+        setEditorTableTextWatcher()
+
+        isViewAttached = true
+        Log.d("MainActivity", "OnAttachedToWindow Process Done.")
+
+        adShowInterStitial()
+
+        val tArray = resources.getStringArray(R.array.ParentList)
+        initSpinner(tArray)
+    }
+
+    fun loadTitleParameters(){
+        rStr = ZumenInfo(
             getString(R.string.tenkai_title),
             getString(R.string.rosen1),
             getString(R.string.tenkai_koujimei),
@@ -648,34 +570,19 @@ class MainActivity : AppCompatActivity(),
             ), getString(titleDed.pl)
         )
 
-        val filepath = this.filesDir.absolutePath + "/" + PrivateCSVFileName
-        val file = File(filepath)
-        if(file.exists()) {
-            resumeCSV()
+        myview.resetView(myview.toLastTapTriangle())
+    }
 
-        }
-        else{
-            createNew()
-            showToast("The PrivateCSV file does not exist.")
-        }
-
-        loadEditTable()
-        colorMovementFabs()
-        //fab.setBackgroundTintList(getColorStateList(R.color.colorLime))
-        fab_replace.backgroundTintList = getColorStateList(R.color.colorLime)
-        setEditNameAdapter(sNumberList)
-
-        checkPermission()
-
+    fun setEditorTableTextWatcher(){
         ela1 = findViewById<EditText>(R.id.editLengthA1)
-        elb1 = findViewById<EditText>(R.id.editLengthB1)
+        editorline1_lengthB = findViewById<EditText>(R.id.editLengthB1)
         elc1 = findViewById<EditText>(R.id.editLengthC1)
         ela2 = findViewById<EditText>(R.id.editLengthA2)
-        elb2 = findViewById<EditText>(R.id.editLengthB2)
-        elc2 = findViewById<EditText>(R.id.editLengthC2)
+        editorline2_lengthB = findViewById<EditText>(R.id.editLengthB2)
+        editorline2_lengthC = findViewById<EditText>(R.id.editLengthC2)
 
         // EditTextの入力値の変化を追跡するリスナーを登録
-        elb1.addTextChangedListener(object : CustomTextWatcher {
+        editorline1_lengthB.addTextChangedListener(object : CustomTextWatcher {
             override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
                 myview.watchedB1_ = p0.toString()
                 myview.invalidate()
@@ -704,26 +611,19 @@ class MainActivity : AppCompatActivity(),
             }
         })
 
-
-        elb2.addTextChangedListener(object : CustomTextWatcher {
+        editorline2_lengthB.addTextChangedListener(object : CustomTextWatcher {
             override fun afterTextChanged(p0: Editable?) {
                 myview.watchedB2_ = p0.toString()
                 myview.invalidate()
             }
         })
 
-        elc2.addTextChangedListener(object : CustomTextWatcher {
+        editorline2_lengthC.addTextChangedListener(object : CustomTextWatcher {
             override fun afterTextChanged(p0: Editable?) {
                 myview.watchedC2_ = p0.toString()
                 myview.invalidate()
             }
         })
-
-        isViewAttached = true
-        Log.d("MainActivity", "OnAttachedToWindow Process Done.")
-
-        adShowInterStitial()
-
     }
 
     override fun onDetachedFromWindow() {
@@ -749,6 +649,15 @@ class MainActivity : AppCompatActivity(),
         Log.d("MainActivityLifeCycle", "OnResume")
         adMobDisable()
 
+        loadTitleParameters()
+
+        resumeCSV()
+
+        loadEditTable()
+        colorMovementFabs()
+        setEditNameAdapter(sNumberList)
+        setEditorTableTextWatcher()
+
         //my_view.setScreenSize() //スクリーンサイズの更新
     }
 
@@ -763,10 +672,42 @@ class MainActivity : AppCompatActivity(),
         menuInflater.inflate(R.menu.menu_main, menu)
         return true
     }
-//endregion
+
+    fun isTablet(context: Context): Boolean {
+        return context.resources.configuration.smallestScreenWidthDp >= 600
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        Log.d("ConfigChange", "onConfigurationChangedが呼ばれました")
+        Log.d("ConfigChange", "画面の向き: ${newConfig.orientation}")
+        Log.d("ConfigChange", "最小画面幅 (dp): ${newConfig.smallestScreenWidthDp}")
+        Log.d("ConfigChange", "現在の画面幅 (dp): ${newConfig.screenWidthDp}")
+        Log.d("ConfigChange", "現在の画面高さ (dp): ${newConfig.screenHeightDp}")
+        Log.d("ConfigChange", "画面レイアウト: ${newConfig.screenLayout}")
+
+        if( isTablet(this) ) {
+            Log.d("ConfigChange", "タブレットと判定されました")
+            return
+        }
+
+        // 現在の画面の向きをチェック
+        if (newConfig.orientation === Configuration.ORIENTATION_LANDSCAPE) {
+            // 画面が横向きの場合、ツールバーを非表示にする
+            bindingMain.editorTable.rosenname.setVisibility(View.GONE)
+            //bindingMain.editorTable.LL2.setVisibility(View.GONE)
+            bindingMain.toolbarLayout.setVisibility(View.GONE)
+        } else if (newConfig.orientation === Configuration.ORIENTATION_PORTRAIT) {
+            // 画面が縦向きの場合、ツールバーを表示する
+            bindingMain.editorTable.rosenname.setVisibility(View.VISIBLE)
+            //bindingMain.editorTable.LL2.setVisibility(View.VISIBLE)
+            bindingMain.toolbarLayout.setVisibility(View.VISIBLE)
+        }
+    }
+    //endregion ActivityLifeCycle
 
     //region File Intent
-    fun playMedia(file: Uri) {
+    fun launchViewIntent(file: Uri) {
         val intent = Intent(Intent.ACTION_VIEW).apply {
             data = file
         }
@@ -810,7 +751,6 @@ class MainActivity : AppCompatActivity(),
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         rosenname = findViewById<EditText>(R.id.rosenname).text.toString()
 
-
         when (item.itemId) {
             R.id.action_new -> {
                 MyDialogFragment().show(supportFragmentManager, "dialog.basic")
@@ -837,8 +777,8 @@ class MainActivity : AppCompatActivity(),
                 sendMail()
             }
             R.id.action_usage, R.id.action_privacy -> {
-                val url = if (item.itemId == R.id.action_usage) "https://trianglelist.home.blog" else "https://drive.google.com/file/d/1C7xlXZGvabeQoNEjmVpOCAxQGrFCXS60/view?usp=sharing"
-                playMedia(Uri.parse(url))
+                val url = if (item.itemId == R.id.action_usage) "https://trianglelist.home.blog" else "https://trianglelist.home.blog/2023/06/28/%e3%83%97%e3%83%a9%e3%82%a4%e3%83%90%e3%82%b7%e3%83%bc%e3%83%9d%e3%83%aa%e3%82%b7%e3%83%bc%e3%81%ab%e3%81%a4%e3%81%84%e3%81%a6/"
+                launchViewIntent(url.toUri())
             }
             else -> return super.onOptionsItemSelected(item)
         }
@@ -849,12 +789,10 @@ class MainActivity : AppCompatActivity(),
         return true
     }
 
-
     private fun launchCreateDocumentIntent(fileType: String, mimeType: String, fileExtension: String) {
         this.fileType = fileType
         saveContent.launch(Pair(mimeType, strDateRosenname(fileExtension)))
     }
-
 
     private fun showDialogInputZumenTitles( title: String, onComplete: () -> Unit ) {
         // 入力に関する情報をリストで管理
@@ -878,6 +816,10 @@ class MainActivity : AppCompatActivity(),
                 message = message,
                 prefillText = prefillText,
                 onInputReceived = { input ->
+                    if(input == "notuse"){
+                        onComplete()
+                        return@showInputDialog
+                    }
                     // 入力された値を適切な変数に格納
                     when (index) {
                         0 -> koujiname = input
@@ -911,7 +853,7 @@ class MainActivity : AppCompatActivity(),
             }
             .setNegativeButton("Cancel", null)
             .setNeutralButton("NotUse"){ _, _ ->
-                onInputReceived("")
+                onInputReceived("notuse")
             }
             .show()
     }
@@ -937,42 +879,9 @@ class MainActivity : AppCompatActivity(),
         saveContent.launch( Pair( "application/pdf", strDateRosenname(".pdf") ) )
     }
 
-    //endregion
-
-
+    //endregion File Intent
 
     //region editorTable Controll
-
-    private fun printDebugConsole(){
-        /*val tvd: TextView = findViewById(R.id.debugconsole)
-        //面積(控除なし): ${myTriangleList.getArea()}㎡　(控除あり):${myTriangleList.getArea()-myDeductionList.getArea()}㎡
-        tvd.text = """ myView.Center: ${my_view.myTriangleList.center.x} ${my_view.myTriangleList.center.y}
-                        |TriCurrent: ${my_view.getTriangleList().getCurrent()} T1.color ${
-            my_view.getTriangleList().get(
-                1
-            ).color_
-        } ${myTriangleList.get(1).color_}
-                        |TapTL: ${my_view.tapTL_} , lastTapNum: ${my_view.getTriangleList().lastTapNumber_}, lastTapSide: ${my_view.getTriangleList().lastTapSide_}
-                        |viewX: ${my_view.getViewSize().x}, viewY ${my_view.getViewSize().y}, zoomsize: ${my_view.zoomSize}
-                        |mtsX: ${
-            myTriangleList.measureMostLongLine().x
-        } , mtsY: ${
-            myTriangleList.measureMostLongLine().y
-        }  mtcX: ${myTriangleList.center.x} , mtcY: ${
-            myTriangleList.center.y
-        }
-                        |mtscl: ${myTriangleList.scale} , mtc: ${myTriangleList.getCurrent()}  mdl: ${myDeductionList.size()} , mdc: ${myDeductionList.getCurrent()}
-                        |currentname: ${
-            myTriangleList.get(myTriangleList.size()).getMyName_()
-        }  cur-1name: ${
-            myTriangleList.get(
-                myTriangleList.size() - 1
-            ).getMyName_()
-        }
-                        |myAngle: ${myTriangleList.myAngle}
-            """.trimMargin()*/
-    }
-
 
     private fun setEditNameAdapter(namelist: List<String>){
         val textView =
@@ -990,34 +899,25 @@ class MainActivity : AppCompatActivity(),
         textView.threshold = 1
         textView2.threshold = 1
         textView3.threshold = 1
-        textView.addTextChangedListener(MyTextWatcher(myELFirst, lastParams))
-
+        textView.addTextChangedListener(DeductionNameTextWatcher(editorline1, lastParams))
     }
+
     private fun setTitles(){
-        rosenname = findViewById<EditText>(R.id.rosenname).text.toString()
-        //findViewById<EditText>(R.id.rosenname).setText(rosenname)
-
         val dedArea = myDeductionList.getArea()
-        val triArea = myTriangleList.getArea()
+        val triArea = trianglelist.getArea()
         val totalArea = roundByUnderTwo(triArea - dedArea).formattedString(2)
-        title = rStr.menseki_ + ": ${ totalArea } m^2"
-
-        /*if( myTriangleList.lastTapNumber_ > 0 ){
-            val coloredArea = myTriangleList.getAreaC( myTriangleList.lastTapNumber_ )
-            val colorStr = arrayOf( "red: ", "orange: ", "yellow: ", "green: ", "blue: " )
-            val tapped = myTriangleList.get( myTriangleList.lastTapNumber_ )
-            title = rStr.menseki_ + ": ${ totalArea } m^2" + " ( ${ colorStr[tapped.color_]+coloredArea } m^2 )"
-        }*/
-
+        title = rStr.menseki_ + ": $totalArea m^2"
+        rosenname = findViewById<EditText>(R.id.rosenname).text.toString()
     }
 
     private fun roundByUnderTwo(fp: Float) :Float {
         val ip: Int = ( fp * 100f ).roundToInt()
         return ip * 0.01f
     }
+
     private fun turnToBlankTrilistUndo(){
         trilistUndo = TriangleList() // reset
-        bindingMain.fabUndo.backgroundTintList = getColorStateList(R.color.colorPrimary)
+        bindingMain.fabTable.fabUndo.backgroundTintList = getColorStateList(R.color.colorPrimary)
     }
 
     private fun typeToInt(type: String) :Int{
@@ -1062,110 +962,127 @@ class MainActivity : AppCompatActivity(),
         findViewById<Spinner>(R.id.editParentConnect3).adapter = spinnerArrayAdapter
     }
 
+    fun setHeaderTable(titleParams: TitleParams){
+        // 入力テーブルの見かけの変更、タイトル行の文字列とカラー
+        myEditor.setHeaderTable(
+            findViewById(R.id.TV_NUM),
+            findViewById(R.id.TV_Name),
+            findViewById(R.id.TV_A),
+            findViewById(R.id.TV_B),
+            findViewById(R.id.TV_C),
+            findViewById(R.id.TV_PN),
+            findViewById(R.id.TV_PL),
+            titleParams
+        )
+    }
 
     private fun flipDeductionMode() {
-        myDeductionList.current = myDeductionList.size()
-        myTriangleList.changeSelectedNumber(myTriangleList.size())
-        //printDebugConsole()
-        colorMovementFabs()
+        changeDeductionMode()
+        setDeductionList()
+        updateFabAppearance()
+        updateTableAppearance()
+        updateAutoComplete()
+        setEditor()
+    }
 
-        val inputMethodManager: InputMethodManager =
-            getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
-
-        if(!deductionMode) {
-            deductionMode = true
-            myview.deductionMode = true
-            Toast.makeText(this, "Edit Mode : Area Deductions", Toast.LENGTH_LONG).show()
-
-            // 入力テーブルの見かけの変更、タイトル行の文字列とカラー
-            myEditor.setHeaderTable(
-                findViewById(R.id.TV_NUM),
-                findViewById(R.id.TV_Name),
-                findViewById(R.id.TV_A),
-                findViewById(R.id.TV_B),
-                findViewById(R.id.TV_C),
-                findViewById(R.id.TV_PN),
-                findViewById(R.id.TV_PL),
-                titleDed
-            )
-            findViewById<TableRow>(R.id.LL1).setBackgroundColor(Color.rgb(255, 165, 155))
-
-            //　fab群の見かけの変更
-            //fab.setBackgroundTintList(getColorStateList(R.color.colorTT2))
-            fab_replace.backgroundTintList = getColorStateList(R.color.colorTT2)
-            fab_resetView.backgroundTintList = getColorStateList(R.color.colorTT2)
-            fab_up.backgroundTintList = getColorStateList(R.color.colorTT2)
-            fab_down.backgroundTintList = getColorStateList(R.color.colorTT2)
-            fab_numreverse.backgroundTintList = getColorStateList(R.color.colorTT2)
-            fab_deduction.backgroundTintList = getColorStateList(R.color.colorWhite)
-            fab_flag.backgroundTintList = getColorStateList(R.color.colorWhite)
-            val iconB: Icon = Icon.createWithResource(this, R.drawable.box)
-            val iconC: Icon = Icon.createWithResource(this, R.drawable.circle)
-            val iconF: Icon = Icon.createWithResource(this, R.drawable.flag)
-            val iconRL: Icon = Icon.createWithResource(this, R.drawable.rot_dl)
-            val iconRR: Icon = Icon.createWithResource(this, R.drawable.rot_dr)
-            fab_setB.setImageIcon(iconB)
-            fab_setC.setImageIcon(iconC)
-            fab_flag.setImageIcon(iconF)
-            fab_rot_l.setImageIcon(iconRL)
-            fab_rot_r.setImageIcon(iconRR)
-
-            //　入力テーブルのオートコンプリート候補の変更、名前入力列にフォーカス、ソフトキーボード表示
+    private fun updateAutoComplete() {
+        if (deductionMode) {
+            // 領域削減モードの場合の処理
             val dArray = resources.getStringArray(R.array.DeductionFormList)
             initSpinner(dArray)
-            findViewById<EditText>(R.id.editName1).requestFocus()
-            inputMethodManager.showSoftInput(findViewById(R.id.editName1), 0)
             setEditNameAdapter(dedNameListC)
-
-            //クロスヘアラインを画面中央に描画
-//            my_view.drawCrossHairLine()
-
         } else {
-            deductionMode = false
-            myview.deductionMode = false
-            Toast.makeText(this, "Edit Mode : Triangles", Toast.LENGTH_LONG).show()
-            // 入力テーブルの見かけの変更、タイトル行の文字列とカラー
-            myEditor.setHeaderTable(
-                findViewById(R.id.TV_NUM),
-                findViewById(R.id.TV_Name),
-                findViewById(R.id.TV_A),
-                findViewById(R.id.TV_B),
-                findViewById(R.id.TV_C),
-                findViewById(R.id.TV_PN),
-                findViewById(R.id.TV_PL),
-                titleTri
-            )
-            findViewById<TableRow>(R.id.LL1).setBackgroundColor(Color.rgb(185, 255, 185))
-
-            //　fab群の見かけの変更
-            //fab.setBackgroundTintList(getColorStateList(R.color.colorLime))
-            fab_replace.backgroundTintList = getColorStateList(R.color.colorLime)
-            fab_resetView.backgroundTintList = getColorStateList(R.color.colorSky)
-            fab_up.backgroundTintList = getColorStateList(R.color.colorSky)
-            fab_down.backgroundTintList = getColorStateList(R.color.colorSky)
-            fab_numreverse.backgroundTintList = getColorStateList(R.color.colorAccent)
-            fab_deduction.backgroundTintList = getColorStateList(R.color.colorAccent)
-            fab_flag.backgroundTintList = getColorStateList(R.color.colorAccent)
-            val iconB: Icon = Icon.createWithResource(this, R.drawable.set_b)
-            val iconC: Icon = Icon.createWithResource(this, R.drawable.set_c)
-            val iconF: Icon = Icon.createWithResource(this, R.drawable.flag_b)
-            val iconRL: Icon = Icon.createWithResource(this, R.drawable.rot_l)
-            val iconRR: Icon = Icon.createWithResource(this, R.drawable.rot_r)
-            fab_setB.setImageIcon(iconB)
-            fab_setC.setImageIcon(iconC)
-            fab_flag.setImageIcon(iconF)
-            fab_rot_l.setImageIcon(iconRL)
-            fab_rot_r.setImageIcon(iconRR)
-
-            //　入力テーブルのオートコンプリート候補の変更、名前入力列にフォーカス、ソフトキーボードは出さない
+            // 三角形モードの場合の処理
             val tArray = resources.getStringArray(R.array.ParentList)
             initSpinner(tArray)
-            findViewById<EditText>(R.id.editLengthA2).requestFocus()
             setEditNameAdapter(sNumberList)
         }
-        editorResetBy(getList(deductionMode))
-        //inputMethodManager.hideSoftInputFromWindow(this.getCurrentFocus().getWindowToken(), 0)
+    }
 
+    private fun setEditor() {
+        val inputMethodManager: InputMethodManager =
+            getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+
+        if (deductionMode) {
+            // 領域削減モードの場合の処理
+            findViewById<EditText>(R.id.editName1).requestFocus()
+            inputMethodManager.showSoftInput(findViewById(R.id.editName1), 0)
+        } else {
+            // 三角形モードの場合の処理
+            findViewById<EditText>(R.id.editLengthA2).requestFocus()
+        }
+        editorResetBy(getList(deductionMode))
+    }
+
+    private fun changeDeductionMode() {
+        deductionMode = !deductionMode
+        myview.deductionMode = deductionMode
+    }
+
+    private fun setDeductionList(){
+        myDeductionList.current = myDeductionList.size()
+        trianglelist.changeSelectedNumber(trianglelist.size())
+    }
+
+    private fun updateFabAppearance() {
+        if (deductionMode) {
+            setDeductionFab()
+        } else {
+            setTriangleFab()
+        }
+        colorMovementFabs()
+    }
+
+    private fun setDeductionFab(){
+        //　fab群の見かけの変更
+        fab_replace.backgroundTintList = getColorStateList(R.color.colorTT2)
+        fab_resetView.backgroundTintList = getColorStateList(R.color.colorTT2)
+        fab_up.backgroundTintList = getColorStateList(R.color.colorTT2)
+        fab_down.backgroundTintList = getColorStateList(R.color.colorTT2)
+        fab_numreverse.backgroundTintList = getColorStateList(R.color.colorTT2)
+        fab_deduction.backgroundTintList = getColorStateList(R.color.colorWhite)
+        fab_flag.backgroundTintList = getColorStateList(R.color.colorWhite)
+        val iconB: Icon = Icon.createWithResource(this, R.drawable.box)
+        val iconC: Icon = Icon.createWithResource(this, R.drawable.circle)
+        val iconF: Icon = Icon.createWithResource(this, R.drawable.flag)
+        val iconRL: Icon = Icon.createWithResource(this, R.drawable.rot_dl)
+        val iconRR: Icon = Icon.createWithResource(this, R.drawable.rot_dr)
+        fab_setB.setImageIcon(iconB)
+        fab_setC.setImageIcon(iconC)
+        fab_flag.setImageIcon(iconF)
+        fab_rot_l.setImageIcon(iconRL)
+        fab_rot_r.setImageIcon(iconRR)
+    }
+
+    private fun setTriangleFab(){
+        //　fab群の見かけの変更
+        fab_replace.backgroundTintList = getColorStateList(R.color.colorLime)
+        fab_resetView.backgroundTintList = getColorStateList(R.color.colorSky)
+        fab_up.backgroundTintList = getColorStateList(R.color.colorSky)
+        fab_down.backgroundTintList = getColorStateList(R.color.colorSky)
+        fab_numreverse.backgroundTintList = getColorStateList(R.color.colorAccent)
+        fab_deduction.backgroundTintList = getColorStateList(R.color.colorAccent)
+        fab_flag.backgroundTintList = getColorStateList(R.color.colorAccent)
+        val iconB: Icon = Icon.createWithResource(this, R.drawable.set_b)
+        val iconC: Icon = Icon.createWithResource(this, R.drawable.set_c)
+        val iconF: Icon = Icon.createWithResource(this, R.drawable.flag_b)
+        val iconRL: Icon = Icon.createWithResource(this, R.drawable.rot_l)
+        val iconRR: Icon = Icon.createWithResource(this, R.drawable.rot_r)
+        fab_setB.setImageIcon(iconB)
+        fab_setC.setImageIcon(iconC)
+        fab_flag.setImageIcon(iconF)
+        fab_rot_l.setImageIcon(iconRL)
+        fab_rot_r.setImageIcon(iconRR)
+    }
+
+    private fun updateTableAppearance() {
+        if (deductionMode) {
+            setHeaderTable(titleTri)
+            findViewById<TableRow>(R.id.LL1).setBackgroundColor(Color.rgb(255, 165, 155))
+        } else {
+            setHeaderTable(titleDed)
+            findViewById<TableRow>(R.id.LL1).setBackgroundColor(Color.rgb(185, 255, 185))
+        }
     }
 
     private fun editorResetBy(elist: EditList){
@@ -1174,9 +1091,8 @@ class MainActivity : AppCompatActivity(),
         val eob = elist.get(currentNum - 1)
 
         loadEditTable()
-        myview.setParentSide(elist.size(), 0)
         myEditor.lineRewrite(
-                Params(
+                InputParameter(
                         "",
                         "",
                         elist.size() + 1,
@@ -1186,12 +1102,12 @@ class MainActivity : AppCompatActivity(),
                         elist.size(),
                         0,
                     PointXY(0f, 0f)
-                ), myELFirst
+                ), editorline1
         )
-        myEditor.lineRewrite(eo.getParams(), myELSecond)
+        myEditor.lineRewrite(eo.getParams(), editorLine2)
         if(currentNum > 1) myEditor.lineRewrite(eob.getParams(), myELThird)
         if(currentNum == 1) myEditor.lineRewrite(
-                Params(
+                InputParameter(
                         "",
                         "",
                         0,
@@ -1205,35 +1121,8 @@ class MainActivity : AppCompatActivity(),
         )
     }
 
-    fun isValid(dp: Params) : Boolean{
-        if (dp.a <= 0.0f || dp.b <= 0.0f || dp.c <= 0.0f) return false
-        if (dp.a + dp.b <= dp.c ){
-            Toast.makeText(this, "Invalid!! : C > A + B", Toast.LENGTH_LONG).show()
-            return false
-        }
-        if (dp.b + dp.c <= dp.a ){
-            Toast.makeText(this, "Invalid!! : A > B + C", Toast.LENGTH_LONG).show()
-            return false
-        }
-        if (dp.c + dp.a <= dp.b ){
-            Toast.makeText(this, "Invalid!! : B > C + A", Toast.LENGTH_LONG).show()
-            return false
-        }
-
-        if ( dp.pn > myTriangleList.size() || ( dp.pn < 1 && dp.n != 1 )) {
-            Toast.makeText(this, "Invalid!! : number of parent", Toast.LENGTH_LONG).show()
-            return false
-        }
-        if (  dp.pl < 1 && dp.n != 1  ) {
-            Toast.makeText(this, "Invalid!! : connection in parent", Toast.LENGTH_LONG).show()
-            return false
-        }
-
-        return true
-    }
-
     private fun loadEditTable(){
-        myELFirst =
+        editorline1 =
             EditTextViewLine(
                     findViewById(R.id.editNumber1),
                     findViewById(R.id.editName1),
@@ -1244,7 +1133,7 @@ class MainActivity : AppCompatActivity(),
                     findViewById(R.id.editParentConnect1)
             )
 
-        myELSecond =
+        editorLine2 =
             EditTextViewLine(
                     findViewById(R.id.editNumber2),
                     findViewById(R.id.editName2),
@@ -1266,27 +1155,11 @@ class MainActivity : AppCompatActivity(),
                     findViewById(R.id.editParentConnect3)
             )
         Log.d("EditorTable", "Load Success.")
-
-
-    }
-
-    private fun validDeduction(dp: Params): Boolean {
-        return isValidName(dp.name) && isValidDimensions(dp)
-    }
-
-    private fun isValidName(name: String): Boolean {
-        return name.isNotEmpty()
-    }
-
-    private fun isValidDimensions(dp: Params): Boolean {
-        if (dp.a < 0.1f) return false
-        if (dp.type == "Box" && dp.b < 0.1f) return false
-        return true
     }
 
     private fun getList(dMode: Boolean) : EditList {
         return if(dMode) myDeductionList
-        else myTriangleList
+        else trianglelist
     }
 
     fun toString( editText: EditText ) : String{
@@ -1295,55 +1168,132 @@ class MainActivity : AppCompatActivity(),
 
     private fun updateElStrings(){
         elsa1 = toString( ela1 )
-        elsb1 = toString( elb1 )
+        elsb1 = toString( editorline1_lengthB )
         elsc1 = toString( elc1 )
         elsa2 = toString( ela2 )
-        elsb2 = toString( elb2 )
-        elsc2 = toString( elc2 )
+        elsb2 = toString( editorline2_lengthB )
+        elsc2 = toString( editorline2_lengthC )
+    }
+    //endregion editor table control
+
+    //region validation
+    private fun isParamsValid(params: InputParameter): Boolean {
+        val rules = rules_triangle
+
+        for (rule in rules) {
+            if(!rule.isValid(params,::showToast)) return false
+        }
+        return true
     }
 
+    private fun validDeduction(dp: InputParameter): Boolean {
+        return isValidName(dp.name) && isValidDimensions(dp)
+    }
 
-    //endregion
+    private fun isValidName(name: String): Boolean {
+        return name.isNotEmpty()
+    }
+
+    private fun isValidDimensions(dp: InputParameter): Boolean {
+        if (dp.a < 0.1f) return false
+        if (dp.type == "Box" && dp.b < 0.1f) return false
+        return true
+    }
+    //endregion validation
 
     //region FabController
     private fun initFabs(){
-        fab_replace =   bindingMain.fabReplace
-        fab_flag =      bindingMain.fabFlag
-        fab_dimsidew =  bindingMain.fabDimsidew
-        fab_dimsideh =  bindingMain.fabDimsideh
-        fab_nijyuualign = bindingMain.fabNijyuualign
-        fab_minus =     bindingMain.fabMinus
-        fab_undo =      bindingMain.fabUndo
-        fab_fillcolor = bindingMain.fabFillcolor
-        fab_texplus =   bindingMain.fabTexplus
-        fab_texminus =  bindingMain.fabTexminus
-        fab_setB =      bindingMain.fabSetB
-        fab_setC =      bindingMain.fabSetC
-        fab_rot_l =     bindingMain.fabRotL
-        fab_rot_r =     bindingMain.fabRotR
-        fab_deduction = bindingMain.fabDeduction
-        fab_resetView = bindingMain.fabResetView
-        fab_up =        bindingMain.fabUp
-        fab_down =      bindingMain.fabDown
-        fab_debug =     bindingMain.fabDebug
-        fab_testbasic = bindingMain.fabTestbasic
-        fab_pdf =       bindingMain.fabPdf
-        fab_share =     bindingMain.fabShare
-        fab_mail =      bindingMain.fabMail
-        fab_numreverse = bindingMain.fabNumreverse
-        fab_xlsx = bindingMain.fabXlsx
+        fab_replace =   bindingMain.fabTable.fabReplace
+        fab_flag =      bindingMain.fabTable.fabFlag
+        fab_dimsidew =  bindingMain.fabTable.fabDimsidew
+        fab_dimsideh =  bindingMain.fabTable.fabDimsideh
+        fab_nijyuualign = bindingMain.fabTable.fabNijyuualign
+        fab_minus =     bindingMain.fabTable.fabMinus
+        fab_undo =      bindingMain.fabTable.fabUndo
+        fab_fillcolor = bindingMain.fabTable.fabFillcolor
+        fab_texplus =   bindingMain.fabTable.fabTexplus
+        fab_texminus =  bindingMain.fabTable.fabTexminus
+        fab_setB =      bindingMain.fabTable.fabSetB
+        fab_setC =      bindingMain.fabTable.fabSetC
+        fab_rot_l =     bindingMain.fabTable.fabRotL
+        fab_rot_r =     bindingMain.fabTable.fabRotR
+        fab_deduction = bindingMain.fabTable.fabDeduction
+        fab_resetView = bindingMain.fabTable.fabResetView
+        fab_up =        bindingMain.fabTable.fabUp
+        fab_down =      bindingMain.fabTable.fabDown
+        fab_debug =     bindingMain.fabTable.fabDebug
+        fab_testbasic = bindingMain.fabTable.fabTestbasic
+        fab_pdfview =   bindingMain.fabTable.fabPdf
+        fab_dxfview =   bindingMain.fabTable.fabDxfview
+        fab_xlsx = bindingMain.fabTable.fabXlsx
+        fab_share =     bindingMain.fabTable.fabShare
+        fab_mail =      bindingMain.fabTable.fabMail
+        fab_numreverse = bindingMain.fabTable.fabNumreverse
     }
 
-    private fun saveAndPerform(action: () -> Unit) {
-        action()
+    private fun autosave() {
         isCSVsavedToPrivate = false
         isCSVsavedToPrivate = saveCSVtoPrivate()
     }
 
-    private fun setCommonFabListener(fab: FloatingActionButton, action: () -> Unit) {
+    val BLINKSECOND = 1
+
+    private fun setCommonFabListener(fab: FloatingActionButton, isSaveCSV: Boolean = true, action: () -> Unit) {
         fab.setOnClickListener {
-            saveAndPerform(action)
+            blinkFAB(fab, BLINKSECOND)
+            // contentDescriptionからToastメッセージを取得し表示
+            fab.contentDescription?.let {
+                showToast(fab.contentDescription.toString())
+                //Toast.makeText(fab.context, it, Toast.LENGTH_SHORT).show()
+            }
+
+            action()
+
+            if (!isSaveCSV) return@setOnClickListener
+            autosave()
         }
+    }
+
+
+    fun blinkFAB(fab: FloatingActionButton, totalDurationSeconds: Int) {
+        val singleAnimationDuration = 500 // 1回のアニメーション持続時間（ミリ秒）
+
+        // 全体の持続時間をミリ秒に変換し、1回のアニメーション持続時間で割ることで繰り返し回数を計算
+        val repeatCount = (totalDurationSeconds * 1000 / singleAnimationDuration) - 1
+
+        val animator = ObjectAnimator.ofFloat(fab, "alpha", 1f, 0.1f, 1f).apply {
+            duration = singleAnimationDuration.toLong()
+            this.repeatCount = repeatCount
+            repeatMode = ValueAnimator.RESTART
+        }
+        animator.start()
+    }
+
+
+    var deleteFlag = 0
+    fun performDelete(){
+        val listLength = getList(deductionMode).size()
+        if (listLength > 0) {
+            trilistUndo = trianglelist.clone()
+
+            var eraseNum = listLength
+            if(!deductionMode) eraseNum = trianglelist.lastTapNumber
+
+            getList(deductionMode).remove(eraseNum)
+
+            myview.setDeductionList(myDeductionList, viewscale)
+            myview.setTriangleList(trianglelist, viewscale)
+
+            editorResetBy(getList(deductionMode))
+        }
+        deleteFlag = 0
+        bindingMain.fabTable.fabMinus.backgroundTintList = getColorStateList(R.color.colorAccent)
+    }
+
+    fun finalizeUI(){
+        colorMovementFabs()
+        myview.resetViewToLastTapTriangle()
+        setTitles()
     }
 
     private fun fabController(){
@@ -1351,83 +1301,63 @@ class MainActivity : AppCompatActivity(),
         val mainViewModel = MainViewModel()
 
         setCommonFabListener(fab_replace) {
-            fabReplace(dParams, false)
+            fabReplace()
         }
 
         setCommonFabListener(fab_flag) {
-
             fabFlag()
         }
 
-
         setCommonFabListener(fab_dimsidew) {
-
-            mainViewModel.setMember( deductionMode, myTriangleList, myDeductionList )
+            mainViewModel.setMember( deductionMode, trianglelist, myDeductionList )
             mainViewModel.fabDimArrange("W", { setListAndResetView( { myview.invalidate() }, false ) } )
-
         }
 
         setCommonFabListener(fab_dimsideh) {
-            mainViewModel.setMember( deductionMode, myTriangleList, myDeductionList )
+            mainViewModel.setMember( deductionMode, trianglelist, myDeductionList )
             mainViewModel.fabDimArrange("H", { setListAndResetView( { myview.invalidate() }, false ) }  )
-
         }
 
         setCommonFabListener(fab_nijyuualign) {
-            if(!deductionMode && myTriangleList.lastTapNumber_ > 1 ){
-                myTriangleList.rotateCurrentTriLCR()
-                //myTriangleList.resetTriConnection(myTriangleList.lastTapNum_, );
-                myview.setTriangleList(myTriangleList, mScale, false )
+            if(!deductionMode && trianglelist.lastTapNumber > 1 ){
+                trianglelist.rotateCurrentTriLCR()
+                myview.setTriangleList(trianglelist, viewscale, false )
                 myview.resetView(myview.toLastTapTriangle())
                 editorResetBy(getList(deductionMode))
-
             }
         }
 
-        var deleteWarning = 0
         setCommonFabListener(fab_minus) {
-            val listLength = getList(deductionMode).size()
-
-            if(listLength > 0 && deleteWarning == 0) {
-                deleteWarning = 1
-                bindingMain.fabMinus.backgroundTintList = getColorStateList(R.color.colorTT2)
-
+            val handler = Handler(Looper.getMainLooper())
+            val runnable = Runnable {
+                deleteFlag = 0
+                bindingMain.fabTable.fabMinus.backgroundTintList = getColorStateList(R.color.colorAccent)
             }
-            else {
-                if (listLength > 0) {
-                    trilistUndo = myTriangleList.clone()
 
-                    var eraseNum = listLength
-                    if(!deductionMode) eraseNum = myTriangleList.lastTapNumber_
-
-                    getList(deductionMode).remove(eraseNum)
-
-                    //my_view.removeTriangle()
-                    myview.setDeductionList(myDeductionList, mScale)
-                    myview.setTriangleList(myTriangleList, mScale)
-
-                    editorResetBy(getList(deductionMode))
-                }
-                deleteWarning = 0
-                bindingMain.fabMinus.backgroundTintList = getColorStateList(R.color.colorAccent)
+            if (deleteFlag == 0) {
+                deleteFlag = 1
+                // 3秒後にdeleteFlagをリセット
+                handler.postDelayed(runnable, 3000)
+                bindingMain.fabTable.fabMinus.backgroundTintList = getColorStateList(R.color.colorTT2)
+            } else {
+                // リストから削除のロジックをここに実装
+                handler.removeCallbacks(runnable) // タイマーをキャンセル
+                deleteFlag = 0
+                performDelete()
             }
-            printDebugConsole()
-            colorMovementFabs()
-            myview.resetViewToLastTapTriangle()
-            setTitles()
-
+            finalizeUI()
         }
 
         setCommonFabListener(fab_undo){
             if( trilistUndo.size() > 0 ){
-                myTriangleList = trilistUndo.clone()
+                trianglelist = trilistUndo.clone()
                 //my_view.undo()
-                myview.setTriangleList(trilistUndo, mScale)
+                myview.setTriangleList(trilistUndo, viewscale)
                 myview.resetViewToLastTapTriangle()
 
                 trilistUndo.trilist.clear()
 
-                bindingMain.fabUndo.backgroundTintList = getColorStateList(R.color.colorPrimary)
+                bindingMain.fabTable.fabUndo.backgroundTintList = getColorStateList(R.color.colorPrimary)
                 editorResetBy(getList(deductionMode))
                 setTitles()
             }
@@ -1435,25 +1365,21 @@ class MainActivity : AppCompatActivity(),
 
         setCommonFabListener(fab_fillcolor) {
             if(!deductionMode){
-                myTriangleList.get(myview.myTriangleList.selectedNumber)
-
+                trianglelist.get(myview.trianglelist.selectedNumber)
 
                 colorindex ++
                 if(colorindex == resColors.size) colorindex = 0
-                bindingMain.fabFillcolor.backgroundTintList = getColorStateList(resColors[colorindex])
+                bindingMain.fabTable.fabFillcolor.backgroundTintList = getColorStateList(resColors[colorindex])
 
-                //dParams_ = myEditor.ReadLine(dParams_, myELSecond)
-                myTriangleList.get(myview.myTriangleList.selectedNumber).color_ = colorindex
+                trianglelist.get(myview.trianglelist.selectedNumber).mycolor = colorindex
 
-                myview.setFillColor(colorindex, myTriangleList.selectedNumber)
+                myview.setFillColor(colorindex, trianglelist.selectedNumber)
             }
         }
 
         setCommonFabListener(fab_texplus) {
             myview.textSize += 5f
             myview.setAllTextSize(myview.textSize)
-
-//            my_view.paintTexS.textSize = my_view.ts_
             myview.invalidate()
         }
 
@@ -1464,7 +1390,6 @@ class MainActivity : AppCompatActivity(),
             myview.invalidate()
         }
 
-
         setCommonFabListener(fab_rot_l) {
             fabRotate(5f, true )
         }
@@ -1474,42 +1399,41 @@ class MainActivity : AppCompatActivity(),
         }
 
         setCommonFabListener(fab_numreverse){
-            trilistUndo = myTriangleList.clone()
-            mainViewModel.setMember( deductionMode, myTriangleList, myDeductionList )
+            trilistUndo = trianglelist.clone()
+            mainViewModel.setMember( deductionMode, trianglelist, myDeductionList )
 
             whenTriDed({
                 if( BuildConfig.DEBUG ){
-                    myTriangleList = mainViewModel.fabReverse() as TriangleList
+                    trianglelist = mainViewModel.fabReverse() as TriangleList
                     setListAndResetView( { myview.toLastTapTriangle() } )
                 }
             }, {
                 myDeductionList = mainViewModel.fabReverse() as DeductionList
                 setListAndResetView( { myview.invalidate() } )
             })
-
         }
 
         //ここからはビュー操作用とファイルシェア用のFAB、図形を書き換えないのでオートセーブの対象外
-        fab_setB.setOnClickListener {
+        setCommonFabListener(fab_setB,false) {
+            myview.trianglelist.isDoubleTap = false
             autoConnection(1)
             findViewById<EditText>(R.id.editLengthB1).requestFocus()
         }
 
-        fab_setC.setOnClickListener {
+        setCommonFabListener(fab_setC,false) {
+            myview.trianglelist.isDoubleTap = false
             autoConnection(2)
             findViewById<EditText>(R.id.editLengthB1).requestFocus()
         }
 
-
-        fab_deduction.setOnClickListener {
-            deleteWarning = 0
+        setCommonFabListener(fab_deduction,false) {
+            deleteFlag = 0
             fab_minus.backgroundTintList = getColorStateList(R.color.colorAccent)
             flipDeductionMode()
             colorMovementFabs()
         }
 
-        fab_resetView.setOnClickListener {
-
+        setCommonFabListener(fab_resetView,false) {
             try{
                 if(!deductionMode) myview.resetViewToLastTapTriangle()
                 else if( myDeductionList.size() > 0 )  myview.resetViewToCurrentDeduction()
@@ -1519,37 +1443,31 @@ class MainActivity : AppCompatActivity(),
             }
         }
 
-        fab_up.setOnClickListener {
-            myEditor.scroll(-1, getList(deductionMode), myELSecond, myELThird)
+        setCommonFabListener(fab_up,false) {
+            myEditor.scroll(-1, getList(deductionMode), editorLine2, myELThird)
 
             if(!deductionMode) moveTrilist()
             else if( myDeductionList.size() > 0 ){
                 myview.myDeductionList.current = myDeductionList.current
                 myview.resetViewToCurrentDeduction()
             }
-
             colorMovementFabs()
-            printDebugConsole()
             setTitles()
         }
 
-        fab_down.setOnClickListener {
-            myEditor.scroll(1, getList(deductionMode), myELSecond, myELThird)
+        setCommonFabListener(fab_down,false) {
+            myEditor.scroll(1, getList(deductionMode), editorLine2, myELThird)
 
             if(!deductionMode) moveTrilist()
             else if( myDeductionList.size() > 0 ){
                 myview.myDeductionList.current = myDeductionList.current
                 myview.resetViewToCurrentDeduction()
             }
-
             colorMovementFabs()
-            printDebugConsole()
             setTitles()
-
         }
 
-        fab_debug.setOnClickListener {
-
+        setCommonFabListener(fab_debug,false) {
             if(!myview.isAreaOff_){
                 myview.isAreaOff_ = true
                 myview.isDebug_ = false
@@ -1562,64 +1480,51 @@ class MainActivity : AppCompatActivity(),
             }
 
             myview.invalidate()
-
-            // オートセーブpdf, dxf
-            //if( BuildConfig.BUILD_TYPE == "debug" ) {
-            //    AutoSavePDF()
-            //AutoSaveDXF()
-            //}
-
         }
 
-        fab_testbasic.setOnClickListener {
-            //CreateNew()
-
+        setCommonFabListener(fab_testbasic,false) {
             findViewById<TextView>(R.id.editLengthB1).text = "" // reset
-            fabReplace(Params("", "", 1, 7f, 7f, 7f, 0, 0), true)
+            fabReplace(InputParameter("", "", 1, 7f, 7f, 7f, 0, 0) )
             findViewById<TextView>(R.id.editLengthB1).text = 0.6f.toString()//"6f" // add
-            fabReplace(Params("", "", 2, 7f, 6f, 6f, 1, 2), true)
+            fabReplace(InputParameter("", "", 2, 7f, 6f, 6f, 1, 2) )
 
             findViewById<TextView>(R.id.editLengthA1).text = 0.23f.toString()//"0.23f" // add
             deductionMode = true
             fabReplace(
-                Params(
+                InputParameter(
                     "仕切弁", "Circle", 1, 0.23f, 0f, 0f, 1, 0,
                     PointXY(1f, 0f),
                     PointXY(
                         0f,
                         0f
                     )
-                ), true
+                )
             )
             deductionMode = false
-
 
             Toast.makeText(this, "Basic Senario Test Done.", Toast.LENGTH_SHORT).show()
         }
 
-        fab_pdf.setOnClickListener {
-            viewPdf( getAppLocalFile(this, "privateTrilist.pdf") )
+        setCommonFabListener(fab_pdfview,false) {
+            viewPdf()
         }
 
-        fab_xlsx.setOnClickListener{
-            viewXlsx( getAppLocalFile(this, "privateTrilist.xlsx") )
+
+        setCommonFabListener(fab_dxfview,false) {
+            viewDxf()
         }
 
-        fab_share.setOnClickListener {
+        setCommonFabListener(fab_xlsx,false){
+            viewXlsx()
+        }
+
+        setCommonFabListener(fab_share,false) {
             sendFiles()
         }
 
-        fab_mail.setOnClickListener {
-            //findViewById<ProgressBar>(R.id.indeterminateBar).visibility = View.VISIBLE
-            //progressBar.visibility = View.VISIBLE
-
+        setCommonFabListener(fab_mail,false) {
             sendMail()
-
-            //    progressBar.visibility = View.INVISIBLE
-
         }
-
-
     }
 
     private fun whenTriDed(methodFalse:() -> Unit, methodTrue:() -> Unit ){
@@ -1630,63 +1535,57 @@ class MainActivity : AppCompatActivity(),
     }
     private fun setListByDedMode( moveCenter: Boolean = true ){
         whenTriDed({
-            myview.setTriangleList( myTriangleList, mScale, moveCenter )
+            myview.setTriangleList( trianglelist, viewscale, moveCenter )
         },{
-            myview.setDeductionList(myDeductionList, mScale)
+            myview.setDeductionList(myDeductionList, viewscale)
         })
     }
     private fun setListAndResetView(resetViewMethod:() -> Unit, moveCenter: Boolean = true ) {
         editorResetBy(getList(deductionMode))
         setListByDedMode( moveCenter )
         resetViewMethod()
-        printDebugConsole()
-        //saveCSVtoPrivate()
+    }
+
+    fun setDeductionlist(){
+        myview.setDeductionList(myDeductionList, viewscale)
+    }
+
+    fun setTrianglelist(){
+        myview.setTriangleList(trianglelist, viewscale, false)
+    }
+
+    fun flagDeduction(){
+        val deduction = myDeductionList.get(parameter.number)
+        parameter.pointflag = myview.pressedInModel
+        parameter.point = deduction.point
+        if(validDeduction(parameter)) {// あまり遠い時はスルー
+            myDeductionList.replace(parameter)
+            setDeductionlist()
+        }
+    }
+
+    fun flagTriangle(){
+        val triangle = trianglelist.get(parameter.number)
+        val tappoint = myview.pressedInModel.scale(PointXY(0f, 0f), 1 / viewscale, -1 / viewscale)
+        triangle.setPointNumber( tappoint, true )
+        setTrianglelist()
     }
 
     fun fabFlag(){
-        dParams = myEditor.readLineTo(dParams, myELSecond)// 200703 // if式の中に入っていると当然ながら更新されない時があるので注意
+        parameter = myEditor.readLineTo(parameter, editorLine2)
 
-        if(deductionMode){
-            val d = myDeductionList.get(dParams.n)
-            dParams.ptF = myview.getTapPoint()
-            dParams.pt = d.point
-            //var ded = myDeductionList.get(dParams_.n)
-            myview.getTapPoint().scale(
-                PointXY(
-                    0f,
-                    0f
-                ), 1 / mScale, -1 / mScale)
-            if(validDeduction(dParams)) {// あまり遠い時はスルー
-                myDeductionList.replace(dParams.n, dParams)
-//                    EditorReset(getList(myDeductionMode),getList(myDeductionMode).length())
-                myview.setDeductionList(myDeductionList, mScale)
-            }
-        }
-        else{
-            val tri = myTriangleList.get(dParams.n)
-            val tp = myview.getTapPoint().scale(
-                PointXY(
-                    0f,
-                    0f
-                ), 1 / mScale, -1 / mScale)
-            if( tp.lengthTo(tri.pointcenter) < 10f ){ // あまり遠い時はスルー
-                tri.pointnumber = tp
-                tri.pointNumber.point = tp
-                tri.pointNumber.flag.isMovedByUser = true
-                tri.pointNumber.flag.isAutoAligned = false
-                myview.setTriangleList(myTriangleList, mScale, false)
-            }
-        }
+        if(deductionMode) flagDeduction()
+        else flagTriangle()
 
         myview.invalidate()
     }
 
     fun fabRotate(degrees: Float, bSeparateFreeMode: Boolean, isRotateDedBoxShape: Boolean = true ){
         if(!deductionMode) {
-            myTriangleList.rotate(PointXY(0f, 0f), degrees, myTriangleList.lastTapNumber_, bSeparateFreeMode )
+            trianglelist.rotate(PointXY(0f, 0f), degrees, trianglelist.lastTapNumber, bSeparateFreeMode )
             myDeductionList.rotate(PointXY(0f, 0f), -degrees )
-            myview.setTriangleList(myTriangleList, mScale)
-            myview.setDeductionList(myDeductionList, mScale)
+            myview.setTriangleList(trianglelist, viewscale)
+            myview.setDeductionList(myDeductionList, viewscale)
             myview.invalidate()//resetViewToLSTP()
         }
         // ded rotate
@@ -1695,116 +1594,161 @@ class MainActivity : AppCompatActivity(),
             val current_deduction_number = myview.myDeductionList.lastTapIndex_+1
             val current_deduction = myDeductionList.get(current_deduction_number)
             current_deduction.rotateShape( current_deduction.point, -degrees )
-            myview.setDeductionList(myDeductionList, mScale)
+            myview.setDeductionList(myDeductionList, viewscale)
             myview.invalidate()
         }
     }
 
-    fun fabReplace(params: Params = dParams, useit: Boolean = false ){
-        //val editor = myEditor
-        trilistSaving(myTriangleList)
-        val dedMode = deductionMode
+    data class InputLines(val add:InputParameter, val edit:InputParameter)
+    data class StrAddLine( val a:String, val b:String, val c:String )
 
-        var readedFirst  = Params()
-        var readedSecond = Params()
-        myEditor.readLineTo(readedFirst, myELFirst)
-        myEditor.readLineTo(readedSecond, myELSecond)
-        if(useit){
-            readedFirst = params
-            readedSecond = params
-        }
-        val strTopA = findViewById<TextView>(R.id.editLengthA1).text.toString()
-        val strTopB = findViewById<TextView>(R.id.editLengthB1).text.toString()
-        val strTopC = findViewById<TextView>(R.id.editLengthC1).text.toString()
+    fun getStrAddLineFromActivity(activity: Activity): StrAddLine {
+        return StrAddLine(
+            a = activity.findViewById<TextView>(R.id.editLengthA1).text.toString(),
+            b = activity.findViewById<TextView>(R.id.editLengthB1).text.toString(),
+            c = activity.findViewById<TextView>(R.id.editLengthC1).text.toString()
+        )
+    }
 
-        if (!dedMode) {
-            if (strTopB == "") {
-                resetTrianglesBy(readedSecond)
-            } else if (strTopC == "" && !useit) {
-                return
-            } else {
-                addTriangleBy(readedFirst)
-            }
-        } else { // if in deduction mode
-            if (strTopA == "") {
-                resetDeductionsBy(readedSecond)
-                myview.myDeductionList[readedSecond.n].point
-            } else {
-                addDeductionBy(readedFirst)
-                myview.myDeductionList[readedFirst.n].point
-            }
-            findViewById<EditText>(R.id.editName1).requestFocus()
+    fun fabReplace(forceParameter: InputParameter? = null ){
+        trilistSaving(trianglelist)
+        val editmode = deductionMode
+
+        val inputLines = preloadInputLines( forceParameter )
+
+        // 使用するActivityまたはFragmentに適した参照を渡す
+        val strAddLine = getStrAddLineFromActivity(this)  // この`this`はActivityのインスタンスを指す
+
+        when(editmode){
+            false -> processTriEditMode( strAddLine.b, strAddLine.c, inputLines.add, inputLines.edit )
+            true  -> processDedEditMode( strAddLine.a, inputLines.add, inputLines.edit )
         }
 
-        myview.setTriangleList(myTriangleList, mScale)
+        finalizeReplace()
+    }
+
+    fun preloadInputLines( forceParameter: InputParameter? = null ):InputLines {
+        if(forceParameter != null) return InputLines( forceParameter, forceParameter)
+
+        val inputLineAdd  = InputParameter()
+        val inputLineEdit = InputParameter()
+        myEditor.readLineTo(inputLineAdd, editorline1)
+        myEditor.readLineTo(inputLineEdit, editorLine2)
+
+        return InputLines( inputLineAdd, inputLineEdit )
+    }
+
+    fun finalizeReplace(){
+        myview.setTriangleList(trianglelist, viewscale)
         setListAndResetView( { whenTriDed( {myview.resetView(myview.toLastTapTriangle())}, {myview.invalidate()} ) } )
         setTitles()
 
-
-        myview.myTriangleList.isDoubleTap_ = false
-        myview.myTriangleList.lastTapSide_ = 0
-
-        //logListCurrent()
+        myview.trianglelist.isDoubleTap = false
+        myview.trianglelist.lastTapSide = 0
         logFabController()
-
     }
 
+    private fun processTriEditMode(strAddLineB: String, strAddLineC: String, inputLineAdd: InputParameter, inputLineEdit: InputParameter) {
+        when {
+            strAddLineB.isEmpty() -> { // Edit attempt
+                if (trianglelist.size() == 0) {
+                    showToast("Cannot edit: The list is empty. Add a triangle first.")
+                    return // Exit early
+                }
+                resetTrianglesBy( inputLineEdit )
+                showToast("Rewrite Triangle")
+            }
+            strAddLineC.isEmpty() -> return
+            else -> {
+                addTriangleBy( inputLineAdd )
+                showToast("Add Triangle")
+            }
+        }
+    }
+
+    private fun processDedEditMode(strTopA: String, readedFirst: InputParameter, readedSecond: InputParameter ) {
+        when {
+            strTopA.isEmpty() -> {
+                resetDeductionsBy(readedSecond)
+                showToast("Rewrite Deduction")
+                logDeductionPoint(readedSecond.number)
+            }
+            else -> {
+                addDeductionBy(readedFirst)
+                showToast("Add Deduction")
+                logDeductionPoint(readedFirst.number)
+            }
+        }
+        findViewById<EditText>(R.id.editName1).requestFocus()
+    }
+
+    private fun logDeductionPoint(number: Int) {
+        val point = myview.myDeductionList[number].point
+        println("Deduction point: $point")  // ここで何らかのログ出力や処理を行う
+    }
 
     private fun moveTrilist(){
-        myview.getTriangleList().changeSelectedNumber(myTriangleList.retrieveCurrent())
-        myview.myTriangleList.lastTapNumber_ = myTriangleList.retrieveCurrent()
-        myTriangleList.lastTapNumber_ = myTriangleList.retrieveCurrent()
+        myview.getTriangleList().changeSelectedNumber(trianglelist.retrieveCurrent())
+        myview.trianglelist.lastTapNumber = trianglelist.retrieveCurrent()
+        trianglelist.lastTapNumber = trianglelist.retrieveCurrent()
         myview.resetViewToLastTapTriangle()
     }
 
     private fun colorMovementFabs() : Int{
-    val max: Int = getList(deductionMode).size()
-    val current: Int = getList(deductionMode).retrieveCurrent()
-    val min = 1
-    var movable = 0
-    //fab_zoomin.setBackgroundTintList(getColorStateList(R.color.colorSky))
-    //fab_zoomout.setBackgroundTintList(getColorStateList(R.color.colorSky))
-    fab_resetView.backgroundTintList = getColorStateList(R.color.colorSky)
-    //色
-    fab_fillcolor.backgroundTintList = getColorStateList(resColors[colorindex])
 
-    fab_share.backgroundTintList = getColorStateList(R.color.colorLime)
+        colorFabs()
 
+        val listMax: Int = getList(deductionMode).size()
+        val listMin = 1
+        val current: Int = getList(deductionMode).retrieveCurrent()
+        var counter = 0
 
-    if(max > current) {
-        fab_down.backgroundTintList = getColorStateList(R.color.colorSky)
-        movable++
+        if(listMax > current) {
+            colorFab( fab_down, R.color.colorSky )
+            counter++
+        }
+        else colorFab( fab_down, R.color.colorAccent)
+
+        if(listMin < current){
+            colorFab( fab_up, R.color.colorSky )
+            counter += 2
+        }
+        else colorFab( fab_up, R.color.colorAccent)
+
+        return counter
     }
-    else fab_down.backgroundTintList = getColorStateList(R.color.colorAccent)
 
-    if(min < current){
-        fab_up.backgroundTintList = getColorStateList(R.color.colorSky)
-        movable += 2
+    fun colorFabs(){
+        colorFab(fab_replace, R.color.colorLime)
+        colorFab(fab_resetView, R.color.colorSky)
+        colorFab(fab_fillcolor, resColors[colorindex])
+        colorFab(fab_share, R.color.colorLime)
     }
-    else fab_up.backgroundTintList = getColorStateList(R.color.colorAccent)
 
-    return movable
-}
+    fun colorFab( fab:FloatingActionButton, color:Int ){
+        fab.backgroundTintList = getColorStateList(color)
+    }
+
     // Params インスタンスの中身をログに出力する関数
-    private fun logParams(params: Params, tag: String = "ParamsLog") {
+    private fun logParams(params: InputParameter, tag: String = "ParamsLog") {
         val paramsContents = with(params) {
             """
         |name: $name
         |type: $type
-        |n: $n
+        |n: $number
         |a: $a
         |b: $b
         |c: $c
         |pn: $pn
         |pl: $pl
-        |pt: (${pt.x}, ${pt.y})
-        |pts: (${ptF.x}, ${ptF.y})
+        |pt: (${point.x}, ${point.y})
+        |pts: (${pointflag.x}, ${pointflag.y})
         """.trimMargin()
         }
         Log.d(tag, paramsContents)
     }
 
-    private fun addDeductionBy(params: Params) : Boolean {
+    private fun addDeductionBy(params: InputParameter) : Boolean {
         if (!validDeduction(params)) {
             Log.d( "Deduction", "invalid parameters" )
             logParams(params, "add Dedution")
@@ -1812,12 +1756,12 @@ class MainActivity : AppCompatActivity(),
         }
 
         // 所属する三角形の判定処理
-        val ded = processDeduction(params)
+        val ded = flagDeduction(params)
         if( ded == null ) return false
         myDeductionList.add( ded.clone() )
 
-        myview.setDeductionList(myDeductionList, mScale)
-        myview.myTriangleList.dedmapping(myDeductionList, -1)
+        myview.setDeductionList(myDeductionList, viewscale)
+        myview.trianglelist.dedmapping(myDeductionList, -1)
         lastParams = params
 
         logFabController()
@@ -1825,18 +1769,17 @@ class MainActivity : AppCompatActivity(),
 
     }
 
-
-    private fun processDeduction(params: Params): Deduction?{//Params {
-        params.pt = myview.getTapPoint()
-        if (params.pt == PointXY(0f, 0f)) return null
+    private fun flagDeduction(params: InputParameter): Deduction?{//Params {
+        params.point = myview.pressedInModel
+        if (params.point == PointXY(0f, 0f)) return null
 
         //形状の自動判定
         if( params.b > 0f ) params.type = "Box"
         else params.type = "Circle"
 
         // 所属する三角形の判定処理
-        params.pn = myview.myTriangleList.isCollide(
-            params.pt.scale(
+        params.pn = myview.trianglelist.isCollide(
+            params.point.scale(
                 PointXY(
                     1f,
                     -1f
@@ -1849,14 +1792,14 @@ class MainActivity : AppCompatActivity(),
         if (params.pn != 0) {
             Log.d(
                 "Deduction",
-                "ptri dedcount" + myview.myTriangleList.get(params.pn).dedcount
+                "ptri dedcount" + myview.trianglelist.get(params.pn).dedcount
             )
 
-            val trilistinview = myview.myTriangleList
+            val trilistinview = myview.trianglelist
             val parent = trilistinview.get(params.pn)
             Log.d("Deduction", "parent:" + parent.toString() )
-            Log.d("Deduction", "params.point:  " + params.pt.x + ", " + params.pt.y)
-            Log.d("Deduction", "params.pointF: " + params.ptF.x + ", " + params.ptF.y)
+            Log.d("Deduction", "params.point:  " + params.point.x + ", " + params.point.y)
+            Log.d("Deduction", "params.pointF: " + params.pointflag.x + ", " + params.pointflag.y)
 
             ded.flag(parent)
 
@@ -1875,21 +1818,41 @@ class MainActivity : AppCompatActivity(),
         //return params
     }
 
-    private fun resetDeductionsBy(params: Params) : Boolean {
+    private fun resetDeductionsBy(params: InputParameter): Boolean {
         if (!validDeduction(params)) {
-            Log.d( "Deduction", "invalid parameters" )
+            Log.d("Deduction", "invalid parameters")
             logParams(params, "reset Dedution")
             return false
         }
 
-        //myTriangleList.current = params.pn
+        val ded = flagDeduction(params)
+        //flagDeductionでnullが返ってくる可能性を考慮
+        if (ded == null) {
+            Log.w("resetDeductionsBy", "flagDeduction returned null. Cannot proceed.")
+            return false
+        }
 
-        val ded = processDeduction(params)
-        if( ded == null ) return false
+        // リストが空の場合、新しい要素を追加する
+        if (myDeductionList.dedlist_.isEmpty()) {
+            Log.d("resetDeductionsBy", "myDeductionList is empty. Adding new deduction.")
+            myDeductionList.add(ded)
+        } else {
+            //params.numberを正しく管理します。
+            val index = params.number
 
-        // 所属する三角形の判定処理
-        myDeductionList.replace(params.n, ded )
-        myview.myTriangleList.dedmapping(myDeductionList, -1)
+            // インデックスが範囲内であることを確認
+            if (index >= 0 && index < myDeductionList.size()) {
+                // リスト内の該当するインデックスを置換
+                myDeductionList.replace(index, ded)
+            } else {
+                // indexが範囲外の場合、エラーログを記録して終了する
+                Log.e("resetDeductionsBy", "Invalid index: $index for list of size ${myDeductionList.size()}")
+                //リストの最後の要素を置き換える例
+                myDeductionList.replace(myDeductionList.size() -1, ded)
+                //return false
+            }
+        }
+        myview.trianglelist.dedmapping(myDeductionList, -1)
         return true
     }
 
@@ -1897,33 +1860,33 @@ class MainActivity : AppCompatActivity(),
         fab.backgroundTintList = getColorStateList( colorIndex )
     }
 
-    private fun trilistSaving( from: TriangleList ){
+    private fun trilistSaving( from: TriangleList){
         trilistUndo = from.clone()
     }
-    private fun createNewTriangle( params: Params, parentTri: Triangle ): Triangle{
+    private fun createNewTriangle(params: InputParameter, parentTri: Triangle): Triangle {
         val newTri = Triangle(
             parentTri,
             params
         )
-        newTri.mynumber = params.n
+        newTri.mynumber = params.number
         return newTri
     }
 
-    private fun trilistAdd(params: Params, triList: TriangleList ){
-        val newTri = createNewTriangle( params, triList.getByNumber(params.pn) )
+    private fun trilistAdd(params: InputParameter, triList: TriangleList){
+        val newTri = createNewTriangle( params, triList.getBy(params.pn) )
         triList.add(newTri, true)
-        triList.lastTapNumber_ = triList.size()
+        triList.lastTapNumber = triList.size()
     }
     private fun setUI(){
         setFabColor( fab_undo, R.color.colorLime )
         findViewById<EditText>(R.id.editLengthA1).requestFocus()
     }
 
-    private fun addTriangleBy(params: Params) : Boolean {
-        if ( isValid( params ) ) {
+    private fun addTriangleBy(params: InputParameter) : Boolean {
+        if ( isParamsValid( params ) ) {
 
-            trilistSaving( myTriangleList )
-            trilistAdd( params, myTriangleList )
+            trilistSaving( trianglelist )
+            trilistAdd( params, trianglelist )
             setUI()
 
             return true
@@ -1931,85 +1894,116 @@ class MainActivity : AppCompatActivity(),
         return false
     }
 
-    private fun resetTrianglesBy(params: Params) : Boolean {
+    private fun resetTrianglesBy(params: InputParameter) : Boolean {
 
-        return if (isValid(params)){
-            trilistUndo = myTriangleList.clone()
+        if (trianglelist.size() == 0) {
+            showToast("Cannot edit: The list is empty. Add a triangle first.")
+            return false
+        }
+        if (params.number <= 0 || params.number > trianglelist.size()) {
+            showToast("Cannot edit: Invalid triangle number ${params.number}.")
+            return false
+        }
+        return if (isParamsValid(params)){
+            trilistUndo = trianglelist.clone()
             fab_undo.backgroundTintList = getColorStateList(R.color.colorLime)
 
             //if( dParams.n == 1 ) myTriangleList.resetTriangle( dParams.n, Triangle( dParams, myTriangleList.myAngle ) )
             //else
-            myTriangleList.resetFromParam(params)
+            trianglelist.resetFromParam(params)
         } // if valid triangle
         else false
     }
 
-
-//endregion
-
+    //endregion
 
     //region TapEvent
-    private fun autoConnection(i: Int){
 
-        myview.myTriangleList.lastTapSide_ = i
-        dParams = myEditor.readLineTo(dParams, myELFirst) //keep them
+    fun getTriangleParameter(sideindex: Int): InputParameter{
+        val triangle: Triangle = trianglelist.get(parameter.pn)
+        return InputParameter(
+            parameter.name,
+            "",
+            trianglelist.size() + 1,
+            triangle.getLengthByIndex(sideindex),
+            parameter.b,
+            parameter.c,
+            triangle.mynumber,
+            sideindex,
+            PointXY(0f, 0f),
+            PointXY(0f, 0f)
+        )
+    }
 
-        var focusTo = elb1
+    fun isDoubleTap(): Boolean{
+        return myview.trianglelist.isDoubleTap
+    }
 
-        if( myview.myTriangleList.isDoubleTap_ == true ){
-            if(i == 1) focusTo = elb2
-            if(i == 2) focusTo = elc2
+    fun connectTriangle(sideindex: Int ){
+        var focusTo = editorline1_lengthB
+
+        if( isDoubleTap() ){
+            if(sideindex == 1) focusTo = editorline2_lengthB
+            if(sideindex == 2) focusTo = editorline2_lengthC
         }
 
-        if(!deductionMode) {
+        myEditor.lineRewrite( getTriangleParameter(sideindex), editorline1 )
 
-            val t: Triangle = myTriangleList.get(dParams.pn)
-            myEditor.lineRewrite(
-                    Params(
-                            dParams.name,
-                            "",
-                            myTriangleList.size() + 1,
-                            t.getLengthByIndex(i),
-                            dParams.b,
-                            dParams.c,
-                            t.mynumber,
-                            i,
-                        PointXY(0f, 0f),
-                        PointXY(0f, 0f)
-                    ), myELFirst
+        if(myview.trianglelist.lastTapSide != -1){
+            val numToLetterMap = mapOf(
+                1 to "B",
+                2 to "C"
+                // 他の数値と文字の対応を追加可能
             )
+            val actionWord = if (isDoubleTap()) "Edit" else "Connect"
+            showToast("$actionWord - length ${numToLetterMap[sideindex]}")
+            myview.trianglelist.isDoubleTap = true
 
-            myview.setParentSide(t.mynumber, i)
+            focusTo.requestFocus()
+            focusTo.setSelection(focusTo.text.length)
+            val inputMethodManager: InputMethodManager =
+                getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+            inputMethodManager.showSoftInput(focusTo, 0)
 
-            if(myview.myTriangleList.lastTapSide_ != -1){
-                myview.myTriangleList.isDoubleTap_ = true
-
-                focusTo.requestFocus()
-                focusTo.setSelection(focusTo.text.length)
-                val inputMethodManager: InputMethodManager =
-                    getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
-                inputMethodManager.showSoftInput(focusTo, 0)
-            }
         }
-        else{
-            setFabSetBC(i)
-            myEditor.lineRewrite(
-                    Params(
-                            dParams.name,
-                            "",
-                            myDeductionList.size() + 1,
-                            dParams.a,
-                            dParams.b,
-                            dParams.c,
-                            dParams.pn,
-                            i,
-                        PointXY(
-                            0f,
-                            0f
-                        )
-                    ), myELFirst
+        myview.resetViewToLastTapTriangle()
+    }
+
+    fun connectDeduction(sideindex: Int){
+        setFabSetBC(sideindex)
+        myEditor.lineRewrite( setupDedParameter(sideindex), editorline1 )
+    }
+
+    fun setupDedParameter(sideindex: Int): InputParameter{
+        return InputParameter(
+            parameter.name,
+            "",
+            myDeductionList.size() + 1,
+            parameter.a,
+            parameter.b,
+            parameter.c,
+            parameter.pn,
+            sideindex,
+            PointXY(
+                0f,
+                0f
             )
-        }
+        )
+    }
+
+    fun setTriListNumber(){
+        if( myview.trianglelist.lastTapNumber < 1 ) myview.trianglelist.lastTapNumber = myview.trianglelist.size()
+    }
+
+    private fun autoConnection(sideindex: Int){
+        setTriListNumber()
+        myview.trianglelist.lastTapSide = sideindex
+        parameter = myEditor.readLineTo(parameter, editorline1) //keep them
+
+        if(!deductionMode)
+            connectTriangle(sideindex)
+        else
+            connectDeduction(sideindex)
     }
 
     private fun setFabSetBC(i: Int){
@@ -2019,112 +2013,114 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
+    fun getDedTapIndex():Int {
+        myview.myDeductionList.setScale(myview.myScale)
+        return myview.myDeductionList.getTapIndex(myview.pressedInModel)
+    }
+
+    fun targetInDedmode(zoomsize: Float){
+        val trilistV = myview.trianglelist
+
+        if ( getDedTapIndex() > -1 ) {
+            val tapNumber = myview.myDeductionList.lastTapIndex_+1
+
+            myEditor.scroll(
+                tapNumber - myDeductionList.current,
+                getList(deductionMode), editorLine2, myELThird
+            )
+        }
+
+        // 三角形番号が押されたときはセンタリング
+        val RANGE = 0.4f / zoomsize
+        trilistV.getTapNumber(getPressedInModel(), RANGE )
+        if ( trilistV.lastTapNumber != 0 ){
+            handleTriangleTap(trilistV, myEditor, trianglelist)
+            if( trilistV.lastTapSide == 3 ) myview.resetViewToLastTapTriangle()
+        }
+    }
+
+    fun getShadowTap(pressedpoint: PointXY, range: Float):Int { return myview.shadowTri_.getTapLength(pressedpoint, range ) }
+    fun getPressedInModel(): PointXY { return myview.pressedInModel.scale(
+        PointXY(
+            0f,
+            0f
+        ), 1f, -1f) }
+
+    fun shadowTapMode(zoomsize: Float): Boolean {
+        val RANGE = 0.8f / zoomsize
+        val shadowTapside = getShadowTap(getPressedInModel(), RANGE)
+
+        when (shadowTapside) {
+            1 -> {
+                findViewById<EditText>(R.id.editLengthB1).requestFocus() // EditTextB1にフォーカスを設定
+                return true // trueを返して関数から抜ける
+            }
+            2 -> {
+                findViewById<EditText>(R.id.editLengthC1).requestFocus() // EditTextC1にフォーカスを設定
+                return true // trueを返して関数から抜ける
+            }
+        }
+
+        return false // 何もアクションが起こらなかった場合はfalseを返す
+    }
+
+    fun getTriTapNumber(zoomsize: Float):Int {
+        val TAPRANGE= myview.textSize / zoomsize * 0.02f
+        return myview.trianglelist.getTapNumber( getPressedInModel(), TAPRANGE )
+    }
+
+    fun targetInTriMode(zoomsize: Float){
+        if(shadowTapMode(zoomsize)) return
+
+        val trilistV = myview.trianglelist
+
+        val inputMethodManager = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+        updateElStrings()
+        myview.setWatchedStrings(elsa1,elsb1,elsc1,elsa2,elsb2,elsc2)
+
+        // タップされた三角形がある場合の処理を行う
+        if (getTriTapNumber(zoomsize) != 0) {
+            handleTriangleTap(trilistV, myEditor, trianglelist, true ) // タップされた三角形の基本処理を行う
+            setTriangleDetails(trianglelist) // タップされた三角形の詳細設定を行う
+            setEditTextContent(trianglelist) // EditTextに三角形情報をセットする
+
+            // タップされた辺に応じた処理を行う
+            when (myview.trianglelist.lastTapSide) {
+                0 -> handleSideZero(inputMethodManager) // 辺0がタップされたときの処理
+                1, 2 -> autoConnection(myview.trianglelist.lastTapSide) // 辺1または2がタップされたときの自動接続処理
+                3 -> myview.resetViewToLastTapTriangle() // 辺3がタップされたときのビューをリセットする処理
+            }
+        }
+    }
+
     fun setTargetEditText(zoomsize: Float)
     {
-        val inputMethodManager: InputMethodManager =
-            getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+        if(deductionMode)targetInDedmode(zoomsize)
+        else targetInTriMode(zoomsize)
 
-        val trilistV = myview.myTriangleList
-
-        if(deductionMode){
-
-            myview.myDeductionList.setScale(myview.myScale)
-            val lasttap = myview.myDeductionList.getTapIndex(myview.pressedInModel)
-            Log.d("Deduction", "lasttap:"+lasttap )
-
-            if ( myview.myDeductionList.lastTapIndex_ > -1 ) {
-                val tapIndex = myview.myDeductionList.lastTapIndex_+1
-                if( -1 < tapIndex ) {
-                    //Toast.makeText(this, "deduction tap", Toast.LENGTH_SHORT).show()
-                    myEditor.scroll(
-                            tapIndex - myDeductionList.current,
-                            getList(deductionMode), myELSecond, myELThird
-                    )
-                    //my_view.resetView( my_view.myDeductionList.get( tapIndex ).point.scale( PointXY(1f,-1f ) ) )
-                }
-            }
-
-            // 三角形番号が押されたときはセンタリング
-            trilistV.getTap(
-                myview.pressedInModel.scale(
-                    PointXY(
-                        0f,
-                        0f
-                    ), 1f, -1f),
-                0.4f / zoomsize
-            )
-            if ( trilistV.lastTapNumber_ != 0 ){
-                handleTriangleTap(trilistV, myEditor, myTriangleList)
-                if( trilistV.lastTapSide_ == 3 ) myview.resetViewToLastTapTriangle()
-            }
-
-
-        }
-        else { // edit triangle
-            updateElStrings()
-            myview.setWatchedStrings(elsa1,elsb1,elsc1,elsa2,elsb2,elsc2)
-
-            val lpp = myview.pressedInModel.scale(PointXY(0f, 0f), 1f, -1f)
-            val slpp = myview.shadowTri_.getTapLength(lpp, 0.8f / zoomsize)
-
-            when (slpp) {
-                1 -> {
-                    findViewById<EditText>(R.id.editLengthB1).requestFocus() // EditTextB1にフォーカスを設定
-                    // my_view.myTriangleList.lastTapSide_ = 1
-                    return
-                }
-                2 -> {
-
-                    findViewById<EditText>(R.id.editLengthC1).requestFocus() // EditTextC1にフォーカスを設定
-                    // my_view.myTriangleList.lastTapSide_ = 2
-                    return
-                }
-            }
-
-
-            // view　の　trilistのlastTapとcurrentをずらして editorTableを移動させる
-            trilistV.getTap(lpp, myview.textSize * 0.02f / zoomsize )
-
-            // タップされた三角形がある場合の処理を行う
-            if (trilistV.lastTapNumber_ != 0) {
-                handleTriangleTap(trilistV, myEditor, myTriangleList, true ) // タップされた三角形の基本処理を行う
-                setTriangleDetails(myTriangleList) // タップされた三角形の詳細設定を行う
-                setEditTextContent(myTriangleList) // EditTextに三角形情報をセットする
-
-                // タップされた辺に応じた処理を行う
-                when (myview.myTriangleList.lastTapSide_) {
-                    0 -> handleSideZero(inputMethodManager) // 辺0がタップされたときの処理
-                    1, 2 -> autoConnection(myview.myTriangleList.lastTapSide_) // 辺1または2がタップされたときの自動接続処理
-                    3 -> myview.resetViewToLastTapTriangle() // 辺3がタップされたときのビューをリセットする処理
-                }
-            }
-
-        }
-
-        Log.d("SetTarget", "Tap Triangle is : " + myview.myTriangleList.lastTapNumber_ + ", side is :" + myview.myTriangleList.lastTapSide_ )
+        Log.d("SetTarget", "Tap Triangle is : " + myview.trianglelist.lastTapNumber + ", side is :" + myview.trianglelist.lastTapSide )
         logListCurrent()
     }
 
     // タップされた三角形に関連する基本処理を行う関数
     fun handleTriangleTap(trilistV: TriangleList, myEditor: EditorTable, myTriangleList: TriangleList, isEditorScroll: Boolean = false ) {
-        if( isEditorScroll ) myEditor.scroll(trilistV.lastTapNumber_ - trilistV.selectedNumber, myTriangleList, myELSecond, myELThird) // スクロールしてタップされた三角形を表示
-        trilistV.selectedNumber = trilistV.lastTapNumber_ // 現在の三角形を更新
-        myTriangleList.changeSelectedNumber(myview.myTriangleList.lastTapNumber_) // myTriangleListの現在の三角形を更新
-        myTriangleList.lastTapNumber_ = myview.myTriangleList.lastTapNumber_ // 最後にタップされた三角形の番号を更新
-        myTriangleList.lastTapSide_ = myview.myTriangleList.lastTapSide_ // 最後にタップされた三角形の辺を更新
+        if( isEditorScroll ) myEditor.scroll(trilistV.lastTapNumber - trilistV.selectedNumber, myTriangleList, editorLine2, myELThird) // スクロールしてタップされた三角形を表示
+        trilistV.selectedNumber = trilistV.lastTapNumber // 現在の三角形を更新
+        myTriangleList.changeSelectedNumber(myview.trianglelist.lastTapNumber) // myTriangleListの現在の三角形を更新
+        myTriangleList.lastTapNumber = myview.trianglelist.lastTapNumber // 最後にタップされた三角形の番号を更新
+        myTriangleList.lastTapSide = myview.trianglelist.lastTapSide // 最後にタップされた三角形の辺を更新
     }
 
     // タップされた三角形の詳細設定を行う関数
     fun setTriangleDetails(myTriangleList: TriangleList) {
-        colorindex = myTriangleList.get(myTriangleList.lastTapNumber_).color_ // タップされた三角形の色を取得
+        colorindex = myTriangleList.get(myTriangleList.lastTapNumber).mycolor // タップされた三角形の色を取得
         colorMovementFabs() // 色の設定を更新
-        printDebugConsole() // デバッグコンソールに情報を出力
         setTitles() // タイトルを設定
     }
 
     // EditTextに三角形情報をセットする関数
     fun setEditTextContent(myTriangleList: TriangleList) {
-        findViewById<EditText>(R.id.editParentNumber1).setText(myTriangleList.lastTapNumber_.toString()) // 最後にタップされた三角形の番号を設定
+        findViewById<EditText>(R.id.editParentNumber1).setText(myTriangleList.lastTapNumber.toString()) // 最後にタップされた三角形の番号を設定
         findViewById<EditText>(R.id.editNumber1).setText(myTriangleList.size().toString()) // 三角形リストのサイズを設定
     }
 
@@ -2134,7 +2130,7 @@ class MainActivity : AppCompatActivity(),
         editLengthA2.requestFocus() // フォーカスを設定
         editLengthA2.setSelection(editLengthA2.text.length) // EditTextのテキストを選択状態にする
         inputMethodManager.showSoftInput(editLengthA2, 0) // ソフトキーボードを表示
-        myview.setParentSide(myview.getTriangleList().lastTapNumber_, 3) // 親となる辺を設定
+        myview.resetViewToLastTapTriangle()
     }
 //endregion
 
@@ -2182,12 +2178,12 @@ class MainActivity : AppCompatActivity(),
                 contentResolver.openOutputStream(uri)?.use { outputStream ->
                     when (fileType) {
                         "DXF" -> saveDXF(BufferedWriter(OutputStreamWriter(outputStream, "Shift-JIS")))
-                        "CSV" -> saveCSV(BufferedWriter(OutputStreamWriter(outputStream, "Shift-JIS")))
+                        "CSV" -> writeCSV(BufferedWriter(OutputStreamWriter(outputStream, "Shift-JIS")))
                         "PDF" -> savePDF(outputStream)
                         "SFC" -> saveSFC(BufferedOutputStream(outputStream))
                         "XLSX" -> {
                             val xlsxWriter = XlsxWriter()
-                            xlsxWriter.write(outputStream, myTriangleList, myDeductionList, rosenname)
+                            xlsxWriter.write(outputStream, trianglelist, myDeductionList, rosenname)
                         }
                         else -> {}
                     }
@@ -2214,7 +2210,7 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    private fun saveDxfToPrivate(filename: String) {
+    private fun saveDxfToPrivate(filename: String = PRIVATE_FILENAME_DXF ) {
         saveToFile(filename) { outputStream ->
             BufferedWriter(OutputStreamWriter(outputStream, "Shift-JIS")).use { bufferedWriter ->
                 saveDXF(bufferedWriter)
@@ -2350,44 +2346,19 @@ class MainActivity : AppCompatActivity(),
         saveContent.launch( Pair( intentType, strDateRosenname(fileprefix) ) )
     }
 
-
-    private fun viewPdf(contentUri: Uri){
-        savePDFinPrivate()
-
-        if ( contentUri != Uri.EMPTY ) {
-            val intent = Intent(Intent.ACTION_VIEW)
-            intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION// or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED//flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-            //intent.flags = Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-            intent.setDataAndType(contentUri, "application/pdf")
-            //intent.setPackage("com.adobe.reader")
-            try {
-                startActivity(intent)
-            } catch (e: ActivityNotFoundException) {
-                Log.d("viewPDF", "PDF viewer is not installed." )
-                Toast.makeText(this, "PDF viewer is not installed.", Toast.LENGTH_LONG).show()
-            }
-        }
+    private fun viewPdf(){
+        val PRIVATE_FILENAME_PDF = "privateTrilist.pdf"
+        LocalFileViewer(this).view(::savePdfToPrivate, PRIVATE_FILENAME_PDF, ::getAppLocalFile,"application/pdf" )
     }
 
-    private fun viewXlsx(contentUri: Uri){
-        // ファイルを生成。
-        saveXlsxInPrivate()
-        setTitles()
+    private fun viewDxf() {
+        LocalFileViewer(this).view(::saveDxfToPrivate, PRIVATE_FILENAME_DXF, ::getAppLocalFile,"application/dxf" )
+    }
 
-        if ( contentUri != Uri.EMPTY ) {
-            val intent = Intent(Intent.ACTION_VIEW)
-            intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-            intent.setDataAndType(contentUri, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-            //intent.setType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-
-            try {
-                startActivity(intent)
-            } catch (e: ActivityNotFoundException) {
-                Log.d("viewXlsx", ".xlsx viewer is not installed." )
-                Toast.makeText(this, ".xlsx viewer is not installed.", Toast.LENGTH_LONG).show()
-            }
-        }
-
+    private fun viewXlsx(){
+       //ClipCsv(this).copyCSVToClipboard(::writeCSV )
+        val PRIVATE_FILENAME_XLSX = "privateTrilist.xlsx"
+        LocalFileViewer(this).view(::saveXlsxToPrivate, PRIVATE_FILENAME_XLSX, ::getAppLocalFile,"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     }
 
     private fun deletePrivateFile(fileName: String) {
@@ -2416,15 +2387,6 @@ class MainActivity : AppCompatActivity(),
             if ( fileName == PrivateCSVFileName ) return@forEach //CSV skip
             deletePrivateFile(fileName)
         }
-    }
-
-
-    private fun saveFileAndGetUri(filename: String): Uri {
-        // ファイルをプライベート領域に保存
-        saveToPrivate(filename)
-
-        // プライベート領域からファイルのContent URIを取得
-        return getAppLocalFile(this, filename)
     }
 
     private fun sendMail(){
@@ -2463,9 +2425,14 @@ class MainActivity : AppCompatActivity(),
         else Uri.EMPTY
     }
 
-    private fun showFileTypeSelectionDialog(onComplete: () -> Unit, checkedItems: BooleanArray = booleanArrayOf(true, true, true, false, false)) {
-        val fileTypes = arrayOf(".csv", ".xlsx", ".dxf", ".sfc", ".pdf")
+
+    val fileTypes = arrayOf(".csv", ".xlsx", ".dxf", ".sfc", ".pdf")
+
+    private fun showFileTypeSelectionDialog(onComplete: () -> Unit ) {
         val selectedFileTypes = ArrayList<String>()
+
+        // ファイルリストをロード
+        val checkedItems = loadListFromFile().toBooleanArray()
 
         AlertDialog.Builder(this)
             .setTitle("Select File Types")
@@ -2483,6 +2450,8 @@ class MainActivity : AppCompatActivity(),
                 }
                 // 選択されたファイルタイプに対する処理
                 handleSelectedFileTypes(selectedFileTypes, onComplete)
+                // shareFilesを保存
+                saveListToFile(checkedItems.toList())
             }
             .setNegativeButton("Cancel", null)
             .show()
@@ -2499,12 +2468,30 @@ class MainActivity : AppCompatActivity(),
             Log.d("SelectedFileType", shareFiles[i] )
             i++
         }
-
-
         // 必要に応じて他の処理を追加
         onComplete()
     }
 
+
+    // ファイルにリストを保存する関数
+    val SHAREFILENAME = "shareFiles.txt"
+    private fun saveListToFile(booleans: List<Boolean>, fileName: String = SHAREFILENAME) {
+        try {
+            val file = File(filesDir, fileName)
+            file.writeText(booleans.joinToString("\n"))
+        } catch (e: IOException) {
+            // エラーハンドリング: ログ記録やユーザーへの通知など
+            e.printStackTrace()
+        }
+    }
+
+    // ファイルからリストを読み込む関数
+    private fun loadListFromFile(fileName: String = SHAREFILENAME): List<Boolean> {
+        val file = File(filesDir, fileName)
+        if (!file.exists()) return List(fileTypes.size) { false } // fileTypesSize の長さの、false のみを含むリストを返す
+
+        return file.readLines().map { it.toBoolean() }
+    }
 
     private fun sendFiles(){
 
@@ -2543,10 +2530,24 @@ class MainActivity : AppCompatActivity(),
         shareUris.clear()
         // ファイル名のリストをループして各ファイルのURIを取得
         for (fileName in fileNames) {
-            val uri = saveFileAndGetUri(fileName)
-            shareUris.add(uri)
-            uris.add(uri)
-            Log.d("ShareFiles", "$fileName saved and URI obtained.")
+            //ファイルが保存されているか確認し、正しくない場合保存を行う。
+            val newFile = File(filesDir, fileName)
+            if(!newFile.exists())
+            {
+                saveToPrivate(fileName)
+            }
+            if(newFile.exists())
+            {
+                val uri = getAppLocalFile(this, fileName)
+                shareUris.add(uri)
+                uris.add(uri)
+                Log.d("ShareFiles", "$fileName saved and URI obtained.")
+            }
+            else
+            {
+                Log.d("ShareFiles", "$fileName save failed")
+            }
+
         }
         return uris
     }
@@ -2556,17 +2557,18 @@ class MainActivity : AppCompatActivity(),
     //region File saving
     private fun saveDXF(bWriter: BufferedWriter) :BufferedWriter{
 
-        val writer = DxfFileWriter(
-                myTriangleList
-        )
-        writer.rStr_ = rStr
+        //想定と違う結果になりえる
+        //trianglelist.arrangePointNumbers()
+
+        val writer = DxfFileWriter(trianglelist.clone())
+        writer.zumeninfo = rStr
         writer.titleTri_ = titleTriStr
         writer.titleDed_ = titleDedStr
         writer.textscale_ = myview.textSize * 0.016f //25*0.014f=0.35f, 25/0.02f=0.5f
 
         writer.writer = bWriter
-        writer.drawingLength = myTriangleList.measureMostLongLine()
-        writer.dedlist_ = myDeductionList
+        writer.drawingLength = trianglelist.measureMostLongLine()
+        writer.dedlist_ = myDeductionList.clone()
         writer.setNames(koujiname, rosenname, gyousyaname, zumennum)
         writer.isDebug = myview.isDebug_
 
@@ -2581,9 +2583,9 @@ class MainActivity : AppCompatActivity(),
 
     private fun saveSFC(out: BufferedOutputStream) {
 
-        val writer = SfcWriter(myTriangleList, myDeductionList, out, filename, drawingStartNumber)
+        val writer = SfcWriter(trianglelist.clone(), myDeductionList.clone(), out, filename, drawingStartNumber, 47.6f)
         writer.setNames(koujiname, rosenname, gyousyaname, zumennum)
-        writer.rStr_ = rStr
+        writer.zumeninfo = rStr
         writer.textscale_ = myview.textSize * 20f //25*14f=350f, 25/20f=500f
         writer.titleTri_ = titleTriStr
         writer.titleDed_ = titleDedStr
@@ -2598,8 +2600,8 @@ class MainActivity : AppCompatActivity(),
 
     private fun savePDF(out: OutputStream){
         val writer = PdfWriter(
-                myTriangleList.getPrintScale(1f),
-                myTriangleList
+                trianglelist.getPrintScale(1f),
+                trianglelist
         )
         writer.out_ = out
         writer.deductionList_ = myDeductionList
@@ -2608,7 +2610,7 @@ class MainActivity : AppCompatActivity(),
         writer.initPaints()
         writer.titleTri_ = titleTriStr
         writer.titleDed_ = titleDedStr
-        writer.rStr_ = rStr
+        writer.zumeninfo = rStr
         writer.setNames(koujiname, rosenname, gyousyaname, zumennum)
 
         //my_view.isAreaOff_ = false
@@ -2650,7 +2652,7 @@ class MainActivity : AppCompatActivity(),
             PointXY(0f, 0f), 0f)
 
         val trilist = TriangleList(tri)
-        myTriangleList = trilist
+        trianglelist = trilist
         myDeductionList.clear()
 
         // メニューバーのタイトル
@@ -2660,21 +2662,21 @@ class MainActivity : AppCompatActivity(),
         findViewById<EditText>(R.id.rosenname).setText(rosenname)
         setTitles()
 
-        myview.setTriangleList(trilist, mScale)
-        myview.setDeductionList(myDeductionList, mScale)
-        myview.myTriangleList.lastTapNumber_ = myview.myTriangleList.size()
+        myview.setTriangleList(trilist, viewscale)
+        myview.setDeductionList(myDeductionList, viewscale)
+        myview.trianglelist.lastTapNumber = myview.trianglelist.size()
         myview.resetViewToLastTapTriangle()
 
-        Log.d("FileLoader", "createNew: " + myview.myTriangleList.size() )
+        Log.d("FileLoader", "createNew: " + myview.trianglelist.size() )
 
         fab_fillcolor.backgroundTintList = getColorStateList(resColors[colorindex])
 
-        printDebugConsole()
         editorResetBy(getList(deductionMode))
 
     }
 
-    private fun savePDFinPrivate(filename: String = "privateTrilist.pdf"){
+    private fun savePdfToPrivate(filename: String = "privateTrilist.pdf"){
+        Log.d("FileSave", "savePdfToPrivate: filename=$filename")
         try {
             savePDF(openFileOutput(filename, MODE_PRIVATE))
         } catch (e: IOException) {
@@ -2682,26 +2684,54 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    private fun saveXlsxInPrivate(filename: String = "privateTrilist.xlsx"){
+    private fun saveXlsxToPrivate(filename: String = "privateTrilist.xlsx"){
+        Log.d("FileSave", "saveXlsxToPrivate: filename=$filename")
         try {
-            XlsxWriter().write( openFileOutput(filename, MODE_PRIVATE ), myTriangleList, myDeductionList, rosenname )
+            XlsxWriter().write( openFileOutput(filename, MODE_PRIVATE ), trianglelist, myDeductionList, rosenname )
         } catch (e: IOException) {
             e.printStackTrace()
         }
     }
 
     private fun saveToPrivate(filename: String) {
+        Log.d("FileSave", "saveToPrivate: filename=$filename")
         // ファイル名から拡張子を取得
         val extension = filename.substringAfterLast('.', "")
 
         when (extension) {
-            "xlsx" -> XlsxWriter().write( openFileOutput(filename, MODE_PRIVATE ), myTriangleList, myDeductionList, rosenname )
-            "pdf" -> savePDFinPrivate(filename)
-            "dxf" -> saveDxfToPrivate(filename)
-            "sfc" -> saveSfcToPrivate(filename)
-            "csv" -> saveCSVtoPrivate(filename)
+            "xlsx" -> {
+                Log.d("FileSave", "saveToPrivate: saving as xlsx")
+                saveXlsxToPrivate(filename)
+            }
+            "pdf" -> {
+                Log.d("FileSave", "saveToPrivate: saving as pdf")
+                savePdfToPrivate(filename)
+            }
+            "dxf" -> {
+                Log.d("FileSave", "saveToPrivate: saving as dxf")
+                saveDxfToPrivate(filename)
+            }
+            "sfc" -> {
+                Log.d("FileSave", "saveToPrivate: saving as sfc")
+                saveSfcToPrivate(filename)
+            }
+            "csv" -> {
+                Log.d("FileSave", "saveToPrivate: saving as csv")
+                //CSVのみファイル名がずれてしまうので修正
+                //拡張子を付与する
+                val file = File(filesDir,filename)
+                if(!filename.endsWith(".csv"))
+                {
+                    val fileRename = File(filesDir, filename+".csv")
+                    file.renameTo(fileRename)
+                }
+                saveCSVtoPrivate(filename)
+            }
             // その他のファイル形式に対応する処理を追加
-            else -> throw IllegalArgumentException("Unsupported file format: $extension")
+            else -> {
+                Log.e("FileSave", "saveToPrivate: Unsupported file format: $extension")
+                throw IllegalArgumentException("Unsupported file format: $extension")
+            }
         }
     }
 
@@ -2709,51 +2739,57 @@ class MainActivity : AppCompatActivity(),
 
     //region File CSV Save and Load
 
-    private fun saveCSV(writer: BufferedWriter): Boolean {
+    private fun writeCSV(writer: Writer): Boolean {
         return try {
             // 入力データの取得
             rosenname = findViewById<EditText>(R.id.rosenname).text.toString()
 
             // CSVファイルへのヘッダー情報の書き込み
             writer.apply {
-                write("koujiname, $koujiname")
-                newLine()
-                write("rosenname, $rosenname")
-                newLine()
-                write("gyousyaname, $gyousyaname")
-                newLine()
-                write("zumennum, $zumennum")
-                newLine()
+                write("koujiname, $koujiname\n")
+                write("rosenname, $rosenname\n")
+                write("gyousyaname, $gyousyaname\n")
+                write("zumennum, $zumennum\n")
             }
 
             // 三角形リストのデータをCSVファイルに書き込み
-            for (index in 1..myTriangleList.size()) {
-                val mt: Triangle = myTriangleList.getByNumber(index)
+            for (index in 1..trianglelist.size()) {
+                val mt: Triangle = trianglelist.getBy(index)
                 val pointnumber: PointXY = mt.pointnumber
-                val cp = parentBCtoCParam(mt.connectionType, mt.lengthNotSized[0], mt.cParam_)
+                val cp = parentBCtoCParam(mt.connectionSide, mt.lengthNotSized[0], mt.cParam_)
 
-                writer.write("${mt.mynumber},${mt.lengthA_},${mt.lengthB_},${mt.lengthC_},${mt.parentnumber},${mt.connectionType},${mt.name},${pointnumber.x},${pointnumber.y},${mt.pointNumber.flag.isMovedByUser},${mt.color_},${mt.dim.horizontal.a},${mt.dim.horizontal.b},${mt.dim.horizontal.c},${mt.dim.vertical.a},${mt.dim.vertical.b},${mt.dim.vertical.c},${cp.side},${cp.type},${cp.lcr},${mt.dim.flag[1].isMovedByUser},${mt.dim.flag[2].isMovedByUser},${mt.angle},${mt.pointCA_.x},${mt.pointCA_.y},${mt.angleInLocal_}")
-                writer.newLine()
+                writer.write("${mt.mynumber},${mt.lengthA_},${mt.lengthB_},${mt.lengthC_}," +
+                        "${mt.parentnumber},${mt.connectionSide}," +
+                        "${mt.name},${pointnumber.x},${pointnumber.y},${mt.pointNumber.flag.isMovedByUser}," +
+                        "${mt.mycolor}," +
+                        "${mt.dim.horizontal.a},${mt.dim.horizontal.b},${mt.dim.horizontal.c}," +
+                        "${mt.dim.vertical.a},${mt.dim.vertical.b},${mt.dim.vertical.c}," +
+                        "${cp.side},${cp.type},${cp.lcr}," +
+                        "${mt.dim.flag[1].isMovedByUser},${mt.dim.flag[2].isMovedByUser}," +
+                        "${mt.angle},${mt.pointCA.x},${mt.pointCA.y},${mt.angleInLocal_}," +
+                        "${mt.dim.horizontal.s},${mt.dim.flagS.isMovedByUser}"
+                )
+                writer.write("\n")
             }
 
             // その他の情報をCSVファイルに書き込み
             writer.apply {
-                write("ListAngle, ${myTriangleList.angle}")
-                newLine()
-                write("ListScale, ${myTriangleList.scale}")
-                newLine()
+                write("ListAngle, ${trianglelist.angle}")
+                writer.write("\n")
+                write("ListScale, ${trianglelist.scale}")
+                writer.write("\n")
                 write("TextSize, ${myview.textSize}")
-                newLine()
+                writer.write("\n")
             }
 
             // 減算リストのデータをCSVファイルに書き込み
             for (index in 1..myDeductionList.size()) {
                 val dd: Deduction = myDeductionList.get(index)
-                val pointAtRealscale = dd.point.scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
-                val pointFlagAtRealscale = dd.pointFlag.scale(PointXY(0f, 0f), 1 / mScale, -1 / mScale)
+                val pointAtRealscale = dd.point.scale(PointXY(0f, 0f), 1 / viewscale, -1 / viewscale)
+                val pointFlagAtRealscale = dd.pointFlag.scale(PointXY(0f, 0f), 1 / viewscale, -1 / viewscale)
 
                 writer.write("Deduction,${dd.num},${dd.name},${dd.lengthX},${dd.lengthY},${dd.overlap_to},${dd.type},${dd.angle},${pointAtRealscale.x},${pointAtRealscale.y},${pointFlagAtRealscale.x},${pointFlagAtRealscale.y},${dd.shapeAngle}")
-                writer.newLine()
+                writer.write("\n")
             }
 
             // すべての書き込みが成功したらtrueを返す
@@ -2773,31 +2809,33 @@ class MainActivity : AppCompatActivity(),
     }
 
     val PrivateCSVFileName = "privateTrilist.csv"
+    private var lastSavedCsvName: String = ""
 
-    private fun saveCSVtoPrivate(filename: String = PrivateCSVFileName): Boolean{
-        if( isCSVsavedToPrivate ) return true //既に保存済み
-        try {
-            setTitles()
+    private fun saveCSVtoPrivate(filename: String = PrivateCSVFileName): Boolean {
+        Log.d("CSVWrite", "saveCSVtoPrivate: filename=$filename")
 
-            val writer = BufferedWriter(
-                OutputStreamWriter(openFileOutput(filename, MODE_PRIVATE), "Shift-JIS"))
-
-            saveCSV(writer)
-            // 結果をログに出力
-            //logFilePreview(PrivateCSVFileName, "saveCSVtoPrivate")
-            showToast("saveCSVToPrivate: success")
-
-            return true
-        } catch (e: IOException) {
-            e.printStackTrace()
-            return false
+        // 同じファイルを連続で保存する場合のみスキップする。
+        if (filename == lastSavedCsvName && isCSVsavedToPrivate) {
+            Log.d("CSVWrite", "saveCSVtoPrivate: $filename already saved")
+            return true // 既に保存済みなら、ここで処理を終了する
         }
 
-        // 広告の再表示
-        //if( BuildConfig.FLAVOR == "free" ) mAdView.visibility = VISIBLE
-
+        try {
+            setTitles()
+            BufferedWriter(OutputStreamWriter(openFileOutput(filename, MODE_PRIVATE), "Shift-JIS")).use { writer ->
+                val isSaved = writeCSV(writer)
+                if (isSaved) {
+                    isCSVsavedToPrivate = true
+                    lastSavedCsvName = filename
+                }
+                return isSaved
+            }
+        } catch (e: IOException) {
+            e.printStackTrace()
+            showToast("saveCSVToPrivate: IOException")
+            return false
+        }
     }
-
 
     private fun openDocumentPicker() {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
@@ -2831,291 +2869,65 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    private fun showToast(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+    private fun parseCSV(reader: BufferedReader):Boolean{
+        val csvloader = CsvLoader()
+        val returnValues = csvloader.parseCSV(
+            reader,
+            this::showToast,
+            this::setAllTextSize,
+            this::typeToInt,
+            viewscale
+        )
+
+        Log.d("CSVParser", "parseCSV: filename=$returnValues")
+        if(returnValues == null ) return false
+
+        setEditLists( returnValues.trilist, returnValues.dedlist )
+        parseHeaderValues( returnValues.headerValues )
+        isCSVsavedToPrivate = false
+        saveCSVtoPrivate()
+        return true
     }
 
-    /**
-     * Triangle オブジェクトをリストに追加します。
-     */
-    private fun addTriangle(trilist: TriangleList, chunks: List<String?>, point: PointXY, angle: Float) {
-        trilist.add(
-            Triangle(
-                chunks.getOrNull(1)?.toFloatOrNull() ?: 0f,
-                chunks.getOrNull(2)?.toFloatOrNull() ?: 0f,
-                chunks.getOrNull(3)?.toFloatOrNull() ?: 0f,
-                point,
-                angle
-            ),
-            true
-        )
+    private fun parseHeaderValues( headerValues: HeaderValues){
+        koujiname = headerValues.koujiname
+        rosenname = headerValues.rosenname
+        gyousyaname = headerValues.gyousyaname
+        zumennum = headerValues.zumennum
+        findViewById<EditText>(R.id.rosenname).setText(rosenname)
     }
 
-    private fun parseCSV(reader: BufferedReader) :Boolean{
-
-        val str: StringBuilder = StringBuilder()
-        var line: String? = reader.readLine()
-        if(line == null) return false
-        var chunks: List<String?> = line.split(",").map { it.trim() }
-
-        if(chunks[0]!! != "koujiname"){
-            showToast( "It's not supported file." )
-            return false
-        }
-
-        val pair = readheaderLine(chunks, line, reader)
-        chunks = pair.first
-        line = pair.second
-
-        val trilist = TriangleList()
-
-        val pointfirst = PointXY(0f, 0f)
-        val anglefirst = 180f
-
-        addTriangle(trilist, chunks, pointfirst, anglefirst)
-
-
-        val mt = trilist.getByNumber(trilist.size())
-
-        mt.name = chunks[6]!!.toString()
-        //pointNumber
-        if(chunks[9]!! == "true") mt.setPointNumberMovedByUser_(
-            PointXY(
-                chunks[7]!!.toFloat(),
-                chunks[8]!!.toFloat()
-            )
-        )
-        // 色
-        if( chunks.size > 10 ) mt.setColor(chunks[10]!!.toInt())
-
-        // dimaligns
-        if( chunks.size > 11 ) {
-            mt.setDimAligns(
-                chunks[11]!!.toInt(), chunks[12]!!.toInt(), chunks[13]!!.toInt(),
-                chunks[14]!!.toInt(), chunks[15]!!.toInt(), chunks[16]!!.toInt()
-            )
-        }
-        if( chunks.size > 20 ) {
-            mt.dim.flag[1].isMovedByUser = chunks[20]!!.toBoolean()
-            mt.dim.flag[2].isMovedByUser = chunks[21]!!.toBoolean()
-        }
-
-        if( chunks.size > 17 ) {
-            mt.cParam_ = ConnParam(
-                chunks[17]!!.toInt(),
-                chunks[18]!!.toInt(),
-                chunks[19]!!.toInt(),
-                chunks[1]!!.toFloat()
-            )
-        }
-
-
-        val dedlist = DeductionList()
-
-        while (line != null){
-            line = reader.readLine()
-            if(line == null) break
-            chunks = line.split(",").map { it.trim() }
-            if(chunks[0] == "ListAngle") {
-                trilist.angle = chunks[1].toFloat()
-                continue
-            }
-            if(chunks[0] == "ListScale") {
-                trilist.setScale(PointXY(0f, 0f), chunks[1].toFloat())
-                continue
-            }
-            if(chunks[0] == "TextSize") {
-                myview.setAllTextSize(chunks[1].toFloat())
-                continue
-            }
-
-            if(chunks[0] == "Deduction"){
-//                dedlist.add(Params(chunks[2]!!.toString(),chunks[6]!!.toString(), chunks[1]!!.toInt(),
-                //                  chunks[3]!!.toFloat(),chunks[4]!!.toFloat(),0f,
-                //                chunks[5]!!.toInt(),typeToInt(chunks[6]!!.toString()),
-                //              PointXY(chunks[8]!!.toFloat(),-chunks[9]!!.toFloat()).scale(mScale),
-                //            PointXY(chunks[10]!!.toFloat(),-chunks[11]!!.toFloat()).scale(mScale)))
-                dedlist.add(
-                    Deduction(
-                        Params(
-                            chunks[2], chunks[6], chunks[1].toInt(),
-                            chunks[3].toFloat(), chunks[4].toFloat(), 0f,
-                            chunks[5].toInt(), typeToInt(chunks[6]),
-                            PointXY(
-                                chunks[8].toFloat(),
-                                -chunks[9].toFloat()
-                            ).scale(mScale),
-                            PointXY(
-                                chunks[10].toFloat(),
-                                -chunks[11].toFloat()
-                            ).scale(mScale)
-                        )
-                    )
-                )
-                if(chunks[12].isNotEmpty()) dedlist.get(dedlist.size()).shapeAngle = chunks[12].toFloat()
-                continue
-            }
-            //Connection Params
-            if( chunks.size > 17 ) {
-
-                if( chunks[5].toInt() == 0 ){
-                    val pt = PointXY(0f, 0f)
-                    var angle = 0f
-
-                    if( chunks.size > 22 ){
-                        pt.set( -chunks[23].toFloat(), -chunks[24].toFloat() )
-                        angle = chunks[22].toFloat()
-                    }
-
-
-                    addTriangle(trilist, chunks, pt, angle - 180f)
-
-                }
-                else {
-
-                    val ptri = trilist.getByNumber(chunks[4].toInt())
-                    val cp = ConnParam(
-                        chunks[17].toInt(),
-                        chunks[18].toInt(),
-                        chunks[19].toInt(),
-                        chunks[1].toFloat()
-                    )
-                    trilist.add(
-                        Triangle(
-                            ptri, cp,
-                            chunks[2].toFloat(),
-                            chunks[3].toFloat()
-                        ),
-                        true
-                    )
-
-                }
-                trilist.getByNumber(trilist.size()).connectionType = chunks[5].toInt()
-            }
-            else{
-
-                val cp = parentBCtoCParam(
-                    chunks[5].toInt(), chunks[1].toFloat(), ConnParam(
-                        0,
-                        0,
-                        0,
-                        0f
-                    )
-                )
-
-                trilist.add(
-                    Triangle(
-                        trilist.getByNumber(chunks[4].toInt()), ConnParam(
-                            cp.side,
-                            cp.type,
-                            cp.lcr,
-                            cp.lenA
-                        ),
-                        chunks[2].toFloat(),
-                        chunks[3].toFloat()
-                    ),
-                    true
-                )
-
-                val mT = trilist.getByNumber(trilist.size())
-                mT.connectionType = chunks[5].toInt()
-                /*
-                if( chunks.size > 25 && mT.parentBC_ >= 9 ) mT.rotate(
-                    mT.pointCA_,
-                    chunks[25].toFloat(),
-                    false
-                )*/
-                // trilist.getTriangle(trilist.size()).setCParamFromParentBC( chunks[5]!!.toInt() )
-            }
-
-            val mT = trilist.getByNumber(trilist.size())
-            mT.name = chunks[6]
-            if( trilist.size() > 1 ) trilist.get(trilist.size() - 1).childSide_ = chunks[5].toInt()
-
-            // 番号円　pointNumber
-            if(chunks[9] == "true") mT.setPointNumberMovedByUser_(
-                PointXY(
-                    chunks[7].toFloat(),
-                    chunks[8].toFloat()
-                )
-            )
-
-            // 色
-            if( chunks.size > 10 ) mT.setColor(chunks[10].toInt())
-
-            // dimaligns
-            if( chunks.size > 11 ) {
-                mT.setDimAligns(
-                    chunks[11].toInt(), chunks[12].toInt(), chunks[13].toInt(),
-                    chunks[14].toInt(), chunks[15].toInt(), chunks[16].toInt()
-                )
-            }
-
-            if( chunks.size > 20 ) {
-                mT.isChangeDimAlignB_ = chunks[20].toBoolean()
-                mT.isChangeDimAlignC_ = chunks[21].toBoolean()
-            }
-
-
-
-            str.append(line)
-            str.append(System.getProperty("line.separator"))
-        }
-        //trilist.lastTapNumber_ = 1
-        myTriangleList = trilist
+    private fun setEditLists(trilist: TriangleList, dedlist: DeductionList){
+        trianglelist = trilist
         myDeductionList = dedlist
         turnToBlankTrilistUndo()
 
         trilist.recoverState(PointXY(0f, 0f))
 
-        myview.setDeductionList(dedlist, mScale)
-        myview.setTriangleList(trilist, mScale)
+        myview.setDeductionList(dedlist, viewscale)
+        myview.setTriangleList(trilist, viewscale)
         myview.resetViewToLastTapTriangle()
 
-        Log.d( "FileLoader", "my_view.setTriangleList: " + myview.myTriangleList.size() )
-        // メニューバーのタイトル
-        //setTitles()
+        Log.d( "FileLoader", "my_view.setTriangleList: " + myview.trianglelist.size() )
 
         deductionMode = true
-        editorResetBy(myTriangleList)
-        //colorMovementFabs()
+        editorResetBy(trianglelist)
         flipDeductionMode()
-        //printDebugConsole()
-        return true
     }
 
-    private fun readheaderLine(
-        chunks: List<String?>,
-        line: String?,
-        reader: BufferedReader
-    ): Pair<List<String?>, String?> {
-        var chunks1 = chunks
-        var line1 = line
-        if (chunks1[0]!! == "koujiname") {
-            koujiname = chunks1[1]!!.toString()
-            line1 = reader.readLine()
-            chunks1 = line1?.split(",")!!.map { it.trim() }
-        }
-        if (chunks1[0]!! == "rosenname") {
-            rosenname = chunks1[1]!!.toString()
-            findViewById<EditText>(R.id.rosenname).setText(rosenname)
-            line1 = reader.readLine()
-            chunks1 = line1?.split(",")!!.map { it.trim() }
-        }
-        if (chunks1[0]!! == "gyousyaname") {
-            gyousyaname = chunks1[1]!!.toString()
-            line1 = reader.readLine()
-            chunks1 = line1?.split(",")!!.map { it.trim() }
-        }
-        if (chunks1[0]!! == "zumennum") {
-            zumennum = chunks1[1]!!.toString()
-            line1 = reader.readLine()
-            chunks1 = line1?.split(",")!!.map { it.trim() }
-        }
-        return Pair(chunks1, line1)
+    private fun setAllTextSize(textsize:Float){
+        myview.setAllTextSize(textsize)
     }
 
     private fun resumeCSV() {
+        val filepath = this.filesDir.absolutePath + "/" + PrivateCSVFileName
+        val file = File(filepath)
+        if( !file.exists() ) {
+            createNew()
+            showToast("The PrivateCSV file does not exist.")
+            return
+        }
+
         StringBuilder()
         try {
             val reader = openFileAsBufferedReader(PrivateCSVFileName)
@@ -3125,7 +2937,7 @@ class MainActivity : AppCompatActivity(),
 
             // 結果をログに出力
             if(myview.isDebug_)logFilePreview(PrivateCSVFileName, "resumeCSV")
-            showToast("resumeCSV: success")
+            //showToast("resumeCSV: success")
 
         } catch (e: IOException) {
             e.printStackTrace()
@@ -3134,7 +2946,15 @@ class MainActivity : AppCompatActivity(),
 
     //endregion
 
-    // region logs
+    // region logs and Toast
+    var currentToast: Toast? = null
+    fun showToast(message: String, isOverwrite:Boolean=true ) {
+        if(isOverwrite){
+            currentToast?.cancel() // 現在表示されているToastがあればキャンセル
+            currentToast = Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).apply { show() }
+        }
+        else Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).apply { show() }
+    }
 
     fun Context.logFilePreview(filePath: String, callerMethodName: String = "UnknownCaller") {
         val file = File(this.filesDir, filePath)
@@ -3150,21 +2970,61 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun logListCurrent(tag: String="ui", callerName: String = "unknown"){
-        Log.d(tag,callerName+" my_view.trilist.current:"+myview.myTriangleList.selectedNumber)
-        Log.d(tag,callerName+" my_view.trilist.lastTapNumber:"+myview.myTriangleList.lastTapNumber_)
-        Log.d(tag,callerName+" mainActivity.trilist.current:"+myTriangleList.selectedNumber)
-        Log.d(tag,callerName+" mainActivity.trilist.lastTapNumber:"+myTriangleList.lastTapNumber_)
+        Log.d(tag,callerName+" my_view.trilist.current:"+myview.trianglelist.selectedNumber)
+        Log.d(tag,callerName+" my_view.trilist.lastTapNumber:"+myview.trianglelist.lastTapNumber)
+        Log.d(tag,callerName+" mainActivity.trilist.current:"+trianglelist.selectedNumber)
+        Log.d(tag,callerName+" mainActivity.trilist.lastTapNumber:"+trianglelist.lastTapNumber)
         Log.d(tag,callerName+" mainActivity.dedlist.current:"+myDeductionList.current)
         Log.d(tag,callerName+" mainActivity.dedlist.lastTapIndex_:"+myDeductionList.lastTapIndex_)
     }
 
     private fun logFabController(tag: String = "ui fab"){
-        val info1 = "trilist in mainActivity \n${myTriangleList.toStrings()}"
-        val info2 = "trilist in myview \n${myview.myTriangleList.toStrings()}"
+        val info1 = "trilist in mainActivity \n${trianglelist.toStrings()}"
+        val info2 = "trilist in myview \n${myview.trianglelist.toStrings()}"
         Log.d(tag,info1)
         Log.d(tag,info2)
     }
 
     //endregion
+
+    // ---------------------------------------------
+    // Share / View インテントで渡された CSV の読み込み処理
+    private fun handleIncomingIntent(incoming: Intent?) {
+        incoming ?: return
+        when (incoming.action) {
+            Intent.ACTION_SEND -> {
+                val uri: Uri? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    incoming.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+                } else {
+                    @Suppress("DEPRECATION")
+                    incoming.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+                }
+                uri?.let { processCsvUri(it) }
+            }
+            Intent.ACTION_VIEW -> {
+                incoming.data?.let { processCsvUri(it) }
+            }
+        }
+    }
+
+    private fun processCsvUri(uri: Uri) {
+        // CSV ファイル以外は無視
+        val fileName = getFileName(uri)
+        if (!fileName.endsWith(".csv", ignoreCase = true)) return
+        try {
+            loadFileWithEncoding(uri) { reader ->
+                parseCSV(reader)
+                setTitles()
+            }
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIncomingIntent(intent)
+    }
+    // ---------------------------------------------
 
 } // end of class

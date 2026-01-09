@@ -7,7 +7,6 @@
         <item name="android:windowBackground">@drawable/splash_drawable_y</item>
     </style>
 
-
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
         <!-- Customize your theme here. -->
@@ -15,6 +14,8 @@
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
         <item name="android:fontFamily">@font/sawarabimincho_regular</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textScaleX">1.0</item>
     </style>
 
     <style name="AppTheme.NoActionBar">
@@ -24,7 +25,68 @@
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
         <item name="android:fontFamily">@font/sawarabimincho_regular</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textScaleX">1.0</item>
     </style>
+
+    <style name="Fab">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginStart">15dp</item>
+        <item name="android:layout_marginEnd">15dp</item>
+        <item name="android:layout_marginTop">15dp</item>
+    </style>
+
+    <style name ="TableRow">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:gravity">center_horizontal</item>
+        <item name="android:padding">1dp</item>
+    </style>
+
+    <style name="TextEditor">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:layout_gravity">center_horizontal</item>
+        <item name="android:gravity">center</item>
+        <item name="android:padding">0dp</item>
+        <item name="android:textSize">@dimen/ts</item>
+        <item name="android:autoSizeMaxTextSize">15sp</item>
+    </style>
+
+    <style name="TextEditorW1" parent="TextEditor">
+        <item name="android:layout_weight">@dimen/w1</item>
+    </style>
+
+    <style name="TextEditorW1.5" parent="TextEditor">
+        <item name="android:layout_weight">@dimen/w1.5</item>
+    </style>
+
+    <style name="TextEditorW2" parent="TextEditor">
+        <item name="android:layout_weight">@dimen/w2</item>
+    </style>
+
+    <style name="TextEditorBorderW1" parent="TextEditor">
+        <item name="android:background">@drawable/border</item>
+        <item name="android:layout_weight">@dimen/w1</item>
+    </style>
+
+    <style name="TextEditorBorderW1.5" parent="TextEditor">
+        <item name="android:background">@drawable/border</item>
+        <item name="android:layout_weight">@dimen/w1.5</item>
+    </style>
+
+
+    <style name="TextEditorBorderW2" parent="TextEditor">
+        <item name="android:background">@drawable/border</item>
+        <item name="android:layout_weight">@dimen/w2</item>
+    </style>
+
+    <style name="TextEditorBorderW3" parent="TextEditor">
+        <item name="android:background">@drawable/border_transparent</item>
+        <item name="android:layout_weight">@dimen/w2</item>
+    </style>
+
 
     <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
 
@@ -34,5 +96,6 @@
         <item name="colorControlNormal">@color/colorAccent</item>
         <item name="colorControlActivated">@color/colorYellow</item>
     </style>
+
 
 </resources>

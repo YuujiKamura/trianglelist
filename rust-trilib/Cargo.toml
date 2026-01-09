@@ -1,0 +1,10 @@
+[package]
+name = "trilib"
+version = "0.1.0"
+edition = "2021"
+description = "Triangle list library - Rust implementation"
+license = "MIT"
+
+[dependencies]
+
+[dev-dependencies]

@@ -8,7 +8,7 @@
     <string name="action_save_sfc">SFC出力</string>
     <string name="action_save_pdf">PDF出力</string>
     <string name="action_send_mail">メールを送信</string>
-    <string name="action_usage" translatable="false">取扱説明書</string>
+    <string name="action_usage">取扱説明書</string>
 
     <string name="tenkai_title">面 積 展 開 図</string>
     <string name="tenkai_koujimei">工 事 名</string>
@@ -25,16 +25,15 @@
     <string name="menseki_koujimei">工事名：</string>
     <string name="menseki_syoukei"> 小計</string>
     <string name="menseki_goukei">合計</string>
-    <string name="editor_number">番号</string>
-    <string name="editor_name">名称</string>
-    <string name="editor_sokuten">測点</string>
-    <string name="editor_lA">辺長Ａ</string>
-    <string name="editor_lB">辺長Ｂ</string>
-    <string name="editor_lC">辺長Ｃ</string>
-    <string name="editor_parent">親</string>
-    <string name="editor_setuzoku">接続</string>
-    <string name="editor_syozoku">所属</string>
-    <string name="editor_form">形状</string>
+    <string name="editor_name" translatable="false">名称</string>
+    <string name="editor_sokuten" translatable="false">測点</string>
+    <string name="editor_lA" translatable="false">辺A</string>
+    <string name="editor_lB" translatable="false">辺B</string>
+    <string name="editor_lC" translatable="false">辺C</string>
+    <string name="editor_parent" translatable="false">親</string>
+    <string name="editor_setuzoku" translatable="false">接</string>
+    <string name="editor_syozoku" translatable="false">親</string>
+    <string name="editor_form" translatable="false">形</string>
     <string name="editor_koujyo">控除</string>
     <string name="credit">http://trianglelist.home.blog</string>
 
@@ -67,6 +66,11 @@
         <item>1</item>
     </string-array>
 
+    <string-array name="EditModeList">
+        <item>辺B</item>
+        <item>延長L</item>
+    </string-array>
+
     <string-array name="DeductionFormList">
         <item>-</item>
         <item>Box</item>
@@ -88,4 +92,34 @@
     </string-array>
     <string name="action_privacy">個人情報保護方針</string>
     <string name="action_save_xlsx">Xlsx出力</string>
+    <string name="rotate_to_left" translatable="false">Rotate Left</string>
+    <string name="rotate_to_right" translatable="false">Rotate Right</string>
+    <string name="test_run_basic_senario" translatable="false">Test run basic senario</string>
+    <string name="reset_view" translatable="false">Reset View</string>
+    <string name="list_to_up" translatable="false">List Up</string>
+    <string name="list_to_down" translatable="false">List Down</string>
+    <string name="fill_color" translatable="false">"Change Color "</string>
+    <string name="show_xlsx" translatable="false">View Xlsx</string>
+    <string name="increase_text_size" translatable="false">Increase Text Size</string>
+    <string name="decrease_text_size" translatable="false">Decrease Text Size</string>
+    <string name="show_debug_string" translatable="false">Show Debug Strings</string>
+    <string name="view_pdf" translatable="false">View PDF</string>
+    <string name="share_pdf_to" translatable="false">Share PDF</string>
+    <string name="send_email_to" translatable="false">Gmail</string>
+    <string name="connect_to_b_length_in_parent" translatable="false">Connect to length B</string>
+    <string name="connect_to_c_length_in_parent" translatable="false">Connect to length C</string>
+    <string name="rewrite_shape" translatable="false">Add or Rewrite</string>
+    <string name="undo" translatable="false">Undo (one-time only)</string>
+    <string name="flip_dimension_text_in_vertical" translatable="false">Flip Dim in Vertical</string>
+    <string name="flip_dimension_text_in_horizontal" translatable="false">Flip Dim in Horizontal</string>
+    <string name="flip_connect_point_in_horizontal" translatable="false">Slide Connection (in Different Lengthes)</string>
+    <string name="flag_up_a_information_text" translatable="false">Flag Up the Info</string>
+    <string name="change_deduction_mode" translatable="false">Change Edit Mode</string>
+    <string name="delete_a_shape_tap_twice" translatable="false">Delete Last, when Tap Twice</string>
+    <string name="trilist_number_reverse" translatable="false">List Reverse (Dedmode Only)</string>
+    <string name="view_dxf" translatable="false">View DXF (need JW cad viewer)</string>
+    <string name="share_files" translatable="false" >Share Files</string>
+    <string name="rosenname_hint" translatable="false">input rosenname</string>
+    <string name="editor_number" translatable="false">　</string>
+
 </resources>

@@ -1,395 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     tools:context=".MainActivity">
 
-    <RelativeLayout
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent" >
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/toolbarLayout"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:gravity="center_horizontal"
+        android:background="@color/colorPrimary"
+        android:theme="@style/AppTheme.AppBarOverlay"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent">
 
-        <com.google.android.material.appbar.AppBarLayout
-            android:id="@+id/toolbarLayout"
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:background="@color/colorPrimary"
-            android:theme="@style/AppTheme.AppBarOverlay">
+            app:popupTheme="@style/AppTheme.PopupOverlay" />
 
-            <androidx.appcompat.widget.Toolbar
-                android:id="@+id/toolbar"
-                android:layout_width="match_parent"
-                android:layout_height="40dp"
-                android:background="@color/colorPrimary"
-                app:popupTheme="@style/AppTheme.PopupOverlay" />
+    </com.google.android.material.appbar.AppBarLayout>
 
-        </com.google.android.material.appbar.AppBarLayout>
+    <include
+        android:id="@+id/editor_table"
+        layout="@layout/editor_table"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/toolbarLayout" />
 
-        <include layout="@layout/content_main" />
+    <include layout="@layout/adview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/editor_table" />
 
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_rot_l"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top|start"
-            android:layout_marginStart="76dp"
-            android:layout_marginTop="@dimen/top_btn"
-            app:fabSize="mini"
-            app:layout_constraintStart_toEndOf="@+id/LL3"
-            app:srcCompat="@drawable/rot_l"
-            android:contentDescription="rotate to left" />
+    <include layout="@layout/fabs"
+        android:id="@+id/fab_table"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/editor_table"
+        android:visibility="visible"/>
 
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_rot_r"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top|start"
-            android:layout_marginStart="136dp"
-            android:layout_marginTop="@dimen/top_btn"
-            app:fabSize="mini"
-            app:layout_constraintStart_toEndOf="@+id/fab_up"
-            app:srcCompat="@drawable/rot_r"
-            android:contentDescription="rotate to right" />
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_resetView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top|start"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="@dimen/top_btn"
-            android:contentDescription="reset view"
-            android:visibility="visible"
-            app:fabSize="mini"
-            app:layout_constraintTop_toBottomOf="@id/toolbarLayout"
-            app:srcCompat="@android:drawable/ic_menu_mylocation" />
-
-
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_up"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top|start"
-            android:layout_marginStart="16dp"
-            android:layout_alignTop="@id/fab_resetView"
-            android:layout_marginTop="50dp"
-            android:visibility="visible"
-            app:fabSize="mini"
-            app:layout_constraintTop_toBottomOf="@id/fab_resetView"
-            app:srcCompat="@drawable/up"
-            android:contentDescription="list to up"/>
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_down"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top|start"
-            android:layout_marginStart="16dp"
-            android:layout_alignTop="@id/fab_up"
-            android:layout_marginTop="50dp"
-            android:visibility="visible"
-            app:fabSize="mini"
-            app:layout_constraintTop_toBottomOf="@id/fab_up"
-            app:srcCompat="@drawable/down"
-            android:contentDescription="list to down"/>
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_testbasic"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top|start"
-            android:layout_marginStart="186dp"
-            android:layout_marginTop="@dimen/top_btn"
-            android:visibility="invisible"
-            app:fabSize="mini"
-            app:layout_constraintStart_toEndOf="@+id/rot_r"
-            app:srcCompat="@drawable/ic_trilist_playstore"
-            android:contentDescription="test run basic senario" />
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_fillcolor"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top|start"
-            android:layout_marginStart="16dp"
-            android:layout_alignTop="@id/fab_down"
-            android:layout_marginTop="50dp"
-            android:visibility="invisible"
-            app:fabSize="mini"
-            app:layout_constraintTop_toBottomOf="@id/fab_down"
-            app:srcCompat="@drawable/fillcolor"
-            android:contentDescription="fill color"/>
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_xlsx"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top|start"
-            android:layout_marginStart="16dp"
-            android:layout_alignTop="@id/fab_down"
-            android:layout_marginTop="50dp"
-            android:visibility="visible"
-            app:fabSize="mini"
-            app:layout_constraintTop_toBottomOf="@id/fab_down"
-            app:srcCompat="@drawable/xlsx"
-            android:contentDescription="show xlsx"/>
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_texplus"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top|start"
-            android:layout_marginStart="16dp"
-            android:layout_alignTop="@id/fab_xlsx"
-            android:layout_marginTop="60dp"
-            android:visibility="visible"
-            app:fabSize="mini"
-            app:layout_constraintTop_toBottomOf="@id/fab_xlsx"
-            app:srcCompat="@drawable/texplus"
-            android:contentDescription="increase text size"/>
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_texminus"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top|start"
-            android:layout_marginStart="16dp"
-            android:layout_alignTop="@id/fab_texplus"
-            android:layout_marginTop="50dp"
-            android:visibility="visible"
-            app:fabSize="mini"
-            app:layout_constraintTop_toBottomOf="@id/fab_texplus"
-            app:srcCompat="@drawable/texminus"
-            android:contentDescription="decrease text size"/>
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_debug"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top|start"
-            android:layout_marginStart="16dp"
-            android:layout_alignTop="@id/fab_texminus"
-            android:layout_marginTop="50dp"
-            android:visibility="visible"
-            app:fabSize="mini"
-            app:layout_constraintTop_toBottomOf="@id/fab_texminus"
-            app:srcCompat="@android:drawable/ic_menu_info_details"
-            android:contentDescription="show debug string"/>
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_pdf"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top|start"
-            android:layout_marginStart="16dp"
-            android:layout_alignTop="@id/fab_debug"
-            android:layout_marginTop="50dp"
-            android:visibility="visible"
-            app:fabSize="mini"
-            app:layout_constraintTop_toBottomOf="@id/fab_texminus"
-            app:srcCompat="@drawable/pdf"
-            android:contentDescription="view pdf"/>
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_share"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top|start"
-            android:layout_marginStart="16dp"
-            android:layout_alignTop="@id/fab_pdf"
-            android:layout_marginTop="70dp"
-            android:visibility="visible"
-            app:fabSize="mini"
-            app:layout_constraintTop_toBottomOf="@id/fab_pdf"
-            app:srcCompat="@android:drawable/ic_menu_share"
-            android:contentDescription="share pdf to"/>
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_mail"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top|start"
-            android:layout_marginStart="16dp"
-            android:layout_alignTop="@id/fab_share"
-            android:layout_marginTop="70dp"
-            android:visibility="visible"
-            app:fabSize="mini"
-            app:layout_constraintTop_toBottomOf="@id/fab_share"
-            app:srcCompat="@android:drawable/ic_dialog_email"
-            android:contentDescription="share pdf to"/>
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_setB"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignEnd="@id/toolbarLayout"
-            android:layout_gravity="top|end"
-            android:layout_marginTop="@dimen/top_btn"
-            android:layout_marginEnd="136dp"
-            android:contentDescription="connect to B length in parent"
-            app:fabSize="mini"
-            app:layout_constraintTop_toBottomOf="@id/toolbarLayout"
-            app:srcCompat="@drawable/set_b" />
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_setC"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignEnd="@id/toolbarLayout"
-            android:layout_gravity="top|end"
-            android:layout_marginTop="@dimen/top_btn"
-            android:layout_marginEnd="76dp"
-            android:contentDescription="connect to C length in parent"
-            app:fabSize="mini"
-            app:layout_constraintTop_toBottomOf="@+id/fab_setB"
-            app:srcCompat="@drawable/set_c" />
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_replace"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignEnd="@id/toolbarLayout"
-            android:layout_gravity="top|end"
-            android:layout_marginTop="@dimen/top_btn"
-            android:layout_marginEnd="16dp"
-            android:scaleType="fitCenter"
-            app:fabSize="mini"
-            app:layout_constraintTop_toBottomOf="parent"
-            app:srcCompat="@android:drawable/ic_menu_edit"
-            android:contentDescription="rewrite shape"/>
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_undo"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignRight="@id/toolbarLayout"
-            android:layout_gravity="top|end"
-            android:layout_alignTop="@id/fab_replace"
-            android:layout_marginTop="60dp"
-            android:layout_marginEnd="16dp"
-            app:backgroundTint="@color/colorAccent"
-            app:fabSize="mini"
-            android:visibility="visible"
-            app:layout_constraintTop_toBottomOf="@+id/fab_replace"
-            app:srcCompat="@android:drawable/ic_menu_revert"
-            android:contentDescription="undo"/>
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_dimsidew"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignRight="@id/toolbarLayout"
-            android:layout_gravity="top|end"
-            android:layout_alignTop="@id/fab_undo"
-            android:layout_marginTop="50dp"
-            android:layout_marginEnd="16dp"
-            app:backgroundTint="@color/colorAccent"
-            app:fabSize="mini"
-            app:layout_constraintTop_toBottomOf="@+id/fab_replace"
-            app:srcCompat="@drawable/textright"
-            android:contentDescription="flip dimension text in horizonal" />
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_dimsideh"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignRight="@id/toolbarLayout"
-            android:layout_gravity="top|end"
-            android:layout_alignTop="@id/fab_dimsidew"
-            android:layout_marginTop="50dp"
-            android:layout_marginEnd="16dp"
-            app:backgroundTint="@color/colorAccent"
-            app:fabSize="mini"
-            app:layout_constraintTop_toBottomOf="@+id/fab_dimsidew"
-            app:srcCompat="@drawable/textoutside"
-            android:contentDescription="flip dimension text in vertical"/>
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_nijyuualign"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignRight="@id/toolbarLayout"
-            android:layout_gravity="top|end"
-            android:layout_alignTop="@id/fab_dimsideh"
-            android:layout_marginTop="50dp"
-            android:layout_marginEnd="16dp"
-            app:backgroundTint="@color/colorAccent"
-            app:fabSize="mini"
-            app:layout_constraintTop_toBottomOf="@+id/fab_dimsideh"
-            app:srcCompat="@drawable/nijyuu"
-            android:contentDescription="flip connect point in horizonal"/>
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_flag"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignRight="@id/toolbarLayout"
-            android:layout_gravity="top|end"
-            android:layout_alignTop="@id/fab_nijyuualign"
-            android:layout_marginTop="50dp"
-            android:layout_marginEnd="16dp"
-            app:fabSize="mini"
-            app:layout_constraintTop_toBottomOf="@+id/fab_nijyuualign"
-            app:srcCompat="@drawable/flag_b"
-            android:contentDescription="flag up a information text"/>
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_deduction"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignRight="@id/toolbarLayout"
-            android:layout_gravity="top|end"
-            android:layout_alignTop="@id/fab_flag"
-            android:layout_marginTop="50dp"
-            android:layout_marginEnd="16dp"
-            app:fabSize="mini"
-            app:layout_constraintTop_toBottomOf="@+id/fab_insert"
-            app:srcCompat="@drawable/deduction"
-            android:contentDescription="into deduction mode" />
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_minus"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignRight="@id/toolbarLayout"
-            android:layout_gravity="top|end"
-            android:layout_alignTop="@id/fab_deduction"
-            android:layout_marginTop="50dp"
-            android:layout_marginEnd="16dp"
-            app:backgroundTint="@color/colorAccent"
-            app:fabSize="mini"
-            app:layout_constraintTop_toBottomOf="@+id/fab_replace"
-            app:srcCompat="@android:drawable/ic_menu_close_clear_cancel"
-            android:contentDescription="delete a shape, tap twice"/>
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_numreverse"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignRight="@id/toolbarLayout"
-            android:visibility="visible"
-            android:layout_gravity="top|end"
-            android:layout_marginTop="50dp"
-            android:layout_marginEnd="16dp"
-            android:layout_alignTop="@id/fab_minus"
-            app:layout_constraintTop_toBottomOf="@+id/fab_minus"
-            app:backgroundTint="@color/colorAccent"
-            app:fabSize="mini"
-            app:srcCompat="@android:drawable/ic_popup_sync"
-            android:contentDescription="trilist number reverse"/>
-
-        <ProgressBar
-            android:id="@+id/indeterminateBar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:background="@drawable/border"
-            android:backgroundTint="@color/colorWhite"
-            android:maxWidth="300dp"
-            android:maxHeight="300dp"
-            android:visibility="invisible" />
-
-    </RelativeLayout>
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
