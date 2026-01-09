@@ -5,3 +5,10 @@ version = 4
 [[package]]
 name = "rust-core"
 version = "0.1.0"
+dependencies = [
+ "trilib",
+]
+
+[[package]]
+name = "trilib"
+version = "0.1.0"
