@@ -97,6 +97,22 @@
             font-size: 16px;
             color: var(--text-muted);
         }
+
+        /* Mobile-specific styles */
+        @media (max-width: 768px) {
+            html, body {
+                touch-action: manipulation;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            #canvas-container {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -104,6 +120,9 @@
         <div class="spinner"></div>
         <div class="loading-text">読み込み中...</div>
     </div>
+
+    <!-- Hidden file input for CSV loading -->
+    <input type="file" id="csv-file-input" accept=".csv,.txt" style="display: none;">
 
     <!-- Canvas container with overlay for text -->
     <div id="canvas-container">
@@ -121,13 +140,36 @@
             const loading = document.getElementById('loading');
             if (loading) {
                 loading.classList.add('hidden');
-                // transitionendイベントでDOM要素を削除（setTimeoutより信頼性が高い）
                 loading.addEventListener('transitionend', function handler() {
                     loading.removeEventListener('transitionend', handler);
                     loading.remove();
                 }, { once: true });
             }
         };
+
+        // File picker for CSV loading
+        window.openFilePicker = function() {
+            document.getElementById('csv-file-input').click();
+        };
+
+        // Store callback for file loaded event
+        window.onCsvFileLoaded = null;
+
+        document.getElementById('csv-file-input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const content = event.target.result;
+                if (window.onCsvFileLoaded) {
+                    window.onCsvFileLoaded(content);
+                }
+            };
+            reader.readAsText(file, 'UTF-8');
+            // Reset input so same file can be selected again
+            e.target.value = '';
+        });
     </script>
 </body>
 </html>
