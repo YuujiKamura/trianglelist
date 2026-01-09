@@ -69,7 +69,6 @@ pub fn draw_text_cad_style(
     color: Color32,
     align: TextAlign,
 ) {
-<<<<<<< HEAD
     // Convert CAD alignment to egui's Align2.
     let align2 = egui::Align2([
         match align.horizontal {
@@ -153,18 +152,6 @@ pub fn draw_text_cad_style(
     } else {
         // No rotation, use standard text drawing
         painter.text(pos, align2, text, egui::FontId::monospace(height), color);
-=======
-    // Note: egui doesn't have built-in text rotation. This is a placeholder.
-    if rotation_degrees.abs() > 1e-3 {
-        painter.text(
-            pos,
-            egui::Align2::CENTER_CENTER,
-            text,
-            egui::FontId::monospace(height),
-            color,
-        );
-        return;
->>>>>>> 117a1f878b2ad4e9579df6a8249857d6cdfa0973
     }
 
     // Convert CAD alignment to egui's Align2.
