@@ -26,7 +26,7 @@
 //! ```
 
 use crate::csv::ParsedTriangle;
-use dxf::dxf::entities::{DxfLine, DxfText, HorizontalAlignment, VerticalAlignment};
+use dxf::{DxfLine, DxfText, HorizontalAlignment, VerticalAlignment};
 
 /// Converts triangles to DXF entities
 ///

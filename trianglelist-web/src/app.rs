@@ -528,7 +528,7 @@ impl TriangleListApp {
         }
 
         // Generate DXF content
-        let writer = dxf::dxf::writer::DxfWriter::new();
+        let writer = dxf::DxfWriter::new();
         let dxf_content = writer.write(&lines, &texts);
 
         // Download the file
