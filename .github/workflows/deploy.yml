@@ -46,12 +46,9 @@ jobs:
           crate: trunk
           locked: true
 
-      - name: Check Trunk build options
-        run: trunk build --help
-
       - name: Build WASM with Trunk
         working-directory: trianglelist-web
-        run: trunk build --release
+        run: trunk build --release --minify false
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
