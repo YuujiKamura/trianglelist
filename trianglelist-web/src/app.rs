@@ -6,6 +6,8 @@
 use eframe::egui;
 
 use crate::csv::{parse_csv, ParseError, ParseResult, ParsedTriangle};
+use crate::render::{ViewState, draw_triangle, draw_triangle_number, draw_side_length};
+use crate::render::color::{default_triangle_fill, DEFAULT_TRIANGLE_STROKE, DEFAULT_TEXT_COLOR};
 
 /// The main TriangleList application struct.
 ///
@@ -22,6 +24,10 @@ pub struct TriangleListApp {
     is_drop_hover: bool,
     /// CSV text input for manual entry
     csv_input: String,
+    /// View state for pan and zoom
+    view_state: ViewState,
+    /// Whether to show triangle visualization
+    show_canvas: bool,
 }
 
 impl Default for TriangleListApp {
@@ -32,6 +38,8 @@ impl Default for TriangleListApp {
             warnings: Vec::new(),
             is_drop_hover: false,
             csv_input: String::new(),
+            view_state: ViewState::default(),
+            show_canvas: false,
         }
     }
 }
@@ -58,12 +66,20 @@ impl TriangleListApp {
                 self.triangles = parse_result.triangles;
                 self.warnings = parse_result.warnings;
                 self.error_message = None;
+                self.show_canvas = !self.triangles.is_empty();
+                
+                // Fit view to triangles
+                if !self.triangles.is_empty() {
+                    self.view_state.fit_to_triangles(&self.triangles);
+                }
+                
                 log::info!("Successfully parsed {} triangles", self.triangles.len());
             }
             Err(e) => {
                 self.error_message = Some(e.to_string());
                 self.triangles.clear();
                 self.warnings.clear();
+                self.show_canvas = false;
                 log::error!("CSV parse error: {}", e);
             }
         }
