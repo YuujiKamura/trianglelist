@@ -49,8 +49,13 @@ jobs:
       - name: Build WASM with Trunk
         working-directory: trianglelist-web
         env:
+          # wasm-optの追加オプション（Trunk 0.21では環境変数名が異なる可能性）
+          # 試行1: TRUNK_WASM_OPT_ARGS
           TRUNK_WASM_OPT_ARGS: "--enable-bulk-memory --enable-nontrapping-float-to-int"
-        run: trunk build --release
+          # 試行2: もし上記が動作しない場合、wasm-optを無効化するか別の方法を検討
+        run: |
+          echo "TRUNK_WASM_OPT_ARGS=${TRUNK_WASM_OPT_ARGS}"
+          trunk build --release
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
