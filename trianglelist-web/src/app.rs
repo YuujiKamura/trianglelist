@@ -6,6 +6,7 @@
 use eframe::egui;
 
 use crate::csv::{parse_csv, ParseError, ParseResult, ParsedTriangle};
+use crate::dxf::{TriangleToDxfConverter, download_dxf};
 use crate::render::ViewState;
 
 /// The main TriangleList application struct.
@@ -172,10 +173,19 @@ impl TriangleListApp {
     }
 
     /// Renders the triangle list
-    fn render_triangle_list(&self, ui: &mut egui::Ui) {
+    fn render_triangle_list(&mut self, ui: &mut egui::Ui) {
         if self.triangles.is_empty() {
             return;
         }
+
+        // DXF download button
+        ui.add_space(10.0);
+        ui.horizontal(|ui| {
+            if ui.button("Download DXF").clicked() {
+                self.download_dxf_file();
+            }
+        });
+        ui.add_space(10.0);
 
         ui.add_space(10.0);
         ui.separator();
@@ -233,6 +243,38 @@ impl TriangleListApp {
                     });
             });
     }
+
+    /// Downloads triangles as DXF file
+    fn download_dxf_file(&self) {
+        if self.triangles.is_empty() {
+            log::warn!("No triangles to export");
+            return;
+        }
+
+        // Convert triangles to DXF entities
+        let converter = TriangleToDxfConverter::new();
+        let (lines, texts) = converter.convert(&self.triangles);
+
+        // Generate DXF content
+        let writer = dxf::dxf::writer::DxfWriter::new();
+        let dxf_content = writer.write(&lines, &texts);
+
+        // Download the file
+        #[cfg(target_arch = "wasm32")]
+        {
+            if let Err(e) = download_dxf(&dxf_content, "triangles.dxf") {
+                log::error!("Failed to download DXF: {:?}", e);
+            } else {
+                log::info!("DXF file downloaded successfully");
+            }
+        }
+
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            log::info!("DXF content generated ({} lines, {} texts)", lines.len(), texts.len());
+            // In non-WASM environments, you might want to write to a file
+        }
+    }
 }
 
 impl eframe::App for TriangleListApp {
@@ -282,7 +324,7 @@ impl eframe::App for TriangleListApp {
             // Warnings display
             self.render_warnings(ui);
 
-            // Triangle list display
+            // Triangle list display (mutable for download button)
             self.render_triangle_list(ui);
         });
     }
