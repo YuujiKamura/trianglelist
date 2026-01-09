@@ -95,13 +95,15 @@ impl TriangleListApp {
                     // Use the dedicated text-overlay canvas for Canvas 2D text rendering
                     if let Some(canvas) = document.get_element_by_id("text-overlay") {
                         if let Ok(canvas_element) = canvas.dyn_into::<web_sys::HtmlCanvasElement>() {
-                            // Sync overlay canvas size with main canvas
-                            if let Some(main_canvas) = document.get_element_by_id("trianglelist-canvas") {
-                                if let Ok(main_element) = main_canvas.dyn_into::<web_sys::HtmlCanvasElement>() {
-                                    canvas_element.set_width(main_element.width());
-                                    canvas_element.set_height(main_element.height());
-                                }
-                            }
+                            // Get the actual display size from bounding client rect
+                            let rect = canvas_element.get_bounding_client_rect();
+                            let width = rect.width() as u32;
+                            let height = rect.height() as u32;
+
+                            // Set canvas internal resolution to match display size
+                            canvas_element.set_width(width);
+                            canvas_element.set_height(height);
+                            web_sys::console::log_1(&format!("text-overlay canvas size: {}x{}", width, height).into());
 
                             match Canvas2dTextRenderer::new(&canvas_element) {
                                 Ok(renderer) => {
@@ -127,7 +129,7 @@ impl TriangleListApp {
         }
     }
 
-    /// Sync text overlay canvas size with main canvas (call on resize)
+    /// Sync text overlay canvas size with display size (only when changed)
     #[cfg(target_arch = "wasm32")]
     fn sync_overlay_canvas_size(&self) {
         use web_sys::window;
@@ -136,11 +138,16 @@ impl TriangleListApp {
             if let Some(document) = window.document() {
                 if let Some(overlay) = document.get_element_by_id("text-overlay") {
                     if let Ok(overlay_element) = overlay.dyn_into::<web_sys::HtmlCanvasElement>() {
-                        if let Some(main) = document.get_element_by_id("trianglelist-canvas") {
-                            if let Ok(main_element) = main.dyn_into::<web_sys::HtmlCanvasElement>() {
-                                overlay_element.set_width(main_element.width());
-                                overlay_element.set_height(main_element.height());
-                            }
+                        // Get actual display size
+                        let rect = overlay_element.get_bounding_client_rect();
+                        let new_width = rect.width() as u32;
+                        let new_height = rect.height() as u32;
+
+                        // Only update if size changed (setting size resets canvas state)
+                        if overlay_element.width() != new_width || overlay_element.height() != new_height {
+                            overlay_element.set_width(new_width);
+                            overlay_element.set_height(new_height);
+                            log::debug!("Overlay canvas resized to {}x{}", new_width, new_height);
                         }
                     }
                 }
