@@ -431,4 +431,90 @@ Header4
         let invalid = ParsedTriangle::independent(2, 1.0, 1.0, 10.0);
         assert!(!invalid.is_valid_triangle());
     }
+
+    #[test]
+    fn test_minimal_csv_compatibility() {
+        // Test compatibility with minimal.csv format
+        let csv = r#"koujiname, 最小形式テスト
+rosenname, テスト路線
+gyousyaname, テスト業者
+zumennum, 1
+1, 6.0, 5.0, 4.0
+2, 5.5, 4.5, 3.5
+3, 4.0, 3.5, 3.0"#;
+
+        let result = parse_csv(csv).unwrap();
+        assert_eq!(result.triangles.len(), 3);
+
+        // Verify first triangle
+        let t1 = &result.triangles[0];
+        assert_eq!(t1.number, 1);
+        assert_eq!(t1.side_a, 6.0);
+        assert_eq!(t1.side_b, 5.0);
+        assert_eq!(t1.side_c, 4.0);
+        assert!(t1.is_independent());
+
+        // Verify second triangle
+        let t2 = &result.triangles[1];
+        assert_eq!(t2.number, 2);
+        assert_eq!(t2.side_a, 5.5);
+        assert_eq!(t2.side_b, 4.5);
+        assert_eq!(t2.side_c, 3.5);
+
+        // Verify third triangle
+        let t3 = &result.triangles[2];
+        assert_eq!(t3.number, 3);
+        assert_eq!(t3.side_a, 4.0);
+        assert_eq!(t3.side_b, 3.5);
+        assert_eq!(t3.side_c, 3.0);
+    }
+
+    #[test]
+    fn test_connected_csv_compatibility() {
+        // Test compatibility with connected.csv format
+        let csv = r#"koujiname, 接続形式テスト
+rosenname, テスト路線
+gyousyaname, テスト業者
+zumennum, 1
+1, 6.0, 5.0, 4.0, -1, -1
+2, 5.0, 4.0, 3.0, 1, 1
+3, 4.0, 3.5, 3.0, 1, 2
+4, 4.0, 3.5, 3.0, 2, 1
+5, 3.0, 2.5, 2.0, 2, 2
+6, 3.5, 3.0, 2.5, 3, 1
+7, 3.0, 2.5, 2.0, 3, 2"#;
+
+        let result = parse_csv(csv).unwrap();
+        assert_eq!(result.triangles.len(), 7);
+
+        // Verify first triangle (independent)
+        let t1 = &result.triangles[0];
+        assert_eq!(t1.number, 1);
+        assert!(t1.is_independent());
+
+        // Verify second triangle (connects to parent 1's B side)
+        let t2 = &result.triangles[1];
+        assert_eq!(t2.number, 2);
+        assert_eq!(t2.parent_number, 1);
+        assert_eq!(t2.connection_type, ConnectionType::ToParentB);
+        assert_eq!(t2.side_a, 5.0); // Should match parent's B side
+
+        // Verify third triangle (connects to parent 1's C side)
+        let t3 = &result.triangles[2];
+        assert_eq!(t3.number, 3);
+        assert_eq!(t3.parent_number, 1);
+        assert_eq!(t3.connection_type, ConnectionType::ToParentC);
+        assert_eq!(t3.side_a, 4.0); // Should match parent's C side
+
+        // Verify fourth triangle (connects to parent 2's B side)
+        let t4 = &result.triangles[3];
+        assert_eq!(t4.number, 4);
+        assert_eq!(t4.parent_number, 2);
+        assert_eq!(t4.connection_type, ConnectionType::ToParentB);
+
+        // Verify all triangles are valid
+        for triangle in &result.triangles {
+            assert!(triangle.is_valid_triangle(), "Triangle {} should be valid", triangle.number);
+        }
+    }
 }
