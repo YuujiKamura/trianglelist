@@ -5,6 +5,7 @@
 use eframe::egui::{Color32, Painter, Pos2, Shape, Stroke, Vec2};
 use crate::csv::ParsedTriangle;
 
+<<<<<<< HEAD
 /// Calculate triangle vertex positions from side lengths
 /// 
 /// Returns three points: [p1, p2, p3]
@@ -37,6 +38,8 @@ pub fn calculate_triangle_points(triangle: &ParsedTriangle) -> [Pos2; 3] {
     [p1, p2, p3]
 }
 
+=======
+>>>>>>> 117a1f878b2ad4e9579df6a8249857d6cdfa0973
 /// Padding factor for fit_to_triangles (90% of available space)
 const PADDING_FACTOR: f32 = 0.9;
 
