@@ -1,0 +1,13 @@
+[package]
+name = "rust-renderer"
+version = "0.1.0"
+edition = "2021"
+description = "DXF compatible text alignment and rendering utilities"
+
+[lib]
+name = "rust_renderer"
+path = "src/lib.rs"
+
+[dependencies]
+
+[dev-dependencies]
