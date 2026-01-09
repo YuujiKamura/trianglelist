@@ -355,18 +355,23 @@ impl TriangleListApp {
             // Draw dimension lines if enabled
             if self.show_dimensions {
                 use crate::render::dimension::{draw_triangle_dimensions, DimensionStyle};
+                use crate::csv::ConnectionType;
                 let dim_style = DimensionStyle::default();
                 let side_lengths = [
                     positioned.data.side_a,
                     positioned.data.side_b,
                     positioned.data.side_c,
                 ];
+                // Skip side A dimension if this triangle is connected to a parent
+                // (A-edge is shared with parent, so dimension is already shown by parent)
+                let skip_side_a = positioned.data.connection_type != ConnectionType::Independent;
                 draw_triangle_dimensions(
                     &painter,
                     points_screen,
                     side_lengths,
                     &self.view_state,
                     &dim_style,
+                    skip_side_a,
                 );
             }
 
