@@ -5,6 +5,9 @@
 use eframe::egui::{Color32, Painter, Pos2, Shape, Stroke, Vec2};
 use crate::csv::ParsedTriangle;
 
+/// Padding factor for fit_to_triangles (90% of available space)
+const PADDING_FACTOR: f32 = 0.9;
+
 /// View state for pan and zoom operations
 #[derive(Clone, Debug)]
 pub struct ViewState {
@@ -12,7 +15,7 @@ pub struct ViewState {
     pub pan: Pos2,
     /// Zoom level (1.0 = 100%)
     pub zoom: f32,
-    /// Canvas size
+    /// Canvas size (should be updated from UI when available)
     pub canvas_size: Vec2,
 }
 
@@ -21,8 +24,16 @@ impl Default for ViewState {
         Self {
             pan: Pos2::new(0.0, 0.0),
             zoom: 1.0,
-            canvas_size: eframe::egui::Vec2::new(800.0, 600.0),
+            // Default size - should be updated from actual canvas size when available
+            canvas_size: Vec2::new(800.0, 600.0),
         }
+    }
+}
+
+impl ViewState {
+    /// Update canvas size from UI
+    pub fn set_canvas_size(&mut self, size: Vec2) {
+        self.canvas_size = size;
     }
 }
 
@@ -44,46 +55,53 @@ impl ViewState {
     }
 
     /// Fit view to show all triangles
+    /// 
+    /// Note: This is a simplified implementation. For accurate results,
+    /// ensure canvas_size is set to the actual canvas dimensions before calling.
     pub fn fit_to_triangles(&mut self, triangles: &[ParsedTriangle]) {
         if triangles.is_empty() {
             return;
         }
 
         // Calculate bounding box (simplified - using side lengths as approximation)
-        let mut min_x = f64::MAX;
-        let mut min_y = f64::MAX;
-        let mut max_x = f64::MIN;
-        let mut max_y = f64::MIN;
+        // Convert to f32 early to avoid type mixing
+        let mut min_x = f32::MAX;
+        let mut min_y = f32::MAX;
+        let mut max_x = f32::MIN;
+        let mut max_y = f32::MIN;
 
         // Approximate triangle positions (simplified calculation)
-        let mut current_x = 0.0;
-        let current_y = 0.0;
+        let mut current_x = 0.0f32;
+        let current_y = 0.0f32;
         
         for triangle in triangles {
             // Simple approximation: place triangles in a row
+            let side_a = triangle.side_a as f32;
+            let side_b = triangle.side_b as f32;
+            
             min_x = min_x.min(current_x);
             min_y = min_y.min(current_y);
-            max_x = max_x.max(current_x + triangle.side_a);
-            max_y = max_y.max(current_y + triangle.side_b);
+            max_x = max_x.max(current_x + side_a);
+            max_y = max_y.max(current_y + side_b);
             
-            current_x += triangle.side_a * 1.2; // Add spacing
+            current_x += side_a * 1.2; // Add spacing
         }
 
         let width = max_x - min_x;
         let height = max_y - min_y;
 
         if width > 0.0 && height > 0.0 {
-            // Calculate zoom to fit
-            let zoom_x = self.canvas_size.x as f64 / width;
-            let zoom_y = self.canvas_size.y as f64 / height;
-            self.zoom = (zoom_x.min(zoom_y) * 0.9) as f32; // 90% to add padding
+            // Calculate zoom to fit with padding
+            let zoom_x = self.canvas_size.x / width;
+            let zoom_y = self.canvas_size.y / height;
+            self.zoom = zoom_x.min(zoom_y) * PADDING_FACTOR;
 
             // Center the view
             let center_x = (min_x + max_x) / 2.0;
             let center_y = (min_y + max_y) / 2.0;
             self.pan = Pos2::new(
-                (self.canvas_size.x / 2.0) - (center_x * self.zoom as f64) as f32,
-                (self.canvas_size.y / 2.0) - (center_y * self.zoom as f64) as f32,
+                self.canvas_size.x / 2.0 - center_x * self.zoom,
+                self.canvas_size.y / 2.0 - center_y * self.zoom,
             );
         }
     }
