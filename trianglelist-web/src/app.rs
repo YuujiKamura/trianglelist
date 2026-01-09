@@ -33,10 +33,16 @@ pub struct TriangleListApp {
     view_state: ViewState,
     /// Whether to show triangle visualization
     show_canvas: bool,
+    /// Whether to show dimension lines
+    show_dimensions: bool,
     /// Use Canvas 2D API for text rendering (CAD quality)
     use_canvas2d_text: bool,
     /// Canvas 2D text renderer (initialized when needed)
     canvas2d_text_renderer: Option<Canvas2dTextRenderer>,
+    /// Current mouse position in model coordinates (for status bar)
+    mouse_model_pos: Option<Pos2>,
+    /// Show side panel
+    show_side_panel: bool,
 }
 
 impl Default for TriangleListApp {
@@ -49,8 +55,11 @@ impl Default for TriangleListApp {
             csv_input: String::new(),
             view_state: ViewState::default(),
             show_canvas: false,
+            show_dimensions: false,
             use_canvas2d_text: false, // Default to egui for now
             canvas2d_text_renderer: None,
+            mouse_model_pos: None,
+            show_side_panel: true,
         }
     }
 }
@@ -291,6 +300,16 @@ impl TriangleListApp {
         let rect = response.rect;
         self.view_state.set_canvas_size(rect.size());
 
+        // Update mouse position for status bar
+        if let Some(pointer_pos) = response.hover_pos() {
+            let relative_vec = pointer_pos - rect.min;
+            let relative_pos = Pos2::new(relative_vec.x, relative_vec.y);
+            let model_pos = self.view_state.screen_to_model(relative_pos);
+            self.mouse_model_pos = Some(model_pos);
+        } else {
+            self.mouse_model_pos = None;
+        }
+
         // Handle pan (drag)
         if response.dragged_by(egui::PointerButton::Primary) {
             self.view_state.pan += response.drag_delta();
@@ -346,6 +365,24 @@ impl TriangleListApp {
                 DEFAULT_TRIANGLE_STROKE,
                 1.0,
             );
+
+            // Draw dimension lines if enabled
+            if self.show_dimensions {
+                use crate::render::dimension::{draw_triangle_dimensions, DimensionStyle};
+                let dim_style = DimensionStyle::default();
+                let side_lengths = [
+                    triangle.side_a,
+                    triangle.side_b,
+                    triangle.side_c,
+                ];
+                draw_triangle_dimensions(
+                    &painter,
+                    points_screen,
+                    side_lengths,
+                    &self.view_state,
+                    &dim_style,
+                );
+            }
 
             // Draw triangle number at centroid
             let centroid_model = Pos2::new(
@@ -540,52 +577,158 @@ impl eframe::App for TriangleListApp {
             self.is_drop_hover = !i.raw.hovered_files.is_empty();
         });
 
-        egui::CentralPanel::default().show(ctx, |ui| {
-            ui.vertical_centered(|ui| {
-                ui.add_space(20.0);
-                ui.heading("TriangleList Web");
-                ui.add_space(10.0);
-                ui.label("Triangle mesh editor - CSV Parser");
-                ui.add_space(20.0);
-            });
-
-            // Drop zone
-            self.render_drop_zone(ui);
-
-            // CSV text input
-            self.render_csv_input(ui);
-
-            // Error display
-            self.render_error(ui);
-
-            // Warnings display
-            self.render_warnings(ui);
-
-            // Canvas or triangle list display
-            if self.show_canvas && !self.triangles.is_empty() {
-                ui.add_space(10.0);
-                ui.horizontal(|ui| {
-                    if ui.button("Fit View").clicked() {
-                        self.view_state.fit_to_triangles(&self.triangles);
-                    }
-                    if ui.button("Hide Canvas").clicked() {
-                        self.show_canvas = false;
-                    }
-                    // Toggle Canvas 2D API text rendering
-                    if ui.checkbox(&mut self.use_canvas2d_text, "Use Canvas 2D Text (CAD Quality)").changed() {
-                        // Initialize or clear renderer when toggled
-                        if self.use_canvas2d_text {
-                            self.init_canvas2d_renderer();
-                        } else {
-                            self.canvas2d_text_renderer = None;
+        // Side panel for settings and file operations
+        if self.show_side_panel {
+            egui::SidePanel::right("side_panel")
+                .resizable(true)
+                .default_width(300.0)
+                .show(ctx, |ui| {
+                    ui.heading("Settings");
+                    ui.separator();
+                    
+                    // File operations
+                    ui.group(|ui| {
+                        ui.heading("File");
+                        ui.add_space(5.0);
+                        ui.button("Load CSV File").on_hover_text("Click to select CSV file");
+                        ui.add_space(5.0);
+                        if ui.button("Download DXF").clicked() {
+                            self.download_dxf_file();
                         }
+                        ui.add_space(5.0);
+                        if ui.button("Clear").clicked() {
+                            self.csv_input.clear();
+                            self.triangles.clear();
+                            self.error_message = None;
+                            self.warnings.clear();
+                            self.show_canvas = false;
+                        }
+                    });
+                    ui.add_space(10.0);
+                    
+                    // Display options
+                    ui.group(|ui| {
+                        ui.heading("Display");
+                        ui.add_space(5.0);
+                        ui.checkbox(&mut self.show_dimensions, "Show Dimension Lines");
+                        ui.add_space(5.0);
+                        if ui.checkbox(&mut self.use_canvas2d_text, "Canvas 2D Text (CAD Quality)").changed() {
+                            if self.use_canvas2d_text {
+                                self.init_canvas2d_renderer();
+                            } else {
+                                self.canvas2d_text_renderer = None;
+                            }
+                        }
+                    });
+                    ui.add_space(10.0);
+                    
+                    // View controls
+                    if self.show_canvas && !self.triangles.is_empty() {
+                        ui.group(|ui| {
+                            ui.heading("View");
+                            ui.add_space(5.0);
+                            if ui.button("Fit View").clicked() {
+                                self.view_state.fit_to_triangles(&self.triangles);
+                            }
+                            ui.add_space(5.0);
+                            ui.horizontal(|ui| {
+                                ui.label("Zoom:");
+                                ui.label(format!("{:.1}%", self.view_state.zoom * 100.0));
+                            });
+                            ui.add_space(5.0);
+                            ui.horizontal(|ui| {
+                                ui.label("Pan:");
+                                ui.label(format!("({:.1}, {:.1})", self.view_state.pan.x, self.view_state.pan.y));
+                            });
+                        });
+                        ui.add_space(10.0);
+                    }
+                    
+                    // Triangle info
+                    if !self.triangles.is_empty() {
+                        ui.group(|ui| {
+                            ui.heading("Statistics");
+                            ui.add_space(5.0);
+                            ui.label(format!("Triangles: {}", self.triangles.len()));
+                            let total_area: f64 = self.triangles.iter()
+                                .map(|t| {
+                                    // Heron's formula
+                                    let s = (t.side_a + t.side_b + t.side_c) / 2.0;
+                                    (s * (s - t.side_a) * (s - t.side_b) * (s - t.side_c)).max(0.0).sqrt()
+                                })
+                                .sum();
+                            ui.label(format!("Total Area: {:.2} m²", total_area));
+                        });
                     }
                 });
-                ui.add_space(10.0);
-                self.render_canvas(ui);
+        }
+        
+        // Status bar at the bottom
+        egui::TopBottomPanel::bottom("status_bar")
+            .resizable(false)
+            .show(ctx, |ui| {
+                ui.horizontal(|ui| {
+                    // Mouse position in model coordinates
+                    if let Some(pos) = self.mouse_model_pos {
+                        ui.label(format!("Model: ({:.2}, {:.2})", pos.x, pos.y));
+                    } else {
+                        ui.label("Model: (--, --)");
+                    }
+                    
+                    ui.separator();
+                    
+                    // Zoom level
+                    ui.label(format!("Zoom: {:.1}%", self.view_state.zoom * 100.0));
+                    
+                    ui.separator();
+                    
+                    // Triangle count
+                    ui.label(format!("Triangles: {}", self.triangles.len()));
+                    
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        if ui.button("Toggle Side Panel").clicked() {
+                            self.show_side_panel = !self.show_side_panel;
+                        }
+                    });
+                });
+            });
+
+        // Main panel
+        egui::CentralPanel::default().show(ctx, |ui| {
+            if !self.show_canvas || self.triangles.is_empty() {
+                // Initial view: file input
+                ui.vertical_centered(|ui| {
+                    ui.add_space(20.0);
+                    ui.heading("TriangleList Web");
+                    ui.add_space(10.0);
+                    ui.label("Triangle mesh editor - CSV Parser");
+                    ui.add_space(20.0);
+                });
+
+                // Drop zone
+                self.render_drop_zone(ui);
+
+                // CSV text input
+                self.render_csv_input(ui);
+
+                // Error display
+                self.render_error(ui);
+
+                // Warnings display
+                self.render_warnings(ui);
+
+                // Triangle list display if we have triangles
+                if !self.triangles.is_empty() {
+                    ui.add_space(10.0);
+                    if ui.button("Show Canvas").clicked() {
+                        self.show_canvas = true;
+                    }
+                    ui.add_space(10.0);
+                    self.render_triangle_list(ui);
+                }
             } else {
-                // Triangle list display
-                self.render_triangle_list(ui);
+                // Canvas view
+                self.render_canvas(ui);
             }
         });
     }

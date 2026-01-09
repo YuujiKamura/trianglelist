@@ -248,6 +248,137 @@ impl Triangle {
     pub fn is_independent(&self) -> bool {
         self.parent_number < 1 || self.connection_type == ConnectionType::Independent
     }
+
+    /// Calculate points for a connected triangle based on parent triangle
+    /// 
+    /// This method calculates the coordinates of a triangle that is connected to a parent triangle.
+    /// The connection side determines which edge of the parent is used for connection.
+    /// 
+    /// # Arguments
+    /// * `parent` - The parent triangle to connect to
+    /// * `connection_side` - The side of the parent to connect to (1 = B edge, 2 = C edge)
+    /// 
+    /// # Returns
+    /// `Ok(())` if successful, or an error if the connection is invalid
+    pub fn calculate_points_connected(&mut self, parent: &Triangle, connection_side: i32) -> Result<(), String> {
+        
+        if !parent.is_valid() {
+            return Err("Parent triangle is invalid".to_string());
+        }
+        if !self.is_valid() {
+            return Err("Triangle is invalid".to_string());
+        }
+
+        let parent_points = parent.points();
+        let parent_angle = parent.angle();
+
+        // Determine which points and lengths to use based on connection side
+        let (base_point, direction_point, length_base, length_direction, length_third) = match connection_side {
+            1 => {
+                // Connect to parent's B edge
+                // Parent: point[0] (CA) -> point[1] (AB) is B edge
+                // Child: point[0] (CA) is at parent's point[1] (AB), use B length
+                let base = parent_points[1]; // Parent's AB (end of B edge)
+                let direction = parent_points[2]; // Parent's BC (for direction)
+                
+                // For connection to B edge, child's A edge = parent's B length
+                // Child's point layout: point[0] = base, point[1] = direction, point[2] = calculated
+                (
+                    base,
+                    direction,
+                    self.length_b, // Child's B length (will be used as base)
+                    self.length_c, // Child's C length (will be used as direction)
+                    self.length_a, // Child's A length (connection edge, already set from parent)
+                )
+            }
+            2 => {
+                // Connect to parent's C edge
+                // Parent: point[0] (CA) -> point[2] (BC) is C edge
+                // Child: point[0] (CA) is at parent's point[0] (CA), use C length
+                let base = parent_points[0]; // Parent's CA (start of C edge)
+                let direction = parent_points[2]; // Parent's BC (end of C edge, for direction)
+                
+                // For connection to C edge, child's A edge = parent's C length
+                (
+                    base,
+                    direction,
+                    self.length_c, // Child's C length (will be used as base)
+                    self.length_a, // Child's A length (will be used as direction)
+                    self.length_b, // Child's B length (connection edge, already set from parent)
+                )
+            }
+            0 => {
+                // Independent triangle - use standard calculation
+                self.calculate_points();
+                return Ok(());
+            }
+            _ => {
+                return Err(format!("Invalid connection side: {}", connection_side));
+            }
+        };
+
+        // Calculate the angle from base point to direction point
+        let dx = (direction_point.x - base_point.x) as f64;
+        let dy = (direction_point.y - base_point.y) as f64;
+        let theta = dy.atan2(dx);
+
+        // Calculate alpha using cosine rule: cos(alpha) = (b² + c² - a²) / (2bc)
+        let a2 = (length_third * length_third) as f64;
+        let b2 = (length_base * length_base) as f64;
+        let c2 = (length_direction * length_direction) as f64;
+        let alpha = ((b2 + c2 - a2) / (2.0 * length_base as f64 * length_direction as f64)).acos();
+
+        // Calculate the angle for the third point
+        let angle_rad = theta + alpha;
+
+        // Set points based on connection side
+        match connection_side {
+            1 => {
+                // Connect to parent's B edge
+                self.points[0] = base_point;
+                self.points[1] = direction_point;
+                // Calculate third point using cosine rule
+                self.points[2] = PointXY::new(
+                    base_point.x + (length_base as f64 * angle_rad.cos()) as f32,
+                    base_point.y + (length_base as f64 * angle_rad.sin()) as f32,
+                );
+                
+                // Update angle: parent angle - angle_ca
+                self.angle = parent_angle - self.angle_a;
+                if self.angle < 0.0 {
+                    self.angle += 360.0;
+                }
+                if self.angle >= 360.0 {
+                    self.angle -= 360.0;
+                }
+            }
+            2 => {
+                // Connect to parent's C edge
+                self.points[0] = base_point;
+                // Calculate second point
+                self.points[1] = PointXY::new(
+                    base_point.x + (length_base as f64 * angle_rad.cos()) as f32,
+                    base_point.y + (length_base as f64 * angle_rad.sin()) as f32,
+                );
+                self.points[2] = direction_point;
+                
+                // Update angle: parent angle + angle_ca
+                self.angle = parent_angle + self.angle_a;
+                if self.angle >= 360.0 {
+                    self.angle -= 360.0;
+                }
+                if self.angle < 0.0 {
+                    self.angle += 360.0;
+                }
+            }
+            _ => unreachable!(),
+        }
+
+        // Recalculate internal angles after setting points
+        self.calculate_internal_angles();
+        
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -373,5 +504,95 @@ mod tests {
         assert!(approx_eq(tri.angle(), 180.0)); // Default angle
         tri.set_angle(90.0);
         assert!(approx_eq(tri.angle(), 90.0));
+    }
+
+    #[test]
+    fn test_calculate_points_connected_b_edge() {
+        // Create a parent triangle: 3-4-5 right triangle
+        let parent = Triangle::new(3.0, 4.0, 5.0);
+        let parent_points = parent.points();
+        
+        // Create a child triangle connected to parent's B edge
+        // Child's A edge should match parent's B edge (length 4)
+        let mut child = Triangle::new(4.0, 3.0, 5.0); // A=4 (parent's B), B=3, C=5
+        
+        // Calculate connected points
+        let result = child.calculate_points_connected(&parent, 1);
+        assert!(result.is_ok());
+        
+        let child_points = child.points();
+        
+        // Child's point[0] should be at parent's point[1] (AB)
+        assert!(approx_eq(child_points[0].x, parent_points[1].x));
+        assert!(approx_eq(child_points[0].y, parent_points[1].y));
+    }
+
+    #[test]
+    fn test_calculate_points_connected_c_edge() {
+        // Create a parent triangle: 3-4-5 right triangle
+        let parent = Triangle::new(3.0, 4.0, 5.0);
+        let parent_points = parent.points();
+        
+        // Create a child triangle connected to parent's C edge
+        // Child's A edge should match parent's C edge (length 5)
+        let mut child = Triangle::new(5.0, 3.0, 4.0); // A=5 (parent's C), B=3, C=4
+        
+        // Calculate connected points
+        let result = child.calculate_points_connected(&parent, 2);
+        assert!(result.is_ok());
+        
+        let child_points = child.points();
+        
+        // Child's point[0] should be at parent's point[0] (CA)
+        assert!(approx_eq(child_points[0].x, parent_points[0].x));
+        assert!(approx_eq(child_points[0].y, parent_points[0].y));
+    }
+
+    #[test]
+    fn test_calculate_points_connected_independent() {
+        // Independent triangle (connection_side = 0) should use standard calculation
+        let parent = Triangle::new(3.0, 4.0, 5.0);
+        let mut child = Triangle::new(3.0, 4.0, 5.0);
+        
+        let result = child.calculate_points_connected(&parent, 0);
+        assert!(result.is_ok());
+        
+        // Points should be recalculated (may be same or different based on implementation)
+        let new_points = child.points();
+        // At minimum, they should be valid
+        assert!(child.is_valid());
+        // Points array should have 3 points
+        assert_eq!(new_points.len(), 3);
+    }
+
+    #[test]
+    fn test_calculate_points_connected_invalid_parent() {
+        let invalid_parent = Triangle::new(1.0, 2.0, 10.0); // Invalid triangle
+        let mut child = Triangle::new(3.0, 4.0, 5.0);
+        
+        let result = child.calculate_points_connected(&invalid_parent, 1);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Parent triangle is invalid"));
+    }
+
+    #[test]
+    fn test_calculate_points_connected_invalid_child() {
+        let parent = Triangle::new(3.0, 4.0, 5.0);
+        let invalid_child = Triangle::new(1.0, 2.0, 10.0); // Invalid triangle
+        let mut child = invalid_child;
+        
+        let result = child.calculate_points_connected(&parent, 1);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Triangle is invalid"));
+    }
+
+    #[test]
+    fn test_calculate_points_connected_invalid_side() {
+        let parent = Triangle::new(3.0, 4.0, 5.0);
+        let mut child = Triangle::new(3.0, 4.0, 5.0);
+        
+        let result = child.calculate_points_connected(&parent, 99);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Invalid connection side"));
     }
 }
