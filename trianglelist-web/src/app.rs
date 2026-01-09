@@ -14,6 +14,18 @@ use crate::render::text::{TextAlign, HorizontalAlign, VerticalAlign};
 use eframe::egui::Pos2;
 use wasm_bindgen::JsCast;
 
+#[cfg(target_arch = "wasm32")]
+use std::cell::RefCell;
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen::prelude::*;
+
+/// Global storage for file content loaded from file picker
+#[cfg(target_arch = "wasm32")]
+thread_local! {
+    static PENDING_FILE_CONTENT: RefCell<Option<String>> = RefCell::new(None);
+    static FILE_CALLBACK_CLOSURE: RefCell<Option<Closure<dyn FnMut(String)>>> = RefCell::new(None);
+}
+
 /// The main TriangleList application struct.
 ///
 /// This struct holds the application state and implements the eframe::App trait
@@ -77,6 +89,19 @@ impl TriangleListApp {
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         let mut app = Self::default();
 
+        // Set up file callback for mobile file picker
+        #[cfg(target_arch = "wasm32")]
+        Self::setup_file_callback();
+
+        // Auto-hide side panel on mobile devices
+        #[cfg(target_arch = "wasm32")]
+        {
+            if Self::is_mobile_device() {
+                app.show_side_panel = false;
+                log::info!("Mobile device detected, hiding side panel by default");
+            }
+        }
+
         // Try to restore cached CSV data
         #[cfg(target_arch = "wasm32")]
         {
@@ -89,6 +114,32 @@ impl TriangleListApp {
         }
 
         app
+    }
+
+    /// Detect if running on a mobile device
+    #[cfg(target_arch = "wasm32")]
+    fn is_mobile_device() -> bool {
+        use web_sys::window;
+
+        if let Some(window) = window() {
+            // Check screen width
+            if let Ok(inner_width) = window.inner_width() {
+                if let Some(width) = inner_width.as_f64() {
+                    if width < 768.0 {
+                        return true;
+                    }
+                }
+            }
+
+            // Also check user agent for touch devices
+            if let Some(navigator) = window.navigator().user_agent().ok() {
+                let ua_lower = navigator.to_lowercase();
+                if ua_lower.contains("mobile") || ua_lower.contains("android") || ua_lower.contains("iphone") || ua_lower.contains("ipad") {
+                    return true;
+                }
+            }
+        }
+        false
     }
 
     /// Save CSV data to localStorage
@@ -126,6 +177,72 @@ impl TriangleListApp {
                 let _ = storage.remove_item(STORAGE_KEY_CSV);
             }
         }
+    }
+
+    /// Set up the file callback for receiving file content from JavaScript
+    #[cfg(target_arch = "wasm32")]
+    fn setup_file_callback() {
+        use wasm_bindgen::JsValue;
+        use web_sys::window;
+
+        FILE_CALLBACK_CLOSURE.with(|closure_cell| {
+            // Only set up the callback once
+            if closure_cell.borrow().is_some() {
+                return;
+            }
+
+            // Create the callback closure
+            let callback = Closure::wrap(Box::new(move |content: String| {
+                log::info!("File content received: {} bytes", content.len());
+                PENDING_FILE_CONTENT.with(|cell| {
+                    *cell.borrow_mut() = Some(content);
+                });
+            }) as Box<dyn FnMut(String)>);
+
+            // Register it with JavaScript
+            if let Some(window) = window() {
+                let _ = js_sys::Reflect::set(
+                    &window,
+                    &JsValue::from_str("onCsvFileLoaded"),
+                    callback.as_ref(),
+                );
+                log::info!("File callback registered");
+            }
+
+            // Store the closure to prevent it from being dropped
+            *closure_cell.borrow_mut() = Some(callback);
+        });
+    }
+
+    /// Check for pending file content from file picker
+    #[cfg(target_arch = "wasm32")]
+    fn take_pending_file_content() -> Option<String> {
+        PENDING_FILE_CONTENT.with(|cell| {
+            cell.borrow_mut().take()
+        })
+    }
+
+    /// Open file picker dialog
+    #[cfg(target_arch = "wasm32")]
+    fn open_file_picker() {
+        use wasm_bindgen::JsValue;
+        use web_sys::window;
+
+        // Ensure callback is registered before opening picker
+        Self::setup_file_callback();
+
+        if let Some(window) = window() {
+            if let Ok(func) = js_sys::Reflect::get(&window, &JsValue::from_str("openFilePicker")) {
+                if let Some(func) = func.dyn_ref::<js_sys::Function>() {
+                    let _ = func.call0(&window);
+                }
+            }
+        }
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    fn open_file_picker() {
+        log::warn!("File picker not available on this platform");
     }
 
     /// Initialize Canvas 2D text renderer
@@ -770,6 +887,14 @@ impl eframe::App for TriangleListApp {
             self.is_drop_hover = !i.raw.hovered_files.is_empty();
         });
 
+        // Check for file content from file picker (mobile support)
+        #[cfg(target_arch = "wasm32")]
+        if let Some(content) = Self::take_pending_file_content() {
+            log::info!("Processing file from picker: {} bytes", content.len());
+            self.csv_input = content.clone();
+            self.parse_and_cache_csv(&content);
+        }
+
         // Side panel for settings and file operations
         if self.show_side_panel {
             egui::SidePanel::right("side_panel")
@@ -783,7 +908,9 @@ impl eframe::App for TriangleListApp {
                     ui.group(|ui| {
                         ui.heading("File");
                         ui.add_space(5.0);
-                        ui.button("Load CSV File").on_hover_text("Click to select CSV file");
+                        if ui.button("Load CSV File").clicked() {
+                            Self::open_file_picker();
+                        }
                         ui.add_space(5.0);
                         if ui.button("Download DXF").clicked() {
                             self.download_dxf_file();
