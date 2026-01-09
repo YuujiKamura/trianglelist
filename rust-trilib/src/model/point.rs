@@ -13,12 +13,19 @@ impl PointXY {
     /// フォーマット時のデフォルト小数点以下桁数
     pub const DECIMAL: usize = 4;
 
-    /// 新しい座標点を作成
+    /// 新しい座標点を作成（丸め誤差調整あり）
+    /// 注意: 演算のたびに丸めが発生します。丸めなしで作成する場合は`raw`を使用してください。
     pub fn new(x: f32, y: f32) -> Self {
         Self {
             x: Self::adjust_for_rounding_error(x),
             y: Self::adjust_for_rounding_error(y),
         }
+    }
+
+    /// 丸め誤差調整なしで座標点を作成
+    /// 精密な計算が必要な場合はこちらを使用してください。
+    pub fn raw(x: f32, y: f32) -> Self {
+        Self { x, y }
     }
 
     /// ゼロ点を作成
@@ -192,40 +199,22 @@ impl PointXY {
 
     /// 3点から角度を計算（-180〜180度）
     /// self → p2 と p3 → p2 のなす角度
+    /// atan2を使用して境界値（0度、180度）でも正確な結果を返す
     pub fn calc_angle_180(&self, p2: &PointXY, p3: &PointXY) -> f32 {
         let v1 = p2.subtract(self);
         let v2 = p2.subtract(p3);
-        let dot = v1.inner_product(&v2);
-        let mag = v1.magnitude() * v2.magnitude();
-        if mag == 0.0 {
-            return 0.0;
-        }
-        let angle_rad = (dot / mag).clamp(-1.0, 1.0).acos();
-        let angle_deg = (angle_rad * 180.0 / std::f64::consts::PI) as f32;
-        if v1.outer_product(&v2) > 0.0 {
-            angle_deg - 180.0
-        } else {
-            180.0 - angle_deg
-        }
+        // atan2(外積, 内積)で符号付き角度を計算
+        let angle_rad = v1.outer_product(&v2).atan2(v1.inner_product(&v2));
+        angle_rad.to_degrees() as f32
     }
 
     /// 3点から角度を計算（0〜360度）
     pub fn calc_angle_360(&self, p2: &PointXY, p3: &PointXY) -> f32 {
-        let v1 = p2.subtract(self);
-        let v2 = p2.subtract(p3);
-        let dot = v1.inner_product(&v2);
-        let mag = v1.magnitude() * v2.magnitude();
-        if mag == 0.0 {
-            return 0.0;
-        }
-        let angle_rad = (dot / mag).clamp(-1.0, 1.0).acos();
-        let angle_deg = (angle_rad * 180.0 / std::f64::consts::PI) as f32;
-        let outer = v1.outer_product(&v2);
-
-        if (outer > 0.0 && angle_deg <= 180.0) || (outer < 0.0 && angle_deg > 180.0) {
-            360.0 - angle_deg
+        let angle = self.calc_angle_180(p2, p3);
+        if angle < 0.0 {
+            360.0 + angle
         } else {
-            angle_deg
+            angle
         }
     }
 
@@ -638,5 +627,54 @@ mod tests {
         let scaled = p.scale_from(&origin, 2.0, 2.0);
         assert!(approx_eq(scaled.x, 3.0));
         assert!(approx_eq(scaled.y, 5.0));
+    }
+
+    #[test]
+    fn test_raw_no_rounding() {
+        // rawは丸め誤差調整なし
+        let p = PointXY::raw(0.000001, -0.000001);
+        assert!(approx_eq(p.x, 0.000001));
+        assert!(approx_eq(p.y, -0.000001));
+    }
+
+    #[test]
+    fn test_calc_angle_180_colinear_opposite() {
+        // 同一直線上で反対方向 -> 180度
+        let p1 = PointXY::new(0.0, 0.0);
+        let p2 = PointXY::new(1.0, 0.0);
+        let p3 = PointXY::new(2.0, 0.0);
+        let angle = p1.calc_angle_180(&p2, &p3);
+        assert!(approx_eq(angle, 180.0) || approx_eq(angle, -180.0));
+    }
+
+    #[test]
+    fn test_calc_angle_180_colinear_same() {
+        // 同一直線上で同じ方向 -> 0度
+        // p1→p2 と p3→p2 が同じ方向
+        let p1 = PointXY::new(0.0, 0.0);
+        let p2 = PointXY::new(1.0, 0.0);
+        let p3 = PointXY::new(0.5, 0.0); // p1とp3はp2に対して同じ側
+        let angle = p1.calc_angle_180(&p2, &p3);
+        assert!(approx_eq(angle, 0.0));
+    }
+
+    #[test]
+    fn test_calc_angle_180_right_angle() {
+        // 直角 -> 90度 or -90度
+        let p1 = PointXY::new(0.0, 0.0);
+        let p2 = PointXY::new(1.0, 0.0);
+        let p3 = PointXY::new(1.0, 1.0);
+        let angle = p1.calc_angle_180(&p2, &p3);
+        assert!(approx_eq(angle.abs(), 90.0));
+    }
+
+    #[test]
+    fn test_calc_angle_360_colinear() {
+        // 180度 (0-360範囲)
+        let p1 = PointXY::new(0.0, 0.0);
+        let p2 = PointXY::new(1.0, 0.0);
+        let p3 = PointXY::new(2.0, 0.0);
+        let angle = p1.calc_angle_360(&p2, &p3);
+        assert!(approx_eq(angle, 180.0));
     }
 }
