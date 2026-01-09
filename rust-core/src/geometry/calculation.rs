@@ -4,7 +4,7 @@
 //! interior angle calculations, and related geometry operations.
 
 use std::f64::consts::PI;
-use std::ops::{Add, Sub};
+use std::ops::{Add, AddAssign, Sub, SubAssign};
 
 /// A 2D point with x and y coordinates.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -34,14 +34,6 @@ impl Point {
         }
     }
 
-    /// Subtracts another point from this point, returning a vector.
-    pub fn subtract(&self, other: &Point) -> Point {
-        Point {
-            x: self.x - other.x,
-            y: self.y - other.y,
-        }
-    }
-
     /// Returns the magnitude (length) of this point as a vector.
     pub fn magnitude(&self) -> f64 {
         self.x.hypot(self.y)
@@ -64,6 +56,24 @@ impl Add for Point {
     }
 }
 
+impl<'a, 'b> Add<&'b Point> for &'a Point {
+    type Output = Point;
+
+    fn add(self, other: &'b Point) -> Point {
+        Point {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
+    }
+}
+
+impl AddAssign for Point {
+    fn add_assign(&mut self, other: Self) {
+        self.x += other.x;
+        self.y += other.y;
+    }
+}
+
 impl Sub for Point {
     type Output = Self;
 
@@ -75,6 +85,23 @@ impl Sub for Point {
     }
 }
 
+impl<'a, 'b> Sub<&'b Point> for &'a Point {
+    type Output = Point;
+
+    fn sub(self, other: &'b Point) -> Point {
+        Point {
+            x: self.x - other.x,
+            y: self.y - other.y,
+        }
+    }
+}
+
+impl SubAssign for Point {
+    fn sub_assign(&mut self, other: Self) {
+        self.x -= other.x;
+        self.y -= other.y;
+    }
+}
 /// Calculates an angle using the law of cosines given three side lengths.
 ///
 /// Given sides a, b, c, calculates the angle opposite to side c.
@@ -120,8 +147,8 @@ pub fn cosine_rule_side(a: f64, b: f64, angle_rad: f64) -> f64 {
 /// # Returns
 /// The interior angle in degrees.
 pub fn internal_angle(p1: &Point, p2: &Point, p3: &Point) -> f64 {
-    let v1 = *p1 - *p2;
-    let v2 = *p3 - *p2;
+    let v1 = p1 - p2;
+    let v2 = p3 - p2;
     let dot = v1.inner_product(&v2);
     let mag_product = v1.magnitude() * v2.magnitude();
 
@@ -228,11 +255,7 @@ pub fn calculate_point_bc(
     let theta = (point_a.y - point_ab.y).atan2(point_a.x - point_ab.x);
 
     // Calculate alpha using law of cosines: angle at point_ab
-    // Clamp to [-1, 1] to handle floating point errors
-    let cos_alpha = ((side_a * side_a + side_b * side_b - side_c * side_c)
-        / (2.0 * side_a * side_b))
-        .clamp(-1.0, 1.0);
-    let alpha = cos_alpha.acos();
+    let alpha = cosine_rule_angle(side_a, side_b, side_c);
 
     // Calculate the angle for point_bc and use offset method
     let angle = theta + alpha;

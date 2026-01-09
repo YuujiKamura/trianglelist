@@ -29,3 +29,12 @@ desktop/bin
 
 # Reports
 reports/
+
+# Rust/Cargo build artifacts
+trianglelist-web/target/
+trianglelist-web/dist/
+rust-renderer/target/
+rust-core/target/
+rust-dxf/target/
+target/
+Cargo.lock
