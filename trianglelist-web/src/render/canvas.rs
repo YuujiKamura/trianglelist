@@ -5,6 +5,38 @@
 use eframe::egui::{Color32, Painter, Pos2, Shape, Stroke, Vec2};
 use crate::csv::ParsedTriangle;
 
+/// Calculate triangle vertex positions from side lengths
+/// 
+/// Returns three points: [p1, p2, p3]
+/// - p1: Origin (0, 0)
+/// - p2: On X-axis at distance side_c
+/// - p3: Calculated using cosine rule
+pub fn calculate_triangle_points(triangle: &ParsedTriangle) -> [Pos2; 3] {
+    if !triangle.is_valid_triangle() {
+        return [Pos2::ZERO; 3];
+    }
+
+    let a = triangle.side_a as f32;
+    let b = triangle.side_b as f32;
+    let c = triangle.side_c as f32;
+
+    // Point 1: Origin
+    let p1 = Pos2::new(0.0, 0.0);
+
+    // Point 2: On X-axis at distance c
+    let p2 = Pos2::new(c, 0.0);
+
+    // Point 3: Calculate using cosine rule
+    // cos(A) = (b² + c² - a²) / (2bc)
+    let cos_a = (b * b + c * c - a * a) / (2.0 * b * c);
+    let cos_a_clamped = cos_a.clamp(-1.0, 1.0);
+    let sin_a = (1.0 - cos_a_clamped * cos_a_clamped).sqrt();
+
+    let p3 = Pos2::new(b * cos_a_clamped, b * sin_a);
+
+    [p1, p2, p3]
+}
+
 /// Padding factor for fit_to_triangles (90% of available space)
 const PADDING_FACTOR: f32 = 0.9;
 
