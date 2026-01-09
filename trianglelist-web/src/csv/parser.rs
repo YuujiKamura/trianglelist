@@ -460,6 +460,7 @@ zumennum, 1
         assert_eq!(t2.side_a, 5.5);
         assert_eq!(t2.side_b, 4.5);
         assert_eq!(t2.side_c, 3.5);
+        assert!(t2.is_independent());
 
         // Verify third triangle
         let t3 = &result.triangles[2];
@@ -467,6 +468,7 @@ zumennum, 1
         assert_eq!(t3.side_a, 4.0);
         assert_eq!(t3.side_b, 3.5);
         assert_eq!(t3.side_c, 3.0);
+        assert!(t3.is_independent());
     }
 
     #[test]
@@ -511,6 +513,28 @@ zumennum, 1
         assert_eq!(t4.number, 4);
         assert_eq!(t4.parent_number, 2);
         assert_eq!(t4.connection_type, ConnectionType::ToParentB);
+        assert_eq!(t4.side_a, 4.0); // Should match parent t2's B side
+
+        // Verify fifth triangle (connects to parent 2's C side)
+        let t5 = &result.triangles[4];
+        assert_eq!(t5.number, 5);
+        assert_eq!(t5.parent_number, 2);
+        assert_eq!(t5.connection_type, ConnectionType::ToParentC);
+        assert_eq!(t5.side_a, 3.0); // Should match parent t2's C side
+
+        // Verify sixth triangle (connects to parent 3's B side)
+        let t6 = &result.triangles[5];
+        assert_eq!(t6.number, 6);
+        assert_eq!(t6.parent_number, 3);
+        assert_eq!(t6.connection_type, ConnectionType::ToParentB);
+        assert_eq!(t6.side_a, 3.5); // Should match parent t3's B side
+
+        // Verify seventh triangle (connects to parent 3's C side)
+        let t7 = &result.triangles[6];
+        assert_eq!(t7.number, 7);
+        assert_eq!(t7.parent_number, 3);
+        assert_eq!(t7.connection_type, ConnectionType::ToParentC);
+        assert_eq!(t7.side_a, 3.0); // Should match parent t3's C side
 
         // Verify all triangles are valid
         for triangle in &result.triangles {
