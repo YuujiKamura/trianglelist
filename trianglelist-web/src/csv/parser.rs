@@ -9,6 +9,15 @@ use serde::{Deserialize, Serialize};
 /// Number of header rows to skip in CSV files
 const HEADER_ROWS: usize = 4;
 
+/// Metadata line prefixes to skip (from ヘロン calculation software)
+const METADATA_PREFIXES: &[&str] = &[
+    "ListAngle",
+    "ListScale",
+    "TextSize",
+    "ListRotation",
+    "ListOffset",
+];
+
 /// Represents the connection type between triangles
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ConnectionType {
@@ -179,6 +188,11 @@ pub fn parse_csv(content: &str) -> Result<ParseResult, ParseError> {
             continue;
         }
 
+        // Skip metadata lines (ListAngle, ListScale, TextSize, etc.)
+        if METADATA_PREFIXES.iter().any(|prefix| trimmed.starts_with(prefix)) {
+            continue;
+        }
+
         let row_num = line_index + 1; // 1-indexed for error messages
 
         // Parse the row
@@ -255,7 +269,8 @@ fn parse_row(line: &str, row_num: usize) -> Result<ParsedTriangle, ParseError> {
         let connection_type_val = parse_i32(columns[COL_CONNECTION_TYPE], row_num, "connection_type")?;
         let connection_type = ConnectionType::from_i32(connection_type_val);
 
-        if parent_number == -1 || connection_type == ConnectionType::Independent {
+        // Parent number 0 or -1 means independent
+        if parent_number <= 0 || connection_type == ConnectionType::Independent {
             Ok(ParsedTriangle::independent(number, side_a, side_b, side_c))
         } else {
             Ok(ParsedTriangle::connected(
@@ -419,6 +434,44 @@ Header4
         assert_eq!(ConnectionType::from_i32(1), ConnectionType::ToParentB);
         assert_eq!(ConnectionType::from_i32(2), ConnectionType::ToParentC);
         assert_eq!(ConnectionType::from_i32(99), ConnectionType::Independent); // Unknown defaults to Independent
+    }
+
+    #[test]
+    fn test_real_world_csv_with_metadata_lines() {
+        // Real-world CSV format from ヘロン calculation software
+        // Has metadata lines at the end (ListAngle, ListScale, TextSize)
+        // Parent number 0 means independent (not -1)
+        let csv = r#"koujiname,
+rosenname, 新規路線
+gyousyaname,
+zumennum, 1/1
+1,6.42,5.93,8.7,0,3,,2.000609,4.2508297,false,4,0,0,0,1,1,3,1,1,2,false,false,89.53419,0.0,0.0,89.53419,0,false
+2,8.7,8.18,1.1,1,2,,2.347401,2.0356534,false,4,0,0,0,3,3,1,2,0,2,false,false,46.56686,0.0,0.0,89.53419,0,false
+3,8.18,8.05,1.2,2,1,,3.0649095,1.7833027,false,4,0,0,0,3,3,1,1,0,2,false,false,53.153996,1.076046,-0.22830561,89.53419,0,false
+ListAngle, 89.53419
+ListScale, 1.0
+TextSize, 33.0
+"#;
+
+        let result = parse_csv(csv);
+        assert!(result.is_ok(), "Parse failed: {:?}", result.err());
+
+        let parsed = result.unwrap();
+        assert_eq!(parsed.triangles.len(), 3);
+
+        // First triangle is independent (parent=0)
+        let t1 = &parsed.triangles[0];
+        assert_eq!(t1.number, 1);
+        assert_eq!(t1.side_a, 6.42);
+        assert_eq!(t1.side_b, 5.93);
+        assert_eq!(t1.side_c, 8.7);
+        assert!(t1.is_independent());
+
+        // Second triangle connects to parent 1
+        let t2 = &parsed.triangles[1];
+        assert_eq!(t2.number, 2);
+        assert_eq!(t2.parent_number, 1);
+        assert_eq!(t2.connection_type, ConnectionType::ToParentC);
     }
 
     #[test]
