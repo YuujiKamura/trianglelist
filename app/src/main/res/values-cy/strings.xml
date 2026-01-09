@@ -23,16 +23,6 @@
     <string name = "menseki_koujimei"> Enw adeiladu: </string>
     <string name = "menseki_syoukei"> subtotal </string>
     <string name = "menseki_goukei"> cyfanswm </string>
-    <string name = "editor_number">rhif</string>
-    <string name = "editor_name">enw</string>
-    <string name = "editor_sokuten">gorsaf</string>
-    <string name = "editor_lA">Hyd A</string>
-    <string name = "editor_lB">Hyd B</string>
-    <string name = "editor_lC">Hyd C</string>
-    <string name = "editor_parent">rhiant</string>
-    <string name = "editor_setuzoku">cysyl</string>
-    <string name = "editor_syozoku">perth</string>
-    <string name = "editor_form">siâp</string>
     <string name = "editor_koujyo">didyniad</string>
     <string name = "credit">http://trianglelist.home.blog</string>
 

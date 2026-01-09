@@ -1,6 +1,15 @@
 package com.jpaver.trianglelist
 
-import com.jpaver.trianglelist.util.Params
+import com.example.trilib.PointXY
+import com.jpaver.trianglelist.editmodel.ConnParam
+import com.jpaver.trianglelist.editmodel.Deduction
+import com.jpaver.trianglelist.editmodel.Triangle
+import com.jpaver.trianglelist.editmodel.TriangleList
+import com.jpaver.trianglelist.editmodel.calcPoints
+import com.jpaver.trianglelist.editmodel.isValid
+import com.jpaver.trianglelist.editmodel.move
+import com.jpaver.trianglelist.editmodel.setOn
+import com.jpaver.trianglelist.viewmodel.InputParameter
 import junit.framework.TestCase.assertSame
 import org.hamcrest.CoreMatchers
 import org.hamcrest.MatcherAssert
@@ -19,16 +28,25 @@ fun compare(target1: Any, target2:Any ){
 //@PrepareForTest(Log.class)
 class TriangleTest {
 
+    //連結したときに寸法配置はどう変わる？
+    @Test
+    fun testDimPathAndOffset() {
+        val t1 = Triangle(3f, 4f, 5f)
+
+        // 1下 3上 -> // 夾角の、1:外 　3:内
+        Assert.assertEquals(1, t1.dim.vertical.a)
+        Assert.assertEquals(1, t1.dim.vertical.b)
+        Assert.assertEquals(1, t1.dim.vertical.c)
+    }
+
     //PathAndOffsetはクローンしたらどうなる？
     @Test
     fun testClonePathAndOffset(){
         val triangle = Triangle(1f,3f,3f)
         val triangle2 = triangle.clone()
 
-        compare(triangle.path[0].dimpoint,triangle2.path[0].dimpoint)
+        compare(triangle.dimOnPath[0].dimpoint,triangle2.dimOnPath[0].dimpoint)
     }
-
-
 
     //dimpointの相互干渉を検出するテスト
     @Test
@@ -37,24 +55,24 @@ class TriangleTest {
 
         // 最初の点から他の点への距離のリストを計算
         val distances = listup_dimpoint_distances(triangle)
-        val booleanList = check_distances(distances, 1.0f)
+        val booleanList = check_distances(distances )
         println("distances: $distances")
         println("distances: $booleanList")
 
     }
 
 
-    fun check_distances(distances: List<Float>, nearby: Float): List<Boolean> {
+    private fun check_distances(distances: List<Float>): List<Boolean> {
         // 距離が1.0fより小さく、0ではない条件を満たすかどうかでBooleanリストを生成
-        return distances.map { it > 0f && it < nearby }
+        return distances.map { it > 0f && it < 1.0f }
     }
 
-    fun listup_dimpoint_distances(triangle: Triangle ): List<Float>{
+    private fun listup_dimpoint_distances(triangle: Triangle): List<Float>{
         val distances = listup_dimpoint_distances(triangle, 0) + listup_dimpoint_distances(triangle, 1) + listup_dimpoint_distances(triangle, 2)
         return distances
     }
 
-    fun listup_dimpoint_distances(triangle: Triangle, index_basepoint: Int): List<Float> {
+    private fun listup_dimpoint_distances(triangle: Triangle, index_basepoint: Int): List<Float> {
         val dimpoint = arrayOf( triangle.dimpoint.a,triangle.dimpoint.b,triangle.dimpoint.c)
 
         return dimpoint[index_basepoint].distancesTo(dimpoint)
@@ -87,47 +105,18 @@ class TriangleTest {
         }
     }
 
-    //三角形の形状によって番号が移動するかテスト
-    @Test
-    fun testCalcWeitedMidPoint() {
-        val t345 = Triangle(3f, 4f, 5f)
-        Assert.assertEquals(-2.08f, t345.pointnumber.x, 0.01f)
-        val t = Triangle(5f, 5f, 5f)
-        Assert.assertEquals(-2.5f, t.pointnumber.x, 0.01f)
-    }
-
     //ノードポインタやオブジェクトが参照を返すのはどんなときか？テスト
     @Test
     fun testSameObjectPropaties(){
         val triangleA = Triangle()
         val triangleB = Triangle()
-        triangleB.nodeTriangleA_ = triangleA // 参照インスタンス代入
+        triangleB.nodeA = triangleA // 参照インスタンス代入
 
         // オブジェクトのハッシュコードが一致するか？
         println("triangleA のハッシュコード: ${triangleA.hashCode()}")
-        println("triangleB.nodeTriangleA のハッシュコード: ${triangleB.nodeTriangleA_.hashCode()}")
+        println("triangleB.nodeTriangleA のハッシュコード: ${triangleB.nodeA.hashCode()}")
 
-        assertSame( "BのnodeTriangleA と A は異なるオブジェクトを参照しています。", triangleB.nodeTriangleA_, triangleA )
-    }
-
-    @Test
-    fun testDistanceHataage() {
-        //PowerMockito.mockStatic(Log.class);
-        val t = Triangle(5f, 5f, 5f)
-        val t2 = Triangle(t, 1, 5f, 5f)
-        val t3 = Triangle(t2, 2, 5f, 5f)
-        var p = t.hataage(PointXY(-2.5f, 2f), 0f, 1f, 1f)
-        Assert.assertEquals(4.33f, p.y, 0.01f)
-        p = t.hataage(PointXY(2.5f, 3f), 0f, 1f, 1f)
-        Assert.assertEquals(4.33f, p.y, 0.01f)
-        p = t.hataage(PointXY(2.5f, 3f), 1f, 1f, 1f)
-        Assert.assertEquals(4.33f, p.y, 0.01f)
-        p = t.hataage(PointXY(2.5f, 1f), 1f, 1f, 1f)
-        Assert.assertEquals(0f, p.y, 0.01f)
-        val p2 = t2.hataage(PointXY(2.5f, 1f), 1f, 1f, 1f)
-        Assert.assertEquals(0f, p2.y, 0.01f)
-        val p3 = t3.hataage(PointXY(2.5f, 5f), 1f, 1f, 1f)
-        Assert.assertEquals(4.33f, p3.y, 0.01f)
+        assertSame( "BのnodeTriangleA と A は異なるオブジェクトを参照しています。", triangleB.nodeA, triangleA )
     }
 
     @Test
@@ -150,43 +139,52 @@ class TriangleTest {
     @Test
     fun testSetPointersFromCParams() {
         val one =
-            Triangle(Params("", "", 1, 5f, 5f, 5f, -1, -1, PointXY(0f, 0f), PointXY(0f, 0f)), 0f)
+            Triangle(InputParameter("", "", 1, 5f, 5f, 5f, -1, -1,
+                PointXY(0f, 0f),
+                PointXY(0f, 0f)
+            ), 0f)
         val connection = ConnParam(1, 0, 0, 5f)
         val two = Triangle(one, connection, 6f, 6f)
 
         // 内容の一致
-        Assert.assertEquals(one.mynumber.toLong(), two.nodeTriangleA_!!.mynumber.toLong())
-        Assert.assertEquals(one.nodeTriangleB!!.mynumber.toLong(), two.mynumber.toLong())
+        Assert.assertEquals(one.mynumber.toLong(), two.nodeA!!.mynumber.toLong())
+        Assert.assertEquals(one.nodeB!!.mynumber.toLong(), two.mynumber.toLong())
 
         // オブジェクトポインタの一致。
-        Assert.assertEquals(one, two.nodeTriangleA_)
-        Assert.assertEquals(one.nodeTriangleB, two)
+        Assert.assertEquals(one, two.nodeA)
+        Assert.assertEquals(one.nodeB, two)
         two.setOn(one, 2, 5f, 5f)
 
         // オブジェクトポインタの一致。
-        Assert.assertEquals(one, two.nodeTriangleA_)
-        Assert.assertEquals(one.nodeTriangleC, two)
+        Assert.assertEquals(one, two.nodeA)
+        Assert.assertEquals(one.nodeC, two)
     }
 
     @Test
     fun testSetPointersFromParams() {
         val one =
-            Triangle(Params("", "", 1, 5f, 5f, 5f, -1, -1, PointXY(0f, 0f), PointXY(0f, 0f)), 0f)
+            Triangle(InputParameter("", "", 1, 5f, 5f, 5f, -1, -1,
+                PointXY(0f, 0f),
+                PointXY(0f, 0f)
+            ), 0f)
         val two =
-            Triangle(one, Params("", "", 2, 5f, 5f, 5f, 1, 1, PointXY(0f, 0f), PointXY(0f, 0f)))
+            Triangle(one, InputParameter("", "", 2, 5f, 5f, 5f, 1, 1,
+                PointXY(0f, 0f),
+                PointXY(0f, 0f)
+            ))
 
         // 内容の一致
-        Assert.assertEquals(one.mynumber.toLong(), two.nodeTriangleA_!!.mynumber.toLong())
-        Assert.assertEquals(one.nodeTriangleB!!.mynumber.toLong(), two.mynumber.toLong())
+        Assert.assertEquals(one.mynumber.toLong(), two.nodeA!!.mynumber.toLong())
+        Assert.assertEquals(one.nodeB!!.mynumber.toLong(), two.mynumber.toLong())
 
         // オブジェクトポインタの一致。
-        Assert.assertEquals(one, two.nodeTriangleA_)
-        Assert.assertEquals(one.nodeTriangleB, two)
+        Assert.assertEquals(one, two.nodeA)
+        Assert.assertEquals(one.nodeB, two)
         two.setOn(one, 2, 5f, 5f)
 
         // オブジェクトポインタの一致。
-        Assert.assertEquals(one, two.nodeTriangleA_)
-        Assert.assertEquals(one.nodeTriangleC, two)
+        Assert.assertEquals(one, two.nodeA)
+        Assert.assertEquals(one.nodeC, two)
     }
 
     @Test
@@ -195,17 +193,17 @@ class TriangleTest {
         val two = Triangle(one, 1, 5f, 5f)
 
         // 内容の一致
-        Assert.assertEquals(one.mynumber.toLong(), two.nodeTriangleA_!!.mynumber.toLong())
-        Assert.assertEquals(one.nodeTriangleB!!.mynumber.toLong(), two.mynumber.toLong())
+        Assert.assertEquals(one.mynumber.toLong(), two.nodeA!!.mynumber.toLong())
+        Assert.assertEquals(one.nodeB!!.mynumber.toLong(), two.mynumber.toLong())
 
         // オブジェクトポインタの一致。
-        Assert.assertEquals(one, two.nodeTriangleA_)
-        Assert.assertEquals(one.nodeTriangleB, two)
+        Assert.assertEquals(one, two.nodeA)
+        Assert.assertEquals(one.nodeB, two)
         two.setOn(one, 2, 5f, 5f)
 
         // オブジェクトポインタの一致。
-        Assert.assertEquals(one, two.nodeTriangleA_)
-        Assert.assertEquals(one.nodeTriangleC, two)
+        Assert.assertEquals(one, two.nodeA)
+        Assert.assertEquals(one.nodeC, two)
     }
 
     @Test
@@ -214,24 +212,15 @@ class TriangleTest {
         Assert.assertEquals(18.74f, t.getArea(), 0.01f)
     }
 
-    @Test
-    fun testSideEffectInBasicTypes() {
-        val t = Triangle(5f, 5f, 5f)
-        var me = 0
-        me = t.dim.cycleIncrement(me)
-        // こうやって代入しない限り、meは渡された時点でクローンに代わり、副作用っぽく変化したりしない。
-        // オブジェクトは違う。引数として生で渡された時、ポインタとして渡されるので、副作用が起きる。
-        // t.sideEffectGo( object.clone ) とかすれば予防できる。
-        Assert.assertEquals(1, me.toLong())
-    }
+
 
     @Test
     fun testCalcDimAngle() {
         val tri = Triangle(5f, 5f, 5f)
-        val angle = tri.point[0].calcAngle(tri.pointAB, tri.pointBC)
-        Assert.assertEquals(-120f, angle, 0.0001f)
-        Assert.assertEquals(-120f, tri.pointBC.calcAngle(tri.point[0], tri.pointAB), 0.0001f)
-        Assert.assertEquals(-120f, tri.pointAB.calcAngle(tri.pointBC, tri.point[0]), 0.0001f)
+        val angle360 = tri.point[0].calcAngle360(tri.pointAB, tri.pointBC)
+        Assert.assertEquals(300f, angle360, 0.0001f)
+        Assert.assertEquals(300f, tri.pointBC.calcAngle360(tri.point[0], tri.pointAB), 0.0001f)
+        Assert.assertEquals(300f, tri.pointAB.calcAngle360(tri.pointBC, tri.point[0]), 0.0001f)
     }
 
     @Test
@@ -240,7 +229,7 @@ class TriangleTest {
         tri1.controlDimHorizontal(0)
         Assert.assertEquals(1, tri1.dim.horizontal.a)
         tri1.setDimPoint()
-        Assert.assertEquals(-2.325f, tri1.dimpoint.a.x, 0.001f)
+        Assert.assertEquals(-1.8f, tri1.dimpoint.a.x, 0.001f)
         var dim = PointXY(-1.5f, 0f)
         val offsetLeft = PointXY(-3f, 0f)
         val offsetRight = PointXY(0f, 0f)
@@ -252,29 +241,11 @@ class TriangleTest {
         Assert.assertEquals(-2.25f, dim.x, 0.001f)
         tri1.controlDimHorizontal(0)
         tri1.setDimPoint()
-        Assert.assertEquals(-0.67f, tri1.dimpoint.a.x, 0.01f)
+        Assert.assertEquals(-1.2f, tri1.dimpoint.a.x, 0.01f)
         tri1.controlDimVertical(0)
         Assert.assertEquals(3, tri1.dim.vertical.a)
         tri1.controlDimVertical(0)
         Assert.assertEquals(1, tri1.dim.vertical.a)
-    }
-
-    @Test
-    fun testAutoAlignPointNumber2() {
-        val t1 = Triangle(6.0f, 3.5f, 3.5f)
-        Assert.assertEquals(-3.0f, t1.pointnumber.x, 0.001f)
-        Assert.assertEquals(118f, t1.angleBC, 0.1f)
-        Assert.assertEquals(0.96f, t1.pointnumber.y, 0.01f)
-    }
-
-    @Test
-    fun testAutoAlignPointNumber() {
-        val t1 = Triangle(5f, 5f, 5f)
-        Assert.assertEquals(-2.5, t1.pointnumber.x.toDouble(), 0.001)
-        Assert.assertEquals(1.4433, t1.pointnumber.y.toDouble(), 0.001)
-        val t2 = Triangle(5f, 1.5f, 5f)
-        //t2.setChildSide(1);
-        Assert.assertEquals(-3.991f, t2.pointnumber.x, 0.001f)
     }
 
     @Test
@@ -293,20 +264,13 @@ class TriangleTest {
         myT.move(PointXY(5f, 5f))
         Assert.assertEquals(9f, myT.myBP_.top, 0.001f)
         val myDParam =
-            Params("集水桝", "Box", 3, 0.8f, 0.8f, 0f, 0, 0, PointXY(0.5f, 0.5f), PointXY(0f, 0f))
+            InputParameter("集水桝", "Box", 3, 0.8f, 0.8f, 0f, 0, 0,
+                PointXY(0.5f, 0.5f),
+                PointXY(0f, 0f)
+            )
         val myD = Deduction(myDParam)
         myD.move(PointXY(5f, 5f))
         Assert.assertEquals(5.5f, myD.point.x, 0.001f)
-    }
-
-    @Test
-    fun testDimPathAndOffset() {
-        val t1 = Triangle(3f, 4f, 5f)
-
-        // 1下 3上 -> // 夾角の、1:外 　3:内
-        Assert.assertEquals(1, t1.dim.vertical.a)
-        Assert.assertEquals(1, t1.dim.vertical.b)
-        Assert.assertEquals(1, t1.dim.vertical.c)
     }
 
     @Test

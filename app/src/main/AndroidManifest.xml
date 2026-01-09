@@ -2,8 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.READ_USER_DICTIONARY"/>
     <uses-permission android:name="android.permission.INTERNET"/>
 
@@ -17,16 +17,49 @@
             android:name="com.jpaver.trianglelist.MainActivity"
             android:configChanges="orientation|screenSize"
             android:exported="true">
+            <!-- Main launcher intent filter -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            
+            <!-- File handling intent filter -->
+            <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.EDIT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.OPENABLE" />
+                <data android:mimeType="text/csv" />
+            </intent-filter>
+            
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.EDIT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.OPENABLE" />
+                <data android:mimeType="text/*" />
+            </intent-filter>
+            
+            <!-- Document creation intent filter -->
+            <intent-filter>
                 <action android:name="android.intent.action.CREATE_DOCUMENT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/csv" />
+            </intent-filter>
+            
+            <!-- Content and sharing intent filters -->
+            <intent-filter>
                 <action android:name="android.intent.action.GET_CONTENT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.OPENABLE" />
+                <data android:mimeType="text/csv" />
+            </intent-filter>
+            
+            <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <action android:name="android.intent.action.SEND_MULTIPLE" />
-                <action android:name="android.intent.action.EDIT" />
-                <category android:name="android.intent.category.OPENABLE" />
-                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/csv" />
             </intent-filter>
         </activity>
 
@@ -50,7 +83,7 @@
         </provider>
 
         <provider
-            android:name="com.jpaver.trianglelist.util.AssetsFileProvider"
+            android:name="com.jpaver.trianglelist.viewmodel.AssetsFileProvider"
             android:authorities="${applicationId}.assets"
             android:exported="true"
             android:readPermission = "true"
