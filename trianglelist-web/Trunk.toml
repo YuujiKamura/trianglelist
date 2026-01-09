@@ -27,8 +27,10 @@ open = false
 # =============================================================================
 # wasm-opt settings
 # =============================================================================
-# wasm-optの追加オプション（環境変数で設定）
-# TRUNK_WASM_OPT_ARGS="--enable-bulk-memory --enable-nontrapping-float-to-int"
+# Trunk 0.21ではwasm-optの追加オプションを直接設定できないため、
+# 環境変数TRUNK_WASM_OPT_ARGSを使用（GitHub Actionsで設定）
+# ローカルビルド時は環境変数を設定するか、wasm-optを無効化
+# 例: export TRUNK_WASM_OPT_ARGS="--enable-bulk-memory --enable-nontrapping-float-to-int"
 
 # =============================================================================
 # Clean settings
