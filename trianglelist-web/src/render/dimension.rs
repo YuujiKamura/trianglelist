@@ -119,7 +119,7 @@ fn draw_arrow(painter: &Painter, position: Pos2, direction: Vec2, style: &Dimens
 ///
 /// # Arguments
 /// * `painter` - egui Painter
-/// * `points` - Three vertices of the triangle (screen coordinates)
+/// * `points` - Three vertices of the triangle (screen coordinates): [CA, AB, BC]
 /// * `side_lengths` - Lengths of the three sides [A, B, C]
 /// * `view_state` - View state for coordinate transformations
 /// * `style` - Dimension style configuration
@@ -130,31 +130,31 @@ pub fn draw_triangle_dimensions(
     view_state: &ViewState,
     style: &DimensionStyle,
 ) {
-    // Side A: from points[1] to points[2] (BC edge)
+    // Side A: CA to AB (points[0] to points[1])
     draw_dimension_line(
         painter,
+        points[0],
         points[1],
-        points[2],
         side_lengths[0],
         view_state,
         style,
     );
-    
-    // Side B: from points[0] to points[2] (CA edge)
+
+    // Side B: AB to BC (points[1] to points[2])
     draw_dimension_line(
         painter,
-        points[0],
+        points[1],
         points[2],
         side_lengths[1],
         view_state,
         style,
     );
-    
-    // Side C: from points[0] to points[1] (AB edge)
+
+    // Side C: BC to CA (points[2] to points[0])
     draw_dimension_line(
         painter,
+        points[2],
         points[0],
-        points[1],
         side_lengths[2],
         view_state,
         style,
