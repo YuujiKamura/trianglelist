@@ -7,4 +7,4 @@ pub mod geometry;
 pub mod model;
 
 pub use geometry::*;
-pub use model::{Alignment, ConnParam, ConnectionSide};
+pub use model::{Alignment, ConnParam, ConnectionSide, Triangle, TriangleColor};
