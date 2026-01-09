@@ -486,28 +486,25 @@ impl TriangleListApp {
 
             // Draw triangle number at centroid
             let centroid_model = positioned.centroid();
+            let centroid_screen = self.view_state.model_to_screen(centroid_model);
 
             // Use Canvas 2D API for text if enabled, otherwise use egui
             if self.use_canvas2d_text {
-                // Try to get canvas element and render with Canvas 2D API
                 if let Some(ref text_renderer) = self.canvas2d_text_renderer {
                     let align = TextAlign::new(HorizontalAlign::Center, VerticalAlign::Middle);
                     let color = color32_to_css(DEFAULT_TEXT_COLOR);
-                    let _ = text_renderer.draw_text_cad_style(
+                    let _ = text_renderer.draw_text(
                         &positioned.data.number.to_string(),
-                        centroid_model.x as f64,
-                        centroid_model.y as f64,
-                        14.0, // Model coordinate height
-                        0.0,  // No rotation
+                        centroid_screen.x as f64,
+                        centroid_screen.y as f64,
+                        14.0,
+                        0.0,
                         align,
                         &color,
-                        &self.view_state,
-                        true, // Zoom-dependent size
                     );
                 }
             } else {
                 // Use egui Painter (existing implementation)
-                let centroid_screen = self.view_state.model_to_screen(centroid_model);
                 draw_triangle_number(
                     &painter,
                     centroid_screen,
