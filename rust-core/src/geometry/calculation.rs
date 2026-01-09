@@ -4,6 +4,7 @@
 //! interior angle calculations, and related geometry operations.
 
 use std::f64::consts::PI;
+use std::ops::{Add, Sub};
 
 /// A 2D point with x and y coordinates.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -22,7 +23,7 @@ impl Point {
     pub fn distance_to(&self, other: &Point) -> f64 {
         let dx = other.x - self.x;
         let dy = other.y - self.y;
-        (dx * dx + dy * dy).sqrt()
+        dx.hypot(dy)
     }
 
     /// Returns a new point offset from this point by the given distance and angle (radians).
@@ -43,12 +44,34 @@ impl Point {
 
     /// Returns the magnitude (length) of this point as a vector.
     pub fn magnitude(&self) -> f64 {
-        (self.x * self.x + self.y * self.y).sqrt()
+        self.x.hypot(self.y)
     }
 
     /// Returns the inner (dot) product with another point.
     pub fn inner_product(&self, other: &Point) -> f64 {
         self.x * other.x + self.y * other.y
+    }
+}
+
+impl Add for Point {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        Self {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
+    }
+}
+
+impl Sub for Point {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        Self {
+            x: self.x - other.x,
+            y: self.y - other.y,
+        }
     }
 }
 
@@ -97,8 +120,8 @@ pub fn cosine_rule_side(a: f64, b: f64, angle_rad: f64) -> f64 {
 /// # Returns
 /// The interior angle in degrees.
 pub fn internal_angle(p1: &Point, p2: &Point, p3: &Point) -> f64 {
-    let v1 = p1.subtract(p2);
-    let v2 = p3.subtract(p2);
+    let v1 = *p1 - *p2;
+    let v2 = *p3 - *p2;
     let dot = v1.inner_product(&v2);
     let mag_product = v1.magnitude() * v2.magnitude();
 
@@ -205,22 +228,15 @@ pub fn calculate_point_bc(
     let theta = (point_a.y - point_ab.y).atan2(point_a.x - point_ab.x);
 
     // Calculate alpha using law of cosines: angle at point_ab
-    let pow_a = side_a * side_a;
-    let pow_b = side_b * side_b;
-    let pow_c = side_c * side_c;
-    let alpha = ((pow_a + pow_b - pow_c) / (2.0 * side_a * side_b)).acos();
+    // Clamp to [-1, 1] to handle floating point errors
+    let cos_alpha = ((side_a * side_a + side_b * side_b - side_c * side_c)
+        / (2.0 * side_a * side_b))
+        .clamp(-1.0, 1.0);
+    let alpha = cos_alpha.acos();
 
-    // Calculate the angle for point_bc
+    // Calculate the angle for point_bc and use offset method
     let angle = theta + alpha;
-
-    // Calculate offset from point_ab
-    let offset_x = side_b * angle.cos();
-    let offset_y = side_b * angle.sin();
-
-    Point {
-        x: point_ab.x + offset_x,
-        y: point_ab.y + offset_y,
-    }
+    point_ab.offset(side_b, angle)
 }
 
 #[cfg(test)]
