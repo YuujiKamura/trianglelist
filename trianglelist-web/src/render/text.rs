@@ -50,14 +50,17 @@ impl TextAlign {
     }
 }
 
-/// Draws text with CAD-compatible alignment and rotation
+/// Draws text with CAD-compatible alignment
+///
+/// Note: egui does not support text rotation. Text is always drawn horizontally.
+/// For rotated text, use Canvas 2D API (text_canvas2d.rs) instead.
 ///
 /// # Arguments
 /// * `painter` - egui Painter
 /// * `text` - Text string to draw
 /// * `pos` - Base position (DXF alignment point)
-/// * `height` - Text height in pixels (CAD text height)
-/// * `rotation_degrees` - Rotation angle in degrees (0 = horizontal)
+/// * `height` - Text height in pixels
+/// * `_rotation_degrees` - Ignored (egui doesn't support rotation)
 /// * `color` - Text color
 /// * `align` - Text alignment
 pub fn draw_text_cad_style(
@@ -65,78 +68,30 @@ pub fn draw_text_cad_style(
     text: &str,
     pos: Pos2,
     height: f32,
-    rotation_degrees: f32,
+    _rotation_degrees: f32,  // Ignored - egui doesn't support text rotation
     color: Color32,
     align: TextAlign,
 ) {
-    // Get text layout
-    let galley = painter.layout_no_wrap(
-        text.to_string(),
+    // Convert alignment to egui's Align2
+    let align2 = egui::Align2([
+        match align.horizontal {
+            HorizontalAlign::Left => egui::Align::LEFT,
+            HorizontalAlign::Center => egui::Align::Center,
+            HorizontalAlign::Right => egui::Align::RIGHT,
+        },
+        match align.vertical {
+            VerticalAlign::Top => egui::Align::TOP,
+            VerticalAlign::Middle => egui::Align::Center,
+            VerticalAlign::Bottom | VerticalAlign::Baseline => egui::Align::BOTTOM,
+        },
+    ]);
+
+    painter.text(
+        pos,
+        align2,
+        text,
         egui::FontId::monospace(height),
         color,
     );
-
-    let text_width = galley.size().x;
-    let text_height = galley.size().y;
-
-    // Calculate offset based on alignment (relative to pos)
-    let offset_x = match align.horizontal {
-        HorizontalAlign::Left => 0.0,
-        HorizontalAlign::Center => -text_width / 2.0,
-        HorizontalAlign::Right => -text_width,
-    };
-    let offset_y = match align.vertical {
-        VerticalAlign::Top => 0.0,
-        VerticalAlign::Middle => -text_height / 2.0,
-        VerticalAlign::Bottom | VerticalAlign::Baseline => -text_height,
-    };
-
-    if rotation_degrees.abs() > 0.1 {
-        // Rotated text: draw each character individually at rotated positions
-        let rotation_rad = rotation_degrees.to_radians();
-        let cos_r = rotation_rad.cos();
-        let sin_r = rotation_rad.sin();
-
-        // Draw each character at rotated position
-        let mut char_x = 0.0f32;
-        for ch in text.chars() {
-            let ch_str = ch.to_string();
-            let ch_galley = painter.layout_no_wrap(
-                ch_str.clone(),
-                egui::FontId::monospace(height),
-                color,
-            );
-            let char_width = ch_galley.size().x;
-
-            // Calculate character position relative to alignment point
-            let rel_x = offset_x + char_x + char_width / 2.0;
-            let rel_y = offset_y + text_height / 2.0;
-
-            // Rotate around pos
-            let rotated_x = pos.x + rel_x * cos_r - rel_y * sin_r;
-            let rotated_y = pos.y + rel_x * sin_r + rel_y * cos_r;
-
-            // Draw character centered at rotated position
-            painter.text(
-                Pos2::new(rotated_x, rotated_y),
-                egui::Align2::CENTER_CENTER,
-                &ch_str,
-                egui::FontId::monospace(height),
-                color,
-            );
-
-            char_x += char_width;
-        }
-    } else {
-        // No rotation: use standard text drawing with alignment
-        let text_pos = Pos2::new(pos.x + offset_x, pos.y + offset_y);
-        painter.text(
-            text_pos,
-            egui::Align2::LEFT_TOP,
-            text,
-            egui::FontId::monospace(height),
-            color,
-        );
-    }
 }
 
