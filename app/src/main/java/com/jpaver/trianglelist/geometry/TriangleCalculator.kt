@@ -1,6 +1,7 @@
-// 必要なインポートを追加
-import kotlin.math.* // 数学関数用
-import com.jpaver.trianglelist.PointXY // PointXYクラス用（パスは実際の場所に合わせて調整してください）
+package com.jpaver.trianglelist.geometry
+
+import kotlin.math.*
+import com.example.trilib.PointXY
 
 /**
  * 三角形の幾何学的計算を行うユーティリティクラス

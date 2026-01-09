@@ -1,3 +1,5 @@
+package com.jpaver.trianglelist.geometry
+
 /**
  * 三角形の妥当性検証を行うユーティリティクラス
  */

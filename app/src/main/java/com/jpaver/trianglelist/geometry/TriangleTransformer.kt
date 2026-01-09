@@ -1,7 +1,10 @@
+package com.jpaver.trianglelist.geometry
+
+import com.example.trilib.PointXY
+
 /**
  * 三角形の変換操作（回転、移動、スケール）を行うユーティリティクラス
  */
-import com.jpaver.trianglelist.PointXY
 
 object TriangleTransformer {
     fun rotate(point: PointXY, center: PointXY, angle: Float): PointXY {
