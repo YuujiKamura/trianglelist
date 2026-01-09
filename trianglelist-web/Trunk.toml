@@ -8,6 +8,8 @@ target = "index.html"
 dist = "dist"
 # リリースビルド時にファイルにハッシュを付与（キャッシュ対策）
 filehash = true
+# GitHub Pages用のbase URL（リポジトリ名）
+public_url = "/trianglelist/"
 
 [watch]
 # ファイル変更監視対象
