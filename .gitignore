@@ -1,14 +1,40 @@
 *.iml
+*.bin
+*.dex
+*.class
 .gradle
+.specstory
+.vscode
+.kotlin
+.idea
 /local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
 /build
 /captures
 .externalNativeBuild
 .cxx
+
+# App module build directories
+app/build
+app/free
+app/full
+app/release
+app/testSfc
+
+# Common module build directory
+common/build
+
+# Desktop module build directory
+desktop/build
+desktop/bin
+
+# Reports
+reports/
+
+# Rust/Cargo build artifacts
+trianglelist-web/target/
+trianglelist-web/dist/
+rust-renderer/target/
+rust-core/target/
+rust-dxf/target/
+target/
+Cargo.lock

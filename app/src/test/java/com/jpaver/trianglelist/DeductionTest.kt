@@ -1,5 +1,9 @@
 package com.jpaver.trianglelist
-import com.jpaver.trianglelist.util.Params
+import com.example.trilib.PointXY
+import com.jpaver.trianglelist.editmodel.Deduction
+import com.jpaver.trianglelist.editmodel.DeductionList
+import com.jpaver.trianglelist.editmodel.Triangle
+import com.jpaver.trianglelist.viewmodel.InputParameter
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -17,7 +21,7 @@ class DeductionTest {
 
     }
 
-    fun setup_deduction(num:Int): Deduction{
+    fun setup_deduction(num:Int): Deduction {
         return Deduction(
             num,
             "仕切弁",
@@ -63,7 +67,7 @@ class DeductionTest {
             PointXY(0f, 0f)
         )
         ded.rotateShape(ded.point, 45f)
-        assertEquals(-0.707, ded.plb.x.toDouble(), 0.001)
+        assertEquals(-0.707, ded.pLBtm.x.toDouble(), 0.001)
     }
 
     @Test
@@ -139,7 +143,7 @@ class DeductionTest {
             )
         )
         val ded2 = Deduction(
-            Params(
+            InputParameter(
                 "仕切弁", "Circle", 2, 0.23f, 0f, 0f, 0, 0,
                 PointXY(0f, 0f),
                 PointXY(
@@ -166,7 +170,7 @@ class DeductionTest {
     @Test
     fun testDedClone() {
         val myDParam =
-            Params("集水桝", "RECT", 3, 0.8f, 0.8f, 0f, 0, 0,
+            InputParameter("集水桝", "RECT", 3, 0.8f, 0.8f, 0f, 0, 0,
                 PointXY(0.5f, 0.5f),
                 PointXY(0f, 0f)
             )
@@ -178,7 +182,7 @@ class DeductionTest {
     @Test
     fun testDeduction() {
         val myDParam =
-            Params("集水桝", "Box", 3, 0.8f, 0.8f, 0f, 0, 0,
+            InputParameter("集水桝", "Box", 3, 0.8f, 0.8f, 0f, 0, 0,
                 PointXY(0.5f, 0.5f),
                 PointXY(0f, 0f)
             )
@@ -199,7 +203,7 @@ class DeductionTest {
         myDList.getDeduction(2)?.num?.let { assertEquals(2, it.toLong()) }
         myDList.getDeduction(3)?.num?.let { assertEquals(3, it.toLong()) }
         myDList.getDeduction(4)?.num?.let { assertEquals(4, it.toLong()) }
-        myDList.replace(1, myDParam) //all of the world.
+        myDList.replace(myDParam) //all of the world.
         //assertEquals(/* expected = */ "集水桝", /* actual = */ myDList.getDeduction(1)?.name ?: )
         myDList.move(PointXY(5f, 5f))
     }
