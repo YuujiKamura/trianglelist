@@ -8,6 +8,7 @@ use eframe::egui::{Pos2, Vec2};
 use crate::render::canvas::ViewState;
 use crate::render::text::{TextAlign, HorizontalAlign, VerticalAlign};
 use crate::render::text_canvas2d::Canvas2dTextRenderer;
+use wasm_bindgen::JsValue;
 
 /// Dimension style configuration
 #[derive(Debug, Clone)]
@@ -80,6 +81,12 @@ pub fn draw_dimension_value(
 
     // Format dimension value
     let text = format!("{:.2}", value);
+
+    #[cfg(target_arch = "wasm32")]
+    web_sys::console::log_1(&JsValue::from_str(&format!(
+        "Drawing dimension: {} at ({:.1}, {:.1}), angle: {:.1}, zoom: {}",
+        text, text_pos.x, text_pos.y, angle_degrees, view_state.zoom
+    )));
 
     // Draw dimension text using Canvas 2D API (supports rotation)
     let align = TextAlign::new(HorizontalAlign::Center, VerticalAlign::Middle);

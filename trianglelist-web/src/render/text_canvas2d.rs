@@ -48,6 +48,11 @@ impl Canvas2dTextRenderer {
         view_state: &ViewState,
         zoom_dependent_size: bool,
     ) -> Result<(), JsValue> {
+        log::debug!(
+            "Canvas2D draw_text: '{}' at ({}, {}), height={}, rot={}, zoom={}, pan=({}, {})",
+            text, model_x, model_y, model_height, rotation_degrees,
+            view_state.zoom, view_state.pan.x, view_state.pan.y
+        );
         self.ctx.save();
 
         // Apply view transform (pan and zoom)
@@ -63,12 +68,13 @@ impl Canvas2dTextRenderer {
         }
 
         // Determine text size
+        // Note: ctx.scale(zoom) is already applied, so text will be scaled automatically
         let font_size = if zoom_dependent_size {
-            // Scale with zoom (text grows/shrinks with geometry)
-            model_height * view_state.zoom as f64
-        } else {
-            // Constant screen size (text remains readable at all zoom levels)
+            // Let the scale transform handle zooming - just use model height
             model_height
+        } else {
+            // Counter the scale transform for constant screen size
+            model_height / view_state.zoom as f64
         };
 
         // Set font
