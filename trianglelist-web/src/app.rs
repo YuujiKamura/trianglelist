@@ -6,8 +6,7 @@
 use eframe::egui;
 
 use crate::csv::{parse_csv, ParseError, ParseResult, ParsedTriangle};
-use crate::render::{ViewState, draw_triangle, draw_triangle_number, draw_side_length};
-use crate::render::color::{default_triangle_fill, DEFAULT_TRIANGLE_STROKE, DEFAULT_TEXT_COLOR};
+use crate::render::ViewState;
 
 /// The main TriangleList application struct.
 ///
