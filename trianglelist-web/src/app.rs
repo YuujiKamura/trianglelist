@@ -290,7 +290,7 @@ impl TriangleListApp {
 
     /// Renders the canvas with triangles
     fn render_canvas(&mut self, ui: &mut egui::Ui) {
-        use crate::render::canvas::calculate_triangle_points;
+        use crate::render::canvas::calculate_all_triangle_positions;
 
         let (response, painter) = ui.allocate_painter(
             ui.available_size(),
@@ -332,29 +332,15 @@ impl TriangleListApp {
         // Draw background
         painter.rect_filled(rect, 0.0, egui::Color32::from_rgb(30, 30, 30));
 
-        // Draw triangles
-        // For now, use a simple layout: place independent triangles in a row
-        let mut current_x = 0.0f32;
-        let base_y = 0.0f32;
+        // Calculate all triangle positions with proper connections
+        let positioned_triangles = calculate_all_triangle_positions(&self.triangles);
 
-        for triangle in &self.triangles {
-            // Calculate triangle points (in model coordinates)
-            let points_model = calculate_triangle_points(triangle);
-
-            // Offset for layout (simple row layout for now)
-            let offset = Pos2::new(current_x, base_y);
-            let offset_vec = offset.to_vec2();
-            let points_offset: [Pos2; 3] = [
-                points_model[0] + offset_vec,
-                points_model[1] + offset_vec,
-                points_model[2] + offset_vec,
-            ];
-
-            // Convert to screen coordinates
+        for positioned in &positioned_triangles {
+            // Convert model coordinates to screen coordinates
             let points_screen: [Pos2; 3] = [
-                self.view_state.model_to_screen(points_offset[0]),
-                self.view_state.model_to_screen(points_offset[1]),
-                self.view_state.model_to_screen(points_offset[2]),
+                self.view_state.model_to_screen(positioned.points[0]),
+                self.view_state.model_to_screen(positioned.points[1]),
+                self.view_state.model_to_screen(positioned.points[2]),
             ];
 
             // Draw triangle
@@ -371,9 +357,9 @@ impl TriangleListApp {
                 use crate::render::dimension::{draw_triangle_dimensions, DimensionStyle};
                 let dim_style = DimensionStyle::default();
                 let side_lengths = [
-                    triangle.side_a,
-                    triangle.side_b,
-                    triangle.side_c,
+                    positioned.data.side_a,
+                    positioned.data.side_b,
+                    positioned.data.side_c,
                 ];
                 draw_triangle_dimensions(
                     &painter,
@@ -385,10 +371,7 @@ impl TriangleListApp {
             }
 
             // Draw triangle number at centroid
-            let centroid_model = Pos2::new(
-                (points_offset[0].x + points_offset[1].x + points_offset[2].x) / 3.0,
-                (points_offset[0].y + points_offset[1].y + points_offset[2].y) / 3.0,
-            );
+            let centroid_model = positioned.centroid();
 
             // Use Canvas 2D API for text if enabled, otherwise use egui
             if self.use_canvas2d_text {
@@ -397,7 +380,7 @@ impl TriangleListApp {
                     let align = TextAlign::new(HorizontalAlign::Center, VerticalAlign::Middle);
                     let color = color32_to_css(DEFAULT_TEXT_COLOR);
                     let _ = text_renderer.draw_text_cad_style(
-                        &triangle.number.to_string(),
+                        &positioned.data.number.to_string(),
                         centroid_model.x as f64,
                         centroid_model.y as f64,
                         14.0, // Model coordinate height
@@ -414,15 +397,11 @@ impl TriangleListApp {
                 draw_triangle_number(
                     &painter,
                     centroid_screen,
-                    triangle.number,
+                    positioned.data.number,
                     14.0,
                     DEFAULT_TEXT_COLOR,
                 );
             }
-
-            // Update position for next triangle (simple spacing)
-            let max_x = points_offset[0].x.max(points_offset[1].x).max(points_offset[2].x);
-            current_x = max_x + triangle.side_c as f32 * 0.2; // Add spacing
         }
     }
 
