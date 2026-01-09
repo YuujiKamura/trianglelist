@@ -1,51 +1,47 @@
-//! Dimension line rendering for triangles
+//! Dimension value rendering for triangles
 //!
-//! Provides functions for drawing dimension lines with text labels for triangle sides.
+//! Draws dimension values along triangle edges.
+//! Based on Android version: text is drawn along the edge path with offset,
+//! no extension lines or dimension auxiliary lines.
 
-use eframe::egui::{Color32, Painter, Pos2, Shape, Stroke, Vec2};
+use eframe::egui::{Color32, Painter, Pos2, Vec2};
 use crate::render::canvas::ViewState;
 use crate::render::text::{draw_text_cad_style, TextAlign, HorizontalAlign, VerticalAlign};
 
-/// Dimension line style configuration
+/// Dimension style configuration
 #[derive(Debug, Clone)]
 pub struct DimensionStyle {
-    /// Line color
-    pub line_color: Color32,
     /// Text color
     pub text_color: Color32,
-    /// Line width
-    pub line_width: f32,
-    /// Text height in model units
+    /// Text height in screen pixels
     pub text_height: f32,
-    /// Offset distance from the measured line
-    pub offset_distance: f32,
-    /// Arrow size
-    pub arrow_size: f32,
+    /// Vertical offset from edge (positive = outside, negative = inside)
+    pub offset_v: f32,
 }
 
 impl Default for DimensionStyle {
     fn default() -> Self {
         Self {
-            line_color: Color32::from_rgb(200, 200, 200),
             text_color: Color32::from_rgb(255, 255, 255),
-            line_width: 1.0,
-            text_height: 10.0,
-            offset_distance: 15.0,
-            arrow_size: 5.0,
+            text_height: 12.0,
+            offset_v: 12.0, // Outside by default
         }
     }
 }
 
-/// Draws a dimension line for a triangle side
+/// Draws a dimension value along a triangle edge
+///
+/// Text is positioned at the midpoint of the edge with vertical offset.
+/// Text direction is automatically adjusted to be readable (left to right).
 ///
 /// # Arguments
 /// * `painter` - egui Painter
-/// * `start` - Start point of the measured line (screen coordinates)
-/// * `end` - End point of the measured line (screen coordinates)
+/// * `start` - Start point of the edge (screen coordinates)
+/// * `end` - End point of the edge (screen coordinates)
 /// * `value` - Dimension value to display
-/// * `view_state` - View state for coordinate transformations
+/// * `_view_state` - View state (reserved for future use)
 /// * `style` - Dimension style configuration
-pub fn draw_dimension_line(
+pub fn draw_dimension_value(
     painter: &Painter,
     start: Pos2,
     end: Pos2,
@@ -53,42 +49,37 @@ pub fn draw_dimension_line(
     _view_state: &ViewState,
     style: &DimensionStyle,
 ) {
-    // Calculate the direction vector of the measured line
+    // Calculate edge direction
     let vec = end - start;
-    let direction = vec.normalized();
-    
-    // Calculate perpendicular vector for offset (rotate 90 degrees)
+    let length = vec.length();
+    if length < 0.01 {
+        return; // Skip zero-length edges
+    }
+    let direction = vec / length;
+
+    // Calculate perpendicular vector for offset
     let perpendicular = Vec2::new(-direction.y, direction.x);
-    
-    // Calculate dimension line position (offset from the measured line)
-    let offset = perpendicular * style.offset_distance;
-    let dim_start = start + offset;
-    let dim_end = end + offset;
-    
-    // Draw extension lines (from measured points to dimension line)
-    painter.line_segment([start, dim_start], Stroke::new(style.line_width, style.line_color));
-    painter.line_segment([end, dim_end], Stroke::new(style.line_width, style.line_color));
-    
-    // Draw main dimension line
-    painter.line_segment([dim_start, dim_end], Stroke::new(style.line_width, style.line_color));
-    
-    // Draw arrows at both ends
-    draw_arrow(painter, dim_start, direction, style);
-    draw_arrow(painter, dim_end, -direction, style);
-    
-    // Calculate text position (center of dimension line)
-    let text_pos = Pos2::new(
-        (dim_start.x + dim_end.x) * 0.5,
-        (dim_start.y + dim_end.y) * 0.5,
+
+    // Calculate text position (midpoint + offset)
+    let midpoint = Pos2::new(
+        (start.x + end.x) * 0.5,
+        (start.y + end.y) * 0.5,
     );
-    
-    // Calculate rotation angle for text (aligned with dimension line)
-    let angle_rad = direction.y.atan2(direction.x);
+    let text_pos = midpoint + perpendicular * style.offset_v;
+
+    // Calculate rotation angle
+    let mut angle_rad = direction.y.atan2(direction.x);
+
+    // Auto-adjust text direction to be readable (left to right)
+    // If text would be upside down, flip it 180 degrees
+    if angle_rad > std::f32::consts::FRAC_PI_2 || angle_rad < -std::f32::consts::FRAC_PI_2 {
+        angle_rad += std::f32::consts::PI;
+    }
     let angle_degrees = angle_rad.to_degrees();
-    
+
     // Format dimension value
     let text = format!("{:.2}", value);
-    
+
     // Draw dimension text
     let align = TextAlign::new(HorizontalAlign::Center, VerticalAlign::Middle);
     draw_text_cad_style(
@@ -100,19 +91,6 @@ pub fn draw_dimension_line(
         style.text_color,
         align,
     );
-}
-
-/// Draws an arrow at the specified position
-fn draw_arrow(painter: &Painter, position: Pos2, direction: Vec2, style: &DimensionStyle) {
-    // Arrow head points (perpendicular to direction)
-    let perpendicular = Vec2::new(-direction.y, direction.x);
-    let arrow_head = position - direction * style.arrow_size;
-    let arrow_left = arrow_head + perpendicular * style.arrow_size * 0.5;
-    let arrow_right = arrow_head - perpendicular * style.arrow_size * 0.5;
-    
-    // Draw arrow as a closed triangle
-    painter.add(Shape::line(vec![position, arrow_left, arrow_right, position], 
-        Stroke::new(style.line_width, style.line_color)));
 }
 
 /// Draws dimension lines for all three sides of a triangle
@@ -131,7 +109,7 @@ pub fn draw_triangle_dimensions(
     style: &DimensionStyle,
 ) {
     // Side A: CA to AB (points[0] to points[1])
-    draw_dimension_line(
+    draw_dimension_value(
         painter,
         points[0],
         points[1],
@@ -141,7 +119,7 @@ pub fn draw_triangle_dimensions(
     );
 
     // Side B: AB to BC (points[1] to points[2])
-    draw_dimension_line(
+    draw_dimension_value(
         painter,
         points[1],
         points[2],
@@ -151,7 +129,7 @@ pub fn draw_triangle_dimensions(
     );
 
     // Side C: BC to CA (points[2] to points[0])
-    draw_dimension_line(
+    draw_dimension_value(
         painter,
         points[2],
         points[0],
