@@ -8,10 +8,12 @@ pub mod text;
 pub mod text_canvas2d;
 pub mod color;
 pub mod dimension;
+pub mod road_section;
 
 pub use canvas::*;
 pub use text::*;
 pub use text_canvas2d::*;
 pub use color::*;
 pub use dimension::*;
+pub use road_section::*;
 

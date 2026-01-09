@@ -11,6 +11,12 @@ use crate::render::{ViewState, draw_triangle, draw_triangle_number};
 use crate::render::color::{default_triangle_fill, DEFAULT_TRIANGLE_STROKE, DEFAULT_TEXT_COLOR};
 use crate::render::text_canvas2d::{Canvas2dTextRenderer, color32_to_css};
 use crate::render::text::{TextAlign, HorizontalAlign, VerticalAlign};
+use crate::road_section::{
+    StationData, RoadSectionGeometry, RoadSectionConfig,
+    parse_road_section_csv, calculate_road_section, detect_csv_type, CsvType,
+    geometry_to_dxf,
+};
+use crate::render::road_section::{draw_road_section_canvas2d, draw_road_section_egui};
 use eframe::egui::Pos2;
 use wasm_bindgen::JsCast;
 
@@ -26,13 +32,34 @@ thread_local! {
     static FILE_CALLBACK_CLOSURE: RefCell<Option<Closure<dyn FnMut(String)>>> = RefCell::new(None);
 }
 
+/// Display mode for the application
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum DisplayMode {
+    /// Triangle mesh mode
+    Triangle,
+    /// Road section (面積展開図) mode
+    RoadSection,
+}
+
+impl Default for DisplayMode {
+    fn default() -> Self {
+        Self::Triangle
+    }
+}
+
 /// The main TriangleList application struct.
 ///
 /// This struct holds the application state and implements the eframe::App trait
 /// for rendering the UI.
 pub struct TriangleListApp {
-    /// Parsed triangles from CSV
+    /// Current display mode
+    display_mode: DisplayMode,
+    /// Parsed triangles from CSV (for Triangle mode)
     triangles: Vec<ParsedTriangle>,
+    /// Parsed station data (for RoadSection mode)
+    stations: Vec<StationData>,
+    /// Calculated road section geometry
+    road_section_geometry: Option<RoadSectionGeometry>,
     /// Error message if parsing failed
     error_message: Option<String>,
     /// Warning messages from parsing
@@ -60,7 +87,10 @@ pub struct TriangleListApp {
 impl Default for TriangleListApp {
     fn default() -> Self {
         Self {
+            display_mode: DisplayMode::default(),
             triangles: Vec::new(),
+            stations: Vec::new(),
+            road_section_geometry: None,
             error_message: None,
             warnings: Vec::new(),
             is_drop_hover: false,
@@ -429,12 +459,60 @@ impl TriangleListApp {
 
     /// Parse CSV and cache to localStorage
     fn parse_and_cache_csv(&mut self, csv_data: &str) {
-        let result = parse_csv(csv_data);
-        if result.is_ok() {
-            #[cfg(target_arch = "wasm32")]
-            Self::save_csv_to_storage(csv_data);
+        // Detect CSV type
+        let csv_type = detect_csv_type(csv_data);
+        log::info!("Detected CSV type: {:?}", csv_type);
+
+        match csv_type {
+            CsvType::Triangle | CsvType::Unknown => {
+                // Try parsing as triangle data
+                let result = parse_csv(csv_data);
+                if result.is_ok() {
+                    #[cfg(target_arch = "wasm32")]
+                    Self::save_csv_to_storage(csv_data);
+                    self.display_mode = DisplayMode::Triangle;
+                    // Clear road section data
+                    self.stations.clear();
+                    self.road_section_geometry = None;
+                }
+                self.handle_parse_result(result);
+            }
+            CsvType::RoadSection => {
+                // Parse as road section data
+                match parse_road_section_csv(csv_data) {
+                    Ok(stations) => {
+                        #[cfg(target_arch = "wasm32")]
+                        Self::save_csv_to_storage(csv_data);
+
+                        self.display_mode = DisplayMode::RoadSection;
+                        self.stations = stations;
+
+                        // Calculate geometry
+                        let config = RoadSectionConfig::default();
+                        let geometry = calculate_road_section(&self.stations, &config);
+
+                        // Fit view to geometry
+                        self.view_state.fit_to_road_section(&geometry);
+
+                        self.road_section_geometry = Some(geometry);
+                        self.show_canvas = true;
+                        self.error_message = None;
+
+                        // Clear triangle data
+                        self.triangles.clear();
+                        self.warnings.clear();
+
+                        log::info!("Parsed {} stations for road section", self.stations.len());
+                    }
+                    Err(e) => {
+                        self.error_message = Some(format!("Road section parse error: {}", e));
+                        self.stations.clear();
+                        self.road_section_geometry = None;
+                        self.show_canvas = false;
+                    }
+                }
+            }
         }
-        self.handle_parse_result(result);
     }
 
     /// Renders the file drop zone
@@ -507,6 +585,10 @@ impl TriangleListApp {
 
             if ui.button("Load Sample").clicked() {
                 self.csv_input = SAMPLE_CSV.to_string();
+            }
+
+            if ui.button("Load Road Section").clicked() {
+                self.csv_input = SAMPLE_ROAD_SECTION_CSV.to_string();
             }
         });
     }
@@ -590,6 +672,17 @@ impl TriangleListApp {
 
         // Draw background
         painter.rect_filled(rect, 0.0, egui::Color32::from_rgb(30, 30, 30));
+
+        // Render based on display mode
+        match self.display_mode {
+            DisplayMode::RoadSection => {
+                self.render_road_section(&painter);
+                return;
+            }
+            DisplayMode::Triangle => {
+                // Continue with triangle rendering below
+            }
+        }
 
         // Calculate all triangle positions with proper connections
         let positioned_triangles = calculate_all_triangle_positions(&self.triangles);
@@ -782,6 +875,19 @@ impl TriangleListApp {
             });
     }
 
+    /// Renders road section geometry
+    fn render_road_section(&self, painter: &egui::Painter) {
+        if let Some(ref geometry) = self.road_section_geometry {
+            if let Some(ref text_renderer) = self.canvas2d_text_renderer {
+                // Use Canvas 2D for text rotation
+                draw_road_section_canvas2d(painter, text_renderer, geometry, &self.view_state);
+            } else {
+                // Fallback to egui (no text rotation)
+                draw_road_section_egui(painter, geometry, &self.view_state);
+            }
+        }
+    }
+
     /// Downloads triangles as DXF file
     ///
     /// This function converts the parsed triangles to DXF format and triggers
@@ -794,6 +900,17 @@ impl TriangleListApp {
     /// If the conversion or download fails, an error is logged and set in
     /// `error_message` for display to the user.
     fn download_dxf_file(&mut self) {
+        // Handle based on display mode
+        match self.display_mode {
+            DisplayMode::RoadSection => {
+                self.download_road_section_dxf();
+                return;
+            }
+            DisplayMode::Triangle => {
+                // Continue with triangle export below
+            }
+        }
+
         if self.triangles.is_empty() {
             log::warn!("No triangles to export");
             self.error_message = Some("No triangles to export".to_string());
@@ -831,6 +948,42 @@ impl TriangleListApp {
         {
             log::info!("DXF content generated ({} lines, {} texts)", lines.len(), texts.len());
             // In non-WASM environments, you might want to write to a file
+        }
+    }
+
+    /// Downloads road section as DXF file
+    fn download_road_section_dxf(&mut self) {
+        if let Some(ref geometry) = self.road_section_geometry {
+            let (lines, texts) = geometry_to_dxf(geometry);
+
+            if lines.is_empty() && texts.is_empty() {
+                log::warn!("Road section DXF has no entities");
+                self.error_message = Some("No road section data to export".to_string());
+                return;
+            }
+
+            // Generate DXF content
+            let writer = dxf::DxfWriter::new();
+            let dxf_content = writer.write(&lines, &texts);
+
+            // Download the file
+            #[cfg(target_arch = "wasm32")]
+            {
+                if let Err(e) = download_dxf(&dxf_content, "road_section.dxf") {
+                    log::error!("Failed to download DXF: {:?}", e);
+                    self.error_message = Some(format!("Failed to download DXF file: {:?}", e));
+                } else {
+                    log::info!("Road section DXF downloaded ({} lines, {} texts)", lines.len(), texts.len());
+                    self.error_message = None;
+                }
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                log::info!("Road section DXF generated ({} lines, {} texts)", lines.len(), texts.len());
+            }
+        } else {
+            self.error_message = Some("No road section data to export".to_string());
         }
     }
 }
@@ -919,11 +1072,29 @@ impl eframe::App for TriangleListApp {
                         if ui.button("Clear").clicked() {
                             self.csv_input.clear();
                             self.triangles.clear();
+                            self.stations.clear();
+                            self.road_section_geometry = None;
                             self.error_message = None;
                             self.warnings.clear();
                             self.show_canvas = false;
                             #[cfg(target_arch = "wasm32")]
                             Self::clear_csv_storage();
+                        }
+                    });
+                    ui.add_space(10.0);
+
+                    // Sample data
+                    ui.group(|ui| {
+                        ui.heading("Samples");
+                        ui.add_space(5.0);
+                        if ui.button("Triangle Sample").clicked() {
+                            self.csv_input = SAMPLE_CSV.to_string();
+                            self.parse_and_cache_csv(&self.csv_input.clone());
+                        }
+                        ui.add_space(5.0);
+                        if ui.button("Road Section Sample").clicked() {
+                            self.csv_input = SAMPLE_ROAD_SECTION_CSV.to_string();
+                            self.parse_and_cache_csv(&self.csv_input.clone());
                         }
                     });
                     ui.add_space(10.0);
@@ -1004,8 +1175,15 @@ impl eframe::App for TriangleListApp {
 
                     ui.separator();
 
-                    // Triangle count
-                    ui.label(format!("Triangles: {}", self.triangles.len()));
+                    // Mode and count
+                    match self.display_mode {
+                        DisplayMode::Triangle => {
+                            ui.label(format!("Mode: Triangle | Count: {}", self.triangles.len()));
+                        }
+                        DisplayMode::RoadSection => {
+                            ui.label(format!("Mode: Road Section | Stations: {}", self.stations.len()));
+                        }
+                    }
 
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         if ui.button("Toggle Side Panel").clicked() {
@@ -1017,7 +1195,12 @@ impl eframe::App for TriangleListApp {
 
         // Main panel
         egui::CentralPanel::default().show(ctx, |ui| {
-            if !self.show_canvas || self.triangles.is_empty() {
+            let has_data = match self.display_mode {
+                DisplayMode::Triangle => !self.triangles.is_empty(),
+                DisplayMode::RoadSection => self.road_section_geometry.is_some(),
+            };
+
+            if !self.show_canvas || !has_data {
                 // Initial view: file input
                 ui.vertical_centered(|ui| {
                     ui.add_space(20.0);
@@ -1071,6 +1254,14 @@ const SAMPLE_CSV: &str = r#"番号
 2, 5.0, 4.0, 3.0, 1, 1
 3, 4.0, 3.5, 3.0, 1, 2
 4, 3.0, 4.0, 5.0, 2, 1
+"#;
+
+const SAMPLE_ROAD_SECTION_CSV: &str = r#"測点名,累積延長,左幅員,右幅員
+No.1,0.0,2.5,2.5
+No.1+10,10.0,2.5,3.0
+No.2,20.0,3.0,3.0
+No.2+10,30.0,2.5,2.5
+No.3,40.0,2.5,2.5
 "#;
 
 #[cfg(test)]

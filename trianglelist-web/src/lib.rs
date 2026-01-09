@@ -7,6 +7,7 @@ pub mod app;
 pub mod csv;
 pub mod dxf;
 pub mod render;
+pub mod road_section;
 
 pub use app::TriangleListApp;
 
