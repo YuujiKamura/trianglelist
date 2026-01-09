@@ -50,11 +50,11 @@ pub struct Triangle {
     /// Base angle (degrees) - rotation angle of the triangle
     angle: f32,
     /// Internal angle at vertex A (degrees)
-    angle_ca: f32,
+    angle_a: f32,
     /// Internal angle at vertex B (degrees)
-    angle_ab: f32,
+    angle_b: f32,
     /// Internal angle at vertex C (degrees)
-    angle_bc: f32,
+    angle_c: f32,
 }
 
 impl Default for Triangle {
@@ -69,9 +69,9 @@ impl Default for Triangle {
             name: String::new(),
             points: [PointXY::zero(), PointXY::zero(), PointXY::zero()],
             angle: 180.0,
-            angle_ca: 0.0,
-            angle_ab: 0.0,
-            angle_bc: 0.0,
+            angle_a: 0.0,
+            angle_b: 0.0,
+            angle_c: 0.0,
         }
     }
 }
@@ -89,9 +89,9 @@ impl Triangle {
             name: String::new(),
             points: [PointXY::zero(), PointXY::zero(), PointXY::zero()],
             angle: 180.0,
-            angle_ca: 0.0,
-            angle_ab: 0.0,
-            angle_bc: 0.0,
+            angle_a: 0.0,
+            angle_b: 0.0,
+            angle_c: 0.0,
         };
         tri.calculate_points();
         tri.calculate_internal_angles();
@@ -116,9 +116,9 @@ impl Triangle {
             name: String::new(),
             points: [PointXY::zero(), PointXY::zero(), PointXY::zero()],
             angle: 180.0,
-            angle_ca: 0.0,
-            angle_ab: 0.0,
-            angle_bc: 0.0,
+            angle_a: 0.0,
+            angle_b: 0.0,
+            angle_c: 0.0,
         };
         tri.calculate_points();
         tri.calculate_internal_angles();
@@ -191,36 +191,32 @@ impl Triangle {
     /// Calculate internal angles using the law of cosines
     /// 
     /// Calculates the three internal angles of the triangle:
-    /// - angle_ca: angle at vertex A (opposite to side A)
-    /// - angle_ab: angle at vertex B (opposite to side B)
-    /// - angle_bc: angle at vertex C (opposite to side C)
+    /// - angle_a: angle at vertex A (opposite to side A)
+    /// - angle_b: angle at vertex B (opposite to side B)
+    /// - angle_c: angle at vertex C (opposite to side C)
     fn calculate_internal_angles(&mut self) {
         if !self.is_valid() {
             return;
         }
 
-        use std::f32::consts::PI;
+        let a2 = self.length_a.powi(2);
+        let b2 = self.length_b.powi(2);
+        let c2 = self.length_c.powi(2);
 
         // Angle at vertex A (opposite to side A)
         // cos(A) = (b² + c² - a²) / (2bc)
-        let cos_a = (self.length_b * self.length_b + self.length_c * self.length_c
-            - self.length_a * self.length_a)
-            / (2.0 * self.length_b * self.length_c);
-        self.angle_ca = cos_a.clamp(-1.0, 1.0).acos() * 180.0 / PI;
+        let cos_a = (b2 + c2 - a2) / (2.0 * self.length_b * self.length_c);
+        self.angle_a = cos_a.clamp(-1.0, 1.0).acos().to_degrees();
 
         // Angle at vertex B (opposite to side B)
         // cos(B) = (a² + c² - b²) / (2ac)
-        let cos_b = (self.length_a * self.length_a + self.length_c * self.length_c
-            - self.length_b * self.length_b)
-            / (2.0 * self.length_a * self.length_c);
-        self.angle_ab = cos_b.clamp(-1.0, 1.0).acos() * 180.0 / PI;
+        let cos_b = (a2 + c2 - b2) / (2.0 * self.length_a * self.length_c);
+        self.angle_b = cos_b.clamp(-1.0, 1.0).acos().to_degrees();
 
         // Angle at vertex C (opposite to side C)
         // cos(C) = (a² + b² - c²) / (2ab)
-        let cos_c = (self.length_a * self.length_a + self.length_b * self.length_b
-            - self.length_c * self.length_c)
-            / (2.0 * self.length_a * self.length_b);
-        self.angle_bc = cos_c.clamp(-1.0, 1.0).acos() * 180.0 / PI;
+        let cos_c = (a2 + b2 - c2) / (2.0 * self.length_a * self.length_b);
+        self.angle_c = cos_c.clamp(-1.0, 1.0).acos().to_degrees();
     }
 
     /// Get the base angle (rotation angle) in degrees
@@ -234,18 +230,18 @@ impl Triangle {
     }
 
     /// Get the internal angle at vertex A (degrees)
-    pub fn angle_ca(&self) -> f32 {
-        self.angle_ca
+    pub fn angle_a(&self) -> f32 {
+        self.angle_a
     }
 
     /// Get the internal angle at vertex B (degrees)
-    pub fn angle_ab(&self) -> f32 {
-        self.angle_ab
+    pub fn angle_b(&self) -> f32 {
+        self.angle_b
     }
 
     /// Get the internal angle at vertex C (degrees)
-    pub fn angle_bc(&self) -> f32 {
-        self.angle_bc
+    pub fn angle_c(&self) -> f32 {
+        self.angle_c
     }
 
     /// Check if this triangle is independent (not connected to any parent)
@@ -354,21 +350,21 @@ mod tests {
         // Angle opposite to side 4 (B) should be ~53.13°
         // Angle opposite to side 5 (C) should be 90°
         let tri = Triangle::new(3.0, 4.0, 5.0);
-        assert!(approx_eq(tri.angle_bc(), 90.0)); // Angle at C (opposite to side 5)
-        assert!(approx_eq(tri.angle_ca(), 36.87)); // Angle at A (opposite to side 3)
-        assert!(approx_eq(tri.angle_ab(), 53.13)); // Angle at B (opposite to side 4)
+        assert!(approx_eq(tri.angle_c(), 90.0)); // Angle at C (opposite to side 5)
+        assert!(approx_eq(tri.angle_a(), 36.87)); // Angle at A (opposite to side 3)
+        assert!(approx_eq(tri.angle_b(), 53.13)); // Angle at B (opposite to side 4)
         
         // Sum of all angles should be 180°
-        assert!(approx_eq(tri.angle_ca() + tri.angle_ab() + tri.angle_bc(), 180.0));
+        assert!(approx_eq(tri.angle_a() + tri.angle_b() + tri.angle_c(), 180.0));
     }
 
     #[test]
     fn test_internal_angles_equilateral() {
         // Equilateral triangle: all angles should be 60°
         let tri = Triangle::new(2.0, 2.0, 2.0);
-        assert!(approx_eq(tri.angle_ca(), 60.0));
-        assert!(approx_eq(tri.angle_ab(), 60.0));
-        assert!(approx_eq(tri.angle_bc(), 60.0));
+        assert!(approx_eq(tri.angle_a(), 60.0));
+        assert!(approx_eq(tri.angle_b(), 60.0));
+        assert!(approx_eq(tri.angle_c(), 60.0));
     }
 
     #[test]

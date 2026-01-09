@@ -35,9 +35,6 @@ impl ViewState {
     pub fn set_canvas_size(&mut self, size: Vec2) {
         self.canvas_size = size;
     }
-}
-
-impl ViewState {
     /// Convert model coordinates to screen coordinates
     pub fn model_to_screen(&self, model_pos: Pos2) -> Pos2 {
         Pos2::new(
