@@ -16,7 +16,7 @@ use crate::road_section::{
     parse_road_section_csv, calculate_road_section, detect_csv_type, CsvType,
     geometry_to_dxf,
 };
-use crate::render::road_section::{draw_road_section_canvas2d, draw_road_section_egui};
+use crate::render::road_section::{draw_road_section_bbox, draw_road_section_canvas2d, draw_road_section_egui};
 use eframe::egui::Pos2;
 use wasm_bindgen::JsCast;
 
@@ -82,6 +82,10 @@ pub struct TriangleListApp {
     mouse_model_pos: Option<Pos2>,
     /// Show side panel
     show_side_panel: bool,
+    /// Use BBOX-based text scaling (CAD equivalent, text scales with zoom)
+    use_bbox_text: bool,
+    /// Auto-adjust text direction to be readable (not upside-down)
+    auto_readable_text: bool,
 }
 
 impl Default for TriangleListApp {
@@ -102,6 +106,8 @@ impl Default for TriangleListApp {
             canvas2d_text_renderer: None,
             mouse_model_pos: None,
             show_side_panel: true,
+            use_bbox_text: true, // Default to CAD-style scaling
+            auto_readable_text: true, // Default to readable text direction
         }
     }
 }
@@ -716,17 +722,32 @@ impl TriangleListApp {
                 let skip_side_a = positioned.data.connection_type != ConnectionType::Independent;
 
                 if let Some(ref text_renderer) = self.canvas2d_text_renderer {
-                    // Use Canvas 2D API for proper text rotation
-                    use crate::render::dimension::{draw_triangle_dimensions, DimensionStyle};
-                    let dim_style = DimensionStyle::default();
-                    draw_triangle_dimensions(
-                        text_renderer,
-                        positioned.points,
-                        side_lengths,
-                        &self.view_state,
-                        &dim_style,
-                        skip_side_a,
-                    );
+                    if self.use_bbox_text {
+                        // BBOX-based: text scales with zoom (CAD equivalent)
+                        use crate::render::dimension::{draw_triangle_dimensions_bbox, BboxDimensionStyle};
+                        let dim_style = BboxDimensionStyle::default();
+                        draw_triangle_dimensions_bbox(
+                            text_renderer,
+                            positioned.points,
+                            side_lengths,
+                            &self.view_state,
+                            &dim_style,
+                            skip_side_a,
+                            self.auto_readable_text,
+                        );
+                    } else {
+                        // Fixed size: text stays readable at any zoom
+                        use crate::render::dimension::{draw_triangle_dimensions, DimensionStyle};
+                        let dim_style = DimensionStyle::default();
+                        draw_triangle_dimensions(
+                            text_renderer,
+                            positioned.points,
+                            side_lengths,
+                            &self.view_state,
+                            &dim_style,
+                            skip_side_a,
+                        );
+                    }
                 } else {
                     // Fallback: draw dimensions using egui (no rotation)
                     use crate::render::text::{draw_text_cad_style, TextAlign, HorizontalAlign, VerticalAlign};
@@ -879,8 +900,13 @@ impl TriangleListApp {
     fn render_road_section(&self, painter: &egui::Painter) {
         if let Some(ref geometry) = self.road_section_geometry {
             if let Some(ref text_renderer) = self.canvas2d_text_renderer {
-                // Use Canvas 2D for text rotation
-                draw_road_section_canvas2d(painter, text_renderer, geometry, &self.view_state);
+                if self.use_bbox_text {
+                    // BBOX-based: text scales with zoom (CAD equivalent)
+                    draw_road_section_bbox(painter, text_renderer, geometry, &self.view_state, self.auto_readable_text);
+                } else {
+                    // Fixed size: text stays readable at any zoom
+                    draw_road_section_canvas2d(painter, text_renderer, geometry, &self.view_state);
+                }
             } else {
                 // Fallback to egui (no text rotation)
                 draw_road_section_egui(painter, geometry, &self.view_state);
@@ -1112,6 +1138,10 @@ impl eframe::App for TriangleListApp {
                                 self.canvas2d_text_renderer = None;
                             }
                         }
+                        ui.add_space(5.0);
+                        ui.checkbox(&mut self.use_bbox_text, "Text scales with zoom");
+                        ui.add_space(5.0);
+                        ui.checkbox(&mut self.auto_readable_text, "Auto-readable text direction");
                     });
                     ui.add_space(10.0);
 

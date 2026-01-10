@@ -6,7 +6,7 @@ use eframe::egui::{Color32, Painter, Pos2, Stroke};
 use crate::road_section::RoadSectionGeometry;
 use super::canvas::ViewState;
 use super::text_canvas2d::Canvas2dTextRenderer;
-use super::text::{TextAlign, HorizontalAlign, VerticalAlign};
+use super::text::{TextAlign, TextEntity, HorizontalAlign, VerticalAlign};
 
 /// Default colors for road section rendering
 pub const ROAD_LINE_COLOR: Color32 = Color32::from_rgb(200, 200, 200);
@@ -137,6 +137,72 @@ pub fn draw_road_section_canvas2d(
             align,
             &color_css,
         );
+    }
+}
+
+/// Draw road section geometry using BBOX-based text rendering (CAD equivalent)
+///
+/// Text scales with view transformations like lines and shapes.
+///
+/// # Arguments
+/// * `auto_readable` - If true, flip text 180° when upside-down to keep it readable
+pub fn draw_road_section_bbox(
+    painter: &Painter,
+    renderer: &Canvas2dTextRenderer,
+    geometry: &RoadSectionGeometry,
+    view_state: &ViewState,
+    auto_readable: bool,
+) {
+    // Draw lines using egui Painter
+    for line in &geometry.lines {
+        let p1 = view_state.model_to_screen(Pos2::new(line.x1 as f32, line.y1 as f32));
+        let p2 = view_state.model_to_screen(Pos2::new(line.x2 as f32, line.y2 as f32));
+
+        let color = dxf_color_to_egui(line.color);
+        painter.line_segment([p1, p2], Stroke::new(1.0, color));
+    }
+
+    // Draw texts using BBOX-based approach
+    for text in &geometry.texts {
+        // Convert DimensionText to TextEntity
+        let align = TextAlign::new(
+            match text.align_h {
+                dxf::HorizontalAlignment::Left => HorizontalAlign::Left,
+                dxf::HorizontalAlignment::Center => HorizontalAlign::Center,
+                dxf::HorizontalAlignment::Right => HorizontalAlign::Right,
+            },
+            match text.align_v {
+                dxf::VerticalAlignment::Top => VerticalAlign::Top,
+                dxf::VerticalAlignment::Middle => VerticalAlign::Middle,
+                dxf::VerticalAlignment::Bottom | dxf::VerticalAlignment::Baseline => VerticalAlign::Bottom,
+            },
+        );
+
+        // Negate rotation to convert from DXF (Y-up) to screen (Y-down) coordinate system
+        let entity = TextEntity::new(&text.text, text.x as f32, text.y as f32, text.height as f32)
+            .with_rotation(-text.rotation as f32)
+            .with_alignment(align)
+            .with_color(&dxf_color_to_css(text.color));
+
+        // Create model_to_screen closure that includes view rotation
+        let view_rotation = view_state.rotation;
+        let _ = renderer.draw_text_entity(&entity, |model_pos| {
+            let screen_pos = view_state.model_to_screen(model_pos);
+            // Apply view rotation around screen center if needed
+            if view_rotation.abs() > 1e-6 {
+                let center = Pos2::new(view_state.canvas_size.x / 2.0, view_state.canvas_size.y / 2.0);
+                let dx = screen_pos.x - center.x;
+                let dy = screen_pos.y - center.y;
+                let cos_r = view_rotation.cos();
+                let sin_r = view_rotation.sin();
+                Pos2::new(
+                    center.x + dx * cos_r - dy * sin_r,
+                    center.y + dx * sin_r + dy * cos_r,
+                )
+            } else {
+                screen_pos
+            }
+        }, auto_readable);
     }
 }
 

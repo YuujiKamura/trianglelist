@@ -81,6 +81,8 @@ impl DxfWriter {
 
     /// Writes a TEXT entity
     fn write_text(&self, output: &mut String, text: &DxfText) {
+        use crate::dxf::entities::{HorizontalAlignment, VerticalAlignment};
+
         writeln!(output, "0\nTEXT").unwrap();
         writeln!(output, "8\n{}", text.layer).unwrap();
         writeln!(output, "62\n{}", text.color).unwrap();
@@ -89,6 +91,17 @@ impl DxfWriter {
         writeln!(output, "40\n{}", text.height).unwrap();
         writeln!(output, "1\n{}", text.text).unwrap();
         writeln!(output, "50\n{}", text.rotation).unwrap();
+
+        // For non-default alignment, specify second alignment point (group 11/21)
+        // DXF spec: when alignment != Left/Baseline, use group 11/21 for alignment
+        let needs_second_point = text.align_h != HorizontalAlignment::Left
+            || text.align_v != VerticalAlignment::Baseline;
+
+        if needs_second_point {
+            writeln!(output, "11\n{}", text.x).unwrap();
+            writeln!(output, "21\n{}", text.y).unwrap();
+        }
+
         writeln!(output, "72\n{}", text.align_h as i32).unwrap();
         writeln!(output, "73\n{}", text.align_v as i32).unwrap();
     }
@@ -181,6 +194,39 @@ mod tests {
         assert!(output.contains("50\n45"));
         assert!(output.contains("72\n1"));
         assert!(output.contains("73\n2"));
+        // Non-default alignment should have second alignment point
+        assert!(output.contains("11\n10"));
+        assert!(output.contains("21\n20"));
+    }
+
+    #[test]
+    fn test_write_text_default_alignment_no_second_point() {
+        let writer = DxfWriter::new();
+        // Default alignment (Left/Baseline) should NOT have group 11/21
+        let texts = vec![DxfText::new(30.0, 40.0, "Default")];
+        let output = writer.write(&[], &texts);
+
+        assert!(output.contains("TEXT"));
+        assert!(output.contains("10\n30"));
+        assert!(output.contains("20\n40"));
+        // Should NOT contain second alignment point for default alignment
+        let text_section_start = output.find("1\nDefault").unwrap();
+        let after_text = &output[text_section_start..];
+        assert!(!after_text.contains("11\n30"));
+    }
+
+    #[test]
+    fn test_write_text_vertical_alignment_has_second_point() {
+        let writer = DxfWriter::new();
+        // Even Left + Middle should have second alignment point
+        let texts = vec![DxfText::new(50.0, 60.0, "Vertical")
+            .align_h(HorizontalAlignment::Left)
+            .align_v(VerticalAlignment::Middle)];
+        let output = writer.write(&[], &texts);
+
+        // Should have second alignment point because vertical is not Baseline
+        assert!(output.contains("11\n50"));
+        assert!(output.contains("21\n60"));
     }
 
     #[test]

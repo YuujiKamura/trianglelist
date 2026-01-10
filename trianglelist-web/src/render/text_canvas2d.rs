@@ -4,9 +4,10 @@
 //! Uses screen coordinates directly - coordinate transformation should be done
 //! by the caller using ViewState::model_to_screen().
 
+use eframe::egui::Pos2;
 use wasm_bindgen::{JsValue, JsCast};
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
-use crate::render::text::{TextAlign, HorizontalAlign, VerticalAlign};
+use crate::render::text::{TextAlign, TextEntity, HorizontalAlign, VerticalAlign, transform_text_bbox};
 
 /// CAD-quality text renderer using Canvas 2D API
 pub struct Canvas2dTextRenderer {
@@ -78,6 +79,53 @@ impl Canvas2dTextRenderer {
 
         self.ctx.restore();
         Ok(())
+    }
+
+    /// Draw text entity using BBOX-based transformation
+    ///
+    /// This is the CAD-equivalent text rendering where text scales with view
+    /// transformations (zoom, pan, rotation) just like lines and shapes.
+    ///
+    /// # Arguments
+    /// * `entity` - Text entity with model-coordinate BBOX
+    /// * `model_to_screen` - Coordinate transformation function
+    /// * `auto_readable` - If true, adjust text to keep it readable (not mirrored or upside-down)
+    pub fn draw_text_entity(
+        &self,
+        entity: &TextEntity,
+        model_to_screen: impl Fn(Pos2) -> Pos2,
+        auto_readable: bool,
+    ) -> Result<(), JsValue> {
+        // Transform BBOX to screen space
+        let (screen_pos, screen_height, screen_rotation, _is_flipped) = transform_text_bbox(entity, model_to_screen);
+
+        // Skip if text would be too small to read
+        if screen_height < 4.0 {
+            return Ok(());
+        }
+
+        // Clamp font size to readable range
+        let font_size = screen_height.max(8.0).min(200.0) as f64;
+
+        let mut rotation = screen_rotation;
+
+        if auto_readable {
+            // Auto-adjust text direction to be readable (not upside-down)
+            let angle_rad = rotation.to_radians();
+            if angle_rad > std::f32::consts::FRAC_PI_2 || angle_rad < -std::f32::consts::FRAC_PI_2 {
+                rotation += 180.0;
+            }
+        }
+
+        self.draw_text(
+            &entity.text,
+            screen_pos.x as f64,
+            screen_pos.y as f64,
+            font_size,
+            rotation as f64,
+            entity.alignment,
+            &entity.color,
+        )
     }
 
     /// Clear the canvas
