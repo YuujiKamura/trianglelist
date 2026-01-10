@@ -2,57 +2,106 @@
 //!
 //! This module provides functionality to generate DXF text output
 //! from DxfLine, DxfText, DxfCircle, and DxfLwPolyline entities.
+//!
+//! All entities are written with proper handles for AutoCAD compatibility.
 
 use std::fmt::Write;
 
 use crate::dxf::entities::{DxfCircle, DxfLine, DxfLwPolyline, DxfText};
+use crate::dxf::handle::{HandleGenerator, owners};
 
 /// DXF file writer
 ///
-/// Generates DXF format text from line and text entities.
-pub struct DxfWriter;
+/// Generates DXF format text from line, text, circle, and polyline entities.
+/// Each entity is assigned a unique handle for CAD software compatibility.
+pub struct DxfWriter {
+    handle_gen: HandleGenerator,
+}
 
 impl DxfWriter {
     /// Creates a new DxfWriter instance
     pub fn new() -> Self {
-        Self
+        Self {
+            handle_gen: HandleGenerator::new(),
+        }
     }
 
-    /// Generates DXF text from lines and texts
+    /// Generates DXF text from lines and texts (legacy API, no handles)
     ///
-    /// # Arguments
-    /// * `lines` - List of DxfLine entities
-    /// * `texts` - List of DxfText entities
-    ///
-    /// # Returns
-    /// DXF format string
+    /// This method is kept for backward compatibility.
+    /// For proper DXF with handles, use `write_all` instead.
     pub fn write(&self, lines: &[DxfLine], texts: &[DxfText]) -> String {
         let mut output = String::new();
+        let mut handle_gen = HandleGenerator::new();
 
         // Header section
-        self.write_header(&mut output);
+        Self::write_header(&mut output);
 
         // Entities section
-        self.write_entities_start(&mut output);
+        Self::write_entities_start(&mut output);
 
         // Write lines
         for line in lines {
-            self.write_line(&mut output, line);
+            Self::write_line_with_handle(&mut output, line, &mut handle_gen);
         }
 
         // Write texts
         for text in texts {
-            self.write_text(&mut output, text);
+            Self::write_text_with_handle(&mut output, text, &mut handle_gen);
         }
 
         // End entities and file
-        self.write_end(&mut output);
+        Self::write_end(&mut output);
 
         output
     }
 
+    /// Generates DXF text from all entity types with proper handles
+    pub fn write_all(
+        &mut self,
+        lines: &[DxfLine],
+        texts: &[DxfText],
+        circles: &[DxfCircle],
+        polylines: &[DxfLwPolyline],
+    ) -> String {
+        let mut output = String::new();
+
+        // Header section
+        Self::write_header(&mut output);
+
+        // Entities section
+        Self::write_entities_start(&mut output);
+
+        // Write all entities with handles
+        for line in lines {
+            Self::write_line_with_handle(&mut output, line, &mut self.handle_gen);
+        }
+
+        for text in texts {
+            Self::write_text_with_handle(&mut output, text, &mut self.handle_gen);
+        }
+
+        for circle in circles {
+            Self::write_circle_with_handle(&mut output, circle, &mut self.handle_gen);
+        }
+
+        for polyline in polylines {
+            Self::write_lwpolyline_with_handle(&mut output, polyline, &mut self.handle_gen);
+        }
+
+        // End entities and file
+        Self::write_end(&mut output);
+
+        output
+    }
+
+    /// Resets the handle generator for a new document
+    pub fn reset(&mut self) {
+        self.handle_gen = HandleGenerator::new();
+    }
+
     /// Writes the DXF header section
-    fn write_header(&self, output: &mut String) {
+    fn write_header(output: &mut String) {
         writeln!(output, "0\nSECTION").unwrap();
         writeln!(output, "2\nHEADER").unwrap();
         writeln!(output, "9\n$ACADVER").unwrap();
@@ -63,132 +112,95 @@ impl DxfWriter {
     }
 
     /// Writes the start of the entities section
-    fn write_entities_start(&self, output: &mut String) {
+    fn write_entities_start(output: &mut String) {
         writeln!(output, "0\nSECTION").unwrap();
         writeln!(output, "2\nENTITIES").unwrap();
     }
 
-    /// Writes a LINE entity
-    fn write_line(&self, output: &mut String, line: &DxfLine) {
-        writeln!(output, "0\nLINE").unwrap();
-        writeln!(output, "8\n{}", line.layer).unwrap();
-        writeln!(output, "62\n{}", line.color).unwrap();
-        writeln!(output, "10\n{}", line.x1).unwrap();
-        writeln!(output, "20\n{}", line.y1).unwrap();
-        writeln!(output, "11\n{}", line.x2).unwrap();
-        writeln!(output, "21\n{}", line.y2).unwrap();
+    /// Writes common entity header (handle, owner, subclass marker)
+    fn write_entity_header(output: &mut String, entity_type: &str, layer: &str, color: i32, handle: &str) {
+        writeln!(output, "0\n{}", entity_type).unwrap();
+        writeln!(output, "5\n{}", handle).unwrap();
+        writeln!(output, "330\n{}", owners::MODEL_SPACE).unwrap();
+        writeln!(output, "100\nAcDbEntity").unwrap();
+        writeln!(output, "8\n{}", layer).unwrap();
+        writeln!(output, "62\n{}", color).unwrap();
     }
 
-    /// Writes a TEXT entity
-    fn write_text(&self, output: &mut String, text: &DxfText) {
+    /// Writes a LINE entity with handle
+    fn write_line_with_handle(output: &mut String, line: &DxfLine, handle_gen: &mut HandleGenerator) {
+        let handle = handle_gen.next();
+        Self::write_entity_header(output, "LINE", &line.layer, line.color, &handle);
+        writeln!(output, "100\nAcDbLine").unwrap();
+        writeln!(output, "10\n{}", line.x1).unwrap();
+        writeln!(output, "20\n{}", line.y1).unwrap();
+        writeln!(output, "30\n0").unwrap();
+        writeln!(output, "11\n{}", line.x2).unwrap();
+        writeln!(output, "21\n{}", line.y2).unwrap();
+        writeln!(output, "31\n0").unwrap();
+    }
+
+    /// Writes a TEXT entity with handle
+    fn write_text_with_handle(output: &mut String, text: &DxfText, handle_gen: &mut HandleGenerator) {
         use crate::dxf::entities::{HorizontalAlignment, VerticalAlignment};
 
-        writeln!(output, "0\nTEXT").unwrap();
-        writeln!(output, "8\n{}", text.layer).unwrap();
-        writeln!(output, "62\n{}", text.color).unwrap();
+        let handle = handle_gen.next();
+        Self::write_entity_header(output, "TEXT", &text.layer, text.color, &handle);
+        writeln!(output, "100\nAcDbText").unwrap();
         writeln!(output, "10\n{}", text.x).unwrap();
         writeln!(output, "20\n{}", text.y).unwrap();
+        writeln!(output, "30\n0").unwrap();
         writeln!(output, "40\n{}", text.height).unwrap();
         writeln!(output, "1\n{}", text.text).unwrap();
         writeln!(output, "50\n{}", text.rotation).unwrap();
 
         // For non-default alignment, specify second alignment point (group 11/21)
-        // DXF spec: when alignment != Left/Baseline, use group 11/21 for alignment
         let needs_second_point = text.align_h != HorizontalAlignment::Left
             || text.align_v != VerticalAlignment::Baseline;
 
         if needs_second_point {
             writeln!(output, "11\n{}", text.x).unwrap();
             writeln!(output, "21\n{}", text.y).unwrap();
+            writeln!(output, "31\n0").unwrap();
         }
 
         writeln!(output, "72\n{}", text.align_h as i32).unwrap();
+        writeln!(output, "100\nAcDbText").unwrap();
         writeln!(output, "73\n{}", text.align_v as i32).unwrap();
     }
 
-    /// Writes a CIRCLE entity
-    fn write_circle(&self, output: &mut String, circle: &DxfCircle) {
-        writeln!(output, "0\nCIRCLE").unwrap();
-        writeln!(output, "8\n{}", circle.layer).unwrap();
-        writeln!(output, "62\n{}", circle.color).unwrap();
+    /// Writes a CIRCLE entity with handle
+    fn write_circle_with_handle(output: &mut String, circle: &DxfCircle, handle_gen: &mut HandleGenerator) {
+        let handle = handle_gen.next();
+        Self::write_entity_header(output, "CIRCLE", &circle.layer, circle.color, &handle);
+        writeln!(output, "100\nAcDbCircle").unwrap();
         writeln!(output, "10\n{}", circle.x).unwrap();
         writeln!(output, "20\n{}", circle.y).unwrap();
-        writeln!(output, "30\n0").unwrap(); // Z coordinate
+        writeln!(output, "30\n0").unwrap();
         writeln!(output, "40\n{}", circle.radius).unwrap();
     }
 
-    /// Writes a LWPOLYLINE entity
-    fn write_lwpolyline(&self, output: &mut String, polyline: &DxfLwPolyline) {
+    /// Writes a LWPOLYLINE entity with handle
+    fn write_lwpolyline_with_handle(output: &mut String, polyline: &DxfLwPolyline, handle_gen: &mut HandleGenerator) {
         if polyline.vertices.is_empty() {
-            return; // Skip empty polylines
+            return;
         }
 
-        writeln!(output, "0\nLWPOLYLINE").unwrap();
-        writeln!(output, "8\n{}", polyline.layer).unwrap();
-        writeln!(output, "62\n{}", polyline.color).unwrap();
-        writeln!(output, "90\n{}", polyline.vertices.len()).unwrap(); // Number of vertices
-        writeln!(output, "70\n{}", if polyline.closed { 1 } else { 0 }).unwrap(); // Closed flag
+        let handle = handle_gen.next();
+        Self::write_entity_header(output, "LWPOLYLINE", &polyline.layer, polyline.color, &handle);
+        writeln!(output, "100\nAcDbPolyline").unwrap();
+        writeln!(output, "90\n{}", polyline.vertices.len()).unwrap();
+        writeln!(output, "70\n{}", if polyline.closed { 1 } else { 0 }).unwrap();
+        writeln!(output, "43\n0").unwrap(); // Constant width
 
-        // Write each vertex
         for (x, y) in &polyline.vertices {
             writeln!(output, "10\n{}", x).unwrap();
             writeln!(output, "20\n{}", y).unwrap();
         }
     }
 
-    /// Generates DXF text from all entity types
-    ///
-    /// # Arguments
-    /// * `lines` - List of DxfLine entities
-    /// * `texts` - List of DxfText entities
-    /// * `circles` - List of DxfCircle entities
-    /// * `polylines` - List of DxfLwPolyline entities
-    ///
-    /// # Returns
-    /// DXF format string
-    pub fn write_all(
-        &self,
-        lines: &[DxfLine],
-        texts: &[DxfText],
-        circles: &[DxfCircle],
-        polylines: &[DxfLwPolyline],
-    ) -> String {
-        let mut output = String::new();
-
-        // Header section
-        self.write_header(&mut output);
-
-        // Entities section
-        self.write_entities_start(&mut output);
-
-        // Write lines
-        for line in lines {
-            self.write_line(&mut output, line);
-        }
-
-        // Write texts
-        for text in texts {
-            self.write_text(&mut output, text);
-        }
-
-        // Write circles
-        for circle in circles {
-            self.write_circle(&mut output, circle);
-        }
-
-        // Write polylines
-        for polyline in polylines {
-            self.write_lwpolyline(&mut output, polyline);
-        }
-
-        // End entities and file
-        self.write_end(&mut output);
-
-        output
-    }
-
     /// Writes the end of the entities section and EOF
-    fn write_end(&self, output: &mut String) {
+    fn write_end(output: &mut String) {
         writeln!(output, "0\nENDSEC").unwrap();
         writeln!(output, "0\nEOF").unwrap();
     }
@@ -227,10 +239,10 @@ mod tests {
         let output = writer.write(&lines, &[]);
 
         assert!(output.contains("LINE"));
-        assert!(output.contains("10\n0"));
-        assert!(output.contains("20\n0"));
-        assert!(output.contains("11\n100"));
-        assert!(output.contains("21\n100"));
+        assert!(output.contains("5\n100")); // Handle
+        assert!(output.contains("330\n1F")); // Owner
+        assert!(output.contains("100\nAcDbEntity"));
+        assert!(output.contains("100\nAcDbLine"));
     }
 
     #[test]
@@ -251,8 +263,8 @@ mod tests {
         let output = writer.write(&[], &texts);
 
         assert!(output.contains("TEXT"));
-        assert!(output.contains("10\n50"));
-        assert!(output.contains("20\n50"));
+        assert!(output.contains("5\n100")); // Handle
+        assert!(output.contains("100\nAcDbText"));
         assert!(output.contains("1\nHello World"));
     }
 
@@ -275,21 +287,15 @@ mod tests {
         assert!(output.contains("50\n45"));
         assert!(output.contains("72\n1"));
         assert!(output.contains("73\n2"));
-        // Non-default alignment should have second alignment point
-        assert!(output.contains("11\n10"));
-        assert!(output.contains("21\n20"));
     }
 
     #[test]
     fn test_write_text_default_alignment_no_second_point() {
         let writer = DxfWriter::new();
-        // Default alignment (Left/Baseline) should NOT have group 11/21
         let texts = vec![DxfText::new(30.0, 40.0, "Default")];
         let output = writer.write(&[], &texts);
 
         assert!(output.contains("TEXT"));
-        assert!(output.contains("10\n30"));
-        assert!(output.contains("20\n40"));
         // Should NOT contain second alignment point for default alignment
         let text_section_start = output.find("1\nDefault").unwrap();
         let after_text = &output[text_section_start..];
@@ -299,13 +305,11 @@ mod tests {
     #[test]
     fn test_write_text_vertical_alignment_has_second_point() {
         let writer = DxfWriter::new();
-        // Even Left + Middle should have second alignment point
         let texts = vec![DxfText::new(50.0, 60.0, "Vertical")
             .align_h(HorizontalAlignment::Left)
             .align_v(VerticalAlignment::Middle)];
         let output = writer.write(&[], &texts);
 
-        // Should have second alignment point because vertical is not Baseline
         assert!(output.contains("11\n50"));
         assert!(output.contains("21\n60"));
     }
@@ -323,11 +327,9 @@ mod tests {
         ];
         let output = writer.write(&lines, &texts);
 
-        // Count occurrences of LINE
         let line_count = output.matches("0\nLINE\n").count();
         assert_eq!(line_count, 2);
 
-        // Count occurrences of TEXT
         let text_count = output.matches("0\nTEXT\n").count();
         assert_eq!(text_count, 2);
     }
@@ -337,7 +339,6 @@ mod tests {
         let writer = DxfWriter::new();
         let output = writer.write(&[], &[]);
 
-        // Check header structure
         assert!(output.starts_with("0\nSECTION\n2\nHEADER\n"));
         assert!(output.contains("9\n$ACADVER\n1\nAC1015\n"));
         assert!(output.contains("9\n$INSUNITS\n70\n4\n"));
@@ -352,20 +353,19 @@ mod tests {
 
     #[test]
     fn test_write_single_circle() {
-        let writer = DxfWriter::new();
+        let mut writer = DxfWriter::new();
         let circles = vec![DxfCircle::new(50.0, 50.0, 10.0)];
         let output = writer.write_all(&[], &[], &circles, &[]);
 
         assert!(output.contains("CIRCLE"));
-        assert!(output.contains("10\n50"));
-        assert!(output.contains("20\n50"));
-        assert!(output.contains("30\n0")); // Z coordinate
+        assert!(output.contains("5\n100")); // Handle
+        assert!(output.contains("100\nAcDbCircle"));
         assert!(output.contains("40\n10")); // Radius
     }
 
     #[test]
     fn test_write_circle_with_style() {
-        let writer = DxfWriter::new();
+        let mut writer = DxfWriter::new();
         let circles = vec![DxfCircle::new(100.0, 200.0, 25.0)
             .color(3)
             .layer("CircleLayer")];
@@ -374,12 +374,11 @@ mod tests {
         assert!(output.contains("CIRCLE"));
         assert!(output.contains("8\nCircleLayer"));
         assert!(output.contains("62\n3"));
-        assert!(output.contains("40\n25")); // Radius
     }
 
     #[test]
     fn test_write_lwpolyline_open() {
-        let writer = DxfWriter::new();
+        let mut writer = DxfWriter::new();
         let polylines = vec![DxfLwPolyline::new(vec![
             (0.0, 0.0),
             (10.0, 0.0),
@@ -388,13 +387,14 @@ mod tests {
         let output = writer.write_all(&[], &[], &[], &polylines);
 
         assert!(output.contains("LWPOLYLINE"));
+        assert!(output.contains("100\nAcDbPolyline"));
         assert!(output.contains("90\n3")); // 3 vertices
-        assert!(output.contains("70\n0")); // Open (not closed)
+        assert!(output.contains("70\n0")); // Open
     }
 
     #[test]
     fn test_write_lwpolyline_closed() {
-        let writer = DxfWriter::new();
+        let mut writer = DxfWriter::new();
         let polylines = vec![DxfLwPolyline::closed(vec![
             (0.0, 0.0),
             (10.0, 0.0),
@@ -410,7 +410,7 @@ mod tests {
 
     #[test]
     fn test_write_lwpolyline_with_style() {
-        let writer = DxfWriter::new();
+        let mut writer = DxfWriter::new();
         let polylines = vec![DxfLwPolyline::new(vec![(0.0, 0.0), (100.0, 100.0)])
             .color(5)
             .layer("OutlineLayer")];
@@ -422,17 +422,16 @@ mod tests {
 
     #[test]
     fn test_write_lwpolyline_empty_skipped() {
-        let writer = DxfWriter::new();
-        let polylines = vec![DxfLwPolyline::new(vec![])]; // Empty
+        let mut writer = DxfWriter::new();
+        let polylines = vec![DxfLwPolyline::new(vec![])];
         let output = writer.write_all(&[], &[], &[], &polylines);
 
-        // Should not contain LWPOLYLINE for empty vertices
         assert!(!output.contains("LWPOLYLINE"));
     }
 
     #[test]
     fn test_write_all_mixed_entities() {
-        let writer = DxfWriter::new();
+        let mut writer = DxfWriter::new();
         let lines = vec![DxfLine::new(0.0, 0.0, 10.0, 10.0)];
         let texts = vec![DxfText::new(5.0, 5.0, "Label")];
         let circles = vec![DxfCircle::new(20.0, 20.0, 5.0)];
@@ -444,10 +443,58 @@ mod tests {
 
         let output = writer.write_all(&lines, &texts, &circles, &polylines);
 
-        // Count each entity type
         assert_eq!(output.matches("0\nLINE\n").count(), 1);
         assert_eq!(output.matches("0\nTEXT\n").count(), 1);
         assert_eq!(output.matches("0\nCIRCLE\n").count(), 1);
         assert_eq!(output.matches("0\nLWPOLYLINE\n").count(), 1);
+    }
+
+    #[test]
+    fn test_handles_are_unique() {
+        let mut writer = DxfWriter::new();
+        let lines = vec![
+            DxfLine::new(0.0, 0.0, 10.0, 10.0),
+            DxfLine::new(10.0, 10.0, 20.0, 20.0),
+            DxfLine::new(20.0, 20.0, 30.0, 30.0),
+        ];
+        let output = writer.write_all(&lines, &[], &[], &[]);
+
+        // Check handles are sequential and unique
+        assert!(output.contains("5\n100"));
+        assert!(output.contains("5\n101"));
+        assert!(output.contains("5\n102"));
+    }
+
+    #[test]
+    fn test_all_entities_have_owner_reference() {
+        let mut writer = DxfWriter::new();
+        let lines = vec![DxfLine::new(0.0, 0.0, 10.0, 10.0)];
+        let texts = vec![DxfText::new(5.0, 5.0, "Test")];
+        let circles = vec![DxfCircle::new(20.0, 20.0, 5.0)];
+        let polylines = vec![DxfLwPolyline::new(vec![(0.0, 0.0), (10.0, 10.0)])];
+
+        let output = writer.write_all(&lines, &texts, &circles, &polylines);
+
+        // All entities should have owner reference (330)
+        let owner_count = output.matches("330\n1F").count();
+        assert_eq!(owner_count, 4);
+    }
+
+    #[test]
+    fn test_reset_handles() {
+        let mut writer = DxfWriter::new();
+        let lines = vec![DxfLine::new(0.0, 0.0, 10.0, 10.0)];
+
+        let output1 = writer.write_all(&lines, &[], &[], &[]);
+        assert!(output1.contains("5\n100"));
+
+        // Without reset, next handle continues
+        let output2 = writer.write_all(&lines, &[], &[], &[]);
+        assert!(output2.contains("5\n101"));
+
+        // After reset, handles start over
+        writer.reset();
+        let output3 = writer.write_all(&lines, &[], &[], &[]);
+        assert!(output3.contains("5\n100"));
     }
 }

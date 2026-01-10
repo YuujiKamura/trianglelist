@@ -23,8 +23,10 @@
 //! ```
 
 pub mod entities;
+pub mod handle;
 pub mod writer;
 
 // Re-export main types for convenience
 pub use entities::{DxfCircle, DxfLine, DxfLwPolyline, DxfText, HorizontalAlignment, VerticalAlignment};
+pub use handle::HandleGenerator;
 pub use writer::DxfWriter;
