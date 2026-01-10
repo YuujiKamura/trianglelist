@@ -24,9 +24,11 @@
 
 pub mod entities;
 pub mod handle;
+pub mod linter;
 pub mod writer;
 
 // Re-export main types for convenience
 pub use entities::{DxfCircle, DxfLine, DxfLwPolyline, DxfText, HorizontalAlignment, VerticalAlignment};
 pub use handle::HandleGenerator;
+pub use linter::{DxfLinter, LintResult, LintError, LintErrorCode};
 pub use writer::DxfWriter;
