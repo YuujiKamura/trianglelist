@@ -115,28 +115,34 @@ impl ParsedTriangle {
 #[derive(Debug, Clone, PartialEq)]
 pub enum ParseError {
     /// Not enough columns in a row
-    InsufficientColumns { row: usize, expected: usize, found: usize },
+    InsufficientColumns { row: usize, expected: usize, found: usize, line: String },
     /// Failed to parse a number
     InvalidNumber { row: usize, column: &'static str, value: String },
     /// Invalid triangle (fails triangle inequality)
-    InvalidTriangle { row: usize, number: i32 },
+    InvalidTriangle { row: usize, number: i32, sides: (f64, f64, f64) },
     /// Empty CSV content
     EmptyContent,
     /// Invalid parent reference
     InvalidParentReference { row: usize, number: i32, parent: i32 },
+    /// Negative or zero side length
+    InvalidSideLength { row: usize, column: &'static str, value: f64 },
+    /// Duplicate triangle number
+    DuplicateTriangleNumber { row: usize, number: i32, first_row: usize },
 }
 
 impl std::fmt::Display for ParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ParseError::InsufficientColumns { row, expected, found } => {
-                write!(f, "Row {}: expected at least {} columns, found {}", row, expected, found)
+            ParseError::InsufficientColumns { row, expected, found, line } => {
+                write!(f, "Row {}: expected at least {} columns, found {} in '{}'",
+                    row, expected, found, truncate_line(line, 50))
             }
             ParseError::InvalidNumber { row, column, value } => {
                 write!(f, "Row {}: invalid {} value '{}'", row, column, value)
             }
-            ParseError::InvalidTriangle { row, number } => {
-                write!(f, "Row {}: triangle {} violates triangle inequality", row, number)
+            ParseError::InvalidTriangle { row, number, sides } => {
+                write!(f, "Row {}: triangle {} violates triangle inequality (sides: {:.2}, {:.2}, {:.2})",
+                    row, number, sides.0, sides.1, sides.2)
             }
             ParseError::EmptyContent => {
                 write!(f, "CSV content is empty or contains only headers")
@@ -144,7 +150,22 @@ impl std::fmt::Display for ParseError {
             ParseError::InvalidParentReference { row, number, parent } => {
                 write!(f, "Row {}: triangle {} references non-existent parent {}", row, number, parent)
             }
+            ParseError::InvalidSideLength { row, column, value } => {
+                write!(f, "Row {}: {} must be positive, got {:.2}", row, column, value)
+            }
+            ParseError::DuplicateTriangleNumber { row, number, first_row } => {
+                write!(f, "Row {}: triangle number {} already defined at row {}", row, number, first_row)
+            }
         }
+    }
+}
+
+/// Truncate a line for display in error messages
+fn truncate_line(line: &str, max_len: usize) -> String {
+    if line.len() <= max_len {
+        line.to_string()
+    } else {
+        format!("{}...", &line[..max_len])
     }
 }
 
@@ -169,6 +190,8 @@ pub struct ParseResult {
 pub fn parse_csv(content: &str) -> Result<ParseResult, ParseError> {
     let mut triangles = Vec::new();
     let mut warnings = Vec::new();
+    // Track triangle numbers to detect duplicates: (number -> row)
+    let mut triangle_numbers: std::collections::HashMap<i32, usize> = std::collections::HashMap::new();
 
     for (line_index, line) in content.lines().enumerate() {
         // Skip header rows
@@ -198,11 +221,22 @@ pub fn parse_csv(content: &str) -> Result<ParseResult, ParseError> {
         // Parse the row
         match parse_row(trimmed, row_num) {
             Ok(triangle) => {
+                // Check for duplicate triangle numbers
+                if let Some(&first_row) = triangle_numbers.get(&triangle.number) {
+                    return Err(ParseError::DuplicateTriangleNumber {
+                        row: row_num,
+                        number: triangle.number,
+                        first_row,
+                    });
+                }
+                triangle_numbers.insert(triangle.number, row_num);
+
                 // Validate triangle inequality
                 if !triangle.is_valid_triangle() {
                     return Err(ParseError::InvalidTriangle {
                         row: row_num,
                         number: triangle.number,
+                        sides: (triangle.side_a, triangle.side_b, triangle.side_c),
                     });
                 }
 
@@ -254,14 +288,15 @@ fn parse_row(line: &str, row_num: usize) -> Result<ParsedTriangle, ParseError> {
             row: row_num,
             expected: MIN_COLUMNS_BASIC,
             found: columns.len(),
+            line: line.to_string(),
         });
     }
 
     // Parse required fields
     let number = parse_i32(columns[COL_NUMBER], row_num, "number")?;
-    let side_a = parse_f64(columns[COL_SIDE_A], row_num, "side_a")?;
-    let side_b = parse_f64(columns[COL_SIDE_B], row_num, "side_b")?;
-    let side_c = parse_f64(columns[COL_SIDE_C], row_num, "side_c")?;
+    let side_a = parse_positive_f64(columns[COL_SIDE_A], row_num, "side_a")?;
+    let side_b = parse_positive_f64(columns[COL_SIDE_B], row_num, "side_b")?;
+    let side_c = parse_positive_f64(columns[COL_SIDE_C], row_num, "side_c")?;
 
     // Check if extended format with connection info
     if columns.len() >= MIN_COLUMNS_CONNECTED {
@@ -304,6 +339,15 @@ fn parse_f64(s: &str, row: usize, column: &'static str) -> Result<f64, ParseErro
         column,
         value: s.to_string(),
     })
+}
+
+/// Parse an f64 from a string and validate it's positive (> 0)
+fn parse_positive_f64(s: &str, row: usize, column: &'static str) -> Result<f64, ParseError> {
+    let value = parse_f64(s, row, column)?;
+    if value <= 0.0 {
+        return Err(ParseError::InvalidSideLength { row, column, value });
+    }
+    Ok(value)
 }
 
 #[cfg(test)]
@@ -593,5 +637,84 @@ zumennum, 1
         for triangle in &result.triangles {
             assert!(triangle.is_valid_triangle(), "Triangle {} should be valid", triangle.number);
         }
+    }
+
+    #[test]
+    fn test_negative_side_length() {
+        let csv = r#"Header1
+Header2
+Header3
+Header4
+1, -6.0, 5.0, 4.0"#;
+
+        let result = parse_csv(csv);
+        assert!(matches!(result, Err(ParseError::InvalidSideLength { column: "side_a", .. })));
+    }
+
+    #[test]
+    fn test_zero_side_length() {
+        let csv = r#"Header1
+Header2
+Header3
+Header4
+1, 0.0, 5.0, 4.0"#;
+
+        let result = parse_csv(csv);
+        assert!(matches!(result, Err(ParseError::InvalidSideLength { column: "side_a", .. })));
+    }
+
+    #[test]
+    fn test_duplicate_triangle_number() {
+        let csv = r#"Header1
+Header2
+Header3
+Header4
+1, 6.0, 5.0, 4.0
+1, 5.0, 4.0, 3.0"#;
+
+        let result = parse_csv(csv);
+        assert!(matches!(result, Err(ParseError::DuplicateTriangleNumber { number: 1, .. })));
+    }
+
+    #[test]
+    fn test_error_display_formats() {
+        // Test that error messages are formatted correctly
+        let err = ParseError::InsufficientColumns {
+            row: 5,
+            expected: 4,
+            found: 2,
+            line: "1, 2".to_string(),
+        };
+        assert!(err.to_string().contains("Row 5"));
+        assert!(err.to_string().contains("expected at least 4"));
+        assert!(err.to_string().contains("found 2"));
+
+        let err = ParseError::InvalidSideLength {
+            row: 3,
+            column: "side_a",
+            value: -5.0,
+        };
+        assert!(err.to_string().contains("Row 3"));
+        assert!(err.to_string().contains("side_a"));
+        assert!(err.to_string().contains("-5.00"));
+
+        let err = ParseError::InvalidTriangle {
+            row: 7,
+            number: 42,
+            sides: (1.0, 2.0, 10.0),
+        };
+        assert!(err.to_string().contains("Row 7"));
+        assert!(err.to_string().contains("triangle 42"));
+        assert!(err.to_string().contains("1.00"));
+        assert!(err.to_string().contains("10.00"));
+
+        let err = ParseError::DuplicateTriangleNumber {
+            row: 10,
+            number: 5,
+            first_row: 6,
+        };
+        assert!(err.to_string().contains("Row 10"));
+        assert!(err.to_string().contains("number 5"));
+        assert!(err.to_string().contains("row 6"));
     }
 }

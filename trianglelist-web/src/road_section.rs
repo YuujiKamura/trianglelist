@@ -469,4 +469,48 @@ No.2,20.0,2.5,2.5
         let triangle_csv = "番号,辺A,辺B,辺C,親番号,接続\n1,6,5,4,-1,-1";
         assert_eq!(detect_csv_type(triangle_csv), CsvType::Triangle);
     }
+
+    #[test]
+    fn test_geometry_to_dxf() {
+        let stations = vec![
+            StationData::new("No.1", 0.0, 2.5, 2.5),
+            StationData::new("No.2", 10.0, 3.0, 2.0),
+        ];
+        let config = RoadSectionConfig::default();
+        let geometry = calculate_road_section(&stations, &config);
+        let (lines, texts) = geometry_to_dxf(&geometry);
+
+        // Should have lines and texts
+        assert!(!lines.is_empty());
+        assert!(!texts.is_empty());
+
+        // Check that texts have correct rotation for vertical display
+        let rotated_texts: Vec<_> = texts.iter().filter(|t| t.rotation != 0.0).collect();
+        assert!(!rotated_texts.is_empty(), "Should have rotated texts for width dimensions");
+
+        // Width dimension texts should be at -90 degrees
+        for text in &rotated_texts {
+            assert_eq!(text.rotation, -90.0, "Width dimension should be rotated -90 degrees");
+        }
+    }
+
+    #[test]
+    fn test_dxf_text_alignment() {
+        let stations = vec![
+            StationData::new("No.1", 0.0, 2.5, 2.5),
+            StationData::new("No.2", 10.0, 3.0, 2.0),
+        ];
+        let config = RoadSectionConfig::default();
+        let geometry = calculate_road_section(&stations, &config);
+        let (_lines, texts) = geometry_to_dxf(&geometry);
+
+        // Station name texts should be blue (color 5)
+        let station_name_texts: Vec<_> = texts.iter()
+            .filter(|t| t.text.starts_with("No."))
+            .collect();
+
+        for text in &station_name_texts {
+            assert_eq!(text.color, 5, "Station name should be blue (color 5)");
+        }
+    }
 }

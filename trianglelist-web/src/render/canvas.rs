@@ -525,5 +525,109 @@ ListScale, 1.0
         assert!(approx_eq(positioned[2].points[0].x, parent2_bc.x, 0.01));
         assert!(approx_eq(positioned[2].points[0].y, parent2_bc.y, 0.01));
     }
+
+    // ViewState coordinate transformation tests
+    #[test]
+    fn test_view_state_default() {
+        let view = ViewState::default();
+        assert_eq!(view.zoom, 1.0);
+        assert_eq!(view.rotation, 0.0);
+        assert_eq!(view.pan.x, 0.0);
+        assert_eq!(view.pan.y, 0.0);
+    }
+
+    #[test]
+    fn test_model_to_screen_identity() {
+        let view = ViewState {
+            pan: Pos2::new(400.0, 300.0),  // Center pan
+            zoom: 1.0,
+            rotation: 0.0,
+            canvas_size: Vec2::new(800.0, 600.0),
+        };
+
+        // With pan at center, model (0,0) should map to screen center
+        let screen = view.model_to_screen(Pos2::new(0.0, 0.0));
+        assert!(approx_eq(screen.x, 400.0, 0.01));
+        assert!(approx_eq(screen.y, 300.0, 0.01));
+    }
+
+    #[test]
+    fn test_model_to_screen_zoom() {
+        let view = ViewState {
+            pan: Pos2::new(400.0, 300.0),
+            zoom: 2.0,
+            rotation: 0.0,
+            canvas_size: Vec2::new(800.0, 600.0),
+        };
+
+        // Model (10, 10) with 2x zoom should be at (420, 320)
+        let screen = view.model_to_screen(Pos2::new(10.0, 10.0));
+        // zoomed: (20, 20), then pan: (420, 320)
+        assert!(approx_eq(screen.x, 420.0, 0.01));
+        assert!(approx_eq(screen.y, 320.0, 0.01));
+    }
+
+    #[test]
+    fn test_model_to_screen_rotation_90() {
+        let view = ViewState {
+            pan: Pos2::new(400.0, 300.0),
+            zoom: 1.0,
+            rotation: std::f32::consts::FRAC_PI_2,  // 90 degrees
+            canvas_size: Vec2::new(800.0, 600.0),
+        };
+
+        // Model (10, 0) with 90° rotation around center
+        let screen = view.model_to_screen(Pos2::new(10.0, 0.0));
+        // After zoom: (10, 0), after pan: (410, 300)
+        // Center: (400, 300), so relative: (10, 0)
+        // After 90° rotation: (0, 10)
+        // Final: (400, 310)
+        assert!(approx_eq(screen.x, 400.0, 0.01));
+        assert!(approx_eq(screen.y, 310.0, 0.01));
+    }
+
+    #[test]
+    fn test_screen_to_model_identity() {
+        let view = ViewState {
+            pan: Pos2::new(400.0, 300.0),
+            zoom: 1.0,
+            rotation: 0.0,
+            canvas_size: Vec2::new(800.0, 600.0),
+        };
+
+        // Screen center should map to model (0, 0)
+        let model = view.screen_to_model(Pos2::new(400.0, 300.0));
+        assert!(approx_eq(model.x, 0.0, 0.01));
+        assert!(approx_eq(model.y, 0.0, 0.01));
+    }
+
+    #[test]
+    fn test_screen_to_model_roundtrip() {
+        let view = ViewState {
+            pan: Pos2::new(350.0, 250.0),
+            zoom: 1.5,
+            rotation: 0.5,  // ~28.6 degrees
+            canvas_size: Vec2::new(800.0, 600.0),
+        };
+
+        let original = Pos2::new(15.0, 25.0);
+        let screen = view.model_to_screen(original);
+        let back = view.screen_to_model(screen);
+
+        assert!(approx_eq(back.x, original.x, 0.01));
+        assert!(approx_eq(back.y, original.y, 0.01));
+    }
+
+    #[test]
+    fn test_canvas_center() {
+        let view = ViewState {
+            canvas_size: Vec2::new(1024.0, 768.0),
+            ..Default::default()
+        };
+
+        let center = view.canvas_center();
+        assert!(approx_eq(center.x, 512.0, 0.01));
+        assert!(approx_eq(center.y, 384.0, 0.01));
+    }
 }
 
