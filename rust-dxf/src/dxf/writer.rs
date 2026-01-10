@@ -1,11 +1,11 @@
 //! DXF file writer
 //!
 //! This module provides functionality to generate DXF text output
-//! from DxfLine and DxfText entities.
+//! from DxfLine, DxfText, DxfCircle, and DxfLwPolyline entities.
 
 use std::fmt::Write;
 
-use crate::dxf::entities::{DxfLine, DxfText};
+use crate::dxf::entities::{DxfCircle, DxfLine, DxfLwPolyline, DxfText};
 
 /// DXF file writer
 ///
@@ -104,6 +104,87 @@ impl DxfWriter {
 
         writeln!(output, "72\n{}", text.align_h as i32).unwrap();
         writeln!(output, "73\n{}", text.align_v as i32).unwrap();
+    }
+
+    /// Writes a CIRCLE entity
+    fn write_circle(&self, output: &mut String, circle: &DxfCircle) {
+        writeln!(output, "0\nCIRCLE").unwrap();
+        writeln!(output, "8\n{}", circle.layer).unwrap();
+        writeln!(output, "62\n{}", circle.color).unwrap();
+        writeln!(output, "10\n{}", circle.x).unwrap();
+        writeln!(output, "20\n{}", circle.y).unwrap();
+        writeln!(output, "30\n0").unwrap(); // Z coordinate
+        writeln!(output, "40\n{}", circle.radius).unwrap();
+    }
+
+    /// Writes a LWPOLYLINE entity
+    fn write_lwpolyline(&self, output: &mut String, polyline: &DxfLwPolyline) {
+        if polyline.vertices.is_empty() {
+            return; // Skip empty polylines
+        }
+
+        writeln!(output, "0\nLWPOLYLINE").unwrap();
+        writeln!(output, "8\n{}", polyline.layer).unwrap();
+        writeln!(output, "62\n{}", polyline.color).unwrap();
+        writeln!(output, "90\n{}", polyline.vertices.len()).unwrap(); // Number of vertices
+        writeln!(output, "70\n{}", if polyline.closed { 1 } else { 0 }).unwrap(); // Closed flag
+
+        // Write each vertex
+        for (x, y) in &polyline.vertices {
+            writeln!(output, "10\n{}", x).unwrap();
+            writeln!(output, "20\n{}", y).unwrap();
+        }
+    }
+
+    /// Generates DXF text from all entity types
+    ///
+    /// # Arguments
+    /// * `lines` - List of DxfLine entities
+    /// * `texts` - List of DxfText entities
+    /// * `circles` - List of DxfCircle entities
+    /// * `polylines` - List of DxfLwPolyline entities
+    ///
+    /// # Returns
+    /// DXF format string
+    pub fn write_all(
+        &self,
+        lines: &[DxfLine],
+        texts: &[DxfText],
+        circles: &[DxfCircle],
+        polylines: &[DxfLwPolyline],
+    ) -> String {
+        let mut output = String::new();
+
+        // Header section
+        self.write_header(&mut output);
+
+        // Entities section
+        self.write_entities_start(&mut output);
+
+        // Write lines
+        for line in lines {
+            self.write_line(&mut output, line);
+        }
+
+        // Write texts
+        for text in texts {
+            self.write_text(&mut output, text);
+        }
+
+        // Write circles
+        for circle in circles {
+            self.write_circle(&mut output, circle);
+        }
+
+        // Write polylines
+        for polyline in polylines {
+            self.write_lwpolyline(&mut output, polyline);
+        }
+
+        // End entities and file
+        self.write_end(&mut output);
+
+        output
     }
 
     /// Writes the end of the entities section and EOF
@@ -267,5 +348,106 @@ mod tests {
         let writer = DxfWriter::default();
         let output = writer.write(&[], &[]);
         assert!(output.contains("EOF"));
+    }
+
+    #[test]
+    fn test_write_single_circle() {
+        let writer = DxfWriter::new();
+        let circles = vec![DxfCircle::new(50.0, 50.0, 10.0)];
+        let output = writer.write_all(&[], &[], &circles, &[]);
+
+        assert!(output.contains("CIRCLE"));
+        assert!(output.contains("10\n50"));
+        assert!(output.contains("20\n50"));
+        assert!(output.contains("30\n0")); // Z coordinate
+        assert!(output.contains("40\n10")); // Radius
+    }
+
+    #[test]
+    fn test_write_circle_with_style() {
+        let writer = DxfWriter::new();
+        let circles = vec![DxfCircle::new(100.0, 200.0, 25.0)
+            .color(3)
+            .layer("CircleLayer")];
+        let output = writer.write_all(&[], &[], &circles, &[]);
+
+        assert!(output.contains("CIRCLE"));
+        assert!(output.contains("8\nCircleLayer"));
+        assert!(output.contains("62\n3"));
+        assert!(output.contains("40\n25")); // Radius
+    }
+
+    #[test]
+    fn test_write_lwpolyline_open() {
+        let writer = DxfWriter::new();
+        let polylines = vec![DxfLwPolyline::new(vec![
+            (0.0, 0.0),
+            (10.0, 0.0),
+            (10.0, 10.0),
+        ])];
+        let output = writer.write_all(&[], &[], &[], &polylines);
+
+        assert!(output.contains("LWPOLYLINE"));
+        assert!(output.contains("90\n3")); // 3 vertices
+        assert!(output.contains("70\n0")); // Open (not closed)
+    }
+
+    #[test]
+    fn test_write_lwpolyline_closed() {
+        let writer = DxfWriter::new();
+        let polylines = vec![DxfLwPolyline::closed(vec![
+            (0.0, 0.0),
+            (10.0, 0.0),
+            (10.0, 10.0),
+            (0.0, 10.0),
+        ])];
+        let output = writer.write_all(&[], &[], &[], &polylines);
+
+        assert!(output.contains("LWPOLYLINE"));
+        assert!(output.contains("90\n4")); // 4 vertices
+        assert!(output.contains("70\n1")); // Closed
+    }
+
+    #[test]
+    fn test_write_lwpolyline_with_style() {
+        let writer = DxfWriter::new();
+        let polylines = vec![DxfLwPolyline::new(vec![(0.0, 0.0), (100.0, 100.0)])
+            .color(5)
+            .layer("OutlineLayer")];
+        let output = writer.write_all(&[], &[], &[], &polylines);
+
+        assert!(output.contains("8\nOutlineLayer"));
+        assert!(output.contains("62\n5"));
+    }
+
+    #[test]
+    fn test_write_lwpolyline_empty_skipped() {
+        let writer = DxfWriter::new();
+        let polylines = vec![DxfLwPolyline::new(vec![])]; // Empty
+        let output = writer.write_all(&[], &[], &[], &polylines);
+
+        // Should not contain LWPOLYLINE for empty vertices
+        assert!(!output.contains("LWPOLYLINE"));
+    }
+
+    #[test]
+    fn test_write_all_mixed_entities() {
+        let writer = DxfWriter::new();
+        let lines = vec![DxfLine::new(0.0, 0.0, 10.0, 10.0)];
+        let texts = vec![DxfText::new(5.0, 5.0, "Label")];
+        let circles = vec![DxfCircle::new(20.0, 20.0, 5.0)];
+        let polylines = vec![DxfLwPolyline::closed(vec![
+            (30.0, 30.0),
+            (40.0, 30.0),
+            (40.0, 40.0),
+        ])];
+
+        let output = writer.write_all(&lines, &texts, &circles, &polylines);
+
+        // Count each entity type
+        assert_eq!(output.matches("0\nLINE\n").count(), 1);
+        assert_eq!(output.matches("0\nTEXT\n").count(), 1);
+        assert_eq!(output.matches("0\nCIRCLE\n").count(), 1);
+        assert_eq!(output.matches("0\nLWPOLYLINE\n").count(), 1);
     }
 }

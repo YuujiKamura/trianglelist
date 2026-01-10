@@ -26,5 +26,5 @@ pub mod entities;
 pub mod writer;
 
 // Re-export main types for convenience
-pub use entities::{DxfLine, DxfText, HorizontalAlignment, VerticalAlignment};
+pub use entities::{DxfCircle, DxfLine, DxfLwPolyline, DxfText, HorizontalAlignment, VerticalAlignment};
 pub use writer::DxfWriter;

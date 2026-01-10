@@ -183,6 +183,128 @@ impl DxfText {
     }
 }
 
+/// DXF CIRCLE entity
+///
+/// Represents a circle with center point and radius.
+#[derive(Clone, Debug, PartialEq)]
+pub struct DxfCircle {
+    /// X coordinate of the center
+    pub x: f64,
+    /// Y coordinate of the center
+    pub y: f64,
+    /// Radius
+    pub radius: f64,
+    /// Color number (default: 7 = white)
+    pub color: i32,
+    /// Layer name (default: "0")
+    pub layer: String,
+}
+
+impl Default for DxfCircle {
+    fn default() -> Self {
+        Self {
+            x: 0.0,
+            y: 0.0,
+            radius: 1.0,
+            color: 7,
+            layer: String::from("0"),
+        }
+    }
+}
+
+impl DxfCircle {
+    /// Creates a new DxfCircle with center and radius
+    pub fn new(x: f64, y: f64, radius: f64) -> Self {
+        Self {
+            x,
+            y,
+            radius,
+            ..Default::default()
+        }
+    }
+
+    /// Builder: set color
+    pub fn color(mut self, color: i32) -> Self {
+        self.color = color;
+        self
+    }
+
+    /// Builder: set layer
+    pub fn layer(mut self, layer: &str) -> Self {
+        self.layer = layer.to_string();
+        self
+    }
+}
+
+/// DXF LWPOLYLINE entity
+///
+/// Represents a lightweight polyline (2D polyline with vertices).
+#[derive(Clone, Debug, PartialEq)]
+pub struct DxfLwPolyline {
+    /// List of vertices as (x, y) pairs
+    pub vertices: Vec<(f64, f64)>,
+    /// Whether the polyline is closed
+    pub closed: bool,
+    /// Color number (default: 7 = white)
+    pub color: i32,
+    /// Layer name (default: "0")
+    pub layer: String,
+}
+
+impl Default for DxfLwPolyline {
+    fn default() -> Self {
+        Self {
+            vertices: Vec::new(),
+            closed: false,
+            color: 7,
+            layer: String::from("0"),
+        }
+    }
+}
+
+impl DxfLwPolyline {
+    /// Creates a new DxfLwPolyline with vertices
+    pub fn new(vertices: Vec<(f64, f64)>) -> Self {
+        Self {
+            vertices,
+            ..Default::default()
+        }
+    }
+
+    /// Creates a new closed DxfLwPolyline with vertices
+    pub fn closed(vertices: Vec<(f64, f64)>) -> Self {
+        Self {
+            vertices,
+            closed: true,
+            ..Default::default()
+        }
+    }
+
+    /// Builder: set closed flag
+    pub fn set_closed(mut self, closed: bool) -> Self {
+        self.closed = closed;
+        self
+    }
+
+    /// Builder: set color
+    pub fn color(mut self, color: i32) -> Self {
+        self.color = color;
+        self
+    }
+
+    /// Builder: set layer
+    pub fn layer(mut self, layer: &str) -> Self {
+        self.layer = layer.to_string();
+        self
+    }
+
+    /// Add a vertex
+    pub fn add_vertex(mut self, x: f64, y: f64) -> Self {
+        self.vertices.push((x, y));
+        self
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -292,5 +414,87 @@ mod tests {
         let text = DxfText::new(10.0, 20.0, "Test");
         let cloned = text.clone();
         assert_eq!(text, cloned);
+    }
+
+    #[test]
+    fn test_dxf_circle_default() {
+        let circle = DxfCircle::default();
+        assert_eq!(circle.x, 0.0);
+        assert_eq!(circle.y, 0.0);
+        assert_eq!(circle.radius, 1.0);
+        assert_eq!(circle.color, 7);
+        assert_eq!(circle.layer, "0");
+    }
+
+    #[test]
+    fn test_dxf_circle_new() {
+        let circle = DxfCircle::new(10.0, 20.0, 5.0);
+        assert_eq!(circle.x, 10.0);
+        assert_eq!(circle.y, 20.0);
+        assert_eq!(circle.radius, 5.0);
+        assert_eq!(circle.color, 7);
+        assert_eq!(circle.layer, "0");
+    }
+
+    #[test]
+    fn test_dxf_circle_builder() {
+        let circle = DxfCircle::new(10.0, 20.0, 5.0)
+            .color(3)
+            .layer("CircleLayer");
+        assert_eq!(circle.color, 3);
+        assert_eq!(circle.layer, "CircleLayer");
+    }
+
+    #[test]
+    fn test_dxf_circle_clone() {
+        let circle = DxfCircle::new(10.0, 20.0, 5.0);
+        let cloned = circle.clone();
+        assert_eq!(circle, cloned);
+    }
+
+    #[test]
+    fn test_dxf_lwpolyline_default() {
+        let poly = DxfLwPolyline::default();
+        assert!(poly.vertices.is_empty());
+        assert!(!poly.closed);
+        assert_eq!(poly.color, 7);
+        assert_eq!(poly.layer, "0");
+    }
+
+    #[test]
+    fn test_dxf_lwpolyline_new() {
+        let vertices = vec![(0.0, 0.0), (10.0, 0.0), (10.0, 10.0)];
+        let poly = DxfLwPolyline::new(vertices.clone());
+        assert_eq!(poly.vertices, vertices);
+        assert!(!poly.closed);
+    }
+
+    #[test]
+    fn test_dxf_lwpolyline_closed() {
+        let vertices = vec![(0.0, 0.0), (10.0, 0.0), (10.0, 10.0)];
+        let poly = DxfLwPolyline::closed(vertices.clone());
+        assert_eq!(poly.vertices, vertices);
+        assert!(poly.closed);
+    }
+
+    #[test]
+    fn test_dxf_lwpolyline_builder() {
+        let poly = DxfLwPolyline::new(vec![(0.0, 0.0)])
+            .add_vertex(10.0, 0.0)
+            .add_vertex(10.0, 10.0)
+            .set_closed(true)
+            .color(5)
+            .layer("OutlineLayer");
+        assert_eq!(poly.vertices.len(), 3);
+        assert!(poly.closed);
+        assert_eq!(poly.color, 5);
+        assert_eq!(poly.layer, "OutlineLayer");
+    }
+
+    #[test]
+    fn test_dxf_lwpolyline_clone() {
+        let poly = DxfLwPolyline::closed(vec![(0.0, 0.0), (10.0, 10.0)]);
+        let cloned = poly.clone();
+        assert_eq!(poly, cloned);
     }
 }
