@@ -666,10 +666,12 @@ pub fn generate_longitudinal_drawing(sections: &[CrossSectionData]) -> Drawing {
 
         let cell_text_height = text_height * 0.9;
 
-        // 行0: 勾配 - 0°回転、上寄せ、{:.3}%
-        if !slope_str.is_empty() {
+        // 行0: 勾配 - 0°回転、上寄せ、{:.3}% - 測点間の中央に配置
+        if !slope_str.is_empty() && i < points.len() - 1 {
+            let next_x = to_dxf_x(points[i + 1].0);
+            let slope_x = (x + next_x) / 2.0;  // 現在の測点と次の測点の中間位置
             let y = table_top - 0.0 * row_height - pos_top;
-            add_rotated_text(&mut drawing, x, y, &slope_str, cell_text_height, 7, "TEXT",
+            add_rotated_text(&mut drawing, slope_x, y, &slope_str, cell_text_height, 7, "TEXT",
                 TextAlign::Center, VerticalAlign::Top, 0.0);
         }
 
@@ -687,10 +689,10 @@ pub fn generate_longitudinal_drawing(sections: &[CrossSectionData]) -> Drawing {
                 TextAlign::Center, VerticalAlign::Middle, 0.0);
         }
 
-        // 行3: 計画高(FH) - 90°回転、中央寄せ、{:.3}
+        // 行3: 計画高(FH) - 90°回転、中央寄せ、{:.3}、赤色
         {
             let y = table_top - 3.0 * row_height - pos_mid;
-            add_rotated_text(&mut drawing, x, y, &format!("{:.3}", fh), cell_text_height, 7, "TEXT",
+            add_rotated_text(&mut drawing, x, y, &format!("{:.3}", fh), cell_text_height, 1, "PLAN",
                 TextAlign::Center, VerticalAlign::Middle, 90.0);
         }
 
