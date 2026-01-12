@@ -27,6 +27,32 @@
 use crate::dxf::entities::{DxfLine, DxfText, HorizontalAlignment, VerticalAlignment};
 use crate::dxf::writer::DxfWriter;
 
+// =============================================================================
+// Constants
+// =============================================================================
+
+/// Epsilon for horizontal distance comparisons (meters)
+/// Used to avoid division by zero when calculating slopes
+const HORIZONTAL_DIST_EPSILON: f64 = 0.001;
+
+/// Epsilon for grade difference comparisons (percent)
+/// Used to filter insignificant grade changes in annotations
+const GRADE_DIFF_EPSILON: f64 = 0.001;
+
+// AutoCAD Color Index (ACI) values
+/// Gray color for grid lines
+const COLOR_GRAY: i32 = 8;
+/// Green color for ground elevation line
+const COLOR_GREEN: i32 = 3;
+/// Red color for planned elevation line
+const COLOR_RED: i32 = 1;
+/// Blue color for slope annotations
+const COLOR_BLUE: i32 = 5;
+
+// =============================================================================
+// Data Structures
+// =============================================================================
+
 /// Station point data for longitudinal profile
 #[derive(Clone, Debug, PartialEq)]
 pub struct StationPoint {
@@ -132,15 +158,15 @@ impl LongitudinalProfile {
 
         let mut prev_slope: Option<f64> = None;
 
-        for i in 0..self.points.len() - 1 {
-            let p1 = &self.points[i];
-            let p2 = &self.points[i + 1];
+        for (i, window) in self.points.windows(2).enumerate() {
+            let p1 = &window[0];
+            let p2 = &window[1];
 
             let horizontal_dist = p2.distance - p1.distance;
             let elevation_diff = p2.planned_elevation - p1.planned_elevation;
 
             // Calculate slope percentage (i)
-            let slope_percent = if horizontal_dist.abs() > 0.001 {
+            let slope_percent = if horizontal_dist.abs() > HORIZONTAL_DIST_EPSILON {
                 (elevation_diff / horizontal_dist) * 100.0
             } else {
                 0.0
@@ -164,11 +190,17 @@ impl LongitudinalProfile {
 
         annotations
     }
+
+    /// Returns the start distance of the profile
+    fn start_distance(&self) -> f64 {
+        self.points.first().map(|p| p.distance).unwrap_or(0.0)
+    }
 }
 
 /// Drawing configuration for longitudinal profile
 #[derive(Clone, Debug)]
 pub struct DrawingConfig {
+    // Text heights
     /// Text height for station labels
     pub station_label_height: f64,
     /// Text height for elevation labels
@@ -177,14 +209,38 @@ pub struct DrawingConfig {
     pub slope_annotation_height: f64,
     /// Text height for title
     pub title_height: f64,
-    /// Offset for graph area from origin
+
+    // Graph area layout
+    /// X-axis offset for graph area from origin
     pub graph_offset_x: f64,
-    /// Offset for graph area from origin
+    /// Y-axis offset for graph area from origin
     pub graph_offset_y: f64,
     /// Width of the graph area (mm in drawing)
     pub graph_width: f64,
     /// Height of the graph area (mm in drawing)
     pub graph_height: f64,
+
+    // Layout offsets
+    /// Padding above graph for elevation range calculation
+    pub elevation_padding: f64,
+    /// Y offset for station labels above graph top
+    pub station_label_offset_y: f64,
+    /// X offset for elevation labels from graph edge
+    pub elevation_label_offset_x: f64,
+    /// Y offset for title above graph top
+    pub title_offset_y: f64,
+    /// Y spacing between title and scale text
+    pub scale_text_offset_y: f64,
+    /// Half-height of tick marks at grade break points
+    pub tick_mark_half_height: f64,
+    /// Y offset for slope annotation text below point
+    pub slope_annotation_offset_y: f64,
+    /// X offset for slope annotation text from point
+    pub slope_annotation_offset_x: f64,
+    /// Y spacing between annotation lines
+    pub annotation_line_spacing: f64,
+
+    // Layer names
     /// Layer name for ground line
     pub layer_ground: String,
     /// Layer name for planned line
@@ -198,14 +254,30 @@ pub struct DrawingConfig {
 impl Default for DrawingConfig {
     fn default() -> Self {
         Self {
+            // Text heights
             station_label_height: 2.5,
             elevation_label_height: 2.5,
             slope_annotation_height: 2.0,
             title_height: 5.0,
+
+            // Graph area layout
             graph_offset_x: 50.0,
             graph_offset_y: 30.0,
             graph_width: 250.0,
             graph_height: 150.0,
+
+            // Layout offsets
+            elevation_padding: 5.0,
+            station_label_offset_y: 5.0,
+            elevation_label_offset_x: 3.0,
+            title_offset_y: 20.0,
+            scale_text_offset_y: 7.0,
+            tick_mark_half_height: 2.0,
+            slope_annotation_offset_y: 8.0,
+            slope_annotation_offset_x: 2.0,
+            annotation_line_spacing: 3.0,
+
+            // Layer names
             layer_ground: String::from("GROUND"),
             layer_planned: String::from("PLANNED"),
             layer_annotation: String::from("ANNOTATION"),
@@ -252,12 +324,19 @@ impl LongitudinalDrawingGenerator {
     }
 
     /// Converts world coordinates to drawing coordinates
+    ///
+    /// Distance is normalized relative to the start point, so profiles
+    /// starting at non-zero chainage (e.g., chain 1000) are correctly
+    /// positioned with the first point at the left edge of the graph.
     fn world_to_drawing(&self, profile: &LongitudinalProfile, distance: f64, elevation: f64) -> (f64, f64) {
         let total_distance = self.get_total_distance(profile);
+        let start_distance = profile.start_distance();
         let elevation_range = self.get_elevation_range(profile);
 
+        // Normalize distance relative to start point
+        let relative_distance = distance - start_distance;
         let x = if total_distance > 0.0 {
-            self.config.graph_offset_x + (distance / total_distance) * self.config.graph_width
+            self.config.graph_offset_x + (relative_distance / total_distance) * self.config.graph_width
         } else {
             self.config.graph_offset_x
         };
@@ -274,12 +353,10 @@ impl LongitudinalDrawingGenerator {
 
     /// Gets total horizontal distance
     fn get_total_distance(&self, profile: &LongitudinalProfile) -> f64 {
-        profile
-            .points
-            .last()
-            .map(|p| p.distance)
-            .unwrap_or(0.0)
-            - profile.points.first().map(|p| p.distance).unwrap_or(0.0)
+        match (profile.points.first(), profile.points.last()) {
+            (Some(first), Some(last)) => last.distance - first.distance,
+            _ => 0.0,
+        }
     }
 
     /// Gets elevation range for scaling
@@ -292,13 +369,11 @@ impl LongitudinalDrawingGenerator {
             .iter()
             .map(|p| p.ground_elevation.max(p.planned_elevation))
             .fold(f64::NEG_INFINITY, f64::max);
-        max_elev - profile.datum_level + 5.0 // Add some padding
+        max_elev - profile.datum_level + self.config.elevation_padding
     }
 
     /// Generates grid lines
     fn generate_grid(&self, lines: &mut Vec<DxfLine>, profile: &LongitudinalProfile) {
-        let color = 8; // Gray
-
         // Vertical grid lines at each station
         for point in &profile.points {
             let (x, y_bottom) = self.world_to_drawing(profile, point.distance, profile.datum_level);
@@ -309,7 +384,7 @@ impl LongitudinalDrawingGenerator {
             );
             lines.push(
                 DxfLine::new(x, y_bottom, x, y_top)
-                    .color(color)
+                    .color(COLOR_GRAY)
                     .layer(&self.config.layer_grid),
             );
         }
@@ -327,24 +402,23 @@ impl LongitudinalDrawingGenerator {
         );
         lines.push(
             DxfLine::new(x_start, y_datum, x_end, y_datum)
-                .color(color)
+                .color(COLOR_GRAY)
                 .layer(&self.config.layer_grid),
         );
     }
 
     /// Generates ground elevation line
     fn generate_ground_line(&self, lines: &mut Vec<DxfLine>, profile: &LongitudinalProfile) {
-        let color = 3; // Green
-        for i in 0..profile.points.len().saturating_sub(1) {
-            let p1 = &profile.points[i];
-            let p2 = &profile.points[i + 1];
+        for window in profile.points.windows(2) {
+            let p1 = &window[0];
+            let p2 = &window[1];
 
             let (x1, y1) = self.world_to_drawing(profile, p1.distance, p1.ground_elevation);
             let (x2, y2) = self.world_to_drawing(profile, p2.distance, p2.ground_elevation);
 
             lines.push(
                 DxfLine::new(x1, y1, x2, y2)
-                    .color(color)
+                    .color(COLOR_GREEN)
                     .layer(&self.config.layer_ground),
             );
         }
@@ -352,17 +426,16 @@ impl LongitudinalDrawingGenerator {
 
     /// Generates planned elevation line
     fn generate_planned_line(&self, lines: &mut Vec<DxfLine>, profile: &LongitudinalProfile) {
-        let color = 1; // Red
-        for i in 0..profile.points.len().saturating_sub(1) {
-            let p1 = &profile.points[i];
-            let p2 = &profile.points[i + 1];
+        for window in profile.points.windows(2) {
+            let p1 = &window[0];
+            let p2 = &window[1];
 
             let (x1, y1) = self.world_to_drawing(profile, p1.distance, p1.planned_elevation);
             let (x2, y2) = self.world_to_drawing(profile, p2.distance, p2.planned_elevation);
 
             lines.push(
                 DxfLine::new(x1, y1, x2, y2)
-                    .color(color)
+                    .color(COLOR_RED)
                     .layer(&self.config.layer_planned),
             );
         }
@@ -370,7 +443,9 @@ impl LongitudinalDrawingGenerator {
 
     /// Generates station labels at graph top
     fn generate_station_labels(&self, texts: &mut Vec<DxfText>, profile: &LongitudinalProfile) {
-        let y_top = self.config.graph_offset_y + self.config.graph_height + 5.0;
+        let y_top = self.config.graph_offset_y
+            + self.config.graph_height
+            + self.config.station_label_offset_y;
 
         for point in &profile.points {
             let (x, _) = self.world_to_drawing(profile, point.distance, profile.datum_level);
@@ -393,6 +468,8 @@ impl LongitudinalDrawingGenerator {
             return;
         }
 
+        let label_offset = self.config.elevation_label_offset_x;
+
         // Start point elevations
         let start_point = &profile.points[0];
         let (x_start, y_ground_start) =
@@ -402,7 +479,7 @@ impl LongitudinalDrawingGenerator {
 
         texts.push(
             DxfText::new(
-                x_start - 3.0,
+                x_start - label_offset,
                 y_ground_start,
                 &format!("GL={:.3}", start_point.ground_elevation),
             )
@@ -414,7 +491,7 @@ impl LongitudinalDrawingGenerator {
 
         texts.push(
             DxfText::new(
-                x_start - 3.0,
+                x_start - label_offset,
                 y_planned_start,
                 &format!("FH={:.3}", start_point.planned_elevation),
             )
@@ -434,7 +511,7 @@ impl LongitudinalDrawingGenerator {
 
             texts.push(
                 DxfText::new(
-                    x_end + 3.0,
+                    x_end + label_offset,
                     y_ground_end,
                     &format!("GL={:.3}", end_point.ground_elevation),
                 )
@@ -446,7 +523,7 @@ impl LongitudinalDrawingGenerator {
 
             texts.push(
                 DxfText::new(
-                    x_end + 3.0,
+                    x_end + label_offset,
                     y_planned_end,
                     &format!("FH={:.3}", end_point.planned_elevation),
                 )
@@ -464,11 +541,15 @@ impl LongitudinalDrawingGenerator {
             profile.datum_level,
         );
         texts.push(
-            DxfText::new(x_datum - 3.0, y_datum, &format!("DL={:.1}", profile.datum_level))
-                .height(self.config.elevation_label_height)
-                .align_h(HorizontalAlignment::Right)
-                .align_v(VerticalAlignment::Middle)
-                .layer(&self.config.layer_annotation),
+            DxfText::new(
+                x_datum - label_offset,
+                y_datum,
+                &format!("DL={:.1}", profile.datum_level),
+            )
+            .height(self.config.elevation_label_height)
+            .align_h(HorizontalAlignment::Right)
+            .align_v(VerticalAlignment::Middle)
+            .layer(&self.config.layer_annotation),
         );
     }
 
@@ -480,7 +561,10 @@ impl LongitudinalDrawingGenerator {
         profile: &LongitudinalProfile,
     ) {
         let annotations = profile.calculate_slope_annotations();
-        let color = 5; // Blue
+        let tick_half = self.config.tick_mark_half_height;
+        let offset_x = self.config.slope_annotation_offset_x;
+        let offset_y = self.config.slope_annotation_offset_y;
+        let line_spacing = self.config.annotation_line_spacing;
 
         for annotation in &annotations {
             let point = &profile.points[annotation.point_index];
@@ -488,13 +572,13 @@ impl LongitudinalDrawingGenerator {
 
             // Draw vertical tick mark at grade break point
             lines.push(
-                DxfLine::new(x, y - 2.0, x, y + 2.0)
-                    .color(color)
+                DxfLine::new(x, y - tick_half, x, y + tick_half)
+                    .color(COLOR_BLUE)
                     .layer(&self.config.layer_annotation),
             );
 
             // Slope annotation text (i and L)
-            let annotation_y = y - 8.0;
+            let annotation_y = y - offset_y;
 
             // Slope percentage (i)
             let slope_text = if annotation.slope_percent >= 0.0 {
@@ -503,42 +587,46 @@ impl LongitudinalDrawingGenerator {
                 format!("i={:.2}%", annotation.slope_percent)
             };
             texts.push(
-                DxfText::new(x + 2.0, annotation_y, &slope_text)
+                DxfText::new(x + offset_x, annotation_y, &slope_text)
                     .height(self.config.slope_annotation_height)
                     .align_h(HorizontalAlignment::Left)
                     .align_v(VerticalAlignment::Top)
-                    .color(color)
+                    .color(COLOR_BLUE)
                     .layer(&self.config.layer_annotation),
             );
 
             // Segment length (L)
             texts.push(
                 DxfText::new(
-                    x + 2.0,
-                    annotation_y - 3.0,
+                    x + offset_x,
+                    annotation_y - line_spacing,
                     &format!("L={:.2}m", annotation.segment_length),
                 )
                 .height(self.config.slope_annotation_height)
                 .align_h(HorizontalAlignment::Left)
                 .align_v(VerticalAlignment::Top)
-                .color(color)
+                .color(COLOR_BLUE)
                 .layer(&self.config.layer_annotation),
             );
 
             // Grade difference (ΔV) - only show at actual grade break points
-            if annotation.delta_v.abs() > 0.001 {
+            if annotation.delta_v.abs() > GRADE_DIFF_EPSILON {
                 let delta_text = if annotation.delta_v >= 0.0 {
                     format!("ΔV=+{:.2}%", annotation.delta_v)
                 } else {
                     format!("ΔV={:.2}%", annotation.delta_v)
                 };
                 texts.push(
-                    DxfText::new(x + 2.0, annotation_y - 6.0, &delta_text)
-                        .height(self.config.slope_annotation_height)
-                        .align_h(HorizontalAlignment::Left)
-                        .align_v(VerticalAlignment::Top)
-                        .color(color)
-                        .layer(&self.config.layer_annotation),
+                    DxfText::new(
+                        x + offset_x,
+                        annotation_y - line_spacing * 2.0,
+                        &delta_text,
+                    )
+                    .height(self.config.slope_annotation_height)
+                    .align_h(HorizontalAlignment::Left)
+                    .align_v(VerticalAlignment::Top)
+                    .color(COLOR_BLUE)
+                    .layer(&self.config.layer_annotation),
                 );
             }
         }
@@ -548,7 +636,9 @@ impl LongitudinalDrawingGenerator {
     fn generate_title_block(&self, texts: &mut Vec<DxfText>, profile: &LongitudinalProfile) {
         // Title at top-left
         let title_x = self.config.graph_offset_x;
-        let title_y = self.config.graph_offset_y + self.config.graph_height + 20.0;
+        let title_y = self.config.graph_offset_y
+            + self.config.graph_height
+            + self.config.title_offset_y;
 
         texts.push(
             DxfText::new(title_x, title_y, &profile.title)
@@ -564,11 +654,15 @@ impl LongitudinalDrawingGenerator {
             profile.horizontal_scale, profile.vertical_scale
         );
         texts.push(
-            DxfText::new(title_x, title_y - 7.0, &scale_text)
-                .height(self.config.elevation_label_height)
-                .align_h(HorizontalAlignment::Left)
-                .align_v(VerticalAlignment::Baseline)
-                .layer(&self.config.layer_annotation),
+            DxfText::new(
+                title_x,
+                title_y - self.config.scale_text_offset_y,
+                &scale_text,
+            )
+            .height(self.config.elevation_label_height)
+            .align_h(HorizontalAlignment::Left)
+            .align_v(VerticalAlignment::Baseline)
+            .layer(&self.config.layer_annotation),
         );
     }
 }
@@ -755,6 +849,15 @@ mod tests {
             graph_offset_y: 50.0,
             graph_width: 300.0,
             graph_height: 200.0,
+            elevation_padding: 10.0,
+            station_label_offset_y: 8.0,
+            elevation_label_offset_x: 5.0,
+            title_offset_y: 25.0,
+            scale_text_offset_y: 10.0,
+            tick_mark_half_height: 3.0,
+            slope_annotation_offset_y: 10.0,
+            slope_annotation_offset_x: 3.0,
+            annotation_line_spacing: 4.0,
             layer_ground: String::from("CUSTOM_GROUND"),
             layer_planned: String::from("CUSTOM_PLANNED"),
             layer_annotation: String::from("CUSTOM_ANNOTATION"),
@@ -782,5 +885,41 @@ mod tests {
 
         // Datum should be below minimum (95.0), rounded to 10m
         assert!(profile.datum_level <= 85.0);
+    }
+
+    #[test]
+    fn test_non_zero_start_distance() {
+        // Test that profiles starting at non-zero chainage are correctly positioned
+        let points = vec![
+            StationPoint::new("No.50", 1000.0, 100.0, 100.0),
+            StationPoint::new("No.51", 1020.0, 102.0, 101.0),
+            StationPoint::new("No.52", 1040.0, 101.5, 102.0),
+        ];
+        let profile = LongitudinalProfile::new(points);
+        let generator = LongitudinalDrawingGenerator::new();
+
+        // First point should be at graph_offset_x
+        let (x_first, _) = generator.world_to_drawing(&profile, 1000.0, 100.0);
+        assert!((x_first - generator.config.graph_offset_x).abs() < 0.001);
+
+        // Last point should be at graph_offset_x + graph_width
+        let (x_last, _) = generator.world_to_drawing(&profile, 1040.0, 100.0);
+        let expected_x_last = generator.config.graph_offset_x + generator.config.graph_width;
+        assert!((x_last - expected_x_last).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_get_total_distance_with_match() {
+        let points = create_test_points();
+        let profile = LongitudinalProfile::new(points);
+        let generator = LongitudinalDrawingGenerator::new();
+
+        let total = generator.get_total_distance(&profile);
+        assert!((total - 60.0).abs() < 0.001);
+
+        // Empty profile should return 0
+        let empty_profile = LongitudinalProfile::new(vec![]);
+        let empty_total = generator.get_total_distance(&empty_profile);
+        assert!((empty_total - 0.0).abs() < 0.001);
     }
 }
