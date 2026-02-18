@@ -1,5 +1,8 @@
 import com.jpaver.trianglelist.dxf.*
+import org.apache.poi.ss.usermodel.*
+import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.File
+import java.io.FileOutputStream
 import kotlin.math.*
 
 /**
@@ -16,6 +19,11 @@ import kotlin.math.*
  *
  * connType/connectionType: -1=独立, 1=親のB辺に接続, 2=親のC辺に接続
  */
+
+data class CsvHeader(
+    val koujiname: String = "", val rosenname: String = "",
+    val gyousyaname: String = "", val zumennum: String = ""
+)
 
 data class TriData(
     val id: Int, val a: Double, val b: Double, val c: Double,
@@ -46,9 +54,12 @@ fun main(args: Array<String>) {
         return
     }
     val csvFile = File(args[0])
-    // 出力先省略時: 入力CSVと同じフォルダに {basename}_triangles.dxf
+    val baseName = csvFile.nameWithoutExtension
+    val outDir = csvFile.parentFile
+    // 出力先省略時: 入力CSVと同じフォルダに {basename}_triangles.dxf/.xlsx
     val dxfFile = if (args.size >= 2) File(args[1])
-                  else File(csvFile.parentFile, csvFile.nameWithoutExtension + "_triangles.dxf")
+                  else File(outDir, "${baseName}_triangles.dxf")
+    val xlsxFile = File(outDir, "${baseName}_triangles.xlsx")
 
     if (!csvFile.exists()) {
         System.err.println("CSV not found: ${csvFile.absolutePath}")
@@ -56,6 +67,7 @@ fun main(args: Array<String>) {
     }
 
     val csvLines = csvFile.readLines()
+    val header = parseHeader(csvLines)
     val triangles = parseCSV(csvLines)
 
     if (triangles.isEmpty()) {
@@ -63,12 +75,47 @@ fun main(args: Array<String>) {
         return
     }
 
+    // DXF 出力
     val placed = placeTriangles(triangles)
     val (dxfLines, dxfTexts, dxfCircles) = buildEntities(placed)
-
     val dxfContent = DxfWriter.write(dxfLines, dxfTexts, dxfCircles, insUnits = DxfConstants.Units.METER)
     dxfFile.writeText(dxfContent)
-    println("DXF written: ${dxfFile.absolutePath} (${placed.size} triangles, ${dxfLines.size} lines, ${dxfTexts.size} texts, ${dxfCircles.size} circles)")
+    println("DXF written: ${dxfFile.absolutePath} (${placed.size} triangles)")
+
+    // Excel 出力
+    writeXlsx(xlsxFile, triangles, header.rosenname)
+    println("XLSX written: ${xlsxFile.absolutePath} (${triangles.size} triangles)")
+}
+
+/** CSVヘッダー情報パース */
+fun parseHeader(lines: List<String>): CsvHeader {
+    val isV2 = lines.any { it.trimStart().startsWith("#VERSION") }
+    if (isV2) {
+        var inHeader = false
+        val map = mutableMapOf<String, String>()
+        for (raw in lines) {
+            val line = raw.trim()
+            if (line.startsWith("#HEADER")) { inHeader = true; continue }
+            if (line.startsWith("#") && inHeader) break
+            if (!inHeader || line.isBlank()) continue
+            val p = line.split(",").map { it.trim() }
+            if (p.size >= 2) map[p[0]] = p[1]
+        }
+        return CsvHeader(
+            koujiname = map["koujiname"] ?: "",
+            rosenname = map["rosenname"] ?: "",
+            gyousyaname = map["gyousyaname"] ?: "",
+            zumennum = map["zumennum"] ?: ""
+        )
+    } else {
+        // v1: 最初の4行がヘッダー
+        return CsvHeader(
+            koujiname = lines.getOrNull(0)?.trim() ?: "",
+            rosenname = lines.getOrNull(1)?.trim() ?: "",
+            gyousyaname = lines.getOrNull(2)?.trim() ?: "",
+            zumennum = lines.getOrNull(3)?.trim() ?: ""
+        )
+    }
 }
 
 /** CSV パース（v1/v2 自動判定） */
@@ -263,7 +310,7 @@ fun buildEntities(placed: Map<Int, PlacedTriangle>): Triple<List<DxfLine>, List<
         }
 
         // shiftRatio: 正=vb方向へ、負=va方向へ
-        val H = 0.5
+        val H = 0.4
         // A辺(pointAB→point0): va端=B頂点, vb端=A頂点
         val shiftA = if (angleAtPointAB < SHARP) H else if (angleAtPoint0 < SHARP) -H else 0.0
         // B辺(pointBC→pointAB): va端=C頂点, vb端=B頂点
@@ -282,4 +329,91 @@ fun buildEntities(placed: Map<Int, PlacedTriangle>): Triple<List<DxfLine>, List<
         dxfCircles.add(DxfCircle(cx, cy, 0.25, color = 5, layer = "NUM"))
     }
     return Triple(dxfLines, dxfTexts, dxfCircles)
+}
+
+/** Excel 面積計算書出力 — app モジュールの XlsxWriter 準拠 */
+fun writeXlsx(file: File, triangles: List<TriData>, rosenmei: String) {
+    val wb = XSSFWorkbook()
+    val sheet = wb.createSheet("面積計算書")
+    val fmt = wb.createDataFormat()
+
+    // スタイル定義
+    val styleC = wb.createCellStyle().apply {
+        alignment = HorizontalAlignment.CENTER
+        borderBottom = BorderStyle.THIN
+    }
+    val styleTitle = wb.createCellStyle().apply {
+        alignment = HorizontalAlignment.CENTER
+    }
+    val styleDigit = wb.createCellStyle().apply {
+        alignment = HorizontalAlignment.CENTER
+        borderBottom = BorderStyle.THIN
+        dataFormat = fmt.getFormat("0.00")
+    }
+
+    // 列幅: 番号(B), 辺長A(C), 辺長B(D), 辺長C(E), 面積(F)
+    val widths = intArrayOf(2, 12, 8, 8, 8, 12)
+    widths.forEachIndexed { i, w -> sheet.setColumnWidth(i, 256 * w) }
+
+    val rowSizer = 1.25f
+
+    fun createStyledRow(rowNum: Int): org.apache.poi.ss.usermodel.Row {
+        val row = sheet.createRow(rowNum)
+        row.heightInPoints = sheet.defaultRowHeightInPoints * rowSizer
+        return row
+    }
+
+    // タイトル行
+    createStyledRow(1).createCell(3).apply {
+        setCellValue("面 積 計 算 書"); setCellStyle(styleTitle)
+    }
+    // 路線名
+    if (rosenmei.isNotBlank()) {
+        createStyledRow(2).createCell(3).apply {
+            setCellValue(rosenmei); setCellStyle(styleTitle)
+        }
+    }
+    // ヘッダー行
+    val headerRow = createStyledRow(3)
+    listOf("番号", "辺長A", "辺長B", "辺長C", "面積").forEachIndexed { i, h ->
+        headerRow.createCell(i + 1).apply { setCellValue(h); setCellStyle(styleC) }
+    }
+
+    // データ行（row 4〜）
+    val dataStart = 4
+    for ((i, tri) in triangles.withIndex()) {
+        val row = createStyledRow(dataStart + i)
+        val rn = dataStart + 1 + i  // Excel行番号（1-based）
+        val lenA = Math.round(tri.a * 100) * 0.01
+        val lenB = Math.round(tri.b * 100) * 0.01
+        val lenC = Math.round(tri.c * 100) * 0.01
+
+        row.createCell(1).apply { setCellValue(tri.id.toDouble()); setCellStyle(styleC) }
+        row.createCell(2).apply { setCellValue(lenA); setCellStyle(styleDigit) }
+        row.createCell(3).apply { setCellValue(lenB); setCellStyle(styleDigit) }
+        row.createCell(4).apply { setCellValue(lenC); setCellStyle(styleDigit) }
+
+        // ヘロンの公式: s = (a+b+c)/2, area = sqrt(s*(s-a)*(s-b)*(s-c))
+        val sFormula = "(0.5*(C$rn+D$rn+E$rn))"
+        val areaFormula = "ROUND(($sFormula*($sFormula-C$rn)*($sFormula-D$rn)*($sFormula-E$rn))^0.5,2)"
+        row.createCell(5).apply { cellFormula = areaFormula; setCellStyle(styleDigit) }
+    }
+
+    // 小計行
+    val sumRowNum = dataStart + triangles.size
+    val sumStart = dataStart + 1
+    val sumEnd = dataStart + triangles.size
+    val sumRow = createStyledRow(sumRowNum)
+    sumRow.createCell(1).apply { setCellValue("小計"); setCellStyle(styleC) }
+    listOf(2, 3, 4).forEach { sumRow.createCell(it).apply { setCellValue(""); setCellStyle(styleC) } }
+    sumRow.createCell(5).apply {
+        cellFormula = "SUM(F$sumStart:F$sumEnd)"
+        setCellStyle(styleDigit)
+    }
+
+    // ファイル書き込み
+    FileOutputStream(file).use { out ->
+        wb.write(out)
+    }
+    wb.close()
 }
