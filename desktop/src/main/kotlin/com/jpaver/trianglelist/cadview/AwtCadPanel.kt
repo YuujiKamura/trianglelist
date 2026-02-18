@@ -36,7 +36,7 @@ class AwtCadPanel : JPanel() {
         Color(0, 255, 255),      // 4: Cyan
         Color(0, 0, 255),        // 5: Blue
         Color(255, 0, 255),      // 6: Magenta
-        Color(255, 255, 255),    // 7: White
+        Color(0, 0, 0),          // 7: White→黒（白背景用）
         Color(128, 128, 128),    // 8: Gray
         Color(192, 192, 192),    // 9: Light Gray
         Color(255, 0, 0),        // 10
@@ -289,7 +289,7 @@ class AwtCadPanel : JPanel() {
     }
 
     init {
-        background = Color(30, 30, 30) // 暗い背景
+        background = Color.WHITE
         isFocusable = true
 
         // パンのドラッグ
@@ -343,15 +343,21 @@ class AwtCadPanel : JPanel() {
 
     private fun aciToAwtColor(aciIndex: Int): Color {
         return when {
-            aciIndex == DxfConstants.Colors.WHITE -> Color.WHITE
+            // 白背景なので ACI 7(白/黒) と 256(ByLayer) は黒で描画
+            aciIndex == DxfConstants.Colors.WHITE_BLACK -> Color.BLACK
+            aciIndex == DxfConstants.Colors.WHITE -> Color.BLACK
             aciIndex in 0..255 -> aciColorTable[aciIndex]
-            else -> aciColorTable[7]
+            else -> Color.BLACK
         }
     }
 
     override fun paintComponent(g: Graphics) {
         super.paintComponent(g)
         val g2d = g as Graphics2D
+
+        // 明示的に白背景を描画（SwingPanel が JPanel.background を無視する場合の対策）
+        g2d.color = Color.WHITE
+        g2d.fillRect(0, 0, width, height)
 
         // アンチエイリアス
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
