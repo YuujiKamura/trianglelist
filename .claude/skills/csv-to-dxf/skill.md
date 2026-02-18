@@ -6,15 +6,52 @@ description: "手書き展開図の写真からCSV生成→DXFをワンストッ
 
 ## ワークフロー
 ```
-ユーザーが手書き展開図の画像を貼る
-  → Claude が読み取って CSV v2 を生成
+手書き展開図の画像
+  → Web版 Gemini 3 に画像+プロンプトを貼って CSV v2 を生成
   → CsvToDxfMain で DXF 生成
   → ターゲットフォルダに出力
 ```
 
-## Step 1: 画像から三角形データを読み取る
+**注意**: 手書き展開図の読み取り精度はClaudeでは不十分。Web版Gemini 3（gemini.google.com）が最も精度が高い。
 
-ユーザーが画像を貼ったら、以下のルールで読み取ってCSVを生成する。
+## Step 1: Web版Gemini 3で画像を読み取る
+
+1. gemini.google.com を開く
+2. 手書き展開図の画像を貼り付ける
+3. 以下のプロンプトを一緒に貼る
+
+### プロンプト（Geminiに貼る）
+```
+この手書き展開図から三角形データを読み取り、以下のCSV形式で出力せよ。余分な説明は不要、CSVだけ返せ。
+
+ルール:
+1. 三角形には丸数字で番号が振ってある。その番号順に記載
+2. 各三角形の3辺の長さを読み取る（単位: メートル）
+3. 最初の三角形は独立: parent=-1, connectionType=-1
+4. 以降は親三角形の番号と接続タイプを判定
+5. 接続タイプ: 親の辺B(2列目)に接続=1、親の辺C(3列目)に接続=2
+6. 子のA辺(1列目) = 親との共有辺の長さ（必ず一致すること）
+
+CSV形式:
+#VERSION,2,,,,,,,,
+#HEADER,,,,,,,,,
+koujiname,求積図面,,,,,,,,
+rosenname,,,,,,,,,
+gyousyaname,,,,,,,,,
+zumennum,1,,,,,,,,
+,,,,,,,,,
+#TRIANGULAR,,,,,,,,,
+number,lengthA,lengthB,lengthC,parent,connectionType,connectionSide,connectionLCR,name,color
+（ここにデータ）
+,,,,,,,,,
+#DEDUCTIONS,,,,,,,,,
+number,name,type,width,height,x,y,angle,,
+,,,,,,,,,
+#PARAMETERS,,,,,,,,,
+ListAngle,0,,,,,,,,
+ListScale,1,,,,,,,,
+TextSize,12,,,,,,,,
+```
 
 ### 読み取りルール
 1. 三角形には丸数字で番号が振ってある。その番号順にCSVに記載
@@ -32,33 +69,14 @@ description: "手書き展開図の写真からCSV生成→DXFをワンストッ
 - 親のB辺 = 親の2列目の辺長の辺
 - 親のC辺 = 親の3列目の辺長の辺
 
-## Step 2: CSVを生成・保存
+## Step 2: Geminiの出力をCSVとして保存
 
-読み取った結果をこの形式で出力:
-```csv
-#VERSION,2,,,,,,,,
-#HEADER,,,,,,,,,
-koujiname,求積図面,,,,,,,,
-rosenname,,,,,,,,,
-gyousyaname,,,,,,,,,
-zumennum,1,,,,,,,,
-,,,,,,,,,
-#TRIANGULAR,,,,,,,,,
-number,lengthA,lengthB,lengthC,parent,connectionType,connectionSide,connectionLCR,name,color
-1,辺A,辺B,辺C,-1,-1,0,0,,7
-2,辺A,辺B,辺C,親番号,接続タイプ,0,0,,7
-...
-,,,,,,,,,
-#DEDUCTIONS,,,,,,,,,
-number,name,type,width,height,x,y,angle,,
-,,,,,,,,,
-#PARAMETERS,,,,,,,,,
-ListAngle,0,,,,,,,,
-ListScale,1,,,,,,,,
-TextSize,12,,,,,,,,
-```
-
+Geminiが返したCSVをコピーし、Claudeに渡してファイルに保存させる。
 ユーザーが指定したパスにWriteツールで保存する。
+
+保存前に以下をチェック:
+- 子のA辺(1列目)が親の対応辺長と一致しているか
+- 分岐点でconnType=1と2が使い分けられているか
 
 ## Step 3: CSV → DXF変換
 
