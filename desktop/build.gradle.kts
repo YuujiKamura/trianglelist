@@ -13,6 +13,18 @@ dependencies {
     implementation(compose.ui)
     implementation("org.apache.poi:poi-ooxml:5.4.1")
 
+    // LWJGL (OpenGL viewer - B案)
+    val lwjglVersion = "3.3.4"
+    val lwjglNatives = "natives-windows"
+    implementation("org.lwjgl:lwjgl:$lwjglVersion")
+    implementation("org.lwjgl:lwjgl-opengl:$lwjglVersion")
+    implementation("org.lwjgl:lwjgl-glfw:$lwjglVersion")
+    implementation("org.lwjgl:lwjgl-stb:$lwjglVersion")
+    runtimeOnly("org.lwjgl:lwjgl:$lwjglVersion:$lwjglNatives")
+    runtimeOnly("org.lwjgl:lwjgl-opengl:$lwjglVersion:$lwjglNatives")
+    runtimeOnly("org.lwjgl:lwjgl-glfw:$lwjglVersion:$lwjglNatives")
+    runtimeOnly("org.lwjgl:lwjgl-stb:$lwjglVersion:$lwjglNatives")
+
     // テスト依存関係
     testImplementation("junit:junit:4.13.2")
     testImplementation(kotlin("test"))
