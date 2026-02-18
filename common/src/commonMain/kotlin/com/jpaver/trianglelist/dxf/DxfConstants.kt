@@ -17,9 +17,10 @@ object DxfConstants {
      * 単位系定数
      */
     object Units {
-        const val MILLIMETER = 6
-        const val METER = 5
         const val INCH = 1
+        const val MILLIMETER = 4
+        const val CENTIMETER = 5
+        const val METER = 6
     }
     
     /**
