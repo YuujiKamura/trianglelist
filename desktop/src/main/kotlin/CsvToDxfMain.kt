@@ -1,0 +1,285 @@
+import com.jpaver.trianglelist.dxf.*
+import java.io.File
+import kotlin.math.*
+
+/**
+ * CSV → DXF 変換 CLI
+ *
+ * v1 CSV形式:
+ *   ヘッダー4行（koujiname, rosenname, gyousyaname, zumennum）
+ *   データ行: ID, A, B, C, parentNum, connType
+ *
+ * v2 CSV形式 (#VERSION,2.0):
+ *   #HEADER セクション
+ *   #TRIANGULAR セクション（ヘッダー行 + データ行）
+ *   number,lengthA,lengthB,lengthC,parent,connectionType,connectionSide,connectionLCR,name,color
+ *
+ * connType/connectionType: -1=独立, 1=親のB辺に接続, 2=親のC辺に接続
+ */
+
+data class TriData(
+    val id: Int, val a: Double, val b: Double, val c: Double,
+    val parentNum: Int, val connType: Int, val name: String = "", val color: Int = 7
+)
+
+data class Vertex(val x: Double, val y: Double)
+
+data class PlacedTriangle(
+    val id: Int,
+    val point0: Vertex, val pointAB: Vertex, val pointBC: Vertex,
+    val a: Double, val b: Double, val c: Double,
+    val angle: Double,    // A辺方向（度数法）
+    val angleAB: Double,  // 頂点B(pointAB)の内角（度数法）
+    val angleCA: Double,  // 頂点A(point0)の内角（度数法）
+    val name: String, val color: Int
+) {
+    /** connType=1 の子に渡す角度 */
+    val angleMpAB: Double get() = angle + angleAB
+    /** connType=2 の子に渡す角度 */
+    val angleMmCA: Double get() = angle - angleCA
+}
+// point0-pointAB = A辺, pointAB-pointBC = B辺, pointBC-point0 = C辺
+
+fun main(args: Array<String>) {
+    if (args.isEmpty()) {
+        println("Usage: csvToDxf <input.csv> [output.dxf]")
+        return
+    }
+    val csvFile = File(args[0])
+    // 出力先省略時: 入力CSVと同じフォルダに {basename}_triangles.dxf
+    val dxfFile = if (args.size >= 2) File(args[1])
+                  else File(csvFile.parentFile, csvFile.nameWithoutExtension + "_triangles.dxf")
+
+    if (!csvFile.exists()) {
+        System.err.println("CSV not found: ${csvFile.absolutePath}")
+        return
+    }
+
+    val csvLines = csvFile.readLines()
+    val triangles = parseCSV(csvLines)
+
+    if (triangles.isEmpty()) {
+        System.err.println("No triangle data found")
+        return
+    }
+
+    val placed = placeTriangles(triangles)
+    val (dxfLines, dxfTexts, dxfCircles) = buildEntities(placed)
+
+    val dxfContent = DxfWriter.write(dxfLines, dxfTexts, dxfCircles, insUnits = DxfConstants.Units.METER)
+    dxfFile.writeText(dxfContent)
+    println("DXF written: ${dxfFile.absolutePath} (${placed.size} triangles, ${dxfLines.size} lines, ${dxfTexts.size} texts, ${dxfCircles.size} circles)")
+}
+
+/** CSV パース（v1/v2 自動判定） */
+fun parseCSV(lines: List<String>): List<TriData> {
+    val isV2 = lines.any { it.trimStart().startsWith("#VERSION") }
+    return if (isV2) parseV2(lines) else parseV1(lines)
+}
+
+fun parseV1(lines: List<String>): List<TriData> {
+    return lines.drop(4).mapNotNull { line ->
+        val p = line.split(",").map { it.trim() }
+        if (p.size < 6) return@mapNotNull null
+        try {
+            TriData(p[0].toInt(), p[1].toDouble(), p[2].toDouble(), p[3].toDouble(),
+                p[4].toInt(), p[5].toInt())
+        } catch (_: NumberFormatException) { null }
+    }
+}
+
+fun parseV2(lines: List<String>): List<TriData> {
+    var inTriangular = false
+    var headerSkipped = false
+    val result = mutableListOf<TriData>()
+
+    for (raw in lines) {
+        val line = raw.trim()
+        if (line.startsWith("#TRIANGULAR")) { inTriangular = true; headerSkipped = false; continue }
+        if (line.startsWith("#") && inTriangular) break // next section
+        if (!inTriangular || line.isBlank()) continue
+        if (!headerSkipped) { headerSkipped = true; continue } // skip column header
+
+        val p = line.split(",").map { it.trim() }
+        if (p.size < 6) continue
+        try {
+            val id = p[0].toInt()
+            val a = p[1].toDouble(); val b = p[2].toDouble(); val c = p[3].toDouble()
+            val parent = p[4].toInt()
+            val colType = p[5].toIntOrNull() ?: 0          // connectionType(p[5])
+            val colSide = if (p.size > 6) p[6].toIntOrNull() ?: 0 else 0  // connectionSide(p[6])
+            // B/C辺の判定: どちらかが2ならC辺接続
+            val connType = if (parent == -1) -1
+                           else if (colSide == 2 || colType == 2) 2
+                           else 1
+            val name = if (p.size > 8) p[8] else ""
+            val color = if (p.size > 9) p[9].toIntOrNull() ?: 7 else 7
+            result.add(TriData(id, a, b, c, parent, connType, name, color))
+        } catch (_: NumberFormatException) { /* skip */ }
+    }
+    return result
+}
+
+/** 第3頂点(pointBC)を計算 — TriangleExtensions.kt:24-34 と同一ロジック */
+fun calculatePointBC(point0: Vertex, pointAB: Vertex, a: Double, b: Double, c: Double): Vertex {
+    val theta = atan2(point0.y - pointAB.y, point0.x - pointAB.x)
+    val alpha = acos(((a * a + b * b - c * c) / (2 * a * b)).coerceIn(-1.0, 1.0))
+    val ang = theta + alpha
+    return Vertex(pointAB.x + b * cos(ang), pointAB.y + b * sin(ang))
+}
+
+/** 頂点p2における内角（度数法） — TriangleExtensions.kt:47-52 と同一ロジック */
+fun calculateInternalAngle(p1: Vertex, p2: Vertex, p3: Vertex): Double {
+    val v1x = p1.x - p2.x; val v1y = p1.y - p2.y
+    val v2x = p3.x - p2.x; val v2y = p3.y - p2.y
+    val dot = v1x * v2x + v1y * v2y
+    val mag1 = sqrt(v1x * v1x + v1y * v1y); val mag2 = sqrt(v2x * v2x + v2y * v2y)
+    return Math.toDegrees(acos((dot / (mag1 * mag2)).coerceIn(-1.0, 1.0)))
+}
+
+fun dist(a: Vertex, b: Vertex): Double = sqrt((a.x - b.x).pow(2) + (a.y - b.y).pow(2))
+
+/** 三角形を座標配置 — app モジュールの Triangle.calcPoints() / setOn() 準拠 */
+fun placeTriangles(triangles: List<TriData>): Map<Int, PlacedTriangle> {
+    val placed = mutableMapOf<Int, PlacedTriangle>()
+
+    for (tri in triangles) {
+        val pt0: Vertex; val ptAB: Vertex; val ptBC: Vertex
+        val angle: Double
+
+        if (tri.parentNum == -1 || tri.connType == -1) {
+            // 独立三角形: angle=0°（A辺が右向き＝左→右に進行）
+            angle = 0.0
+            pt0 = Vertex(0.0, 0.0)
+            val rad = Math.toRadians(angle)
+            ptAB = Vertex(pt0.x + tri.a * cos(rad), pt0.y + tri.a * sin(rad))
+            ptBC = calculatePointBC(pt0, ptAB, tri.a, tri.b, tri.c)
+        } else {
+            val parent = placed[tri.parentNum]
+            if (parent == null) {
+                System.err.println("Parent ${tri.parentNum} not found for triangle ${tri.id}")
+                continue
+            }
+
+            val childA: Double
+            when (tri.connType) {
+                1 -> {
+                    // 親のB辺に接続 — 親の頂点を直接コピー（浮動小数点誤差を排除）
+                    childA = parent.b
+                    pt0 = parent.pointBC
+                    ptAB = parent.pointAB
+                }
+                2 -> {
+                    // 親のC辺に接続 — 親の頂点を直接コピー
+                    childA = parent.c
+                    pt0 = parent.point0
+                    ptAB = parent.pointBC
+                }
+                else -> {
+                    System.err.println("Unknown connType ${tri.connType} for triangle ${tri.id}")
+                    continue
+                }
+            }
+            // angleは実座標から逆算
+            angle = Math.toDegrees(atan2(ptAB.y - pt0.y, ptAB.x - pt0.x))
+            ptBC = calculatePointBC(pt0, ptAB, childA, tri.b, tri.c)
+        }
+
+        val angleAB = calculateInternalAngle(pt0, ptAB, ptBC)
+        val angleCA = calculateInternalAngle(ptBC, pt0, ptAB)
+
+        placed[tri.id] = PlacedTriangle(
+            tri.id, pt0, ptAB, ptBC,
+            tri.a, tri.b, tri.c,
+            angle, angleAB, angleCA,
+            tri.name, tri.color
+        )
+    }
+    return placed
+}
+
+/** PointXY.calcDimAngle() 準拠 — 基線に沿った読みやすいテキスト角度 */
+fun calcDimAngle(from: Vertex, to: Vertex): Double {
+    var angle = Math.toDegrees(atan2(to.x - from.x, to.y - from.y))
+    angle = -angle + 90.0
+    if (angle > 90.0) angle -= 180.0
+    if (angle < 0.0) angle += 360.0
+    return angle
+}
+
+/** 基線方向から外側の垂直アライメントを決定 — DimOnPath.verticalDxf() 準拠
+ *  辺の2頂点と対向頂点から、寸法テキストを三角形の外側に配置するためのalignVを返す */
+fun dimVerticalDxf(va: Vertex, vb: Vertex, opposite: Vertex): Int {
+    // 辺(va→vb)に対して対向頂点がどちら側にあるか
+    val cross = (vb.x - va.x) * (opposite.y - va.y) - (vb.y - va.y) * (opposite.x - va.x)
+
+    // calcDimAngleが方向を反転したか判定
+    val naturalAngle = Math.toDegrees(atan2(vb.y - va.y, vb.x - va.x))
+    val dimAngle = calcDimAngle(va, vb)
+    val diff = ((dimAngle - naturalAngle) % 360 + 360) % 360
+    val flipped = diff > 90.0 && diff < 270.0
+
+    // cross > 0: 対向頂点は左側 → テキストは右側（外側）→ alignV=3(top=テキスト下方)
+    // flipped の場合はDXFテキスト座標系での上下が反転する
+    return if (flipped xor (cross > 0)) 3 else 1
+}
+
+/** DXFエンティティ生成（レイヤー分離: TRI/LEN/NUM） */
+fun buildEntities(placed: Map<Int, PlacedTriangle>): Triple<List<DxfLine>, List<DxfText>, List<DxfCircle>> {
+    val dxfLines = mutableListOf<DxfLine>()
+    val dxfTexts = mutableListOf<DxfText>()
+    val dxfCircles = mutableListOf<DxfCircle>()
+
+    // 共有辺の寸法値重複防止
+    val drawnEdges = mutableSetOf<String>()
+    fun edgeKey(va: Vertex, vb: Vertex): String {
+        val ax = "%.3f".format(va.x); val ay = "%.3f".format(va.y)
+        val bx = "%.3f".format(vb.x); val by = "%.3f".format(vb.y)
+        return if ("$ax,$ay" < "$bx,$by") "$ax,$ay-$bx,$by" else "$bx,$by-$ax,$ay"
+    }
+
+    for ((_, pt) in placed) {
+        // レイヤ TRI: 3辺（白）
+        dxfLines.add(DxfLine(pt.point0.x, pt.point0.y, pt.pointAB.x, pt.pointAB.y, 7, "TRI"))
+        dxfLines.add(DxfLine(pt.pointAB.x, pt.pointAB.y, pt.pointBC.x, pt.pointBC.y, 7, "TRI"))
+        dxfLines.add(DxfLine(pt.pointBC.x, pt.pointBC.y, pt.point0.x, pt.point0.y, 7, "TRI"))
+
+        // レイヤ LEN: 辺長テキスト — 基線アライメント配置（appのcalcDimAngle + verticalDxf準拠）
+        // 鋭角頂点(< 20°)に隣接する辺は中点から10%ずらす（Dims.autoDimHorizontalByAngle準拠）
+        val SHARP = 20.0
+        val angleAtPoint0  = calculateInternalAngle(pt.pointBC, pt.point0, pt.pointAB)   // A頂点
+        val angleAtPointAB = calculateInternalAngle(pt.point0, pt.pointAB, pt.pointBC)    // B頂点
+        val angleAtPointBC = calculateInternalAngle(pt.pointAB, pt.pointBC, pt.point0)    // C頂点
+
+        fun dimText(va: Vertex, vb: Vertex, opposite: Vertex, len: Double, shiftRatio: Double = 0.0) {
+            val key = edgeKey(va, vb)
+            if (!drawnEdges.add(key)) return  // 共有辺は先に描いた方だけ
+            val mx = (va.x + vb.x) / 2.0 + (vb.x - va.x) * shiftRatio
+            val my = (va.y + vb.y) / 2.0 + (vb.y - va.y) * shiftRatio
+            val rotation = calcDimAngle(va, vb)
+            val alignV = dimVerticalDxf(va, vb, opposite)
+            dxfTexts.add(DxfText(mx, my, "%.2f".format(len), height = 0.24,
+                rotation = rotation, color = 7, alignH = 1, alignV = alignV, layer = "LEN"))
+        }
+
+        // shiftRatio: 正=vb方向へ、負=va方向へ
+        val H = 0.5
+        // A辺(pointAB→point0): va端=B頂点, vb端=A頂点
+        val shiftA = if (angleAtPointAB < SHARP) H else if (angleAtPoint0 < SHARP) -H else 0.0
+        // B辺(pointBC→pointAB): va端=C頂点, vb端=B頂点
+        val shiftB = if (angleAtPointBC < SHARP) H else if (angleAtPointAB < SHARP) -H else 0.0
+        // C辺(point0→pointBC): va端=A頂点, vb端=C頂点
+        val shiftC = if (angleAtPoint0 < SHARP) H else if (angleAtPointBC < SHARP) -H else 0.0
+
+        dimText(pt.pointAB, pt.point0, pt.pointBC, pt.a, shiftA)
+        dimText(pt.pointBC, pt.pointAB, pt.point0, pt.b, shiftB)
+        dimText(pt.point0, pt.pointBC, pt.pointAB, pt.c, shiftC)
+
+        // レイヤ NUM: 三角形番号（青）+ 円
+        val cx = (pt.point0.x + pt.pointAB.x + pt.pointBC.x) / 3.0
+        val cy = (pt.point0.y + pt.pointAB.y + pt.pointBC.y) / 3.0
+        dxfTexts.add(DxfText(cx, cy, pt.id.toString(), height = 0.30, color = 5, alignH = 1, alignV = 2, layer = "NUM"))
+        dxfCircles.add(DxfCircle(cx, cy, 0.25, color = 5, layer = "NUM"))
+    }
+    return Triple(dxfLines, dxfTexts, dxfCircles)
+}

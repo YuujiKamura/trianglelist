@@ -61,6 +61,14 @@ tasks.register<JavaExec>("extractMarkings") {
     mainClass.set("DxfMarkingSyncToolKt")
 }
 
+// CSV → DXF 変換ツール
+tasks.register<JavaExec>("csvToDxf") {
+    group = "application"
+    description = "三角形CSVからDXFファイルを生成"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("CsvToDxfMainKt")
+}
+
 // テストタスクの設定
 tasks.test {
     useJUnitPlatform()
