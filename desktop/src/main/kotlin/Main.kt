@@ -11,6 +11,7 @@ import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.jpaver.trianglelist.cadview.CADView
+import com.jpaver.trianglelist.cadview.CADViewAwt
 import com.jpaver.trianglelist.cadview.ViewStateManager
 import com.jpaver.trianglelist.dxf.DxfParseResult
 import com.jpaver.trianglelist.dxf.DxfParser
@@ -29,6 +30,7 @@ fun main(args: Array<String>) = application {
     // コマンドライン引数を処理
     val isTestMode = args.contains("--test") || args.contains("-t")
     val isDebugMode = args.contains("--debug") || args.contains("-d")
+    val useAwtViewer = args.contains("--viewer=awt")
     // DXFファイルパスを取得（オプション以外の引数）
     val dxfFilePath = args.firstOrNull { !it.startsWith("-") && it.endsWith(".dxf", ignoreCase = true) }
 
@@ -54,13 +56,13 @@ fun main(args: Array<String>) = application {
             TextGeometryTestWidget()
         } else {
             // 通常のCADビューアモード
-            CADViewerApp(initialFilePath = dxfFilePath, initialDebugMode = isDebugMode)
+            CADViewerApp(initialFilePath = dxfFilePath, initialDebugMode = isDebugMode, useAwtViewer = useAwtViewer)
         }
     }
 }
 
 @Composable
-private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Boolean = false) {
+private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Boolean = false, useAwtViewer: Boolean = false) {
     var parseResult by remember { mutableStateOf<DxfParseResult?>(null) }
     var showDialog by remember { mutableStateOf(false) }
     var debugMode by remember { mutableStateOf(initialDebugMode) }
@@ -294,16 +296,23 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
         }
 
         parseResult?.let { result ->
-            CADView(
-                parseResult = result,
-                debugMode = debugMode,
-                initialScale = initialScale,
-                initialOffset = initialOffset,
-                onViewStateChanged = { scale, offset ->
-                    currentScale = scale
-                    currentOffset = offset
-                }
-            )
+            if (useAwtViewer) {
+                CADViewAwt(
+                    parseResult = result,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                CADView(
+                    parseResult = result,
+                    debugMode = debugMode,
+                    initialScale = initialScale,
+                    initialOffset = initialOffset,
+                    onViewStateChanged = { scale, offset ->
+                        currentScale = scale
+                        currentOffset = offset
+                    }
+                )
+            }
         }
     }
 }

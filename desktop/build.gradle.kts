@@ -25,6 +25,14 @@ dependencies {
     runtimeOnly("org.lwjgl:lwjgl-glfw:$lwjglVersion:$lwjglNatives")
     runtimeOnly("org.lwjgl:lwjgl-stb:$lwjglVersion:$lwjglNatives")
 
+    // JavaFX (C案 viewer)
+    val javafxVersion = "21.0.2"
+    val javafxPlatform = "win"
+    implementation("org.openjfx:javafx-base:$javafxVersion:$javafxPlatform")
+    implementation("org.openjfx:javafx-graphics:$javafxVersion:$javafxPlatform")
+    implementation("org.openjfx:javafx-controls:$javafxVersion:$javafxPlatform")
+    implementation("org.openjfx:javafx-swing:$javafxVersion:$javafxPlatform")
+
     // テスト依存関係
     testImplementation("junit:junit:4.13.2")
     testImplementation(kotlin("test"))
