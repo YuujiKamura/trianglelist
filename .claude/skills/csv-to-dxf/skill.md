@@ -1,14 +1,14 @@
 ---
-description: "手書き展開図の写真からCSV生成→DXFをワンストップ出力。手書き、展開図、写真、スケッチ、求積、三角形、CSV、DXF、変換、image、画像と言われた時に使用。"
+description: "手書き展開図の写真からCSV生成→DXF+Excelをワンストップ出力。手書き、展開図、写真、スケッチ、求積、三角形、CSV、DXF、Excel、変換、image、画像と言われた時に使用。"
 ---
 
-# 手書き展開図 → CSV → DXF ワンストップ変換
+# 手書き展開図 → CSV → DXF + Excel ワンストップ変換
 
 ## ワークフロー
 ```
 手書き展開図の画像
   → Web版 Gemini 3 に画像+プロンプトを貼って CSV v2 を生成
-  → CsvToDxfMain で DXF 生成
+  → CsvToDxfMain で DXF + Excel（面積計算書）を同時生成
   → ターゲットフォルダに出力
 ```
 
@@ -79,18 +79,27 @@ Geminiが返したCSVをコピーし、Claudeに渡してファイルに保存�
 - **共有辺一致**: 子のA辺(1列目)が親の対応辺長と一致しているか
 - **分岐**: 分岐点でconnType=1と2が使い分けられているか
 
-## Step 3: CSV → DXF変換
+## Step 3: CSV → DXF + Excel 変換
 
 ```bash
 cd /c/Users/yuuji/StudioProjects/trianglelist
 ./gradlew :desktop:csvToDxf --args="<CSVファイルパス>"
-# → 同フォルダに {basename}_triangles.dxf が生成される
+# → 同フォルダに以下が生成される:
+#   {basename}_triangles.dxf  — 三角形展開図（CAD用）
+#   {basename}_triangles.xlsx — 面積計算書（Excel）
 ```
+
+### Excel出力内容（面積計算書）
+- タイトル: 面積計算書
+- ヘッダー: 番号, 辺長A, 辺長B, 辺長C, 面積
+- 面積はヘロンの公式をExcel数式で埋め込み（セル内で自動計算）
+- 小計行にSUM数式
 
 ## Step 4: 出力先にコピー（必要に応じて）
 
 ```bash
 cp <生成されたDXF> <ターゲットフォルダ>/
+cp <生成されたXLSX> <ターゲットフォルダ>/
 ```
 
 ## CSV形式の詳細
@@ -163,5 +172,5 @@ point0(A) ──A辺(a)── pointAB(B)
 - 分岐点で1と2を使い分けているか確認
 
 ### 寸法値が重なる場合
-- shiftRatioを調整（CsvToDxfMain.kt の `val H = 0.5`）
+- shiftRatioを調整（CsvToDxfMain.kt の `val H = 0.4`）
 - 鋭角閾値を調整（`val SHARP = 20.0`）

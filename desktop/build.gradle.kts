@@ -11,7 +11,8 @@ dependencies {
     // implementation(project(":core"))  // 一時的にコメントアウト
     implementation(compose.desktop.currentOs)
     implementation(compose.ui)
-    
+    implementation("org.apache.poi:poi-ooxml:5.4.1")
+
     // テスト依存関係
     testImplementation("junit:junit:4.13.2")
     testImplementation(kotlin("test"))
