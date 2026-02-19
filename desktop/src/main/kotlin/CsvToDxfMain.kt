@@ -50,14 +50,19 @@ data class PlacedTriangle(
 
 fun main(args: Array<String>) {
     if (args.isEmpty()) {
-        println("Usage: csvToDxf <input.csv> [output.dxf]")
+        println("Usage: csvToDxf <input.csv> [output.dxf] [--text-height=<mm>]")
         return
     }
-    val csvFile = File(args[0])
+    // オプション解析
+    val positional = args.filter { !it.startsWith("--") }
+    val textHeight = args.firstOrNull { it.startsWith("--text-height=") }
+        ?.substringAfter("=")?.toDoubleOrNull() ?: 250.0
+
+    val csvFile = File(positional[0])
     val baseName = csvFile.nameWithoutExtension
     val outDir = csvFile.parentFile
     // 出力先省略時: 入力CSVと同じフォルダに {basename}_triangles.dxf/.xlsx
-    val dxfFile = if (args.size >= 2) File(args[1])
+    val dxfFile = if (positional.size >= 2) File(positional[1])
                   else File(outDir, "${baseName}_triangles.dxf")
     val xlsxFile = File(outDir, "${baseName}_triangles.xlsx")
 
@@ -77,7 +82,8 @@ fun main(args: Array<String>) {
 
     // DXF 出力
     val placed = placeTriangles(triangles)
-    val (dxfLines, dxfTexts, dxfCircles) = buildEntities(placed)
+    println("Text height: ${textHeight}mm")
+    val (dxfLines, dxfTexts, dxfCircles) = buildEntities(placed, textHeight)
     val dxfContent = DxfWriter.write(dxfLines, dxfTexts, dxfCircles, insUnits = DxfConstants.Units.MILLIMETER)
     dxfFile.writeText(dxfContent)
     println("DXF written: ${dxfFile.absolutePath} (${placed.size} triangles)")
@@ -272,7 +278,7 @@ fun dimVerticalDxf(va: Vertex, vb: Vertex, opposite: Vertex): Int {
 }
 
 /** DXFエンティティ生成（レイヤー分離: TRI/LEN/NUM）— 座標はミリ単位 */
-fun buildEntities(placed: Map<Int, PlacedTriangle>): Triple<List<DxfLine>, List<DxfText>, List<DxfCircle>> {
+fun buildEntities(placed: Map<Int, PlacedTriangle>, textHeight: Double = 250.0): Triple<List<DxfLine>, List<DxfText>, List<DxfCircle>> {
     val dxfLines = mutableListOf<DxfLine>()
     val dxfTexts = mutableListOf<DxfText>()
     val dxfCircles = mutableListOf<DxfCircle>()
@@ -311,7 +317,7 @@ fun buildEntities(placed: Map<Int, PlacedTriangle>): Triple<List<DxfLine>, List<
             val my = (va.y + vb.y) / 2.0 + (vb.y - va.y) * shiftRatio
             val rotation = calcDimAngle(va, vb)
             val alignV = dimVerticalDxf(va, vb, opposite)
-            dxfTexts.add(DxfText(mx, my, "%.2f".format(len), height = 240.0,
+            dxfTexts.add(DxfText(mx, my, "%.2f".format(len), height = textHeight,
                 rotation = rotation, color = 7, alignH = 1, alignV = alignV, layer = "LEN"))
         }
 
@@ -331,8 +337,8 @@ fun buildEntities(placed: Map<Int, PlacedTriangle>): Triple<List<DxfLine>, List<
         // レイヤ NUM: 三角形番号（青）+ 円
         val cx = (p0.x + pAB.x + pBC.x) / 3.0
         val cy = (p0.y + pAB.y + pBC.y) / 3.0
-        dxfTexts.add(DxfText(cx, cy, pt.id.toString(), height = 300.0, color = 5, alignH = 1, alignV = 2, layer = "NUM"))
-        dxfCircles.add(DxfCircle(cx, cy, 250.0, color = 5, layer = "NUM"))
+        dxfTexts.add(DxfText(cx, cy, pt.id.toString(), height = textHeight, color = 5, alignH = 1, alignV = 2, layer = "NUM"))
+        dxfCircles.add(DxfCircle(cx, cy, textHeight * 0.8, color = 5, layer = "NUM"))
     }
     return Triple(dxfLines, dxfTexts, dxfCircles)
 }
