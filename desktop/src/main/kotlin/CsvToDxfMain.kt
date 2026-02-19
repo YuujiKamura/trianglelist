@@ -78,7 +78,7 @@ fun main(args: Array<String>) {
     // DXF 出力
     val placed = placeTriangles(triangles)
     val (dxfLines, dxfTexts, dxfCircles) = buildEntities(placed)
-    val dxfContent = DxfWriter.write(dxfLines, dxfTexts, dxfCircles, insUnits = DxfConstants.Units.METER)
+    val dxfContent = DxfWriter.write(dxfLines, dxfTexts, dxfCircles, insUnits = DxfConstants.Units.MILLIMETER)
     dxfFile.writeText(dxfContent)
     println("DXF written: ${dxfFile.absolutePath} (${placed.size} triangles)")
 
@@ -271,11 +271,12 @@ fun dimVerticalDxf(va: Vertex, vb: Vertex, opposite: Vertex): Int {
     return if (flipped xor (cross > 0)) 3 else 1
 }
 
-/** DXFエンティティ生成（レイヤー分離: TRI/LEN/NUM） */
+/** DXFエンティティ生成（レイヤー分離: TRI/LEN/NUM）— 座標はミリ単位 */
 fun buildEntities(placed: Map<Int, PlacedTriangle>): Triple<List<DxfLine>, List<DxfText>, List<DxfCircle>> {
     val dxfLines = mutableListOf<DxfLine>()
     val dxfTexts = mutableListOf<DxfText>()
     val dxfCircles = mutableListOf<DxfCircle>()
+    val S = 1000.0  // メートル→ミリ変換係数
 
     // 共有辺の寸法値重複防止
     val drawnEdges = mutableSetOf<String>()
@@ -286,17 +287,22 @@ fun buildEntities(placed: Map<Int, PlacedTriangle>): Triple<List<DxfLine>, List<
     }
 
     for ((_, pt) in placed) {
+        // ミリ座標
+        val p0  = Vertex(pt.point0.x * S, pt.point0.y * S)
+        val pAB = Vertex(pt.pointAB.x * S, pt.pointAB.y * S)
+        val pBC = Vertex(pt.pointBC.x * S, pt.pointBC.y * S)
+
         // レイヤ TRI: 3辺（白）
-        dxfLines.add(DxfLine(pt.point0.x, pt.point0.y, pt.pointAB.x, pt.pointAB.y, 7, "TRI"))
-        dxfLines.add(DxfLine(pt.pointAB.x, pt.pointAB.y, pt.pointBC.x, pt.pointBC.y, 7, "TRI"))
-        dxfLines.add(DxfLine(pt.pointBC.x, pt.pointBC.y, pt.point0.x, pt.point0.y, 7, "TRI"))
+        dxfLines.add(DxfLine(p0.x, p0.y, pAB.x, pAB.y, 7, "TRI"))
+        dxfLines.add(DxfLine(pAB.x, pAB.y, pBC.x, pBC.y, 7, "TRI"))
+        dxfLines.add(DxfLine(pBC.x, pBC.y, p0.x, p0.y, 7, "TRI"))
 
         // レイヤ LEN: 辺長テキスト — 基線アライメント配置（appのcalcDimAngle + verticalDxf準拠）
         // 鋭角頂点(< 20°)に隣接する辺は中点から10%ずらす（Dims.autoDimHorizontalByAngle準拠）
         val SHARP = 20.0
-        val angleAtPoint0  = calculateInternalAngle(pt.pointBC, pt.point0, pt.pointAB)   // A頂点
-        val angleAtPointAB = calculateInternalAngle(pt.point0, pt.pointAB, pt.pointBC)    // B頂点
-        val angleAtPointBC = calculateInternalAngle(pt.pointAB, pt.pointBC, pt.point0)    // C頂点
+        val angleAtPoint0  = calculateInternalAngle(pBC, p0, pAB)   // A頂点
+        val angleAtPointAB = calculateInternalAngle(p0, pAB, pBC)    // B頂点
+        val angleAtPointBC = calculateInternalAngle(pAB, pBC, p0)    // C頂点
 
         fun dimText(va: Vertex, vb: Vertex, opposite: Vertex, len: Double, shiftRatio: Double = 0.0) {
             val key = edgeKey(va, vb)
@@ -305,28 +311,28 @@ fun buildEntities(placed: Map<Int, PlacedTriangle>): Triple<List<DxfLine>, List<
             val my = (va.y + vb.y) / 2.0 + (vb.y - va.y) * shiftRatio
             val rotation = calcDimAngle(va, vb)
             val alignV = dimVerticalDxf(va, vb, opposite)
-            dxfTexts.add(DxfText(mx, my, "%.2f".format(len), height = 0.24,
+            dxfTexts.add(DxfText(mx, my, "%.2f".format(len), height = 240.0,
                 rotation = rotation, color = 7, alignH = 1, alignV = alignV, layer = "LEN"))
         }
 
         // shiftRatio: 正=vb方向へ、負=va方向へ
         val H = 0.4
-        // A辺(pointAB→point0): va端=B頂点, vb端=A頂点
+        // A辺(pAB→p0): va端=B頂点, vb端=A頂点
         val shiftA = if (angleAtPointAB < SHARP) H else if (angleAtPoint0 < SHARP) -H else 0.0
-        // B辺(pointBC→pointAB): va端=C頂点, vb端=B頂点
+        // B辺(pBC→pAB): va端=C頂点, vb端=B頂点
         val shiftB = if (angleAtPointBC < SHARP) H else if (angleAtPointAB < SHARP) -H else 0.0
-        // C辺(point0→pointBC): va端=A頂点, vb端=C頂点
+        // C辺(p0→pBC): va端=A頂点, vb端=C頂点
         val shiftC = if (angleAtPoint0 < SHARP) H else if (angleAtPointBC < SHARP) -H else 0.0
 
-        dimText(pt.pointAB, pt.point0, pt.pointBC, pt.a, shiftA)
-        dimText(pt.pointBC, pt.pointAB, pt.point0, pt.b, shiftB)
-        dimText(pt.point0, pt.pointBC, pt.pointAB, pt.c, shiftC)
+        dimText(pAB, p0, pBC, pt.a, shiftA)
+        dimText(pBC, pAB, p0, pt.b, shiftB)
+        dimText(p0, pBC, pAB, pt.c, shiftC)
 
         // レイヤ NUM: 三角形番号（青）+ 円
-        val cx = (pt.point0.x + pt.pointAB.x + pt.pointBC.x) / 3.0
-        val cy = (pt.point0.y + pt.pointAB.y + pt.pointBC.y) / 3.0
-        dxfTexts.add(DxfText(cx, cy, pt.id.toString(), height = 0.30, color = 5, alignH = 1, alignV = 2, layer = "NUM"))
-        dxfCircles.add(DxfCircle(cx, cy, 0.25, color = 5, layer = "NUM"))
+        val cx = (p0.x + pAB.x + pBC.x) / 3.0
+        val cy = (p0.y + pAB.y + pBC.y) / 3.0
+        dxfTexts.add(DxfText(cx, cy, pt.id.toString(), height = 300.0, color = 5, alignH = 1, alignV = 2, layer = "NUM"))
+        dxfCircles.add(DxfCircle(cx, cy, 250.0, color = 5, layer = "NUM"))
     }
     return Triple(dxfLines, dxfTexts, dxfCircles)
 }
