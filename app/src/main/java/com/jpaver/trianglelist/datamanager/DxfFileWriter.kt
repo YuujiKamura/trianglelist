@@ -41,7 +41,7 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
     private lateinit var dxfEntity: DxfEntity
 
     override var textscale_ = trilist_.getPrintTextScale( 1f , "dxf")
-    override var printscale_ = trilist_.getPrintScale(1f)//setScale(drawingLength) 
+    override var printscale_ = trilist_.getPrintScale(1f)
     // 注意: printscale_は縮尺分母の逆数 (0.5 = 1/50, 0.04 = 1/25など)
     override var sizeX_ = 42000f * printscale_
     override var sizeY_ = 29700f * printscale_
