@@ -72,8 +72,6 @@
         <item>BF</item>
         <item>CF</item>
     </string-array>
-    <string name="action_save_sfc" translatable="false">Export SFC</string>
-    <string name="action_usage" translatable="false">Instruction</string>
     <string name="action_privacy">PrivacyPolicy</string>
     <string name="action_save_xlsx">Export Xlsx</string>
 </resources>

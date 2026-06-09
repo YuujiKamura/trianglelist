@@ -73,8 +73,6 @@
         <item> BF </item>
         <item> CF </item>
     </string-array>
-    <string name="action_save_sfc" translatable="false">" Allbwn SFC"</string>
-    <string name="action_usage" translatable="false">llawlyfr cyfarwyddiadau</string>
     <string name="action_privacy">Polisi Preifatrwydd</string>
     <string name="action_save_xlsx">" Allbwn Xlsx"</string>
 </resources>
