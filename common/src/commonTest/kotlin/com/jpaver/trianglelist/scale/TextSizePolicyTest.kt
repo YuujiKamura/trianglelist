@@ -1,6 +1,6 @@
 package com.jpaver.trianglelist.scale
 
-import org.junit.Test
+import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class TextSizePolicyTest {
