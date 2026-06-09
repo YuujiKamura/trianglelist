@@ -73,8 +73,6 @@
         <item> BF </item>
         <item> CF </item>
     </string-array>
-    <string name="action_save_sfc" translatable="false">" Sortie SFC"</string>
-    <string name="action_usage" translatable="false">Manuel d\'instructions</string>
     <string name="action_privacy">Politique de confidentialité</string>
     <string name="action_save_xlsx">Sortie Xlsx</string>
 </resources>

@@ -5,10 +5,10 @@
     <string name="action_save_csv">CSVを保存</string>
     <string name="action_load_csv">CSVを読込</string>
     <string name="action_save_dxf">DXF出力</string>
-    <string name="action_save_sfc">SFC出力</string>
+    <string name="action_save_sfc" translatable="false">SFC出力</string>
     <string name="action_save_pdf">PDF出力</string>
     <string name="action_send_mail">メールを送信</string>
-    <string name="action_usage">取扱説明書</string>
+    <string name="action_usage" translatable="false">取扱説明書</string>
 
     <string name="tenkai_title">面 積 展 開 図</string>
     <string name="tenkai_koujimei">工 事 名</string>

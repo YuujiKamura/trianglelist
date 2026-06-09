@@ -73,8 +73,6 @@
         <item> BF </item>
         <item> CF </item>
     </string-array>
-    <string name="action_save_sfc" translatable="false">" Έξοδος SFC"</string>
-    <string name="action_usage" translatable="false">εγχειρίδιο οδηγιών</string>
     <string name="action_privacy">Πολιτική Απορρήτου</string>
     <string name="action_save_xlsx">" Έξοδος Xlsx"</string>
 </resources>
