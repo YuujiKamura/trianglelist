@@ -24,20 +24,32 @@ class DxfFileWriterTest {
 
     @Before
     fun setUp() {
-        // TriangleList の用意
-        triList = TriangleList()
-        triList.add(Triangle(10f, 2f, 10f), true)
-        triList.add(Triangle(triList[1], 2, 1f, 10f), true)
+        writer = newWriter(sideLength = 10f)
+        triList = writer.trilist_
+    }
 
-        writer = DxfFileWriter(triList).apply {
+    /**
+     * 指定の最長辺長で TriangleList + DxfFileWriter を構築する。
+     * 辺長を変えることで TriangleList.getPrintScale() が選ぶ縮尺 (1/50, 1/100, 1/200...)
+     * が変わり、タイトル枠の text scale も追従する。
+     */
+    private fun newWriter(sideLength: Float): DxfFileWriter {
+        val tList = TriangleList()
+        // 三角形 2 つを連結。 setUp 当時の比率 (a=10, b=2, c=10) と
+        // (親, 接続=2, b=1, c=10) を sideLength でスケール
+        val s = sideLength / 10f
+        tList.add(Triangle(10f * s, 2f * s, 10f * s), true)
+        tList.add(Triangle(tList[1], 2, 1f * s, 10f * s), true)
+
+        val w = DxfFileWriter(tList).apply {
             dedlist_       = DeductionList()
             startTriNumber_ = 1
         }
-        writer.titleTri_ = TitleParamStr()
-        writer.titleDed_ = TitleParamStr()
+        w.titleTri_ = TitleParamStr()
+        w.titleDed_ = TitleParamStr()
         // タイトル枠の中身はアプリの strings.xml プリセット (MainActivity#loadTitleParameters) と同じ値を使う。
         // 各 field は「ヘッダーラベル」を保持、実値 (koujiname/rosenname/gyousyaname/zumennum) は setNames で渡す。
-        writer.zumeninfo = ZumenInfo(
+        w.zumeninfo = ZumenInfo(
             zumentitle  = "面 積 展 開 図",
             rosenname   = "路線1",
             koujiname   = "工 事 名",
@@ -56,50 +68,58 @@ class DxfFileWriterTest {
             tCredit_    = "http://trianglelist.home.blog"
         )
         // 値 (アプリの実運用相当): 工事名 / 路線名 / 施工者 / 図面番号
-        writer.setNames(
+        w.setNames(
             "市道○○号線 舗装打換工事",
             "市道○○号線",
             "○○建設株式会社",
             "1/1"
         )
+        return w
+    }
+
+    private fun outputDir(): File {
+        val projectDir = System.getProperty("user.dir")?.let { File(it) }
+        return File(projectDir, "build/test-output").apply { mkdirs() }
+    }
+
+    private fun writeAndValidate(w: DxfFileWriter, name: String) {
+        val outFile = File(outputDir(), name)
+        w.saveTo(outFile)
+        assertTrue("DXF ファイルが正しく書き出されている", outFile.exists() && outFile.length() > 0)
+        val result = DxfValidator.validate(outFile)
+        result.errors.forEach { println("DXF validation error: $it") }
+        println("→ DXF written: ${outFile.absolutePath} (printscale_=${w.printscale_}, textscale_=${w.textscale_})")
     }
 
     @Test
     fun writeDxf_newBuilderMode() {
-        // プロジェクトの build 以下に出力フォルダを作成
-        val projectDir = System.getProperty("user.dir")?.let { File(it) }
-        val outDir = File(projectDir, "build/test-output").apply { mkdirs() }
-        val outFile = File(outDir, "test-new.dxf")
-
-        writer.saveTo(outFile)
-
-        assertTrue("DXF ファイルが正しく書き出されている", outFile.exists() && outFile.length() > 0)
-
-        val result = DxfValidator.validate(outFile)
-        result.errors.forEach { println("DXF validation error: $it") }
-        // Temporarily disable validation to check if CAD can open the file
-        // assertTrue("DXF validation failed", result.ok)
-
-        // IDE から簡単に参照できるようにパスを出力
-        println("→ DXF written to build output folder: ${outFile.absolutePath}")
+        writeAndValidate(writer, "test-new.dxf")
     }
 
     @Test
     fun writeDxf_withPaperAndScale() {
-        // プロジェクトの build 以下に出力フォルダを作成
-        val projectDir = System.getProperty("user.dir")?.let { File(it) }
-        val outDir = File(projectDir, "build/test-output").apply { mkdirs() }
-        val outFile = File(outDir, "test-a3-scale50.dxf")
+        writeAndValidate(writer, "test-a3-scale50.dxf")
+    }
 
-        // A3横、1/50縮尺でDXF生成
-        writer.saveTo(outFile)
+    // ---- 可変縮尺テスト ----
+    // 辺長を変えると getPrintScale() が選ぶ縮尺が変わり、 タイトル枠の text scale も
+    // それに追従する想定。 viewer (desktop モジュール) で 1 つずつ開いて目視確認する。
 
-        assertTrue("DXF ファイルが正しく書き出されている", outFile.exists() && outFile.length() > 0)
+    @Test
+    fun writeDxf_scale_small() {
+        // 辺長 10m 前後 → 1/50 (default) 想定
+        writeAndValidate(newWriter(sideLength = 10f), "test-scale-small.dxf")
+    }
 
-        val result = DxfValidator.validate(outFile)
-        result.errors.forEach { println("DXF validation error: $it") }
+    @Test
+    fun writeDxf_scale_medium() {
+        // 辺長 50m 前後 → 1/100〜1/200 想定
+        writeAndValidate(newWriter(sideLength = 50f), "test-scale-medium.dxf")
+    }
 
-        // IDE から簡単に参照できるようにパスを出力
-        println("→ A3 Scale 1/50 DXF written: ${outFile.absolutePath}")
+    @Test
+    fun writeDxf_scale_large() {
+        // 辺長 200m 前後 → 1/500 程度の想定
+        writeAndValidate(newWriter(sideLength = 200f), "test-scale-large.dxf")
     }
 }
