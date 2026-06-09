@@ -23,12 +23,32 @@ class DxfParser {
             val lines = filteredText.lines()
             val iterator = lines.iterator()
 
-            return parseDxfContent(iterator)
+            val baseResult = parseDxfContent(iterator)
+            val drawingScale = extractDrawingScale(baseResult.texts)
+            return baseResult.copy(drawingScaleDenominator = drawingScale)
 
         } catch (e: Exception) {
             // エラーが発生した場合は空の結果を返す
             return DxfParseResult()
         }
+    }
+
+    /**
+     * TEXT 群から「1/50 (A3)」「1/600 (A3)」等の縮尺表記を抽出して分母を返す。
+     * trianglelist 出力 DXF には DrawingFileWriter.writeDrawingFrame が
+     * 必ずこの形式で埋め込むため、ファイル名 hint や DIMSCALE 系の壊れた
+     * variable に頼らずに確実に縮尺が取れる。
+     */
+    private fun extractDrawingScale(texts: List<DxfText>): Float? {
+        // 「1/50 (A3)」「1/100」「1/600 (A4)」等の形を受け入れる。
+        // 行末 / 空白 / 「(」が 1/N の後に続けばマッチ、非縮尺の数字混じり (例「面積 1.5 m2」) は弾く。
+        val regex = Regex("^\\s*1/(\\d+(?:\\.\\d+)?)(?:\\s|\\(|$)")
+        for (text in texts) {
+            val m = regex.find(text.text) ?: continue
+            val denom = m.groupValues[1].toFloatOrNull()
+            if (denom != null && denom > 0f) return denom
+        }
+        return null
     }
 
     /**

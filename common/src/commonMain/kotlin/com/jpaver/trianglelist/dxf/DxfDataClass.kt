@@ -9,7 +9,14 @@ data class DxfParseResult(
     val arcs: List<DxfArc> = emptyList(),
     val lwPolylines: List<DxfLwPolyline> = emptyList(),
     val texts: List<DxfText> = emptyList(),
-    val header: DxfHeader? = null
+    val header: DxfHeader? = null,
+    /**
+     * 紙の縮尺の分母。1/50 の図面なら 50f。
+     * trianglelist 出力 DXF では DrawingFileWriter.writeDrawingFrame が必ず
+     * `1/${st.toInt()} (A3)` 形式の TEXT を埋め込むので、それを正規表現で抽出する。
+     * 取得できなければ null。
+     */
+    val drawingScaleDenominator: Float? = null
 )
 
 /**
