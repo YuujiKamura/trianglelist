@@ -442,24 +442,29 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
         }
 
         // Inspector: DXF の TEXT 群を paper-mm に逆算して JIS との乖離を表示。
-        // drawingScale はファイル名 (test-scale-{small,medium,large}) から推定、
-        // 推定できない場合は 1/50 を仮置き。本物の縮尺取得は将来 LAYOUT entity から。
+        // drawingScale は DxfParser が TEXT 内の「1/N (A3)」表記から確実に抽出する。
+        // ファイル名 hint なし、DIMSCALE 等の壊れた variable にも依存しない。
         parseResult?.let { result ->
             if (result.texts.isNotEmpty()) {
                 val heights = result.texts.map { it.height }
                 val avgModelMm = heights.average().toFloat()
                 val minModelMm = heights.min().toFloat()
                 val maxModelMm = heights.max().toFloat()
-                val drawingScaleDenominator = inferDrawingScaleDenominator(currentFile?.name)
-                val avgPaperMm = com.jpaver.trianglelist.scale.TextSizePolicy
-                    .modelToPaper(avgModelMm, drawingScaleDenominator)
+                val drawingScaleDenominator = result.drawingScaleDenominator
+                val scaleLabel = drawingScaleDenominator?.let { "1/${it.toInt()}" } ?: "?"
+                val avgPaperMm = drawingScaleDenominator?.let {
+                    com.jpaver.trianglelist.scale.TextSizePolicy.modelToPaper(avgModelMm, it)
+                }
                 val jisDimensionMm = com.jpaver.trianglelist.scale.TextSizePolicy.DIMENSION_PAPER_MM
-                val gap = if (avgPaperMm > 0f) jisDimensionMm / avgPaperMm else Float.POSITIVE_INFINITY
+                val paperAvgLabel = avgPaperMm?.let { "${"%.4f".format(it)} mm" } ?: "縮尺不明"
+                val gapLabel = if (avgPaperMm != null && avgPaperMm > 0f) {
+                    "${"%.1f".format(jisDimensionMm / avgPaperMm)} 倍小"
+                } else "─"
                 Text(
                     text = "[Inspector] DXF TEXT 個数=${result.texts.size}, " +
                         "model height min=${"%.2f".format(minModelMm)} / avg=${"%.2f".format(avgModelMm)} / max=${"%.2f".format(maxModelMm)}  |  " +
-                        "drawingScale=1/${drawingScaleDenominator.toInt()} 仮定 → paper avg=${"%.4f".format(avgPaperMm)} mm  |  " +
-                        "JIS 寸法値想定 ${jisDimensionMm} mm との乖離 ${"%.1f".format(gap)} 倍小",
+                        "drawingScale=$scaleLabel → paper avg=$paperAvgLabel  |  " +
+                        "JIS 寸法値想定 ${jisDimensionMm} mm との乖離 $gapLabel",
                     modifier = Modifier.padding(bottom = 4.dp),
                     style = MaterialTheme.typography.caption,
                     color = androidx.compose.ui.graphics.Color(0xFFFF6600)
@@ -489,18 +494,3 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
     }
 }
 
-/**
- * ファイル名から drawingScale 分母を推定 (Inspector 用)。
- * test-scale-{small,medium,large}.dxf という命名規約のものは確定値、
- * それ以外は 1/50 を仮置き。本物の縮尺取得は将来 LAYOUT entity から。
- */
-private fun inferDrawingScaleDenominator(filename: String?): Float {
-    if (filename == null) return 50f
-    val lower = filename.lowercase()
-    return when {
-        "scale-large" in lower || "scale600" in lower -> 600f
-        "scale-medium" in lower || "scale150" in lower -> 150f
-        "scale-small" in lower || "scale50" in lower -> 50f
-        else -> 50f
-    }
-}
