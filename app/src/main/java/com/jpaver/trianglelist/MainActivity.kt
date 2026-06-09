@@ -2564,7 +2564,8 @@ class MainActivity : AppCompatActivity(),
         writer.zumeninfo = rStr
         writer.titleTri_ = titleTriStr
         writer.titleDed_ = titleDedStr
-        writer.textscale_ = myview.textSize * 0.016f //25*0.014f=0.35f, 25/0.02f=0.5f
+        // 0.016 = 元 JIS 物理基準 0.014 (= paper 0.35mm 文字) を目視 +14% 調整した値。 詳細は ADR 0001。
+        writer.textscale_ = myview.textSize * 0.016f
 
         writer.writer = bWriter
         writer.drawingLength = trianglelist.measureMostLongLine()
@@ -2586,7 +2587,8 @@ class MainActivity : AppCompatActivity(),
         val writer = SfcWriter(trianglelist.clone(), myDeductionList.clone(), out, filename, drawingStartNumber, 47.6f)
         writer.setNames(koujiname, rosenname, gyousyaname, zumennum)
         writer.zumeninfo = rStr
-        writer.textscale_ = myview.textSize * 20f //25*14f=350f, 25/20f=500f
+        // 20 = 元 JIS 物理基準 14 (= paper 0.35mm 文字 × SFC unit) を目視 +43% 調整した値。 詳細は ADR 0001。
+        writer.textscale_ = myview.textSize * 20f
         writer.titleTri_ = titleTriStr
         writer.titleDed_ = titleDedStr
 
@@ -2606,7 +2608,8 @@ class MainActivity : AppCompatActivity(),
         writer.out_ = out
         writer.deductionList_ = myDeductionList
 
-        writer.textscale_ = myview.textSize * 0.5f / writer.printScale_ //25*0.4f=10f, 25/0.3f=7.5f
+        // 0.5 = 元 JIS 物理基準 0.4 (= paper 3.5mm 文字 / pt 換算) を目視 +25% 調整した値。 詳細は ADR 0001。
+        writer.textscale_ = myview.textSize * 0.5f / writer.printScale_
         writer.initPaints()
         writer.titleTri_ = titleTriStr
         writer.titleDed_ = titleDedStr
