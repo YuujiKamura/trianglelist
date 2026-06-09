@@ -41,6 +41,10 @@ dependencies {
 compose.desktop {
     application {
         mainClass = "MainKt"
+        // Compose Desktop の Skia (Skiko) 描画を AWT Graphics に乗せて
+        // BufferedImage / paintAll で screenshot 取れるようにする (CP capture コマンド用)。
+        // 参考: JetBrains/compose-multiplatform-core PR #601 (Swing interop off-screen rendering)
+        jvmArgs += listOf("-Dcompose.swing.render.on.graphics=true")
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "TriangleListDesktop"
@@ -91,8 +95,9 @@ tasks.register<JavaExec>("csvToDxf") {
 }
 
 // テストタスクの設定
+// 依存は junit:junit:4.13.2 のため useJUnit() (Platform=JUnit 5 ではない)
 tasks.test {
-    useJUnitPlatform()
+    useJUnit()
     testLogging {
         events("passed", "skipped", "failed")
     }

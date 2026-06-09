@@ -56,13 +56,15 @@ fun main(args: Array<String>) = application {
             TextGeometryTestWidget()
         } else {
             // 通常のCADビューアモード
-            CADViewerApp(initialFilePath = dxfFilePath, initialDebugMode = isDebugMode, useAwtViewer = useAwtViewer)
+            // window (= ComposeWindow / extends JFrame) を CP の capture コマンドに渡す。
+            // contentPane を BufferedImage に paintAll するための AWT 参照。
+            CADViewerApp(initialFilePath = dxfFilePath, initialDebugMode = isDebugMode, useAwtViewer = useAwtViewer, awtWindow = window)
         }
     }
 }
 
 @Composable
-private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Boolean = false, useAwtViewer: Boolean = false) {
+private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Boolean = false, useAwtViewer: Boolean = false, awtWindow: java.awt.Window? = null) {
     var parseResult by remember { mutableStateOf<DxfParseResult?>(null) }
     var showDialog by remember { mutableStateOf(false) }
     var debugMode by remember { mutableStateOf(initialDebugMode) }
@@ -174,6 +176,148 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
     // コマンドファイル監視（エージェントからの区画線追加用）
     val commandExecutor = remember { MarkingCommandExecutor() }
     var commandFileModified by remember { mutableStateOf(0L) }
+
+    // CP (control plane): localhost:9876 で TCP listen し、
+    // 「open <path>」の 1 行を受信したら viewer 再起動なしで DXF を差し替える。
+    // CLI 側は desktop/scripts/cad-open.ps1 で送信する。
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val server = java.net.ServerSocket(9876, 50, java.net.InetAddress.getByName("127.0.0.1"))
+                println("CP listening on 127.0.0.1:9876")
+                while (true) {
+                    val socket = server.accept()
+                    try {
+                        val line = socket.getInputStream().bufferedReader().readLine()?.trim()
+                        if (line == null) {
+                            socket.close()
+                            continue
+                        }
+                        println("CP recv: $line")
+                        val out = socket.getOutputStream()
+                        when {
+                            line.startsWith("open ") -> {
+                                val path = line.removePrefix("open ").trim()
+                                val target = File(path)
+                                if (target.exists()) {
+                                    run {
+                                        loadDxfFile(target)?.let { result ->
+                                            parseResult = result
+                                            currentFile = target
+                                            lastModified = target.lastModified()
+                                            viewStateManager.saveLastOpenedFile(target.absolutePath)
+                                        }
+                                    }
+                                    out.write("ok\n".toByteArray())
+                                } else {
+                                    out.write("error: file not found\n".toByteArray())
+                                }
+                            }
+                            line.startsWith("zoom ") -> {
+                                // 「zoom <factor>」 ── 現在 scale に factor を乗算する
+                                val factor = line.removePrefix("zoom ").trim().toFloatOrNull()
+                                if (factor != null) {
+                                    run {
+                                        val base = currentScale ?: initialScale ?: 1f
+                                        val ns = base * factor
+                                        initialScale = ns
+                                        currentScale = ns
+                                    }
+                                    out.write("ok scale=${currentScale}\n".toByteArray())
+                                } else {
+                                    out.write("error: invalid factor\n".toByteArray())
+                                }
+                            }
+                            line.startsWith("pan ") -> {
+                                // 「pan <dx> <dy>」 ── current offset に (dx, dy) を加算
+                                val parts = line.removePrefix("pan ").split(" ").mapNotNull { it.toFloatOrNull() }
+                                if (parts.size >= 2) {
+                                    run {
+                                        val base = currentOffset ?: initialOffset ?: Offset.Zero
+                                        val no = Offset(base.x + parts[0], base.y + parts[1])
+                                        initialOffset = no
+                                        currentOffset = no
+                                    }
+                                    out.write("ok offset=${currentOffset}\n".toByteArray())
+                                } else {
+                                    out.write("error: pan needs <dx> <dy>\n".toByteArray())
+                                }
+                            }
+                            line.startsWith("view ") -> {
+                                // 「view <scale> <ox> <oy>」 ── 絶対値で set
+                                val parts = line.removePrefix("view ").split(" ").mapNotNull { it.toFloatOrNull() }
+                                if (parts.size >= 3) {
+                                    run {
+                                        initialScale = parts[0]
+                                        initialOffset = Offset(parts[1], parts[2])
+                                        currentScale = parts[0]
+                                        currentOffset = Offset(parts[1], parts[2])
+                                    }
+                                    out.write("ok scale=${parts[0]} offset=(${parts[1]},${parts[2]})\n".toByteArray())
+                                } else {
+                                    out.write("error: view needs <scale> <ox> <oy>\n".toByteArray())
+                                }
+                            }
+                            line == "fit" -> {
+                                // 全体フィットに戻す (CADView が initial が null の時に再計算する)
+                                run {
+                                    initialScale = null
+                                    initialOffset = null
+                                    currentScale = null
+                                    currentOffset = null
+                                }
+                                out.write("ok fit\n".toByteArray())
+                            }
+                            line == "state" -> {
+                                out.write("scale=${currentScale ?: initialScale} offset=${currentOffset ?: initialOffset}\n".toByteArray())
+                            }
+                            line.startsWith("capture ") -> {
+                                // viewer 窓を AlwaysOnTop で一瞬前面に出して Robot で撮る。
+                                // toFront だけでは Windows 11 の focus-steal 抑止で前面に出ない、
+                                // AlwaysOnTop なら確実 (撮ったあとすぐ解除して user 作業に戻す)。
+                                val path = line.removePrefix("capture ").trim()
+                                val win = awtWindow
+                                if (win == null) {
+                                    out.write("error: no awt window\n".toByteArray())
+                                } else {
+                                    try {
+                                        javax.swing.SwingUtilities.invokeAndWait {
+                                            win.isAlwaysOnTop = true
+                                            win.toFront()
+                                        }
+                                        Thread.sleep(200)  // 前面化 + 再描画待ち
+                                        val bounds = win.bounds
+                                        val robot = java.awt.Robot()
+                                        val img = robot.createScreenCapture(bounds)
+                                        javax.swing.SwingUtilities.invokeAndWait {
+                                            win.isAlwaysOnTop = false
+                                        }
+                                        val outFile = java.io.File(path)
+                                        outFile.parentFile?.mkdirs()
+                                        javax.imageio.ImageIO.write(img, "png", outFile)
+                                        out.write("ok ${outFile.absolutePath}\n".toByteArray())
+                                        println("CP capture: ${outFile.absolutePath} (${bounds.width}x${bounds.height} at ${bounds.x},${bounds.y})")
+                                    } catch (e: Exception) {
+                                        out.write("error: ${e.message}\n".toByteArray())
+                                        println("CP capture error: ${e.message}")
+                                    }
+                                }
+                            }
+                            else -> {
+                                out.write("error: unknown command (open|zoom|pan|view|fit|state|capture)\n".toByteArray())
+                            }
+                        }
+                    } catch (e: Exception) {
+                        println("CP handler error: ${e.message}")
+                    } finally {
+                        try { socket.close() } catch (_: Exception) {}
+                    }
+                }
+            } catch (e: Exception) {
+                println("CP fatal: ${e.message}")
+            }
+        }
+    }
 
     LaunchedEffect(currentFile) {
         if (currentFile != null) {
@@ -297,6 +441,32 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
             )
         }
 
+        // Inspector: DXF の TEXT 群を paper-mm に逆算して JIS との乖離を表示。
+        // drawingScale はファイル名 (test-scale-{small,medium,large}) から推定、
+        // 推定できない場合は 1/50 を仮置き。本物の縮尺取得は将来 LAYOUT entity から。
+        parseResult?.let { result ->
+            if (result.texts.isNotEmpty()) {
+                val heights = result.texts.map { it.height }
+                val avgModelMm = heights.average().toFloat()
+                val minModelMm = heights.min().toFloat()
+                val maxModelMm = heights.max().toFloat()
+                val drawingScaleDenominator = inferDrawingScaleDenominator(currentFile?.name)
+                val avgPaperMm = com.jpaver.trianglelist.scale.TextSizePolicy
+                    .modelToPaper(avgModelMm, drawingScaleDenominator)
+                val jisDimensionMm = com.jpaver.trianglelist.scale.TextSizePolicy.DIMENSION_PAPER_MM
+                val gap = if (avgPaperMm > 0f) jisDimensionMm / avgPaperMm else Float.POSITIVE_INFINITY
+                Text(
+                    text = "[Inspector] DXF TEXT 個数=${result.texts.size}, " +
+                        "model height min=${"%.2f".format(minModelMm)} / avg=${"%.2f".format(avgModelMm)} / max=${"%.2f".format(maxModelMm)}  |  " +
+                        "drawingScale=1/${drawingScaleDenominator.toInt()} 仮定 → paper avg=${"%.4f".format(avgPaperMm)} mm  |  " +
+                        "JIS 寸法値想定 ${jisDimensionMm} mm との乖離 ${"%.1f".format(gap)} 倍小",
+                    modifier = Modifier.padding(bottom = 4.dp),
+                    style = MaterialTheme.typography.caption,
+                    color = androidx.compose.ui.graphics.Color(0xFFFF6600)
+                )
+            }
+        }
+
         parseResult?.let { result ->
             if (useAwtViewer) {
                 CADViewAwt(
@@ -316,5 +486,21 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                 )
             }
         }
+    }
+}
+
+/**
+ * ファイル名から drawingScale 分母を推定 (Inspector 用)。
+ * test-scale-{small,medium,large}.dxf という命名規約のものは確定値、
+ * それ以外は 1/50 を仮置き。本物の縮尺取得は将来 LAYOUT entity から。
+ */
+private fun inferDrawingScaleDenominator(filename: String?): Float {
+    if (filename == null) return 50f
+    val lower = filename.lowercase()
+    return when {
+        "scale-large" in lower || "scale600" in lower -> 600f
+        "scale-medium" in lower || "scale150" in lower -> 150f
+        "scale-small" in lower || "scale50" in lower -> 50f
+        else -> 50f
     }
 }
