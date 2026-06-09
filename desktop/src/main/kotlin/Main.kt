@@ -279,6 +279,36 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                             line == "state" -> {
                                 out.write("scale=${currentScale ?: initialScale} offset=${currentOffset ?: initialOffset}\n".toByteArray())
                             }
+                            line == "inspector" -> {
+                                // 画面に頼らず Inspector 数値を CP 越しに text で取る。
+                                // capture (Robot screenshot) が他 window に覆われる環境でも
+                                // viewer 内部状態から数値で観測できる経路。
+                                val r = parseResult
+                                if (r == null || r.texts.isEmpty()) {
+                                    out.write("error: no parseResult or no texts\n".toByteArray())
+                                } else {
+                                    val heights = r.texts.map { it.height }
+                                    val minH = heights.min().toFloat()
+                                    val avgH = heights.average().toFloat()
+                                    val maxH = heights.max().toFloat()
+                                    val ds = r.drawingScaleDenominator
+                                    val scaleStr = ds?.let { "1/${it.toInt()}" } ?: "unknown"
+                                    val paperAvg = ds?.let {
+                                        com.jpaver.trianglelist.scale.TextSizePolicy.modelToPaper(avgH, it)
+                                    }
+                                    val paperAvgStr = paperAvg?.let { "%.4f".format(it) } ?: "null"
+                                    val jisGap = if (paperAvg != null && paperAvg > 0f) {
+                                        "%.2f".format(com.jpaver.trianglelist.scale.TextSizePolicy.DIMENSION_PAPER_MM / paperAvg)
+                                    } else "null"
+                                    out.write(
+                                        ("texts_count=${r.texts.size} " +
+                                         "height_min=%.2f height_avg=%.2f height_max=%.2f ".format(minH, avgH, maxH) +
+                                         "drawing_scale=$scaleStr " +
+                                         "paper_avg_mm=$paperAvgStr " +
+                                         "jis_gap_factor=$jisGap\n").toByteArray()
+                                    )
+                                }
+                            }
                             line.startsWith("capture ") -> {
                                 // viewer 窓を AlwaysOnTop で一瞬前面に出して Robot で撮る。
                                 // toFront だけでは Windows 11 の focus-steal 抑止で前面に出ない、
