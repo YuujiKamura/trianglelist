@@ -122,4 +122,26 @@ class DxfFileWriterTest {
         // 辺長 200m 前後 → 1/500 程度の想定
         writeAndValidate(newWriter(sideLength = 200f), "test-scale-large.dxf")
     }
+
+    // ---- user 実用域 fixtures (2026-06-10 追加) ----
+    // user 発話「200分の1〜250くらいまでが、 実用域。 最大で500くらい」 を
+    // viewer で目視照合するため、 1/200, 1/250, 1/500 周辺の fixture を出す。
+
+    @Test
+    fun writeDxf_scale_practical_200() {
+        // 辺長 70m 前後 → 1/200 想定 (printscale_ ≈ 2.0)
+        writeAndValidate(newWriter(sideLength = 70f), "test-scale-practical-200.dxf")
+    }
+
+    @Test
+    fun writeDxf_scale_practical_250() {
+        // 辺長 90m 前後 → 1/250 想定 (printscale_ ≈ 2.5)
+        writeAndValidate(newWriter(sideLength = 90f), "test-scale-practical-250.dxf")
+    }
+
+    @Test
+    fun writeDxf_scale_practical_500() {
+        // 辺長 170m 前後 → 1/500 想定 (printscale_ ≈ 5.0)
+        writeAndValidate(newWriter(sideLength = 170f), "test-scale-practical-500.dxf")
+    }
 }

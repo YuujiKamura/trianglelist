@@ -24,7 +24,7 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
 
     val drawingScale_ = triangleList.scale
     var printScale_ = printScale// 2.0f
-    override var textscale_ = triangleList_.getPrintTextScale( 1f, "pdf")
+    // textscale_ は MainActivity:2609 が即上書きする dead init だったので削除、基底 default(5f) のまま。ADR 0001 参照。
 
     // 展開図の用紙寸法。1190pt = 2.833.. * 420mm,   842pt = 2.835.. * 297mm
     // A4の縦　595pt = 2.833.. * 210mm
