@@ -299,10 +299,12 @@ object ColorConverter {
 
     fun toComposeColor(dxfColor: DxfColor): Color {
         val index = dxfColor.aciIndex
+        // 白背景表示なので ACI 7(白) と 256(ByLayer) を黒に反転 (AwtCadPanel と同じ扱い)
         return when {
-            index == DxfConstants.Colors.WHITE -> Color.White // 256: ByLayer
+            index == DxfConstants.Colors.WHITE -> Color.Black              // 256: ByLayer
+            index == DxfConstants.Colors.WHITE_BLACK -> Color.Black        // 7: 白/黒切替
             index in 0..255 -> aciColorTable[index]
-            else -> aciColorTable[7] // 範囲外は白
+            else -> Color.Black                                            // 範囲外も黒
         }
     }
 
