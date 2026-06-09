@@ -205,6 +205,14 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                             parseResult = result
                                             currentFile = target
                                             lastModified = target.lastModified()
+                                            // 別ファイルを開く ── 保存された view state を復元、
+                                            // 無ければ null にして CADView の fit を再計算させる。
+                                            // これをしないと前ファイルの scale/offset が残って枠が画面外にはみ出る。
+                                            val saved = viewStateManager.loadViewState(target.absolutePath)
+                                            initialScale = saved?.first
+                                            initialOffset = saved?.second
+                                            currentScale = saved?.first
+                                            currentOffset = saved?.second
                                             viewStateManager.saveLastOpenedFile(target.absolutePath)
                                         }
                                     }
@@ -473,22 +481,27 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
         }
 
         parseResult?.let { result ->
-            if (useAwtViewer) {
-                CADViewAwt(
-                    parseResult = result,
-                    modifier = Modifier.fillMaxSize()
-                )
-            } else {
-                CADView(
-                    parseResult = result,
-                    debugMode = debugMode,
-                    initialScale = initialScale,
-                    initialOffset = initialOffset,
-                    onViewStateChanged = { scale, offset ->
-                        currentScale = scale
-                        currentOffset = offset
-                    }
-                )
+            // ファイル名を key にして CADView を再生成。
+            // CADView 内部の isInitialized が remember に抱えられているため、
+            // 別ファイルを CP 越しに open しても fit が再計算されないバグへの対処。
+            androidx.compose.runtime.key(currentFile?.absolutePath) {
+                if (useAwtViewer) {
+                    CADViewAwt(
+                        parseResult = result,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    CADView(
+                        parseResult = result,
+                        debugMode = debugMode,
+                        initialScale = initialScale,
+                        initialOffset = initialOffset,
+                        onViewStateChanged = { scale, offset ->
+                            currentScale = scale
+                            currentOffset = offset
+                        }
+                    )
+                }
             }
         }
     }
