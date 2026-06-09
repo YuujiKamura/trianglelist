@@ -193,8 +193,18 @@ class ObjectsBuilder(private val h: HandleGen) {
         p(77, 2); p(78, 300)                      // シェードプロット
         p(147, 1.0); p(148, 0.0); p(149, 0.0)     // 印刷倍率
 
-        /* Model Layout */
-        p(0, "LAYOUT"); p(5, modelLayout); p(100, "AcDbLayout")
+        /* Model Layout (AcDbPlotSettings + AcDbLayout) */
+        p(0, "LAYOUT"); p(5, modelLayout)
+        p(100, "AcDbPlotSettings")
+        p(1, ""); p(2, "none_device"); p(4, paper.isoName); p(6, "")
+        p(40, 0.0); p(41, 0.0); p(42, 0.0); p(43, 0.0)
+        p(44, paper.height); p(45, paper.width)
+        p(46, 0.0); p(47, 0.0); p(48, 0.0); p(49, 0.0)
+        p(140, 0.0); p(141, 0.0); p(142, num); p(143, den)
+        p(70, 1712); p(72, 1); p(73, 1); p(74, 0)
+        p(7, ""); p(75, 0); p(76, 0); p(77, 2); p(78, 300)
+        p(147, 1.0); p(148, 0.0); p(149, 0.0)
+        p(100, "AcDbLayout")
         p(1, "Model"); p(70, 1); p(71, 0)
         p(10, 0); p(20, 0); p(11, paper.width * den); p(21, paper.height * den)  // モデル空間範囲
         p(12, 0); p(22, 0); p(32, 0)              // 下左奥
@@ -206,8 +216,18 @@ class ObjectsBuilder(private val h: HandleGen) {
         p(76, 0)                                   // UCSフォロー
         p(330, "36")  // Model_Space block record
 
-        /* Layout */
-        p(0, "LAYOUT"); p(5, layout); p(100, "AcDbLayout")
+        /* Layout (AcDbPlotSettings + AcDbLayout) */
+        p(0, "LAYOUT"); p(5, layout)
+        p(100, "AcDbPlotSettings")
+        p(1, ""); p(2, "none_device"); p(4, paper.isoName); p(6, "")
+        p(40, 0.0); p(41, 0.0); p(42, 0.0); p(43, 0.0)
+        p(44, paper.height); p(45, paper.width)
+        p(46, 0.0); p(47, 0.0); p(48, 0.0); p(49, 0.0)
+        p(140, 0.0); p(141, 0.0); p(142, num); p(143, den)
+        p(70, 688); p(72, 1); p(73, 1); p(74, 5)
+        p(7, ""); p(75, 16); p(76, 0); p(77, 2); p(78, 300)
+        p(147, 1.0); p(148, 0.0); p(149, 0.0)
+        p(100, "AcDbLayout")
         p(1, "Layout1"); p(70, 1); p(71, 1)
         p(10, 0); p(20, 0); p(11, paper.width); p(21, paper.height)  // レイアウト範囲
         p(12, 0); p(22, 0); p(32, 0)              // 下左奥
@@ -218,7 +238,6 @@ class ObjectsBuilder(private val h: HandleGen) {
         p(17, 0); p(27, 1); p(37, 0)              // UCS Y軸
         p(76, 0)                                   // UCSフォロー
         p(330, blkPaper)          // owner BlockRecord
-        p(340, plotSettings)      // PlotSettings reference
 
         /* 終わり */
         p(0, "ENDSEC"); p(0, "EOF")

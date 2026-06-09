@@ -56,7 +56,7 @@ class DxfHeader(private val handles: HandleGen) {
               9
             ${'$'}INSUNITS
              70
-              ${DxfConstants.Units.MILLIMETER}             ; ミリメートル
+              ${DxfConstants.Units.MILLIMETER}
               9
             ${'$'}ACADMAINTVER
              70
