@@ -16,9 +16,9 @@
     <string name="tenkai_rosenmei">路 線 名</string>
     <string name="tenkai_syukusyaku">縮    尺</string>
     <string name="tenkai_zuban">図面番号</string>
-    <string name="tenkai_sakuseibi">作　成　日</string>
+    <string name="tenkai_sakuseibi">作 成 日</string>
 
-    <string name="tenkai_nengappi">　　　年　　月　　日</string>
+    <string name="tenkai_nengappi">    年  月  日</string>
     <string name="tenkai_sekousya">施 工 者</string>
     <string name="menseki">面積</string>
     <string name="menseki_title">面 積 計 算 書</string>

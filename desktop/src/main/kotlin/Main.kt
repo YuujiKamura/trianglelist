@@ -99,7 +99,9 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
 
     fun loadDxfFile(file: File): DxfParseResult? {
         return try {
-            val dxfContent = file.readText()
+            // trianglelist 出力の DXF は $DWGCODEPAGE=ANSI_932 (DxfHeader) 固定。
+            // UTF-8 default で読むと日本語が壊れる。
+            val dxfContent = file.readText(java.nio.charset.Charset.forName("MS932"))
             val parser = DxfParser()
             val result = parser.parse(dxfContent)
 
