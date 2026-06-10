@@ -1,11 +1,10 @@
 package com.jpaver.trianglelist.datamanager
 
-import java.io.BufferedWriter
 
 class DxfObject {
 
-    fun dxfobject(writer:BufferedWriter){
-        writer.write("""
+    fun dxfobject(writer: Appendable){
+        writer.append("""
               0
             SECTION
               2
@@ -2827,6 +2826,6 @@ class DxfObject {
             0
             EOF
         """.trimIndent())
-        writer.newLine()
+        writer.append('\n')
     }
 }

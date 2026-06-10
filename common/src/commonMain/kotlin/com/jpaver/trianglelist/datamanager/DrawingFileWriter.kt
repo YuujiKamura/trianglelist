@@ -9,7 +9,6 @@ import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
 import com.jpaver.trianglelist.editmodel.ZumenInfo
 import com.jpaver.trianglelist.viewmodel.TitleParamStr
-import java.time.LocalDate
 import com.jpaver.trianglelist.viewmodel.formattedString
 import com.jpaver.trianglelist.editmodel.isCollide
 
@@ -276,7 +275,7 @@ open class DrawingFileWriter {
         //writeText(koujiname_, PointXY(strx, yKOUJIMEI ), iWhite_, textsize, 0, 0, 0.0, 1f)
 
 
-        val nengappi = LocalDate.now().year.toString() + " 年 " + LocalDate.now().monthValue.toString() + " 月 " + LocalDate.now().dayOfMonth.toString() + " 日"
+        val nengappi = currentDateStringJp()
 
         writeTextHV(zumeninfo.zumentitle,
             com.example.trilib.PointXY(strx, 5.7f * scale), WHITE, frameTextSize, 0, 0, 0.0, 1f)

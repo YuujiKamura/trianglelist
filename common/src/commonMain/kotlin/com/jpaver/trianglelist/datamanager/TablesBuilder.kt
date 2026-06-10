@@ -1,11 +1,24 @@
 package com.jpaver.trianglelist.datamanager
 
-import java.io.BufferedWriter
 
-class DxfTable {
+/**
+ * Writes the minimum required TABLES section so that AutoCAD / DWG viewers can
+ * open the DXF without handle-collision errors. All handles are generated from
+ * the shared [HandleGen] passed in by the caller, guaranteeing uniqueness
+ * across the whole file.
+ */
+class TablesBuilder {
 
-    fun tables(wrtr: BufferedWriter){
-        wrtr.write("""
+    /**
+     * Writes TABLES and returns the handle of the *Paper_Space* BLOCK_RECORD
+     * so that caller can pass it to [ObjectsBuilder].
+     */
+    fun writeMinimalTables(
+        w: Appendable,
+        @Suppress("UNUSED_PARAMETER") layers: List<String> = listOf("0")
+    ): String {
+        // Use the exact same format as DxfTable - string literal approach
+        w.append("""
               0
             SECTION
               2
@@ -477,6 +490,8 @@ class DxfTable {
               0
             ENDSEC
         """.trimIndent())
-        wrtr.newLine()
+        w.append('\n')
+
+        return "32"  // Paper_Space handle
     }
-}
+} 

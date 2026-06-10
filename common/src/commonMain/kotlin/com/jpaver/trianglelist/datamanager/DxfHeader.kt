@@ -1,11 +1,10 @@
 package com.jpaver.trianglelist.datamanager
 
 import com.jpaver.trianglelist.dxf.DxfConstants
-import java.io.BufferedWriter
 
 class DxfHeader(private val handles: HandleGen) {
 
-    fun header(writer: BufferedWriter, paper: Paper, printScale: PrintScale){
+    fun header(writer: Appendable, paper: Paper, printScale: PrintScale){
         // Reserve first handle value so that $HANDSEED points **after** the highest in-use
         // handle.  DXF spec: "$HANDSEED shall contain a handle that is greater than any
         // handle currently in the database."  We consume one handle here to avoid duplicating
@@ -21,30 +20,16 @@ class DxfHeader(private val handles: HandleGen) {
         val extMaxX = minOf(modelSpaceX, paper.width * 100) // Cap at 100x paper size
         val extMaxY = minOf(modelSpaceY, paper.height * 100)
 
-        // ログ出力：計算値を確認（テスト時は出力しない）
-        try {
-            android.util.Log.d("DxfHeader", "=== DXFヘッダー計算値 ===")
-            android.util.Log.d("DxfHeader", "reservedForSeed: $reservedForSeed")
-            android.util.Log.d("DxfHeader", "scaleForDimScale: $scaleForDimScale (${printScale.paper}/${printScale.model})")
-            android.util.Log.d("DxfHeader", "extMaxX: $extMaxX (${paper.width} * $scaleForDimScale)")
-            android.util.Log.d("DxfHeader", "extMaxY: $extMaxY (${paper.height} * $scaleForDimScale)")
-            android.util.Log.d("DxfHeader", "PEXTMAX: ${paper.width} x ${paper.height}")
-        } catch (e: Exception) {
-            // ユニットテスト環境では標準出力に出力
-            println("=== DXFヘッダー計算値 ===")
-            println("reservedForSeed: $reservedForSeed")
-            println("scaleForDimScale: $scaleForDimScale (${printScale.paper}/${printScale.model})")
-            println("extMaxX: $extMaxX (${paper.width} * $scaleForDimScale)")
-            println("extMaxY: $extMaxY (${paper.height} * $scaleForDimScale)")
-            println("PEXTMAX: ${paper.width} x ${paper.height}")
-        }
-        try {
-            android.util.Log.d("DxfHeader", "LIMMAX: ${extMaxX*1.2} x ${extMaxY*1.2}")
-        } catch (e: Exception) {
-            println("LIMMAX: ${extMaxX*1.2} x ${extMaxY*1.2}")
-        }
+        // ログ出力：計算値を確認
+        println("=== DXFヘッダー計算値 ===")
+        println("reservedForSeed: $reservedForSeed")
+        println("scaleForDimScale: $scaleForDimScale (${printScale.paper}/${printScale.model})")
+        println("extMaxX: $extMaxX (${paper.width} * $scaleForDimScale)")
+        println("extMaxY: $extMaxY (${paper.height} * $scaleForDimScale)")
+        println("PEXTMAX: ${paper.width} x ${paper.height}")
+        println("LIMMAX: ${extMaxX*1.2} x ${extMaxY*1.2}")
 
-        writer.write("""
+        writer.append("""
              0
             SECTION
               2
@@ -960,7 +945,7 @@ class DxfHeader(private val handles: HandleGen) {
             0
             ENDSEC
         """.trimIndent())
-        writer.newLine()
+        writer.append('\n')
     }
 
 }

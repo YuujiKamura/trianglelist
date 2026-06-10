@@ -10,10 +10,6 @@ import com.jpaver.trianglelist.label.DimensionLayout
 import com.jpaver.trianglelist.label.DimensionPlacement
 import com.jpaver.trianglelist.myName_
 import com.jpaver.trianglelist.viewmodel.TitleParamStr
-import java.io.BufferedWriter
-import java.io.FileOutputStream
-import java.io.OutputStreamWriter
-import java.nio.charset.Charset
 
 
 class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
@@ -23,7 +19,7 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
                     override var titleDed_: TitleParamStr = TitleParamStr()
 ): DrawingFileWriter() {
     //region parameters
-    lateinit var writer: BufferedWriter
+    lateinit var writer: Appendable
     lateinit var drawingLength: com.example.trilib.PointXY // = drawingLength
 
     var isDebug = false
@@ -69,32 +65,16 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         val actualScale = if (printscale_ == 0.5f) 50f else 1f/printscale_  // 0.5→50への特別変換
         val printScale = customPrintScale ?: PrintScale(1f, actualScale)  // カスタム設定 or 従来値(0.5=1/50)から変換
 
-        // ログ出力：設定値を確認（テスト時は出力しない）
-        try {
-            android.util.Log.d("DxfFileWriter", "=== DXF生成設定 ===")
-            android.util.Log.d("DxfFileWriter", "用紙: ${paper.name} (${paper.width}×${paper.height}mm)")
-            android.util.Log.d("DxfFileWriter", "縮尺: 1/${printScale.paper.toInt()} (model=${printScale.model}, paper=${printScale.paper})")
-            android.util.Log.d("DxfFileWriter", "printscale_: $printscale_")
-            android.util.Log.d("DxfFileWriter", "customPrintScale: $customPrintScale")
-            android.util.Log.d("DxfFileWriter", "unitscale_: $unitscale_")
-        } catch (e: Exception) {
-            // ユニットテスト環境では標準出力に出力
-            println("=== DXF生成設定 ===")
-            println("用紙: ${paper.name} (${paper.width}×${paper.height}mm)")
-            println("縮尺: 1/${printScale.paper.toInt()} (model=${printScale.model}, paper=${printScale.paper})")
-            println("printscale_: $printscale_")
-            println("customPrintScale: $customPrintScale")
-            println("unitscale_: $unitscale_")
-        }
-        try {
-            android.util.Log.d("DxfFileWriter", "textscale_: $textscale_")
-            android.util.Log.d("DxfFileWriter", "sizeX_: $sizeX_")
-            android.util.Log.d("DxfFileWriter", "sizeY_: $sizeY_")
-        } catch (e: Exception) {
-            println("textscale_: $textscale_")
-            println("sizeX_: $sizeX_")
-            println("sizeY_: $sizeY_")
-        }
+        // ログ出力：設定値を確認
+        println("=== DXF生成設定 ===")
+        println("用紙: ${paper.name} (${paper.width}×${paper.height}mm)")
+        println("縮尺: 1/${printScale.paper.toInt()} (model=${printScale.model}, paper=${printScale.paper})")
+        println("printscale_: $printscale_")
+        println("customPrintScale: $customPrintScale")
+        println("unitscale_: $unitscale_")
+        println("textscale_: $textscale_")
+        println("sizeX_: $sizeX_")
+        println("sizeY_: $sizeY_")
 
         DxfHeader(handleGen).header(writer, paper, printScale)  // ← 引数化対応
         tablesBuilder.writeMinimalTables(writer, listOf("0", "C-COL-COL1", "C-TTL-FRAM"))  // ← ビルダー版
@@ -103,13 +83,6 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
 
     }
 
-    /** Helper: open [file] with Shift_JIS (CP932) encoding, write DXF, close writer automatically */
-    fun saveTo(file: java.io.File, charset: Charset = Charset.forName("Shift_JIS")) {
-        BufferedWriter(OutputStreamWriter(FileOutputStream(file), charset)).use { bw ->
-            this.writer = bw
-            save()
-        }
-    }
 
     fun verticalFromBaseline(vertical: Int, p1: com.example.trilib.PointXY, p2: com.example.trilib.PointXY): Int{
         // 垂直方向の文字位置合わせタイプ(省略可能、既定 = 0): 整数コード(ビットコードではありません):
@@ -311,13 +284,13 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
     override fun writeEntities(){
 
         // 最初に書く
-        writer.write("""
+        writer.append("""
             0
             SECTION
             2
             ENTITIES
         """.trimIndent())
-        writer.newLine()
+        writer.append('\n')
 
         val myDXFTriList = trilist_.clone()
         val myDXFDedList = dedlist_.clone()
@@ -392,11 +365,11 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         writeCalcSheet(1f, textscale_, trilistNumbered, myDXFDedList )
 
         //一番最後に書く
-        writer.write("""
+        writer.append("""
             0
             ENDSEC
         """.trimIndent())
-        writer.newLine()
+        writer.append('\n')
 
     }
 

@@ -62,6 +62,7 @@ import com.jpaver.trianglelist.datamanager.HeaderValues
 import com.jpaver.trianglelist.datamanager.PdfWriter
 import com.jpaver.trianglelist.datamanager.SfcWriter
 import com.jpaver.trianglelist.datamanager.XlsxWriter
+import com.jpaver.trianglelist.datamanager.saveTo
 import com.jpaver.trianglelist.editmodel.ConnParam
 import com.jpaver.trianglelist.editmodel.Deduction
 import com.jpaver.trianglelist.editmodel.DeductionList
@@ -2584,7 +2585,7 @@ class MainActivity : AppCompatActivity(),
 
     private fun saveSFC(out: BufferedOutputStream) {
 
-        val writer = SfcWriter(trianglelist.clone(), myDeductionList.clone(), out, filename, drawingStartNumber, 47.6f)
+        val writer = SfcWriter(trianglelist.clone(), myDeductionList.clone(), filename, drawingStartNumber, 47.6f)
         writer.setNames(koujiname, rosenname, gyousyaname, zumennum)
         writer.zumeninfo = rStr
         // 20 = 元 JIS 物理基準 14 (= paper 0.35mm 文字 × SFC unit) を目視 +43% 調整した値。 詳細は ADR 0001。
@@ -2595,7 +2596,7 @@ class MainActivity : AppCompatActivity(),
         writer.setStartNumber(drawingStartNumber)
         writer.isReverse_ = isNumberReverse
 
-        writer.save()
+        writer.saveTo(out)
         out.close()
 
     }

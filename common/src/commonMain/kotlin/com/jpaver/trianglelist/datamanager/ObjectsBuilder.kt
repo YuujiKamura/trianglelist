@@ -1,6 +1,5 @@
 package com.jpaver.trianglelist.datamanager
 
-import java.io.BufferedWriter
 
 /**
  * Utility responsible for writing the OBJECTS section (RootDictionary + PlotSettings + Layout + Standard Objects)
@@ -16,14 +15,14 @@ class ObjectsBuilder(private val h: HandleGen) {
      * Writes the complete OBJECTS section to [w], including standard dictionaries,
      * materials, visual styles, and other objects that CAD software expects.
      *
-     * @param w           BufferedWriter instance to which the DXF data is written.
+     * @param w           Appendable to which the DXF data is written.
      * @param paper       Paper object containing width and height.
      * @param printScale  Printing scale.
      * @param blkPaper    Handle of the *Paper_Space* BLOCK_RECORD. Defaults to "32" which is what
      *                    [DxfTemplate] currently emits.
      */
     fun writeCompleteObjects(
-        w: BufferedWriter,
+        w: Appendable,
         paper: Paper,
         printScale: PrintScale,
         blkPaper: String = "32"
@@ -60,7 +59,7 @@ class ObjectsBuilder(private val h: HandleGen) {
         val vsRealistic = h.new()
         val vsConceptual = h.new()
         
-        fun p(gc: Int, v: Any) = w.write("%3d\n%s\n".format(gc, v))
+        fun p(gc: Int, v: Any) { w.append("${gc.toString().padStart(3)}\n$v\n") }
 
         /* Start OBJECTS section */
         p(0, "SECTION"); p(2, "OBJECTS")
@@ -243,8 +242,8 @@ class ObjectsBuilder(private val h: HandleGen) {
         p(0, "ENDSEC"); p(0, "EOF")
     }
 
-    private fun writeMaterial(w: BufferedWriter, handle: String, ownerDict: String, name: String) {
-        fun p(gc: Int, v: Any) = w.write("%3d\n%s\n".format(gc, v))
+    private fun writeMaterial(w: Appendable, handle: String, ownerDict: String, name: String) {
+        fun p(gc: Int, v: Any) { w.append("${gc.toString().padStart(3)}\n$v\n") }
         
         p(0, "MATERIAL"); p(5, handle)
         p(102, "{ACAD_REACTORS"); p(330, ownerDict); p(102, "}")
@@ -253,8 +252,8 @@ class ObjectsBuilder(private val h: HandleGen) {
         p(72, 1); p(94, 127); p(282, 1)
     }
 
-    private fun writeVisualStyle(w: BufferedWriter, handle: String, ownerDict: String, name: String, type: Int) {
-        fun p(gc: Int, v: Any) = w.write("%3d\n%s\n".format(gc, v))
+    private fun writeVisualStyle(w: Appendable, handle: String, ownerDict: String, name: String, type: Int) {
+        fun p(gc: Int, v: Any) { w.append("${gc.toString().padStart(3)}\n$v\n") }
         
         p(0, "VISUALSTYLE"); p(5, handle)
         p(102, "{ACAD_REACTORS"); p(330, ownerDict); p(102, "}")
