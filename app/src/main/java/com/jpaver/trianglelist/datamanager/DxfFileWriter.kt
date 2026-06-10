@@ -6,6 +6,8 @@ import com.jpaver.trianglelist.editmodel.DeductionList
 import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
 import com.jpaver.trianglelist.editmodel.ZumenInfo
+import com.jpaver.trianglelist.label.DimensionLayout
+import com.jpaver.trianglelist.label.DimensionPlacement
 import com.jpaver.trianglelist.myName_
 import com.jpaver.trianglelist.viewmodel.TitleParamStr
 import java.io.BufferedWriter
@@ -138,7 +140,10 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         // arrange
         val (pca, pab, pbc) = xyPointXYTriple(tri)
 
-        val (dimverticalA, dimverticalB, dimverticalC) = getDimTriple(tri)
+        // ADR 0003 Phase 2a: 寸法座標の出所を Triangle のキャッシュ (dimpoint/dimOnPath) から
+        // common の式 DimensionLayout に切替。gapPaperMm=0 なので出力はキャッシュ由来と同値
+        // (同値性は Phase 1 parity + golden diff テストで固定)
+        val (placeA, placeB, placeC) = layoutTriple(tri)
 
         var (la, lb, lc) = stringTriple(tri)
 
@@ -149,40 +154,79 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         writeTriangleLines(tri,WHITE)
 
         if(isDebug){
-            la += "A$dimverticalA"
-            lb += "B$dimverticalB"
-            lc += "C$dimverticalC"
+            la += "A${placeA.verticalDxf}"
+            lb += "B${placeB.verticalDxf}"
+            lc += "C${placeC.verticalDxf}"
         }
 
         // DimTexts
         if( tri.mynumber == 1 || tri.connectionSide > 2)
-            writeTextDimension(dimverticalA, la, tri.dimpoint.a, pab.calcDimAngle(pca))
-        writeTextDimension(dimverticalB, lb, tri.dimpoint.b, pbc.calcDimAngle(pab))
-        writeTextDimension(dimverticalC, lc, tri.dimpoint.c, pca.calcDimAngle(pbc))
+            writeTextDimension(placeA.verticalDxf, la, placeA.dimpoint, pab.calcDimAngle(pca))
+        writeTextDimension(placeB.verticalDxf, lb, placeB.dimpoint, pbc.calcDimAngle(pab))
+        writeTextDimension(placeC.verticalDxf, lc, placeC.dimpoint, pca.calcDimAngle(pbc))
 
         //DimFlags
-        writeDimFlags(tri, WHITE)
+        writeDimFlagsFromLayout(tri, placeA, placeB, placeC, WHITE)
 
         // 番号
         writePointNumber(tri, textSize,BLUE,1,2, textSize*0.85f )
 
         // 測点
         if(tri.myName_() != "") {
-            writeSokuten(tri, trilist_.sokutenListVector, textSize2, BLUE, 1, 1)
+            writeSokutenFromLayout(tri, trilist_.sokutenListVector, textSize2, BLUE, 1, 1)
         }
     }
 
-    private fun getDimTriple(
-        tri: Triangle
-    ): Triple<Int, Int, Int> {
-        val dimverticalA = tri.dimOnPath[0].verticalDxf()//verticalFromBaseline(tri.dim.vertical.a, pca, pab)
-        val dimverticalB = tri.dimOnPath[1].verticalDxf()//verticalFromBaseline(tri.dim.vertical.b, pab, pbc)
-        val dimverticalC = tri.dimOnPath[2].verticalDxf()//verticalFromBaseline(tri.dim.vertical.c, pbc, pca)
-        //val dimverticalD = verticalFromBaseline(tri.dim.vertical.a, pca, pab)
-        //val dimverticalE = verticalFromBaseline(tri.dim.vertical.b, pab, pbc)
-        //val dimverticalF = verticalFromBaseline(tri.dim.vertical.c, pbc, pca)
-        return Triple(dimverticalA, dimverticalB, dimverticalC)
-        //return Triple(dimverticalD, dimverticalE, dimverticalF)
+    /**
+     * 3 辺の寸法配置を DimensionLayout で計算する。
+     * 入力は Triangle のキャッシュ (setDimPath) と同じ:
+     * A=(pointAB,point[0]), B=(pointBC,pointAB), C=(point[0],pointBC) + dim の縦横コード。
+     */
+    private fun layoutTriple(tri: Triangle): Triple<DimensionPlacement, DimensionPlacement, DimensionPlacement> {
+        val scale = tri.scaleFactor
+        val dimheight = tri.dimHeight
+        return Triple(
+            DimensionLayout.layout(tri.pointAB, tri.point[0], tri.dim.vertical.a, tri.dim.horizontal.a, scale, dimheight, 0f),
+            DimensionLayout.layout(tri.pointBC, tri.pointAB, tri.dim.vertical.b, tri.dim.horizontal.b, scale, dimheight, 0f),
+            DimensionLayout.layout(tri.point[0], tri.pointBC, tri.dim.vertical.c, tri.dim.horizontal.c, scale, dimheight, 0f)
+        )
+    }
+
+    /** DrawingFileWriter.writeDimFlags の置換: 旗揚げ線の両端を DimensionLayout の計算結果から取る */
+    private fun writeDimFlagsFromLayout(
+        tri: Triangle,
+        placeA: DimensionPlacement,
+        placeB: DimensionPlacement,
+        placeC: DimensionPlacement,
+        color: Int
+    ) {
+        if (tri.dim.horizontal.a > 2) writeLine(placeA.pointA, placeA.pointB, color)
+        if (tri.dim.horizontal.b > 2) writeLine(placeB.pointA, placeB.pointB, color)
+        if (tri.dim.horizontal.c > 2) writeLine(placeC.pointA, placeC.pointB, color)
+    }
+
+    /**
+     * DrawingFileWriter.writeSokuten の置換: 測点名の位置を DimensionLayout (SIDE_SOKUTEN) から取る。
+     * 旧実装は setDimPath/setDimPoint でキャッシュを書き直してから読んでいた (= 常に再計算) ため、
+     * 式の直接呼び出しと同値。キャッシュへの書き戻し副作用は以降誰も読まないので落とした。
+     */
+    private fun writeSokutenFromLayout(
+        tri: Triangle,
+        normalizedvector: Int,
+        ts: Float,
+        color: Int,
+        align1: Int,
+        align2: Int
+    ) {
+        val place = DimensionLayout.layout(
+            tri.pointAB, tri.point[0],
+            DimensionLayout.SIDE_SOKUTEN, tri.dim.horizontal.s,
+            tri.scaleFactor, tri.dimHeight, 0f
+        )
+        val pa = place.pointA
+        val pb = place.pointB
+        writeTextSwitch(tri.name, place.dimpoint, ts, color, align1, align2, pb.calcSokAngle(pa, normalizedvector))
+        writeLine(pa, pb, color)
     }
 
     private fun writeTextDimension(verticalAlign: Int, len: String, p1: com.example.trilib.PointXY, angle: Float){
