@@ -1,6 +1,5 @@
 package com.jpaver.trianglelist.editmodel
 
-import android.util.Log
 import com.jpaver.trianglelist.Bounds
 import com.jpaver.trianglelist.viewmodel.TextScaleCalculator
 import com.jpaver.trianglelist.angleUnconnectedSide
@@ -15,15 +14,15 @@ import com.jpaver.trianglelist.toStrings
 import com.jpaver.trianglelist.viewmodel.InputParameter
 
 fun printTriangle(t: Triangle) {
-    Log.d("Triangle", t.toStrings())
+    TriLog.d("Triangle", t.toStrings())
 }
 
 fun print_trilist(tl: TriangleList, callername:String = "undefined caller") {
-    Log.d("TriangleList", callername + "-TriangleList size ${tl.size()} hash ${tl.hashCode()}")
+    TriLog.d("TriangleList", callername + "-TriangleList size ${tl.size()} hash ${tl.hashCode()}")
     for (i in 0 until tl.size()) {
         printTriangle(tl[i]) // Indexing directly to i assuming `tl[i]` is valid and starts from 0
     }
-    Log.d("TriangleList", "") // To add the newline effect, although Logcat naturally separates logs
+    TriLog.d("TriangleList", "") // To add the newline effect, although Logcat naturally separates logs
 }
 
 class LastTapNumberValidationException(message: String) : Exception(message)
@@ -259,14 +258,14 @@ open class TriangleList : EditList {
         return rot
     }
 
-    internal constructor() {
+    constructor() {
         trilist = ArrayList()
         trilistStored_ = ArrayList()
         outlineList_ = ArrayList()
         selectedNumber = trilist.size
     }
 
-    internal constructor(myFirstTriangle: Triangle) {
+    constructor(myFirstTriangle: Triangle) {
         trilist = ArrayList()
         trilistStored_ = ArrayList()
         trilist.add(myFirstTriangle)
@@ -846,7 +845,7 @@ open class TriangleList : EditList {
         for (i in trilist.indices) {
             area += trilist[i].getArea()
         }
-        return (Math.round(area * 100.0) * 0.01).toFloat()
+        return (kotlin.math.floor(area * 100.0 + 0.5) * 0.01).toFloat()
     }
 
     fun addOutlinePoint(pt: com.example.trilib.PointXY, str: String, olp: ArrayList<com.example.trilib.PointXY>, node: Triangle?) {

@@ -1,6 +1,5 @@
 package com.jpaver.trianglelist.editmodel
 
-import android.util.Log
 import com.jpaver.trianglelist.viewmodel.InputParameter
 
 class DeductionList : EditList() {
@@ -142,7 +141,7 @@ class DeductionList : EditList() {
             dedlist_[number - 1] = ded
         } else {
             // インデックスが範囲外の場合の処理
-            Log.e("DeductionList", "Index out of bounds: index=$number, size=${dedlist_.size}")
+            TriLog.e("DeductionList", "Index out of bounds: index=$number, size=${dedlist_.size}")
         }
     }
 

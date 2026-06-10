@@ -7,8 +7,6 @@ import android.widget.TextView
 import com.example.trilib.PointXY
 import com.jpaver.trianglelist.editmodel.EditList
 
-data class DeductionParams(var num: Int, var name: String, var lengthX: Float, var lengthY: Float, var parentNum: Int, var type: String, var angle: Float, var point: PointXY)
-
 data class TitleParams(var type: Int, var n: Int, var name: Int, var a: Int, var b: Int, var c: Int, var pn: Int, var pl: Int)
 
 class TitleParamStr(var type: String ="", var n: String="", var name: String="", var a: String="", var b: String="", var c: String="", var pn: String="", var pl: String="")
