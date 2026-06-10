@@ -30,10 +30,12 @@ desktop/bin
 # Reports
 reports/
 
-# Web (Vite) — 段階1 wasmJs シェル
+# Web (Vite) — 段階1 wasmJs シェル (wasm 成果物は sync-wasm が生成)
 web/node_modules/
 web/dist/
-web/public/wasm/
+web/wasm/
+web/public/*.wasm
+web/public/*.wasm.map
 
 # Rust/Cargo build artifacts
 trianglelist-web/target/

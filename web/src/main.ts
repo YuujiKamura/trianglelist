@@ -17,9 +17,10 @@ type TextPrim = {
 type CirclePrim = { type: 'circle'; layer: string; cx: number; cy: number; r: number };
 type Prim = LinePrim | TextPrim | CirclePrim;
 
-type WasmExports = {
-  renderCsvToPrimitives: (csv: string, scale: number) => string;
-};
+// Kotlin wasmJs の ESM glue を静的 import してバンドルに乗せる (Vite の正規 module graph)。
+// .wasm 本体は uninstantiated.mjs が fetch('./TriangleList-common-wasm-js.wasm') =
+// document base 相対で読むため、sync-wasm が web/public/ 直下に置く
+import { renderCsvToPrimitives } from '../wasm/TriangleList-common-wasm-js.mjs';
 
 // 内蔵サンプル (desktop/sample/sample_triangles.csv と同形式)
 const SAMPLE_CSV = `テスト工事
@@ -44,14 +45,6 @@ const COLORS: Record<string, string> = {
 function setStatus(msg: string): void {
   const el = document.getElementById('status');
   if (el) el.textContent = msg;
-}
-
-async function loadWasm(): Promise<WasmExports> {
-  // Kotlin の生成物は public/wasm/ に sync-wasm で置かれる。バンドルせず実行時 import。
-  // specifier を変数にして tsc/vite の静的 module 解決を回避する (runtime URL のため)
-  const wasmUrl = '/wasm/TriangleList-common-wasm-js.mjs';
-  const mod = await import(/* @vite-ignore */ wasmUrl);
-  return mod as unknown as WasmExports;
 }
 
 function bounds(prims: Prim[]): { minX: number; minY: number; maxX: number; maxY: number } {
@@ -130,9 +123,9 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
   }
 }
 
-function renderCsv(wasm: WasmExports, canvas: HTMLCanvasElement, csv: string, label: string): void {
+function renderCsv(canvas: HTMLCanvasElement, csv: string, label: string): void {
   try {
-    const json = wasm.renderCsvToPrimitives(csv, 1.0);
+    const json = renderCsvToPrimitives(csv, 1.0);
     const prims = JSON.parse(json) as Prim[];
     draw(canvas, prims);
     setStatus(`${label}: ${prims.length} primitives`);
@@ -142,22 +135,13 @@ function renderCsv(wasm: WasmExports, canvas: HTMLCanvasElement, csv: string, la
   }
 }
 
-async function main(): Promise<void> {
+function main(): void {
   const canvas = document.getElementById('cv') as HTMLCanvasElement | null;
   const fileInput = document.getElementById('file') as HTMLInputElement | null;
   if (!canvas || !fileInput) return;
 
-  let wasm: WasmExports;
-  try {
-    wasm = await loadWasm();
-  } catch (e) {
-    setStatus(`wasm load error: ${String(e)}`);
-    console.error(e);
-    return;
-  }
-
   // デフォルトで内蔵サンプルを表示
-  renderCsv(wasm, canvas, SAMPLE_CSV, 'sample');
+  renderCsv(canvas, SAMPLE_CSV, 'sample');
 
   fileInput.addEventListener('change', () => {
     const file = fileInput.files?.[0];
@@ -165,10 +149,10 @@ async function main(): Promise<void> {
     const reader = new FileReader();
     reader.onload = () => {
       // 注: 既存 app の CSV は Shift_JIS の場合があるが、段階1 は UTF-8 読みのみ
-      renderCsv(wasm, canvas, String(reader.result ?? ''), file.name);
+      renderCsv(canvas, String(reader.result ?? ''), file.name);
     };
     reader.readAsText(file);
   });
 }
 
-void main();
+main();
