@@ -45,3 +45,9 @@ rust-core/target/
 rust-dxf/target/
 target/
 Cargo.lock
+.gstack/
+
+# AI orchestration runtime state / local-only config
+.omc/
+__pycache__/
+.claude/settings.local.json
