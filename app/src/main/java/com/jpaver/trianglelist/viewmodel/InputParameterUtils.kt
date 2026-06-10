@@ -1,16 +1,7 @@
 package com.jpaver.trianglelist.viewmodel
 
 // Utility functions and validation rules extracted from Triangle.kt
-
-fun Float?.formattedString(fractionDigits: Int): String {
-    if (this == null) return ""
-    val smartFractionDigits = if ((this * 100).toInt() % 10 == 0) 1 else fractionDigits
-    val format = "%.${smartFractionDigits}f"
-    val spacedFormat = spaced_by(smartFractionDigits) + format.format(this)
-    return spacedFormat
-}
-
-fun spaced_by(number: Int): String = " ".repeat(2 - number)
+// formattedString / spaced_by は common の viewmodel/FormattedString.kt に移動 (editmodel 降ろし)
 
 data class ValidationRule(val falseCondition: (InputParameter) -> Boolean, val message: String) {
     fun isValid(params: InputParameter, showToast: (String, Boolean) -> Unit): Boolean {

@@ -211,7 +211,7 @@ fun Triangle.resetByChild(myChild: Triangle) {
 
 fun Triangle.setConnectionType(cParam: ConnParam) {
     if (nodeA == null) {
-        android.util.Log.e("TriangleSetters", "setConnectionType called with null nodeA")
+        TriLog.e("TriangleSetters", "setConnectionType called with null nodeA")
         return
     }
     parentnumber = nodeA!!.mynumber

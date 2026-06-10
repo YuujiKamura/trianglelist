@@ -48,7 +48,7 @@ internal fun calculateInternalAngle(p1: PointXY, p2: PointXY, p3: PointXY): Doub
     val v1 = p1.subtract(p2)
     val v2 = p3.subtract(p2)
     val angleRadian = acos(v1.innerProduct(v2) / (v1.magnitude() * v2.magnitude()))
-    return angleRadian * 180 / Math.PI
+    return angleRadian * 180 / PI
 }
 
 internal fun Triangle.calculatePointCenter(): PointXY {
@@ -125,8 +125,8 @@ fun Triangle.calcPoints(ref: Triangle?, refside: Int) {
         else -> throw IllegalStateException("Unexpected value: $refside")
     }
     // set plist[1]
-    plist[1]!![ plist[0]!!.x + llist[0] * cos(Math.toRadians(angleLocal.toDouble())) ] =
-        plist[0]!!.y + llist[0] * sin(Math.toRadians(angleLocal.toDouble()))
+    plist[1]!![ plist[0]!!.x + llist[0] * cos(angleLocal.toDouble() / 180.0 * PI) ] =
+        plist[0]!!.y + llist[0] * sin(angleLocal.toDouble() / 180.0 * PI)
 
     val theta = atan2((plist[0]!!.y - plist[1]!!.y).toDouble(), (plist[0]!!.x - plist[1]!!.x).toDouble())
     val alpha = acos((powlist[0] + powlist[1] - powlist[2]) / (2 * llist[0] * llist[1]))

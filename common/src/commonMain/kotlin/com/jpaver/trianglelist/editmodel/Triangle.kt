@@ -1,6 +1,5 @@
 package com.jpaver.trianglelist.editmodel
 
-import android.util.Log
 import com.jpaver.trianglelist.Bounds
 import com.jpaver.trianglelist.getAngleBySide
 import com.jpaver.trianglelist.getLengthByIndex
@@ -70,7 +69,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
             b
         } catch (e: Exception) {
-            Log.e(TAG, "clone() failed", e)
+            TriLog.e(TAG, "clone() failed", e)
             Triangle()
         }
     }
@@ -216,7 +215,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         angleBC = 0f
     }
 
-    internal constructor()
+    constructor()
 
     constructor(A: Float, B: Float, C: Float) {
         setNumber(1)
