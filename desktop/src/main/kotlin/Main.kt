@@ -309,6 +309,26 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                     )
                                 }
                             }
+                            line == "overlaps" || line.startsWith("overlaps ") -> {
+                                // 「overlaps [<textWidthFactor>]」 ── 現状図面の重なりを数値で観測する
+                                // (ADR 0002 段階 2: まず測る、直すのは後)。配置は一切変更しない。
+                                val argStr = line.removePrefix("overlaps").trim()
+                                val factor = if (argStr.isEmpty()) 1.0f else argStr.toFloatOrNull()
+                                val r = parseResult
+                                if (factor == null) {
+                                    out.write("error: invalid factor\n".toByteArray())
+                                } else if (r == null || r.texts.isEmpty()) {
+                                    out.write("error: no parseResult or no texts\n".toByteArray())
+                                } else {
+                                    val report = com.jpaver.trianglelist.label.DxfOverlapAnalyzer.analyze(r, factor)
+                                    val top = report.pairs.take(5)
+                                        .joinToString(",") { "${it.textId}x${it.otherId}" }
+                                    out.write(
+                                        ("overlap_texts=${report.overlappingTexts}/${report.totalTexts} " +
+                                         "pairs=${report.pairs.size} top=$top\n").toByteArray()
+                                    )
+                                }
+                            }
                             line.startsWith("capture ") -> {
                                 // viewer 窓を AlwaysOnTop で一瞬前面に出して Robot で撮る。
                                 // toFront だけでは Windows 11 の focus-steal 抑止で前面に出ない、
