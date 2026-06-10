@@ -4,6 +4,8 @@ import com.jpaver.trianglelist.editmodel.Deduction
 import com.jpaver.trianglelist.editmodel.DeductionList
 import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
+import com.jpaver.trianglelist.label.DimensionLayout
+import com.jpaver.trianglelist.label.DimensionPlacement
 import java.io.BufferedOutputStream
 import java.nio.charset.Charset
 
@@ -223,6 +225,11 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
 
         val (la, lb, lc) = stringTriple(tri)
 
+        // ADR 0003 Phase 2b: 寸法座標の出所を Triangle のキャッシュ (dimpoint/dimOnPath/pathS) から
+        // common の式 DimensionLayout に切替。gapPaperMm=0 なので座標はキャッシュ由来と同値。
+        // SFC 固有の垂直アライメント (alignVByVector の 2/8 体系) は据え置き = 座標の出所のみ替える。
+        val (placeA, placeB, placeC) = layoutTriple(tri)
+
         val dimA = alignVByVector(tri.dim.vertical.a, pca, pab)
         val dimB = alignVByVector(tri.dim.vertical.b, pab, pbc)//flip(tri.myDimAlignB_, tri.dimAngleB_ )
         val dimC = alignVByVector(tri.dim.vertical.c, pbc, pca)//flip(tri.myDimAlignC_, tri.dimAngleC_ )
@@ -232,29 +239,76 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
 
         // DimTexts
         if(tri.mynumber ==1 || tri.connectionSide > 2)
-            writeTextA9(la, tri.dimpoint.a, 8, ts, dimA, pab.calcDimAngle(pca), 1f)
-        writeTextA9(lb, tri.dimpoint.b, 8, ts, dimB, pbc.calcDimAngle(pab), 1f)
-        writeTextA9(lc, tri.dimpoint.c, 8, ts, dimC, pca.calcDimAngle(pbc), 1f)
+            writeTextA9(la, placeA.dimpoint, 8, ts, dimA, pab.calcDimAngle(pca), 1f)
+        writeTextA9(lb, placeB.dimpoint, 8, ts, dimB, pbc.calcDimAngle(pab), 1f)
+        writeTextA9(lc, placeC.dimpoint, 8, ts, dimC, pca.calcDimAngle(pbc), 1f)
 
         //DimFlags
-        writeDimFlags(tri, 8)
+        writeDimFlagsFromLayout(tri, placeA, placeB, placeC, 8)
 
         // 番号
         writePointNumber( tri, ts, 4, 5,-1,ts*0.85f )
 
         // 測点
         if(tri.name != "") {
-            //val noffset = -250f
-            //val nlength = -tri.name.length*500f+noffset
-            //val nhalflength = nlength*0.5f+noffset
             val slv = trilist_.sokutenListVector
             var align = 8
             if( slv < 0 ) align = 2
 
-            writeSokuten(tri, trilist_.sokutenListVector, ts, 4, align, -1 )
-            //writeText(tri.name, pab.offset( pca, nhalflength ), 4, ts, align, pab.calcSokAngle( pca, slv ), 1f)
-            //writeLine(pab.offset( pca, nlength ), pab.offset (pca, noffset ), 4)
+            writeSokutenFromLayout(tri, slv, ts, 4, align, -1 )
         }
+    }
+
+    /**
+     * 3 辺の寸法配置を DimensionLayout で計算する (Phase 2a DxfFileWriter.layoutTriple と同型)。
+     * 入力は Triangle のキャッシュ (setDimPath) と同じ:
+     * A=(pointAB,point[0]), B=(pointBC,pointAB), C=(point[0],pointBC) + dim の縦横コード。
+     */
+    private fun layoutTriple(tri: Triangle): Triple<DimensionPlacement, DimensionPlacement, DimensionPlacement> {
+        val scale = tri.scaleFactor
+        val dimheight = tri.dimHeight
+        return Triple(
+            DimensionLayout.layout(tri.pointAB, tri.point[0], tri.dim.vertical.a, tri.dim.horizontal.a, scale, dimheight, 0f),
+            DimensionLayout.layout(tri.pointBC, tri.pointAB, tri.dim.vertical.b, tri.dim.horizontal.b, scale, dimheight, 0f),
+            DimensionLayout.layout(tri.point[0], tri.pointBC, tri.dim.vertical.c, tri.dim.horizontal.c, scale, dimheight, 0f)
+        )
+    }
+
+    /** DrawingFileWriter.writeDimFlags の置換: 旗揚げ線の両端を DimensionLayout の計算結果から取る */
+    private fun writeDimFlagsFromLayout(
+        tri: Triangle,
+        placeA: DimensionPlacement,
+        placeB: DimensionPlacement,
+        placeC: DimensionPlacement,
+        color: Int
+    ) {
+        if (tri.dim.horizontal.a > 2) writeLine(placeA.pointA, placeA.pointB, color)
+        if (tri.dim.horizontal.b > 2) writeLine(placeB.pointA, placeB.pointB, color)
+        if (tri.dim.horizontal.c > 2) writeLine(placeC.pointA, placeC.pointB, color)
+    }
+
+    /**
+     * DrawingFileWriter.writeSokuten の置換: 測点名の位置を DimensionLayout (SIDE_SOKUTEN) から取る。
+     * 旧実装は setDimPath/setDimPoint でキャッシュを書き直してから読んでいた (= 常に再計算) ため、
+     * 式の直接呼び出しと同値。キャッシュへの書き戻し副作用は以降誰も読まないので落とした。
+     */
+    private fun writeSokutenFromLayout(
+        tri: Triangle,
+        normalizedvector: Int,
+        ts: Float,
+        color: Int,
+        align1: Int,
+        align2: Int
+    ) {
+        val place = DimensionLayout.layout(
+            tri.pointAB, tri.point[0],
+            DimensionLayout.SIDE_SOKUTEN, tri.dim.horizontal.s,
+            tri.scaleFactor, tri.dimHeight, 0f
+        )
+        val pa = place.pointA
+        val pb = place.pointB
+        writeTextSwitch(tri.name, place.dimpoint, ts, color, align1, align2, pb.calcSokAngle(pa, normalizedvector))
+        writeLine(pa, pb, color)
     }
 
 
