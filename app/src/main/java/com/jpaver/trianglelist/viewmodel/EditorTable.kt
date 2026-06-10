@@ -9,7 +9,7 @@ import com.jpaver.trianglelist.editmodel.EditList
 
 data class TitleParams(var type: Int, var n: Int, var name: Int, var a: Int, var b: Int, var c: Int, var pn: Int, var pl: Int)
 
-class TitleParamStr(var type: String ="", var n: String="", var name: String="", var a: String="", var b: String="", var c: String="", var pn: String="", var pl: String="")
+// TitleParamStr は writer 群と共に common/commonMain/viewmodel/TitleParamStr.kt に在住 (package 同一)
 
 data class EditTextViewLine(var n: EditText, var name: EditText, var a: EditText, var b: EditText, var c: EditText, var pn: EditText, var pl: Spinner)
 

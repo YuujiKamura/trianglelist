@@ -1,6 +1,7 @@
 package com.jpaver.trianglelist
 
 import com.jpaver.trianglelist.datamanager.SfcWriter
+import com.jpaver.trianglelist.datamanager.saveTo
 import com.jpaver.trianglelist.editmodel.ZumenInfo
 import com.jpaver.trianglelist.viewmodel.TitleParamStr
 import org.junit.Assert
@@ -29,7 +30,7 @@ class SfcWriterTest {
         val deductionlist = csvloadresult.dedlist
         val drawingStartNumber = 1
 
-        val writer = SfcWriter(trianglelist, deductionlist, outputStream, fileName, drawingStartNumber, 1f)
+        val writer = SfcWriter(trianglelist, deductionlist, fileName, drawingStartNumber, 1f)
         writer.setNames("koujiname", "rosenname", "gyousyaname", "zumennum")
         writer.zumeninfo = ZumenInfo()
         writer.textscale_ = 25f * 20f
@@ -38,7 +39,7 @@ class SfcWriterTest {
 
         writer.setStartNumber(drawingStartNumber)
         writer.isReverse_ = false
-        writer.save()
+        writer.saveTo(outputStream)
 
         // ストリームを閉じる
         outputStream.close()

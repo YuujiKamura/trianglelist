@@ -2,7 +2,6 @@ package com.jpaver.trianglelist.datamanager
 
 import com.example.trilib.PointXY
 import com.jpaver.trianglelist.viewmodel.formattedString
-import java.io.BufferedWriter
 
 class DxfEntity(
     private val handleGen: HandleGen,
@@ -11,7 +10,7 @@ class DxfEntity(
 ) {
 
     fun writeTextHV(
-        writer: BufferedWriter,
+        writer: Appendable,
         text: String,
         point: PointXY,
         color: Int,
@@ -34,7 +33,7 @@ class DxfEntity(
 
         val handle = handleGen.new()
 
-        writer.write("""
+        writer.append("""
             0
             TEXT
             5
@@ -80,11 +79,11 @@ class DxfEntity(
             73
             $alignV
         """.trimIndent())
-        writer.newLine()
+        writer.append('\n')
     }
 
     fun writeLine(
-        writer: BufferedWriter,
+        writer: Appendable,
         p1: PointXY,
         p2: PointXY,
         color: Int
@@ -96,7 +95,7 @@ class DxfEntity(
 
         val handle = handleGen.new()
 
-        writer.write("""
+        writer.append("""
             0
             LINE
             5
@@ -126,11 +125,11 @@ class DxfEntity(
             62
             $color
         """.trimIndent())
-        writer.newLine()
+        writer.append('\n')
     }
 
     fun writeCircle(
-        writer: BufferedWriter,
+        writer: Appendable,
         point: PointXY,
         size: Float,
         color: Int
@@ -141,7 +140,7 @@ class DxfEntity(
 
         val handle = handleGen.new()
 
-        writer.write("""
+        writer.append("""
             0
             CIRCLE
             5
@@ -167,11 +166,11 @@ class DxfEntity(
             40
             $s 
         """.trimIndent())
-        writer.newLine()
+        writer.append('\n')
     }
 
     fun writeTextAndLine(
-        writer: BufferedWriter,
+        writer: Appendable,
         st: String,
         p1: PointXY,
         p2: PointXY,
@@ -182,14 +181,14 @@ class DxfEntity(
     }
 
     fun writeDXFTriHatch(
-        writer: BufferedWriter,
+        writer: Appendable,
         array: ArrayList<PointXY>,
         color: Int,
         sixtytwo: Int
     ) {
         val handle = handleGen.new()
 
-        writer.write("""
+        writer.append("""
             0
             HATCH
             5
@@ -229,7 +228,7 @@ class DxfEntity(
 
         for (index in 0 until array.size) {
             if (index + 1 < array.size) {
-                writer.write("""
+                writer.append("""
                 72
                 1
                 10
@@ -241,11 +240,11 @@ class DxfEntity(
                 21
                 ${(array[index + 1].y * unitscale_)}                
             """.trimIndent())
-                writer.newLine()
+                writer.append('\n')
             }
         }
 
-        writer.write("""
+        writer.append("""
             97
             0
             75
@@ -263,12 +262,12 @@ class DxfEntity(
     }
 
     fun writeDXFTriOutlines(
-        writer: BufferedWriter,
+        writer: Appendable,
         array: ArrayList<PointXY>
     ) {
         val handle = handleGen.new()
 
-        writer.write("""
+        writer.append("""
             0
             LWPOLYLINE
             5
@@ -288,16 +287,16 @@ class DxfEntity(
             43
             0.0
         """.trimIndent())
-        writer.newLine()
+        writer.append('\n')
 
         for (index in 0 until array.size) {
-            writer.write("""
+            writer.append("""
                 10
                 ${(array[index].x * unitscale_)}
                 20
                 ${(array[index].y * unitscale_)}                
             """.trimIndent())
-            writer.newLine()
+            writer.append('\n')
         }
     }
 

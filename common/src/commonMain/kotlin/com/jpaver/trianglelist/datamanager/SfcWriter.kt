@@ -6,14 +6,11 @@ import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
 import com.jpaver.trianglelist.label.DimensionLayout
 import com.jpaver.trianglelist.label.DimensionPlacement
-import java.io.BufferedOutputStream
-import java.nio.charset.Charset
 
-class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: BufferedOutputStream, filename: String, startnum: Int, viewscale:Float ): DrawingFileWriter() {
+class SfcWriter(trilist: TriangleList, dedlist: DeductionList, filename: String, startnum: Int, viewscale:Float ): DrawingFileWriter() {
 
     override var trilist_: TriangleList = trilist.clone().numbered( setStartNumber( startnum ) )
     override var dedlist_: DeductionList = dedlist.clone()
-    val outputStream_ = outputStream
     val filename_ = filename
     var strPool_ = "" // ここにどんどん書き込む
     var assembryNumber_ = 10
@@ -24,7 +21,6 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
     override var sizeY_ = 297 * printscale_
     override var centerX_ = sizeX_ * 0.5f
     override var centerY_ = sizeY_ * 0.5f
-    val charset = Charset.forName("SJIS")
     var circleSize = textscale_ * 0.8f
 
 
@@ -359,7 +355,7 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
         angle: Double,
         scale: Float
     ){
-        val tsxb = text.toByteArray(charset).size * tsy * 0.5f
+        val tsxb = sjisByteLength(text) * tsy * 0.5f
         var positiveangle = angle
         if( angle < 0 ) positiveangle = 360 + angle
         adas("text_string_feature('1','${color}','1',\'${text}\','${point.x}','${point.y}','${tsy}','${tsxb}','0.00','${positiveangle}','0.00','${align}','1')" )
@@ -373,20 +369,27 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
         adas( "layer_feature(\'通常\','1')" )
         apnd( "ENDSEC;" )
         apnd( "END-ISO-10303-21;" )
-
-        // fileStr_ to outputStream
-        //val charset = Charset.forName("SJIS")
-        //val strUtf = "012ABC亜漢字表示"
-        val strSjis = strPool_.toByteArray(charset)
-        /*
-        for(i in 0..strSjis.size-1){
-            var c : Byte = strSjis[i]
-            var s = "%X".format(c)
-            Log.d("Sample","$s")
-        }*/
-
-        outputStream_.write( strSjis )
         return
     }
 
+    /**
+     * SFC 全文 (SJIS エンコード前の String) を組み立てて返す。
+     * 書き出し先 (stream / file) は platform 側の拡張 (app の SfcWriter.saveTo) が担う。
+     */
+    fun buildSfcString(): String {
+        save()
+        return strPool_
+    }
+
+}
+
+/**
+ * SJIS (CP932) エンコード時のバイト幅。ASCII と半角カナ = 1 byte、他 = 2 byte。
+ * 旧実装 text.toByteArray(SJIS).size の pure 置換 (golden が同値性を証明)。
+ * sumOf を使わないのは整数リテラルの overload 解決曖昧さ (KT-46360) 回避。
+ */
+fun sjisByteLength(text: String): Int {
+    var bytes = 0
+    for (c in text) bytes += if (c.code <= 0x7F || c.code in 0xFF61..0xFF9F) 1 else 2
+    return bytes
 }

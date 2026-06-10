@@ -1,6 +1,7 @@
 package com.jpaver.trianglelist
 
 import com.jpaver.trianglelist.datamanager.SfcWriter
+import com.jpaver.trianglelist.datamanager.saveTo
 import com.jpaver.trianglelist.editmodel.DeductionList
 import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
@@ -99,7 +100,7 @@ class SfcDimensionLayoutGoldenTest {
     private fun writeSfcString(tList: TriangleList): String {
         val outFile = tempFolder.newFile("out.sfc")
         val os = outFile.outputStream().buffered()
-        val w = SfcWriter(tList, DeductionList(), os, "test.sfc", 1, 1f)
+        val w = SfcWriter(tList, DeductionList(), "test.sfc", 1, 1f)
         w.titleTri_ = TitleParamStr()
         w.titleDed_ = TitleParamStr()
         w.zumeninfo = newZumenInfo()
@@ -107,7 +108,7 @@ class SfcDimensionLayoutGoldenTest {
         w.setNames("市道○○号線 舗装打換工事", "市道○○号線", "○○建設株式会社", "1/1")
         w.setStartNumber(1)
         w.isReverse_ = false
-        w.save()
+        w.saveTo(os)
         os.close()
         return outFile.readText(charset)
     }
