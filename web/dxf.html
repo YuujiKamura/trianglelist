@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TriangleList DXF Viewer</title>
+    <style>
+      :root { color-scheme: light; }
+      html, body { height: 100%; }
+      body { margin: 0; font-family: system-ui, sans-serif; background: #fafafa; display: flex; flex-direction: column; }
+      header {
+        display: flex; align-items: center; gap: 12px;
+        padding: 8px 12px; background: #1f3a5f; color: #fff;
+      }
+      header h1 { font-size: 14px; margin: 0; font-weight: 600; }
+      header a { color: #9cc4ff; font-size: 12px; }
+      header input[type="file"] { font-size: 12px; }
+      #status { font-size: 12px; opacity: 0.85; }
+      #container { flex: 1; position: relative; min-height: 0; }
+      #container.dragover::after {
+        content: 'DXF をドロップ';
+        position: absolute; inset: 0; display: grid; place-items: center;
+        background: rgba(31, 58, 95, 0.35); color: #fff; font-size: 24px;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>TriangleList DXF Viewer (dxf-viewer / WebGL)</h1>
+      <input id="file" type="file" accept=".dxf" />
+      <span id="status">DXF ファイルを選択またはドロップ</span>
+      <a href="/index.html">CSV ページへ</a>
+    </header>
+    <div id="container"></div>
+    <script type="module" src="/src/dxf.ts"></script>
+  </body>
+</html>
