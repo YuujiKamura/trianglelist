@@ -17,10 +17,12 @@ fun Triangle.toStrings(
 ): String {
     val connectedTriangles = arrayOf(nodeA, nodeB, nodeC)
     val sb = StringBuilder()
-    sb.append("Triangle ${mynumber}         hash:${System.identityHashCode(this)} valid:${isValidLengthes()}\n")
+    // System.identityHashCode は JVM 専用のため hashCode() に置換 (Triangle は hashCode を
+    // override していないので JVM では同値、デバッグ文字列専用)
+    sb.append("Triangle ${mynumber}         hash:${this.hashCode()} valid:${isValidLengthes()}\n")
 
     connectedTriangles.forEachIndexed { i, tri ->
-        if (tri != null && isnode) sb.append("connected node to$i hash:${System.identityHashCode(tri)} \n")
+        if (tri != null && isnode) sb.append("connected node to$i hash:${tri.hashCode()} \n")
     }
     if (isnode) sb.append("connection parameters to0 side${cParam_.side} type${cParam_.type} lcr${cParam_.lcr} \n")
     if (ispoints) sb.append("points:${point[0]} ${pointAB} ${pointBC} \n")

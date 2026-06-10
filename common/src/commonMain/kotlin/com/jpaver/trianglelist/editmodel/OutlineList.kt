@@ -1,6 +1,8 @@
 package com.jpaver.trianglelist.editmodel
 
-class OutlineList(var trianglelist: TriangleList) :Cloneable{
+// java.lang.Cloneable マーカーは JVM 専用かつ clone() override も無く実質無意味だったため、
+// wasmJs 追加に伴い外した (挙動不変)
+class OutlineList(var trianglelist: TriangleList) {
 
     val trilist = trianglelist.trilist
     var outlineStr_ = ArrayList<String>()

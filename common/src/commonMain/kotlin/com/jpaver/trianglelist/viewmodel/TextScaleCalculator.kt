@@ -48,8 +48,9 @@ class TextScaleCalculator {
     }
 
     fun getTextScale(printScale: Float, exportFileType: String): Float {
-        val defaultValue = defaultScaleMap.getOrDefault(exportFileType, 5f)
-        val selectedMap = fileTypeMap.getOrDefault(exportFileType, mapOf())
-        return selectedMap.getOrDefault(printScale, defaultValue)
+        // Map.getOrDefault は JVM (Java 8) 専用のため elvis に置換 (値に null は無いので同値)
+        val defaultValue = defaultScaleMap[exportFileType] ?: 5f
+        val selectedMap = fileTypeMap[exportFileType] ?: mapOf()
+        return selectedMap[printScale] ?: defaultValue
     }
 } 

@@ -50,7 +50,9 @@ class MarkingCommandExecutor {
                 message = "DXFパスが指定されていません"
             )
         }
-        DxfAnalyzer.analyzeFile(dxfPath)?.print()
+        // analyzeFile (java.io.File) は desktopMain へ移設したため、
+        // 読み込みを expect/actual (readDxfTextOrNull) に分離して同じ流れを保つ
+        readDxfTextOrNull(dxfPath)?.let { DxfAnalyzer.analyze(it) }?.print()
         return ExecutionResult(
             lines = emptyList(),
             texts = emptyList(),

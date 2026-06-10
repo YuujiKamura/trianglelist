@@ -1,0 +1,10 @@
+import { defineConfig } from 'vite';
+
+// Kotlin/Wasm 成果物 (common.mjs + .wasm) は public/wasm/ に static asset として置き、
+// 実行時に dynamic import する方式 (bundler 統合を避ける、kotlin-wasm-browser-template 準拠)。
+// そのため特別な wasm プラグインは不要。
+export default defineConfig({
+  build: {
+    target: 'esnext',
+  },
+});

@@ -1,6 +1,8 @@
 package com.jpaver.trianglelist.editmodel
 
-class PointNumberManager( ): Cloneable {
+// java.lang.Cloneable は JVM 専用のため、wasmJs 追加に伴い PointXY と同じ
+// com.example.trilib.Cloneable<T> へ切替 (clone() の型・呼び出し形は不変)
+class PointNumberManager( ): com.example.trilib.Cloneable<PointNumberManager> {
     data class Flags( var isMovedByUser: Boolean = false, var isAutoAligned: Boolean = false )
     var flag = Flags()
 

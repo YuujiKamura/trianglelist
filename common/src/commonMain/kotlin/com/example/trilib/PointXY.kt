@@ -1,6 +1,27 @@
 package com.example.trilib
+import kotlin.math.PI
 import kotlin.math.acos
 import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.floor
+import kotlin.math.pow
+import kotlin.math.sin
+import kotlin.math.sqrt
+
+// commonMain では java.lang.String.format が使えないため、"%.Nf" (HALF_UP) と同値の
+// 固定小数表記を自前で組む (viewmodel/FormattedString.kt と同じ流儀の Double 版)
+private fun formatFixed(value: Double, digits: Int): String {
+    val negative = value < 0.0
+    var factor = 1.0
+    repeat(digits) { factor *= 10.0 }
+    val scaled = (if (negative) -value else value) * factor
+    var units = floor(scaled).toLong()
+    if (scaled - units >= 0.5) units += 1
+    val s = units.toString().padStart(digits + 1, '0')
+    val intPart = s.dropLast(digits)
+    val body = if (digits == 0) intPart else intPart + "." + s.takeLast(digits)
+    return if (negative) "-$body" else body
+}
 
 class PointXY :Cloneable<PointXY> {
     private var _x: Double = 0.0
@@ -21,12 +42,12 @@ class PointXY :Cloneable<PointXY> {
     // xの値をフォーマットして返すメソッド
     val DECIMAL = 4
     fun getFormattedX(decimalPlaces: Int = DECIMAL): String {
-        return String.format("%.${decimalPlaces}f", x)
+        return formatFixed(x, decimalPlaces)
     }
 
     // yの値をフォーマットして返すメソッド
     fun getFormattedY(decimalPlaces: Int = DECIMAL): String {
-        return String.format("%.${decimalPlaces}f", y)
+        return formatFixed(y, decimalPlaces)
     }
 
     fun format(decimalPlaces: Int = DECIMAL): String{
@@ -52,13 +73,7 @@ class PointXY :Cloneable<PointXY> {
     constructor(p: PointXY) : this(p.x, p.y)
 
     override fun clone(): PointXY {
-        val b = PointXY(this.x,this.y)
-
-        try {
-        } catch (e: CloneNotSupportedException) {
-            e.printStackTrace()
-        }
-        return b
+        return PointXY(this.x, this.y)
     }
 
     private fun validateInputs(lineStart: PointXY, lineEnd: PointXY, scaleX: Double=1.0, scaleY: Double=1.0 ) {
@@ -126,7 +141,7 @@ class PointXY :Cloneable<PointXY> {
         val v1 = p2.subtract(this)
         val v2 = p2.subtract(p3)
         val angleRadian = acos(v1.innerProduct(v2) / (v1.magnitude() * v2.magnitude()))
-        val angleDegree = angleRadian * 180 / Math.PI
+        val angleDegree = angleRadian * 180 / PI
         return if (v1.outerProduct(v2) > 0) {
             angleDegree - 180
         } else {
@@ -138,7 +153,7 @@ class PointXY :Cloneable<PointXY> {
         val v1 = p2.subtract(this) // p2からthisへのベクトル、逆にすると結果が変わる
         val v2 = p2.subtract(p3) // p2からp3へのベクトル
         val angleRadian = acos(v1.innerProduct(v2) / (v1.magnitude() * v2.magnitude()))
-        val angleDegree = angleRadian * 180 / Math.PI
+        val angleDegree = angleRadian * 180 / PI
         val outerProduct = v1.outerProduct(v2)
 
         // 外角の反転
@@ -153,7 +168,7 @@ class PointXY :Cloneable<PointXY> {
         val deltaX = p2.x - x
         val deltaY = p2.y - y
         val angleRadian = atan2(deltaY, deltaX)  // deltaY/deltaX の角度をラジアンで計算
-        var angleDegree = angleRadian * 180 / Math.PI  // ラジアンを度数に変換
+        var angleDegree = angleRadian * 180 / PI  // ラジアンを度数に変換
 
         if (angleDegree < 0) {
             angleDegree += 360.0  // 負の角度の場合、360度を加えて正の範囲に修正
@@ -226,8 +241,8 @@ class PointXY :Cloneable<PointXY> {
     }
 
     fun toVector(angle: Double): PointXY {
-        val angleInRadians = Math.toRadians(angle)
-        return PointXY(Math.cos(angleInRadians), Math.sin(angleInRadians))
+        val angleInRadians = angle * PI / 180.0
+        return PointXY(cos(angleInRadians), sin(angleInRadians))
     }
 
     // 直交方向へのオフセット p2 is base line, p3 is cross vector align
@@ -253,12 +268,12 @@ class PointXY :Cloneable<PointXY> {
     }
 
     fun lengthXY(): Double {
-        return Math.pow(Math.pow(x, 2.0) + Math.pow(y, 2.0), 0.5)
+        return (x.pow(2.0) + y.pow(2.0)).pow(0.5)
     }
 
     fun calcDimAngle(a: PointXY): Double {
         var angle =
-            Math.atan2(a.x - x, a.y - y) * 180 / Math.PI
+            atan2(a.x - x, a.y - y) * 180 / PI
         //if(0 > angle )
         angle = -angle
         angle += 90.0
@@ -269,7 +284,7 @@ class PointXY :Cloneable<PointXY> {
 
     fun calcSokAngle(a: PointXY, vector: Int): Double {
         var angle =
-            Math.atan2(a.x - x, a.y - y) * 180 / Math.PI
+            atan2(a.x - x, a.y - y) * 180 / PI
         //if(0 > angle )
         angle = -angle
         angle += 90.0
@@ -348,7 +363,7 @@ class PointXY :Cloneable<PointXY> {
     }
 
     fun magnitude(): Double {
-        return Math.sqrt(x * x + y * y)
+        return sqrt(x * x + y * y)
     }
 
     fun innerProduct(point: PointXY): Double {
@@ -368,11 +383,11 @@ class PointXY :Cloneable<PointXY> {
         val offsetX: Double = this.x - center.x
         val offsetY: Double = this.y - center.y
         // 角度をラジアンに変換
-        val radians = degrees / 180 * Math.PI
+        val radians = degrees / 180 * PI
         // 回転後のX座標を計算
-        rotatedX = offsetX * Math.cos(radians) - offsetY * Math.sin(radians) + center.x
+        rotatedX = offsetX * cos(radians) - offsetY * sin(radians) + center.x
         // 回転後のY座標を計算
-        rotatedY = offsetX * Math.sin(radians) + offsetY * Math.cos(radians) + center.y
+        rotatedY = offsetX * sin(radians) + offsetY * cos(radians) + center.y
 
         return PointXY(rotatedX, rotatedY)
     }
