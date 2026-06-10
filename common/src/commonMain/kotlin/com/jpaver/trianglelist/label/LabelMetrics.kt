@@ -20,25 +20,40 @@ interface LabelMetrics {
     fun inkBoxLocal(text: String, heightMm: Float, alignH: Int, alignV: Int): InkBox
 
     /**
-     * 全半角の係数近似 fallback (platform 非依存)。テストと未較正環境用。
-     * 幅 = Σ(全角 1.0 / 半角 0.5) × heightMm、高さ = heightMm。
+     * MS Gothic 等幅係数の fallback (platform 非依存)。テストと未較正環境用。
+     * この DXF は STYLE で MS Gothic を指定しており (TablesBuilder.kt:194-270)、
+     * MS Gothic は完全等幅 (半角 = 0.5em / 全角 = 1.0em) なので係数近似でもかなり正確。
+     *
+     * heightMm はキャップハイト (DXF group code 40)。em = heightMm × EM_PER_CAP で
+     * 幅 = Σ(全角 1.0 / 半角 0.5) × em、高さ = 数字インク実高 (heightMm × DIGIT_INK_PER_CAP)。
      * 半角判定は char.code <= 0xFF (自前 writer の出力対象では十分な粗さ)。
      */
     object Approximate : LabelMetrics {
+        /**
+         * em / 較正基準高。較正基準は QCAD 互換の「'A' インク実高」(RTextRenderer.cpp の
+         * アルゴリズム参照 ── テーブル値でなく 'A' の bbox 実測で正規化)。
+         * fontTools 実測 (C:/Windows/Fonts/msgothic.ttc): 'A'/'5' インク実高 0.770em → 1/0.770 = 1.299。
+         */
+        const val EM_PER_CAP: Float = 1.299f
+
+        /** 数字インク実高 / 較正基準高。較正基準が 'A' インク実高そのものなので 1.0 (数字の見え高 = DXF height)。 */
+        const val DIGIT_INK_PER_CAP: Float = 1.0f
+
         override fun inkBoxLocal(text: String, heightMm: Float, alignH: Int, alignV: Int): InkBox {
             val units = text.sumOf { ch -> if (ch.code <= 0xFF) 0.5 else 1.0 }.toFloat()
-            val widthMm = units * heightMm
+            val widthMm = units * heightMm * EM_PER_CAP
+            val inkHeightMm = heightMm * DIGIT_INK_PER_CAP
             val leftMm = when (alignH) {
                 1 -> -widthMm / 2f // 中央: アンカーが中心
                 2 -> -widthMm      // 右寄せ: アンカーは右端
                 else -> 0f         // 左寄せ (0): アンカーは左端
             }
             val bottomMm = when (alignV) {
-                2 -> -heightMm / 2f // 中央: アンカーが中心
-                3 -> -heightMm      // 上: アンカーは上端
-                else -> 0f          // ベースライン (0)・下 (1): アンカーは下端
+                2 -> -inkHeightMm / 2f // 中央: アンカーが中心
+                3 -> -inkHeightMm      // 上: アンカーは上端
+                else -> 0f             // ベースライン (0)・下 (1): アンカーは下端
             }
-            return InkBox(leftMm, leftMm + widthMm, bottomMm, bottomMm + heightMm)
+            return InkBox(leftMm, leftMm + widthMm, bottomMm, bottomMm + inkHeightMm)
         }
     }
 }

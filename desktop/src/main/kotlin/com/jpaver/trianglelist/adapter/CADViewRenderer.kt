@@ -123,7 +123,8 @@ class CADViewRenderer {
     fun calculateDrawingBounds(
         parseResult: DxfParseResult,
         textMeasurer: TextMeasurer,
-        scale: Float = 1.0f
+        scale: Float = 1.0f,
+        density: androidx.compose.ui.unit.Density = androidx.compose.ui.unit.Density(1f)
     ): List<Float> {
         // 事前にY軸反転したデータを使用
         val flipped = CanvasUtil.flipYAxis(parseResult)
@@ -132,8 +133,8 @@ class CADViewRenderer {
         if (headerBounds != null) {
             return headerBounds
         }
-        
+
         // エンティティから計算
-        return boundsCalculator.calculateBounds(flipped, textMeasurer, scale)
+        return boundsCalculator.calculateBounds(flipped, textMeasurer, scale, density)
     }
 }
