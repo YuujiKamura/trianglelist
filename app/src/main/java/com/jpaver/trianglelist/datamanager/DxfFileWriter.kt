@@ -183,12 +183,12 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
      * A=(pointAB,point[0]), B=(pointBC,pointAB), C=(point[0],pointBC) + dim の縦横コード。
      */
     private fun layoutTriple(tri: Triangle): Triple<DimensionPlacement, DimensionPlacement, DimensionPlacement> {
-        val scale = tri.scaleFactor
-        val dimheight = tri.dimHeight
+        val scale = tri.scaleFactor.toDouble()
+        val dimheight = tri.dimHeight.toDouble()
         return Triple(
-            DimensionLayout.layout(tri.pointAB, tri.point[0], tri.dim.vertical.a, tri.dim.horizontal.a, scale, dimheight, 0f),
-            DimensionLayout.layout(tri.pointBC, tri.pointAB, tri.dim.vertical.b, tri.dim.horizontal.b, scale, dimheight, 0f),
-            DimensionLayout.layout(tri.point[0], tri.pointBC, tri.dim.vertical.c, tri.dim.horizontal.c, scale, dimheight, 0f)
+            DimensionLayout.layout(tri.pointAB, tri.point[0], tri.dim.vertical.a, tri.dim.horizontal.a, scale, dimheight, 0.0),
+            DimensionLayout.layout(tri.pointBC, tri.pointAB, tri.dim.vertical.b, tri.dim.horizontal.b, scale, dimheight, 0.0),
+            DimensionLayout.layout(tri.point[0], tri.pointBC, tri.dim.vertical.c, tri.dim.horizontal.c, scale, dimheight, 0.0)
         )
     }
 
@@ -221,7 +221,7 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         val place = DimensionLayout.layout(
             tri.pointAB, tri.point[0],
             DimensionLayout.SIDE_SOKUTEN, tri.dim.horizontal.s,
-            tri.scaleFactor, tri.dimHeight, 0f
+            tri.scaleFactor.toDouble(), tri.dimHeight.toDouble(), 0.0
         )
         val pa = place.pointA
         val pb = place.pointB
@@ -229,7 +229,7 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         writeLine(pa, pb, color)
     }
 
-    private fun writeTextDimension(verticalAlign: Int, len: String, p1: com.example.trilib.PointXY, angle: Float){
+    private fun writeTextDimension(verticalAlign: Int, len: String, p1: com.example.trilib.PointXY, angle: Double){
         writeTextHV(len, p1, WHITE, textscale_, 1, verticalAlign, angle, 1f)
     }
 
@@ -240,7 +240,7 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         textsize: Float,
         alignH: Int,
         alignV: Int,
-        angle: Float,
+        angle: Double,
         scale: Float
     ){
         dxfEntity.writeTextHV(writer, text, point, color, textsize, alignH, alignV, angle)
@@ -279,7 +279,7 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
             writeTextAndLine(
                 ded.infoStr,
                 pointFlag,
-                pointFlag.plus(infoStrLength + textOffsetX,0f),
+                pointFlag.plus((infoStrLength + textOffsetX).toDouble(),0.0),
                 textSize,
                 1f
             )
@@ -287,7 +287,7 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
             writeLine( point, pointFlag, RED)
             writeTextAndLine(
                 ded.infoStr,
-                pointFlag.plus(-ded.getInfo().length*textSize - textOffsetX,0f),
+                pointFlag.plus((-ded.getInfo().length*textSize - textOffsetX).toDouble(),0.0),
                 pointFlag,
                 textSize,
                 1f
@@ -301,7 +301,7 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
     private fun writeDedRect(ded: Deduction){
         val color = RED
         ded.shapeAngle = -ded.shapeAngle // 逆回転
-        ded.setBox( 1f )
+        ded.setBox( 1.0 )
         writeLine( ded.pLTop, ded.pLBtm, color)
         writeLine( ded.pLTop, ded.pRTop, color)
         writeLine( ded.pRTop, ded.pRBtm, color)

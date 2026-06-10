@@ -222,8 +222,8 @@ fun CADView(
                 for ((_, box) in labelBoxes) {
                     val corners = box.corners()
                     val path = androidx.compose.ui.graphics.Path().apply {
-                        moveTo(corners[0].x, -corners[0].y)
-                        for (i in 1 until corners.size) lineTo(corners[i].x, -corners[i].y)
+                        moveTo(corners[0].x.toFloat(), (-corners[0].y).toFloat())
+                        for (i in 1 until corners.size) lineTo(corners[i].x.toFloat(), (-corners[i].y).toFloat())
                         close()
                     }
                     drawPath(

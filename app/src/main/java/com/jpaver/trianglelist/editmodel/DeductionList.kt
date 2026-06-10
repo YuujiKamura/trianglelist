@@ -10,13 +10,13 @@ class DeductionList : EditList() {
     var myAngle = 0f
     fun scale(basepoint: com.example.trilib.PointXY?, sx: Float, sy: Float) {
         for (i in dedlist_.indices) {
-            dedlist_[i].scale(basepoint!!, sx, sy)
+            dedlist_[i].scale(basepoint!!, sx.toDouble(), sy.toDouble())
         }
     }
 
     fun setScale(s: Float) {
         for (i in dedlist_.indices) {
-            dedlist_[i].myscale = s
+            dedlist_[i].myscale = s.toDouble()
         }
     }
 
@@ -27,7 +27,7 @@ class DeductionList : EditList() {
 
     // scale関数はdoSomethingを使って定義
     fun scale(basepoint: com.example.trilib.PointXY, s: Float) {
-        doSomething(dedlist_) { it.scale(basepoint, s, s) }
+        doSomething(dedlist_) { it.scale(basepoint, s.toDouble(), s.toDouble()) }
     }
 
     fun move(to: com.example.trilib.PointXY?) {
@@ -63,7 +63,7 @@ class DeductionList : EditList() {
     fun rotate(bp: com.example.trilib.PointXY?, angle: Float) {
         myAngle += angle
         for (i in dedlist_.indices) {
-            dedlist_[i].rotate(bp!!, angle)
+            dedlist_[i].rotate(bp!!, angle.toDouble())
         }
     }
 

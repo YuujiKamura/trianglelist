@@ -21,11 +21,11 @@ class TrilistReverseTest {
         tritree.add(3, 2, 5f, 5f, 5f)
         tritree.add(2, 2, 5f, 5f, 5f)
 
-        Assert.assertEquals(5f, tritree.get(5).pointBC.x, 0.001f)
+        Assert.assertEquals(5.0, tritree.get(5).pointBC.x, 0.001)
 
         val revtree = tritree.reverse()
 
-        Assert.assertEquals(5f, revtree.get(1).pointAB.x, 0.001f)
+        Assert.assertEquals(5.0, revtree.get(1).pointAB.x, 0.001)
 
     }
 
@@ -40,11 +40,11 @@ class TrilistReverseTest {
         tritree.add(2, 1, 5f, 5f, 5f)
         tritree.add(2, 2, 5f, 5f, 5f)
 
-        Assert.assertEquals(5f, tritree.get(4).pointBC.x, 0.001f)
+        Assert.assertEquals(5.0, tritree.get(4).pointBC.x, 0.001)
 
         val revtree = tritree.reverse()
 
-        Assert.assertEquals(5f, revtree.get(1).pointAB.x, 0.001f)
+        Assert.assertEquals(5.0, revtree.get(1).pointAB.x, 0.001)
 
     }
 

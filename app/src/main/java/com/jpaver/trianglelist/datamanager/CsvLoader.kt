@@ -379,15 +379,15 @@ class CsvLoader {
                         PointXY(
                             chunks[8].toFloat(),
                             -chunks[9].toFloat()
-                        ).scale(viewscale),
+                        ).scale(viewscale.toDouble()),
                         PointXY(
                             chunks[10].toFloat(),
                             -chunks[11].toFloat()
-                        ).scale(viewscale)
+                        ).scale(viewscale.toDouble())
                     )
                 )
             )
-            if(chunks[12].isNotEmpty()) dedlist.get(dedlist.size()).shapeAngle = chunks[12].toFloat()
+            if(chunks[12].isNotEmpty()) dedlist.get(dedlist.size()).shapeAngle = chunks[12].toDouble()
             return true
         }
         return false

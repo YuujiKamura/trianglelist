@@ -15,7 +15,7 @@ data class OverlapPair(
     val textId: String,
     val otherId: String,
     val otherKind: ObstacleKind,
-    val depthMm: Float,
+    val depthMm: Double,
 )
 
 /**
@@ -57,15 +57,15 @@ object DxfOverlapAnalyzer {
         parseResult.lines.forEachIndexed { index, line ->
             field.addEdge(
                 "line:$index",
-                PointXY(line.x1.toFloat(), line.y1.toFloat()),
-                PointXY(line.x2.toFloat(), line.y2.toFloat()),
+                PointXY(line.x1, line.y1),
+                PointXY(line.x2, line.y2),
             )
         }
         parseResult.circles.forEachIndexed { index, circle ->
             field.addCircle(
                 "circle:$index",
-                PointXY(circle.centerX.toFloat(), circle.centerY.toFloat()),
-                circle.radius.toFloat(),
+                PointXY(circle.centerX, circle.centerY),
+                circle.radius,
             )
         }
         val world = textWorld(parseResult, textWidthFactor, metrics)
@@ -145,11 +145,11 @@ object DxfOverlapAnalyzer {
      * 内包条件: box の 4 隅がすべて円内 (番号は円の中に収まって描かれる)。
      */
     private fun isCircledNumber(box: LabelBox, circle: com.jpaver.trianglelist.dxf.DxfCircle): Boolean {
-        val centerX = circle.centerX.toFloat()
-        val centerY = circle.centerY.toFloat()
-        val radiusMm = circle.radius.toFloat()
+        val centerX = circle.centerX
+        val centerY = circle.centerY
+        val radiusMm = circle.radius
         val centerDistance = hypot(box.center.x - centerX, box.center.y - centerY)
-        if (centerDistance > radiusMm * 0.5f) return false
+        if (centerDistance > radiusMm * 0.5) return false
         return box.corners().all { corner ->
             hypot(corner.x - centerX, corner.y - centerY) <= radiusMm + LabelBox.EPS
         }
@@ -170,15 +170,15 @@ object DxfOverlapAnalyzer {
      * alignH/alignV の解釈も metrics 側 ── 描画を写す実装が描画と同じ式を使うため。
      */
     private fun toLabelBox(text: DxfText, textWidthFactor: Float, metrics: LabelMetrics): LabelBox {
-        val heightMm = text.height.toFloat()
+        val heightMm = text.height
         val ink = metrics.inkBoxLocal(text.text, heightMm, text.alignH, text.alignV)
         val widthMm = (ink.rightMm - ink.leftMm) * textWidthFactor
         val boxHeightMm = ink.topMm - ink.bottomMm
-        val anchor = PointXY(text.x.toFloat(), text.y.toFloat())
-        val rotationDeg = text.rotation.toFloat()
+        val anchor = PointXY(text.x, text.y)
+        val rotationDeg = text.rotation
         val center = PointXY(
-            anchor.x + (ink.leftMm + ink.rightMm) / 2f,
-            anchor.y + (ink.bottomMm + ink.topMm) / 2f,
+            anchor.x + (ink.leftMm + ink.rightMm) / 2.0,
+            anchor.y + (ink.bottomMm + ink.topMm) / 2.0,
         ).rotate(anchor, rotationDeg)
         return LabelBox(center, widthMm = widthMm, heightMm = boxHeightMm, rotationDeg = rotationDeg)
     }

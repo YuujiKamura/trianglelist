@@ -11,7 +11,7 @@ class PointXYtest {
         init{
             calculate()
         }
-        fun calculate(): Float{
+        fun calculate(): Double{
             val angle1 = prev.calcAngle360(targ,next)
             println("$num: $angle1")
             return angle1
@@ -95,7 +95,7 @@ class PointXYtest {
 
     }
 
-    data class TestResult(val label: String, val pointIndex: Int, val distance: Float, val isClose: Boolean)
+    data class TestResult(val label: String, val pointIndex: Int, val distance: Double, val isClose: Boolean)
 
     // 失敗したテストの結果を格納するリストの宣言
     val failedTests = mutableListOf<TestResult>()
@@ -108,7 +108,7 @@ class PointXYtest {
         val lineStart = PointXY(0f, 0f)
         val lineEnd = PointXY(2f, 2f)
 
-        val actualPoint = p.mirror(lineStart, lineEnd,1f )
+        val actualPoint = p.mirror(lineStart, lineEnd,1.0 )
         val expectedPoint = PointXY(2f, 1f)
 
         assertPointXYEquals(expectedPoint, actualPoint)
@@ -167,9 +167,9 @@ class PointXYtest {
                 0f
             ),
             PointXY(0f, 0f),
-            1f,  )
+            1.0,  )
 
-        Assert.assertEquals(1f, pressedInModel.x, 0.001f)
+        Assert.assertEquals(1.0, pressedInModel.x, 0.001)
 
     }
 
@@ -179,27 +179,27 @@ class PointXYtest {
         val p2 = PointXY(1f, 0f)
         p1.add( p1 ) // add rewrite it
         p1.addminus( p2 ) // add rewrite it
-        Assert.assertEquals(1f, p1.x, 0.001f)
+        Assert.assertEquals(1.0, p1.x, 0.001)
 
     }
 
     @Test
     fun testPointXYreference() {
         val p1 = PointXY(0f, 0f)
-        p1.add(1f, 0f) // add rewrite it
-        p1.plus(1f, 0f) // plus is NOT rewrite it
-        Assert.assertEquals(1f, p1.x, 0.001f)
+        p1.add(1.0, 0.0) // add rewrite it
+        p1.plus(1.0, 0.0) // plus is NOT rewrite it
+        Assert.assertEquals(1.0, p1.x, 0.001)
     }
 
     @Test
     fun testPointOffsetToMinus() {
         val p1 = PointXY(0f, 0f)
         val p2 = PointXY(0f, 5f)
-        val p3 = p1.offset(p2, 10f)
-        Assert.assertEquals(10f, p3.y, 0.001f )
+        val p3 = p1.offset(p2, 10.0)
+        Assert.assertEquals(10.0, p3.y, 0.001 )
 
         // マイナス方向に向かってのプラスのムーブメント
-        assertEquals( -10.0f, p2.offset(p1, 15f).y, 0.001f )
+        assertEquals( -10.0, p2.offset(p1, 15.0).y, 0.001 )
     }
 
 
@@ -210,40 +210,40 @@ class PointXYtest {
         val p2 = PointXY(-3f, -2f)
         //vector -2, -3
         //if offset -3, expected return -5-(-3)*(-2)=-11, -5-(-3)*(-3)=-14
-        Assert.assertEquals(-7f, p1.offset(p2, -3.6065f).x, 0.001f)
-        Assert.assertEquals(-8f, p1.offset(p2, -3.6065f).y, 0.001f)
+        Assert.assertEquals(-7.0, p1.offset(p2, -3.6065).x, 0.001)
+        Assert.assertEquals(-8.0, p1.offset(p2, -3.6065).y, 0.001)
 
         // 3,4,,?
         val p34 = PointXY(3f, 4f)
-        Assert.assertEquals(5f, p34.lengthXY(), 0.001f)
+        Assert.assertEquals(5.0, p34.lengthXY(), 0.001)
     }
 
     @Test
     fun testMinMax() {
         val p = PointXY(0f, 0f)
-        Assert.assertEquals(0f, p.min(
+        Assert.assertEquals(0.0, p.min(
             PointXY(
                 1f,
                 0f
             )
-        ).x, 0.001f)
-        Assert.assertEquals(1f, p.max(
+        ).x, 0.001)
+        Assert.assertEquals(1.0, p.max(
             PointXY(
                 1f,
                 0f
             )
-        ).x, 0.001f)
-        Assert.assertEquals(0f, p.max(
+        ).x, 0.001)
+        Assert.assertEquals(0.0, p.max(
             PointXY(
                 -1f,
                 0f
             )
-        ).x, 0.001f)
-        Assert.assertEquals(-1f, p.min(
+        ).x, 0.001)
+        Assert.assertEquals(-1.0, p.min(
             PointXY(
                 -1f,
                 0f
             )
-        ).x, 0.001f)
+        ).x, 0.001)
     }
 }

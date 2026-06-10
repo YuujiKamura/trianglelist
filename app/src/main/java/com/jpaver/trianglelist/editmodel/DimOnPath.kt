@@ -1,19 +1,19 @@
 package com.jpaver.trianglelist.editmodel
 
 data class DimOnPath(
-    private var scale: Float = 1.0f,
+    private var scale: Double = 1.0,
     var leftP: com.example.trilib.PointXY = com.example.trilib.PointXY(10f, 10f),
     var rightP: com.example.trilib.PointXY = com.example.trilib.PointXY(10f, 10f),
     var vertical: Int = 1,
     var horizontal: Int = 0,
-    private var dimheight: Float = 0.05f
+    private var dimheight: Double = 0.05
 ) {
 
     var pointA: com.example.trilib.PointXY = com.example.trilib.PointXY(0f, 0f)
     var pointB: com.example.trilib.PointXY = com.example.trilib.PointXY(0f, 0f)
     var dimpoint: com.example.trilib.PointXY = com.example.trilib.PointXY(0f, 0f)
-    var offsetV = 0f
-    var offsetH = 0f
+    var offsetV = 0.0
+    var offsetH = 0.0
     var textSpacer = 5f
 
     val CENTER = 0
@@ -24,8 +24,8 @@ data class DimOnPath(
     val SIDE_SOKUTEN = 4
 
     var clockwise = "C"
-    val offsetUpper = -dimheight * 0.2f //
-    val offsetLower =  dimheight * 0.9f //
+    val offsetUpper = -dimheight * 0.2 //
+    val offsetLower =  dimheight * 0.9 //
 
     init {
         setPointAB( leftP, rightP )
@@ -52,8 +52,8 @@ data class DimOnPath(
             }
         }
 
-        val tmp = leftpoint.offset( rightpoint, -3f * this.scale)
-        val outerright = leftpoint.offset(rightpoint, -0.5f * this.scale)
+        val tmp = leftpoint.offset( rightpoint, -3.0 * this.scale)
+        val outerright = leftpoint.offset(rightpoint, -0.5 * this.scale)
         val outerleft  = tmp
 
         setPointAB( outerleft, outerright )
@@ -63,7 +63,7 @@ data class DimOnPath(
     fun initDimPoint(leftP: com.example.trilib.PointXY, rightP: com.example.trilib.PointXY){
 
         val lineLength = leftP.lengthTo(rightP)
-        val HABAYOSE = lineLength*0.1f
+        val HABAYOSE = lineLength*0.1
 
         when( horizontal ){
             CENTER  -> {}
@@ -111,11 +111,11 @@ data class DimOnPath(
         }
     }
 
-    fun initPointsOuter(leftP: com.example.trilib.PointXY, rightP: com.example.trilib.PointXY, lineLength: Float){
-        val SUKIMA = 0.5f*scale
+    fun initPointsOuter(leftP: com.example.trilib.PointXY, rightP: com.example.trilib.PointXY, lineLength: Double){
+        val SUKIMA = 0.5*scale
         val movement = SUKIMA+lineLength
         val HATAAGE = -3*scale
-        val HABAYOSE = -lineLength*0.05f
+        val HABAYOSE = -lineLength*0.05
 
         pointA = leftP.offset(rightP, HATAAGE )
         pointB = rightP.offset(leftP, movement)

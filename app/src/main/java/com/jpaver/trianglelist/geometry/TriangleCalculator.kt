@@ -24,8 +24,8 @@ object TriangleCalculator {
         val alpha = calculateAlpha(lengths)
         val angle = theta + alpha
         
-        val offset_x = (lengths[1] * cos(angle)).toFloat()
-        val offset_y = (lengths[1] * sin(angle)).toFloat()
+        val offset_x = lengths[1] * cos(angle)
+        val offset_y = lengths[1] * sin(angle)
         return pointAB.plus(offset_x, offset_y)
     }
 

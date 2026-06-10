@@ -18,7 +18,7 @@ class DxfEntity(
         textsize: Float,
         alignH: Int,
         alignV: Int,
-        angle: Float
+        angle: Double
     ) {
         var x = point.x * unitscale_
         var y = point.y * unitscale_
@@ -177,7 +177,7 @@ class DxfEntity(
         p2: PointXY,
         textsize: Float
     ) {
-        writeTextHV(writer, st, p1.plus(textsize, textsize * 0.2f), 1, textsize, 0, 1, 0f)
+        writeTextHV(writer, st, p1.plus(textsize.toDouble(), textsize.toDouble() * 0.2), 1, textsize, 0, 1, 0.0)
         writeLine(writer, p1, p2, 1)
     }
 

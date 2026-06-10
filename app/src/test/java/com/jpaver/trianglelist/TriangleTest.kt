@@ -62,17 +62,17 @@ class TriangleTest {
     }
 
 
-    private fun check_distances(distances: List<Float>): List<Boolean> {
+    private fun check_distances(distances: List<Double>): List<Boolean> {
         // 距離が1.0fより小さく、0ではない条件を満たすかどうかでBooleanリストを生成
-        return distances.map { it > 0f && it < 1.0f }
+        return distances.map { it > 0.0 && it < 1.0 }
     }
 
-    private fun listup_dimpoint_distances(triangle: Triangle): List<Float>{
+    private fun listup_dimpoint_distances(triangle: Triangle): List<Double>{
         val distances = listup_dimpoint_distances(triangle, 0) + listup_dimpoint_distances(triangle, 1) + listup_dimpoint_distances(triangle, 2)
         return distances
     }
 
-    private fun listup_dimpoint_distances(triangle: Triangle, index_basepoint: Int): List<Float> {
+    private fun listup_dimpoint_distances(triangle: Triangle, index_basepoint: Int): List<Double> {
         val dimpoint = arrayOf( triangle.dimpoint.a,triangle.dimpoint.b,triangle.dimpoint.c)
 
         return dimpoint[index_basepoint].distancesTo(dimpoint)
@@ -218,9 +218,9 @@ class TriangleTest {
     fun testCalcDimAngle() {
         val tri = Triangle(5f, 5f, 5f)
         val angle360 = tri.point[0].calcAngle360(tri.pointAB, tri.pointBC)
-        Assert.assertEquals(300f, angle360, 0.0001f)
-        Assert.assertEquals(300f, tri.pointBC.calcAngle360(tri.point[0], tri.pointAB), 0.0001f)
-        Assert.assertEquals(300f, tri.pointAB.calcAngle360(tri.pointBC, tri.point[0]), 0.0001f)
+        Assert.assertEquals(300.0, angle360, 0.0001)
+        Assert.assertEquals(300.0, tri.pointBC.calcAngle360(tri.point[0], tri.pointAB), 0.0001)
+        Assert.assertEquals(300.0, tri.pointAB.calcAngle360(tri.pointBC, tri.point[0]), 0.0001)
     }
 
     @Test
@@ -229,19 +229,19 @@ class TriangleTest {
         tri1.controlDimHorizontal(0)
         Assert.assertEquals(1, tri1.dim.horizontal.a)
         tri1.setDimPoint()
-        Assert.assertEquals(-1.8f, tri1.dimpoint.a.x, 0.001f)
+        Assert.assertEquals(-1.8, tri1.dimpoint.a.x, 0.001)
         var dim = PointXY(-1.5f, 0f)
         val offsetLeft = PointXY(-3f, 0f)
         val offsetRight = PointXY(0f, 0f)
         var haba = dim.lengthTo(offsetLeft) * 0.5f
-        Assert.assertEquals(0.75f, haba, 0.001f)
+        Assert.assertEquals(0.75, haba, 0.001)
         haba = dim.lengthTo(offsetRight) * 0.5f
-        Assert.assertEquals(0.75f, haba, 0.001f)
+        Assert.assertEquals(0.75, haba, 0.001)
         dim = dim.offset(offsetLeft, haba)
-        Assert.assertEquals(-2.25f, dim.x, 0.001f)
+        Assert.assertEquals(-2.25, dim.x, 0.001)
         tri1.controlDimHorizontal(0)
         tri1.setDimPoint()
-        Assert.assertEquals(-1.2f, tri1.dimpoint.a.x, 0.01f)
+        Assert.assertEquals(-1.2, tri1.dimpoint.a.x, 0.01)
         tri1.controlDimVertical(0)
         Assert.assertEquals(3, tri1.dim.vertical.a)
         tri1.controlDimVertical(0)
@@ -260,9 +260,9 @@ class TriangleTest {
     @Test
     fun testTriBounds() {
         val myT = Triangle(3f, 4f, 5f)
-        Assert.assertEquals(4f, myT.myBP_.top, 0.001f)
+        Assert.assertEquals(4.0, myT.myBP_.top, 0.001)
         myT.move(PointXY(5f, 5f))
-        Assert.assertEquals(9f, myT.myBP_.top, 0.001f)
+        Assert.assertEquals(9.0, myT.myBP_.top, 0.001)
         val myDParam =
             InputParameter("集水桝", "Box", 3, 0.8f, 0.8f, 0f, 0, 0,
                 PointXY(0.5f, 0.5f),
@@ -270,7 +270,7 @@ class TriangleTest {
             )
         val myD = Deduction(myDParam)
         myD.move(PointXY(5f, 5f))
-        Assert.assertEquals(5.5f, myD.point.x, 0.001f)
+        Assert.assertEquals(5.5, myD.point.x, 0.001)
     }
 
     @Test
@@ -349,42 +349,42 @@ class TriangleTest {
         val tri1 = Triangle(3f, 5f, 4f, PointXY(0f, 0f), 0.0f)
         val tri2 = Triangle(tri1, 3, 6f, 5f, 4f)
         // 0:not use, 1:B, 2:C, 3:BR, 4:BL, 5:CR, 6:CL, 7:BC, 8: CC, 9:FB, 10:FC
-        Assert.assertTrue(tri1.point[0].equals(0f, 0f))
-        Assert.assertTrue(tri1.pointAB.equals(3f, 0f))
-        Assert.assertTrue(tri1.pointBC.equals(0f, -4f))
-        Assert.assertTrue(tri2.point[0].equals(0f, -4f))
-        Assert.assertFalse(tri2.pointAB.equals(3f, 0f))
-        Assert.assertFalse(tri2.pointBC.equals(0f, -4f))
+        Assert.assertTrue(tri1.point[0].equals(0.0, 0.0))
+        Assert.assertTrue(tri1.pointAB.equals(3.0, 0.0))
+        Assert.assertTrue(tri1.pointBC.equals(0.0, -4.0))
+        Assert.assertTrue(tri2.point[0].equals(0.0, -4.0))
+        Assert.assertFalse(tri2.pointAB.equals(3.0, 0.0))
+        Assert.assertFalse(tri2.pointBC.equals(0.0, -4.0))
         tri1.calcPoints(tri2, 1)
-        Assert.assertFalse(tri1.point[0].equals(0f, 0f))
-        Assert.assertFalse(tri1.pointAB.equals(3f, 0f))
-        Assert.assertFalse(tri1.pointBC.equals(0f, -4f))
+        Assert.assertFalse(tri1.point[0].equals(0.0, 0.0))
+        Assert.assertFalse(tri1.pointAB.equals(3.0, 0.0))
+        Assert.assertFalse(tri1.pointBC.equals(0.0, -4.0))
     }
 
     @Test
     fun testNewCalcPointC() {
         val tri1 = Triangle(3f, 4f, 5f, PointXY(0f, 0f), 0.0f)
         val tri2 = Triangle(tri1, 2, 3f, 4f)
-        Assert.assertTrue(tri1.point[0].equals(0f, 0f))
-        Assert.assertTrue(tri1.pointAB.equals(3f, 0f))
-        Assert.assertTrue(tri1.pointBC.equals(3f, -4f))
+        Assert.assertTrue(tri1.point[0].equals(0.0, 0.0))
+        Assert.assertTrue(tri1.pointAB.equals(3.0, 0.0))
+        Assert.assertTrue(tri1.pointBC.equals(3.0, -4.0))
         tri1.calcPoints(tri2, 2)
-        Assert.assertTrue(tri1.point[0].equals(0f, 0f))
-        Assert.assertTrue(tri1.pointAB.equals(3f, 0f))
-        Assert.assertTrue(tri1.pointBC.equals(3f, -4f))
+        Assert.assertTrue(tri1.point[0].equals(0.0, 0.0))
+        Assert.assertTrue(tri1.pointAB.equals(3.0, 0.0))
+        Assert.assertTrue(tri1.pointBC.equals(3.0, -4.0))
     }
 
     @Test
     fun testNewCalcPointB() {
         val tri1 = Triangle(3f, 5f, 4f, PointXY(0f, 0f), 0.0f)
         val tri2 = Triangle(tri1, 1, 4f, 3f)
-        Assert.assertTrue(tri1.point[0].equals(0f, 0f))
-        Assert.assertTrue(tri1.pointAB.equals(3f, 0f))
-        Assert.assertTrue(tri1.pointBC.equals(0f, -4f))
+        Assert.assertTrue(tri1.point[0].equals(0.0, 0.0))
+        Assert.assertTrue(tri1.pointAB.equals(3.0, 0.0))
+        Assert.assertTrue(tri1.pointBC.equals(0.0, -4.0))
         tri1.calcPoints(tri2, 1)
-        Assert.assertTrue(tri1.point[0].equals(0f, 0f))
-        Assert.assertTrue(tri1.pointAB.equals(3f, 0f))
-        Assert.assertTrue(tri1.pointBC.equals(0f, -4f))
+        Assert.assertTrue(tri1.point[0].equals(0.0, 0.0))
+        Assert.assertTrue(tri1.pointAB.equals(3.0, 0.0))
+        Assert.assertTrue(tri1.pointBC.equals(0.0, -4.0))
     }
 
     @Test

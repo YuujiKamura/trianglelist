@@ -11,10 +11,10 @@ class ViewTranslateManager() {
     var zoomSize: Float = 1.0f
 
     fun screenTranslate( canvas: Canvas ){
-        canvas.translate(baseInView.x, baseInView.y) // baseInViewはview座標系の中央を標準としていて、そこからスクロールによって移動した数値になる。
+        canvas.translate(baseInView.x.toFloat(), baseInView.y.toFloat()) // baseInViewはview座標系の中央を標準としていて、そこからスクロールによって移動した数値になる。
         canvas.scale(zoomSize, zoomSize )//, mFocusX, mFocusY )//, scaleCenter.x, scaleCenter.y )//この位置に来ることでscaleの中心がbaseInViewに依存する。
         //canvas.translate(-pressedInModel.x, pressedInModel.y)//どこで更新されているのか追跡
-        canvas.translate(-centerInModel.x, centerInModel.y)
+        canvas.translate(-centerInModel.x.toFloat(), centerInModel.y.toFloat())
     }
 
     fun setParameters(_baseInView: com.example.trilib.PointXY, _zoomSize: Float, _centerInModel: com.example.trilib.PointXY, _pressedInModel: com.example.trilib.PointXY){
@@ -28,7 +28,7 @@ class ViewTranslateManager() {
         return pressedInView.translateAndScale(
             baseInView,
             centerInModel,
-            zoomSize, //ズームレベルによってなぜか位置が動いている
+            zoomSize.toDouble(), //ズームレベルによってなぜか位置が動いている
         )
     }
 

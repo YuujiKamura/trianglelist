@@ -25,8 +25,8 @@ class MeasuredLabelMetrics(
     private val density: Density,
 ) : LabelMetrics {
 
-    override fun inkBoxLocal(text: String, heightMm: Float, alignH: Int, alignV: Int): LabelMetrics.InkBox {
-        val fontSizePx = TextRenderer.fontSizePxFor(heightMm)
+    override fun inkBoxLocal(text: String, heightMm: Double, alignH: Int, alignV: Int): LabelMetrics.InkBox {
+        val fontSizePx = TextRenderer.fontSizePxFor(heightMm.toFloat())
         // 描画と同じ style で layout (整列計算は描画と同じ firstBaseline を使う)
         val style = TextStyle(
             fontFamily = TextRenderer.msGothicFamily,
@@ -38,7 +38,7 @@ class MeasuredLabelMetrics(
         val topLeft = TextRenderer.alignedTopLeft(
             0f, 0f,
             layout.size.width.toFloat(), layout.size.height.toFloat(),
-            baseline, heightMm, alignH, alignV,
+            baseline, heightMm.toFloat(), alignH, alignV,
         )
 
         // インク実測: 描画と同じ MS Gothic Typeface・同じ px サイズ。
@@ -51,10 +51,10 @@ class MeasuredLabelMetrics(
 
         // 描画 frame (y 下向き) → DXF ローカル (Y 上向き)
         return LabelMetrics.InkBox(
-            leftMm = leftFlipped,
-            rightMm = rightFlipped,
-            bottomMm = -bottomFlipped,
-            topMm = -topFlipped,
+            leftMm = leftFlipped.toDouble(),
+            rightMm = rightFlipped.toDouble(),
+            bottomMm = (-bottomFlipped).toDouble(),
+            topMm = (-topFlipped).toDouble(),
         )
     }
 }

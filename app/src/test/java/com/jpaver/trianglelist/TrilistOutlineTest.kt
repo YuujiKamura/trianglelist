@@ -60,7 +60,7 @@ class TrilistOutlineTest {
         val actualResult = outlinelist.find(target)!!
 
         println(actualResult)
-        assertTrue( target.nearBy( actualResult, 0.05f) )
+        assertTrue( target.nearBy( actualResult, 0.05) )
 
         val angles = pointlist!!.map{ outlinelist.calcAngle(it) }
         println(angles.joinToString("\n") )

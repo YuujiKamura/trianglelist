@@ -45,7 +45,7 @@ class DxfOverlapAnalyzerTest {
         assertEquals("line:0", pair.otherId)
         assertEquals(ObstacleKind.EDGE, pair.otherKind)
         assertEquals("text:0:ABCD", pair.textId)
-        assertEquals(2f, pair.depthMm, 1e-3f, "中央貫通の押し出し量は 2 のはず: $pair")
+        assertEquals(2.0, pair.depthMm, 1e-3, "中央貫通の押し出し量は 2 のはず: $pair")
     }
 
     @Test
@@ -60,7 +60,7 @@ class DxfOverlapAnalyzerTest {
         val report = DxfOverlapAnalyzer.analyze(parseResult)
 
         assertEquals(1, report.pairs.size, "接触 1 件のはず: ${report.pairs}")
-        assertEquals(0f, report.pairs.single().depthMm, 1e-3f, "寄り添い配置の深さは 0 のはず: ${report.pairs}")
+        assertEquals(0.0, report.pairs.single().depthMm, 1e-3, "寄り添い配置の深さは 0 のはず: ${report.pairs}")
     }
 
     @Test
@@ -84,7 +84,7 @@ class DxfOverlapAnalyzerTest {
             setOf(pair.textId, pair.otherId) == setOf("text:0:ABCD", "text:1:EFGH"),
             "ペアの両端が 2 テキストの id のはず: $pair",
         )
-        assertEquals(0.5f, pair.depthMm, 1e-3f, "y 方向の食い込み 1.0-0.5=0.5 が最小のはず: $pair")
+        assertEquals(0.5, pair.depthMm, 1e-3, "y 方向の食い込み 1.0-0.5=0.5 が最小のはず: $pair")
     }
 
     @Test
@@ -167,7 +167,7 @@ class DxfOverlapAnalyzerTest {
         val pair = report.pairs.single()
         assertEquals("circle:0", pair.otherId)
         assertEquals(ObstacleKind.CIRCLE, pair.otherKind)
-        assertEquals(0.5f, pair.depthMm, 1e-3f, "深さ = r - 最近点距離 = 0.5 のはず: $pair")
+        assertEquals(0.5, pair.depthMm, 1e-3, "深さ = r - 最近点距離 = 0.5 のはず: $pair")
     }
 
     @Test
@@ -220,8 +220,8 @@ class DxfOverlapAnalyzerTest {
     fun `LabelMetrics を差し替えると box の幅が実測値になる`() {
         // 固定幅 5mm のインク矩形を返す fake metrics ── 実測実装の差し込み口を pin する
         val fixedWidth = object : LabelMetrics {
-            override fun inkBoxLocal(text: String, heightMm: Float, alignH: Int, alignV: Int) =
-                LabelMetrics.InkBox(-2.5f, 2.5f, -heightMm / 2f, heightMm / 2f)
+            override fun inkBoxLocal(text: String, heightMm: Double, alignH: Int, alignV: Int) =
+                LabelMetrics.InkBox(-2.5, 2.5, -heightMm / 2.0, heightMm / 2.0)
         }
         val parseResult = DxfParseResult(
             texts = listOf(DxfText(x = 0.0, y = 0.0, text = "ABCD", height = 2.0, alignH = 1, alignV = 2)),
@@ -229,8 +229,8 @@ class DxfOverlapAnalyzerTest {
 
         val box = DxfOverlapAnalyzer.textBoxes(parseResult, metrics = fixedWidth).single().second
 
-        assertEquals(5.0f, box.widthMm, 1e-3f, "幅は metrics の実測値が使われるはず")
-        assertEquals(2.0f, box.heightMm, 1e-3f, "高さは DXF height のまま")
+        assertEquals(5.0, box.widthMm, 1e-3, "幅は metrics の実測値が使われるはず")
+        assertEquals(2.0, box.heightMm, 1e-3, "高さは DXF height のまま")
     }
 
     @Test
@@ -244,9 +244,9 @@ class DxfOverlapAnalyzerTest {
         assertEquals(1, boxes.size)
         val (id, box) = boxes.single()
         assertEquals("text:0:ABCD", id)
-        assertEquals(5.196f, box.widthMm, 1e-3f, "半角 4 文字 × 0.5 × height 2 × em/cap 1.299 = 5.196")
-        assertEquals(2f, box.heightMm, 1e-3f, "インク高 = height × 1.0")
-        assertEquals(0f, box.center.x, 1e-3f, "中央寄せはアンカーが中心")
-        assertEquals(0f, box.center.y, 1e-3f)
+        assertEquals(5.196, box.widthMm, 1e-3, "半角 4 文字 × 0.5 × height 2 × em/cap 1.299 = 5.196")
+        assertEquals(2.0, box.heightMm, 1e-3, "インク高 = height × 1.0")
+        assertEquals(0.0, box.center.x, 1e-3, "中央寄せはアンカーが中心")
+        assertEquals(0.0, box.center.y, 1e-3)
     }
 }

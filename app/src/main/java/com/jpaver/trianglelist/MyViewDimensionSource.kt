@@ -24,12 +24,12 @@ object MyViewDimensionSource {
 
     /** 3 辺 (A/B/C) の寸法配置。dimOnPath[0]/[1]/[2] に対応。 */
     fun triple(tri: Triangle): Triple<DimensionPlacement, DimensionPlacement, DimensionPlacement> {
-        val scale = tri.scaleFactor
-        val dimheight = tri.dimHeight
+        val scale = tri.scaleFactor.toDouble()
+        val dimheight = tri.dimHeight.toDouble()
         return Triple(
-            DimensionLayout.layout(tri.pointAB, tri.point[0], tri.dim.vertical.a, tri.dim.horizontal.a, scale, dimheight, 0f),
-            DimensionLayout.layout(tri.pointBC, tri.pointAB, tri.dim.vertical.b, tri.dim.horizontal.b, scale, dimheight, 0f),
-            DimensionLayout.layout(tri.point[0], tri.pointBC, tri.dim.vertical.c, tri.dim.horizontal.c, scale, dimheight, 0f)
+            DimensionLayout.layout(tri.pointAB, tri.point[0], tri.dim.vertical.a, tri.dim.horizontal.a, scale, dimheight, 0.0),
+            DimensionLayout.layout(tri.pointBC, tri.pointAB, tri.dim.vertical.b, tri.dim.horizontal.b, scale, dimheight, 0.0),
+            DimensionLayout.layout(tri.point[0], tri.pointBC, tri.dim.vertical.c, tri.dim.horizontal.c, scale, dimheight, 0.0)
         )
     }
 
@@ -38,7 +38,7 @@ object MyViewDimensionSource {
         DimensionLayout.layout(
             tri.pointAB, tri.point[0],
             DimensionLayout.SIDE_SOKUTEN, tri.dim.horizontal.s,
-            tri.scaleFactor, tri.dimHeight, 0f
+            tri.scaleFactor.toDouble(), tri.dimHeight.toDouble(), 0.0
         )
 
     /** 影三角形は B/C 辺の寸法値のみ描く (drawShadowTriangle)。shadowTri の dimOnPath[1]/[2] に対応。 */

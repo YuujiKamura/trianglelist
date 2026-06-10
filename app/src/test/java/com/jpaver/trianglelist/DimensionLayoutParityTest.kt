@@ -13,7 +13,7 @@ import org.junit.Test
  */
 class DimensionLayoutParityTest {
 
-    private val eps = 1e-4f
+    private val eps = 1e-4
 
     // 反転 {pointA.x < pointB.x, >=} の両側 + 垂直辺 (x 同値で >= が成立) + 斜め + 小数を覆う
     private val edges = listOf(
@@ -25,16 +25,16 @@ class DimensionLayoutParityTest {
         PointXY(8f, 1f) to PointXY(2f, 6f),           // 斜め反転
         PointXY(0.5f, 1.25f) to PointXY(4.75f, 0.3f)  // 小数
     )
-    private val scales = listOf(1f, 0.5f, 2.5f)
-    private val dimheights = listOf(0.05f, 0.3f)
+    private val scales = listOf(1.0, 0.5, 2.5)
+    private val dimheights = listOf(0.05, 0.3)
 
     private fun assertParity(
         leftP: PointXY,
         rightP: PointXY,
         vertical: Int,
         horizontal: Int,
-        scale: Float,
-        dimheight: Float
+        scale: Double,
+        dimheight: Double
     ) {
         val old = DimOnPath(scale, PointXY(leftP), PointXY(rightP), vertical, horizontal, dimheight)
         val new = DimensionLayout.layout(PointXY(leftP), PointXY(rightP), vertical, horizontal, scale, dimheight)
@@ -110,7 +110,7 @@ class DimensionLayoutParityTest {
         val verticals = listOf(tri.dim.vertical.a, tri.dim.vertical.b, tri.dim.vertical.c)
         val horizontals = listOf(tri.dim.horizontal.a, tri.dim.horizontal.b, tri.dim.horizontal.c)
         for (i in 0..2) {
-            assertParity(sides[i].first, sides[i].second, verticals[i], horizontals[i], tri.scaleFactor, tri.dimHeight)
+            assertParity(sides[i].first, sides[i].second, verticals[i], horizontals[i], tri.scaleFactor.toDouble(), tri.dimHeight.toDouble())
         }
     }
 }

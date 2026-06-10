@@ -32,19 +32,19 @@ class PointNumberTest {
         t1.setPointNumber(com.example.trilib.PointXY(0f, 2.5f), true)
 
         //参照を排除したpointnumber
-        t1.pointnumber = t1.pointnumber.rotate(com.example.trilib.PointXY(0f, 0f), 90f)
-        Assert.assertEquals(-2.5f, t1.pointnumber.x, 0.01f)
-        Assert.assertEquals(0.0f, t1.pointnumber.y, 0.01f)
+        t1.pointnumber = t1.pointnumber.rotate(com.example.trilib.PointXY(0f, 0f), 90.0)
+        Assert.assertEquals(-2.5, t1.pointnumber.x, 0.01)
+        Assert.assertEquals(0.0, t1.pointnumber.y, 0.01)
 
         //一様に回転する
-        t1.pointnumber = t1.pointnumber.rotate(com.example.trilib.PointXY(0f, 0f), 90f)
-        Assert.assertEquals(0f, t1.pointnumber.x, 0.01f)
-        Assert.assertEquals(-2.5f, t1.pointnumber.y, 0.01f)
+        t1.pointnumber = t1.pointnumber.rotate(com.example.trilib.PointXY(0f, 0f), 90.0)
+        Assert.assertEquals(0.0, t1.pointnumber.x, 0.01)
+        Assert.assertEquals(-2.5, t1.pointnumber.y, 0.01)
 
         //更新される
         t1.control_rotate(com.example.trilib.PointXY(0f, 0f), 90f)
-        Assert.assertEquals(2.5f, t1.pointnumber.x, 0.01f)
-        Assert.assertEquals(0.0f, t1.pointnumber.y, 0.01f)
+        Assert.assertEquals(2.5, t1.pointnumber.x, 0.01)
+        Assert.assertEquals(0.0, t1.pointnumber.y, 0.01)
 
     }
 
@@ -59,9 +59,9 @@ class PointNumberTest {
     @Test
     fun testAutoAlignPointNumber2() {
         val t1 = Triangle(6.0f, 3.5f, 3.5f)
-        Assert.assertEquals(-3.0f, t1.pointnumber.x, 0.001f)
+        Assert.assertEquals(-3.0, t1.pointnumber.x, 0.001)
         Assert.assertEquals(118f, t1.angleBC, 0.1f)
-        Assert.assertEquals(0.6f, t1.pointnumber.y, 0.01f)
+        Assert.assertEquals(0.6, t1.pointnumber.y, 0.01)
     }
 
     @Test
@@ -71,16 +71,16 @@ class PointNumberTest {
         Assert.assertEquals(1.4433, t1.pointnumber.y.toDouble(), 0.001)
         val t2 = Triangle(5f, 1.5f, 5f)
         //t2.setChildSide(1);
-        Assert.assertEquals(-3.258f, t2.pointnumber.x, 0.001f)
+        Assert.assertEquals(-3.258, t2.pointnumber.x, 0.001)
     }
 
     //三角形の形状によって番号が移動するかテスト
     @Test
     fun testCalcWeitedMidPoint() {
         val t345 = Triangle(3f, 4f, 5f)
-        Assert.assertEquals(-2.0f, t345.pointnumber.x, 0.01f)
+        Assert.assertEquals(-2.0, t345.pointnumber.x, 0.01)
         val t = Triangle(5f, 5f, 5f)
-        Assert.assertEquals(-2.5f, t.pointnumber.x, 0.01f)
+        Assert.assertEquals(-2.5, t.pointnumber.x, 0.01)
     }
 
 }

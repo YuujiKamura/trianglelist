@@ -330,8 +330,8 @@ class MyView(context: Context, attrs: AttributeSet?) :
     }
 
     private fun setPressEvent(x: Float, y: Float){
-        pressedInView.set(x, y)
-        lastCPoint.set(x, y)
+        pressedInView.set(x.toDouble(), y.toDouble())
+        lastCPoint.set(x.toDouble(), y.toDouble())
         pressedInViewToModel(pressedInView)
 
     }
@@ -347,7 +347,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         if (isViewScaling) return false     // ピンチ中はスクロールしない
 
         /* ── 1. タッチ位置を更新 ───────────────────────── */
-        pressedInView.set(e2.x, e2.y)
+        pressedInView.set(e2.x.toDouble(), e2.y.toDouble())
 
         /* ── 2. 今回の移動量を求める（現在値 − 前回値） ── */
         moveVector = pressedInView.addminus(lastCPoint)
@@ -522,15 +522,15 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
 
     fun resetPointToZero(){
-        translatePoint.set(0f, 0f)
-        moveVector.set(0f, 0f)
-        pressedInView.set(0f, 0f)
-        lastCPoint.set(0f, 0f)
-        pressedInModel.set(0f, 0f)
+        translatePoint.set(0.0, 0.0)
+        moveVector.set(0.0, 0.0)
+        pressedInView.set(0.0, 0.0)
+        lastCPoint.set(0.0, 0.0)
+        pressedInModel.set(0.0, 0.0)
     }
 
     fun viewResetToCenter() {
-        viewSize.set(width.toFloat(), height.toFloat())
+        viewSize.set(width.toDouble(), height.toDouble())
         centerInView.set(viewSize.x * 0.5f, viewSize.y * 0.25f)
 
         baseInView.set(centerInView)        // ★平行移動量を初期化
@@ -715,48 +715,48 @@ class MyView(context: Context, attrs: AttributeSet?) :
         if( isDebug_ == true ){
             val strD = ded.point.x.toString() + " " + ded.point.y.toString()
             val strDF = ded.pointFlag.x.toString() + " " + ded.pointFlag.y.toString()
-            canvas.drawText(strD, pointFlag.x, pointFlag.y-50f, paint)
-            canvas.drawText(strDF, pointFlag.x, pointFlag.y-100f, paint)
-            canvas.drawCircle(point.x, point.y, ded.lengthX / 2 * ded.myscale, paintYellow)
+            canvas.drawText(strD, pointFlag.x.toFloat(), (pointFlag.y-50f).toFloat(), paint)
+            canvas.drawText(strDF, pointFlag.x.toFloat(), (pointFlag.y-100f).toFloat(), paint)
+            canvas.drawCircle(point.x.toFloat(), point.y.toFloat(), (ded.lengthX / 2 * ded.myscale).toFloat(), paintYellow)
 
             val strA = "angle: ${ded.shapeAngle}"
-            canvas.drawText(strA, point.x, point.y-50f, paint)
+            canvas.drawText(strA, point.x.toFloat(), (point.y-50f).toFloat(), paint)
 
         }
 
         if(point.x <= pointFlag.x) {  //pointFlag is RIGHT from DedCenter
-            if(pointFlag.x != 0f) {
-                canvas.drawLine(point.x, point.y, pointFlag.x, pointFlag.y, paint)
+            if(pointFlag.x != 0.0) {
+                canvas.drawLine(point.x.toFloat(), point.y.toFloat(), pointFlag.x.toFloat(), pointFlag.y.toFloat(), paint)
                 drawDedText(
                     canvas,
                     str,
                     pointFlag,//.plus(3f, 0f),
-                    pointFlag.plus(infoStrLength, 0f),
+                    pointFlag.plus(infoStrLength.toDouble(), 0.0),
                     paint
                 )
             }
             else                  drawDedText(
                 canvas, str, point, point.plus(
-                    infoStrLength,
-                    0f
+                    infoStrLength.toDouble(),
+                    0.0
                 ), paint
             )
         } else {                     //pointFlag is LEFT from DedCenter
-            if(pointFlag.x != 0f) {
+            if(pointFlag.x != 0.0) {
                 //中継ぎ線
-                canvas.drawLine(point.x, point.y, pointFlag.x, pointFlag.y, paint)
+                canvas.drawLine(point.x.toFloat(), point.y.toFloat(), pointFlag.x.toFloat(), pointFlag.y.toFloat(), paint)
                 // フラッグから文字の長さを引いた点が基準
                 drawDedText(
                     canvas, str, pointFlag.plus(
-                        -infoStrLength,
-                        0f
+                        (-infoStrLength).toDouble(),
+                        0.0
                     ), pointFlag, paint
                 )
             }
             else                  drawDedText(
                 canvas, str, point.plus(
-                    -infoStrLength,
-                    0f
+                    (-infoStrLength).toDouble(),
+                    0.0
                 ), point, paint
             )
         }
@@ -764,7 +764,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         // サークル内を色抜きするために一時書き換えて戻す
         if(ded.type == "Circle"){
             paint.style = Paint.Style.STROKE
-            canvas.drawCircle(point.x, point.y, ded.lengthX / 2 * ded.myscale, paint)
+            canvas.drawCircle(point.x.toFloat(), point.y.toFloat(), (ded.lengthX / 2 * ded.myscale).toFloat(), paint)
             paint.style = Paint.Style.FILL
         }
         if(ded.type == "Box")    drawDedRect(canvas, ded, paint)
@@ -773,14 +773,14 @@ class MyView(context: Context, attrs: AttributeSet?) :
     }
 
     fun drawCrossLines(canvas: Canvas, point: PointXY, paint: Paint){
-        if(point.x != 0f){
+        if(point.x != 0.0){
             canvas.drawLine(
-                point.x - 20f, point.y,
-                point.x + 20f, point.y, paint
+                (point.x - 20f).toFloat(), point.y.toFloat(),
+                (point.x + 20f).toFloat(), point.y.toFloat(), paint
             )
             canvas.drawLine(
-                point.x, point.y - 20f,
-                point.x, point.y + 20f, paint
+                point.x.toFloat(), (point.y - 20f).toFloat(),
+                point.x.toFloat(), (point.y + 20f).toFloat(), paint
             )
 
         }
@@ -788,7 +788,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
     }
 
     fun drawLine(start: PointXY, end: PointXY, paint:Paint, canvas: Canvas ){
-        canvas.drawLine( start.x, -start.y,end.x, -end.y, paint )
+        canvas.drawLine( start.x.toFloat(), (-start.y).toFloat(),end.x.toFloat(), (-end.y).toFloat(), paint )
     }
 
     fun drawBlinkLine( canvas: Canvas, myTriangleList: TriangleList){
@@ -809,8 +809,8 @@ class MyView(context: Context, attrs: AttributeSet?) :
         paintYellow.style = Paint.Style.STROKE
 
         if( tri.mynumber == myTriangleList.lastTapNumber && isPrintPDF_ == false ) canvas.drawCircle(
-            tri.pointnumber.x,
-            -tri.pointnumber.y,
+            tri.pointnumber.x.toFloat(),
+            (-tri.pointnumber.y).toFloat(),
             circleSize,
             paintYellow
         )
@@ -819,7 +819,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
     }
 
     fun drawLine(canvas: Canvas, p1: PointXY, p2: PointXY, sx: Float, sy: Float, paint: Paint){
-        canvas.drawLine(p1.x * sx, p1.y * sy, p2.x * sx, p2.y * sy, paint)
+        canvas.drawLine((p1.x * sx).toFloat(), (p1.y * sy).toFloat(), (p2.x * sx).toFloat(), (p2.y * sy).toFloat(), paint)
     }
 
     fun drawTriLines(canvas: Canvas, tri: Triangle, paintLine: Paint){
@@ -834,9 +834,9 @@ class MyView(context: Context, attrs: AttributeSet?) :
         drawLine(canvas, pbc, pca, 1f, -1f, paintLine)
     }
 
-    fun drawDigits(canvas: Canvas, str: String, path: Path, offsetH: Float, offsetV: Float, paint: Paint, onecharsize: Float ){
+    fun drawDigits(canvas: Canvas, str: String, path: Path, offsetH: Double, offsetV: Double, paint: Paint, onecharsize: Float ){
         for( index in 0..<str.length){
-            canvas.drawTextOnPath(str.get(index).toString(), path, offsetH+((index-2)*onecharsize), offsetV, paint )
+            canvas.drawTextOnPath(str.get(index).toString(), path, (offsetH+((index-2)*onecharsize)).toFloat(), offsetV.toFloat(), paint )
         }
     }
 
@@ -846,8 +846,8 @@ class MyView(context: Context, attrs: AttributeSet?) :
         paint1: Paint,
         paint2: Paint
     ){
-        val pnX = tri.pointnumber.x
-        val pnY = -tri.pointnumber.y
+        val pnX = tri.pointnumber.x.toFloat()
+        val pnY = (-tri.pointnumber.y).toFloat()
         val pnpY = getPaintCenterY(pnY, paint1)
         val areaoffsetY = paint2.textSize *1.3f
         paint2.style = Paint.Style.STROKE
@@ -880,30 +880,30 @@ class MyView(context: Context, attrs: AttributeSet?) :
             val pc = tri.pointcenter
             val pn = tri.pointnumber
             val pcOffsetToN = pc//.offset(pn, circleSize * 1.2f )
-            val pnOffsetToC = pn.offset(pc, circleSize * 1.1f )
-            val arrowTail = pcOffsetToN.offset(pn, pcOffsetToN.lengthTo(pnOffsetToC) * 0.3f).rotate(pcOffsetToN, 10f)
+            val pnOffsetToC = pn.offset(pc, (circleSize * 1.1f).toDouble() )
+            val arrowTail = pcOffsetToN.offset(pn, pcOffsetToN.lengthTo(pnOffsetToC) * 0.3).rotate(pcOffsetToN, 10.0)
             canvas.drawLine(
-                pcOffsetToN.x,
-                -pcOffsetToN.y,
-                pnOffsetToC.x,
-                -pnOffsetToC.y,
+                pcOffsetToN.x.toFloat(),
+                (-pcOffsetToN.y).toFloat(),
+                pnOffsetToC.x.toFloat(),
+                (-pnOffsetToC.y).toFloat(),
                 paint2
             )
 
             canvas.drawLine(
-                pcOffsetToN.x,
-                -pcOffsetToN.y,
-                arrowTail.x,
-                -arrowTail.y,
+                pcOffsetToN.x.toFloat(),
+                (-pcOffsetToN.y).toFloat(),
+                arrowTail.x.toFloat(),
+                (-arrowTail.y).toFloat(),
                 paint2
             )
         }
     }
 
     fun drawDedText(canvas: Canvas, st: String, p1: PointXY, p2: PointXY, paint: Paint){
-        val pt = p1.plus(textSpacer_*2, -textSpacer_) //オフセット
-        canvas.drawText(st, pt.x, pt.y, paint)
-        canvas.drawLine(p1.x, p1.y, p2.x, p2.y, paint)
+        val pt = p1.plus((textSpacer_*2).toDouble(), (-textSpacer_).toDouble()) //オフセット
+        canvas.drawText(st, pt.x.toFloat(), pt.y.toFloat(), paint)
+        canvas.drawLine(p1.x.toFloat(), p1.y.toFloat(), p2.x.toFloat(), p2.y.toFloat(), paint)
     }
 
     fun drawDedRect(canvas: Canvas, dd: Deduction, paint: Paint){
@@ -918,18 +918,18 @@ class MyView(context: Context, attrs: AttributeSet?) :
     fun makePath(PA: DimensionPlacement): Path {
         val path = Path()
         path.rewind()
-        path.moveTo(PA.pointA.x, -PA.pointA.y)
-        path.lineTo(PA.pointB.x, -PA.pointB.y)
+        path.moveTo(PA.pointA.x.toFloat(), (-PA.pointA.y).toFloat())
+        path.lineTo(PA.pointB.x.toFloat(), (-PA.pointB.y).toFloat())
         return path
     }
 
     fun makeTriangleFillPath(tri: Triangle): Path {
         val path = Path()
         path.rewind()
-        path.moveTo(tri.pointCA.x, -tri.pointCA.y)
-        path.lineTo(tri.pointAB.x, -tri.pointAB.y)
-        path.lineTo(tri.pointBC.x, -tri.pointBC.y)
-        path.lineTo(tri.pointCA.x, -tri.pointCA.y)
+        path.moveTo(tri.pointCA.x.toFloat(), (-tri.pointCA.y).toFloat())
+        path.lineTo(tri.pointAB.x.toFloat(), (-tri.pointAB.y).toFloat())
+        path.lineTo(tri.pointBC.x.toFloat(), (-tri.pointBC.y).toFloat())
+        path.lineTo(tri.pointCA.x.toFloat(), (-tri.pointCA.y).toFloat())
         return path
     }
 
@@ -1002,11 +1002,11 @@ class MyView(context: Context, attrs: AttributeSet?) :
         drawSeparatedPDF(false, printPoint, canvas, paintTex )
 
         // リストの中心座標にキャンバスを動かす、Xはマイナス、Yはプラス
-        canvas.translate(-trianglelist.center.x, trianglelist.center.y)
+        canvas.translate((-trianglelist.center.x).toFloat(), trianglelist.center.y.toFloat())
 
         drawEntities(canvas, paintTri, paintTex, paintRed, lightColors_, trianglelist, myDeductionList )
 
-        canvas.translate(trianglelist.center.x, -trianglelist.center.y)
+        canvas.translate(trianglelist.center.x.toFloat(), (-trianglelist.center.y).toFloat())
 
         teardownDrawPdf(scaleFactor)
 
@@ -1044,7 +1044,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
             val printAreaH = 29.7f*printScale
             //キャンバスをどれだけ動かすか決める。幅は固定値、縦はリストのナンバーを検索し、ナンバー上のA辺の長さによって動かす。
-            var wTransLen: Float
+            var wTransLen: Double
             // 縦方向の移動量
             val hYohaku = 75f
             val hkaishi = 5f
@@ -1059,9 +1059,9 @@ class MyView(context: Context, attrs: AttributeSet?) :
                 Collections.reverse( numberList )
                 Collections.reverse( numleftList )
             }
-            var numkyori = 0f
-            var numkyoriC: Float
-            var numkyoriL: Float
+            var numkyori = 0.0
+            var numkyoriC: Double
+            var numkyoriL: Double
 
             for( i in 0 until numberList.size ){
 
@@ -1079,7 +1079,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
                 }
 
                 zukeinohaba = numberList.get(i).length[0] * 2
-                var hTransLen = zukeinohaba + hYohaku + hkaishi// 分割数で上下の描画位置を変えたらいけない。
+                var hTransLen = (zukeinohaba + hYohaku + hkaishi).toDouble()// 分割数で上下の描画位置を変えたらいけない。
 
                 // mirror -X +Y
                 //最初の一回目
@@ -1087,7 +1087,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
                     // 初期位置に動かす。
                     printPoint.add( -numberList[0].pointCA.x,  - halfAreaH + (hTransLen) + numcenPCAy ) //* 0.75f ) )
 
-                    canvas.translate( printPoint.x, printPoint.y )
+                    canvas.translate( printPoint.x.toFloat(), printPoint.y.toFloat() )
                 }
                 else{
                     // 次の中心座標へ動かす
@@ -1098,7 +1098,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
                     hTransLen = ( zukeinohaba + hYohaku + numkyori )
 
                     printPoint.add( -wTransLen, hTransLen )
-                    canvas.translate( -wTransLen, hTransLen )
+                    canvas.translate( (-wTransLen).toFloat(), hTransLen.toFloat() )
                 }
 
                 //描画
