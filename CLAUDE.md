@@ -5,7 +5,7 @@
 - DB: `~/user-context-vault/repos/trianglelist/history.sqlite` (commits/file_changes/branches/insights)。スキーマと再構築は `scripts/build_history_db.py`
 - **全 insight エントリに出典とパスを明記しろ**: `evidence` (出典 / 一次資料 / 観測事実) 必須 + `code_refs` (file:line / commit hash) か `related_md` のどちらか必須
 - trigger `insights_require_source` が出典なし INSERT を物理 reject する。これは「user が自分で理解していないコードが増える」のを防ぐため ── エントリから必ず実コードに辿れること
-- 逆引き GUI (暫定): `uvx datasette serve ~/user-context-vault/repos/trianglelist/history.sqlite --port 8901` → http://localhost:8901 。専用の人にやさしい viewer は `~/user-context-vault/tools/history-viewer/` (Gemini デザイン、2026-06-10 依頼)
+- 逆引き GUI: 専用 viewer (Gemini デザイン 2026-06-10) は `cd ~/user-context-vault/tools/history-viewer && python app.py` → http://localhost:8902 。トピック束ね + 全文検索 + code_refs クリックコピー。汎用探索は `uvx datasette serve ~/user-context-vault/repos/trianglelist/history.sqlite --port 8901` (FTS 有効化済み)
 
 ## 三角形接続の仕様
 
