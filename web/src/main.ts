@@ -13,17 +13,22 @@ type TextPrim = {
   angle: number; // 度数法、モデル座標系で CCW (PointXY.calcDimAngle 由来)
   size: number; // モデル単位の文字高さ
   align: number; // DXF 垂直コード: 1=点が文字の下端, 2=中央, 3=点が文字の上端
+  // 段階2e: 識別 + 現在実効値 (dim テキストのみ tri/side/h/v、番号テキストは tri のみ)
+  tri?: number;
+  side?: number;
+  h?: number; // horizontal 実効値 (0..4、>2 で旗揚げ)。W cycle はここから次値を計算
+  v?: number; // vertical 実効値 (1=外/3=内)
 };
-type CirclePrim = { type: 'circle'; layer: string; cx: number; cy: number; r: number };
+type CirclePrim = { type: 'circle'; layer: string; cx: number; cy: number; r: number; tri?: number };
 type Prim = LinePrim | TextPrim | CirclePrim;
 
 // Kotlin wasmJs の ESM glue を静的 import してバンドルに乗せる (Vite の正規 module graph)。
 // .wasm 本体は uninstantiated.mjs が fetch('./TriangleList-common-wasm-js.wasm') =
 // document base 相対で読むため、sync-wasm が web/public/ 直下に置く
 import {
-  renderCsvToPrimitives,
-  buildDxfText,
-  buildSfcText,
+  renderCsvToPrimitivesWithOverrides,
+  buildDxfTextWithOverrides,
+  buildSfcTextWithOverrides,
   hitTriangle,
 } from '../wasm/TriangleList-common-wasm-js.mjs';
 // DXF/SFC は既存 app の出力と同じ Shift_JIS。ブラウザ標準 TextEncoder は UTF-8 専用なので
@@ -95,6 +100,65 @@ type ViewTransform = { scale: number; offsetX: number; offsetY: number };
 let view: ViewTransform | null = null; // null = 次の draw で bounds-fit を計算し直す
 let lastPrims: Prim[] = []; // ズーム・パン時に wasm を呼び直さず再描画するためのキャッシュ
 let selected = 0; // 選択中の三角形番号 (1-based、0 = 非選択)
+
+// ---- 段階2e: 手動 override (ADR 0003 の「式 ⊕ override」の override 側) ----
+// W/H フリップ・番号サークル移動は CSV に乗らない (WebCsvReader は dim を round-trip
+// しない) ので、結果値をここで保持して全 render/export 呼出しに JSON で渡す。
+// 形式は common の WebOverrides.parse と対 (tri = 1-based、side = 0/1/2 = A/B/C)
+type DimOverride = { tri: number; side: number; h?: number; v?: number };
+type NumberOverride = { tri: number; x: number; y: number };
+type Overrides = { dims: DimOverride[]; numbers: NumberOverride[] };
+
+let overrides: Overrides = { dims: [], numbers: [] };
+
+let selectedDim: { tri: number; side: number } | null = null; // W/H ボタンの対象
+let numberMoveTri = 0; // >0 = 番号サークル移動モード (次のタップが移動先)
+
+function overridesJson(): string {
+  return JSON.stringify(overrides);
+}
+
+// 触った軸だけ記録する (h だけ/v だけ)。flag の立ち方が app の controlDim* と一致する
+function upsertDimOverride(tri: number, side: number, patch: { h?: number; v?: number }): void {
+  let o = overrides.dims.find((d) => d.tri === tri && d.side === side);
+  if (!o) {
+    o = { tri, side };
+    overrides.dims.push(o);
+  }
+  if (patch.h !== undefined) o.h = patch.h;
+  if (patch.v !== undefined) o.v = patch.v;
+}
+
+function upsertNumberOverride(tri: number, x: number, y: number): void {
+  const o = overrides.numbers.find((n) => n.tri === tri);
+  if (o) {
+    o.x = x;
+    o.y = y;
+  } else {
+    overrides.numbers.push({ tri, x, y });
+  }
+}
+
+// 行削除で三角形番号が振り直される: 消えた番号の override は捨て、後続番号は -1 する
+function shiftOverridesAfterDelete(n: number): void {
+  overrides.dims = overrides.dims
+    .filter((d) => d.tri !== n)
+    .map((d) => (d.tri > n ? { ...d, tri: d.tri - 1 } : d));
+  overrides.numbers = overrides.numbers
+    .filter((o) => o.tri !== n)
+    .map((o) => (o.tri > n ? { ...o, tri: o.tri - 1 } : o));
+}
+
+// 現在の lastPrims から (tri, side) の寸法テキストを引く (実効 h/v の読み出し元)
+function findDimPrim(tri: number, side: number): TextPrim | undefined {
+  return lastPrims.find(
+    (p): p is TextPrim => p.type === 'text' && p.layer === 'dim' && p.tri === tri && p.side === side,
+  );
+}
+
+function findNumberCircle(tri: number): CirclePrim | undefined {
+  return lastPrims.find((p): p is CirclePrim => p.type === 'circle' && p.tri === tri);
+}
 
 function fitTransform(canvas: HTMLCanvasElement, prims: Prim[]): ViewTransform {
   const b = bounds(prims);
@@ -183,11 +247,33 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
       ctx.restore();
     }
   }
+
+  // 段階2e: 選択中の寸法テキスト / 移動モード中の番号サークルをオレンジ破線で示す
+  const marker = (cx: number, cy: number, r: number) => {
+    ctx.strokeStyle = '#e67e22';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  };
+  if (selectedDim) {
+    const p = prims.find(
+      (q): q is TextPrim =>
+        q.type === 'text' && q.layer === 'dim' && q.tri === selectedDim!.tri && q.side === selectedDim!.side,
+    );
+    if (p) marker(sx(p.x), sy(p.y), Math.max(p.size * s * 1.4, 14));
+  }
+  if (numberMoveTri > 0) {
+    const c = prims.find((q): q is CirclePrim => q.type === 'circle' && q.tri === numberMoveTri);
+    if (c) marker(sx(c.cx), sy(c.cy), c.r * s + 6);
+  }
 }
 
 function renderCsv(canvas: HTMLCanvasElement, csv: string, label: string): void {
   try {
-    const json = renderCsvToPrimitives(csv, 1.0);
+    const json = renderCsvToPrimitivesWithOverrides(csv, 1.0, overridesJson());
     const prims = JSON.parse(json) as Prim[];
     lastPrims = prims;
     draw(canvas, prims);
@@ -268,9 +354,11 @@ function serializeState(): string {
 // 全編集経路が漏れなく保存される
 const AUTOSAVE_KEY = 'trianglelist.web.autosave.csv';
 
+// 段階2e: overrides も一緒に封筒 JSON で保存する ({csv, overrides})。
+// 旧形式 (raw CSV 文字列) は restore 側がフォールバック読みする
 function autosave(): void {
   try {
-    localStorage.setItem(AUTOSAVE_KEY, serializeState());
+    localStorage.setItem(AUTOSAVE_KEY, JSON.stringify({ csv: serializeState(), overrides }));
   } catch {
     // private mode 等で localStorage が使えなくても編集自体は続行できる
   }
@@ -333,6 +421,8 @@ function updateRowHighlight(): void {
 // (アプリ handleTriangleTap (MainActivity.kt:2107) + setEditTextContent (2124) 相当)
 function selectTriangle(canvas: HTMLCanvasElement, n: number): void {
   selected = n;
+  selectedDim = null; // 三角形を選び直したら寸法選択は解除
+  numberMoveTri = 0;
   if (n > 0) {
     current = n;
     input('newParent').value = String(n);
@@ -345,6 +435,8 @@ function selectTriangle(canvas: HTMLCanvasElement, n: number): void {
 
 function clearSelection(): void {
   selected = 0;
+  selectedDim = null;
+  numberMoveTri = 0;
   updateRowHighlight();
 }
 
@@ -443,6 +535,7 @@ function buildTable(canvas: HTMLCanvasElement): void {
     del.addEventListener('click', (e) => {
       e.stopPropagation(); // 行クリック選択を発火させない
       rows.splice(i, 1);
+      shiftOverridesAfterDelete(i + 1); // 番号が振り直されるので override も追従
       clearSelection(); // 番号が振り直されるので選択解除
       if (current > rows.length) current = rows.length;
       buildTable(canvas); // 番号が振り直されるので組み直し
@@ -474,8 +567,14 @@ function addRow(canvas: HTMLCanvasElement): void {
 // ---- 段階2d: FAB 群 (アプリ fabs.xml + fabController 相当) ----
 // undo は 1 段だけ: 編集 FAB の直前 CSV を丸ごと持つ (アプリ trilistUndo = trianglelist.clone()
 // (MainActivity.kt:1278,1615) の CSV 版)。一覧のインライン編集はキーストローク粒度になるので
-// 対象外 — アプリも undo を取るのは fabReplace と performDelete だけ
-let undoCsv: string | null = null;
+// 対象外 — アプリも undo を取るのは fabReplace と performDelete だけ。
+// 段階2e: overrides も一緒に snapshot する (削除で tri 番号が shift するため CSV だけでは戻らない)
+type UndoSnap = { csv: string; overrides: Overrides };
+let undoSnap: UndoSnap | null = null;
+
+function takeUndoSnap(): void {
+  undoSnap = { csv: serializeState(), overrides: JSON.parse(JSON.stringify(overrides)) as Overrides };
+}
 
 // setB/setC (MainActivity.kt:1418-1428 + autoConnection:1999): 新規入力行の接続を立てて
 // 辺B にフォーカス。親番号が空ならカレント (タップ済み番号、無ければ末尾 = setTriListNumber:1996)。
@@ -509,7 +608,7 @@ function fabReplace(canvas: HTMLCanvasElement): void {
       setStatus('Cannot edit: カレント行がありません。図か一覧で選択してください');
       return;
     }
-    undoCsv = serializeState();
+    takeUndoSnap();
     const r = rows[current - 1];
     r.a = input('curA').value;
     r.b = input('curB').value;
@@ -527,7 +626,7 @@ function fabReplace(canvas: HTMLCanvasElement): void {
   if (newC === '') return; // アプリと同じ: B だけでは何もしない (strAddLineC.isEmpty -> return)
 
   // Add (アプリ addTriangleBy 相当 — 行を足して CSV 再構築に任せる)
-  undoCsv = serializeState();
+  takeUndoSnap();
   const conn = select('newConn').value;
   let parent = input('newParent').value.trim();
   if (conn === '-1') {
@@ -583,8 +682,9 @@ function fabMinus(canvas: HTMLCanvasElement): void {
   disarmDelete();
   if (rows.length === 0) return;
   const n = current > 0 ? current : rows.length;
-  undoCsv = serializeState();
+  takeUndoSnap();
   rows.splice(n - 1, 1);
+  shiftOverridesAfterDelete(n); // 番号が振り直されるので override も追従
   clearSelection();
   current = Math.min(n, rows.length); // 消した位置の次 (なければ末尾) をカレントに
   buildTable(canvas);
@@ -595,13 +695,14 @@ function fabMinus(canvas: HTMLCanvasElement): void {
 
 // undo FAB (MainActivity.kt:1352-1365): 1 段だけ戻して undo バッファを空にする
 function fabUndo(canvas: HTMLCanvasElement): void {
-  if (undoCsv === null) {
+  if (undoSnap === null) {
     setStatus('undo: 戻る先がありません');
     return;
   }
-  const csv = undoCsv;
-  undoCsv = null; // trilistUndo.trilist.clear() と同じ: 1 段で使い切り
-  loadCsv(canvas, csv, 'undo');
+  const snap = undoSnap;
+  undoSnap = null; // trilistUndo.trilist.clear() と同じ: 1 段で使い切り
+  overrides = snap.overrides;
+  loadCsv(canvas, snap.csv, 'undo');
   autosave();
 }
 
@@ -619,9 +720,40 @@ function moveCurrent(canvas: HTMLCanvasElement, delta: number): void {
   setStatus(`current: ${n}`);
 }
 
+// ---- 段階2e: 寸法 W/H フリップ (アプリ MainViewModel.kt:47-48 の "W"/"H" と同じ語彙) ----
+// W = horizontal cycle (次の値へ、HORIZONTAL_OPTIONMAX=4 で 0..4 を一周。>2 で旗揚げ)、
+// H = vertical flip (1=外 ⇔ 3=内)。override は結果値で記録する (cycle/flip の再生は
+// 状態依存で非冪等 — Dims.kt:130 cycleIncrement / :155 flipVertical)。
+// 現在実効値はプリミティブ JSON の h/v フィールドから読む (接続構造依存の初期値を推測しない)
+function flipDim(canvas: HTMLCanvasElement, axis: 'W' | 'H'): void {
+  if (!selectedDim) {
+    setStatus(`${axis}: 先に寸法値をタップで選択`);
+    return;
+  }
+  const prim = findDimPrim(selectedDim.tri, selectedDim.side);
+  if (!prim) {
+    setStatus(`${axis}: 選択中の寸法が見つからない (再選択して)`);
+    selectedDim = null;
+    return;
+  }
+  if (axis === 'W') {
+    const next = ((prim.h ?? 0) + 1) % 5;
+    upsertDimOverride(selectedDim.tri, selectedDim.side, { h: next });
+    redraw(canvas);
+    setStatus(`W: 三角形 ${selectedDim.tri} ${['A', 'B', 'C'][selectedDim.side]} 辺 → ${next}${next > 2 ? ' (旗揚げ)' : ''}`);
+  } else {
+    const next = (prim.v ?? 1) === 1 ? 3 : 1;
+    upsertDimOverride(selectedDim.tri, selectedDim.side, { v: next });
+    redraw(canvas);
+    setStatus(`H: 三角形 ${selectedDim.tri} ${['A', 'B', 'C'][selectedDim.side]} 辺 → ${next === 1 ? '外' : '内'}`);
+  }
+}
+
 function wireFabs(canvas: HTMLCanvasElement): void {
   el<HTMLButtonElement>('fabSetB').addEventListener('click', () => autoConnection(1));
   el<HTMLButtonElement>('fabSetC').addEventListener('click', () => autoConnection(2));
+  el<HTMLButtonElement>('fabDimW').addEventListener('click', () => flipDim(canvas, 'W'));
+  el<HTMLButtonElement>('fabDimH').addEventListener('click', () => flipDim(canvas, 'H'));
   el<HTMLButtonElement>('fabReplace').addEventListener('click', () => fabReplace(canvas));
   el<HTMLButtonElement>('fabUndo').addEventListener('click', () => fabUndo(canvas));
   el<HTMLButtonElement>('fabMinus').addEventListener('click', () => fabMinus(canvas));
@@ -654,6 +786,84 @@ function wireRosenName(): void {
 // ---- 段階2c: Canvas 入力 (wheel ズーム / drag パン / pinch / クリック選択) ----
 // 慣性・アニメは不要 (引き算)。再描画は lastPrims の全量描き直しで十分
 // (insight #55: 描画コストは draw call 律速、この規模では問題ない)。
+
+// ---- 段階2e: タップ判定 (寸法テキスト / 番号サークル / 三角形) ----
+// 寸法テキスト・番号サークルの当たり判定は、プリミティブ JSON の text/circle 座標に
+// 対する画面 px の最近傍判定 (brief 設計: 新しい facade 関数は増やさない)。
+// 優先順位: 番号移動モードの移動先 > 番号サークル > 寸法テキスト > 三角形 (common の isCollide)
+
+function nearestDimText(px: number, py: number): TextPrim | null {
+  const v = view;
+  if (!v) return null;
+  let best: TextPrim | null = null;
+  let bestD = Infinity;
+  for (const p of lastPrims) {
+    if (p.type !== 'text' || p.layer !== 'dim' || p.tri === undefined || p.side === undefined) continue;
+    const d = Math.hypot(p.x * v.scale + v.offsetX - px, -p.y * v.scale + v.offsetY - py);
+    const threshold = Math.max(p.size * v.scale * 1.4, 16); // 文字高さ依存 + 最低 16px
+    if (d <= threshold && d < bestD) {
+      best = p;
+      bestD = d;
+    }
+  }
+  return best;
+}
+
+function nearestNumberCircle(px: number, py: number): CirclePrim | null {
+  const v = view;
+  if (!v) return null;
+  let best: CirclePrim | null = null;
+  let bestD = Infinity;
+  for (const p of lastPrims) {
+    if (p.type !== 'circle' || p.tri === undefined) continue;
+    const d = Math.hypot(p.cx * v.scale + v.offsetX - px, -p.cy * v.scale + v.offsetY - py);
+    if (d <= p.r * v.scale + 8 && d < bestD) {
+      best = p;
+      bestD = d;
+    }
+  }
+  return best;
+}
+
+function handleTap(canvas: HTMLCanvasElement, px: number, py: number): void {
+  if (!view) return;
+  const m = toModel(view, px, py);
+
+  // 番号移動モード中: このタップが移動先 (タップ→タップ先指定、brief の「簡単な方」)
+  if (numberMoveTri > 0) {
+    const tri = numberMoveTri;
+    numberMoveTri = 0;
+    upsertNumberOverride(tri, m.x, m.y);
+    redraw(canvas); // autosave 込み。遠すぎる点は common 側 BORDER 判定で無視される
+    const c = findNumberCircle(tri);
+    const movedToTarget = c && Math.hypot(c.cx - m.x, c.cy - m.y) < 1e-6;
+    setStatus(movedToTarget ? `番号 ${tri} を移動した` : `番号 ${tri}: 中心から遠すぎるため移動せず`);
+    return;
+  }
+
+  // 番号サークル → 移動モードに入る
+  const circle = nearestNumberCircle(px, py);
+  if (circle && circle.tri !== undefined) {
+    numberMoveTri = circle.tri;
+    selectedDim = null;
+    draw(canvas, lastPrims);
+    setStatus(`番号 ${circle.tri}: 移動先をタップ`);
+    return;
+  }
+
+  // 寸法テキスト → W/H ボタンの対象に
+  const dim = nearestDimText(px, py);
+  if (dim && dim.tri !== undefined && dim.side !== undefined) {
+    selectedDim = { tri: dim.tri, side: dim.side };
+    numberMoveTri = 0;
+    draw(canvas, lastPrims);
+    setStatus(`寸法選択: 三角形 ${dim.tri} の ${['A', 'B', 'C'][dim.side] ?? dim.side} 辺 (W/H でフリップ)`);
+    return;
+  }
+
+  // 三角形 (common の isCollide)。何もない場所は 0 が返り選択解除になる
+  selectTriangle(canvas, hitTriangle(serializeState(), m.x, m.y));
+}
 
 function canvasPx(canvas: HTMLCanvasElement, e: { clientX: number; clientY: number }): { x: number; y: number } {
   // CSS 表示サイズと canvas 内部解像度のずれを吸収して内部 px に揃える
@@ -731,10 +941,7 @@ function wireCanvasEvents(canvas: HTMLCanvasElement): void {
     pointers.delete(e.pointerId);
     pinchDist = 0;
     if (isClick && view) {
-      // クリック選択: px → モデル座標 (draw と同じ ViewTransform の逆) → common の当たり判定。
-      // 何もない場所は 0 が返り選択解除になる
-      const m = toModel(view, downAt!.x, downAt!.y);
-      selectTriangle(canvas, hitTriangle(serializeState(), m.x, m.y));
+      handleTap(canvas, downAt!.x, downAt!.y);
     }
     downAt = null;
   };
@@ -780,11 +987,14 @@ function wireExportButtons(): void {
   document.getElementById('saveCsv')?.addEventListener('click', () => {
     exportFile('CSV', 'triangles.csv', () => new Blob([serializeState()], { type: 'text/csv' }));
   });
+  // 段階2e: overrides 付き経路に切替 — W/H フリップ・番号移動が図面ファイルにも乗る
   document.getElementById('saveDxf')?.addEventListener('click', () => {
-    exportFile('DXF', 'triangles.dxf', () => toSjisBlob(buildDxfText(serializeState())));
+    exportFile('DXF', 'triangles.dxf', () => toSjisBlob(buildDxfTextWithOverrides(serializeState(), overridesJson())));
   });
   document.getElementById('saveSfc')?.addEventListener('click', () => {
-    exportFile('SFC', 'triangles.sfc', () => toSjisBlob(buildSfcText(serializeState(), 'triangles.sfc')));
+    exportFile('SFC', 'triangles.sfc', () =>
+      toSjisBlob(buildSfcTextWithOverrides(serializeState(), 'triangles.sfc', overridesJson())),
+    );
   });
 }
 
@@ -805,9 +1015,22 @@ function main(): void {
   const addBtn = document.getElementById('addRow');
   if (!canvas || !fileInput) return;
 
-  // autosave があればそこから復元、無ければ内蔵サンプル (アプリ起動時の private CSV 復元と同じ)
+  // autosave があればそこから復元、無ければ内蔵サンプル (アプリ起動時の private CSV 復元と同じ)。
+  // 段階2e の封筒 JSON ({csv, overrides}) を先に試し、旧形式 (raw CSV) はフォールバック
   const saved = localStorage.getItem(AUTOSAVE_KEY);
-  loadCsv(canvas, saved ?? SAMPLE_CSV, saved !== null ? 'autosave' : 'sample');
+  let savedCsv: string | null = saved;
+  if (saved !== null) {
+    try {
+      const env = JSON.parse(saved) as { csv?: string; overrides?: Overrides };
+      if (typeof env.csv === 'string') {
+        savedCsv = env.csv;
+        overrides = env.overrides ?? { dims: [], numbers: [] };
+      }
+    } catch {
+      // 旧形式 raw CSV — そのまま使う (overrides は空のまま)
+    }
+  }
+  loadCsv(canvas, savedCsv ?? SAMPLE_CSV, saved !== null ? 'autosave' : 'sample');
 
   addBtn?.addEventListener('click', () => addRow(canvas));
   wireExportButtons();
@@ -821,6 +1044,7 @@ function main(): void {
     const reader = new FileReader();
     reader.onload = () => {
       // 注: 既存 app の CSV は Shift_JIS の場合があるが、段階1 同様 UTF-8 読みのみ
+      overrides = { dims: [], numbers: [] }; // 新しいファイルに前データの override を持ち越さない
       loadCsv(canvas, String(reader.result ?? ''), file.name);
       autosave(); // 読み込んだファイルも次回リロードで復元できるように
     };

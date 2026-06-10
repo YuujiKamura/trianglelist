@@ -5,4 +5,8 @@ declare module '*/TriangleList-common-wasm-js.mjs' {
   export function buildDxfText(csv: string): string;
   export function buildSfcText(csv: string, filename: string): string;
   export function hitTriangle(csv: string, x: number, y: number): number;
+  // 段階2e (task #15): overrides 付き経路。overridesJson は WebOverrides の JSON 形式
+  export function renderCsvToPrimitivesWithOverrides(csv: string, scale: number, overridesJson: string): string;
+  export function buildDxfTextWithOverrides(csv: string, overridesJson: string): string;
+  export function buildSfcTextWithOverrides(csv: string, filename: string, overridesJson: string): string;
 }

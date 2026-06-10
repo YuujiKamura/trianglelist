@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TriangleList Web (段階2d)</title>
+    <title>TriangleList Web (段階2e)</title>
     <style>
       :root { color-scheme: light; }
       body { margin: 0; font-family: system-ui, sans-serif; background: #fafafa; }
@@ -64,7 +64,7 @@
   </head>
   <body>
     <header>
-      <h1>TriangleList Web — 段階2d (アプリ実動線: 3行フォーム + FAB)</h1>
+      <h1>TriangleList Web — 段階2e (寸法 W/H フリップ + 番号サークル移動)</h1>
       <input id="file" type="file" accept=".csv,text/csv" />
       <span id="status">loading wasm...</span>
     </header>
@@ -156,6 +156,10 @@
           <div class="fabcol" id="fabRight">
             <button id="fabSetB" type="button" title="親のB辺に接続">B</button>
             <button id="fabSetC" type="button" title="親のC辺に接続">C</button>
+            <!-- 段階2e: 寸法 W/H フリップ (アプリ MainViewModel の "W"/"H" と同じ語彙)。
+                 寸法値をタップで選択してから押す。W=水平サイクル (旗揚げ含む)、H=内/外 -->
+            <button id="fabDimW" type="button" title="寸法 W フリップ (水平サイクル、旗揚げ含む)">W</button>
+            <button id="fabDimH" type="button" title="寸法 H フリップ (内/外)">H</button>
             <button id="fabReplace" type="button" title="追加 / 書換え (replace)">⏎</button>
             <button id="fabUndo" type="button" title="元に戻す (1段)">↶</button>
             <button id="fabMinus" type="button" title="削除 (2回タップ)">🗑</button>

@@ -94,9 +94,18 @@ object WebDrawingExport {
         WebCsvReader.read(csv).apply { setChildsToAllParents() }
 
     /** CSV → DXF 全文 (SJIS エンコード前の String)。初期化列は DxfDimensionLayoutGoldenTest.newWriter と同一 */
-    fun buildDxfText(csv: String): String {
+    fun buildDxfText(csv: String): String = buildDxfText(csv, "")
+
+    /**
+     * 段階2e (task #15): overrides 付き経路。readForExport 後に WebOverrides を適用して
+     * から writer を組む — W/H フリップ・番号移動が DXF にも乗る (ADR 0003 Decision C
+     * 「描画と書き出しは同じ式⊕override の結果を消費する」)。空 overrides なら従来と同一出力。
+     */
+    fun buildDxfText(csv: String, overridesJson: String): String {
         val header = parseHeader(csv)
-        val writer = DxfFileWriter(readForExport(csv)).apply {
+        val trilist = readForExport(csv)
+        WebOverrides.applyJson(trilist, overridesJson)
+        val writer = DxfFileWriter(trilist).apply {
             dedlist_ = DeductionList()
             startTriNumber_ = 1
         }
@@ -111,9 +120,14 @@ object WebDrawingExport {
     }
 
     /** CSV → SFC 全文 (SJIS エンコード前の String)。初期化列は SfcDimensionLayoutGoldenTest.writeSfcString と同一 */
-    fun buildSfcText(csv: String, filename: String): String {
+    fun buildSfcText(csv: String, filename: String): String = buildSfcText(csv, filename, "")
+
+    /** 段階2e (task #15): overrides 付き経路 (buildDxfText の overrides 版と同じ理屈) */
+    fun buildSfcText(csv: String, filename: String, overridesJson: String): String {
         val header = parseHeader(csv)
-        val writer = SfcWriter(readForExport(csv), DeductionList(), filename, 1, 1f)
+        val trilist = readForExport(csv)
+        WebOverrides.applyJson(trilist, overridesJson)
+        val writer = SfcWriter(trilist, DeductionList(), filename, 1, 1f)
         writer.titleTri_ = TitleParamStr()
         writer.titleDed_ = TitleParamStr()
         writer.zumeninfo = defaultZumenInfo()

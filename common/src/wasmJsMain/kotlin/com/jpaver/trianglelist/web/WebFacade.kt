@@ -44,6 +44,28 @@ fun hitTriangle(csv: String, x: Float, y: Float): Int =
     WebHitTest.hitTriangle(csv, x, y)
 
 /**
+ * Web 段階2e (task #15): overrides 付き描画。overridesJson は WebOverrides の JSON 形式
+ * ({"dims":[{tri,side,h,v}],"numbers":[{tri,x,y}]})。境界は文字列 1 本の既存方針のまま。
+ * 空文字なら renderCsvToPrimitives と同一出力 (既存関数は互換のため残す)。
+ */
+@OptIn(ExperimentalJsExport::class)
+@JsExport
+fun renderCsvToPrimitivesWithOverrides(csv: String, scale: Float, overridesJson: String): String =
+    WebPrimitiveRenderer.renderCsv(csv, scale, overridesJson)
+
+/** Web 段階2e (task #15): overrides 付き DXF。W/H フリップ・番号移動が書き出しにも乗る */
+@OptIn(ExperimentalJsExport::class)
+@JsExport
+fun buildDxfTextWithOverrides(csv: String, overridesJson: String): String =
+    WebDrawingExport.buildDxfText(csv, overridesJson)
+
+/** Web 段階2e (task #15): overrides 付き SFC */
+@OptIn(ExperimentalJsExport::class)
+@JsExport
+fun buildSfcTextWithOverrides(csv: String, filename: String, overridesJson: String): String =
+    WebDrawingExport.buildSfcText(csv, filename, overridesJson)
+
+/**
  * binaries.executable() のリンクに entry point が要るための no-op。
  * 段階1 は @JsExport 関数を JS から呼ぶだけで、起動時処理は無い。
  */
