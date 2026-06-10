@@ -29,30 +29,46 @@ class DxfOverlapAnalyzerTest {
     }
 
     @Test
-    fun `テキストが辺を跨ぐと EDGE 種別のペアが返る`() {
-        // 左寄せ "ABCD" height=2 at (0,0) → box は x∈[0,8], y∈[0,2]。x=4 の縦線が貫く
+    fun `テキストを辺が貫くと EDGE 種別のペアが深さ付きで返る`() {
+        // 半角 "ABCD" height=2 → 幅 = 4×0.5×2 = 4、box は x∈[0,4], y∈[0,2]。x=2 の縦線が中央を貫く
         val parseResult = DxfParseResult(
-            lines = listOf(DxfLine(x1 = 4.0, y1 = -5.0, x2 = 4.0, y2 = 5.0)),
+            lines = listOf(DxfLine(x1 = 2.0, y1 = -5.0, x2 = 2.0, y2 = 5.0)),
             texts = listOf(DxfText(x = 0.0, y = 0.0, text = "ABCD", height = 2.0)),
         )
 
         val report = DxfOverlapAnalyzer.analyze(parseResult)
 
         assertEquals(1, report.overlappingTexts)
-        assertEquals(1, report.pairs.size, "辺跨ぎ 1 件のはず: ${report.pairs}")
+        assertEquals(1, report.pairs.size, "辺貫通 1 件のはず: ${report.pairs}")
         val pair = report.pairs.single()
         assertEquals("line:0", pair.otherId)
         assertEquals(ObstacleKind.EDGE, pair.otherKind)
         assertEquals("text:0:ABCD", pair.textId)
+        assertEquals(2f, pair.depthMm, 1e-3f, "中央貫通の押し出し量は 2 のはず: $pair")
+    }
+
+    @Test
+    fun `自分の辺に寄り添う寸法値配置は深さ 0 の contact になる`() {
+        // 中央寄せ・上寄せの "10.0" をアンカーごと辺上に置く = 実図面の寸法値配置。
+        // box 上辺が辺と同一線上 → ヒットはするが深さ 0 (めり込みではない)
+        val parseResult = DxfParseResult(
+            lines = listOf(DxfLine(x1 = -5.0, y1 = 0.0, x2 = 5.0, y2 = 0.0)),
+            texts = listOf(DxfText(x = 0.0, y = 0.0, text = "10.0", height = 1.0, alignH = 1, alignV = 3)),
+        )
+
+        val report = DxfOverlapAnalyzer.analyze(parseResult)
+
+        assertEquals(1, report.pairs.size, "接触 1 件のはず: ${report.pairs}")
+        assertEquals(0f, report.pairs.single().depthMm, 1e-3f, "寄り添い配置の深さは 0 のはず: ${report.pairs}")
     }
 
     @Test
     fun `テキスト同士の重なりは A-B と B-A を 1 ペアに正規化する`() {
-        // 両方左寄せ height=1: "ABCD" は x∈[0,4]、"EFGH" は x∈[2,6] → x∈[2,4] で重なる
+        // 両方左寄せ height=1: "ABCD" は x∈[0,2]、"EFGH" は x∈[1,3] → x∈[1,2] で重なる
         val parseResult = DxfParseResult(
             texts = listOf(
                 DxfText(x = 0.0, y = 0.0, text = "ABCD", height = 1.0),
-                DxfText(x = 2.0, y = 0.5, text = "EFGH", height = 1.0),
+                DxfText(x = 1.0, y = 0.5, text = "EFGH", height = 1.0),
             ),
         )
 
@@ -66,13 +82,14 @@ class DxfOverlapAnalyzerTest {
             setOf(pair.textId, pair.otherId) == setOf("text:0:ABCD", "text:1:EFGH"),
             "ペアの両端が 2 テキストの id のはず: $pair",
         )
+        assertEquals(0.5f, pair.depthMm, 1e-3f, "y 方向の食い込み 0.5 が最小のはず: $pair")
     }
 
     @Test
     fun `alignH=中央 はアンカーを中心として左右に広がる`() {
-        // "ABCD" height=2 → width=8。中央寄せなら box は x∈[-4,4] で x=-2 の縦線にヒット、
-        // 左寄せなら x∈[0,8] でヒットしない。同じ線で補正の有無を弁別する
-        val edge = DxfLine(x1 = -2.0, y1 = -5.0, x2 = -2.0, y2 = 5.0)
+        // "ABCD" height=2 → 幅 4。中央寄せなら box は x∈[-2,2] で x=-1 の縦線にヒット、
+        // 左寄せなら x∈[0,4] でヒットしない。同じ線で補正の有無を弁別する
+        val edge = DxfLine(x1 = -1.0, y1 = -5.0, x2 = -1.0, y2 = 5.0)
         val centered = DxfParseResult(
             lines = listOf(edge),
             texts = listOf(DxfText(x = 0.0, y = 0.0, text = "ABCD", height = 2.0, alignH = 1, alignV = 2)),
@@ -82,15 +99,15 @@ class DxfOverlapAnalyzerTest {
             texts = listOf(DxfText(x = 0.0, y = 0.0, text = "ABCD", height = 2.0, alignH = 0, alignV = 2)),
         )
 
-        assertEquals(1, DxfOverlapAnalyzer.analyze(centered).overlappingTexts, "中央寄せは x=-2 の線を含むはず")
-        assertEquals(0, DxfOverlapAnalyzer.analyze(leftAligned).overlappingTexts, "左寄せは x=-2 に届かないはず")
+        assertEquals(1, DxfOverlapAnalyzer.analyze(centered).overlappingTexts, "中央寄せは x=-1 の線を含むはず")
+        assertEquals(0, DxfOverlapAnalyzer.analyze(leftAligned).overlappingTexts, "左寄せは x=-1 に届かないはず")
     }
 
     @Test
     fun `回転テキストは回転後の矩形で判定される`() {
-        // 中央アンカー "ABCD" height=1 → width=4。無回転なら x∈[-2,2], y∈[-0.5,0.5]。
-        // 90 度回転で x∈[-0.5,0.5], y∈[-2,2] になり、y=1.5 の水平線にヒットする
-        val edge = DxfLine(x1 = -1.0, y1 = 1.5, x2 = 1.0, y2 = 1.5)
+        // 中央アンカー "ABCD" height=1 → 幅 2。無回転なら x∈[-1,1], y∈[-0.5,0.5]。
+        // 90 度回転で x∈[-0.5,0.5], y∈[-1,1] になり、y=0.8 の水平線にヒットする
+        val edge = DxfLine(x1 = -1.0, y1 = 0.8, x2 = 1.0, y2 = 0.8)
         val rotated = DxfParseResult(
             lines = listOf(edge),
             texts = listOf(DxfText(x = 0.0, y = 0.0, text = "ABCD", height = 1.0, rotation = 90.0, alignH = 1, alignV = 2)),
@@ -100,15 +117,15 @@ class DxfOverlapAnalyzerTest {
             texts = listOf(DxfText(x = 0.0, y = 0.0, text = "ABCD", height = 1.0, rotation = 0.0, alignH = 1, alignV = 2)),
         )
 
-        assertEquals(1, DxfOverlapAnalyzer.analyze(rotated).overlappingTexts, "90 度回転後は y=1.5 に届くはず")
-        assertEquals(0, DxfOverlapAnalyzer.analyze(unrotated).overlappingTexts, "無回転は y=1.5 に届かないはず")
+        assertEquals(1, DxfOverlapAnalyzer.analyze(rotated).overlappingTexts, "90 度回転後は y=0.8 に届くはず")
+        assertEquals(0, DxfOverlapAnalyzer.analyze(unrotated).overlappingTexts, "無回転は y=0.8 に届かないはず")
     }
 
     @Test
     fun `textWidthFactor で幅の係数を変えると判定が変わる`() {
-        // 左寄せ "AB" height=1 at (0,0): factor=1.0 で x∈[0,2]、factor=2.0 で x∈[0,4]。x=3 の縦線で弁別
+        // 左寄せ "AB" height=1: factor=1.0 で x∈[0,1]、factor=2.0 で x∈[0,2]。x=1.5 の縦線で弁別
         val parseResult = DxfParseResult(
-            lines = listOf(DxfLine(x1 = 3.0, y1 = -5.0, x2 = 3.0, y2 = 5.0)),
+            lines = listOf(DxfLine(x1 = 1.5, y1 = -5.0, x2 = 1.5, y2 = 5.0)),
             texts = listOf(DxfText(x = 0.0, y = 0.0, text = "AB", height = 1.0)),
         )
 
@@ -117,17 +134,54 @@ class DxfOverlapAnalyzerTest {
     }
 
     @Test
-    fun `サークルは外接 box の LABEL 障害物としてヒットする`() {
-        // 左寄せ "ABCD" height=1 → box x∈[0,4], y∈[0,1]。中心 (5,0.5) 半径 1.5 の円の外接 box は x∈[3.5,6.5]
+    fun `全角文字は半角の倍の幅で数える`() {
+        // 同じ 2 文字でも "あい" (全角) は幅 2、"AB" (半角) は幅 1。x=1.5 の縦線で弁別
+        val edge = DxfLine(x1 = 1.5, y1 = -5.0, x2 = 1.5, y2 = 5.0)
+        val zenkaku = DxfParseResult(
+            lines = listOf(edge),
+            texts = listOf(DxfText(x = 0.0, y = 0.0, text = "あい", height = 1.0)),
+        )
+        val hankaku = DxfParseResult(
+            lines = listOf(edge),
+            texts = listOf(DxfText(x = 0.0, y = 0.0, text = "AB", height = 1.0)),
+        )
+
+        assertEquals(1, DxfOverlapAnalyzer.analyze(zenkaku).overlappingTexts, "全角 2 文字は x=1.5 に届くはず")
+        assertEquals(0, DxfOverlapAnalyzer.analyze(hankaku).overlappingTexts, "半角 2 文字は x=1.5 に届かないはず")
+    }
+
+    @Test
+    fun `サークルは円プリミティブの CIRCLE 障害物としてヒットする`() {
+        // 左寄せ "ABCD" height=1 → box x∈[0,2], y∈[0,1]。中心 (3,0.5) r=1.5 の円は
+        // box 最近点 (2,0.5) まで距離 1 → 深さ 0.5 (外接 box 近似なら 0.5 より過大に出る)
         val parseResult = DxfParseResult(
-            circles = listOf(DxfCircle(centerX = 5.0, centerY = 0.5, radius = 1.5)),
+            circles = listOf(DxfCircle(centerX = 3.0, centerY = 0.5, radius = 1.5)),
             texts = listOf(DxfText(x = 0.0, y = 0.0, text = "ABCD", height = 1.0)),
         )
 
         val report = DxfOverlapAnalyzer.analyze(parseResult)
 
-        assertEquals(1, report.pairs.size, "円の外接 box とのペア 1 件のはず: ${report.pairs}")
-        assertEquals("circle:0", report.pairs.single().otherId)
-        assertEquals(ObstacleKind.LABEL, report.pairs.single().otherKind)
+        assertEquals(1, report.pairs.size, "円とのペア 1 件のはず: ${report.pairs}")
+        val pair = report.pairs.single()
+        assertEquals("circle:0", pair.otherId)
+        assertEquals(ObstacleKind.CIRCLE, pair.otherKind)
+        assertEquals(0.5f, pair.depthMm, 1e-3f, "深さ = r - 最近点距離 = 0.5 のはず: $pair")
+    }
+
+    @Test
+    fun `textBoxes は analyze と同じ box を返す (viewer overlay 用の単一経路)`() {
+        val parseResult = DxfParseResult(
+            texts = listOf(DxfText(x = 0.0, y = 0.0, text = "ABCD", height = 2.0, alignH = 1, alignV = 2)),
+        )
+
+        val boxes = DxfOverlapAnalyzer.textBoxes(parseResult)
+
+        assertEquals(1, boxes.size)
+        val (id, box) = boxes.single()
+        assertEquals("text:0:ABCD", id)
+        assertEquals(4f, box.widthMm, 1e-3f, "半角 4 文字 × 0.5 × height 2 = 4")
+        assertEquals(2f, box.heightMm, 1e-3f)
+        assertEquals(0f, box.center.x, 1e-3f, "中央寄せはアンカーが中心")
+        assertEquals(0f, box.center.y, 1e-3f)
     }
 }

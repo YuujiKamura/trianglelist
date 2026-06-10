@@ -69,6 +69,8 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
     var showDialog by remember { mutableStateOf(false) }
     var debugMode by remember { mutableStateOf(initialDebugMode) }
     var hotReload by remember { mutableStateOf(true) }
+    // LabelBox overlay (rev2): 判定が見ている box を青枠で重ね描きする。CP 「boxes on/off」で切替
+    var showLabelBoxes by remember { mutableStateOf(false) }
     var currentFile by remember { mutableStateOf<File?>(null) }
     var lastModified by remember { mutableStateOf(0L) }
 
@@ -321,13 +323,23 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                     out.write("error: no parseResult or no texts\n".toByteArray())
                                 } else {
                                     val report = com.jpaver.trianglelist.label.DxfOverlapAnalyzer.analyze(r, factor)
-                                    val top = report.pairs.take(5)
-                                        .joinToString(",") { "${it.textId}x${it.otherId}" }
+                                    // 深さ 0 (〜EPS) = contact (寄り添い、正常)、> EPS = intrusion (めり込み)。
+                                    // 足切りはせず観測層のここで分けて報告する (rev1)
+                                    val eps = com.jpaver.trianglelist.label.LabelBox.EPS
+                                    val (intrusions, contacts) = report.pairs.partition { it.depthMm > eps }
+                                    val top = report.pairs.sortedByDescending { it.depthMm }.take(5)
+                                        .joinToString(",") { "${it.textId}x${it.otherId}@%.1f".format(it.depthMm) }
                                     out.write(
                                         ("overlap_texts=${report.overlappingTexts}/${report.totalTexts} " +
-                                         "pairs=${report.pairs.size} top=$top\n").toByteArray()
+                                         "pairs=${report.pairs.size} contact=${contacts.size} intrusion=${intrusions.size} " +
+                                         "top=$top\n").toByteArray()
                                     )
                                 }
+                            }
+                            line == "boxes on" || line == "boxes off" -> {
+                                // LabelBox overlay の表示トグル (rev2)。判定が見ている box を目で確認する
+                                showLabelBoxes = line.endsWith("on")
+                                out.write("ok boxes=${if (showLabelBoxes) "on" else "off"}\n".toByteArray())
                             }
                             line.startsWith("capture ") -> {
                                 // viewer 窓を AlwaysOnTop で一瞬前面に出して Robot で撮る。
@@ -544,6 +556,7 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                     CADView(
                         parseResult = result,
                         debugMode = debugMode,
+                        showLabelBoxes = showLabelBoxes,
                         initialScale = initialScale,
                         initialOffset = initialOffset,
                         onViewStateChanged = { scale, offset ->
