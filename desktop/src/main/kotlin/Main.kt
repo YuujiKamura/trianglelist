@@ -348,6 +348,7 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                     out.write(
                                         ("overlap_texts=${report.overlappingTexts}/${report.totalTexts} " +
                                          "pairs=${report.pairs.size} contact=${contacts.size} intrusion=${intrusions.size} " +
+                                         "circled=${report.circledNumbers.size} " +
                                          "top=$top\n").toByteArray()
                                     )
                                 }

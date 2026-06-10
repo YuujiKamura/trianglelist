@@ -171,6 +171,52 @@ class DxfOverlapAnalyzerTest {
     }
 
     @Test
+    fun `同心で内包される番号 TEXT は円とペアリングされ判定の世界から消える`() {
+        // writer の番号サークル形 (DxfFileWriter.kt:167): 中央アンカーの番号と同心の円。
+        // "1" height=1 → box 幅 0.65、円 r=0.85 に内包される
+        val parseResult = DxfParseResult(
+            lines = listOf(DxfLine(x1 = -0.3, y1 = -5.0, x2 = -0.3, y2 = 5.0)), // box を貫くはずの線
+            circles = listOf(DxfCircle(centerX = 0.0, centerY = 0.0, radius = 0.85)),
+            texts = listOf(DxfText(x = 0.0, y = 0.0, text = "1", height = 1.0, alignH = 1, alignV = 2)),
+        )
+
+        val report = DxfOverlapAnalyzer.analyze(parseResult)
+
+        assertEquals(listOf(CircledNumber("text:0:1", "circle:0")), report.circledNumbers, "番号と円がペアリングされるはず")
+        assertEquals(0, report.totalTexts, "番号 TEXT は判定対象から構造的に消えるはず")
+        assertTrue(report.pairs.isEmpty(), "番号 TEXT は線と当たらないはず (世界に居ない): ${report.pairs}")
+    }
+
+    @Test
+    fun `円から離れた TEXT はペアリングされない`() {
+        val parseResult = DxfParseResult(
+            circles = listOf(DxfCircle(centerX = 0.0, centerY = 0.0, radius = 0.85)),
+            texts = listOf(DxfText(x = 10.0, y = 10.0, text = "1", height = 1.0, alignH = 1, alignV = 2)),
+        )
+
+        val report = DxfOverlapAnalyzer.analyze(parseResult)
+
+        assertTrue(report.circledNumbers.isEmpty(), "離れた TEXT は番号扱いしないはず")
+        assertEquals(1, report.totalTexts)
+    }
+
+    @Test
+    fun `同心でも円に内包されない大きい TEXT はペアリングされず円とのペアが出る`() {
+        // "12345678" height=2 → 幅 10.392、r=1 の円には収まらない → 番号扱いせず、
+        // 円は障害物として残るので CIRCLE ペアが観測される
+        val parseResult = DxfParseResult(
+            circles = listOf(DxfCircle(centerX = 0.0, centerY = 0.0, radius = 1.0)),
+            texts = listOf(DxfText(x = 0.0, y = 0.0, text = "12345678", height = 2.0, alignH = 1, alignV = 2)),
+        )
+
+        val report = DxfOverlapAnalyzer.analyze(parseResult)
+
+        assertTrue(report.circledNumbers.isEmpty(), "内包されない TEXT は番号扱いしないはず")
+        assertEquals(1, report.pairs.size, "円との重なりが観測されるはず: ${report.pairs}")
+        assertEquals(ObstacleKind.CIRCLE, report.pairs.single().otherKind)
+    }
+
+    @Test
     fun `LabelMetrics を差し替えると box の幅が実測値になる`() {
         // 固定幅 5mm のインク矩形を返す fake metrics ── 実測実装の差し込み口を pin する
         val fixedWidth = object : LabelMetrics {
