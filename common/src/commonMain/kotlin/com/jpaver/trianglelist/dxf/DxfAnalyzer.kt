@@ -28,7 +28,7 @@ object DxfAnalyzer {
             println()
             println("Sections:")
             sections.forEach { s ->
-                println("  ${s.name}: ${s.bytes / 1024} KB (${String.format("%.1f", s.percentage)}%)")
+                println("  ${s.name}: ${s.bytes / 1024} KB (${formatPercent(s.percentage)}%)")
             }
             println()
             println("Entities:")
@@ -94,13 +94,18 @@ object DxfAnalyzer {
         return AnalysisResult(totalBytes, sections, entities)
     }
 
-    fun analyzeFile(filePath: String): AnalysisResult? {
-        return try {
-            val content = java.io.File(filePath).readText()
-            analyze(content)
-        } catch (e: Exception) {
-            println("Error analyzing DXF: ${e.message}")
-            null
-        }
-    }
+    // analyzeFile (java.io.File 依存) は wasmJs 追加に伴い
+    // desktopMain の DxfJvmIo.kt へ extension として移設 (API 同名のまま)
+}
+
+// commonMain では java.lang.String.format が使えないため "%.1f" 同値を自前で組む
+// (viewmodel/FormattedString.kt と同じ流儀)
+private fun formatPercent(value: Double): String {
+    val negative = value < 0.0
+    val scaled = (if (negative) -value else value) * 10.0
+    var units = kotlin.math.floor(scaled).toLong()
+    if (scaled - units >= 0.5) units += 1
+    val s = units.toString().padStart(2, '0')
+    val body = s.dropLast(1) + "." + s.takeLast(1)
+    return if (negative) "-$body" else body
 }

@@ -42,7 +42,7 @@ class DxfObjectsBuilder(private val h: DxfHandleGen) {
         val vsConceptual = h.new()
 
         fun p(gc: Int, v: Any) {
-            w.appendLine("%3d".format(gc))
+            w.appendLine(gc.toString().padStart(3, ' '))
             w.appendLine(v.toString())
         }
 
@@ -216,7 +216,7 @@ class DxfObjectsBuilder(private val h: DxfHandleGen) {
 
     private fun writeMaterial(w: Appendable, handle: String, ownerDict: String, name: String) {
         fun p(gc: Int, v: Any) {
-            w.appendLine("%3d".format(gc))
+            w.appendLine(gc.toString().padStart(3, ' '))
             w.appendLine(v.toString())
         }
         p(0, "MATERIAL"); p(5, handle)
@@ -228,7 +228,7 @@ class DxfObjectsBuilder(private val h: DxfHandleGen) {
 
     private fun writeVisualStyle(w: Appendable, handle: String, ownerDict: String, name: String, type: Int) {
         fun p(gc: Int, v: Any) {
-            w.appendLine("%3d".format(gc))
+            w.appendLine(gc.toString().padStart(3, ' '))
             w.appendLine(v.toString())
         }
         p(0, "VISUALSTYLE"); p(5, handle)

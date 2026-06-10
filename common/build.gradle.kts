@@ -5,6 +5,17 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+// compose 依存は android/desktop の source set にしか無い (wasm から skiko を外すため)。
+// compose compiler を wasmJs にも適用すると runtime 不在でエラーになるので JVM 系に限定する
+composeCompiler {
+    targetKotlinPlatforms.set(
+        setOf(
+            org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.androidJvm,
+            org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.jvm
+        )
+    )
+}
+
 kotlin {
     androidTarget {
         compilations.all {
@@ -16,8 +27,28 @@ kotlin {
 
     jvm("desktop")
 
+    // Web 段階1 (insight #61): wasmJs ターゲット。境界は @JsExport の文字列 JSON 1 本
+    // (WebFacade.kt)。binaries.executable() で common.mjs + .wasm を生成し、
+    // web/ の Vite シェルが static asset として取り込む (kotlin-wasm-browser-template の流儀)。
+    @OptIn(org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalWasmDsl::class)
+    wasmJs {
+        browser()
+        binaries.executable()
+        generateTypeScriptDefinitions()
+    }
+
     sourceSets {
-        val commonMain by getting {
+        // compose 依存は JVM 側 (android/desktop) のみに置く。commonMain に置くと
+        // wasmJs 実行物に skiko / @js-joda/core がリンクされ、Web 段階1 の
+        // 「成果物を static asset として dynamic import」が bare import で壊れるため。
+        // commonMain で compose を使っていたのは TextAlignUtils.kt (Offset) のみで、
+        // 利用者が desktop だけだったので desktopMain へ移設済み
+        val commonTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
+        val androidMain by getting {
             dependencies {
                 implementation(compose.runtime)
                 implementation(compose.foundation)
@@ -26,9 +57,13 @@ kotlin {
                 implementation(compose.material3)
             }
         }
-        val commonTest by getting {
+        val desktopMain by getting {
             dependencies {
-                implementation(kotlin("test"))
+                implementation(compose.runtime)
+                implementation(compose.foundation)
+                implementation(compose.material)
+                implementation(compose.ui)
+                implementation(compose.material3)
             }
         }
     }

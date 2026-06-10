@@ -30,6 +30,11 @@ desktop/bin
 # Reports
 reports/
 
+# Web (Vite) — 段階1 wasmJs シェル
+web/node_modules/
+web/dist/
+web/public/wasm/
+
 # Rust/Cargo build artifacts
 trianglelist-web/target/
 trianglelist-web/dist/

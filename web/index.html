@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TriangleList Web (段階1)</title>
+    <style>
+      :root { color-scheme: light; }
+      body { margin: 0; font-family: system-ui, sans-serif; background: #fafafa; }
+      header {
+        display: flex; align-items: center; gap: 12px;
+        padding: 8px 12px; background: #1f3a5f; color: #fff;
+      }
+      header h1 { font-size: 14px; margin: 0; font-weight: 600; }
+      header input[type="file"] { font-size: 12px; }
+      #status { font-size: 12px; opacity: 0.85; }
+      main { display: grid; place-items: center; }
+      canvas { background: #fff; border: 1px solid #ccc; margin: 12px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>TriangleList Web — 段階1 (wasmJs + Canvas 2D)</h1>
+      <input id="file" type="file" accept=".csv,text/csv" />
+      <span id="status">loading wasm...</span>
+    </header>
+    <main>
+      <canvas id="cv" width="1200" height="800"></canvas>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

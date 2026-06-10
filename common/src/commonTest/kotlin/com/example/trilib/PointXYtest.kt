@@ -89,7 +89,8 @@ class PointXYtest {
     }
 
     private fun assertPointXYEquals(expected: PointXY, actual: PointXY) {
-        System.out.printf( "PointXY expected x: %s, y: %s, actual x: %s, y: %s %n", expected.x, expected.y, actual.x, actual.y)
+        // System.out.printf は JVM 専用のため println に置換 (wasmJs 追加対応、出力同値)
+        println("PointXY expected x: ${expected.x}, y: ${expected.y}, actual x: ${actual.x}, y: ${actual.y} ")
         assertEquals(expected.y.toDouble(), actual.y.toDouble(), 0.001 )
         assertEquals(expected.x.toDouble(), actual.x.toDouble(), 0.001 )
 

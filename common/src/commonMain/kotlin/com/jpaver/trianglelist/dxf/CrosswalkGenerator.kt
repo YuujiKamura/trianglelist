@@ -1,5 +1,6 @@
 package com.jpaver.trianglelist.dxf
 
+import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
@@ -48,7 +49,7 @@ class CrosswalkGenerator {
         val nextPoint = getPointAtDistance(path, startOffset + 100) ?: centerPoint
 
         val roadAngle = atan2(nextPoint.second - centerPoint.second, nextPoint.first - centerPoint.first)
-        val stripeAngle = roadAngle + Math.PI / 2
+        val stripeAngle = roadAngle + PI / 2
 
         val totalRoadWidth = stripeCount * stripeWidth + (stripeCount - 1) * stripeSpacing
         val halfRoadWidth = totalRoadWidth / 2
