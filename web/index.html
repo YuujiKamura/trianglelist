@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TriangleList Web (段階1)</title>
+    <title>TriangleList Web (段階2a)</title>
     <style>
       :root { color-scheme: light; }
       body { margin: 0; font-family: system-ui, sans-serif; background: #fafafa; }
@@ -14,18 +14,48 @@
       header h1 { font-size: 14px; margin: 0; font-weight: 600; }
       header input[type="file"] { font-size: 12px; }
       #status { font-size: 12px; opacity: 0.85; }
-      main { display: grid; place-items: center; }
-      canvas { background: #fff; border: 1px solid #ccc; margin: 12px; }
+      #layout {
+        display: flex; flex-wrap: wrap; gap: 12px;
+        padding: 12px; align-items: flex-start; justify-content: center;
+      }
+      canvas { background: #fff; border: 1px solid #ccc; }
+      #tablePanel {
+        background: #fff; border: 1px solid #ccc; padding: 8px;
+      }
+      #tablePanel h2 { font-size: 13px; margin: 0 0 6px; font-weight: 600; color: #1f3a5f; }
+      #triTable { border-collapse: collapse; font-size: 12px; }
+      #triTable th, #triTable td { border: 1px solid #ddd; padding: 2px 4px; text-align: center; }
+      #triTable th { background: #eef2f7; font-weight: 600; }
+      #triTable td.num { color: #1f5fbf; font-weight: 600; min-width: 28px; }
+      #triTable input[type="number"] { width: 60px; font-size: 12px; box-sizing: border-box; }
+      #triTable select { font-size: 12px; }
+      #triTable button.del { font-size: 11px; }
+      #addRow { margin-top: 8px; font-size: 12px; }
     </style>
   </head>
   <body>
     <header>
-      <h1>TriangleList Web — 段階1 (wasmJs + Canvas 2D)</h1>
+      <h1>TriangleList Web — 段階2a (表編集 + wasmJs + Canvas 2D)</h1>
       <input id="file" type="file" accept=".csv,text/csv" />
       <span id="status">loading wasm...</span>
     </header>
     <main>
-      <canvas id="cv" width="1200" height="800"></canvas>
+      <div id="layout">
+        <section id="tablePanel">
+          <h2>三角形リスト</h2>
+          <table id="triTable">
+            <thead>
+              <tr>
+                <th>番号</th><th>辺A</th><th>辺B</th><th>辺C</th>
+                <th>親番号</th><th>接続</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="triRows"></tbody>
+          </table>
+          <button id="addRow" type="button">行を追加</button>
+        </section>
+        <canvas id="cv" width="1200" height="800"></canvas>
+      </div>
     </main>
     <script type="module" src="/src/main.ts"></script>
   </body>
