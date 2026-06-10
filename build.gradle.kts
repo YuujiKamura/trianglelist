@@ -7,6 +7,8 @@ plugins {
     id("org.jetbrains.kotlin.android") apply false
     id("org.jetbrains.kotlin.jvm") apply false
     id("org.jetbrains.kotlin.multiplatform") apply false
+    // 1.61.0+ は Kotlin 2.3 メタデータでビルドされており本プロジェクトの Kotlin 2.0.0 では読めない
+    id("io.github.takahirom.roborazzi") version "1.60.0" apply false
 }
 
 // 一括ビルド＆テストタスク
