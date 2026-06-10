@@ -31,13 +31,17 @@ data class OverlapReport(
  * CollisionField に登録し、各 TEXT の box を query して重なりの事実 (深さ付き) を数える。
  * 配置は一切変更しない。判定に図面知識・閾値を持ち込まない (段階 1 と同じ流儀)。
  *
- * テキスト幅は文字種で重み付けした係数近似: Σ(全角 1.0 / 半角 0.5) × height ×
- * textWidthFactor。フォント実測は将来、係数を引数にするのは viewer 実測から後で
- * 較正するため (ADR 0002「係数近似から始めて乖離を観測してから決める」)。
+ * テキスト幅は LabelMetrics から取る (rev3)。desktop は描画と同じフォントの実測、
+ * default は全半角係数近似の fallback (LabelMetrics.Approximate、テスト用)。
+ * textWidthFactor は実測較正の追加係数として残す (通常 1.0)。
  */
 object DxfOverlapAnalyzer {
 
-    fun analyze(parseResult: DxfParseResult, textWidthFactor: Float = 1.0f): OverlapReport {
+    fun analyze(
+        parseResult: DxfParseResult,
+        textWidthFactor: Float = 1.0f,
+        metrics: LabelMetrics = LabelMetrics.Approximate,
+    ): OverlapReport {
         val field = CollisionField()
 
         parseResult.lines.forEachIndexed { index, line ->
@@ -54,7 +58,7 @@ object DxfOverlapAnalyzer {
                 circle.radius.toFloat(),
             )
         }
-        val boxes = textBoxes(parseResult, textWidthFactor)
+        val boxes = textBoxes(parseResult, textWidthFactor, metrics)
         for ((id, box) in boxes) {
             field.addBox(id, box)
         }
@@ -83,9 +87,13 @@ object DxfOverlapAnalyzer {
      * 共用する唯一の生成経路 ── 判定が見ている box と目が見る box を一致させる
      * (rev2: 描画用に別実装したら検証にならない)。
      */
-    fun textBoxes(parseResult: DxfParseResult, textWidthFactor: Float = 1.0f): List<Pair<String, LabelBox>> =
+    fun textBoxes(
+        parseResult: DxfParseResult,
+        textWidthFactor: Float = 1.0f,
+        metrics: LabelMetrics = LabelMetrics.Approximate,
+    ): List<Pair<String, LabelBox>> =
         parseResult.texts.mapIndexed { index, text ->
-            textId(index, text.text) to toLabelBox(text, textWidthFactor)
+            textId(index, text.text) to toLabelBox(text, textWidthFactor, metrics)
         }
 
     /**
@@ -98,29 +106,21 @@ object DxfOverlapAnalyzer {
     }
 
     /**
-     * DxfText → LabelBox 変換。アンカー (x, y) から alignH/alignV で中心へ補正し、
-     * 回転テキストは補正オフセットごとアンカー回りに rotation 回転する
-     * (DXF の TEXT 回転はアンカー基準のため)。
-     * 幅は全角 1.0 / 半角 0.5 の文字数重み × height の係数近似。半角判定は
-     * char.code <= 0xFF (自前 writer の出力対象では十分な粗さ)。
+     * DxfText → LabelBox 変換。インク矩形 (アンカー基準ローカル) は LabelMetrics が
+     * 供給し、ここでは回転だけをアンカー回りに適用する (DXF の TEXT 回転はアンカー基準)。
+     * alignH/alignV の解釈も metrics 側 ── 描画を写す実装が描画と同じ式を使うため。
      */
-    private fun toLabelBox(text: DxfText, textWidthFactor: Float): LabelBox {
+    private fun toLabelBox(text: DxfText, textWidthFactor: Float, metrics: LabelMetrics): LabelBox {
         val heightMm = text.height.toFloat()
-        val widthUnits = text.text.sumOf { ch -> if (ch.code <= 0xFF) 0.5 else 1.0 }.toFloat()
-        val widthMm = widthUnits * heightMm * textWidthFactor
-        val offsetX = when (text.alignH) {
-            1 -> 0f               // 中央: アンカーが中心
-            2 -> -widthMm / 2f    // 右寄せ: アンカーは右端 → 中心は左へ
-            else -> widthMm / 2f  // 左寄せ (0): アンカーは左端 → 中心は右へ
-        }
-        val offsetY = when (text.alignV) {
-            2 -> 0f                // 中央: アンカーが中心
-            3 -> -heightMm / 2f    // 上: アンカーは上端 → 中心は下へ
-            else -> heightMm / 2f  // ベースライン (0)・下 (1): 中心は上へ
-        }
+        val ink = metrics.inkBoxLocal(text.text, heightMm, text.alignH, text.alignV)
+        val widthMm = (ink.rightMm - ink.leftMm) * textWidthFactor
+        val boxHeightMm = ink.topMm - ink.bottomMm
         val anchor = PointXY(text.x.toFloat(), text.y.toFloat())
         val rotationDeg = text.rotation.toFloat()
-        val center = PointXY(anchor.x + offsetX, anchor.y + offsetY).rotate(anchor, rotationDeg)
-        return LabelBox(center, widthMm = widthMm, heightMm = heightMm, rotationDeg = rotationDeg)
+        val center = PointXY(
+            anchor.x + (ink.leftMm + ink.rightMm) / 2f,
+            anchor.y + (ink.bottomMm + ink.topMm) / 2f,
+        ).rotate(anchor, rotationDeg)
+        return LabelBox(center, widthMm = widthMm, heightMm = boxHeightMm, rotationDeg = rotationDeg)
     }
 }

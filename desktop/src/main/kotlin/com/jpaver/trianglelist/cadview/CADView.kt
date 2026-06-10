@@ -42,10 +42,35 @@ fun CADView(
     var isInitialized by remember { mutableStateOf(initialScale != null && initialOffset != null) }
     val textMeasurer = rememberTextMeasurer()
     val renderer = remember { CADViewRenderer() }
+    val overlayDensity = LocalDensity.current
     // LabelBox overlay (rev2): 判定 (DxfOverlapAnalyzer.analyze) が見ている box と
-    // 同一経路 textBoxes() で生成する。描画用の別実装を作らない ── 判定の box を目が見る
+    // 同一経路 textBoxes() で生成する。箱の基準 (viewer 実測か CAD メトリクスか) は
+    // rev5 で確定予定 ── それまで fallback (全半角近似) のまま
     val labelBoxes = remember(parseResult) {
         com.jpaver.trianglelist.label.DxfOverlapAnalyzer.textBoxes(parseResult)
+    }
+    // 較正検証データ: renderer の実描画 layout 箱と判定 box の数値比較 (boxes on で 1 回出力)
+    val overlayTextRenderer = remember { com.jpaver.trianglelist.adapter.TextRenderer() }
+    val flippedTexts = remember(parseResult) {
+        com.jpaver.trianglelist.util.CanvasUtil.flipYAxis(parseResult).texts
+    }
+    LaunchedEffect(showLabelBoxes, parseResult) {
+        if (!showLabelBoxes) return@LaunchedEffect
+        println("[boxes] density=${overlayDensity.density} fontScale=${overlayDensity.fontScale}")
+        labelBoxes.forEachIndexed { i, (id, box) ->
+            val t = flippedTexts.getOrNull(i) ?: return@forEachIndexed
+            val b = overlayTextRenderer.calculateTextBounds(t, scale, textMeasurer)
+            val renderedW = b[1] - b[0]
+            val renderedH = b[3] - b[2]
+            val dxCenter = (b[0] + b[1]) / 2f - box.center.x
+            val dyCenter = (b[2] + b[3]) / 2f - (-box.center.y)
+            println(
+                "[boxes] $id rot=%.0f boxW=%.1f rendW=%.1f ratioW=%.3f boxH=%.1f rendH=%.1f dx=%.1f dy=%.1f".format(
+                    box.rotationDeg, box.widthMm, renderedW, renderedW / box.widthMm,
+                    box.heightMm, renderedH, dxCenter, dyCenter
+                )
+            )
+        }
     }
 
     // ビューステートが変更されたら通知
