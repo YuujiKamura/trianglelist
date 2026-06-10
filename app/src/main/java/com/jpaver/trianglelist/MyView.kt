@@ -22,13 +22,13 @@ import com.jpaver.trianglelist.viewmodel.ViewTranslateManager
 import com.jpaver.trianglelist.datamanager.PdfWriter
 import com.jpaver.trianglelist.editmodel.Deduction
 import com.jpaver.trianglelist.editmodel.DeductionList
-import com.jpaver.trianglelist.editmodel.DimOnPath
 import com.jpaver.trianglelist.editmodel.EditList
 import com.jpaver.trianglelist.editmodel.EmptyTriListException
 import com.jpaver.trianglelist.editmodel.LastTapNumberValidationException
 import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
 import com.jpaver.trianglelist.editmodel.isCollide
+import com.jpaver.trianglelist.label.DimensionPlacement
 import com.jpaver.trianglelist.editmodel.print_trilist
 import com.jpaver.trianglelist.editmodel.setScale
 import com.jpaver.trianglelist.viewmodel.formattedString
@@ -614,19 +614,15 @@ class MyView(context: Context, attrs: AttributeSet?) :
         tri.pointCA
         tri.pointAB
         tri.pointBC
-        val pathA = tri.dimOnPath[0]
-        val pathB = tri.dimOnPath[1]
-        val pathC = tri.dimOnPath[2]
-        val pathS = tri.pathS
+        // ADR 0003 Phase 2c: 寸法座標の出所を Triangle のキャッシュ (dimOnPath/pathS) から
+        // common の式 DimensionLayout に切替 (gapPaperMm=0 でキャッシュ同値、DimensionLayoutParityTest +
+        // MyViewDimensionWiringTest で固定)。isPrintPDF_ 分岐により画面と PDF 印刷の両方をこれで賄う。
+        val (placeA, placeB, placeC) = MyViewDimensionSource.triple(tri)
+        val placeS = MyViewDimensionSource.sokuten(tri)
 
         var la = tri.strLengthA //String type
         var lb = tri.strLengthB
         var lc = tri.strLengthC
-
-        pathA.textSpacer = textSpacer_
-        pathB.textSpacer = textSpacer_
-        pathC.textSpacer = textSpacer_
-        pathS.textSpacer = textSpacer_
 
         val margin = paintDim.textSize*0.52f
         val savedDimColor = paintDim.color
@@ -636,9 +632,11 @@ class MyView(context: Context, attrs: AttributeSet?) :
                 logModelViewPoints()
                 //val name = tri.myName_ + " :" + sokt.pointA_.x + " :" + sokt.pointA_.y + " :" + sokt.pointB_.x + " :" + sokt.pointB_.y
 
-                la += "A${pathA.vertical}"//-${tri.dim.vertical.a}"// + " :" + tri.dim.horizontal.a
-                lb += "B${pathB.vertical}"//-${tri.dim.vertical.b}"// + " :" + tri.dim.horizontal.b
-                lc += "C${pathC.vertical}"//-${tri.dim.vertical.c}"// + " :" + tri.dim.horizontal.c
+                // ADR 0003 Phase 2c: placement に旧 DimOnPath.vertical (init で変異) の同等値が無いため
+                // debug 表示は dim.vertical 直読みに切替 (debug 文字列のみ、golden/テスト非対象)
+                la += "A${tri.dim.vertical.a}"
+                lb += "B${tri.dim.vertical.b}"
+                lc += "C${tri.dim.vertical.c}"
             }
             else if( tri.mynumber == myTriangleList.lastTapNumber ){
                 la += " A"
@@ -649,26 +647,26 @@ class MyView(context: Context, attrs: AttributeSet?) :
             else if( tri.mynumber < myTriangleList.size() ) paintDim.color = White_
         }
 
-        // 線
+        // 線 (旗揚げ線: 旗揚げ系 horizontal>2 のときのみ。DxfFileWriter.writeDimFlagsFromLayout と同型)
         drawTriLines( canvas, tri, paintLine )
-        if(pathA.horizontal > 2) canvas.drawPath(makePath(pathA), paintLine)
-        if(pathB.horizontal > 2) canvas.drawPath(makePath(pathB), paintLine)
-        if(pathC.horizontal > 2) canvas.drawPath(makePath(pathC), paintLine)
+        if(tri.dim.horizontal.a > 2) canvas.drawPath(makePath(placeA), paintLine)
+        if(tri.dim.horizontal.b > 2) canvas.drawPath(makePath(placeB), paintLine)
+        if(tri.dim.horizontal.c > 2) canvas.drawPath(makePath(placeC), paintLine)
 
         // 番号
         drawTriangleNumber(canvas, tri, paintDim, paintB)
 
         // 寸法
         if(tri.mynumber == 1 || tri.connectionSide > 2 || tri.cParam_.type != 0 )
-            drawDigits( canvas, la, makePath(pathA), pathA.offsetH, pathA.offsetV, paintDim, margin )
-        drawDigits( canvas, lb, makePath(pathB), pathB.offsetH, pathB.offsetV, paintDim, margin )
-        drawDigits( canvas, lc, makePath(pathC), pathC.offsetH, pathC.offsetV, paintDim, margin )
+            drawDigits( canvas, la, makePath(placeA), placeA.offsetH, placeA.offsetV, paintDim, margin )
+        drawDigits( canvas, lb, makePath(placeB), placeB.offsetH, placeB.offsetV, paintDim, margin )
+        drawDigits( canvas, lc, makePath(placeC), placeC.offsetH, placeC.offsetV, paintDim, margin )
         paintDim.color = savedDimColor
 
         // 測点
         if(tri.myName_() != ""){
-            canvas.drawTextOnPath(tri.myName_(), makePath(pathS), 0f, -5f, paintSok)
-            canvas.drawPath(makePath(pathS), paintLine)
+            canvas.drawTextOnPath(tri.myName_(), makePath(placeS), 0f, -5f, paintSok)
+            canvas.drawPath(makePath(placeS), paintLine)
         }
         //Log.d( "myView", "drawTriangle: " + tri.myNumber )
 
@@ -688,19 +686,19 @@ class MyView(context: Context, attrs: AttributeSet?) :
             shadowTri_.setScale( trilist.scale)
             canvas.drawPath( makeTriangleFillPath( shadowTri_ ), paintGray )
 
-            // 寸法値
-            val pathB = shadowTri_.dimOnPath[1]
-            val pathC = shadowTri_.dimOnPath[2]
+            // 寸法値 (ADR 0003 Phase 2c: dimOnPath キャッシュ → common の式。影は B/C 辺のみ描く。
+            // calcPoints が常に arrangeDims→setDimPath を呼ぶため shadowTri_ の geometry と式は同値)
+            val (placeB, placeC) = MyViewDimensionSource.shadowBC(shadowTri_)
             val strB = "B ${watchedB1_}"
             val strC = "C ${watchedC1_}"
-            drawDigit( canvas, strB, pathB, paintYellow )
-            drawDigit( canvas, strC, pathC, paintYellow )
+            drawDigit( canvas, strB, placeB, paintYellow )
+            drawDigit( canvas, strC, placeC, paintYellow )
         }
     }
 
-    fun drawDigit(canvas: Canvas, str: String, path: DimOnPath, paint: Paint ){
+    fun drawDigit(canvas: Canvas, str: String, place: DimensionPlacement, paint: Paint ){
         val onecharsize = paint.textSize* 0.5f
-        drawDigits( canvas, str, makePath(path), path.offsetH, path.offsetV, paint, onecharsize )
+        drawDigits( canvas, str, makePath(place), place.offsetH, place.offsetV, paint, onecharsize )
     }
 
     fun drawDeduction(canvas: Canvas, ded: Deduction, paint: Paint){
@@ -917,7 +915,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
     }
 
 
-    fun makePath(PA: DimOnPath): Path {
+    fun makePath(PA: DimensionPlacement): Path {
         val path = Path()
         path.rewind()
         path.moveTo(PA.pointA.x, -PA.pointA.y)
