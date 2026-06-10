@@ -169,6 +169,23 @@ class DxfOverlapAnalyzerTest {
     }
 
     @Test
+    fun `LabelMetrics を差し替えると box の幅が実測値になる`() {
+        // 固定幅 5mm のインク矩形を返す fake metrics ── 実測実装の差し込み口を pin する
+        val fixedWidth = object : LabelMetrics {
+            override fun inkBoxLocal(text: String, heightMm: Float, alignH: Int, alignV: Int) =
+                LabelMetrics.InkBox(-2.5f, 2.5f, -heightMm / 2f, heightMm / 2f)
+        }
+        val parseResult = DxfParseResult(
+            texts = listOf(DxfText(x = 0.0, y = 0.0, text = "ABCD", height = 2.0, alignH = 1, alignV = 2)),
+        )
+
+        val box = DxfOverlapAnalyzer.textBoxes(parseResult, metrics = fixedWidth).single().second
+
+        assertEquals(5.0f, box.widthMm, 1e-3f, "幅は metrics の実測値が使われるはず")
+        assertEquals(2.0f, box.heightMm, 1e-3f, "高さは DXF height のまま")
+    }
+
+    @Test
     fun `textBoxes は analyze と同じ box を返す (viewer overlay 用の単一経路)`() {
         val parseResult = DxfParseResult(
             texts = listOf(DxfText(x = 0.0, y = 0.0, text = "ABCD", height = 2.0, alignH = 1, alignV = 2)),

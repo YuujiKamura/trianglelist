@@ -179,6 +179,7 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
     val commandExecutor = remember { MarkingCommandExecutor() }
     var commandFileModified by remember { mutableStateOf(0L) }
 
+
     // CP (control plane): localhost:9876 で TCP listen し、
     // 「open <path>」の 1 行を受信したら viewer 再起動なしで DXF を差し替える。
     // CLI 側は desktop/scripts/cad-open.ps1 で送信する。
@@ -322,6 +323,7 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                 } else if (r == null || r.texts.isEmpty()) {
                                     out.write("error: no parseResult or no texts\n".toByteArray())
                                 } else {
+                                    // 箱の基準 (viewer 実測 / CAD メトリクス) は rev5 で確定 ── それまで fallback 近似
                                     val report = com.jpaver.trianglelist.label.DxfOverlapAnalyzer.analyze(r, factor)
                                     // 深さ 0 (〜EPS) = contact (寄り添い、正常)、> EPS = intrusion (めり込み)。
                                     // 足切りはせず観測層のここで分けて報告する (rev1)
