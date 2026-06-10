@@ -43,11 +43,14 @@ fun CADView(
     val textMeasurer = rememberTextMeasurer()
     val renderer = remember { CADViewRenderer() }
     val overlayDensity = LocalDensity.current
-    // LabelBox overlay (rev2): 判定 (DxfOverlapAnalyzer.analyze) が見ている box と
-    // 同一経路 textBoxes() で生成する。箱の基準 (viewer 実測か CAD メトリクスか) は
-    // rev5 で確定予定 ── それまで fallback (全半角近似) のまま
-    val labelBoxes = remember(parseResult) {
-        com.jpaver.trianglelist.label.DxfOverlapAnalyzer.textBoxes(parseResult)
+    // LabelBox overlay (rev5 確定): 判定 (DxfOverlapAnalyzer.analyze) が見ている box と
+    // 同一経路 textBoxes() で生成する。実測メトリクス (MS Gothic + キャップハイト=height、
+    // 描画と同一) なので箱はグリフに構造的に密着する
+    val labelMetrics = remember(textMeasurer, overlayDensity) {
+        com.jpaver.trianglelist.adapter.MeasuredLabelMetrics(textMeasurer, overlayDensity)
+    }
+    val labelBoxes = remember(parseResult, labelMetrics) {
+        com.jpaver.trianglelist.label.DxfOverlapAnalyzer.textBoxes(parseResult, metrics = labelMetrics)
     }
     // 較正検証データ: renderer の実描画 layout 箱と判定 box の数値比較 (boxes on で 1 回出力)
     val overlayTextRenderer = remember { com.jpaver.trianglelist.adapter.TextRenderer() }
@@ -56,10 +59,10 @@ fun CADView(
     }
     LaunchedEffect(showLabelBoxes, parseResult) {
         if (!showLabelBoxes) return@LaunchedEffect
-        println("[boxes] density=${overlayDensity.density} fontScale=${overlayDensity.fontScale}")
+        println("[boxes] density=${overlayDensity.density} fontScale=${overlayDensity.fontScale} capRatio=${com.jpaver.trianglelist.adapter.TextRenderer.capHeightRatio} msGothic=${com.jpaver.trianglelist.adapter.TextRenderer.msGothicTypeface != null}")
         labelBoxes.forEachIndexed { i, (id, box) ->
             val t = flippedTexts.getOrNull(i) ?: return@forEachIndexed
-            val b = overlayTextRenderer.calculateTextBounds(t, scale, textMeasurer)
+            val b = overlayTextRenderer.calculateTextBounds(t, scale, textMeasurer, overlayDensity)
             val renderedW = b[1] - b[0]
             val renderedH = b[3] - b[2]
             val dxCenter = (b[0] + b[1]) / 2f - box.center.x
@@ -98,7 +101,7 @@ fun CADView(
             println("======================")
 
             // 新しい境界計算クラスを使用
-            val (minX, maxX, minY, maxY) = renderer.calculateDrawingBounds(parseResult, textMeasurer, scale)
+            val (minX, maxX, minY, maxY) = renderer.calculateDrawingBounds(parseResult, textMeasurer, scale, density)
 
             val width = maxX - minX
             val height = maxY - minY

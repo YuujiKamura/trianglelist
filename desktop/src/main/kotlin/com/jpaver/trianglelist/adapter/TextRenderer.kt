@@ -16,9 +16,100 @@ import com.jpaver.trianglelist.dxf.calculateAlignedTopLeft
 /**
  * デスクトップ版テキスト描画クラス
  * DXFテキストエンティティをCompose Canvasに描画する機能を提供
+ *
+ * CAD 視覚シミュレーション (rev5 確定): この DXF は STYLE で MS Gothic を指定しており
+ * (app/.../datamanager/TablesBuilder.kt:194-270)、DXF TEXT height (group code 40) は
+ * キャップハイト (ezdxf 公式 doc の make_font(cap_height) 同義)。旧描画の
+ * fontSize = height.sp (em ベース・既定フォント) は CAD 実態から乖離していたため、
+ * MS Gothic + 「キャップハイト = height」へ統一する。係数はハードコードせず
+ * Skia の実フォントメトリクスから取り、toSp() で density (OS 表示スケール) も打ち消す。
  */
 class TextRenderer {
-    
+
+    companion object {
+        /** この DXF の STYLE 指定フォント (TablesBuilder.kt:194-270 = MS Gothic)。 */
+        val msGothicTypeface: org.jetbrains.skia.Typeface? by lazy {
+            try {
+                org.jetbrains.skia.FontMgr.default.matchFamilyStyle(
+                    "MS Gothic", org.jetbrains.skia.FontStyle.NORMAL
+                )
+            } catch (e: Throwable) {
+                null
+            }
+        }
+
+        /** Compose 描画用の MS Gothic ファミリ。取得不能時は既定ファミリに fallback。 */
+        val msGothicFamily: androidx.compose.ui.text.font.FontFamily by lazy {
+            val typeface = msGothicTypeface
+            if (typeface != null) {
+                androidx.compose.ui.text.font.FontFamily(
+                    androidx.compose.ui.text.platform.Typeface(typeface)
+                )
+            } else {
+                androidx.compose.ui.text.font.FontFamily.Default
+            }
+        }
+
+        /**
+         * MS Gothic の「'A' インク実高 / em」比 (Skia 実測較正)。
+         *
+         * テーブル値 (OS/2 sCapHeight) ではなく実測する ── QCAD (src/core/RTextRenderer.cpp、
+         * アルゴリズム参照) は TTF を固定サイズで 'A' の bbox 実測 → 1/heightA で正規化しており
+         * テーブル値を信じない。MS Gothic はテーブル 0.68em に対し数字インク実高 0.77em と
+         * 乖離が大きい (fontTools 実測、msgothic.ttc) ため実測必須。
+         */
+        val capHeightRatio: Float by lazy {
+            try {
+                val probeSizePx = 100f
+                val font = org.jetbrains.skia.Font(msGothicTypeface, probeSizePx)
+                val inkA = font.measureText("A") // Rect はベースライン原点、top は負
+                val heightA = inkA.bottom - inkA.top
+                if (heightA > 0f) heightA / probeSizePx else FALLBACK_CAP_RATIO
+            } catch (e: Throwable) {
+                FALLBACK_CAP_RATIO
+            }
+        }
+
+        /** fontTools 実測 (msgothic.ttc): 数字 '5' インク実高 0.770em ('A' 同等)。実測不能時のみ使用。 */
+        const val FALLBACK_CAP_RATIO: Float = 0.770f
+
+        /** DXF height (キャップハイト, model mm) → 描画 fontSize (px = model mm)。 */
+        fun fontSizePxFor(heightMm: Float): Float = heightMm / capHeightRatio
+
+        /**
+         * DXF アンカー → Compose 左上座標 (描画と判定が共用する唯一の整列式)。
+         * 垂直は layout 箱でなくグリフのベースライン / キャップ帯基準 ── layout 箱基準
+         * だと ascent との差ぶんグリフが下にずれる (rev3 実測 ~0.4×height)。
+         * @param firstBaseline layout 上端からベースラインまでの距離 (px)
+         * @param capHeightPx キャップハイト (= DXF height、px = model mm)
+         */
+        fun alignedTopLeft(
+            baseX: Float,
+            baseY: Float,
+            textWidth: Float,
+            textHeight: Float,
+            firstBaseline: Float,
+            capHeightPx: Float,
+            alignH: Int,
+            alignV: Int
+        ): Offset {
+            val x = when (alignH) {
+                0 -> baseX // 左揃え：そのまま
+                1 -> baseX - textWidth / 2 // 中央揃え：半分左に
+                2 -> baseX - textWidth // 右揃え：全幅左に
+                else -> baseX
+            }
+            val y = when (alignV) {
+                0 -> baseY - firstBaseline // ベースライン: グリフのベースラインをアンカーに
+                1 -> baseY - textHeight // 下揃え: ディセンダ線をアンカーに (layout 下端で近似)
+                2 -> baseY - (firstBaseline - capHeightPx / 2) // 中央揃え: キャップ帯の中心
+                3 -> baseY - (firstBaseline - capHeightPx) // 上揃え: キャップ上端
+                else -> baseY - firstBaseline
+            }
+            return Offset(x, y)
+        }
+    }
+
     /**
      * DXFテキストを描画する
      * @param drawScope 描画スコープ
@@ -28,30 +119,35 @@ class TextRenderer {
      * @param debugMode デバッグモード（true時に描画起点・テキスト範囲のボックスを表示）
      */
     fun drawText(
-        drawScope: DrawScope, 
-        text: DxfText, 
+        drawScope: DrawScope,
+        text: DxfText,
         scale: Float,
         textMeasurer: androidx.compose.ui.text.TextMeasurer,
         debugMode: Boolean = false
     ) {
         val color = ColorConverter.aciToColor(text.color)
+        val capHeightPx = text.height.toFloat()
         val textStyle = TextStyle(
             color = color,
-            // scaleによるサイズ変更を取り除き、DXFサイズをそのまま使用
-            fontSize = text.height.sp
+            fontFamily = msGothicFamily,
+            // キャップハイト = DXF height になるよう補正。toSp で density も打ち消す
+            // (DrawScope は Density を実装している)
+            fontSize = with(drawScope) { fontSizePxFor(capHeightPx).toSp() }
         )
-        
+
         // テキストのサイズを測定
         val textLayoutResult = textMeasurer.measure(text.text, textStyle)
         val textWidth = textLayoutResult.size.width.toFloat()
         val textHeight = textLayoutResult.size.height.toFloat() // 実際の描画高さを使用
-        
+
         // 頂点データは既にY反転済みなので、そのまま使用
-        val adjustedPosition = calculateAlignedPosition(
+        val adjustedPosition = alignedTopLeft(
             text.x.toFloat(),
             text.y.toFloat(),
             textWidth,
             textHeight,
+            textLayoutResult.firstBaseline,
+            capHeightPx,
             text.alignH,
             text.alignV
         )
@@ -92,25 +188,30 @@ class TextRenderer {
      * @return 境界ボックスの座標 (minX, maxX, minY, maxY)
      */
     fun calculateTextBounds(
-        text: DxfText, 
+        text: DxfText,
         scale: Float,
-        textMeasurer: androidx.compose.ui.text.TextMeasurer
+        textMeasurer: androidx.compose.ui.text.TextMeasurer,
+        density: androidx.compose.ui.unit.Density = androidx.compose.ui.unit.Density(1f)
     ): List<Float> {
         // drawTextメソッドと全く同じロジックを使用
+        val capHeightPx = text.height.toFloat()
         val textStyle = TextStyle(
-            fontSize = text.height.sp // scaleは適用しない（drawTextと同じ）
+            fontFamily = msGothicFamily,
+            fontSize = with(density) { fontSizePxFor(capHeightPx).toSp() } // drawText と同じ補正
         )
-        
+
         val textLayoutResult = textMeasurer.measure(text.text, textStyle)
         val textWidth = textLayoutResult.size.width.toFloat()
         val textHeight = textLayoutResult.size.height.toFloat() // 実際の描画高さを使用
-        
+
         // アライメントに基づいた実際の描画位置を計算（drawTextと同じロジック）
-        val adjustedPosition = calculateAlignedPosition(
+        val adjustedPosition = alignedTopLeft(
             text.x.toFloat(),
             text.y.toFloat(),
             textWidth,
             textHeight,
+            textLayoutResult.firstBaseline,
+            capHeightPx,
             text.alignH,
             text.alignV
         )
@@ -123,47 +224,6 @@ class TextRenderer {
         return listOf(minX, maxX, minY, maxY)
     }
     
-    /**
-     * アライメントに基づいてテキストの描画位置を計算する
-     * @param baseX 基準X座標
-     * @param baseY 基準Y座標
-     * @param textWidth テキスト幅
-     * @param textHeight テキスト高さ
-     * @param alignH 水平アライメント（0=左、1=中央、2=右）
-     * @param alignV 垂直アライメント（0=ベースライン、1=下、2=中央、3=上）
-     * @return 調整された描画位置
-     */
-    private fun calculateAlignedPosition(
-        baseX: Float,
-        baseY: Float,
-        textWidth: Float,
-        textHeight: Float,
-        alignH: Int,
-        alignV: Int
-    ): androidx.compose.ui.geometry.Offset {
-        // DXFのテキスト位置をComposeの描画位置（左上）に変換する
-        // DXFでは(baseX, baseY)がテキストの基準点、Composeでは左上が基準
-        
-        // 水平アライメント
-        val x = when (alignH) {
-            0 -> baseX // 左揃え：そのまま
-            1 -> baseX - textWidth / 2 // 中央揃え：半分左に
-            2 -> baseX - textWidth // 右揃え：全幅左に
-            else -> baseX
-        }
-        
-        // 垂直アライメント（Composeのテキスト描画の特性に合わせて調整）
-        val y = when (alignV) {
-            0 -> baseY - textHeight // ベースライン：テキスト高さ分上に（Composeは左上基準のため）
-            1 -> baseY - textHeight // 下揃え：テキスト高さ分上に
-            2 -> baseY - textHeight / 2 // 中央揃え：半分上に
-            3 -> baseY // 上揃え：そのまま
-            else -> baseY - textHeight // デフォルトはベースライン
-        }
-        
-        return Offset(x, y)
-    }
-
     /**
      * デバッグ用のボックスを描画する
      * 1. 描画起点（DXFの基準点）- 小さい赤いボックス

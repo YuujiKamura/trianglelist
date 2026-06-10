@@ -179,6 +179,20 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
     val commandExecutor = remember { MarkingCommandExecutor() }
     var commandFileModified by remember { mutableStateOf(0L) }
 
+    // CP スレッド用の実測メトリクス (rev5): UI と同じ resolver/density から専用
+    // TextMeasurer を作る ── フォントは描画と同一 (MS Gothic + cap 補正)、
+    // cache は UI と共有しない (TextMeasurer の cache は thread-safe でないため)
+    val cpFontResolver = androidx.compose.ui.platform.LocalFontFamilyResolver.current
+    val cpDensity = androidx.compose.ui.platform.LocalDensity.current
+    val cpLabelMetrics = remember(cpFontResolver, cpDensity) {
+        com.jpaver.trianglelist.adapter.MeasuredLabelMetrics(
+            androidx.compose.ui.text.TextMeasurer(
+                cpFontResolver, cpDensity, androidx.compose.ui.unit.LayoutDirection.Ltr
+            ),
+            cpDensity
+        )
+    }
+
 
     // CP (control plane): localhost:9876 で TCP listen し、
     // 「open <path>」の 1 行を受信したら viewer 再起動なしで DXF を差し替える。
@@ -323,8 +337,8 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                 } else if (r == null || r.texts.isEmpty()) {
                                     out.write("error: no parseResult or no texts\n".toByteArray())
                                 } else {
-                                    // 箱の基準 (viewer 実測 / CAD メトリクス) は rev5 で確定 ── それまで fallback 近似
-                                    val report = com.jpaver.trianglelist.label.DxfOverlapAnalyzer.analyze(r, factor)
+                                    // rev5 確定: 描画と同一の実測メトリクス (MS Gothic + cap 補正) で判定
+                                    val report = com.jpaver.trianglelist.label.DxfOverlapAnalyzer.analyze(r, factor, cpLabelMetrics)
                                     // 深さ 0 (〜EPS) = contact (寄り添い、正常)、> EPS = intrusion (めり込み)。
                                     // 足切りはせず観測層のここで分けて報告する (rev1)
                                     val eps = com.jpaver.trianglelist.label.LabelBox.EPS

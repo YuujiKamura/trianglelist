@@ -21,7 +21,8 @@ class DrawingBoundsCalculator {
     fun calculateBounds(
         parseResult: DxfParseResult,
         textMeasurer: TextMeasurer,
-        scale: Float = 1.0f
+        scale: Float = 1.0f,
+        density: androidx.compose.ui.unit.Density = androidx.compose.ui.unit.Density(1f)
     ): List<Float> {
         val allPoints = mutableListOf<Offset>()
         
@@ -53,7 +54,7 @@ class DrawingBoundsCalculator {
         // テキストの境界を追加
         val textRenderer = TextRenderer()
         parseResult.texts.forEach { text ->
-            val textBounds = textRenderer.calculateTextBounds(text, scale, textMeasurer)
+            val textBounds = textRenderer.calculateTextBounds(text, scale, textMeasurer, density)
             allPoints.add(Offset(textBounds[0], textBounds[2])) // minX, minY
             allPoints.add(Offset(textBounds[1], textBounds[3])) // maxX, maxY
         }
