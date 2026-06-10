@@ -216,6 +216,17 @@ type Row = {
 let headerLines: string[] = [];
 let rows: Row[] = [];
 
+// 測点名は CSV 列6 (CsvLoader.kt:242 のカラム表で確定)。extras[0] がそれに当たる。
+// WebCsvReader は列6を読まない (描画に出ない) が、round-trip と書き出しで保持する
+function nameOf(row: Row): string {
+  return row.extras[0] ?? '';
+}
+
+function setName(row: Row, v: string): void {
+  if (row.extras.length === 0 && v === '') return; // 列を増やさない (round-trip 不変)
+  row.extras[0] = v;
+}
+
 // Kotlin の toIntOrNull と同じ判定 (parseInt は '1.5'→1 になるので regex で厳密に)
 function intOrNull(s: string): number | null {
   return /^[+-]?\d+$/.test(s) ? parseInt(s, 10) : null;
@@ -251,13 +262,64 @@ function serializeState(): string {
   return lines.join('\n') + '\n';
 }
 
+// ---- 段階2d: autosave ----
+// アプリの autosave (MainActivity.kt:1235-1255、全編集 FAB の後に CSV を private へ保存) の web 版。
+// redraw() は「編集の後」しか呼ばれない (ズーム・パンは draw() 直呼び) ので、ここに挟むと
+// 全編集経路が漏れなく保存される
+const AUTOSAVE_KEY = 'trianglelist.web.autosave.csv';
+
+function autosave(): void {
+  try {
+    localStorage.setItem(AUTOSAVE_KEY, serializeState());
+  } catch {
+    // private mode 等で localStorage が使えなくても編集自体は続行できる
+  }
+}
+
 function redraw(canvas: HTMLCanvasElement): void {
   renderCsv(canvas, serializeState(), `table (${rows.length} rows)`);
+  autosave();
 }
 
 // ---- 段階2c: 選択 state (図⇔表の双方向ハイライト) ----
 // 選択番号 1 つだけ持つ (複数選択は不要)。行の追加・削除は番号が振り直されるので
 // 選択は素直に解除 (引き算: 追従しない)。辺長等の値編集は番号不変なので選択維持。
+
+// ---- 段階2d: カレント行 (アプリ EditList.retrieveCurrent 相当) ----
+// 3 行フォームの「現在」が指す行番号 (1-based、0 = なし)。タップ・行クリック・上下 FAB で動く
+let current = 0;
+
+function el<T extends HTMLElement>(id: string): T {
+  return document.getElementById(id) as T;
+}
+
+const input = (id: string) => el<HTMLInputElement>(id);
+const select = (id: string) => el<HTMLSelectElement>(id);
+
+// 3 行フォームを state から書き直す (アプリ EditorTable.lineRewrite + scroll 相当)。
+// 新規入力行の値はユーザーの書きかけなので触らない — 番号プリセットだけ更新する
+function syncForm(): void {
+  input('newNum').value = String(rows.length + 1);
+
+  const cur = current >= 1 ? rows[current - 1] : null;
+  input('curNum').value = cur ? String(current) : '';
+  input('curName').value = cur ? nameOf(cur) : '';
+  input('curA').value = cur ? cur.a : '';
+  input('curB').value = cur ? cur.b : '';
+  input('curC').value = cur ? cur.c : '';
+  input('curParent').value = cur ? cur.parent : '';
+  select('curConn').value = cur ? cur.conn : '-1';
+
+  const prev = current >= 2 ? rows[current - 2] : null;
+  input('prevNum').value = prev ? String(current - 1) : '';
+  input('prevName').value = prev ? nameOf(prev) : '';
+  input('prevA').value = prev ? prev.a : '';
+  input('prevB').value = prev ? prev.b : '';
+  input('prevC').value = prev ? prev.c : '';
+  input('prevParent').value = prev ? prev.parent : '';
+  // 前行は read-only 表示なので接続は select でなくラベル文字列で揃える
+  input('prevConn').value = prev ? (CONN_OPTIONS.find(([v]) => v === prev.conn)?.[1] ?? prev.conn) : '';
+}
 
 function updateRowHighlight(): void {
   const tbody = document.getElementById('triRows');
@@ -267,9 +329,16 @@ function updateRowHighlight(): void {
   });
 }
 
+// タップ/行クリック = 選択 + カレント行切替 + 新規入力行の親番号セット
+// (アプリ handleTriangleTap (MainActivity.kt:2107) + setEditTextContent (2124) 相当)
 function selectTriangle(canvas: HTMLCanvasElement, n: number): void {
   selected = n;
+  if (n > 0) {
+    current = n;
+    input('newParent').value = String(n);
+  }
   updateRowHighlight();
+  syncForm();
   draw(canvas, lastPrims);
   setStatus(n > 0 ? `selected: ${n}` : 'selection cleared');
 }
@@ -286,12 +355,12 @@ const CONN_OPTIONS: Array<[string, string]> = [
 ];
 
 function numberInput(value: string, step: string, onInput: (v: string) => void): HTMLInputElement {
-  const input = document.createElement('input');
-  input.type = 'number';
-  input.step = step;
-  input.value = value;
-  input.addEventListener('input', () => onInput(input.value));
-  return input;
+  const inp = document.createElement('input');
+  inp.type = 'number';
+  inp.step = step;
+  inp.value = value;
+  inp.addEventListener('input', () => onInput(inp.value));
+  return inp;
 }
 
 function buildTable(canvas: HTMLCanvasElement): void {
@@ -310,6 +379,18 @@ function buildTable(canvas: HTMLCanvasElement): void {
     tdNum.className = 'num';
     tdNum.textContent = String(i + 1); // 自動採番、read-only
     tr.appendChild(tdNum);
+
+    // 測点名 (CSV 列6 = extras[0])。描画には出ないが round-trip・書き出しで保持する
+    const tdName = document.createElement('td');
+    const nameInp = document.createElement('input');
+    nameInp.type = 'text';
+    nameInp.value = nameOf(row);
+    nameInp.addEventListener('input', () => {
+      setName(row, nameInp.value);
+      autosave(); // 描画は変わらないので redraw 不要、保存だけ
+    });
+    tdName.appendChild(nameInp);
+    tr.appendChild(tdName);
 
     for (const key of ['a', 'b', 'c'] as const) {
       const td = document.createElement('td');
@@ -332,26 +413,26 @@ function buildTable(canvas: HTMLCanvasElement): void {
     tr.appendChild(tdParent);
 
     const tdConn = document.createElement('td');
-    const select = document.createElement('select');
+    const sel = document.createElement('select');
     for (const [value, label] of CONN_OPTIONS) {
       const opt = document.createElement('option');
       opt.value = value;
       opt.textContent = label;
-      select.appendChild(opt);
+      sel.appendChild(opt);
     }
     if (!CONN_OPTIONS.some(([v]) => v === row.conn)) {
       // 既存 CSV に -1/1/2 以外 (例: 0) が来ても値を壊さず保持する
       const opt = document.createElement('option');
       opt.value = row.conn;
       opt.textContent = row.conn;
-      select.appendChild(opt);
+      sel.appendChild(opt);
     }
-    select.value = row.conn;
-    select.addEventListener('change', () => {
-      row.conn = select.value;
+    sel.value = row.conn;
+    sel.addEventListener('change', () => {
+      row.conn = sel.value;
       redraw(canvas);
     });
-    tdConn.appendChild(select);
+    tdConn.appendChild(sel);
     tr.appendChild(tdConn);
 
     const tdDel = document.createElement('td');
@@ -363,7 +444,9 @@ function buildTable(canvas: HTMLCanvasElement): void {
       e.stopPropagation(); // 行クリック選択を発火させない
       rows.splice(i, 1);
       clearSelection(); // 番号が振り直されるので選択解除
+      if (current > rows.length) current = rows.length;
       buildTable(canvas); // 番号が振り直されるので組み直し
+      syncForm();
       redraw(canvas);
     });
     tdDel.appendChild(del);
@@ -384,7 +467,188 @@ function addRow(canvas: HTMLCanvasElement): void {
   }
   clearSelection(); // 行構成が変わるので選択解除
   buildTable(canvas);
+  syncForm();
   redraw(canvas);
+}
+
+// ---- 段階2d: FAB 群 (アプリ fabs.xml + fabController 相当) ----
+// undo は 1 段だけ: 編集 FAB の直前 CSV を丸ごと持つ (アプリ trilistUndo = trianglelist.clone()
+// (MainActivity.kt:1278,1615) の CSV 版)。一覧のインライン編集はキーストローク粒度になるので
+// 対象外 — アプリも undo を取るのは fabReplace と performDelete だけ
+let undoCsv: string | null = null;
+
+// setB/setC (MainActivity.kt:1418-1428 + autoConnection:1999): 新規入力行の接続を立てて
+// 辺B にフォーカス。親番号が空ならカレント (タップ済み番号、無ければ末尾 = setTriListNumber:1996)。
+// 辺A は親行の接続先辺長を文字列コピーでプリセット — WebCsvReader.kt:33 は辺A 空の行を
+// skip するため必須 (アプリは影プレビュー経由で決まるが、影はスコープ外)
+function autoConnection(side: 1 | 2): void {
+  select('newConn').value = String(side);
+  const parentInput = input('newParent');
+  if (parentInput.value.trim() === '') {
+    parentInput.value = String(current > 0 ? current : rows.length);
+  }
+  const p = rows[parseInt(parentInput.value, 10) - 1];
+  if (p) input('newA').value = side === 1 ? p.b : p.c;
+  input('newB').focus();
+}
+
+// replace (MainActivity.kt:1614 fabReplace → processTriEditMode:1652):
+// 新規行の B が空 → カレント行の書換え / C だけ空 → 何もしない / 両方あり → 追加。
+// この 3 分岐の判定をそのまま写す (幾何の知識は CSV 再構築側 = common が持つ)
+function fabReplace(canvas: HTMLCanvasElement): void {
+  const newB = input('newB').value.trim();
+  const newC = input('newC').value.trim();
+
+  if (newB === '') {
+    // Edit attempt (processTriEditMode: strAddLineB.isEmpty)
+    if (rows.length === 0) {
+      setStatus('Cannot edit: リストが空です。先に追加してください');
+      return;
+    }
+    if (current < 1) {
+      setStatus('Cannot edit: カレント行がありません。図か一覧で選択してください');
+      return;
+    }
+    undoCsv = serializeState();
+    const r = rows[current - 1];
+    r.a = input('curA').value;
+    r.b = input('curB').value;
+    r.c = input('curC').value;
+    const cp = input('curParent').value.trim();
+    r.parent = cp === '' ? '-1' : cp;
+    r.conn = select('curConn').value;
+    setName(r, input('curName').value);
+    buildTable(canvas);
+    syncForm();
+    redraw(canvas);
+    setStatus(`Rewrite Triangle ${current}`);
+    return;
+  }
+  if (newC === '') return; // アプリと同じ: B だけでは何もしない (strAddLineC.isEmpty -> return)
+
+  // Add (アプリ addTriangleBy 相当 — 行を足して CSV 再構築に任せる)
+  undoCsv = serializeState();
+  const conn = select('newConn').value;
+  let parent = input('newParent').value.trim();
+  if (conn === '-1') {
+    parent = '-1';
+  } else if (parent === '') {
+    parent = String(current > 0 ? current : rows.length);
+  }
+  let a = input('newA').value.trim();
+  if ((conn === '1' || conn === '2') && a === '') {
+    // 辺A 空のまま CSV に流すと WebCsvReader が行ごと skip する — 親の接続先辺長を写す
+    const p = rows[parseInt(parent, 10) - 1];
+    if (p) a = conn === '1' ? p.b : p.c;
+  }
+  const name = input('newName').value;
+  rows.push({ a, b: newB, c: newC, parent, conn, extras: name !== '' ? [name] : [] });
+
+  // 新規入力行をリセットして次の入力へ (アプリ finalizeReplace + editorResetBy 相当)
+  input('newName').value = '';
+  input('newA').value = '';
+  input('newB').value = '';
+  input('newC').value = '';
+  input('newParent').value = '';
+  select('newConn').value = '-1';
+
+  selected = rows.length;
+  current = rows.length;
+  buildTable(canvas);
+  syncForm();
+  redraw(canvas);
+  setStatus(`Add Triangle ${rows.length}`);
+}
+
+// 削除 FAB (MainActivity.kt:1331-1350): 2 タップ確認式。1 回目で赤点灯 + 3 秒タイマー、
+// 2 回目で performDelete (1275) — カレント (lastTapNumber 相当) を消す
+let deleteArmed = false;
+let deleteTimer: ReturnType<typeof setTimeout> | undefined;
+
+function disarmDelete(): void {
+  deleteArmed = false;
+  el<HTMLButtonElement>('fabMinus').classList.remove('armed');
+  if (deleteTimer !== undefined) clearTimeout(deleteTimer);
+  deleteTimer = undefined;
+}
+
+function fabMinus(canvas: HTMLCanvasElement): void {
+  if (!deleteArmed) {
+    deleteArmed = true;
+    el<HTMLButtonElement>('fabMinus').classList.add('armed');
+    deleteTimer = setTimeout(disarmDelete, 3000);
+    setStatus('もう一度タップで削除');
+    return;
+  }
+  disarmDelete();
+  if (rows.length === 0) return;
+  const n = current > 0 ? current : rows.length;
+  undoCsv = serializeState();
+  rows.splice(n - 1, 1);
+  clearSelection();
+  current = Math.min(n, rows.length); // 消した位置の次 (なければ末尾) をカレントに
+  buildTable(canvas);
+  syncForm();
+  redraw(canvas);
+  setStatus(`Delete Triangle ${n}`);
+}
+
+// undo FAB (MainActivity.kt:1352-1365): 1 段だけ戻して undo バッファを空にする
+function fabUndo(canvas: HTMLCanvasElement): void {
+  if (undoCsv === null) {
+    setStatus('undo: 戻る先がありません');
+    return;
+  }
+  const csv = undoCsv;
+  undoCsv = null; // trilistUndo.trilist.clear() と同じ: 1 段で使い切り
+  loadCsv(canvas, csv, 'undo');
+  autosave();
+}
+
+// リスト上下 FAB (アプリ fab_up/down → EditorTable.scroll(±1) + moveTrilist:1691):
+// カレント行を ±1 して図の選択も追従させる
+function moveCurrent(canvas: HTMLCanvasElement, delta: number): void {
+  if (rows.length === 0) return;
+  const base = current > 0 ? current : rows.length;
+  const n = Math.min(Math.max(base + delta, 1), rows.length);
+  current = n;
+  selected = n;
+  updateRowHighlight();
+  syncForm();
+  draw(canvas, lastPrims);
+  setStatus(`current: ${n}`);
+}
+
+function wireFabs(canvas: HTMLCanvasElement): void {
+  el<HTMLButtonElement>('fabSetB').addEventListener('click', () => autoConnection(1));
+  el<HTMLButtonElement>('fabSetC').addEventListener('click', () => autoConnection(2));
+  el<HTMLButtonElement>('fabReplace').addEventListener('click', () => fabReplace(canvas));
+  el<HTMLButtonElement>('fabUndo').addEventListener('click', () => fabUndo(canvas));
+  el<HTMLButtonElement>('fabMinus').addEventListener('click', () => fabMinus(canvas));
+  // resetView FAB: 既存 dblclick fit と同じ動作のボタン化
+  el<HTMLButtonElement>('fabResetView').addEventListener('click', () => {
+    view = null;
+    draw(canvas, lastPrims);
+  });
+  el<HTMLButtonElement>('fabUp').addEventListener('click', () => moveCurrent(canvas, -1));
+  el<HTMLButtonElement>('fabDown').addEventListener('click', () => moveCurrent(canvas, 1));
+}
+
+// 路線名: アプリの editor_table の路線名欄に相当。sample_triangles.csv 形式では
+// ヘッダ 2 行目 (工事名/路線名/業者名/測点) — 描画には出ないが round-trip で保持する
+function syncRosenName(): void {
+  input('rosenName').value = headerLines[1] ?? '';
+}
+
+function wireRosenName(): void {
+  input('rosenName').addEventListener('input', () => {
+    while (headerLines.length < 2) {
+      // ヘッダの無い最小 CSV に路線名を書いたら工事名行から補う (空行は再読込で落ちるため)
+      headerLines.push(headerLines.length === 0 ? '無題' : '');
+    }
+    headerLines[1] = input('rosenName').value;
+    autosave();
+  });
 }
 
 // ---- 段階2c: Canvas 入力 (wheel ズーム / drag パン / pinch / クリック選択) ----
@@ -528,7 +792,10 @@ function loadCsv(canvas: HTMLCanvasElement, csv: string, label: string): void {
   parseCsvToState(csv);
   view = null; // 新しいデータは全体 fit から
   clearSelection();
+  current = rows.length > 0 ? rows.length : 0; // カレントは末尾 (アプリの初期 retrieveCurrent 相当)
   buildTable(canvas);
+  syncForm();
+  syncRosenName();
   renderCsv(canvas, serializeState(), label);
 }
 
@@ -538,12 +805,15 @@ function main(): void {
   const addBtn = document.getElementById('addRow');
   if (!canvas || !fileInput) return;
 
-  // デフォルトで内蔵サンプルを表に展開して描画
-  loadCsv(canvas, SAMPLE_CSV, 'sample');
+  // autosave があればそこから復元、無ければ内蔵サンプル (アプリ起動時の private CSV 復元と同じ)
+  const saved = localStorage.getItem(AUTOSAVE_KEY);
+  loadCsv(canvas, saved ?? SAMPLE_CSV, saved !== null ? 'autosave' : 'sample');
 
   addBtn?.addEventListener('click', () => addRow(canvas));
   wireExportButtons();
   wireCanvasEvents(canvas);
+  wireFabs(canvas);
+  wireRosenName();
 
   fileInput.addEventListener('change', () => {
     const file = fileInput.files?.[0];
@@ -552,6 +822,7 @@ function main(): void {
     reader.onload = () => {
       // 注: 既存 app の CSV は Shift_JIS の場合があるが、段階1 同様 UTF-8 読みのみ
       loadCsv(canvas, String(reader.result ?? ''), file.name);
+      autosave(); // 読み込んだファイルも次回リロードで復元できるように
     };
     reader.readAsText(file);
   });

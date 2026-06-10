@@ -3,12 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TriangleList Web (段階2c)</title>
+    <title>TriangleList Web (段階2d)</title>
     <style>
       :root { color-scheme: light; }
       body { margin: 0; font-family: system-ui, sans-serif; background: #fafafa; }
       header {
-        display: flex; align-items: center; gap: 12px;
+        display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
         padding: 8px 12px; background: #1f3a5f; color: #fff;
       }
       header h1 { font-size: 14px; margin: 0; font-weight: 600; }
@@ -18,30 +18,53 @@
         display: flex; flex-wrap: wrap; gap: 12px;
         padding: 12px; align-items: flex-start; justify-content: center;
       }
-      /* touch-action: none — pointer events で pan/pinch を取るため、ブラウザ既定の
-         タッチスクロール/ズームを canvas 上では止める */
-      canvas { background: #fff; border: 1px solid #ccc; touch-action: none; cursor: grab; }
       #tablePanel {
-        background: #fff; border: 1px solid #ccc; padding: 8px;
+        background: #fff; border: 1px solid #ccc; padding: 8px; max-width: 100%;
       }
       #tablePanel h2 { font-size: 13px; margin: 0 0 6px; font-weight: 600; color: #1f3a5f; }
-      #triTable { border-collapse: collapse; font-size: 12px; }
-      #triTable th, #triTable td { border: 1px solid #ddd; padding: 2px 4px; text-align: center; }
-      #triTable th { background: #eef2f7; font-weight: 600; }
-      #triTable td.num { color: #1f5fbf; font-weight: 600; min-width: 28px; }
+      #rosenLabel { display: block; font-size: 12px; margin-bottom: 6px; }
+      #rosenName { font-size: 12px; width: 160px; }
+      table.tri { border-collapse: collapse; font-size: 12px; }
+      table.tri th, table.tri td { border: 1px solid #ddd; padding: 2px 4px; text-align: center; }
+      table.tri th { background: #eef2f7; font-weight: 600; }
+      table.tri td.num { color: #1f5fbf; font-weight: 600; min-width: 28px; }
+      table.tri input[type="number"] { width: 56px; font-size: 12px; box-sizing: border-box; }
+      table.tri input[type="text"] { width: 64px; font-size: 12px; box-sizing: border-box; }
+      table.tri select { font-size: 12px; }
+      table.tri input:read-only { background: #f3f3f3; border: 1px solid #ddd; color: #555; }
+      /* 3 行ウィンドウフォーム (アプリ editor_table 同等): 上=新規入力行 / 中=カレント行 / 下=前行 */
+      #editorForm tr.formNew td { background: #f4fbf4; }
+      #editorForm tr.formCur td { background: #dce9fb; }
+      #listDetails { margin-top: 8px; }
+      #listDetails summary { font-size: 12px; cursor: pointer; color: #1f3a5f; }
       #triTable tbody tr { cursor: pointer; }
       #triTable tbody tr.selected td { background: #dce9fb; }
-      #triTable input[type="number"] { width: 60px; font-size: 12px; box-sizing: border-box; }
-      #triTable select { font-size: 12px; }
       #triTable button.del { font-size: 11px; }
       #addRow { margin-top: 8px; font-size: 12px; }
       #exportBtns { margin-top: 8px; display: flex; gap: 6px; }
       #exportBtns button { font-size: 12px; }
+      /* touch-action: none — pointer events で pan/pinch を取るため、ブラウザ既定の
+         タッチスクロール/ズームを canvas 上では止める */
+      #canvasWrap { position: relative; max-width: 100%; }
+      canvas { background: #fff; border: 1px solid #ccc; touch-action: none; cursor: grab; max-width: 100%; }
+      /* FAB 群 (アプリ fabs.xml に倣う): 右列=編集系、左列=ビュー系。丸ボタンで十分 (素材なし) */
+      .fabcol { position: absolute; bottom: 12px; display: flex; flex-direction: column; gap: 8px; }
+      #fabLeft { left: 12px; }
+      #fabRight { right: 12px; }
+      .fabcol button {
+        width: 44px; height: 44px; border-radius: 50%; border: 1px solid #1f3a5f;
+        background: #eef2f7; color: #1f3a5f; font-size: 16px; cursor: pointer;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      }
+      .fabcol button:hover { background: #dce9fb; }
+      .fabcol button .sub { display: block; font-size: 8px; line-height: 1; }
+      /* 削除 FAB の 2 タップ確認: 1 回目で赤点灯 (アプリ fab_minus colorTT2 相当) */
+      #fabMinus.armed { background: #d22; border-color: #a00; color: #fff; }
     </style>
   </head>
   <body>
     <header>
-      <h1>TriangleList Web — 段階2c (表編集 + 書き出し + ズーム・パン + タップ選択)</h1>
+      <h1>TriangleList Web — 段階2d (アプリ実動線: 3行フォーム + FAB)</h1>
       <input id="file" type="file" accept=".csv,text/csv" />
       <span id="status">loading wasm...</span>
     </header>
@@ -49,23 +72,95 @@
       <div id="layout">
         <section id="tablePanel">
           <h2>三角形リスト</h2>
-          <table id="triTable">
+          <label id="rosenLabel">路線名 <input id="rosenName" type="text" /></label>
+          <!-- 3 行ウィンドウフォーム: 新規入力行 (次番号プリセット) / カレント行 / 前行 -->
+          <table class="tri" id="editorForm">
             <thead>
               <tr>
-                <th>番号</th><th>辺A</th><th>辺B</th><th>辺C</th>
-                <th>親番号</th><th>接続</th><th></th>
+                <th></th><th>番号</th><th>測点名</th><th>辺A</th><th>辺B</th><th>辺C</th>
+                <th>親番号</th><th>接続</th>
               </tr>
             </thead>
-            <tbody id="triRows"></tbody>
+            <tbody>
+              <tr class="formNew">
+                <th>新規</th>
+                <td><input id="newNum" type="number" readonly /></td>
+                <td><input id="newName" type="text" /></td>
+                <td><input id="newA" type="number" step="0.1" /></td>
+                <td><input id="newB" type="number" step="0.1" /></td>
+                <td><input id="newC" type="number" step="0.1" /></td>
+                <td><input id="newParent" type="number" step="1" /></td>
+                <td>
+                  <select id="newConn">
+                    <option value="-1">独立</option>
+                    <option value="1">親のB辺</option>
+                    <option value="2">親のC辺</option>
+                  </select>
+                </td>
+              </tr>
+              <tr class="formCur">
+                <th>現在</th>
+                <td><input id="curNum" type="number" readonly /></td>
+                <td><input id="curName" type="text" /></td>
+                <td><input id="curA" type="number" step="0.1" /></td>
+                <td><input id="curB" type="number" step="0.1" /></td>
+                <td><input id="curC" type="number" step="0.1" /></td>
+                <td><input id="curParent" type="number" step="1" /></td>
+                <td>
+                  <select id="curConn">
+                    <option value="-1">独立</option>
+                    <option value="1">親のB辺</option>
+                    <option value="2">親のC辺</option>
+                  </select>
+                </td>
+              </tr>
+              <tr class="formPrev">
+                <th>前行</th>
+                <td><input id="prevNum" type="number" readonly /></td>
+                <td><input id="prevName" type="text" readonly /></td>
+                <td><input id="prevA" type="number" readonly /></td>
+                <td><input id="prevB" type="number" readonly /></td>
+                <td><input id="prevC" type="number" readonly /></td>
+                <td><input id="prevParent" type="number" readonly /></td>
+                <td><input id="prevConn" type="text" readonly /></td>
+              </tr>
+            </tbody>
           </table>
-          <button id="addRow" type="button">行を追加</button>
+          <!-- 既存の全行表は「一覧」として残す (行クリック選択は維持) -->
+          <details id="listDetails" open>
+            <summary>一覧 (全行)</summary>
+            <table class="tri" id="triTable">
+              <thead>
+                <tr>
+                  <th>番号</th><th>測点名</th><th>辺A</th><th>辺B</th><th>辺C</th>
+                  <th>親番号</th><th>接続</th><th></th>
+                </tr>
+              </thead>
+              <tbody id="triRows"></tbody>
+            </table>
+            <button id="addRow" type="button">行を追加</button>
+          </details>
           <div id="exportBtns">
             <button id="saveCsv" type="button">CSV 保存</button>
             <button id="saveDxf" type="button">DXF 保存</button>
             <button id="saveSfc" type="button">SFC 保存</button>
           </div>
         </section>
-        <canvas id="cv" width="1200" height="800"></canvas>
+        <div id="canvasWrap">
+          <canvas id="cv" width="1200" height="800"></canvas>
+          <div class="fabcol" id="fabLeft">
+            <button id="fabResetView" type="button" title="全体表示">⛶</button>
+            <button id="fabUp" type="button" title="リスト上 (前の三角形)">▲</button>
+            <button id="fabDown" type="button" title="リスト下 (次の三角形)">▼</button>
+          </div>
+          <div class="fabcol" id="fabRight">
+            <button id="fabSetB" type="button" title="親のB辺に接続">B</button>
+            <button id="fabSetC" type="button" title="親のC辺に接続">C</button>
+            <button id="fabReplace" type="button" title="追加 / 書換え (replace)">⏎</button>
+            <button id="fabUndo" type="button" title="元に戻す (1段)">↶</button>
+            <button id="fabMinus" type="button" title="削除 (2回タップ)">🗑</button>
+          </div>
+        </div>
       </div>
     </main>
     <script type="module" src="/src/main.ts"></script>
