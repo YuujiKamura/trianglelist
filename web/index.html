@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TriangleList Web (段階2b)</title>
+    <title>TriangleList Web (段階2c)</title>
     <style>
       :root { color-scheme: light; }
       body { margin: 0; font-family: system-ui, sans-serif; background: #fafafa; }
@@ -18,7 +18,9 @@
         display: flex; flex-wrap: wrap; gap: 12px;
         padding: 12px; align-items: flex-start; justify-content: center;
       }
-      canvas { background: #fff; border: 1px solid #ccc; }
+      /* touch-action: none — pointer events で pan/pinch を取るため、ブラウザ既定の
+         タッチスクロール/ズームを canvas 上では止める */
+      canvas { background: #fff; border: 1px solid #ccc; touch-action: none; cursor: grab; }
       #tablePanel {
         background: #fff; border: 1px solid #ccc; padding: 8px;
       }
@@ -27,6 +29,8 @@
       #triTable th, #triTable td { border: 1px solid #ddd; padding: 2px 4px; text-align: center; }
       #triTable th { background: #eef2f7; font-weight: 600; }
       #triTable td.num { color: #1f5fbf; font-weight: 600; min-width: 28px; }
+      #triTable tbody tr { cursor: pointer; }
+      #triTable tbody tr.selected td { background: #dce9fb; }
       #triTable input[type="number"] { width: 60px; font-size: 12px; box-sizing: border-box; }
       #triTable select { font-size: 12px; }
       #triTable button.del { font-size: 11px; }
@@ -37,7 +41,7 @@
   </head>
   <body>
     <header>
-      <h1>TriangleList Web — 段階2b (表編集 + 書き出し + wasmJs + Canvas 2D)</h1>
+      <h1>TriangleList Web — 段階2c (表編集 + 書き出し + ズーム・パン + タップ選択)</h1>
       <input id="file" type="file" accept=".csv,text/csv" />
       <span id="status">loading wasm...</span>
     </header>

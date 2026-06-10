@@ -34,6 +34,16 @@ fun buildSfcText(csv: String, filename: String): String =
     WebDrawingExport.buildSfcText(csv, filename)
 
 /**
+ * Web 段階2c (task #11): タップ点 (モデル座標、y 上向き) → 三角形番号 (1-based、0 = 無し)。
+ * px → モデル座標の逆変換は JS 側 (ViewTransform)。判定は common の
+ * TriangleList.isCollide に委譲 (WebHitTest、desktopTest でテスト済み)。
+ */
+@OptIn(ExperimentalJsExport::class)
+@JsExport
+fun hitTriangle(csv: String, x: Float, y: Float): Int =
+    WebHitTest.hitTriangle(csv, x, y)
+
+/**
  * binaries.executable() のリンクに entry point が要るための no-op。
  * 段階1 は @JsExport 関数を JS から呼ぶだけで、起動時処理は無い。
  */

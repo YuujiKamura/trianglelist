@@ -20,7 +20,12 @@ type Prim = LinePrim | TextPrim | CirclePrim;
 // Kotlin wasmJs の ESM glue を静的 import してバンドルに乗せる (Vite の正規 module graph)。
 // .wasm 本体は uninstantiated.mjs が fetch('./TriangleList-common-wasm-js.wasm') =
 // document base 相対で読むため、sync-wasm が web/public/ 直下に置く
-import { renderCsvToPrimitives, buildDxfText, buildSfcText } from '../wasm/TriangleList-common-wasm-js.mjs';
+import {
+  renderCsvToPrimitives,
+  buildDxfText,
+  buildSfcText,
+  hitTriangle,
+} from '../wasm/TriangleList-common-wasm-js.mjs';
 // DXF/SFC は既存 app の出力と同じ Shift_JIS。ブラウザ標準 TextEncoder は UTF-8 専用なので
 // encoding-japanese (MIT, polygonplanet/encoding.js) で Unicode → SJIS バイト化する
 import Encoding from 'encoding-japanese';
@@ -44,6 +49,8 @@ const COLORS: Record<string, string> = {
   dim: '#1a7a1a',
   num: '#1f5fbf',
 };
+
+const SELECT_FILL = 'rgba(31, 95, 191, 0.25)'; // 選択三角形の塗り (半透明青)
 
 function setStatus(msg: string): void {
   const el = document.getElementById('status');
@@ -78,22 +85,74 @@ function bounds(prims: Prim[]): { minX: number; minY: number; maxX: number; maxY
   return { minX, minY, maxX, maxY };
 }
 
-function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+// ---- 段階2c: ズーム・パン + タップ選択 ----
+// 変換は ViewTransform 1 つに集約し、draw (モデル→画面) と hit (画面→モデル) の
+// 両方が同じものを使う (逆関数の二重実装で食い違うのが典型バグ、brief 設計)。
+//   px = x * scale + offsetX
+//   py = -y * scale + offsetY   (y 反転込み)
+type ViewTransform = { scale: number; offsetX: number; offsetY: number };
 
+let view: ViewTransform | null = null; // null = 次の draw で bounds-fit を計算し直す
+let lastPrims: Prim[] = []; // ズーム・パン時に wasm を呼び直さず再描画するためのキャッシュ
+let selected = 0; // 選択中の三角形番号 (1-based、0 = 非選択)
+
+function fitTransform(canvas: HTMLCanvasElement, prims: Prim[]): ViewTransform {
   const b = bounds(prims);
   const bw = Math.max(b.maxX - b.minX, 1e-6);
   const bh = Math.max(b.maxY - b.minY, 1e-6);
   const margin = 40;
   const s = Math.min((canvas.width - margin * 2) / bw, (canvas.height - margin * 2) / bh);
-  const offX = (canvas.width - bw * s) / 2;
-  const offY = (canvas.height - bh * s) / 2;
+  // 旧 fit 描画 (sx = (x-minX)*s + offX, sy = (maxY-y)*s + offY) と同じ絵になる offset
+  return {
+    scale: s,
+    offsetX: (canvas.width - bw * s) / 2 - b.minX * s,
+    offsetY: (canvas.height - bh * s) / 2 + b.maxY * s,
+  };
+}
 
-  // モデル (y 上向き) → 画面 (y 下向き)。MyView.makePath の y 反転と同じ向き
-  const sx = (x: number) => (x - b.minX) * s + offX;
-  const sy = (y: number) => (b.maxY - y) * s + offY;
+function toModel(v: ViewTransform, px: number, py: number): { x: number; y: number } {
+  return { x: (px - v.offsetX) / v.scale, y: (v.offsetY - py) / v.scale };
+}
+
+function zoomAt(px: number, py: number, factor: number): void {
+  const v = view;
+  if (!v) return;
+  // 倍率は fit の 1/100〜1000 倍相当で十分。極端な値で float が壊れるのだけ防ぐ
+  const next = Math.min(Math.max(v.scale * factor, 1e-3), 1e6);
+  const f = next / v.scale;
+  v.scale = next;
+  // カーソル位置 (px,py) を不動点に: モデル点が同じ画面位置に留まるよう offset を補正
+  v.offsetX = px - (px - v.offsetX) * f;
+  v.offsetY = py - (py - v.offsetY) * f;
+}
+
+function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (!view) view = fitTransform(canvas, prims);
+  const v = view;
+  const s = v.scale;
+  const sx = (x: number) => x * s + v.offsetX;
+  const sy = (y: number) => -y * s + v.offsetY; // モデル (y 上向き) → 画面 (y 下向き)
+
+  // 選択三角形の塗り (線より下に敷く)。WebPrimitiveRenderer.render は三角形ごとに
+  // 'tri' layer の line を 3 本連続で出す (WebPrimitiveRenderer.kt:62-65) ので、
+  // 番号 n の頂点は tri 線群の [3(n-1), 3n) から拾える — 表示専用の導出で幾何判定はしない
+  if (selected > 0) {
+    const triLines = prims.filter((p): p is LinePrim => p.type === 'line' && p.layer === 'tri');
+    const base = (selected - 1) * 3;
+    if (base + 2 < triLines.length) {
+      ctx.fillStyle = SELECT_FILL;
+      ctx.beginPath();
+      ctx.moveTo(sx(triLines[base].x1), sy(triLines[base].y1));
+      ctx.lineTo(sx(triLines[base].x2), sy(triLines[base].y2));
+      ctx.lineTo(sx(triLines[base + 1].x2), sy(triLines[base + 1].y2));
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
 
   for (const p of prims) {
     const color = COLORS[p.layer] ?? '#000000';
@@ -130,6 +189,7 @@ function renderCsv(canvas: HTMLCanvasElement, csv: string, label: string): void 
   try {
     const json = renderCsvToPrimitives(csv, 1.0);
     const prims = JSON.parse(json) as Prim[];
+    lastPrims = prims;
     draw(canvas, prims);
     setStatus(`${label}: ${prims.length} primitives`);
   } catch (e) {
@@ -195,6 +255,30 @@ function redraw(canvas: HTMLCanvasElement): void {
   renderCsv(canvas, serializeState(), `table (${rows.length} rows)`);
 }
 
+// ---- 段階2c: 選択 state (図⇔表の双方向ハイライト) ----
+// 選択番号 1 つだけ持つ (複数選択は不要)。行の追加・削除は番号が振り直されるので
+// 選択は素直に解除 (引き算: 追従しない)。辺長等の値編集は番号不変なので選択維持。
+
+function updateRowHighlight(): void {
+  const tbody = document.getElementById('triRows');
+  if (!tbody) return;
+  Array.from(tbody.children).forEach((tr, i) => {
+    tr.classList.toggle('selected', i + 1 === selected);
+  });
+}
+
+function selectTriangle(canvas: HTMLCanvasElement, n: number): void {
+  selected = n;
+  updateRowHighlight();
+  draw(canvas, lastPrims);
+  setStatus(n > 0 ? `selected: ${n}` : 'selection cleared');
+}
+
+function clearSelection(): void {
+  selected = 0;
+  updateRowHighlight();
+}
+
 const CONN_OPTIONS: Array<[string, string]> = [
   ['-1', '独立'],
   ['1', '親のB辺'],
@@ -217,6 +301,10 @@ function buildTable(canvas: HTMLCanvasElement): void {
 
   rows.forEach((row, i) => {
     const tr = document.createElement('tr');
+    if (i + 1 === selected) tr.classList.add('selected');
+    // 行クリック → 図の三角形と同じ選択 state を更新 (双方向の表側)。
+    // セル内 input のクリックも「その行を選ぶ」操作なので止めない
+    tr.addEventListener('click', () => selectTriangle(canvas, i + 1));
 
     const tdNum = document.createElement('td');
     tdNum.className = 'num';
@@ -271,8 +359,10 @@ function buildTable(canvas: HTMLCanvasElement): void {
     del.type = 'button';
     del.className = 'del';
     del.textContent = '削除';
-    del.addEventListener('click', () => {
+    del.addEventListener('click', (e) => {
+      e.stopPropagation(); // 行クリック選択を発火させない
       rows.splice(i, 1);
+      clearSelection(); // 番号が振り直されるので選択解除
       buildTable(canvas); // 番号が振り直されるので組み直し
       redraw(canvas);
     });
@@ -292,8 +382,106 @@ function addRow(canvas: HTMLCanvasElement): void {
     const parent = rows[rows.length - 1];
     rows.push({ a: parent.b, b: '3.0', c: '3.0', parent: String(rows.length), conn: '1', extras: [] });
   }
+  clearSelection(); // 行構成が変わるので選択解除
   buildTable(canvas);
   redraw(canvas);
+}
+
+// ---- 段階2c: Canvas 入力 (wheel ズーム / drag パン / pinch / クリック選択) ----
+// 慣性・アニメは不要 (引き算)。再描画は lastPrims の全量描き直しで十分
+// (insight #55: 描画コストは draw call 律速、この規模では問題ない)。
+
+function canvasPx(canvas: HTMLCanvasElement, e: { clientX: number; clientY: number }): { x: number; y: number } {
+  // CSS 表示サイズと canvas 内部解像度のずれを吸収して内部 px に揃える
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: ((e.clientX - rect.left) * canvas.width) / rect.width,
+    y: ((e.clientY - rect.top) * canvas.height) / rect.height,
+  };
+}
+
+function wireCanvasEvents(canvas: HTMLCanvasElement): void {
+  // wheel: カーソル位置を不動点にズーム
+  canvas.addEventListener(
+    'wheel',
+    (e) => {
+      e.preventDefault();
+      const p = canvasPx(canvas, e);
+      zoomAt(p.x, p.y, e.deltaY < 0 ? 1.2 : 1 / 1.2);
+      draw(canvas, lastPrims);
+    },
+    { passive: false },
+  );
+
+  // pointer events で mouse / touch を一本化。1 本 = パン or クリック、2 本 = ピンチ
+  const pointers = new Map<number, { x: number; y: number }>();
+  let downAt: { x: number; y: number } | null = null; // クリック判定の基準点
+  let moved = false; // 5px 超動いたら drag、クリック選択は発火させない
+  let pinchDist = 0;
+
+  canvas.addEventListener('pointerdown', (e) => {
+    canvas.setPointerCapture(e.pointerId);
+    const p = canvasPx(canvas, e);
+    pointers.set(e.pointerId, p);
+    if (pointers.size === 1) {
+      downAt = p;
+      moved = false;
+    } else {
+      moved = true; // 2 本目が触れた時点でクリック扱いにしない
+      if (pointers.size === 2) {
+        const [a, b] = [...pointers.values()];
+        pinchDist = Math.hypot(a.x - b.x, a.y - b.y);
+      }
+    }
+  });
+
+  canvas.addEventListener('pointermove', (e) => {
+    const prev = pointers.get(e.pointerId);
+    if (!prev) return;
+    const cur = canvasPx(canvas, e);
+    pointers.set(e.pointerId, cur);
+    const v = view;
+    if (!v) return;
+
+    if (pointers.size === 1) {
+      // drag パン: offset の平行移動
+      v.offsetX += cur.x - prev.x;
+      v.offsetY += cur.y - prev.y;
+      if (downAt && Math.hypot(cur.x - downAt.x, cur.y - downAt.y) > 5) moved = true;
+      draw(canvas, lastPrims);
+    } else if (pointers.size === 2) {
+      // pinch: 2 点の中点を不動点に距離比でズーム
+      const [a, b] = [...pointers.values()];
+      const d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (pinchDist > 0 && d > 0) {
+        zoomAt((a.x + b.x) / 2, (a.y + b.y) / 2, d / pinchDist);
+        draw(canvas, lastPrims);
+      }
+      pinchDist = d;
+    }
+  });
+
+  const release = (e: PointerEvent) => {
+    if (!pointers.has(e.pointerId)) return;
+    const isClick = pointers.size === 1 && !moved && downAt !== null;
+    pointers.delete(e.pointerId);
+    pinchDist = 0;
+    if (isClick && view) {
+      // クリック選択: px → モデル座標 (draw と同じ ViewTransform の逆) → common の当たり判定。
+      // 何もない場所は 0 が返り選択解除になる
+      const m = toModel(view, downAt!.x, downAt!.y);
+      selectTriangle(canvas, hitTriangle(serializeState(), m.x, m.y));
+    }
+    downAt = null;
+  };
+  canvas.addEventListener('pointerup', release);
+  canvas.addEventListener('pointercancel', release);
+
+  // ダブルクリックで全体 fit に戻す
+  canvas.addEventListener('dblclick', () => {
+    view = null;
+    draw(canvas, lastPrims);
+  });
 }
 
 // ---- 段階2b: 書き出し配線 (CSV 保存 + DXF/SFC ダウンロード) ----
@@ -338,6 +526,8 @@ function wireExportButtons(): void {
 
 function loadCsv(canvas: HTMLCanvasElement, csv: string, label: string): void {
   parseCsvToState(csv);
+  view = null; // 新しいデータは全体 fit から
+  clearSelection();
   buildTable(canvas);
   renderCsv(canvas, serializeState(), label);
 }
@@ -353,6 +543,7 @@ function main(): void {
 
   addBtn?.addEventListener('click', () => addRow(canvas));
   wireExportButtons();
+  wireCanvasEvents(canvas);
 
   fileInput.addEventListener('change', () => {
     const file = fileInput.files?.[0];
