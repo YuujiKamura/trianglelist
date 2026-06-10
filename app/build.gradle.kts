@@ -3,6 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("io.github.takahirom.roborazzi")
 }
 
 android {
@@ -69,6 +70,17 @@ android {
         abortOnError = false  // 警告調査のため一時的にfalse
         warningsAsErrors = false
     }
+
+    testOptions {
+        unitTests {
+            // Robolectric が実レイアウト/テーマ/文字列リソースを inflate するために必須
+            isIncludeAndroidResources = true
+            all {
+                // Roborazzi 推奨: スクリーンショットの描画精度を上げる
+                it.systemProperties["robolectric.pixelCopyRenderMode"] = "hardware"
+            }
+        }
+    }
 }
 
 dependencies {
@@ -91,6 +103,10 @@ dependencies {
     testImplementation("org.mockito:mockito-core:5.18.0")
     testImplementation("org.mockito:mockito-inline:5.2.0")
     testImplementation("org.robolectric:robolectric:4.15.1")
+    testImplementation("androidx.test:core:1.7.0")
+    testImplementation("androidx.test.ext:junit:1.3.0")
+    testImplementation("androidx.test.espresso:espresso-core:3.7.0")
+    testImplementation("io.github.takahirom.roborazzi:roborazzi:1.60.0")
     implementation(project(":common"))
     // implementation(project(":core"))  // 一時的にコメントアウト (lint警告確認用)
     testImplementation(project(":common"))
