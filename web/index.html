@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TriangleList Web (段階2a)</title>
+    <title>TriangleList Web (段階2b)</title>
     <style>
       :root { color-scheme: light; }
       body { margin: 0; font-family: system-ui, sans-serif; background: #fafafa; }
@@ -31,11 +31,13 @@
       #triTable select { font-size: 12px; }
       #triTable button.del { font-size: 11px; }
       #addRow { margin-top: 8px; font-size: 12px; }
+      #exportBtns { margin-top: 8px; display: flex; gap: 6px; }
+      #exportBtns button { font-size: 12px; }
     </style>
   </head>
   <body>
     <header>
-      <h1>TriangleList Web — 段階2a (表編集 + wasmJs + Canvas 2D)</h1>
+      <h1>TriangleList Web — 段階2b (表編集 + 書き出し + wasmJs + Canvas 2D)</h1>
       <input id="file" type="file" accept=".csv,text/csv" />
       <span id="status">loading wasm...</span>
     </header>
@@ -53,6 +55,11 @@
             <tbody id="triRows"></tbody>
           </table>
           <button id="addRow" type="button">行を追加</button>
+          <div id="exportBtns">
+            <button id="saveCsv" type="button">CSV 保存</button>
+            <button id="saveDxf" type="button">DXF 保存</button>
+            <button id="saveSfc" type="button">SFC 保存</button>
+          </div>
         </section>
         <canvas id="cv" width="1200" height="800"></canvas>
       </div>

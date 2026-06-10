@@ -20,7 +20,10 @@ type Prim = LinePrim | TextPrim | CirclePrim;
 // Kotlin wasmJs の ESM glue を静的 import してバンドルに乗せる (Vite の正規 module graph)。
 // .wasm 本体は uninstantiated.mjs が fetch('./TriangleList-common-wasm-js.wasm') =
 // document base 相対で読むため、sync-wasm が web/public/ 直下に置く
-import { renderCsvToPrimitives } from '../wasm/TriangleList-common-wasm-js.mjs';
+import { renderCsvToPrimitives, buildDxfText, buildSfcText } from '../wasm/TriangleList-common-wasm-js.mjs';
+// DXF/SFC は既存 app の出力と同じ Shift_JIS。ブラウザ標準 TextEncoder は UTF-8 専用なので
+// encoding-japanese (MIT, polygonplanet/encoding.js) で Unicode → SJIS バイト化する
+import Encoding from 'encoding-japanese';
 
 // 内蔵サンプル (desktop/sample/sample_triangles.csv と同形式)
 const SAMPLE_CSV = `テスト工事
@@ -293,6 +296,46 @@ function addRow(canvas: HTMLCanvasElement): void {
   redraw(canvas);
 }
 
+// ---- 段階2b: 書き出し配線 (CSV 保存 + DXF/SFC ダウンロード) ----
+// 図面の組み立ては common (WebDrawingExport、golden 同値テストで app と同一出力を固定済み)。
+// TS は「文字列を受けてバイト化してダウンロード」の糊だけ。
+
+function downloadBlob(filename: string, blob: Blob): void {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function toSjisBlob(text: string): Blob {
+  const sjis = Encoding.convert(Encoding.stringToCode(text), { to: 'SJIS', from: 'UNICODE' });
+  return new Blob([new Uint8Array(sjis)], { type: 'application/octet-stream' });
+}
+
+function exportFile(label: string, filename: string, build: () => Blob): void {
+  try {
+    downloadBlob(filename, build());
+    setStatus(`${label} saved: ${filename}`);
+  } catch (e) {
+    setStatus(`${label} error: ${String(e)}`);
+    console.error(e);
+  }
+}
+
+function wireExportButtons(): void {
+  // CSV は UTF-8 のまま (読込側 FileReader.readAsText の UTF-8 想定と対称)
+  document.getElementById('saveCsv')?.addEventListener('click', () => {
+    exportFile('CSV', 'triangles.csv', () => new Blob([serializeState()], { type: 'text/csv' }));
+  });
+  document.getElementById('saveDxf')?.addEventListener('click', () => {
+    exportFile('DXF', 'triangles.dxf', () => toSjisBlob(buildDxfText(serializeState())));
+  });
+  document.getElementById('saveSfc')?.addEventListener('click', () => {
+    exportFile('SFC', 'triangles.sfc', () => toSjisBlob(buildSfcText(serializeState(), 'triangles.sfc')));
+  });
+}
+
 function loadCsv(canvas: HTMLCanvasElement, csv: string, label: string): void {
   parseCsvToState(csv);
   buildTable(canvas);
@@ -309,6 +352,7 @@ function main(): void {
   loadCsv(canvas, SAMPLE_CSV, 'sample');
 
   addBtn?.addEventListener('click', () => addRow(canvas));
+  wireExportButtons();
 
   fileInput.addEventListener('change', () => {
     const file = fileInput.files?.[0];

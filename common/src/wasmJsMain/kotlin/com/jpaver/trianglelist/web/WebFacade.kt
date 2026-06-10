@@ -16,6 +16,24 @@ fun renderCsvToPrimitives(csv: String, scale: Float): String =
     WebPrimitiveRenderer.renderCsv(csv, scale)
 
 /**
+ * Web 段階2b (task #10): CSV → DXF 全文。SJIS バイト化とダウンロードは JS 側
+ * (encoding-japanese + Blob)。中身は WebDrawingExport (desktopTest の golden 同値テストで
+ * app の golden fixture と同一出力を固定済み) に委譲。
+ */
+@OptIn(ExperimentalJsExport::class)
+@JsExport
+fun buildDxfText(csv: String): String =
+    WebDrawingExport.buildDxfText(csv)
+
+/**
+ * Web 段階2b (task #10): CSV → SFC 全文。filename は SFC ヘッダの FILE_NAME に入る。
+ */
+@OptIn(ExperimentalJsExport::class)
+@JsExport
+fun buildSfcText(csv: String, filename: String): String =
+    WebDrawingExport.buildSfcText(csv, filename)
+
+/**
  * binaries.executable() のリンクに entry point が要るための no-op。
  * 段階1 は @JsExport 関数を JS から呼ぶだけで、起動時処理は無い。
  */
