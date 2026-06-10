@@ -147,7 +147,7 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
             writeTextAndLine(
                 ded.infoStr,
                 pointFlag,
-                pointFlag.plus( infoStrLength + textOffsetX,0f ),
+                pointFlag.plus( (infoStrLength + textOffsetX).toDouble(),0.0 ),
                 textscale_,
                 1f
             )
@@ -157,7 +157,7 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
             writeLine(point, pointFlag, 2)
             writeTextAndLine(
                 ded.infoStr,
-                pointFlag.plus( -infoStrLength - textOffsetX,0f ),
+                pointFlag.plus( (-infoStrLength - textOffsetX).toDouble(),0.0 ),
                 pointFlag,
                 textscale_,
                 1f
@@ -180,7 +180,7 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
         scale: Float
     ){
         writeLine( p1, p2, 2, scale )
-        writeTextA9(st, p1.plus( 200f, 100f ), 2, textscale_, 1, 0f, scale )
+        writeTextA9(st, p1.plus( 200.0, 100.0 ), 2, textscale_, 1, 0.0, scale )
 
         //writeDXFText(writer_, st, p1.plus(0.2f,0.1f), 1, textsize, 0)
         //writeLine(writer_, p1, p2, 1)
@@ -188,7 +188,7 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
 
     fun writeDedRect( color: Int, ded: Deduction){
         ded.shapeAngle = -ded.shapeAngle // 逆回転
-        ded.setBox( 1000f )
+        ded.setBox( 1000.0 )
         writeLine(ded.pLTop, ded.pLBtm, color)
         writeLine(ded.pLTop, ded.pRTop, color)
         writeLine(ded.pRTop, ded.pRBtm, color)
@@ -265,12 +265,12 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
      * A=(pointAB,point[0]), B=(pointBC,pointAB), C=(point[0],pointBC) + dim の縦横コード。
      */
     private fun layoutTriple(tri: Triangle): Triple<DimensionPlacement, DimensionPlacement, DimensionPlacement> {
-        val scale = tri.scaleFactor
-        val dimheight = tri.dimHeight
+        val scale = tri.scaleFactor.toDouble()
+        val dimheight = tri.dimHeight.toDouble()
         return Triple(
-            DimensionLayout.layout(tri.pointAB, tri.point[0], tri.dim.vertical.a, tri.dim.horizontal.a, scale, dimheight, 0f),
-            DimensionLayout.layout(tri.pointBC, tri.pointAB, tri.dim.vertical.b, tri.dim.horizontal.b, scale, dimheight, 0f),
-            DimensionLayout.layout(tri.point[0], tri.pointBC, tri.dim.vertical.c, tri.dim.horizontal.c, scale, dimheight, 0f)
+            DimensionLayout.layout(tri.pointAB, tri.point[0], tri.dim.vertical.a, tri.dim.horizontal.a, scale, dimheight, 0.0),
+            DimensionLayout.layout(tri.pointBC, tri.pointAB, tri.dim.vertical.b, tri.dim.horizontal.b, scale, dimheight, 0.0),
+            DimensionLayout.layout(tri.point[0], tri.pointBC, tri.dim.vertical.c, tri.dim.horizontal.c, scale, dimheight, 0.0)
         )
     }
 
@@ -303,7 +303,7 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
         val place = DimensionLayout.layout(
             tri.pointAB, tri.point[0],
             DimensionLayout.SIDE_SOKUTEN, tri.dim.horizontal.s,
-            tri.scaleFactor, tri.dimHeight, 0f
+            tri.scaleFactor.toDouble(), tri.dimHeight.toDouble(), 0.0
         )
         val pa = place.pointA
         val pb = place.pointB
@@ -337,7 +337,7 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
         textsize: Float,
         alignH: Int,
         alignV: Int,
-        angle: Float,
+        angle: Double,
         scale: Float
     ) {
         val aH = alignH - 1
@@ -356,7 +356,7 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, outputStream: Buf
         color: Int,
         tsy: Float,
         align: Int,
-        angle: Float,
+        angle: Double,
         scale: Float
     ){
         val tsxb = text.toByteArray(charset).size * tsy * 0.5f

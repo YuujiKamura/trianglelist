@@ -1566,7 +1566,7 @@ class MainActivity : AppCompatActivity(),
 
     fun flagTriangle(){
         val triangle = trianglelist.get(parameter.number)
-        val tappoint = myview.pressedInModel.scale(PointXY(0f, 0f), 1 / viewscale, -1 / viewscale)
+        val tappoint = myview.pressedInModel.scale(PointXY(0f, 0f), 1.0 / viewscale, -1.0 / viewscale)
         triangle.setPointNumber( tappoint, true )
         setTrianglelist()
     }
@@ -1593,7 +1593,7 @@ class MainActivity : AppCompatActivity(),
             if( !isRotateDedBoxShape ) return
             val current_deduction_number = myview.myDeductionList.lastTapIndex_+1
             val current_deduction = myDeductionList.get(current_deduction_number)
-            current_deduction.rotateShape( current_deduction.point, -degrees )
+            current_deduction.rotateShape( current_deduction.point, (-degrees).toDouble() )
             myview.setDeductionList(myDeductionList, viewscale)
             myview.invalidate()
         }
@@ -2044,7 +2044,7 @@ class MainActivity : AppCompatActivity(),
         PointXY(
             0f,
             0f
-        ), 1f, -1f) }
+        ), 1.0, -1.0) }
 
     fun shadowTapMode(zoomsize: Float): Boolean {
         val RANGE = 0.8f / zoomsize
@@ -2638,7 +2638,7 @@ class MainActivity : AppCompatActivity(),
         )
 
         // translate back by view pointer
-        writer.translate(writer.currentCanvas_, -viewPointer.x, -viewPointer.y)
+        writer.translate(writer.currentCanvas_, -viewPointer.x.toFloat(), -viewPointer.y.toFloat())
         writer.writeTitleFrame(writer.currentCanvas_)
         writer.closeCurrentPage()
 
@@ -2788,8 +2788,8 @@ class MainActivity : AppCompatActivity(),
             // 減算リストのデータをCSVファイルに書き込み
             for (index in 1..myDeductionList.size()) {
                 val dd: Deduction = myDeductionList.get(index)
-                val pointAtRealscale = dd.point.scale(PointXY(0f, 0f), 1 / viewscale, -1 / viewscale)
-                val pointFlagAtRealscale = dd.pointFlag.scale(PointXY(0f, 0f), 1 / viewscale, -1 / viewscale)
+                val pointAtRealscale = dd.point.scale(PointXY(0f, 0f), 1.0 / viewscale, -1.0 / viewscale)
+                val pointFlagAtRealscale = dd.pointFlag.scale(PointXY(0f, 0f), 1.0 / viewscale, -1.0 / viewscale)
 
                 writer.write("Deduction,${dd.num},${dd.name},${dd.lengthX},${dd.lengthY},${dd.overlap_to},${dd.type},${dd.angle},${pointAtRealscale.x},${pointAtRealscale.y},${pointFlagAtRealscale.x},${pointFlagAtRealscale.y},${dd.shapeAngle}")
                 writer.write("\n")

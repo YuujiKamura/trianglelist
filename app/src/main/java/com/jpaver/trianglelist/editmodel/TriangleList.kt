@@ -62,7 +62,7 @@ open class TriangleList : EditList {
     var selectedNumber = 0
     var scale = 1f
     var angle = 0f
-    var myBounds = Bounds(0f, 0f, 0f, 0f)
+    var myBounds = Bounds(0.0, 0.0, 0.0, 0.0)
     var myCenter = com.example.trilib.PointXY(0f, 0f)
     var myLength = com.example.trilib.PointXY(0f, 0f)
     var outlineStr_ = ""
@@ -208,7 +208,7 @@ open class TriangleList : EditList {
 
 
     fun calcBounds(): Bounds {
-        myBounds = Bounds(0f, 0f, 0f, 0f)
+        myBounds = Bounds(0.0, 0.0, 0.0, 0.0)
         for (i in trilist.indices) {
             myBounds = trilist[i].expandBoundaries(myBounds)
         }
@@ -229,7 +229,7 @@ open class TriangleList : EditList {
     }
 
     fun measureLongLineNotScaled(): com.example.trilib.PointXY {
-        return measureMostLongLine().scale(1 / scale)
+        return measureMostLongLine().scale(1.0 / scale)
     }
 
     fun rotateByLength(align: String): Float {
@@ -715,7 +715,7 @@ open class TriangleList : EditList {
     // 同じポイントは二ついらない
     private fun notHave(it: com.example.trilib.PointXY, inthis: ArrayList<com.example.trilib.PointXY>): Boolean {
         //if( inthis.size() < 1 ) return false;
-        for (i in inthis.indices) if (it.nearBy(inthis[i], 0.01f)) return false
+        for (i in inthis.indices) if (it.nearBy(inthis[i], 0.01)) return false
         return true
     }
 
@@ -765,7 +765,7 @@ open class TriangleList : EditList {
             if (isCol) {
                 tri.dedcount++
                 deduction.overlap_to = tri.mynumber
-                deduction.shapeAngle = tri.angleUnconnectedSide()
+                deduction.shapeAngle = tri.angleUnconnectedSide().toDouble()
             }
         }
     }

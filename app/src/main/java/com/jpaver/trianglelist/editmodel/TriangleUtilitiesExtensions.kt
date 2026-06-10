@@ -57,7 +57,7 @@ fun Triangle.getParentPointByType(pbc: Int, pct: Int, lcr: Int): com.example.tri
     if (nodeA == null) return com.example.trilib.PointXY(0f, 0f)
     return when (pct) {
         1 -> getParentPointByLCR(pbc, lcr)
-        2 -> getParentPointByLCR(pbc, lcr).crossOffset(nodeA!!.getPointByBackSide(pbc)!!, -1.0f)
+        2 -> getParentPointByLCR(pbc, lcr).crossOffset(nodeA!!.getPointByBackSide(pbc)!!, -1.0)
         else -> getParentPointByLCR(pbc, lcr)
     }
 }
@@ -66,13 +66,13 @@ fun Triangle.getParentPointByLCR(pbc: Int, lcr: Int): com.example.trilib.PointXY
     if (nodeA == null) return com.example.trilib.PointXY(0f, 0f)
     return when (pbc) {
         1 -> when (lcr) {
-            0 -> nodeA!!.pointAB.offset(nodeA!!.pointBC, length[0])
+            0 -> nodeA!!.pointAB.offset(nodeA!!.pointBC, length[0].toDouble())
             1 -> getParentOffsetPointBySide(pbc)
             2 -> nodeA!!.pointBC.clone()
             else -> com.example.trilib.PointXY(0f, 0f)
         }
         2 -> when (lcr) {
-            0 -> nodeA!!.pointBC.offset(nodeA!!.point[0], length[0])
+            0 -> nodeA!!.pointBC.offset(nodeA!!.point[0], length[0].toDouble())
             1 -> getParentOffsetPointBySide(pbc)
             2 -> nodeA!!.point[0].clone()
             else -> com.example.trilib.PointXY(0f, 0f)
@@ -92,8 +92,8 @@ fun Triangle.getNode(pbc: Int): Triangle = when (pbc) {
 fun Triangle.getParentOffsetPointBySide(pbc: Int): com.example.trilib.PointXY {
     if (nodeA == null) return com.example.trilib.PointXY(0f, 0f)
     return when (pbc) {
-        1 -> nodeA!!.pointAB.offset(nodeA!!.pointBC, nodeA!!.lengthB * 0.5f + length[0] * 0.5f)
-        2 -> nodeA!!.pointBC.offset(nodeA!!.point[0], nodeA!!.lengthC * 0.5f + length[0] * 0.5f)
+        1 -> nodeA!!.pointAB.offset(nodeA!!.pointBC, nodeA!!.lengthB * 0.5 + length[0] * 0.5)
+        2 -> nodeA!!.pointBC.offset(nodeA!!.point[0], nodeA!!.lengthC * 0.5 + length[0] * 0.5)
         else -> nodeA!!.getPointBySide(pbc)!!
     }
 }
@@ -102,7 +102,7 @@ fun Triangle.myName_(): String = name
 
 fun Triangle.getTapLength(tapP: com.example.trilib.PointXY, rangeRadius: Float): Int {
     setDimPoint()
-    val range = rangeRadius * scaleFactor
+    val range = (rangeRadius * scaleFactor).toDouble()
     val result = when {
         tapP.nearBy(dimpoint.a, range) -> 0
         tapP.nearBy(dimpoint.b, range) -> 1

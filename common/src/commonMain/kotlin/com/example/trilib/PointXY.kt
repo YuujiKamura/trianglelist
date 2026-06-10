@@ -3,24 +3,20 @@ import kotlin.math.acos
 import kotlin.math.atan2
 
 class PointXY :Cloneable<PointXY> {
-    private var _x: Float = 0.0f
-    private var _y: Float = 0.0f
+    private var _x: Double = 0.0
+    private var _y: Double = 0.0
 
-    var x: Float
-        get() = adjustForRoundingError(_x)
+    var x: Double
+        get() = _x
         set(value) {
             _x = value
         }
 
-    var y: Float
-        get() = adjustForRoundingError(_y)
+    var y: Double
+        get() = _y
         set(value) {
             _y = value
         }
-
-    private fun adjustForRoundingError(value: Float, threshold: Float = 1e-5f): Float {
-        return if (Math.abs(value) < threshold) 0.0f else value
-    }
 
     // xの値をフォーマットして返すメソッド
     val DECIMAL = 4
@@ -38,13 +34,19 @@ class PointXY :Cloneable<PointXY> {
     }
 
     // 主コンストラクタ
-    constructor(x: Float, y: Float) {
+    constructor(x: Double, y: Double) {
         this.x = x
         this.y = y
     }
 
+    // Float 入力の縁 (CSV/UI) 用の拡幅コンストラクタ。Float→Double は精度劣化なし
+    constructor(x: Float, y: Float) : this(x.toDouble(), y.toDouble())
+
     // スケールを適用する追加のコンストラクタ
-    constructor(x: Float, y: Float, s: Float) : this(x * s, y * s)
+    constructor(x: Double, y: Double, s: Double) : this(x * s, y * s)
+
+    // Float 入力の縁 (紙座標リテラル) 用の拡幅コンストラクタ。Float→Double は精度劣化なし
+    constructor(x: Float, y: Float, s: Float) : this(x.toDouble(), y.toDouble(), s.toDouble())
 
     // PointXY オブジェクトからのコピーコンストラクタ
     constructor(p: PointXY) : this(p.x, p.y)
@@ -59,7 +61,7 @@ class PointXY :Cloneable<PointXY> {
         return b
     }
 
-    private fun validateInputs(lineStart: PointXY, lineEnd: PointXY, scaleX: Float=1f, scaleY: Float=1f ) {
+    private fun validateInputs(lineStart: PointXY, lineEnd: PointXY, scaleX: Double=1.0, scaleY: Double=1.0 ) {
         if (scaleX.isNaN() || scaleX.isInfinite() || scaleY.isNaN() || scaleY.isInfinite()) {
             throw IllegalArgumentException("Scaling factors must be valid numbers.")
         }
@@ -71,46 +73,15 @@ class PointXY :Cloneable<PointXY> {
         return "(x=$x, y=$y)"
     }
 
-    fun mirroredAndScaledPoint(lineStart: PointXY, lineEnd: PointXY, clockwise:Float=1f ): PointXY {
+    fun mirroredAndScaledPoint(lineStart: PointXY, lineEnd: PointXY, clockwise:Double=1.0 ): PointXY {
 
         return mirror(lineStart, lineEnd, clockwise )
     }
 
-
-/*
-    private fun mirroredPoint(lineStart: PointXY, lineEnd: PointXY): PointXY {
-        // 直線の傾き（m）とy切片（b）を計算
-        val dx = lineEnd.x - lineStart.x
-        val dy = lineEnd.y - lineStart.y
-        val m = if (dx != 0f) dy / dx else Float.POSITIVE_INFINITY // 垂直な直線の場合、傾きは無限大
-        val b = lineStart.y - m * lineStart.x
-
-        val xh: Float
-        val yh: Float
-
-        if (m.isInfinite()) {
-            // 直線が垂直の場合、垂線の足のx座標は直線のx座標と同じで、y座標は元の点のy座標
-            xh = lineStart.x
-            yh = y
-        } else {
-            // 垂直でない直線の場合、垂線の足の座標（xh, yh）を計算
-            xh = (m * y + x - m * b) / (m * m + 1)
-            yh = m * xh + b
-        }
-
-        // 元の点から垂線の足までの距離を2倍にして、ミラーリングされた点を計算
-        val xm = 2 * xh - x
-        val ym = 2 * yh - y
-
-        // ミラーリングされた点を返す
-        return PointXY(xm, ym)
-    }
-*/
-
-    fun mirror(lineStart: PointXY, lineEnd: PointXY, clockwise: Float = -1f ): PointXY {
+    fun mirror(lineStart: PointXY, lineEnd: PointXY, clockwise: Double = -1.0 ): PointXY {
         validateInputs( lineStart, lineEnd )
         val angle = this.calcAngle180(lineStart, lineEnd)
-        val angleis = angle * 2f * clockwise
+        val angleis = angle * 2.0 * clockwise
         val result = this.rotate(lineStart, angleis )
         return result
     }
@@ -136,12 +107,12 @@ class PointXY :Cloneable<PointXY> {
         return sp
     }
 
-    fun equals(x: Float, y: Float): Boolean {
-        val range = 0.001f
+    fun equals(x: Double, y: Double): Boolean {
+        val range = 0.001
         return this.x < x + range && this.x > x - range && this.y < y + range && this.y > y - range
     }
 
-    operator fun set(x: Float, y: Float): PointXY {
+    operator fun set(x: Double, y: Double): PointXY {
         this.x = x
         this.y = y
         return this
@@ -151,48 +122,48 @@ class PointXY :Cloneable<PointXY> {
         return if ( vectorTo(p2).x > 0 ) true else false
     }
 
-    fun calcAngle180(p2: PointXY, p3: PointXY): Float {
+    fun calcAngle180(p2: PointXY, p3: PointXY): Double {
         val v1 = p2.subtract(this)
         val v2 = p2.subtract(p3)
         val angleRadian = acos(v1.innerProduct(v2) / (v1.magnitude() * v2.magnitude()))
         val angleDegree = angleRadian * 180 / Math.PI
         return if (v1.outerProduct(v2) > 0) {
-            angleDegree.toFloat() - 180
+            angleDegree - 180
         } else {
-            180 - angleDegree.toFloat()
+            180 - angleDegree
         }
     }
 
-    fun calcAngle360(p2: PointXY, p3: PointXY): Float {
+    fun calcAngle360(p2: PointXY, p3: PointXY): Double {
         val v1 = p2.subtract(this) // p2からthisへのベクトル、逆にすると結果が変わる
         val v2 = p2.subtract(p3) // p2からp3へのベクトル
         val angleRadian = acos(v1.innerProduct(v2) / (v1.magnitude() * v2.magnitude()))
-        val angleDegree = (angleRadian * 180 / Math.PI).toFloat()
+        val angleDegree = angleRadian * 180 / Math.PI
         val outerProduct = v1.outerProduct(v2)
 
         // 外角の反転
-        if ( outerProduct > 0 && angleDegree <= 180f ||
-             outerProduct < 0 && angleDegree >  180f ) {
-             return  360f - angleDegree
+        if ( outerProduct > 0 && angleDegree <= 180.0 ||
+             outerProduct < 0 && angleDegree >  180.0 ) {
+             return  360.0 - angleDegree
         }
         return angleDegree
     }
 
-    fun calcAngleWithXAxis(p2: PointXY): Float {
+    fun calcAngleWithXAxis(p2: PointXY): Double {
         val deltaX = p2.x - x
         val deltaY = p2.y - y
         val angleRadian = atan2(deltaY, deltaX)  // deltaY/deltaX の角度をラジアンで計算
-        var angleDegree = (angleRadian * 180 / Math.PI).toFloat()  // ラジアンを度数に変換
+        var angleDegree = angleRadian * 180 / Math.PI  // ラジアンを度数に変換
 
         if (angleDegree < 0) {
-            angleDegree += 360f  // 負の角度の場合、360度を加えて正の範囲に修正
+            angleDegree += 360.0  // 負の角度の場合、360度を加えて正の範囲に修正
         }
 
         return angleDegree
     }
 
-    fun moveX(length:Float,angle:Float): PointXY {
-        return this.plus(length,0f).rotate(this, angle )
+    fun moveX(length:Double,angle:Double): PointXY {
+        return this.plus(length,0.0).rotate(this, angle )
     }
 
     fun set(sp: PointXY) {
@@ -203,11 +174,11 @@ class PointXY :Cloneable<PointXY> {
     fun translateAndScale(
         baseInView: PointXY,
         centerInModel: PointXY,
-        zoom: Float
+        zoom: Double
     ): PointXY {
         val inLocal = clone()
-        inLocal.addminus(baseInView).change_scale(PointXY(0f, 0f), 1 / zoom) // // 左上起点座標を自身(pressedInView)から引く
-        inLocal.add(centerInModel.scale(1f, -1f))
+        inLocal.addminus(baseInView).change_scale(PointXY(0.0, 0.0), 1 / zoom) // // 左上起点座標を自身(pressedInView)から引く
+        inLocal.add(centerInModel.scale(1.0, -1.0))
         return inLocal
     }
 
@@ -217,13 +188,13 @@ class PointXY :Cloneable<PointXY> {
         return this
     }
 
-    fun add(a: Float, b: Float): PointXY {
+    fun add(a: Double, b: Double): PointXY {
         x += a
         y += b
         return this
     }
 
-    fun plus(x: Float, y: Float): PointXY {
+    fun plus(x: Double, y: Double): PointXY {
         return PointXY(this.x + x, this.y + y)
     }
 
@@ -245,22 +216,22 @@ class PointXY :Cloneable<PointXY> {
         return PointXY((x + a.x) / 2, (y + a.y) / 2)
     }
 
-    fun offset(p2: PointXY, movement: Float): PointXY {
+    fun offset(p2: PointXY, movement: Double): PointXY {
         val offset = vectorTo(p2).normalize().scale(movement)
         return this + offset
     }
 
-    fun offset(distance: Float, angle: Float): PointXY {
+    fun offset(distance: Double, angle: Double): PointXY {
         return this + toVector(angle).scale(distance)
     }
 
-    fun toVector(angle: Float): PointXY {
-        val angleInRadians = Math.toRadians(angle.toDouble())
-        return PointXY(Math.cos(angleInRadians).toFloat(), Math.sin(angleInRadians).toFloat())
+    fun toVector(angle: Double): PointXY {
+        val angleInRadians = Math.toRadians(angle)
+        return PointXY(Math.cos(angleInRadians), Math.sin(angleInRadians))
     }
 
     // 直交方向へのオフセット p2 is base line, p3 is cross vector align
-    fun crossOffset(p2: PointXY, movement: Float, clockwise:Float=-90f): PointXY {
+    fun crossOffset(p2: PointXY, movement: Double, clockwise:Double=-90.0): PointXY {
         //PointXY normalizedVector = vectorTo(p2).normalize();
 
         // 一行にいろいろ書いてみる
@@ -273,7 +244,7 @@ class PointXY :Cloneable<PointXY> {
         return PointXY(p2.x - x, p2.y - y)
     }
 
-    fun lengthTo(p2: PointXY): Float {
+    fun lengthTo(p2: PointXY): Double {
         return PointXY(x, y).vectorTo(p2).lengthXY()
     }
 
@@ -281,42 +252,41 @@ class PointXY :Cloneable<PointXY> {
         return PointXY(x / lengthXY(), y / lengthXY())
     }
 
-    fun lengthXY(): Float {
-        return Math.pow(Math.pow(x.toDouble(), 2.0) + Math.pow(y.toDouble(), 2.0), 0.5)
-            .toFloat()
+    fun lengthXY(): Double {
+        return Math.pow(Math.pow(x, 2.0) + Math.pow(y, 2.0), 0.5)
     }
 
-    fun calcDimAngle(a: PointXY): Float {
+    fun calcDimAngle(a: PointXY): Double {
         var angle =
-            (Math.atan2((a.x - x).toDouble(), (a.y - y).toDouble()) * 180 / Math.PI).toFloat()
+            Math.atan2(a.x - x, a.y - y) * 180 / Math.PI
         //if(0 > angle )
         angle = -angle
-        angle += 90f
-        if (90 < angle) angle -= 180f
-        if (angle < 0) angle += 360f
+        angle += 90.0
+        if (90 < angle) angle -= 180.0
+        if (angle < 0) angle += 360.0
         return angle
     }
 
-    fun calcSokAngle(a: PointXY, vector: Int): Float {
+    fun calcSokAngle(a: PointXY, vector: Int): Double {
         var angle =
-            (Math.atan2((a.x - x).toDouble(), (a.y - y).toDouble()) * 180 / Math.PI).toFloat()
+            Math.atan2(a.x - x, a.y - y) * 180 / Math.PI
         //if(0 > angle )
         angle = -angle
-        angle += 90f
-        if (vector < 0) angle -= 180f
+        angle += 90.0
+        if (vector < 0) angle -= 180.0
         return angle
     }
 
-    fun change_scale(a: PointXY, scale: Float) {
+    fun change_scale(a: PointXY, scale: Double) {
         x = x * scale + a.x
         y = y * scale + a.y
     }
 
-    fun scale(scale: Float): PointXY {
+    fun scale(scale: Double): PointXY {
         return PointXY(x * scale, y * scale)
     }
 
-    fun scale(scaleX: Float, scaleY: Float): PointXY {
+    fun scale(scaleX: Double, scaleY: Double): PointXY {
         return PointXY(x * scaleX, y * scaleY)
     }
 
@@ -324,7 +294,7 @@ class PointXY :Cloneable<PointXY> {
         return PointXY(x * scale.x, y * scale.y)
     }
 
-    fun scale(a: PointXY, sx: Float, sy: Float): PointXY {
+    fun scale(a: PointXY, sx: Double, sy: Double): PointXY {
         // 基準点aからの相対座標を計算
         val relativeX = x - a.x
         val relativeY = y - a.y
@@ -337,12 +307,12 @@ class PointXY :Cloneable<PointXY> {
         return PointXY(scaledX + a.x, scaledY + a.y)
     }
 
-    fun nearBy(target: PointXY, range: Float): Boolean {
+    fun nearBy(target: PointXY, range: Double): Boolean {
         return x > target.x - range && x < target.x + range &&
                 y > target.y - range && y < target.y + range
     }
 
-    fun sign(p1: PointXY, p2: PointXY, p3: PointXY): Float {
+    fun sign(p1: PointXY, p2: PointXY, p3: PointXY): Double {
         return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y)
     }
 
@@ -350,26 +320,26 @@ class PointXY :Cloneable<PointXY> {
         val b1: Boolean
         val b2: Boolean
         val b3: Boolean
-        b1 = sign(this, ab, bc) < 0.0f
-        b2 = sign(this, bc, ca) < 0.0f
-        b3 = sign(this, ca, ab) < 0.0f
+        b1 = sign(this, ab, bc) < 0.0
+        b2 = sign(this, bc, ca) < 0.0
+        b3 = sign(this, ca, ab) < 0.0
         return b1 == b2 && b2 == b3
     }
 
     // isCollideメソッドはlengthToを使用して距離を計算
-    fun isCollide(target: PointXY, nearby: Float): Boolean {
+    fun isCollide(target: PointXY, nearby: Double): Boolean {
         return this.lengthTo(target) <= nearby
     }
 
-    fun isCollide(targets: List<PointXY>, nearby: Float): Boolean {
+    fun isCollide(targets: List<PointXY>, nearby: Double): Boolean {
         return targets.any{ it.lengthTo(this) <= nearby }
     }
 
-    fun distancesTo(targets: List<PointXY>): List<Float> {
+    fun distancesTo(targets: List<PointXY>): List<Double> {
         return targets.map { this.lengthTo(it) }
     }
 
-    fun distancesTo(targets: Array<PointXY>): List<Float> {
+    fun distancesTo(targets: Array<PointXY>): List<Double> {
         return targets.map { this.lengthTo(it) }
     }
 
@@ -378,31 +348,31 @@ class PointXY :Cloneable<PointXY> {
     }
 
     fun magnitude(): Double {
-        return Math.sqrt((x * x + y * y).toDouble())
+        return Math.sqrt(x * x + y * y)
     }
 
     fun innerProduct(point: PointXY): Double {
-        return (x * point.x + y * point.y).toDouble()
+        return x * point.x + y * point.y
     }
 
     fun outerProduct(point: PointXY): Double {
-        return (x * point.y - y * point.x).toDouble()
+        return x * point.y - y * point.x
     }
 
     // 座標回転メソッド
-    fun rotate(center: PointXY, degrees: Float): PointXY {
+    fun rotate(center: PointXY, degrees: Double): PointXY {
         // 回転後の座標
-        val rotatedX: Float
-        val rotatedY: Float
+        val rotatedX: Double
+        val rotatedY: Double
         // 中心点からの相対座標
-        val offsetX: Double = (this.x - center.x).toDouble()
-        val offsetY: Double = (this.y - center.y).toDouble()
+        val offsetX: Double = this.x - center.x
+        val offsetY: Double = this.y - center.y
         // 角度をラジアンに変換
         val radians = degrees / 180 * Math.PI
         // 回転後のX座標を計算
-        rotatedX = (offsetX * Math.cos(radians) - offsetY * Math.sin(radians)).toFloat() + center.x
+        rotatedX = offsetX * Math.cos(radians) - offsetY * Math.sin(radians) + center.x
         // 回転後のY座標を計算
-        rotatedY = (offsetX * Math.sin(radians) + offsetY * Math.cos(radians)).toFloat() + center.y
+        rotatedY = offsetX * Math.sin(radians) + offsetY * Math.cos(radians) + center.y
 
         return PointXY(rotatedX, rotatedY)
     }

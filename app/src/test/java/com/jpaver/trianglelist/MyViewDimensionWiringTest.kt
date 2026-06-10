@@ -25,7 +25,7 @@ import org.junit.Test
  */
 class MyViewDimensionWiringTest {
 
-    private val eps = 1e-3f
+    private val eps = 1e-3
 
     private fun dimVariantsTriList(): TriangleList {
         val tList = TriangleList()

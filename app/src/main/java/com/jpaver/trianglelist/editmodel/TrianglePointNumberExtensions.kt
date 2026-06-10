@@ -2,7 +2,7 @@ package com.jpaver.trianglelist
 
 import com.jpaver.trianglelist.editmodel.Triangle
 
-fun Triangle.pointUnconnectedSide(point: com.example.trilib.PointXY, clockwise: Float): com.example.trilib.PointXY {
+fun Triangle.pointUnconnectedSide(point: com.example.trilib.PointXY, clockwise: Double): com.example.trilib.PointXY {
     if (nodeC == null) return point.mirroredAndScaledPoint(this.point[0], pointBC, clockwise)
     if (nodeB == null) return point.mirroredAndScaledPoint(pointAB, pointBC, clockwise)
     return point

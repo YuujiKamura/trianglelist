@@ -55,8 +55,8 @@ class Deduction(var num: Int = 0,
 
     )
 
-    var myscale = 1f
-    var shapeAngle = 0f
+    var myscale = 1.0
+    var shapeAngle = 0.0
     lateinit var pLTop: com.example.trilib.PointXY
     lateinit var pLBtm: com.example.trilib.PointXY
     lateinit var pRTop: com.example.trilib.PointXY
@@ -88,7 +88,7 @@ class Deduction(var num: Int = 0,
         infoStr = getInfo()
     }
 
-    fun setBox(scale: Float){
+    fun setBox(scale: Double){
 
         myscale = scale
         val mx = point.x - lengthX * scale * 0.5f
@@ -136,7 +136,7 @@ class Deduction(var num: Int = 0,
         overlap_to = params.pn
         type = params.type
         angle = 0f
-        if( params.point.x != 0f && params.point.y != 0f ) point =  params.point
+        if( params.point.x != 0.0 && params.point.y != 0.0 ) point =  params.point
         pointFlag =  params.pointflag
         infoStr = getInfo()
     }
@@ -185,7 +185,7 @@ class Deduction(var num: Int = 0,
         pointFlag.add(to)
     }
 
-    fun scale(basepoint: com.example.trilib.PointXY, sx: Float, sy: Float) {
+    fun scale(basepoint: com.example.trilib.PointXY, sx: Double, sy: Double) {
         point = point.scale(basepoint, sx, sy)
         pointFlag = pointFlag.scale(basepoint, sx, sy)
         myscale = sx
@@ -200,7 +200,7 @@ class Deduction(var num: Int = 0,
        // lengthY *= scale
     }
 
-    fun rotate(bp: com.example.trilib.PointXY, degree: Float){
+    fun rotate(bp: com.example.trilib.PointXY, degree: Double){
         rotateShape( bp, degree )
 
         point = point.rotate(bp, degree)
@@ -208,7 +208,7 @@ class Deduction(var num: Int = 0,
 
     }
 
-    fun rotateShape(bp: com.example.trilib.PointXY, degree: Float ){
+    fun rotateShape(bp: com.example.trilib.PointXY, degree: Double ){
         if(type == "Box"){
             pLTop = pLTop.rotate(bp, degree)
             pLBtm = pLBtm.rotate(bp, degree)
@@ -249,8 +249,8 @@ class Deduction(var num: Int = 0,
     fun flag(tri: Triangle): Boolean{
         //if(!tri.isCollide( point )) return false
 
-        pointFlag = tri.pointUnconnectedSide( point.scale(1f,-1f), 1f ).scale(1f,-1f)
-        shapeAngle = tri.angleUnconnectedSide()
+        pointFlag = tri.pointUnconnectedSide( point.scale(1.0,-1.0), 1.0 ).scale(1.0,-1.0)
+        shapeAngle = tri.angleUnconnectedSide().toDouble()
 
         return true
     }

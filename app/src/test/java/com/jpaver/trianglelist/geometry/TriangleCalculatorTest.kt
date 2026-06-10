@@ -7,7 +7,7 @@ import kotlin.math.abs
 
 class TriangleCalculatorTest {
     
-    private val DELTA = 0.001f // 浮動小数点の比較用の許容誤差
+    private val DELTA = 0.001 // 浮動小数点の比較用の許容誤差
 
     @Test
     fun calculatePoint_正三角形の頂点を計算() {
@@ -18,8 +18,8 @@ class TriangleCalculatorTest {
         val result = TriangleCalculator.calculatePoint(basepoint, pointAB, lengths)
 
         // 正三角形なので、y座標は√3/2になるはず
-        assertEquals(0.5f, result.x, DELTA)
-        assertEquals(-0.8660254f, result.y, DELTA) // 符号を反転し、精度も合わせる
+        assertEquals(0.5, result.x, DELTA)
+        assertEquals(-0.8660254, result.y, DELTA) // 符号を反転し、精度も合わせる
     }
 
     @Test
@@ -43,8 +43,8 @@ class TriangleCalculatorTest {
 
         val center = TriangleCalculator.calculateCenter(points)
 
-        assertEquals(0.5f, center.x, DELTA)
-        assertEquals(0.289f, center.y, DELTA) // 高さの1/3の位置
+        assertEquals(0.5, center.x, DELTA)
+        assertEquals(0.289, center.y, DELTA) // 高さの1/3の位置
     }
 
     @Test
@@ -55,7 +55,7 @@ class TriangleCalculatorTest {
 
         val result = TriangleCalculator.calculatePoint(basepoint, pointAB, lengths)
 
-        assertEquals(3f, result.x, DELTA)
-        assertEquals(-4f, result.y, DELTA) // 符号を反転
+        assertEquals(3.0, result.x, DELTA)
+        assertEquals(-4.0, result.y, DELTA) // 符号を反転
     }
 } 

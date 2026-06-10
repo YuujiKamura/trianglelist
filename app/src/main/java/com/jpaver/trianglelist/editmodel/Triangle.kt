@@ -150,7 +150,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     var name = ""
 
     // --- バウンディングボックス・寸法 ---
-    var myBP_ = Bounds(0f, 0f, 0f, 0f)
+    var myBP_ = Bounds(0.0, 0.0, 0.0, 0.0)
     var pathS = DimOnPath()
     var dimHeight = 0f
 

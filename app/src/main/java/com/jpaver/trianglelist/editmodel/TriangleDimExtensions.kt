@@ -23,10 +23,10 @@ internal fun Triangle.arrangeDims(isVertical: Boolean = false, isHorizontal: Boo
 
 fun Triangle.setDimPath(ts: Float = dimHeight) {
     dimHeight = ts
-    dimOnPath[0] = DimOnPath(scaleFactor, pointAB, point[0], dim.vertical.a, dim.horizontal.a, ts)
-    dimOnPath[1] = DimOnPath(scaleFactor, pointBC, pointAB, dim.vertical.b, dim.horizontal.b, ts)
-    dimOnPath[2] = DimOnPath(scaleFactor, point[0], pointBC, dim.vertical.c, dim.horizontal.c, ts)
-    pathS = DimOnPath(scaleFactor, pointAB, point[0], SIDE_SOKUTEN, dim.horizontal.s, ts)
+    dimOnPath[0] = DimOnPath(scaleFactor.toDouble(), pointAB, point[0], dim.vertical.a, dim.horizontal.a, ts.toDouble())
+    dimOnPath[1] = DimOnPath(scaleFactor.toDouble(), pointBC, pointAB, dim.vertical.b, dim.horizontal.b, ts.toDouble())
+    dimOnPath[2] = DimOnPath(scaleFactor.toDouble(), point[0], pointBC, dim.vertical.c, dim.horizontal.c, ts.toDouble())
+    pathS = DimOnPath(scaleFactor.toDouble(), pointAB, point[0], SIDE_SOKUTEN, dim.horizontal.s, ts.toDouble())
 }
 
 fun Triangle.controlDimHorizontal(side: Int) {

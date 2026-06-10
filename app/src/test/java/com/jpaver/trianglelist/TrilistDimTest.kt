@@ -63,9 +63,9 @@ class TrilistDimTest {
         Assert.assertEquals(3, alignVdimH)
         Assert.assertEquals(3, alignVdimI)
 
-        Assert.assertEquals(tri.dimOnPath[0].rightP.x, pca.x )
-        Assert.assertEquals(tri.dimOnPath[1].pointA.x, pab.x )
-        Assert.assertEquals(tri.dimOnPath[2].pointA.x, pbc.x )
+        Assert.assertEquals(tri.dimOnPath[0].rightP.x, pca.x, 0.0 )
+        Assert.assertEquals(tri.dimOnPath[1].pointA.x, pab.x, 0.0 )
+        Assert.assertEquals(tri.dimOnPath[2].pointA.x, pbc.x, 0.0 )
 
         Assert.assertEquals(4, "No.3".length)
 

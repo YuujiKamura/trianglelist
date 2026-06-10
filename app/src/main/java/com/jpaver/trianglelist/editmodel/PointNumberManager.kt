@@ -49,7 +49,7 @@ class PointNumberManager( ): Cloneable {
     //pointNumberだけ使う
     fun pointUnconnectedSide(triangle: Triangle, outlineList: OutlineList?=null ): com.example.trilib.PointXY {
         //外側に出すと実行時エラーになる
-        val KEISUU = 0.7f
+        val KEISUU = 0.7
         val FLAG_LENGTH_B = triangle.lengthB*KEISUU
         val FLAG_LENGTH_C = triangle.lengthA*KEISUU
         val angle_ = arrayOf( triangle.angleCA, triangle.angleAB, triangle.angleBC )

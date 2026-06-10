@@ -8,8 +8,8 @@ import com.example.trilib.PointXY
  */
 data class DimensionPlacement(
     val dimpoint: PointXY,
-    val offsetH: Float,
-    val offsetV: Float,
+    val offsetH: Double,
+    val offsetV: Double,
     val verticalDxf: Int,
     val pointA: PointXY,
     val pointB: PointXY,
@@ -45,18 +45,18 @@ object DimensionLayout {
         rightP: PointXY,
         vertical: Int,
         horizontal: Int,
-        scale: Float = 1.0f,
-        dimheight: Float = 0.05f,
-        gapPaperMm: Float = 0f
+        scale: Double = 1.0,
+        dimheight: Double = 0.05,
+        gapPaperMm: Double = 0.0
     ): DimensionPlacement {
-        val offsetUpper = -dimheight * 0.2f
-        val offsetLower = dimheight * 0.9f
+        val offsetUpper = -dimheight * 0.2
+        val offsetLower = dimheight * 0.9
 
         var v = vertical
         var pointA = leftP
         var pointB = rightP
-        var offsetH = 0f
-        var offsetV = 0f
+        var offsetH = 0.0
+        var offsetV = 0.0
         var clockwise = "C"
 
         if (v == 1) offsetV = offsetLower
@@ -70,8 +70,8 @@ object DimensionLayout {
                 lp = rightP
                 rp = leftP
             }
-            val outerleft = lp.offset(rp, -3f * scale)
-            val outerright = lp.offset(rp, -0.5f * scale)
+            val outerleft = lp.offset(rp, -3.0 * scale)
+            val outerright = lp.offset(rp, -0.5 * scale)
             pointA = outerleft
             pointB = outerright
             // 上下逆さまにならない様に y 降順へ正規化
@@ -82,7 +82,7 @@ object DimensionLayout {
             }
         } else {
             val lineLength = leftP.lengthTo(rightP)
-            val habayose = lineLength * 0.1f
+            val habayose = lineLength * 0.1
 
             when (horizontal) {
                 CENTER -> {}
@@ -124,9 +124,9 @@ object DimensionLayout {
 
         // DIMGAP 相当 (Phase 4 の口)。gap=0 なら一切触らない = DimOnPath と同値。
         // 測点名 (offsetV=0) は寸法値ではないため gap 対象外。
-        if (gapPaperMm != 0f && offsetV != 0f) {
+        if (gapPaperMm != 0.0 && offsetV != 0.0) {
             val gapModel = gapPaperMm * scale
-            offsetV += if (offsetV > 0f) gapModel else -gapModel
+            offsetV += if (offsetV > 0.0) gapModel else -gapModel
         }
 
         return DimensionPlacement(
@@ -143,20 +143,20 @@ object DimensionLayout {
     private data class OuterPoints(
         val pointA: PointXY,
         val pointB: PointXY,
-        val offsetH: Float
+        val offsetH: Double
     )
 
     // 左右旗揚げ: 辺の延長線上に HATAAGE ぶん出し、反対側へ隙間+辺長ぶん移動した区間に置く
     private fun pointsOuter(
         leftP: PointXY,
         rightP: PointXY,
-        lineLength: Float,
-        scale: Float
+        lineLength: Double,
+        scale: Double
     ): OuterPoints {
-        val sukima = 0.5f * scale
+        val sukima = 0.5 * scale
         val movement = sukima + lineLength
         val hataage = -3 * scale
-        val habayose = -lineLength * 0.05f
+        val habayose = -lineLength * 0.05
         return OuterPoints(
             pointA = leftP.offset(rightP, hataage),
             pointB = rightP.offset(leftP, movement),

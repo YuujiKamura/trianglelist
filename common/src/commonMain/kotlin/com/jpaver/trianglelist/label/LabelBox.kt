@@ -29,17 +29,17 @@ import kotlin.math.sqrt
  */
 class LabelBox(
     val center: PointXY,
-    val widthMm: Float,
-    val heightMm: Float,
-    val rotationDeg: Float = 0f,
+    val widthMm: Double,
+    val heightMm: Double,
+    val rotationDeg: Double = 0.0,
 ) {
     /**
      * 4 隅を返す。順序は回転前ローカルで左下→右下→右上→左上 (反時計回り) を
      * 中心まわりに rotationDeg 回転したもの。SAT の軸算出と投影に使う。
      */
     fun corners(): List<PointXY> {
-        val halfWidthMm = widthMm / 2f
-        val halfHeightMm = heightMm / 2f
+        val halfWidthMm = widthMm / 2.0
+        val halfHeightMm = heightMm / 2.0
         val local = listOf(
             PointXY(center.x - halfWidthMm, center.y - halfHeightMm),
             PointXY(center.x + halfWidthMm, center.y - halfHeightMm),
@@ -59,7 +59,7 @@ class LabelBox(
      * OBB 同士の重なり深さ (model mm)。分離していれば null。
      * 0 = 境界接触 (contact)、> 0 = めり込み (intrusion) の素材。
      */
-    fun penetrationDepth(other: LabelBox): Float? {
+    fun penetrationDepth(other: LabelBox): Double? {
         val cornersA = corners()
         val cornersB = other.corners()
         val axes = axesOf(cornersA) + axesOf(cornersB)
@@ -79,7 +79,7 @@ class LabelBox(
      * 線分が box 内部を横切るなら「線分を box の外へ出すのに必要な移動量」> 0。
      * 退化線分 (長さ 0 = 点) は線分法線が消えるので box 2 軸だけで判定する。
      */
-    fun penetrationDepthSegment(start: PointXY, end: PointXY): Float? {
+    fun penetrationDepthSegment(start: PointXY, end: PointXY): Double? {
         val cornersBox = corners()
         val segment = listOf(start, end)
         val segmentDir = end - start
@@ -93,16 +93,16 @@ class LabelBox(
      * 閉形式: box ローカル座標で円中心を矩形にクランプした最近点との距離 d に対し
      * d ≤ r なら交差、深さ = r - d (境界接触で 0)。円中心が box 内部なら深さ = r。
      */
-    fun penetrationDepthCircle(circleCenter: PointXY, radiusMm: Float): Float? {
+    fun penetrationDepthCircle(circleCenter: PointXY, radiusMm: Double): Double? {
         // 円中心を box ローカル (center 原点、回転を戻した軸並行) へ
         val unrotated = circleCenter.rotate(center, -rotationDeg)
         val localX = unrotated.x - center.x
         val localY = unrotated.y - center.y
-        val clampedX = localX.coerceIn(-widthMm / 2f, widthMm / 2f)
-        val clampedY = localY.coerceIn(-heightMm / 2f, heightMm / 2f)
+        val clampedX = localX.coerceIn(-widthMm / 2.0, widthMm / 2.0)
+        val clampedY = localY.coerceIn(-heightMm / 2.0, heightMm / 2.0)
         val distance = hypot(localX - clampedX, localY - clampedY)
         if (distance > radiusMm + EPS) return null
-        return max(0f, radiusMm - distance)
+        return max(0.0, radiusMm - distance)
     }
 
     private fun axesOf(corners: List<PointXY>): List<PointXY> {
@@ -120,12 +120,12 @@ class LabelBox(
      * 1 軸でも負 (= 分離) なら null、全軸で重なれば最小値を深さとして返す。
      * 内包・退化 (線分の点投影) も「重なり長さ」でなく移動量で測るので正しく拾える。
      */
-    private fun depthOverAxes(a: List<PointXY>, b: List<PointXY>, axes: List<PointXY>): Float? {
-        var minDepthMm = Float.POSITIVE_INFINITY
+    private fun depthOverAxes(a: List<PointXY>, b: List<PointXY>, axes: List<PointXY>): Double? {
+        var minDepthMm = Double.POSITIVE_INFINITY
         for (axis in axes) {
             val length = sqrt(axis.x * axis.x + axis.y * axis.y)
             // 退化軸 (長さ 0 の線分の法線) は分離軸にならないので飛ばす
-            if (length == 0f) continue
+            if (length == 0.0) continue
             val unitX = axis.x / length
             val unitY = axis.y / length
             val (minA, maxA) = projectOnto(a, unitX, unitY)
@@ -135,12 +135,12 @@ class LabelBox(
             if (separation < -EPS) return null
             minDepthMm = min(minDepthMm, separation)
         }
-        return max(0f, minDepthMm)
+        return max(0.0, minDepthMm)
     }
 
-    private fun projectOnto(points: List<PointXY>, unitX: Float, unitY: Float): Pair<Float, Float> {
-        var minProj = Float.POSITIVE_INFINITY
-        var maxProj = Float.NEGATIVE_INFINITY
+    private fun projectOnto(points: List<PointXY>, unitX: Double, unitY: Double): Pair<Double, Double> {
+        var minProj = Double.POSITIVE_INFINITY
+        var maxProj = Double.NEGATIVE_INFINITY
         for (p in points) {
             val proj = p.x * unitX + p.y * unitY
             minProj = min(minProj, proj)
@@ -160,6 +160,6 @@ class LabelBox(
          * (sample.dxf rot=84°/349°/76° で実測)。1e-2 mm はノイズの上、かつ視認可能な
          * 幾何のはるか下 (1/50 図面で紙 0.0002 mm)。
          */
-        const val EPS: Float = 1e-2f
+        const val EPS: Double = 1e-2
     }
 }

@@ -15,9 +15,9 @@ interface LabelMetrics {
      * leftMm/rightMm は X、bottomMm/topMm は Y (top > bottom)。
      * 回転は呼び出し側 (DxfOverlapAnalyzer) がアンカー回りに適用する。
      */
-    data class InkBox(val leftMm: Float, val rightMm: Float, val bottomMm: Float, val topMm: Float)
+    data class InkBox(val leftMm: Double, val rightMm: Double, val bottomMm: Double, val topMm: Double)
 
-    fun inkBoxLocal(text: String, heightMm: Float, alignH: Int, alignV: Int): InkBox
+    fun inkBoxLocal(text: String, heightMm: Double, alignH: Int, alignV: Int): InkBox
 
     /**
      * MS Gothic 等幅係数の fallback (platform 非依存)。テストと未較正環境用。
@@ -34,24 +34,24 @@ interface LabelMetrics {
          * アルゴリズム参照 ── テーブル値でなく 'A' の bbox 実測で正規化)。
          * fontTools 実測 (C:/Windows/Fonts/msgothic.ttc): 'A'/'5' インク実高 0.770em → 1/0.770 = 1.299。
          */
-        const val EM_PER_CAP: Float = 1.299f
+        const val EM_PER_CAP: Double = 1.299
 
         /** 数字インク実高 / 較正基準高。較正基準が 'A' インク実高そのものなので 1.0 (数字の見え高 = DXF height)。 */
-        const val DIGIT_INK_PER_CAP: Float = 1.0f
+        const val DIGIT_INK_PER_CAP: Double = 1.0
 
-        override fun inkBoxLocal(text: String, heightMm: Float, alignH: Int, alignV: Int): InkBox {
-            val units = text.sumOf { ch -> if (ch.code <= 0xFF) 0.5 else 1.0 }.toFloat()
+        override fun inkBoxLocal(text: String, heightMm: Double, alignH: Int, alignV: Int): InkBox {
+            val units = text.sumOf { ch -> if (ch.code <= 0xFF) 0.5 else 1.0 }
             val widthMm = units * heightMm * EM_PER_CAP
             val inkHeightMm = heightMm * DIGIT_INK_PER_CAP
             val leftMm = when (alignH) {
-                1 -> -widthMm / 2f // 中央: アンカーが中心
-                2 -> -widthMm      // 右寄せ: アンカーは右端
-                else -> 0f         // 左寄せ (0): アンカーは左端
+                1 -> -widthMm / 2.0 // 中央: アンカーが中心
+                2 -> -widthMm       // 右寄せ: アンカーは右端
+                else -> 0.0         // 左寄せ (0): アンカーは左端
             }
             val bottomMm = when (alignV) {
-                2 -> -inkHeightMm / 2f // 中央: アンカーが中心
-                3 -> -inkHeightMm      // 上: アンカーは上端
-                else -> 0f             // ベースライン (0)・下 (1): アンカーは下端
+                2 -> -inkHeightMm / 2.0 // 中央: アンカーが中心
+                3 -> -inkHeightMm       // 上: アンカーは上端
+                else -> 0.0             // ベースライン (0)・下 (1): アンカーは下端
             }
             return InkBox(leftMm, leftMm + widthMm, bottomMm, bottomMm + inkHeightMm)
         }

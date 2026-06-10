@@ -12,7 +12,7 @@ import kotlin.math.*
  */
 
 fun Triangle.calcPoints(basepoint: PointXY = this.point[0], _angle: Float = this.angle, isArrangeDims: Boolean = false) {
-    pointAB = basepoint.offset(length[0], _angle)
+    pointAB = basepoint.offset(length[0].toDouble(), _angle.toDouble())
     pointBC = calculatePointBC(basepoint)
     calculateInternalAngles()
     calculatePointCenter()
@@ -28,8 +28,8 @@ internal fun Triangle.calculatePointBC(basepoint: PointXY): PointXY {
     val powC = length[2].pow(2.0f).toDouble()
     val alpha = acos((powA + powB - powC) / (2 * length[0] * length[1]))
     val angle = theta + alpha
-    val offsetX = (length[1] * cos(angle)).toFloat()
-    val offsetY = (length[1] * sin(angle)).toFloat()
+    val offsetX = length[1] * cos(angle)
+    val offsetY = length[1] * sin(angle)
     return pointAB.plus(offsetX, offsetY)
 }
 
@@ -60,12 +60,12 @@ internal fun Triangle.calculatePointCenter(): PointXY {
 
 fun Triangle.scale(basepoint: PointXY, scaleFactor: Float, isArrangeDims: Boolean = false) {
     this.scaleFactor *= scaleFactor
-    point[0].change_scale(basepoint, scaleFactor)
+    point[0].change_scale(basepoint, scaleFactor.toDouble())
     length[0] *= scaleFactor
     length[1] *= scaleFactor
     length[2] *= scaleFactor
-    pointcenter.change_scale(basepoint, scaleFactor)
-    pointnumber.change_scale(basepoint, scaleFactor)
+    pointcenter.change_scale(basepoint, scaleFactor.toDouble())
+    pointnumber.change_scale(basepoint, scaleFactor.toDouble())
     calcPoints(point[0], angle, isArrangeDims)
 }
 
@@ -92,7 +92,7 @@ fun Triangle.move(vector: PointXY) {
 fun Triangle.rotate(basepoint: PointXY, addDegree: Float) {
     angleInLocal_ += addDegree
     rotate_body(basepoint, addDegree)
-    pointnumber = pointnumber.rotate(basepoint, addDegree)
+    pointnumber = pointnumber.rotate(basepoint, addDegree.toDouble())
 }
 
 fun Triangle.calcPoints(ref: Triangle?, refside: Int) {
@@ -125,14 +125,14 @@ fun Triangle.calcPoints(ref: Triangle?, refside: Int) {
         else -> throw IllegalStateException("Unexpected value: $refside")
     }
     // set plist[1]
-    plist[1]!![ (plist[0]!!.x + llist[0] * cos(Math.toRadians(angleLocal.toDouble()))).toFloat() ] =
-        (plist[0]!!.y + llist[0] * sin(Math.toRadians(angleLocal.toDouble()))).toFloat()
+    plist[1]!![ plist[0]!!.x + llist[0] * cos(Math.toRadians(angleLocal.toDouble())) ] =
+        plist[0]!!.y + llist[0] * sin(Math.toRadians(angleLocal.toDouble()))
 
     val theta = atan2((plist[0]!!.y - plist[1]!!.y).toDouble(), (plist[0]!!.x - plist[1]!!.x).toDouble())
     val alpha = acos((powlist[0] + powlist[1] - powlist[2]) / (2 * llist[0] * llist[1]))
 
-    plist[2]!![ (plist[1]!!.x + llist[1] * cos(theta + alpha)).toFloat() ] =
-        (plist[1]!!.y + llist[1] * sin(theta + alpha)).toFloat()
+    plist[2]!![ plist[1]!!.x + llist[1] * cos(theta + alpha) ] =
+        plist[1]!!.y + llist[1] * sin(theta + alpha)
 
     calculateInternalAngles()
     if (refside == 1) this.angle = nodeB!!.angle - angleCA
@@ -163,17 +163,17 @@ fun Triangle.expandBoundaries(listBound: Bounds): Bounds {
 fun Triangle.control_rotate(basepoint: PointXY, addDegree: Float) {
     angleInLocal_ += addDegree
     rotate_body(basepoint, addDegree)
-    pointnumber = pointnumber.rotate(basepoint, addDegree)
+    pointnumber = pointnumber.rotate(basepoint, addDegree.toDouble())
 }
 
 fun Triangle.recover_rotate(basepoint: PointXY, addDegree: Float) {
     angleInLocal_ = addDegree
     rotate_body(basepoint, addDegree)
-    if (!pointNumber.flag.isMovedByUser) pointnumber = pointnumber.rotate(basepoint, addDegree)
+    if (!pointNumber.flag.isMovedByUser) pointnumber = pointnumber.rotate(basepoint, addDegree.toDouble())
 }
 
 fun Triangle.rotate_body(basepoint: PointXY, addDegree: Float) {
-    point[0] = point[0].rotate(basepoint, addDegree)
+    point[0] = point[0].rotate(basepoint, addDegree.toDouble())
     angle += addDegree
     calcPoints(point[0], angle)
 }

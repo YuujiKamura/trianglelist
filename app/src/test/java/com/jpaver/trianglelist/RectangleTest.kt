@@ -9,9 +9,9 @@ import org.junit.Test
 
 class RectangleTest {
 
-    val rect345 = Rectangle(3f,4f,5f )
-    val rect555 = Rectangle(5f,5f,5f )
-    val rect45 = Rectangle(5f,5f,5f, -45f)
+    val rect345 = Rectangle(3.0,4.0,5.0 )
+    val rect555 = Rectangle(5.0,5.0,5.0 )
+    val rect45 = Rectangle(5.0,5.0,5.0, -45.0)
     val tri1  = Triangle(5f,5f,5f)
 
     @Test
@@ -23,14 +23,14 @@ class RectangleTest {
     }
 
     fun case1(){
-        val rect1 = Rectangle(5f,5f,5f, nodeA = rect555 )
-        Assert.assertEquals( 10f, rect1.calcPoint().b.left.y,0.005f )
+        val rect1 = Rectangle(5.0,5.0,5.0, nodeA = rect555 )
+        Assert.assertEquals( 10.0, rect1.calcPoint().b.left.y,0.005 )
     }
 
     fun case2(){
-        val rect2 = Rectangle(5f,5f,5f, nodeA = rect45 )
-        Assert.assertEquals( 5f/1.414f, rect2.calcPoint().a.left.y,0.005f )
-        Assert.assertEquals( 5f/1.414f*2, rect2.calcPoint().b.left.y,0.005f )
+        val rect2 = Rectangle(5.0,5.0,5.0, nodeA = rect45 )
+        Assert.assertEquals( 5.0/1.414, rect2.calcPoint().a.left.y,0.005 )
+        Assert.assertEquals( 5.0/1.414*2, rect2.calcPoint().b.left.y,0.005 )
     }
 
     @Test
@@ -38,13 +38,13 @@ class RectangleTest {
         case1()
         case2()
 
-        val rect3 = Rectangle(5f,5f,5f, nodeA = tri1 )
-        Assert.assertEquals( 0f, rect3.calcPoint().a.left.y,0.005f )
+        val rect3 = Rectangle(5.0,5.0,5.0, nodeA = tri1 )
+        Assert.assertEquals( 0.0, rect3.calcPoint().a.left.y,0.005 )
     }
 
     @Test
     fun testCalcPoint(){
-        Assert.assertEquals( 3f, rect345.calcPoint().b.left.y )
-        Assert.assertEquals( 5f/1.414f, rect45.calcPoint().b.left.y,0.005f )
+        Assert.assertEquals( 3.0, rect345.calcPoint().b.left.y, 0.0 )
+        Assert.assertEquals( 5.0/1.414, rect45.calcPoint().b.left.y,0.005 )
     }
 }

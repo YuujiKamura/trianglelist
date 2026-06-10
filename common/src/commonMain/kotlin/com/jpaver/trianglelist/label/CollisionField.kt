@@ -12,7 +12,7 @@ enum class ObstacleKind { EDGE, LABEL, CIRCLE }
  * depthMm は 0 = 境界接触 (contact、寄り添い)、> 0 = めり込み (intrusion)。
  * 閾値での足切りはここではしない ── 観測層が LabelBox.EPS を境に分けて報告する。
  */
-data class Hit(val id: String, val kind: ObstacleKind, val depthMm: Float)
+data class Hit(val id: String, val kind: ObstacleKind, val depthMm: Double)
 
 /**
  * メッシュ全体の障害物集合への衝突クエリ (ADR 0002 採用、Measurement 層)。
@@ -36,7 +36,7 @@ class CollisionField {
 
     private data class Edge(val id: String, val start: PointXY, val end: PointXY)
     private data class Box(val id: String, val box: LabelBox)
-    private data class Circle(val id: String, val center: PointXY, val radiusMm: Float)
+    private data class Circle(val id: String, val center: PointXY, val radiusMm: Double)
 
     /** 辺 (線分) を障害物として登録する。 */
     fun addEdge(id: String, start: PointXY, end: PointXY) {
@@ -49,7 +49,7 @@ class CollisionField {
     }
 
     /** 円 (番号サークル等) を障害物として登録する。 */
-    fun addCircle(id: String, center: PointXY, radiusMm: Float) {
+    fun addCircle(id: String, center: PointXY, radiusMm: Double) {
         circles.add(Circle(id, center, radiusMm))
     }
 
@@ -84,13 +84,13 @@ class CollisionField {
      * 候補円に重なっている障害物を、重なり深さ付きで全部返す。
      * @param excludeId 自分自身など除外したい障害物の id (null なら全件対象)。
      */
-    fun queryCircle(center: PointXY, radiusMm: Float, excludeId: String? = null): List<Hit> {
+    fun queryCircle(center: PointXY, radiusMm: Double, excludeId: String? = null): List<Hit> {
         val hits = mutableListOf<Hit>()
         for (edge in edges) {
             if (edge.id == excludeId) continue
             val distance = distancePointToSegment(center, edge.start, edge.end)
             if (distance <= radiusMm + LabelBox.EPS) {
-                hits.add(Hit(edge.id, ObstacleKind.EDGE, max(0f, radiusMm - distance)))
+                hits.add(Hit(edge.id, ObstacleKind.EDGE, max(0.0, radiusMm - distance)))
             }
         }
         for (entry in boxes) {
@@ -104,21 +104,21 @@ class CollisionField {
             val distance = hypot(circle.center.x - center.x, circle.center.y - center.y)
             val radiusSum = radiusMm + circle.radiusMm
             if (distance <= radiusSum + LabelBox.EPS) {
-                hits.add(Hit(circle.id, ObstacleKind.CIRCLE, max(0f, radiusSum - distance)))
+                hits.add(Hit(circle.id, ObstacleKind.CIRCLE, max(0.0, radiusSum - distance)))
             }
         }
         return hits
     }
 
     /** 点 p と線分 ab の最短距離。射影パラメータを [0,1] にクランプする標準形。 */
-    private fun distancePointToSegment(p: PointXY, a: PointXY, b: PointXY): Float {
+    private fun distancePointToSegment(p: PointXY, a: PointXY, b: PointXY): Double {
         val abX = b.x - a.x
         val abY = b.y - a.y
         val lengthSq = abX * abX + abY * abY
-        val t = if (lengthSq == 0f) {
-            0f // 退化線分 (長さ 0) は端点との距離
+        val t = if (lengthSq == 0.0) {
+            0.0 // 退化線分 (長さ 0) は端点との距離
         } else {
-            (((p.x - a.x) * abX + (p.y - a.y) * abY) / lengthSq).coerceIn(0f, 1f)
+            (((p.x - a.x) * abX + (p.y - a.y) * abY) / lengthSq).coerceIn(0.0, 1.0)
         }
         return hypot(p.x - (a.x + t * abX), p.y - (a.y + t * abY))
     }

@@ -83,12 +83,12 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
 //region canvas translate and text scaling
     fun translate( canvas: Canvas, x: Float, y: Float ){
         canvas.translate(x,y)
-        viewPointer_.add(x,y) // rewrite viewPointer but..
+        viewPointer_.add(x.toDouble(),y.toDouble()) // rewrite viewPointer but..
     }
 
     fun translateCenter() {
         currentCanvas_.translate(sizeX_/2f,sizeY_/2f )
-        viewPointer_.add( sizeX_/2f,sizeY_/2f )
+        viewPointer_.add( sizeX_/2.0,sizeY_/2.0 )
     }
 
     //endregion canvas trans and textscaling
@@ -326,8 +326,8 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
     }
 
     fun writeRect(point: com.example.trilib.PointXY, sizeX: Float, sizeY: Float, scale: Float, color: Int){
-        val sizex = sizeX/2
-        val sizey = sizeY/2
+        val sizex = sizeX/2.0
+        val sizey = sizeY/2.0
         writeLine(point.plus(-sizex, -sizey), point.plus(sizex, -sizey), scale, color)
         writeLine(point.plus(-sizex, sizey), point.plus(sizex, sizey), scale,  color)
         writeLine(point.plus(-sizex, -sizey), point.plus(-sizex, sizey), scale,  color)
@@ -335,17 +335,17 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
     }
 
     fun writeLine(p1: com.example.trilib.PointXY, p2: com.example.trilib.PointXY, scale: Float, color: Int){
-        currentCanvas_.drawLine(p1.x*scale, p1.y*scale, p2.x*scale, p2.y*scale, setPaint(color, 5f, 1))
+        currentCanvas_.drawLine((p1.x*scale).toFloat(), (p1.y*scale).toFloat(), (p2.x*scale).toFloat(), (p2.y*scale).toFloat(), setPaint(color, 5f, 1))
     }
 
     override fun writeLine(p1: com.example.trilib.PointXY, p2: com.example.trilib.PointXY, color: Int, scale: Float ){
-        currentCanvas_.drawLine(p1.x, p1.y, p2.x, p2.y, setPaint(color, 5f, 1))
+        currentCanvas_.drawLine(p1.x.toFloat(), p1.y.toFloat(), p2.x.toFloat(), p2.y.toFloat(), setPaint(color, 5f, 1))
     }
 
     override fun writeText(str: String, point: com.example.trilib.PointXY, scale: Float, color: Int, size: Float, align: Int){
 
         this.setPaint(color, size, align)
-        currentCanvas_.drawText(str, point.x*scale, point.y*scale ,setPaint(color, size, align))
+        currentCanvas_.drawText(str, (point.x*scale).toFloat(), (point.y*scale).toFloat() ,setPaint(color, size, align))
 /*
         if(align <= 1) {
             if (align == 1) point.x -= (size * str.length  / 2)

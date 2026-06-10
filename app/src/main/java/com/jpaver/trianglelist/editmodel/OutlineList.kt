@@ -50,11 +50,11 @@ class OutlineList(var trianglelist: TriangleList) :Cloneable{
     }
 
 
-    fun calcAngle(target: com.example.trilib.PointXY): Float {
-        val result = find(target) ?: return 0f
+    fun calcAngle(target: com.example.trilib.PointXY): Double {
+        val result = find(target) ?: return 0.0
         val index = pointlist.indexOf(result)
 
-        if (index == -1 || pointlist.size < 3) return 0f // リストに十分な要素がない、または見つからない場合
+        if (index == -1 || pointlist.size < 3) return 0.0 // リストに十分な要素がない、または見つからない場合
 
         // リストが閉じていると仮定して、前後のポイントのインデックスを計算
         val prevIndex = if (index > 0) index - 1 else pointlist.size - 1
@@ -73,7 +73,7 @@ class OutlineList(var trianglelist: TriangleList) :Cloneable{
 
     fun find(target: com.example.trilib.PointXY): com.example.trilib.PointXY? {
         return pointlist.firstOrNull { pointXY ->
-            target.nearBy( pointXY, 0.05f)
+            target.nearBy( pointXY, 0.05)
         }
     }
 
@@ -104,7 +104,7 @@ class OutlineList(var trianglelist: TriangleList) :Cloneable{
     // 同じポイントは二ついらない
     private fun notHave(target: com.example.trilib.PointXY, pointarray: ArrayList<com.example.trilib.PointXY>): Boolean {
         for (i in pointarray.indices){
-            if( target.nearBy(pointarray[i], 0.005f) ) return false
+            if( target.nearBy(pointarray[i], 0.005) ) return false
         }
         return true
     }
