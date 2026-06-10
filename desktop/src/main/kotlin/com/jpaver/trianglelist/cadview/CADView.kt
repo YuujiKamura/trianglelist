@@ -32,6 +32,7 @@ fun CADView(
     parseResult: DxfParseResult,
     modifier: Modifier = Modifier,
     debugMode: Boolean = false,
+    showLabelBoxes: Boolean = false,
     initialScale: Float? = null,
     initialOffset: Offset? = null,
     onViewStateChanged: ((Float, Offset) -> Unit)? = null
@@ -41,6 +42,11 @@ fun CADView(
     var isInitialized by remember { mutableStateOf(initialScale != null && initialOffset != null) }
     val textMeasurer = rememberTextMeasurer()
     val renderer = remember { CADViewRenderer() }
+    // LabelBox overlay (rev2): 判定 (DxfOverlapAnalyzer.analyze) が見ている box と
+    // 同一経路 textBoxes() で生成する。描画用の別実装を作らない ── 判定の box を目が見る
+    val labelBoxes = remember(parseResult) {
+        com.jpaver.trianglelist.label.DxfOverlapAnalyzer.textBoxes(parseResult)
+    }
 
     // ビューステートが変更されたら通知
     LaunchedEffect(scale, offset) {
@@ -181,6 +187,24 @@ fun CADView(
             )
 
             renderer.drawAllEntities(this, parseResult, scale, textMeasurer, debugMode)
+
+            // LabelBox overlay: 既存描画の上に青枠で重ねる。canvas world は Y 反転済み
+            // DXF 座標 (CanvasUtil.flipYAxis) なので、DXF 座標の corners を -y で写す
+            if (showLabelBoxes) {
+                for ((_, box) in labelBoxes) {
+                    val corners = box.corners()
+                    val path = androidx.compose.ui.graphics.Path().apply {
+                        moveTo(corners[0].x, -corners[0].y)
+                        for (i in 1 until corners.size) lineTo(corners[i].x, -corners[i].y)
+                        close()
+                    }
+                    drawPath(
+                        path,
+                        color = Color.Blue,
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5f / scale)
+                    )
+                }
+            }
 
             drawContext.canvas.restore()
         }
