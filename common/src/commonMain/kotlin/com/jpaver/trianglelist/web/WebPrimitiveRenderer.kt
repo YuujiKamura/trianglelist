@@ -6,6 +6,7 @@ import com.jpaver.trianglelist.editmodel.Deduction
 import com.jpaver.trianglelist.editmodel.DeductionList
 import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
+import com.jpaver.trianglelist.editmodel.isCollide
 import com.jpaver.trianglelist.label.DimensionLayout
 import com.jpaver.trianglelist.label.DimensionPlacement
 import com.jpaver.trianglelist.setLengthStr
@@ -132,8 +133,20 @@ object WebPrimitiveRenderer {
 
             // 番号サークル + 番号 (DrawingFileWriter.writePointNumber と同じ r=ts*0.85、中央寄せ)
             val pn = tri.pointnumber
-            item("""{"type":"circle","layer":"num","cx":${pn.x},"cy":${pn.y},"r":${textSize * 0.85f},"tri":${tri.mynumber}}""")
+            val circleR = textSize * 0.85f
+            item("""{"type":"circle","layer":"num","cx":${pn.x},"cy":${pn.y},"r":$circleR,"tri":${tri.mynumber}}""")
             item(text(tri.mynumber.toString(), pn, 0.0, textSize, 2, "num", ""","tri":${tri.mynumber}"""))
+
+            // 引き出し矢印線 (MyView.drawTriNumber:878-900 の鏡写し): サークルが三角形の外に
+            // 出ているとき、図形センターからサークルの縁まで線を引き、センター側に 10° 回転の
+            // 返し (チェック矢印) を付ける。式は app と同じモデル空間、表示時の Y 反転で同じ見た目
+            if (!tri.isCollide(tri.pointnumber)) {
+                val pc = tri.pointcenter
+                val pnOffsetToC = pn.offset(pc, (circleR * 1.1f).toDouble())
+                val arrowTail = pc.offset(pn, pc.lengthTo(pnOffsetToC) * 0.3).rotate(pc, 10.0)
+                item(line(pc, pnOffsetToC, "num"))
+                item(line(pc, arrowTail, "num"))
+            }
         }
 
         // 控除 (Deduction)。正 = DxfFileWriter.writeDeduction (DxfFileWriter.kt:240-282)。
@@ -162,36 +175,40 @@ object WebPrimitiveRenderer {
         val point = ded.point
         val pointFlag = ded.pointFlag
         val textOffsetX = if (ded.type == "Box") -0.5f else 0f
+        // 控除番号タグ — TS 側が選択中の控除だけ色替え表示するための識別子
+        val tag = ""","ded":${ded.num}"""
 
-        item(line(point, pointFlag, "ded"))
+        item(line(point, pointFlag, "ded", tag))
         if (point.x <= pointFlag.x) { // ptFlag is RIGHT from pt
-            item(dedTextAndLine(ded.infoStr, pointFlag, pointFlag.plus((infoStrLength + textOffsetX).toDouble(), 0.0), textSize))
+            item(dedTextAndLine(ded.infoStr, pointFlag, pointFlag.plus((infoStrLength + textOffsetX).toDouble(), 0.0), textSize, tag))
         } else {                      // ptFlag is LEFT from pt
             val p1 = pointFlag.plus((-ded.getInfo().length * textSize - textOffsetX).toDouble(), 0.0)
-            item(dedTextAndLine(ded.infoStr, p1, pointFlag, textSize))
+            item(dedTextAndLine(ded.infoStr, p1, pointFlag, textSize, tag))
         }
 
         if (ded.type == "Circle") {
-            item("""{"type":"circle","layer":"ded","cx":${point.x},"cy":${point.y},"r":${ded.lengthX / 2 * scale}}""")
+            item("""{"type":"circle","layer":"ded","cx":${point.x},"cy":${point.y},"r":${ded.lengthX / 2 * scale}$tag}""")
         }
         if (ded.type == "Box") {
             // writeDedRect: 逆回転で box を組み直す (Y 反転後の空間では shapeAngle の符号が逆)
             ded.shapeAngle = -ded.shapeAngle
             ded.setBox(scale.toDouble())
-            item(line(ded.pLTop, ded.pLBtm, "ded"))
-            item(line(ded.pLTop, ded.pRTop, "ded"))
-            item(line(ded.pRTop, ded.pRBtm, "ded"))
-            item(line(ded.pLBtm, ded.pRBtm, "ded"))
+            item(line(ded.pLTop, ded.pLBtm, "ded", tag))
+            item(line(ded.pLTop, ded.pRTop, "ded", tag))
+            item(line(ded.pRTop, ded.pRBtm, "ded", tag))
+            item(line(ded.pLBtm, ded.pRBtm, "ded", tag))
         }
     }
 
     /** DxfEntity.writeTextAndLine と同形: テキスト (左寄せ・点が下端) + 下線。2 つの prim を結合して返す */
-    private fun dedTextAndLine(st: String, p1: PointXY, p2: PointXY, textSize: Float): String =
-        text(st, p1.plus(textSize.toDouble(), textSize.toDouble() * 0.2), 0.0, textSize, 1, "ded", ""","alignH":0""") +
-            "," + line(p1, p2, "ded")
+    private fun dedTextAndLine(st: String, p1: PointXY, p2: PointXY, textSize: Float, tag: String = ""): String =
+        text(st, p1.plus(textSize.toDouble(), textSize.toDouble() * 0.2), 0.0, textSize, 1, "ded", ""","alignH":0$tag""") +
+            "," + line(p1, p2, "ded", tag)
 
-    private fun line(p1: PointXY, p2: PointXY, layer: String): String =
-        """{"type":"line","layer":"$layer","x1":${p1.x},"y1":${p1.y},"x2":${p2.x},"y2":${p2.y}}"""
+    private fun line(p1: PointXY, p2: PointXY, layer: String): String = line(p1, p2, layer, "")
+
+    private fun line(p1: PointXY, p2: PointXY, layer: String, extra: String): String =
+        """{"type":"line","layer":"$layer","x1":${p1.x},"y1":${p1.y},"x2":${p2.x},"y2":${p2.y}$extra}"""
 
     private fun dimText(str: String, place: DimensionPlacement, angle: Double, textSize: Float, tri: Int, side: Int, h: Int, v: Int): String =
         text(str, place.dimpoint, angle, textSize, place.verticalDxf, "dim", ""","tri":$tri,"side":$side,"h":$h,"v":$v""")

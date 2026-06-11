@@ -184,4 +184,25 @@ class WebPrimitiveRendererTest {
         assertEquals(7, count(json, """"align":2"""))
         assertTrue(count(json, """"align":1""") + count(json, """"align":3""") == 15)
     }
+
+    @Test
+    fun number_circle_outside_triangle_gets_leader_arrow() {
+        // MyView.drawTriNumber:878-900 の鏡写し: サークルが三角形の外に出ているとき、
+        // 図形センター→サークル縁の引き出し線 + センター側 10° 回転の返し (チェック矢印) = 2 本
+        val moved = "1,3.0,3.0,3.0,-1,-1,,10.0,10.0,true\n"
+        val json = WebPrimitiveRenderer.renderCsv(moved, 1f)
+        assertEquals(2, count(json, """"type":"line","layer":"num""""), "leader arrow lines expected")
+        // 既定 (サークルが三角形内、isCollide true) では出ない
+        val def = WebPrimitiveRenderer.renderCsv("1,3.0,3.0,3.0,-1,-1\n", 1f)
+        assertEquals(0, count(def, """"type":"line","layer":"num""""), "no arrow when inside")
+    }
+
+    @Test
+    fun deduction_primitives_carry_ded_number_tag() {
+        // TS 側の選択色替えに使う識別子。Box = 旗揚げ線 1 + テキスト 1 + 下線 1 + 矩形 4 辺 = 7 prim
+        val csv = "1,3.0,3.0,3.0,-1,-1\n" +
+            "Deduction,1,水路,0.5,4.0,1,Box,0.0,-1.0,1.0,-1.5,2.0,0.0\n"
+        val json = WebPrimitiveRenderer.renderCsv(csv, 1f)
+        assertEquals(7, count(json, """"ded":1"""), "all deduction prims should carry ded tag")
+    }
 }
