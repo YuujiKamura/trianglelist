@@ -696,12 +696,19 @@ function takeUndoSnap(): void {
 // 辺A は親行の接続先辺長を文字列コピーでプリセット — WebCsvReader.kt:33 は辺A 空の行を
 // skip するため必須 (アプリは影プレビュー経由で決まるが、影はスコープ外)
 function autoConnection(side: 1 | 2): void {
-  select('newConn').value = String(side);
   const parentInput = input('newParent');
-  if (parentInput.value.trim() === '') {
-    parentInput.value = String(current > 0 ? current : rows.length);
+  const parentN = parentInput.value.trim() === ''
+    ? (current > 0 ? current : rows.length)
+    : parseInt(parentInput.value, 10);
+  // 既接続辺には追加遷移を起こさない (selectEdge と同じ共通判定)
+  const child = edgeOccupiedBy(parentN, side);
+  if (child > 0) {
+    setStatus(`⚠ 三角形 ${parentN} の ${side === 1 ? 'B' : 'C'} 辺 — 三角形 ${child} が接続済みのため追加できません`);
+    return;
   }
-  const p = rows[parseInt(parentInput.value, 10) - 1];
+  select('newConn').value = String(side);
+  parentInput.value = String(parentN);
+  const p = rows[parentN - 1];
   if (p) input('newA').value = side === 1 ? p.b : p.c;
   input('newB').focus();
 }
@@ -769,6 +776,15 @@ function fabReplace(canvas: HTMLCanvasElement): void {
   if (addBad) {
     setStatus(`⚠ 新規行: ${addBad} — 追加を中止`);
     return;
+  }
+  // 既接続辺への二重接続も行を足す前に却下 (selectEdge / autoConnection と同じ共通判定)
+  if (conn === '1' || conn === '2') {
+    const pn = parseInt(parent, 10);
+    const child = edgeOccupiedBy(pn, conn === '1' ? 1 : 2);
+    if (child > 0) {
+      setStatus(`⚠ 三角形 ${pn} の ${conn === '1' ? 'B' : 'C'} 辺 — 三角形 ${child} が接続済みのため追加を中止`);
+      return;
+    }
   }
   takeUndoSnap();
   const name = input('newName').value;
@@ -1040,9 +1056,30 @@ function buildShadow(): void {
   }
 }
 
+// 既に子が接続されている辺か (parent=tri, conn=side の行があるか)。
+// 0 = 未接続、>0 = 接続中の子三角形の番号。タップ選択・B/C FAB・追加実行の
+// 3 動線が共通で使う (アプリは占有判定を持たない — web 版の改善, 2026-06-11 user 指示)
+function edgeOccupiedBy(tri: number, side: 1 | 2): number {
+  return rows.findIndex((r) => intOrNull(r.parent) === tri && intOrNull(r.conn) === side) + 1;
+}
+
 // 辺タップ (アプリ targetInTriMode → autoConnection(lastTapSide) 相当):
-// FAB を押さなくても新規行に接続・親・辺A がプリセットされ、シャドーが出る
+// FAB を押さなくても新規行に接続・親・辺A がプリセットされ、シャドーが出る。
+// ただし既接続辺は追加遷移 (プリセット+シャドー+フォーカス) を起こさず、選択と W/H 対象のみ
 function selectEdge(canvas: HTMLCanvasElement, tri: number, side: 1 | 2): void {
+  const child = edgeOccupiedBy(tri, side);
+  if (child > 0) {
+    selected = tri;
+    current = tri;
+    selectedDim = { tri, side };
+    edgeSel = null;
+    shadowPrims = null;
+    updateRowHighlight();
+    syncForm();
+    draw(canvas, lastPrims);
+    setStatus(`三角形 ${tri} の ${side === 1 ? 'B' : 'C'} 辺 — 三角形 ${child} が接続済み (追加不可、W/H・旗は可)`);
+    return;
+  }
   selected = tri;
   current = tri;
   // アプリの lastTapSide と同じく、タップした辺はそのまま W/H フリップの対象にもなる
