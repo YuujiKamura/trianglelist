@@ -65,7 +65,13 @@
          アイコンが薄黄色なのでアプリ FAB と同じ colorAccent #333333 背景に乗せる */
       .fabcol button.icon { background: #333333; border-color: #222222; }
       .fabcol button.icon:hover { background: #4d4d4d; }
-      .fabcol button img { width: 26px; height: 26px; object-fit: contain; display: block; margin: 0 auto; pointer-events: none; }
+      .fabcol button img { width: 32px; height: 32px; object-fit: contain; display: block; margin: 0 auto; pointer-events: none; }
+      /* 三角形編集モード (デフォルト) の FAB 配色 (アプリ setTriangleFab:1058-1066 準拠):
+         ペンシル = colorLime #AAFFAA、全体表示/リスト上下 = colorSky #88CCFF (colors.xml 実値)。
+         up/down アイコンは白系 PNG なので Sky に乗る (アプリと同じ組合せ) */
+      #fabReplace { background: #AAFFAA; border-color: #55aa66; }
+      #fabResetView { background: #88CCFF; border-color: #4d88bb; }
+      #fabUp, #fabDown { background: #88CCFF; border-color: #4d88bb; }
       /* 削除 FAB の 2 タップ確認: 1 回目で赤点灯 (アプリ fab_minus colorTT2 相当) */
       #fabMinus.armed { background: #d22; border-color: #a00; color: #fff; }
       /* 控除モード ON: アプリ setDeductionFab:1044 (colorWhite) 準拠の白点灯 + 赤枠 */
@@ -231,7 +237,7 @@
             <!-- アイコンはアプリの drawable-nodpi と共通 (sync-icons.mjs)。対応は fabs.xml の
                  srcCompat が正。システムアイコン (@android) の FAB だけ絵文字で代替 -->
             <div class="fabrow">
-              <button id="fabResetView" type="button" title="全体表示">⛶</button>
+              <button id="fabResetView" type="button" title="全体表示"><img src="/micons/my_location.svg" alt="全体表示" /></button>
               <button id="fabRotL" type="button" class="icon" title="左回転 (+5°)"><img src="/icons/rot_l.png" alt="左回転" /></button>
               <button id="fabRotR" type="button" class="icon" title="右回転 (−5°)"><img src="/icons/rot_r.png" alt="右回転" /></button>
             </div>
@@ -246,25 +252,27 @@
             <div class="fabrow">
               <button id="fabSetB" type="button" class="icon" title="親のB辺に接続"><img src="/icons/set_b.png" alt="B辺接続" /></button>
               <button id="fabSetC" type="button" class="icon" title="親のC辺に接続"><img src="/icons/set_c.png" alt="C辺接続" /></button>
-              <!-- アプリのペンシル FAB (システムアイコン ic_menu_edit のため絵文字で代替)。
-                   ⏎ だと undo に見える (user 指摘 2026-06-11) ので鉛筆に -->
-              <button id="fabReplace" type="button" title="書込み: 追加 / 書換え (アプリのペンシル)">✎</button>
+              <!-- アプリのペンシル FAB (ic_menu_edit)。web は Material Symbols の edit
+                   (Apache 2.0、micons/LICENSE.txt) — Android デフォルトセットの web 対応物 -->
+              <button id="fabReplace" type="button" title="書込み: 追加 / 書換え (アプリのペンシル)"><img src="/micons/edit.svg" alt="書込み" /></button>
             </div>
-            <button id="fabUndo" type="button" title="元に戻す (1段)">↶</button>
+            <button id="fabUndo" type="button" class="icon" title="元に戻す (1段)"><img src="/micons/undo.svg" alt="元に戻す" /></button>
             <!-- 寸法 W/H フリップ = アプリ fab_dimsidew (textright) / fab_dimsideh (textoutside)。
                  辺か寸法値をタップで選択してから押す。W=水平サイクル (旗揚げ含む)、H=内/外 -->
             <button id="fabDimW" type="button" class="icon" title="寸法 W フリップ (水平サイクル、旗揚げ含む)"><img src="/icons/textright.png" alt="寸法W" /></button>
             <button id="fabDimH" type="button" class="icon" title="寸法 H フリップ (内/外)"><img src="/icons/textoutside.png" alt="寸法H" /></button>
             <!-- アプリ fab_flag と同じ明示操作 — 移動先をタップしてからこれを押すと
                  現在行の番号サークル (控除モード中は選択控除の名称フラッグ) がそこへ動く -->
-            <button id="fabFlag" type="button" class="icon" title="旗揚げ移動: 移動先をタップしてから押す"><img src="/icons/flag_b.png" alt="旗揚げ" /></button>
+            <!-- アプリの flag_b.png は淡色細線で 32px では潰れる (user 指摘 2026-06-11) ため
+                 Material の flag を採用。控除モード中は赤 FLAG (icons/flag.png) に swap -->
+            <button id="fabFlag" type="button" class="icon" title="旗揚げ移動: 移動先をタップしてから押す"><img src="/micons/flag.svg" alt="旗揚げ" /></button>
             <!-- アプリ fab_nijyuualign 相当: 二重断面/フロートの起点を 右→中央→左 で巡回 -->
             <button id="fabNijyuu" type="button" class="icon" title="二重断面の起点を巡回 (右→中央→左)"><img src="/icons/nijyuu.png" alt="二重" /></button>
             <!-- アプリ fab_fillcolor 相当: 押すたび色が一周し選択三角形に塗る。背景 = 現在色 (main.ts が動的設定) -->
             <button id="fabFillColor" type="button" title="塗り色 (選択三角形、押すたび循環)"><img src="/icons/fillcolor.png" alt="塗り色" /></button>
             <!-- アプリ fab_deduction 相当: 控除モード切替。ON 中はクリック = 控除カーソル -->
             <button id="fabDeduction" type="button" class="icon" title="控除モード切替 (クリックで位置決め → 控除リストの「追加」)"><img src="/icons/deduction.png" alt="控除" /></button>
-            <button id="fabMinus" type="button" title="削除 (2回タップ)">🗑</button>
+            <button id="fabMinus" type="button" class="icon" title="削除 (2回タップ)"><img src="/micons/delete.svg" alt="削除" /></button>
           </div>
         </div>
       </div>

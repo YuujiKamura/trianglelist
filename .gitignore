@@ -36,6 +36,8 @@ web/dist/
 web/wasm/
 web/public/*.wasm
 web/public/*.wasm.map
+# sync-icons.mjs がアプリ drawable-nodpi からコピー生成 (SoT はアプリ側)
+web/public/icons/
 
 # Rust/Cargo build artifacts
 trianglelist-web/target/
