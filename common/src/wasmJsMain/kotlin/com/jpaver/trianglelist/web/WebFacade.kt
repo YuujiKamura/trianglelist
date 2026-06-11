@@ -66,6 +66,15 @@ fun buildSfcTextWithOverrides(csv: String, filename: String, overridesJson: Stri
     WebDrawingExport.buildSfcText(csv, filename, overridesJson)
 
 /**
+ * ADR 0008: overrides 焼き込み済みの完全形式 28 列 CSV。保存 CSV にも手動配置
+ * (W/H フリップ・番号移動) が乗る — アプリで開いても手動配置が失われない
+ */
+@OptIn(ExperimentalJsExport::class)
+@JsExport
+fun buildCsvTextWithOverrides(csv: String, overridesJson: String): String =
+    WebDrawingExport.buildCsvText(csv, overridesJson)
+
+/**
  * binaries.executable() のリンクに entry point が要るための no-op。
  * 段階1 は @JsExport 関数を JS から呼ぶだけで、起動時処理は無い。
  */

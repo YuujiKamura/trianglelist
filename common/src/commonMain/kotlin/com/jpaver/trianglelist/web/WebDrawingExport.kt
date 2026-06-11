@@ -1,5 +1,6 @@
 package com.jpaver.trianglelist.web
 
+import com.jpaver.trianglelist.datamanager.CsvCodec
 import com.jpaver.trianglelist.datamanager.DxfFileWriter
 import com.jpaver.trianglelist.datamanager.SfcWriter
 import com.jpaver.trianglelist.editmodel.DeductionList
@@ -117,6 +118,19 @@ object WebDrawingExport {
         writer.writer = sb
         writer.save()
         return sb.toString()
+    }
+
+    /**
+     * CSV → 完全形式 28 列 CSV (ADR 0008 bake)。overrides (W/H フリップ・番号移動) を model に
+     * 適用してから書くので、web での手動配置が保存 CSV に乗る — これまで overrides は
+     * localStorage 止まりで、書き出した CSV をアプリで開くと手動配置が消えていた (ユーザー損失)。
+     * 列順・値はアプリの保存 (MainActivity.writeCSV) と同一
+     */
+    fun buildCsvText(csv: String, overridesJson: String): String {
+        val doc = CsvCodec.parse(csv)
+        val trilist = readForExport(csv)
+        WebOverrides.applyJson(trilist, overridesJson)
+        return CsvCodec.serialize(CsvCodec.bake(trilist, doc))
     }
 
     /** CSV → SFC 全文 (SJIS エンコード前の String)。初期化列は SfcDimensionLayoutGoldenTest.writeSfcString と同一 */

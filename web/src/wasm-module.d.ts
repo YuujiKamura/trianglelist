@@ -9,4 +9,6 @@ declare module '*/TriangleList-common-wasm-js.mjs' {
   export function renderCsvToPrimitivesWithOverrides(csv: string, scale: number, overridesJson: string): string;
   export function buildDxfTextWithOverrides(csv: string, overridesJson: string): string;
   export function buildSfcTextWithOverrides(csv: string, filename: string, overridesJson: string): string;
+  // ADR 0008: overrides 焼き込み済みの完全形式 28 列 CSV (手動配置の書き戻し)
+  export function buildCsvTextWithOverrides(csv: string, overridesJson: string): string;
 }
