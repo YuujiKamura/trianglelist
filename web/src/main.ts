@@ -596,14 +596,17 @@ function buildTable(canvas: HTMLCanvasElement): void {
 
     for (const key of ['a', 'b', 'c'] as const) {
       const td = document.createElement('td');
-      // 表示も保存値も fmt2 で 2 桁に揃える (入力途中の文字列は input イベントでは触らない)
+      // 表示も保存値も fmt2 で 2 桁に揃える (入力途中の文字列は input イベントでは触らない)。
+      // 接続辺は編集のたび相手側 (親の B/C ⇔ 子の A) へ伝播する
       const inp = numberInput(fmt2(row[key]), '0.01', (v) => {
         row[key] = v;
+        refreshCells(propagateEdgeValue(i + 1, key));
         redraw(canvas);
       });
       inp.addEventListener('change', () => {
         inp.value = fmt2(inp.value);
         row[key] = inp.value;
+        refreshCells(propagateEdgeValue(i + 1, key));
         redraw(canvas);
       });
       td.appendChild(inp);
@@ -749,6 +752,8 @@ function fabReplace(canvas: HTMLCanvasElement): void {
     r.parent = cp === '' ? '-1' : cp;
     r.conn = select('curConn').value;
     setName(r, input('curName').value);
+    // 接続辺の伝播 (この後 buildTable が全組み直しするので refreshCells は不要)
+    (['a', 'b', 'c'] as const).forEach((k) => propagateEdgeValue(current, k));
     buildTable(canvas);
     syncForm();
     redraw(canvas);
@@ -1054,6 +1059,70 @@ function buildShadow(): void {
   } catch {
     shadowPrims = null;
   }
+}
+
+// ---- 接続辺の伝播 (アプリ TriangleList.resetTriangles 群の web 版再設計) ----
+// アプリは位置・角度・形状を resetTriangles/resetMyChild/resetByParent で in-place に
+// 連鎖書き換えするが、web は毎描画 CSV から全再構築するので幾何の連鎖は不要。
+// 残る本質は不変条件 1 本だけ:「子の A 辺 ≡ 親の接続先辺 (conn 1=B, 2=C) は同一の物理辺」。
+// 編集起点から 1 hop だけ写せば足りる (A を編集→親の B/C へ、B/C を編集→その辺の子の A へ。
+// それ以外の辺は変わらないので再帰不要)。設計の経緯は docs/adr/latest/0006。
+//
+// 二重断面接続 (完全形式 CSV の cParam: type≠0 か lcr≠Center) は子 A ≠ 親辺長が正規の
+// 状態なので伝播しない — extras[12]=cp.type (列18), extras[13]=cp.lcr (列19)
+function isSimpleConnection(r: Row): boolean {
+  const cpType = r.extras[12];
+  const cpLcr = r.extras[13];
+  return (cpType === undefined || cpType === '' || cpType === '0') &&
+    (cpLcr === undefined || cpLcr === '' || cpLcr === '2');
+}
+
+type EdgeKey = 'a' | 'b' | 'c';
+
+function propagateEdgeValue(tri: number, key: EdgeKey): Array<{ tri: number; key: EdgeKey }> {
+  const changed: Array<{ tri: number; key: EdgeKey }> = [];
+  const r = rows[tri - 1];
+  if (!r) return changed;
+  const val = r[key];
+  const n = parseFloat(val);
+  if (!Number.isFinite(n) || n <= 0) return changed; // 入力途中の値は伝播しない
+  if (key === 'a') {
+    // 子の A → 親の接続先辺へ (1 hop 上り)
+    if (!isSimpleConnection(r)) return changed;
+    const pn = intOrNull(r.parent) ?? -1;
+    const conn = intOrNull(r.conn);
+    const p = rows[pn - 1];
+    if (p && (conn === 1 || conn === 2)) {
+      const pkey: EdgeKey = conn === 1 ? 'b' : 'c';
+      if (p[pkey] !== val) {
+        p[pkey] = val;
+        changed.push({ tri: pn, key: pkey });
+      }
+    }
+  } else {
+    // 親の B/C → その辺に接続している子の A へ (1 hop 下り)
+    const child = edgeOccupiedBy(tri, key === 'b' ? 1 : 2);
+    const c = rows[child - 1];
+    if (c && isSimpleConnection(c) && c.a !== val) {
+      c.a = val;
+      changed.push({ tri: child, key: 'a' });
+    }
+  }
+  return changed;
+}
+
+// 伝播で変わった値を画面の入力欄へ反映する。編集中のセルにはフォーカスがあるので
+// 表全体は組み直さず、相手側のセルだけ書き換える (行内 number input は [A,B,C,親] の生成順)
+const CELL_INDEX: Record<EdgeKey, number> = { a: 0, b: 1, c: 2 };
+
+function refreshCells(changes: Array<{ tri: number; key: EdgeKey }>): void {
+  if (changes.length === 0) return;
+  for (const ch of changes) {
+    const tr = document.getElementById('triRows')?.children[ch.tri - 1];
+    const inp = tr?.querySelectorAll<HTMLInputElement>('input[type="number"]')[CELL_INDEX[ch.key]];
+    if (inp) inp.value = fmt2(rows[ch.tri - 1][ch.key]);
+  }
+  syncForm(); // カレント行・前行のフォーム表示も追従
 }
 
 // 既に子が接続されている辺か (parent=tri, conn=side の行があるか)。
@@ -1415,6 +1484,7 @@ if (import.meta.hot) {
     if (canvas && r && (data.key === 'a' || data.key === 'b' || data.key === 'c') && typeof data.value === 'string') {
       const primsBefore = lastPrims;
       r[data.key] = data.value;
+      refreshCells(propagateEdgeValue(data.tri!, data.key));
       redraw(canvas);
       hot.send('tlcp:edit-res', {
         id: data.id,
