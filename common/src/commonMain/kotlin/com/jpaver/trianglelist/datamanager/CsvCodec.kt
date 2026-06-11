@@ -3,11 +3,14 @@ package com.jpaver.trianglelist.datamanager
 import com.example.trilib.PointXY
 import com.jpaver.trianglelist.editmodel.ConnCode
 import com.jpaver.trianglelist.editmodel.ConnParam
+import com.jpaver.trianglelist.editmodel.Deduction
+import com.jpaver.trianglelist.editmodel.DeductionList
 import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
 import com.jpaver.trianglelist.editmodel.setColor
 import com.jpaver.trianglelist.setDimAligns
 import com.jpaver.trianglelist.setPointNumber
+import com.jpaver.trianglelist.viewmodel.InputParameter
 
 /**
  * CSV の文書モデルと codec (ADR 0008)。
@@ -47,26 +50,34 @@ object CsvCodec {
 
     /**
      * CSV 文書。preLines = 最初の三角形行より前の行 (ヘッダ等)、postLines = それ以降の
-     * 非三角形行 (ListScale/TextSize/Deduction 等)。どちらも原文のまま保持して書き戻す。
-     * ListAngle 行だけは数値として取り出す (リスト回転の SoT、ADR 0007)
+     * 非三角形行 (ListScale/TextSize 等)。どちらも原文のまま保持して書き戻す。
+     * ListAngle 行だけは数値として取り出す (リスト回転の SoT、ADR 0007)。
+     * dedRows = "Deduction" 先頭の控除行 (ADR 0008 の残課題の昇格)。chunks は列0 =
+     * "Deduction" を含む生の列で、未知の追加列 (14 列目以降) も保持して書き戻す
      */
     data class CsvDoc(
         val preLines: List<String>,
         val rows: List<CsvRow>,
         val listAngle: Float?,
         val postLines: List<String>,
+        val dedRows: List<CsvRow> = emptyList(),
     )
 
     fun parse(text: String): CsvDoc {
         val preLines = mutableListOf<String>()
         val postLines = mutableListOf<String>()
         val rows = mutableListOf<CsvRow>()
+        val dedRows = mutableListOf<CsvRow>()
         var listAngle: Float? = null
         for (line in text.lineSequence()) {
             if (line.isBlank()) continue
             val chunks = line.split(",").map { it.trim() }
             if (chunks.firstOrNull() == "ListAngle") {
                 listAngle = chunks.getOrNull(1)?.toFloatOrNull() ?: listAngle
+                continue
+            }
+            if (chunks.firstOrNull() == "Deduction") {
+                dedRows.add(CsvRow(chunks))
                 continue
             }
             val number = if (chunks.size >= 4) chunks[0].toIntOrNull() else null
@@ -76,7 +87,7 @@ object CsvCodec {
             }
             rows.add(CsvRow(chunks))
         }
-        return CsvDoc(preLines, rows, listAngle, postLines)
+        return CsvDoc(preLines, rows, listAngle, postLines, dedRows)
     }
 
     fun serialize(doc: CsvDoc): String {
@@ -86,6 +97,8 @@ object CsvCodec {
         // アプリ writeCSV と同じく三角形行の後に書く。値の書式 ("ListAngle, x") も同一
         doc.listAngle?.let { sb.append("ListAngle, ").append(it).append('\n') }
         doc.postLines.forEach { sb.append(it).append('\n') }
+        // アプリ writeCSV:2789-2797 と同じく末尾 (ListScale/TextSize の後) に書く
+        doc.dedRows.forEach { sb.append(it.chunks.joinToString(",")).append('\n') }
         return sb.toString()
     }
 
@@ -137,6 +150,54 @@ object CsvCodec {
         trilist.angle = doc.listAngle ?: 0f
         trilist.recoverState(PointXY(0f, 0f))
         return trilist
+    }
+
+    /**
+     * dedRows → DeductionList。アプリの CsvLoader.buildDeductions (CsvLoader.kt:369-392、
+     * viewscale=1) と同値: 列 8-11 (point/pointFlag) は `PointXY(x, -y)` で Y 反転して
+     * ビュー空間 (y 下向き) に戻し、列 12 が空でなければ shapeAngle。type (列 6) は
+     * "Box"/"Circle" 文字列、pl は MainActivity.typeToInt:924 と同写像 (Box=1, Circle=2)。
+     *
+     * 回転はここでは当てない — アプリのロード経路 (MainActivity.setEditLists:2904-2920) は
+     * trilist.recoverState だけで dedlist は回さない (CSV の控除座標は保存時点の絶対値)。
+     * 対話回転 (fabRotate:1584-1591) は別経路で、web では行の座標書き換え
+     * (WebDeduction.rotateDeductionLine) が担う
+     */
+    fun buildDeductions(doc: CsvDoc): DeductionList {
+        val dedlist = DeductionList()
+        for (row in doc.dedRows) {
+            val c = row.chunks
+            val num = c.getOrNull(1)?.toIntOrNull() ?: continue
+            val lengthX = c.getOrNull(3)?.toFloatOrNull() ?: continue
+            val lengthY = c.getOrNull(4)?.toFloatOrNull() ?: continue
+            val pn = c.getOrNull(5)?.toIntOrNull() ?: 0
+            val type = c.getOrNull(6) ?: ""
+            val px = c.getOrNull(8)?.toFloatOrNull() ?: continue
+            val py = c.getOrNull(9)?.toFloatOrNull() ?: continue
+            val fx = c.getOrNull(10)?.toFloatOrNull() ?: continue
+            val fy = c.getOrNull(11)?.toFloatOrNull() ?: continue
+            dedlist.add(
+                Deduction(
+                    InputParameter(
+                        c.getOrNull(2) ?: "", type, num,
+                        lengthX, lengthY, 0f,
+                        pn, typeToInt(type),
+                        PointXY(px, -py),
+                        PointXY(fx, -fy),
+                    )
+                )
+            )
+            val sa = c.getOrNull(12)
+            if (!sa.isNullOrEmpty()) sa.toDoubleOrNull()?.let { dedlist.get(dedlist.size()).shapeAngle = it }
+        }
+        return dedlist
+    }
+
+    /** MainActivity.typeToInt:924-929 と同写像 */
+    fun typeToInt(type: String): Int = when (type) {
+        "Box" -> 1
+        "Circle" -> 2
+        else -> 0
     }
 
     private fun applyRowMeta(c: List<String>, tri: Triangle) {
@@ -192,6 +253,7 @@ object CsvCodec {
                 )
             )
         }
-        return CsvDoc(original.preLines, rows, trilist.angle, original.postLines)
+        // dedRows は素通し (控除は TriangleList の外。web の編集は行の置換/追加で dedRows 自体を更新する)
+        return CsvDoc(original.preLines, rows, trilist.angle, original.postLines, original.dedRows)
     }
 }

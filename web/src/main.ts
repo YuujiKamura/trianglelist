@@ -13,6 +13,7 @@ type TextPrim = {
   angle: number; // 度数法、モデル座標系で CCW (PointXY.calcDimAngle 由来)
   size: number; // モデル単位の文字高さ
   align: number; // DXF 垂直コード: 1=点が文字の下端, 2=中央, 3=点が文字の上端
+  alignH?: number; // 水平: 0=左寄せ (控除の infoStr、DXF writeTextAndLine 準拠)。省略時は中央
   // 段階2e: 識別 + 現在実効値 (dim テキストのみ tri/side/h/v、番号テキストは tri のみ)
   tri?: number;
   side?: number;
@@ -31,6 +32,8 @@ import {
   buildSfcTextWithOverrides,
   buildCsvTextWithOverrides,
   hitTriangle,
+  placeDeduction,
+  rotateDeductionLine,
 } from '../wasm/TriangleList-common-wasm-js.mjs';
 // DXF/SFC は既存 app の出力と同じ Shift_JIS。ブラウザ標準 TextEncoder は UTF-8 専用なので
 // encoding-japanese (MIT, polygonplanet/encoding.js) で Unicode → SJIS バイト化する
@@ -54,6 +57,7 @@ const COLORS: Record<string, string> = {
   tri: '#222222',
   dim: '#1a7a1a',
   num: '#1f5fbf',
+  ded: '#c0392b', // 控除 = 赤系 (アプリ/DXF の RED 準拠)
 };
 
 const SELECT_FILL = 'rgba(31, 95, 191, 0.25)'; // 選択三角形の塗り (半透明青)
@@ -130,6 +134,44 @@ let lastTapModel: { x: number; y: number } | null = null;
 // (接続の向きが実際の追加結果と必ず一致する)
 let edgeSel: { tri: number; side: 1 | 2 } | null = null;
 let shadowPrims: LinePrim[] | null = null;
+
+// ---- 控除 (Deduction) 編集 (アプリ deductionMode = flipDeductionMode:980 の web 版) ----
+// SoT は CSV 行そのもの (13 列 "Deduction,..." 文字列の配列)。幾何 (配置・親判定・旗揚げ・
+// 回転) は全部 common (WebDeduction / CsvCodec.buildDeductions) — TS は行の出し入れだけ。
+// dedCursor = 控除モード中のキャンバスクリック位置 (アプリ myview.pressedInModel 相当、
+// モデル座標 y 上向き)。アプリはタップ位置が見えないが、web は十字マーカーで可視化する
+let dedLines: string[] = [];
+let deductionMode = false;
+let dedCursor: { x: number; y: number } | null = null;
+let dedSelected = 0; // 選択中の控除番号 (1-based、0 = 非選択)
+
+// Deduction CSV 行の表示用パース (列順は MainActivity.writeCSV:2795)。座標列 8/9 は
+// モデル座標 (y 上向き、保存時に Y 反転済みの値) なのでそのまま hit/マーカーに使える
+type DedView = { num: number; name: string; lenX: string; lenY: string; pn: string; type: string; x: number; y: number };
+
+function parseDedLine(line: string): DedView | null {
+  const c = line.split(',').map((s) => s.trim());
+  if (c[0] !== 'Deduction' || c.length < 13) return null;
+  return {
+    num: intOrNull(c[1]) ?? 0,
+    name: c[2] ?? '',
+    lenX: c[3] ?? '',
+    lenY: c[4] ?? '',
+    pn: c[5] ?? '0',
+    type: c[6] ?? '',
+    x: parseFloat(c[8] ?? ''),
+    y: parseFloat(c[9] ?? ''),
+  };
+}
+
+// 削除・並び替え後の番号振り直し (DeductionList.remove:122-131 と同じ「詰めて renum」)
+function renumberDedLines(): void {
+  dedLines = dedLines.map((line, i) => {
+    const c = line.split(',');
+    if (c[0]?.trim() === 'Deduction' && c.length >= 2) c[1] = String(i + 1);
+    return c.join(',');
+  });
+}
 
 function overridesJson(): string {
   return JSON.stringify(overrides);
@@ -253,7 +295,8 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
     } else {
       ctx.fillStyle = color;
       ctx.font = `${Math.max(p.size * s, 8)}px sans-serif`;
-      ctx.textAlign = 'center';
+      // alignH=0 (控除 infoStr、DXF writeTextAndLine の左寄せ) 以外は従来どおり中央
+      ctx.textAlign = p.alignH === 0 ? 'left' : 'center';
       // DXF 垂直コード → canvas baseline。y 反転後も「1=文字が点の上に乗る」を保つ
       ctx.textBaseline = p.align === 1 ? 'bottom' : p.align === 3 ? 'top' : 'middle';
       ctx.save();
@@ -343,6 +386,36 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
       ctx.restore();
     }
   }
+
+  // 控除モード: クリック位置の十字マーカー (アプリの pressedInModel は不可視 —
+  // web は「次の追加がどこに置かれるか」を見える化する改善)
+  if (deductionMode && dedCursor) {
+    const cx = sx(dedCursor.x);
+    const cy = sy(dedCursor.y);
+    ctx.strokeStyle = COLORS.ded;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(cx - 12, cy);
+    ctx.lineTo(cx + 12, cy);
+    ctx.moveTo(cx, cy - 12);
+    ctx.lineTo(cx, cy + 12);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // 選択中の控除に黄色リング (三角形の番号リングと同じ見せ方)
+  if (dedSelected > 0) {
+    const d = parseDedLine(dedLines[dedSelected - 1] ?? '');
+    if (d && Number.isFinite(d.x) && Number.isFinite(d.y)) {
+      ctx.strokeStyle = SELECT_YELLOW;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(sx(d.x), sy(d.y), Math.max((parseFloat(d.lenX) || 0.3) * 0.7 * s, 10), 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
 }
 
 function renderCsv(canvas: HTMLCanvasElement, csv: string, label: string): void {
@@ -430,12 +503,21 @@ function parseCsvToState(csv: string): void {
   rows = [];
   edges = [];
   listAngle = 0;
+  dedLines = [];
+  dedSelected = 0;
+  dedCursor = null;
   for (const line of csv.split(/\r?\n/)) {
     if (line.trim() === '') continue;
     const chunks = line.split(',').map((s) => s.trim());
     // ListAngle 行は headerLines に残さず数値 state に取り出す (serializeState が書き戻す)
     if (chunks[0] === 'ListAngle') {
       listAngle = parseFloat(chunks[1] ?? '') || 0;
+      continue;
+    }
+    // Deduction 行は控除 state へ (アプリ CsvLoader.buildDeductions:369 と同じ判定)。
+    // 幾何の読みは common (CsvCodec.buildDeductions)、ここは行の保持と一覧表示だけ
+    if (chunks[0] === 'Deduction') {
+      dedLines.push(line.trim());
       continue;
     }
     const num = chunks.length >= 4 ? intOrNull(chunks[0]) : null;
@@ -482,6 +564,8 @@ function serializeState(): string {
   });
   // アプリ保存 (MainActivity.kt:2781) と同じく三角形行の後に ListAngle を書く
   lines.push(`ListAngle, ${listAngle}`);
+  // 控除はアプリ保存 (MainActivity.kt:2790-2797) と同じく末尾に書く
+  lines.push(...dedLines);
   return lines.join('\n') + '\n';
 }
 
@@ -1101,6 +1185,11 @@ function fabMinus(canvas: HTMLCanvasElement): void {
 function fabRotate(canvas: HTMLCanvasElement, degrees: number): void {
   if (rows.length === 0) return;
   listAngle += degrees;
+  // 控除の連動 (MainActivity.kt:1587 myDeductionList.rotate(origin, -degrees) 準拠)。
+  // 三角形は listAngle → recoverState が回すが、控除の CSV 座標は絶対値なので
+  // 行自体を common (rotateDeductionLine) で回して書き直す
+  dedLines = dedLines.map((l) => rotateDeductionLine(l, degrees));
+  buildDedTable(canvas);
   setStatus(`回転: ${listAngle}°`);
   redraw(canvas);
 }
@@ -1210,6 +1299,196 @@ function fabNijyuu(canvas: HTMLCanvasElement): void {
   setStatus(`二重: 三角形 ${n} の起点 → ${['左', '中央', '右'][p.lcr]}`);
 }
 
+// ---- 控除モード (アプリ flipDeductionMode:980-1035 の web 版) ----
+// アプリ: 控除 FAB でモード切替 → タップ位置がカーソル (pressedInModel) → 寸法入力 →
+// ペンシルで addDeductionBy。web: 控除 FAB でモード切替 → クリックで十字カーソル →
+// フォーム (名称/寸法1/寸法2) → 追加。幾何は common の placeDeduction が全部やる
+
+function toggleDeductionMode(canvas: HTMLCanvasElement): void {
+  deductionMode = !deductionMode;
+  el<HTMLButtonElement>('fabDeduction').classList.toggle('modeon', deductionMode);
+  const details = document.getElementById('dedDetails') as HTMLDetailsElement | null;
+  if (details && deductionMode) details.open = true;
+  if (!deductionMode) {
+    dedCursor = null;
+    dedSelected = 0;
+    updateDedHighlight();
+  }
+  draw(canvas, lastPrims);
+  setStatus(
+    deductionMode
+      ? '控除モード ON — 図をクリックして位置を決め、名称と寸法を入れて「追加」(寸法2 空 or 0 → 円)'
+      : '控除モード OFF',
+  );
+}
+
+function updateDedHighlight(): void {
+  const tbody = document.getElementById('dedRows');
+  if (!tbody) return;
+  Array.from(tbody.children).forEach((tr, i) => {
+    tr.classList.toggle('selected', i + 1 === dedSelected);
+  });
+}
+
+// 控除行クリック = 選択 + フォームへ読み込み (アプリの控除タップ → editorResetBy 相当)
+function selectDed(canvas: HTMLCanvasElement, n: number): void {
+  dedSelected = n;
+  const d = n > 0 ? parseDedLine(dedLines[n - 1] ?? '') : null;
+  if (d) {
+    input('dedName').value = d.name;
+    input('dedLenX').value = d.lenX;
+    input('dedLenY').value = d.type === 'Box' ? d.lenY : '';
+  }
+  updateDedHighlight();
+  draw(canvas, lastPrims);
+  if (d) setStatus(`控除 ${n} を選択 (${d.type === 'Box' ? '長方形' : '円'} ${d.name})`);
+}
+
+function buildDedTable(canvas: HTMLCanvasElement): void {
+  const tbody = document.getElementById('dedRows');
+  if (!tbody) return;
+  tbody.textContent = '';
+  dedLines.forEach((line, i) => {
+    const d = parseDedLine(line);
+    if (!d) return;
+    const tr = document.createElement('tr');
+    tr.className = 'dedrow';
+    if (i + 1 === dedSelected) tr.classList.add('selected');
+    tr.addEventListener('click', () => selectDed(canvas, i + 1));
+    const cells = [
+      String(i + 1),
+      d.name,
+      fmt2(d.lenX),
+      d.type === 'Box' ? fmt2(d.lenY) : '',
+      d.type === 'Box' ? '長方形' : '円',
+      d.pn === '0' ? '-' : d.pn,
+    ];
+    for (const c of cells) {
+      const td = document.createElement('td');
+      td.textContent = c;
+      tr.appendChild(td);
+    }
+    const tdDel = document.createElement('td');
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'del';
+    del.textContent = '削除';
+    del.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dedDelete(canvas, i + 1);
+    });
+    tdDel.appendChild(del);
+    tr.appendChild(tdDel);
+    tbody.appendChild(tr);
+  });
+}
+
+// validDeduction (MainActivity.kt:1190-1202) と同じ関門: 名前非空 + 寸法1>=0.1 +
+// 長方形 (寸法2>0) は寸法2>=0.1。state を汚す前に弾く (三角形側の共通関門と同じ流儀)
+function readDedForm(): { name: string; lenX: number; lenY: number } | null {
+  const name = input('dedName').value.trim();
+  const lenX = parseFloat(input('dedLenX').value);
+  const lenYRaw = input('dedLenY').value.trim();
+  const lenY = lenYRaw === '' ? 0 : parseFloat(lenYRaw);
+  if (name === '') {
+    setStatus('⚠ 控除: 名称を入力してください');
+    return null;
+  }
+  if (!Number.isFinite(lenX) || lenX < 0.1) {
+    setStatus('⚠ 控除: 寸法1 (円の直径 / 長方形の幅) は 0.1 以上が必要です');
+    return null;
+  }
+  if (!Number.isFinite(lenY) || (lenY > 0 && lenY < 0.1)) {
+    setStatus('⚠ 控除: 寸法2 は空 (=円) か 0.1 以上 (=長方形) にしてください');
+    return null;
+  }
+  return { name, lenX, lenY };
+}
+
+// 追加 (アプリ addDeductionBy:1752): カーソル位置に配置。完成行は common が返す
+function dedAdd(canvas: HTMLCanvasElement): void {
+  const f = readDedForm();
+  if (!f) return;
+  if (!dedCursor) {
+    setStatus('⚠ 控除: 先に図をクリックして位置を決めてください (アプリの「先にタップ」と同じ)');
+    return;
+  }
+  const line = placeDeduction(serializeState(), dedCursor.x, dedCursor.y, f.name, f.lenX, f.lenY, dedLines.length + 1);
+  if (line === '') {
+    setStatus('⚠ 控除: 追加できません (パラメータを確認してください)');
+    return;
+  }
+  takeUndoSnap();
+  dedLines.push(line);
+  dedSelected = dedLines.length;
+  buildDedTable(canvas);
+  redraw(canvas);
+  const d = parseDedLine(line);
+  setStatus(`控除 ${dedLines.length} を追加 (${d?.type === 'Box' ? '長方形' : '円'}${d && d.pn !== '0' ? `、三角形 ${d.pn} 内` : '、親なし'})`);
+}
+
+// 置換 (アプリ resetDeductionsBy:1822 = flagDeduction やり直し): 新しいカーソルが
+// あればそこへ、無ければ既存位置のまま寸法・名称だけ更新
+function dedReplace(canvas: HTMLCanvasElement): void {
+  if (dedSelected < 1) {
+    setStatus('⚠ 控除: 置換する控除を一覧で選択してください');
+    return;
+  }
+  const f = readDedForm();
+  if (!f) return;
+  const old = parseDedLine(dedLines[dedSelected - 1] ?? '');
+  const at = dedCursor ?? (old && Number.isFinite(old.x) && Number.isFinite(old.y) ? { x: old.x, y: old.y } : null);
+  if (!at) {
+    setStatus('⚠ 控除: 位置が決まっていません — 図をクリックしてください');
+    return;
+  }
+  const line = placeDeduction(serializeState(), at.x, at.y, f.name, f.lenX, f.lenY, dedSelected);
+  if (line === '') {
+    setStatus('⚠ 控除: 置換できません (パラメータを確認してください)');
+    return;
+  }
+  takeUndoSnap();
+  dedLines[dedSelected - 1] = line;
+  buildDedTable(canvas);
+  redraw(canvas);
+  setStatus(`控除 ${dedSelected} を置換`);
+}
+
+// 削除 (DeductionList.remove:122 と同じ詰め + renum)
+function dedDelete(canvas: HTMLCanvasElement, n?: number): void {
+  const target = n ?? dedSelected;
+  if (target < 1 || target > dedLines.length) {
+    setStatus('⚠ 控除: 削除する控除を一覧で選択してください');
+    return;
+  }
+  takeUndoSnap();
+  dedLines.splice(target - 1, 1);
+  renumberDedLines();
+  dedSelected = 0;
+  buildDedTable(canvas);
+  redraw(canvas);
+  setStatus(`控除 ${target} を削除`);
+}
+
+// 控除モード中のクリック: 既存控除の上なら選択、それ以外はカーソル位置決め
+function handleDedTap(canvas: HTMLCanvasElement, px: number, py: number, m: { x: number; y: number }): void {
+  const v = view;
+  if (v) {
+    for (let i = 0; i < dedLines.length; i++) {
+      const d = parseDedLine(dedLines[i]);
+      if (!d || !Number.isFinite(d.x) || !Number.isFinite(d.y)) continue;
+      const dist = Math.hypot(d.x * v.scale + v.offsetX - px, -d.y * v.scale + v.offsetY - py);
+      if (dist <= EDGE_TAP_PX) {
+        selectDed(canvas, i + 1);
+        return;
+      }
+    }
+  }
+  dedCursor = m;
+  draw(canvas, lastPrims);
+  setStatus(`控除カーソル: (${m.x.toFixed(2)}, ${m.y.toFixed(2)}) — 名称と寸法を入れて「追加」`);
+}
+
 // 新規作成 (段階2f): 現在の図を捨て、最初の 1 個 (独立 3.00/3.00/3.00) を生成して
 // 全体フィットから始める (空画面でなく即編集に入れる形)。誤爆は confirm + undo 1 段で守る
 function newDrawing(canvas: HTMLCanvasElement): void {
@@ -1220,6 +1499,10 @@ function newDrawing(canvas: HTMLCanvasElement): void {
   rows = [{ ea: newEdge('3.00'), eb: newEdge('3.00'), ec: newEdge('3.00'), parent: '-1', conn: '-1', extras: [] }];
   overrides = { dims: [], numbers: [] };
   lastTapModel = null;
+  dedLines = [];
+  dedSelected = 0;
+  dedCursor = null;
+  buildDedTable(canvas);
   clearSelection();
   selected = 1;
   current = 1;
@@ -1251,6 +1534,11 @@ function wireFabs(canvas: HTMLCanvasElement): void {
   el<HTMLButtonElement>('fabRotR').addEventListener('click', () => fabRotate(canvas, -5));
   el<HTMLButtonElement>('fabUp').addEventListener('click', () => moveCurrent(canvas, -1));
   el<HTMLButtonElement>('fabDown').addEventListener('click', () => moveCurrent(canvas, 1));
+  // 控除モード (アプリ fab_deduction → flipDeductionMode 相当)
+  el<HTMLButtonElement>('fabDeduction').addEventListener('click', () => toggleDeductionMode(canvas));
+  el<HTMLButtonElement>('dedAdd').addEventListener('click', () => dedAdd(canvas));
+  el<HTMLButtonElement>('dedReplace').addEventListener('click', () => dedReplace(canvas));
+  el<HTMLButtonElement>('dedDelete').addEventListener('click', () => dedDelete(canvas));
 }
 
 // 新規行の Enter ナビゲーション (アプリの EditText imeOptions=actionNext 相当):
@@ -1493,6 +1781,13 @@ function handleTap(canvas: HTMLCanvasElement, px: number, py: number): void {
   // 段階2f: 全タップの位置を覚える (アプリ pressedInModel 相当)。旗 FAB がこれを移動先に使う
   lastTapModel = m;
 
+  // 控除モード: クリック = 控除選択 or カーソル位置決め (三角形選択には流さない —
+  // アプリの deductionMode 分岐 MainActivity.kt:1578 と同じモード切り)
+  if (deductionMode) {
+    handleDedTap(canvas, px, py, m);
+    return;
+  }
+
   // シャドーの B/C 辺タップ → 対応する入力にフォーカス (アプリ shadowTapMode:2050 相当、最優先)
   if (shadowPrims && shadowPrims.length === 3) {
     if (distToSegmentPx(px, py, shadowPrims[1]) <= EDGE_TAP_PX) {
@@ -1716,6 +2011,7 @@ function loadCsv(canvas: HTMLCanvasElement, csv: string, label: string): void {
   clearSelection();
   current = rows.length > 0 ? rows.length : 0; // カレントは末尾 (アプリの初期 retrieveCurrent 相当)
   buildTable(canvas);
+  buildDedTable(canvas); // 控除一覧 (dedLines は parseCsvToState が更新済み)
   syncForm();
   syncRosenName();
   renderCsv(canvas, serializeState(), label);
@@ -1815,6 +2111,7 @@ if (import.meta.hot) {
       id: data.id,
       state: {
         rows: rowsExpanded, edges, selected, current, listAngle, overrides,
+        dedLines, deductionMode, dedCursor, dedSelected,
         csv: serializeState(),
         // 保存ボタンが書く実物 (overrides 焼き込み済み完全形式)。書き戻しの検証口
         csvBaked: buildCsvTextWithOverrides(serializeState(), overridesJson()),

@@ -1,6 +1,9 @@
 package com.jpaver.trianglelist.web
 
 import com.example.trilib.PointXY
+import com.jpaver.trianglelist.datamanager.CsvCodec
+import com.jpaver.trianglelist.editmodel.Deduction
+import com.jpaver.trianglelist.editmodel.DeductionList
 import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
 import com.jpaver.trianglelist.label.DimensionLayout
@@ -48,14 +51,18 @@ object WebPrimitiveRenderer {
      * overridesJson が空なら renderCsv(csv, scale) と完全同一出力。
      */
     fun renderCsv(csv: String, scale: Float, overridesJson: String): String {
-        val trilist = WebCsvReader.read(csv)
+        val doc = CsvCodec.parse(csv)
+        val trilist = CsvCodec.build(doc)
         if (scale != 1f && scale > 0f) trilist.setScale(PointXY(0f, 0f), scale)
         WebOverrides.applyJson(trilist, overridesJson)
         val textSize = DEFAULT_TEXT_SIZE * (if (scale > 0f) scale else 1f)
-        return render(trilist, textSize)
+        return render(trilist, textSize, CsvCodec.buildDeductions(doc), if (scale > 0f) scale else 1f)
     }
 
-    fun render(trilist: TriangleList, textSize: Float): String {
+    fun render(trilist: TriangleList, textSize: Float): String =
+        render(trilist, textSize, DeductionList(), 1f)
+
+    fun render(trilist: TriangleList, textSize: Float, dedlist: DeductionList, scale: Float): String {
         // MyView.setAllTextSize → trianglelist.setDimPathTextSize と同じ経路で dimHeight を配る
         trilist.setDimPathTextSize(textSize)
         trilist.arrangePointNumbers()
@@ -107,9 +114,59 @@ object WebPrimitiveRenderer {
             item(text(tri.mynumber.toString(), pn, 0.0, textSize, 2, "num", ""","tri":${tri.mynumber}"""))
         }
 
+        // 控除 (Deduction)。正 = DxfFileWriter.writeDeduction (DxfFileWriter.kt:240-282)。
+        // ded はビュー空間 (y 下向き) で持つので、DxfFileWriter.writeEntities:299 と同じく
+        // Y 反転 (web は viewscale=1) でモデル空間に揃えてから描く
+        if (dedlist.size() > 0) {
+            val dedModel = dedlist.clone()
+            dedModel.scale(PointXY(0f, 0f), scale, -scale)
+            for (n in 1..dedModel.size()) renderDeduction(dedModel.get(n), textSize, scale, ::item)
+        }
+
         sb.append(']')
         return sb.toString()
     }
+
+    /**
+     * DxfFileWriter.writeDeduction:240-282 の写し (色 = 赤系は layer "ded" として TS 側で塗る):
+     * - 旗揚げ線 point→pointFlag
+     * - infoStr テキスト + 下線 (writeTextAndLine = DxfEntity.kt:172-181: テキストは
+     *   p1 + (ts, ts*0.2)、左寄せ・下端基準、下線は p1→p2)。pointFlag の左右で分岐
+     * - Circle: 中心 point、半径 lengthX/2 (writeCircle:270)
+     * - Box: writeDedRect:274-281 = shapeAngle 逆回転で setBox し直して 4 辺
+     */
+    private fun renderDeduction(ded: Deduction, textSize: Float, scale: Float, item: (String) -> Unit) {
+        val infoStrLength = ded.infoStr.length * textSize + 0.3f
+        val point = ded.point
+        val pointFlag = ded.pointFlag
+        val textOffsetX = if (ded.type == "Box") -0.5f else 0f
+
+        item(line(point, pointFlag, "ded"))
+        if (point.x <= pointFlag.x) { // ptFlag is RIGHT from pt
+            item(dedTextAndLine(ded.infoStr, pointFlag, pointFlag.plus((infoStrLength + textOffsetX).toDouble(), 0.0), textSize))
+        } else {                      // ptFlag is LEFT from pt
+            val p1 = pointFlag.plus((-ded.getInfo().length * textSize - textOffsetX).toDouble(), 0.0)
+            item(dedTextAndLine(ded.infoStr, p1, pointFlag, textSize))
+        }
+
+        if (ded.type == "Circle") {
+            item("""{"type":"circle","layer":"ded","cx":${point.x},"cy":${point.y},"r":${ded.lengthX / 2 * scale}}""")
+        }
+        if (ded.type == "Box") {
+            // writeDedRect: 逆回転で box を組み直す (Y 反転後の空間では shapeAngle の符号が逆)
+            ded.shapeAngle = -ded.shapeAngle
+            ded.setBox(scale.toDouble())
+            item(line(ded.pLTop, ded.pLBtm, "ded"))
+            item(line(ded.pLTop, ded.pRTop, "ded"))
+            item(line(ded.pRTop, ded.pRBtm, "ded"))
+            item(line(ded.pLBtm, ded.pRBtm, "ded"))
+        }
+    }
+
+    /** DxfEntity.writeTextAndLine と同形: テキスト (左寄せ・点が下端) + 下線。2 つの prim を結合して返す */
+    private fun dedTextAndLine(st: String, p1: PointXY, p2: PointXY, textSize: Float): String =
+        text(st, p1.plus(textSize.toDouble(), textSize.toDouble() * 0.2), 0.0, textSize, 1, "ded", ""","alignH":0""") +
+            "," + line(p1, p2, "ded")
 
     private fun line(p1: PointXY, p2: PointXY, layer: String): String =
         """{"type":"line","layer":"$layer","x1":${p1.x},"y1":${p1.y},"x2":${p2.x},"y2":${p2.y}}"""
