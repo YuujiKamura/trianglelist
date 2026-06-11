@@ -552,7 +552,7 @@ function syncForm(): void {
   input('curB').value = cur ? fmt2(edgeVal(cur, 'b')) : '';
   input('curC').value = cur ? fmt2(edgeVal(cur, 'c')) : '';
   input('curParent').value = cur ? cur.parent : '';
-  setConnSelects('cur', cur ? cur.conn : '-1');
+  setConnSelects('cur', cur ? connPartsOf(cur) : null);
 
   const prev = current >= 2 ? rows[current - 2] : null;
   input('prevNum').value = prev ? String(current - 1) : '';
@@ -662,8 +662,7 @@ function syncLcrDisabled(prefix: 'new' | 'cur'): void {
   select(`${prefix}Lcr`).disabled = select(`${prefix}CType`).value === '0';
 }
 
-function setConnSelects(prefix: 'new' | 'cur', conn: string): void {
-  const p = decodeConn(conn);
+function setConnSelects(prefix: 'new' | 'cur', p: ConnParts | null): void {
   if (!p) {
     if (prefix === 'cur') select('curConn').value = '-1';
     select(`${prefix}CType`).value = '0';
@@ -676,12 +675,37 @@ function setConnSelects(prefix: 'new' | 'cur', conn: string): void {
   syncLcrDisabled(prefix);
 }
 
-function readConnSelects(prefix: 'new' | 'cur'): string {
+function readConnParts(prefix: 'new' | 'cur'): ConnParts | null {
   const side = intOrNull(select(`${prefix}Conn`).value) ?? -1;
-  if (side < 1) return '-1';
+  if (side < 1) return null; // 独立
   const type = intOrNull(select(`${prefix}CType`).value) ?? 0;
   const lcr = intOrNull(select(`${prefix}Lcr`).value) ?? 2;
-  return String(encodeConn({ side, type, lcr }));
+  return { side, type, lcr };
+}
+
+// フロート (コード 9/10) は単独で lcr を表せない — アプリも 6 列形式では表せず、
+// 保存は完全形式の列 17-19 (cp.side/type/lcr) で持つ (CsvLoader.readCParamSafe)。
+// web も同じ列を extras に書いて起点の SoT にする。WebCsvReader は列 17-19 を
+// 優先して読むので、ここに書けば描画に効く。なおフロートの浮き距離は common の
+// 固定値 (親辺から垂直 1.0 — getParentPointByType type2 の crossOffset(-1.0)) で app と同一
+const CP_SIDE_X = 11; // CSV 列 17 - 6
+const CP_TYPE_X = 12; // CSV 列 18 - 6
+const CP_LCR_X = 13; // CSV 列 19 - 6
+
+function writeCpExtras(r: Row, p: ConnParts | null): void {
+  if (!p || (p.type === 0 && r.extras.length <= CP_LCR_X)) return; // 辺共有はコードだけで完結
+  while (r.extras.length <= CP_LCR_X) r.extras.push('');
+  r.extras[CP_SIDE_X] = String(p.side);
+  r.extras[CP_TYPE_X] = String(p.type);
+  r.extras[CP_LCR_X] = String(p.lcr);
+}
+
+// 行の実効 ConnParts: コードを基本に、cp 列 (extras[13]) があれば lcr を上書き
+function connPartsOf(r: Row): ConnParts | null {
+  const base = decodeConn(r.conn);
+  if (!base) return null;
+  const lcr = intOrNull(r.extras[CP_LCR_X] ?? '');
+  return base.type !== 0 && lcr !== null && lcr >= 0 && lcr <= 2 ? { ...base, lcr } : base;
 }
 
 function numberInput(value: string, step: string, onInput: (v: string) => void): HTMLInputElement {
@@ -760,7 +784,7 @@ function buildTable(canvas: HTMLCanvasElement): void {
 
     // 接続辺 × 形態 × 起点 の 3 列 (独立行は表示のみ — 図面に 1 リストの形態なので
     // 既存行を独立に変える操作は提供しない、スマホ版同様)
-    const parts = decodeConn(row.conn);
+    const parts = connPartsOf(row);
     if (!parts) {
       const tdInd = document.createElement('td');
       tdInd.textContent = CONN_LABEL[row.conn] ?? row.conn;
@@ -784,13 +808,13 @@ function buildTable(canvas: HTMLCanvasElement): void {
       const lcrSel = mkSel(LCR_OPTIONS, String(parts.lcr));
       lcrSel.disabled = parts.type === 0;
       const apply = () => {
-        row.conn = String(
-          encodeConn({
-            side: intOrNull(sideSel.value) ?? 1,
-            type: intOrNull(typeSel.value) ?? 0,
-            lcr: intOrNull(lcrSel.value) ?? 2,
-          }),
-        );
+        const np: ConnParts = {
+          side: intOrNull(sideSel.value) ?? 1,
+          type: intOrNull(typeSel.value) ?? 0,
+          lcr: intOrNull(lcrSel.value) ?? 2,
+        };
+        row.conn = String(encodeConn(np));
+        writeCpExtras(row, np); // フロートの lcr はコードに乗らないため列 17-19 が SoT
         relinkEdgeA(row); // 接続の形が変わったので辺A の共有を張り直す
         buildTable(canvas); // select は離散操作なので組み直してよい (data-edge 更新)
         syncForm();
@@ -904,12 +928,14 @@ function fabReplace(canvas: HTMLCanvasElement): void {
     const cp = input('curParent').value.trim();
     const newParentVal = cp === '' ? '-1' : cp;
     // 接続 (parent/conn) が変わる場合は先に辺A の共有を張り直してから値を書く
-    const newConnVal = readConnSelects('cur');
+    const curParts = readConnParts('cur');
+    const newConnVal = curParts ? String(encodeConn(curParts)) : '-1';
     if (newParentVal !== r.parent || newConnVal !== r.conn) {
       r.parent = newParentVal;
       r.conn = newConnVal;
       relinkEdgeA(r);
     }
+    writeCpExtras(r, curParts); // フロートの lcr 変更はコードに乗らない (列 17-19 が SoT)
     setEdgeVal(r, 'a', input('curA').value); // 共有辺なら親の B/C も同時に変わる (実体が 1 個)
     setEdgeVal(r, 'b', input('curB').value);
     setEdgeVal(r, 'c', input('curC').value);
@@ -923,11 +949,13 @@ function fabReplace(canvas: HTMLCanvasElement): void {
   if (newC === '') return; // アプリと同じ: B だけでは何もしない (strAddLineC.isEmpty -> return)
 
   // Add (アプリ addTriangleBy 相当 — 行を足して CSV 再構築に任せる)
-  let conn = readConnSelects('new');
+  let newParts = readConnParts('new');
+  let conn = newParts ? String(encodeConn(newParts)) : '-1';
   let parent = input('newParent').value.trim();
   if (rows.length === 0) {
     // 最初の 1 個は必ず独立 (スマホ版同様、図面に 1 リスト)。新規行に独立の選択肢は無く、
     // 空リストへの追加だけが独立になる。残留プリセットによる「存在しない親」も同時に防ぐ
+    newParts = null;
     conn = '-1';
     parent = '-1';
     input('newParent').value = '';
@@ -980,7 +1008,9 @@ function fabReplace(canvas: HTMLCanvasElement): void {
   const pRow = rows[parseInt(parent, 10) - 1];
   const ea =
     pRow && (conn === '1' || conn === '2') ? (conn === '1' ? pRow.eb : pRow.ec) : newEdge(a);
-  rows.push({ ea, eb: newEdge(newB), ec: newEdge(newC), parent, conn, extras: name !== '' ? [name] : [] });
+  const newRow: Row = { ea, eb: newEdge(newB), ec: newEdge(newC), parent, conn, extras: name !== '' ? [name] : [] };
+  writeCpExtras(newRow, newParts); // 二重断面/フロートは列 17-19 にも cp を書く (lcr の SoT)
+  rows.push(newRow);
 
   // 新規入力行をリセットして次の入力へ (アプリ finalizeReplace + editorResetBy 相当)
   input('newName').value = '';
@@ -1150,7 +1180,7 @@ function fabNijyuu(canvas: HTMLCanvasElement): void {
     setStatus('二重: 先に三角形を選択してください');
     return;
   }
-  const p = decodeConn(r.conn);
+  const p = connPartsOf(r);
   if (!p || p.type === 0) {
     // アプリのガード (子A=親辺長なら何もしない) と同義 — web では形態で明示されている
     setStatus('二重: 対象は二重断面/フロートの行のみ (形態列で変更できます)');
@@ -1159,6 +1189,7 @@ function fabNijyuu(canvas: HTMLCanvasElement): void {
   takeUndoSnap();
   p.lcr = p.lcr === 0 ? 2 : p.lcr - 1; // アプリ rotateLCR と同じ巡回: 右(2)→中央(1)→左(0)→右
   r.conn = String(encodeConn(p));
+  writeCpExtras(r, p); // フロートの lcr はコードに乗らない (列 17-19 が SoT)
   buildTable(canvas);
   syncForm();
   redraw(canvas);
