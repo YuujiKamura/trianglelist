@@ -1694,6 +1694,20 @@ function wireExportButtons(): void {
       toSjisBlob(buildSfcTextWithOverrides(serializeState(), 'triangles.sfc', overridesJson())),
     );
   });
+  // XLSX: アプリの XlsxWriter と同じ面積計算書 (組み立ては xlsx-export.ts に独立、
+  // ExcelJS は保存時だけ dynamic import してバンドルを太らせない)
+  document.getElementById('saveXlsx')?.addEventListener('click', () => {
+    void (async () => {
+      try {
+        const { buildXlsxBlob } = await import('./xlsx-export');
+        downloadBlob('triangles.xlsx', await buildXlsxBlob(serializeState()));
+        setStatus('XLSX saved: triangles.xlsx');
+      } catch (e) {
+        setStatus(`XLSX error: ${String(e)}`);
+        console.error(e);
+      }
+    })();
+  });
 }
 
 function loadCsv(canvas: HTMLCanvasElement, csv: string, label: string): void {
