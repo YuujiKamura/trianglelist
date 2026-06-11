@@ -259,7 +259,9 @@ function fitTransform(canvas: HTMLCanvasElement, prims: Prim[]): ViewTransform {
   const b = bounds(prims);
   const bw = Math.max(b.maxX - b.minX, 1e-6);
   const bh = Math.max(b.maxY - b.minY, 1e-6);
-  const margin = 40;
+  // マージンは画面サイズ比で取る (固定 px だと大画面で「目一杯」になる)。
+  // 片側 12% → 図形は短辺の約 3/4 に収まる (CAD の zoom-extents padding の感覚)
+  const margin = Math.min(canvas.width, canvas.height) * 0.12;
   const s = Math.min((canvas.width - margin * 2) / bw, (canvas.height - margin * 2) / bh);
   // 旧 fit 描画 (sx = (x-minX)*s + offX, sy = (maxY-y)*s + offY) と同じ絵になる offset
   return {
