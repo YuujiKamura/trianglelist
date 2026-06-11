@@ -32,6 +32,13 @@ object WebDrawingExport {
     private val HEADER_LABELS = listOf("koujiname", "rosenname", "gyousyaname", "zumennum")
 
     /**
+     * CSV のメタ行ラベル (CsvCodec.parse:79-87 が読む語彙)。ヘッダ 4 行が空のとき、
+     * これらをヘッダ値として誤読しない — 誤読すると図面番号欄に "TextSize, 30"、
+     * 施工者欄に "ListAngle, 0" が印字される (2026-06-12 図面枠の画面目視で発見)
+     */
+    private val META_LABELS = setOf("ListAngle", "TextSize", "Deduction")
+
+    /**
      * CSV ヘッダ行 → 工事名/路線名/業者名/図面番号。
      * - web 最小形式: 三角形行でない先頭 4 行をこの順で読む (web/src/main.ts の headerLines と同じ判定)
      * - app 完全形式: `koujiname,<値>` のラベル付き行は 2 カラム目を値として読む
@@ -45,6 +52,7 @@ object WebDrawingExport {
             // 三角形行 (WebCsvReader.read と同じ判定: 4 カラム以上 + 先頭が非負整数) はヘッダではない
             val number = if (chunks.size >= 4) chunks[0].toIntOrNull() else null
             if (number != null && number >= 0) continue
+            if (chunks[0] in META_LABELS) continue // ListAngle/TextSize/Deduction 行はヘッダではない
             values.add(if (chunks[0] in HEADER_LABELS) chunks.getOrNull(1) ?: "" else line.trim())
         }
         return CsvHeader(

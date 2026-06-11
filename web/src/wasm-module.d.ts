@@ -20,4 +20,6 @@ declare module '*/TriangleList-common-wasm-js.mjs' {
   export function rotateDeductionLine(line: string, degrees: number): string;
   // 控除モードの rot FAB: 選択控除を自身の中心回りに回す (位置不動、Box の shapeAngle のみ)
   export function rotateDeductionShape(line: string, degrees: number): string;
+  // 図面枠 (A3、DXF の writeDrawingFrame と同形) を prim JSON 配列で返す。layer "frame"
+  export function renderFrame(csv: string): string;
 }

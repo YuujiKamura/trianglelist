@@ -48,6 +48,7 @@ import {
   buildCsvTextWithOverrides,
   hitTriangle,
   placeDeduction,
+  renderFrame,
   rotateDeductionLine,
   rotateDeductionShape,
 } from '../wasm/TriangleList-common-wasm-js.mjs';
@@ -74,6 +75,7 @@ const COLORS: Record<string, string> = {
   dim: '#1a7a1a',
   num: '#1f5fbf',
   ded: '#c0392b', // 控除 = 赤系 (アプリ/DXF の RED 準拠)
+  frame: '#8a8a8a', // 図面枠 = 薄グレー (図形より控えめに、DXF では WHITE 相当)
 };
 // 選択中の控除の色 (図形・旗揚げ・テキストごと色替えして他の控除と見分ける)
 const DED_SELECT_COLOR = '#e67e22';
@@ -467,7 +469,16 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
 function renderCsv(canvas: HTMLCanvasElement, csv: string, label: string): void {
   try {
     const json = renderCsvToPrimitivesWithOverrides(csv, 1.0, overridesJson());
-    const prims = JSON.parse(json) as Prim[];
+    let prims = JSON.parse(json) as Prim[];
+    // 図面枠 (A3、DXF の writeDrawingFrame と同形)。lastPrims に足すので fit も枠込み —
+    // 「目いっぱいでなくマージン」の図面らしい余白になる (2026-06-12 user 要望)
+    if (frameVisible()) {
+      try {
+        prims = prims.concat(JSON.parse(renderFrame(csv)) as Prim[]);
+      } catch (e) {
+        console.error('frame render failed', e);
+      }
+    }
     lastPrims = prims;
     draw(canvas, prims);
     setStatus(`${label}: ${prims.length} primitives`);
@@ -475,6 +486,11 @@ function renderCsv(canvas: HTMLCanvasElement, csv: string, label: string): void 
     setStatus(`render error: ${String(e)}`);
     console.error(e);
   }
+}
+
+function frameVisible(): boolean {
+  const cb = document.getElementById('frameToggle');
+  return cb instanceof HTMLInputElement ? cb.checked : false;
 }
 
 // ---- 段階2a: 表編集 UI ----
@@ -2325,6 +2341,11 @@ function main(): void {
 
   addBtn?.addEventListener('click', () => addRow(canvas));
   document.getElementById('newDrawing')?.addEventListener('click', () => newDrawing(canvas));
+  // 図面枠トグル: 枠の出入りで見える範囲が変わるので fit し直す
+  document.getElementById('frameToggle')?.addEventListener('change', () => {
+    view = null;
+    redraw(canvas);
+  });
   wireExportButtons();
   wireCanvasEvents(canvas);
   wireFabs(canvas);
