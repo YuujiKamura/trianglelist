@@ -913,11 +913,30 @@ function buildTable(canvas: HTMLCanvasElement): void {
         redraw(canvas);
       });
       inp.dataset.edge = String(row[EKEY[key]]);
+      inp.dataset.tri = String(i + 1);
+      inp.dataset.key = key;
       inp.addEventListener('change', () => {
         inp.value = fmt2(inp.value);
         setEdgeVal(row, key, inp.value);
         syncEdgeInputs(row[EKEY[key]], inp);
         redraw(canvas);
+      });
+      // Enter で次の辺セルへ (a→b→c→次行a、最終行の c は新規行 A へ) — 新規行の
+      // wireNewRowEnter と同じ actionNext 動線を既存行にも。blur で change が発火するので
+      // 値の確定 (fmt2 + redraw) は既存の change ハンドラに任せる
+      inp.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter' || e.isComposing) return;
+        e.preventDefault();
+        const sel =
+          key === 'a' ? `input[data-tri="${i + 1}"][data-key="b"]`
+          : key === 'b' ? `input[data-tri="${i + 1}"][data-key="c"]`
+          : `input[data-tri="${i + 2}"][data-key="a"]`;
+        const t = document.querySelector<HTMLInputElement>(`#triRows ${sel}`)
+          ?? document.querySelector<HTMLInputElement>('#newA');
+        if (t) {
+          t.focus();
+          t.select();
+        }
       });
       td.appendChild(inp);
       tr.appendChild(td);
@@ -2299,14 +2318,30 @@ if (import.meta.hot) {
   // キー注入: 要素に値をセットして keydown を流す (Enter ナビ等のキーボード UX の検証口)。
   // 合成イベントはブラウザ既定動作を起こさないが、こちらの handler は preventDefault 前提なので等価
   hot.on('tlcp:key-req', (data: { id: string; target?: string; key?: string; value?: string }) => {
-    const t = document.getElementById(String(data.target ?? ''));
+    // target は要素 id か CSS selector (一覧の辺セルは id を持たず data-tri/data-key で指す)
+    const sel = String(data.target ?? '');
+    let t: Element | null = document.getElementById(sel);
+    if (!t) {
+      try {
+        t = document.querySelector(sel);
+      } catch {
+        t = null;
+      }
+    }
     if (t instanceof HTMLInputElement || t instanceof HTMLSelectElement) {
       if (typeof data.value === 'string') t.value = data.value;
       t.focus();
       if (data.key) t.dispatchEvent(new KeyboardEvent('keydown', { key: data.key, bubbles: true, cancelable: true }));
+      const a = document.activeElement;
       hot.send('tlcp:key-res', {
         id: data.id,
-        state: { ok: true, active: document.activeElement?.id ?? '', rows: rows.length },
+        state: {
+          ok: true,
+          active: a?.id ?? '',
+          // Enter ナビの検証用: フォーカス先が辺セルなら data-tri/data-key で答える
+          activeData: a instanceof HTMLElement ? { tri: a.dataset.tri ?? '', key: a.dataset.key ?? '' } : null,
+          rows: rows.length,
+        },
       });
     } else {
       hot.send('tlcp:key-res', { id: data.id, state: { ok: false } });
