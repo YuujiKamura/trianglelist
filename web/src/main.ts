@@ -21,15 +21,29 @@ type TextPrim = {
   v?: number; // vertical 実効値 (1=外/3=内)
 };
 type CirclePrim = { type: 'circle'; layer: string; cx: number; cy: number; r: number; tri?: number };
-type Prim = LinePrim | TextPrim | CirclePrim;
+// 三角形の塗り (アプリ MyView.drawEntities:572-576 の写し)。color は CSV 列 10 の index、
+// 実色は FILL_PALETTE が解決する
+type FillPrim = {
+  type: 'fill';
+  layer: string;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  x3: number;
+  y3: number;
+  color: number;
+  tri?: number;
+};
+type Prim = LinePrim | TextPrim | CirclePrim | FillPrim;
 
 // Kotlin wasmJs の ESM glue を静的 import してバンドルに乗せる (Vite の正規 module graph)。
 // .wasm 本体は uninstantiated.mjs が fetch('./TriangleList-common-wasm-js.wasm') =
 // document base 相対で読むため、sync-wasm が web/public/ 直下に置く
 import {
   renderCsvToPrimitivesWithOverrides,
-  buildDxfTextWithOverrides,
-  buildSfcTextWithOverrides,
+  buildDxfTextNumReverse,
+  buildSfcTextNumReverse,
   buildCsvTextWithOverrides,
   hitTriangle,
   placeDeduction,
@@ -59,6 +73,18 @@ const COLORS: Record<string, string> = {
   num: '#1f5fbf',
   ded: '#c0392b', // 控除 = 赤系 (アプリ/DXF の RED 準拠)
 };
+
+// 三角形の塗りパレット (index = CSV 列 10 = Triangle.mycolor、既定 4)。
+// 色値はアプリの resColors (MainActivity.kt:218-224 → res/values/colors.xml:9-14) と同一 —
+// FAB に出る「ユーザーが認識する色」。アプリの画面塗り (MyView.darkColors_:71-75) は
+// 黒背景向けの暗色版で、白背景の web ではこの明色版が同じ見え方になる
+const FILL_PALETTE = [
+  '#FF99AA', // 0 colorPink
+  '#FFAA99', // 1 colorOrange
+  '#FFFF99', // 2 colorYellow
+  '#AAFFAA', // 3 colorLime
+  '#88CCFF', // 4 colorSky (既定)
+];
 
 const SELECT_FILL = 'rgba(31, 95, 191, 0.25)'; // 選択三角形の塗り (半透明青)
 const SELECT_YELLOW = '#e6b800'; // 選択辺・番号リング・寸法ボックス (app paintYellow 相当、白地で読める濃さ)
@@ -90,6 +116,11 @@ function bounds(prims: Prim[]): { minX: number; minY: number; maxX: number; maxY
     } else if (p.type === 'circle') {
       acc(p.cx - p.r, p.cy - p.r);
       acc(p.cx + p.r, p.cy + p.r);
+    } else if (p.type === 'fill') {
+      // 頂点は辺 line と同じ点なので bounds には効かないが、型として明示的に扱う
+      acc(p.x1, p.y1);
+      acc(p.x2, p.y2);
+      acc(p.x3, p.y3);
     } else {
       acc(p.x, p.y);
     }
@@ -260,6 +291,19 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
   const sx = (x: number) => x * s + v.offsetX;
   const sy = (y: number) => -y * s + v.offsetY; // モデル (y 上向き) → 画面 (y 下向き)
 
+  // 三角形の塗り (アプリ MyView.drawEntities:572-576 と同じく「塗り全部 → 線・文字」の z-order)。
+  // 選択ハイライトより下に敷くので最初に描く
+  for (const p of prims) {
+    if (p.type !== 'fill') continue;
+    ctx.fillStyle = FILL_PALETTE[p.color] ?? FILL_PALETTE[4];
+    ctx.beginPath();
+    ctx.moveTo(sx(p.x1), sy(p.y1));
+    ctx.lineTo(sx(p.x2), sy(p.y2));
+    ctx.lineTo(sx(p.x3), sy(p.y3));
+    ctx.closePath();
+    ctx.fill();
+  }
+
   // 選択三角形の塗り (線より下に敷く)。WebPrimitiveRenderer.render は三角形ごとに
   // 'tri' layer の line を 3 本連続で出す (WebPrimitiveRenderer.kt:62-65) ので、
   // 番号 n の頂点は tri 線群の [3(n-1), 3n) から拾える — 表示専用の導出で幾何判定はしない
@@ -278,6 +322,7 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
   }
 
   for (const p of prims) {
+    if (p.type === 'fill') continue; // 塗りは最初のパスで描画済み
     const color = COLORS[p.layer] ?? '#000000';
     if (p.type === 'line') {
       ctx.strokeStyle = color;
@@ -475,6 +520,23 @@ let rows: Row[] = [];
 // TS はこの数値 1 個を持つだけ。CSV では ListAngle 行 (CsvLoader.readListParameter と同形)
 let listAngle = 0;
 
+// 寸法文字サイズ (アプリ MyView.textSize:117、view px 単位、初期値 30)。CSV では TextSize 行
+// (writeCSV:2785、CsvLoader.readListParameter:404-407 が読む)。レンダラは比率
+// (textSizeCsv / 30) でモデル単位文字高さへ写す (WebPrimitiveRenderer.renderCsv)。
+// texplus/minus FAB ±5f (MainActivity.kt:1381-1392) の web 版がこれを書き換える
+let textSizeCsv = 30;
+
+// アプリ MyView.adjustTextSize:942-946 と同じクランプ (下限 8、上限 80)
+function adjustTextSize(ts: number): number {
+  if (ts <= 5) return 8;
+  if (ts >= 80) return 80;
+  return ts;
+}
+
+// 塗り色サイクルの現在 index (アプリ MainActivity.colorindex:217、初期値 4 = sky)。
+// FAB を押すたび +1 で一周し、選択三角形の CSV 列 10 に書く (MainActivity.kt:1367-1377)
+let colorIndex = 4;
+
 // 測点名は CSV 列6 (CsvLoader.kt:242 のカラム表で確定)。extras[0] がそれに当たる。
 // WebCsvReader は列6を読まない (描画に出ない) が、round-trip と書き出しで保持する
 function nameOf(row: Row): string {
@@ -503,6 +565,7 @@ function parseCsvToState(csv: string): void {
   rows = [];
   edges = [];
   listAngle = 0;
+  textSizeCsv = 30;
   dedLines = [];
   dedSelected = 0;
   dedCursor = null;
@@ -512,6 +575,11 @@ function parseCsvToState(csv: string): void {
     // ListAngle 行は headerLines に残さず数値 state に取り出す (serializeState が書き戻す)
     if (chunks[0] === 'ListAngle') {
       listAngle = parseFloat(chunks[1] ?? '') || 0;
+      continue;
+    }
+    // TextSize 行も同様に数値 state へ (アプリ CsvLoader.readListParameter:404-407 と同形)
+    if (chunks[0] === 'TextSize') {
+      textSizeCsv = parseFloat(chunks[1] ?? '') || 30;
       continue;
     }
     // Deduction 行は控除 state へ (アプリ CsvLoader.buildDeductions:369 と同じ判定)。
@@ -564,6 +632,8 @@ function serializeState(): string {
   });
   // アプリ保存 (MainActivity.kt:2781) と同じく三角形行の後に ListAngle を書く
   lines.push(`ListAngle, ${listAngle}`);
+  // 寸法文字サイズ (アプリ writeCSV:2785 と同形)。CsvCodec.parse が textSize に昇格して読む
+  lines.push(`TextSize, ${textSizeCsv}`);
   // 控除はアプリ保存 (MainActivity.kt:2790-2797) と同じく末尾に書く
   lines.push(...dedLines);
   return lines.join('\n') + '\n';
@@ -1194,6 +1264,46 @@ function fabRotate(canvas: HTMLCanvasElement, degrees: number): void {
   redraw(canvas);
 }
 
+// 塗り色 FAB (MainActivity.kt:1367-1377 setCommonFabListener(fab_fillcolor) の写し):
+// 押すたび colorIndex を一周 (0..4) させ、選択三角形の CSV 列 10 (= Triangle.mycolor、
+// CsvCodec.applyRowMeta:206 が setColor で読む) に書く。FAB の背景も現在色に追従
+// (アプリの backgroundTintList = resColors[colorindex]:1373 相当)。
+// アプリ同様 undo スナップは取らない (もう一周で戻せる)、控除モード中は何もしない
+const FILL_NAMES = ['ピンク', 'オレンジ', 'イエロー', 'ライム', 'スカイ'];
+
+function syncFillColorFab(): void {
+  const b = document.getElementById('fabFillColor');
+  if (b instanceof HTMLButtonElement) b.style.background = FILL_PALETTE[colorIndex];
+}
+
+function fabFillColor(canvas: HTMLCanvasElement): void {
+  if (deductionMode) return; // アプリの if(!deductionMode) ガード (MainActivity.kt:1368) と同じ
+  const n = selected > 0 ? selected : current;
+  const r = rows[n - 1];
+  if (!r) {
+    setStatus('色: 先に三角形を選択してください');
+    return;
+  }
+  colorIndex = (colorIndex + 1) % FILL_PALETTE.length;
+  // CSV 列 10 = extras[4] (extras は列 6 以降)。間の列 7-9 (番号サークル) は空文字で
+  // 埋める — 空文字は CsvCodec.applyRowMeta が無視する (toFloatOrNull/toBoolean が効かない)
+  while (r.extras.length < 5) r.extras.push('');
+  r.extras[4] = String(colorIndex);
+  syncFillColorFab();
+  redraw(canvas);
+  setStatus(`色: 三角形 ${n} → ${FILL_NAMES[colorIndex]} (${colorIndex})`);
+}
+
+// texplus/minus FAB (MainActivity.kt:1381-1392): textSize ±5f → setAllTextSize で全寸法文字に
+// 反映。web は textSizeCsv (CSV の TextSize 行の SoT) を ±5 して再描画するだけ —
+// 反映は serializeState → CsvCodec.parse → WebPrimitiveRenderer の比率計算が担う
+function fabTexSize(canvas: HTMLCanvasElement, delta: number): void {
+  if (rows.length === 0) return;
+  textSizeCsv = adjustTextSize(textSizeCsv + delta);
+  redraw(canvas);
+  setStatus(`寸法文字サイズ: ${textSizeCsv} (アプリ初期値 30、8〜80)`);
+}
+
 // undo FAB (MainActivity.kt:1352-1365): 1 段だけ戻して undo バッファを空にする
 function fabUndo(canvas: HTMLCanvasElement): void {
   if (undoSnap === null) {
@@ -1521,6 +1631,11 @@ function wireFabs(canvas: HTMLCanvasElement): void {
   el<HTMLButtonElement>('fabDimH').addEventListener('click', () => flipDim(canvas, 'H'));
   el<HTMLButtonElement>('fabFlag').addEventListener('click', () => fabFlag(canvas));
   el<HTMLButtonElement>('fabNijyuu').addEventListener('click', () => fabNijyuu(canvas));
+  // 塗り色サイクル (アプリ fab_fillcolor) + 寸法文字 ± (アプリ fab_texplus/fab_texminus)
+  el<HTMLButtonElement>('fabFillColor').addEventListener('click', () => fabFillColor(canvas));
+  el<HTMLButtonElement>('fabTexPlus').addEventListener('click', () => fabTexSize(canvas, 5));
+  el<HTMLButtonElement>('fabTexMinus').addEventListener('click', () => fabTexSize(canvas, -5));
+  syncFillColorFab(); // FAB 背景を初期色 (index 4 = sky) に
   el<HTMLButtonElement>('fabReplace').addEventListener('click', () => fabReplace(canvas));
   el<HTMLButtonElement>('fabUndo').addEventListener('click', () => fabUndo(canvas));
   el<HTMLButtonElement>('fabMinus').addEventListener('click', () => fabMinus(canvas));
@@ -1980,13 +2095,20 @@ function wireExportButtons(): void {
       toSjisBlob(buildCsvTextWithOverrides(serializeState(), overridesJson())),
     );
   });
+  // 番号逆順チェック (アプリ保存ダイアログの NumReverse ボタン、MainActivity.kt:2293 の web 版)。
+  // DXF/SFC のみ反映 — CSV はファイル仕様不変、XLSX もアプリの XlsxWriter().write
+  // (MainActivity.kt:2694) が isReverse を受けないので対象外 (現物が正)
+  const numReverse = () =>
+    (document.getElementById('numReverse') as HTMLInputElement | null)?.checked ?? false;
   // 段階2e: overrides 付き経路に切替 — W/H フリップ・番号移動が図面ファイルにも乗る
   document.getElementById('saveDxf')?.addEventListener('click', () => {
-    exportFile('DXF', 'triangles.dxf', () => toSjisBlob(buildDxfTextWithOverrides(serializeState(), overridesJson())));
+    exportFile('DXF', 'triangles.dxf', () =>
+      toSjisBlob(buildDxfTextNumReverse(serializeState(), overridesJson(), numReverse())),
+    );
   });
   document.getElementById('saveSfc')?.addEventListener('click', () => {
     exportFile('SFC', 'triangles.sfc', () =>
-      toSjisBlob(buildSfcTextWithOverrides(serializeState(), 'triangles.sfc', overridesJson())),
+      toSjisBlob(buildSfcTextNumReverse(serializeState(), 'triangles.sfc', overridesJson(), numReverse())),
     );
   });
   // XLSX: アプリの XlsxWriter と同じ面積計算書 (組み立ては xlsx-export.ts に独立、
@@ -2110,7 +2232,7 @@ if (import.meta.hot) {
     hot.send('tlcp:state-res', {
       id: data.id,
       state: {
-        rows: rowsExpanded, edges, selected, current, listAngle, overrides,
+        rows: rowsExpanded, edges, selected, current, listAngle, textSizeCsv, colorIndex, overrides,
         dedLines, deductionMode, dedCursor, dedSelected,
         csv: serializeState(),
         // 保存ボタンが書く実物 (overrides 焼き込み済み完全形式)。書き戻しの検証口

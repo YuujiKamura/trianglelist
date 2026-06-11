@@ -50,8 +50,10 @@ object CsvCodec {
 
     /**
      * CSV 文書。preLines = 最初の三角形行より前の行 (ヘッダ等)、postLines = それ以降の
-     * 非三角形行 (ListScale/TextSize 等)。どちらも原文のまま保持して書き戻す。
+     * 非三角形行 (ListScale 等)。どちらも原文のまま保持して書き戻す。
      * ListAngle 行だけは数値として取り出す (リスト回転の SoT、ADR 0007)。
+     * TextSize 行も同様に昇格 (寸法文字サイズの SoT。アプリ writeCSV:2785 が書き
+     * CsvLoader.readListParameter:404-407 が読む行。単位はアプリの view px、初期値 30)。
      * dedRows = "Deduction" 先頭の控除行 (ADR 0008 の残課題の昇格)。chunks は列0 =
      * "Deduction" を含む生の列で、未知の追加列 (14 列目以降) も保持して書き戻す
      */
@@ -61,6 +63,7 @@ object CsvCodec {
         val listAngle: Float?,
         val postLines: List<String>,
         val dedRows: List<CsvRow> = emptyList(),
+        val textSize: Float? = null,
     )
 
     fun parse(text: String): CsvDoc {
@@ -69,11 +72,16 @@ object CsvCodec {
         val rows = mutableListOf<CsvRow>()
         val dedRows = mutableListOf<CsvRow>()
         var listAngle: Float? = null
+        var textSize: Float? = null
         for (line in text.lineSequence()) {
             if (line.isBlank()) continue
             val chunks = line.split(",").map { it.trim() }
             if (chunks.firstOrNull() == "ListAngle") {
                 listAngle = chunks.getOrNull(1)?.toFloatOrNull() ?: listAngle
+                continue
+            }
+            if (chunks.firstOrNull() == "TextSize") {
+                textSize = chunks.getOrNull(1)?.toFloatOrNull() ?: textSize
                 continue
             }
             if (chunks.firstOrNull() == "Deduction") {
@@ -87,7 +95,7 @@ object CsvCodec {
             }
             rows.add(CsvRow(chunks))
         }
-        return CsvDoc(preLines, rows, listAngle, postLines, dedRows)
+        return CsvDoc(preLines, rows, listAngle, postLines, dedRows, textSize)
     }
 
     fun serialize(doc: CsvDoc): String {
@@ -97,6 +105,8 @@ object CsvCodec {
         // アプリ writeCSV と同じく三角形行の後に書く。値の書式 ("ListAngle, x") も同一
         doc.listAngle?.let { sb.append("ListAngle, ").append(it).append('\n') }
         doc.postLines.forEach { sb.append(it).append('\n') }
+        // アプリ writeCSV:2785 と同じ書式・同じ位置 (ListScale 等 postLines の後)
+        doc.textSize?.let { sb.append("TextSize, ").append(it).append('\n') }
         // アプリ writeCSV:2789-2797 と同じく末尾 (ListScale/TextSize の後) に書く
         doc.dedRows.forEach { sb.append(it.chunks.joinToString(",")).append('\n') }
         return sb.toString()
@@ -253,7 +263,8 @@ object CsvCodec {
                 )
             )
         }
-        // dedRows は素通し (控除は TriangleList の外。web の編集は行の置換/追加で dedRows 自体を更新する)
-        return CsvDoc(original.preLines, rows, trilist.angle, original.postLines, original.dedRows)
+        // dedRows は素通し (控除は TriangleList の外。web の編集は行の置換/追加で dedRows 自体を更新する)。
+        // textSize も素通し (model は持たない値、文書レベルで保持)
+        return CsvDoc(original.preLines, rows, trilist.angle, original.postLines, original.dedRows, original.textSize)
     }
 }

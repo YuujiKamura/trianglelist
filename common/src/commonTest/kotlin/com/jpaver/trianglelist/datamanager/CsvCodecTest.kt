@@ -33,7 +33,8 @@ class CsvCodecTest {
         assertEquals(4, doc.preLines.size)
         assertEquals(2, doc.rows.size)
         assertEquals(15.0f, doc.listAngle!!, 0.001f)
-        assertEquals(2, doc.postLines.size) // ListScale + TextSize (Deduction は dedRows へ昇格)
+        assertEquals(5.0f, doc.textSize!!, 0.001f) // TextSize は数値として昇格 (ListAngle と同格)
+        assertEquals(1, doc.postLines.size) // ListScale のみ (TextSize は textSize、Deduction は dedRows へ昇格)
         assertEquals(1, doc.dedRows.size)
         assertEquals(13, doc.dedRows[0].chunks.size)
         assertEquals(28, doc.rows[0].chunks.size)
@@ -121,6 +122,30 @@ class CsvCodecTest {
         val bakedDoc = CsvCodec.parse(baked)
         assertEquals(28, bakedDoc.rows[0].chunks.size)
         assertEquals(10.0f, bakedDoc.listAngle!!, 0.001f)
+    }
+
+    @Test
+    fun textSize_roundtrip_update_and_render() {
+        // round-trip 固定点: アプリ writeCSV:2785 と同じ "TextSize, x" 書式のまま戻る
+        val csv = "1,3.0,3.0,3.0,-1,-1\nListAngle, 0.0\nTextSize, 30.0\n"
+        val doc = CsvCodec.parse(csv)
+        assertEquals(30.0f, doc.textSize!!, 0.001f)
+        assertEquals(csv, CsvCodec.serialize(doc))
+        // 変更後の書き戻し (web の texplus/minus FAB ±5f → serialize)
+        val plus = CsvCodec.serialize(doc.copy(textSize = 35.0f))
+        assertTrue(plus.contains("TextSize, 35.0"))
+        assertEquals(35.0f, CsvCodec.parse(plus).textSize!!, 0.001f)
+        // bake (構築 → 書き戻し) でも素通しで保持される
+        assertEquals(30.0f, CsvCodec.bake(CsvCodec.build(doc), doc).textSize!!, 0.001f)
+        // 描画反映: TextSize 60 (= アプリ初期値 30 の 2 倍) で寸法文字高さも 2 倍
+        val base = "1,3.0,3.0,3.0,-1,-1\n"
+        assertTrue(WebPrimitiveRenderer.renderCsv(base, 1f).contains(""""size":0.25"""))
+        assertTrue(WebPrimitiveRenderer.renderCsv(base + "TextSize, 60.0\n", 1f).contains(""""size":0.5"""))
+        // TextSize 行なし → 従来出力と同一 (golden 不変の pin)
+        assertEquals(
+            WebPrimitiveRenderer.renderCsv(base, 1f),
+            WebPrimitiveRenderer.renderCsv(base + "TextSize, 30.0\n", 1f),
+        )
     }
 
     @Test

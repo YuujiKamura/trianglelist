@@ -128,6 +128,8 @@ class WebPrimitiveRendererTest {
     @Test
     fun render_emits_expected_primitive_counts() {
         val json = WebPrimitiveRenderer.renderCsv(sampleCsv, 1f)
+        // 塗り: 7 三角形 × 1 (MyView.drawEntities:572-576 の「全三角形を塗る」の web 版)
+        assertEquals(7, count(json, """"type":"fill","layer":"fill""""))
         // 辺: 7 三角形 × 3 本
         assertEquals(21, count(json, """"type":"line","layer":"tri""""))
         // 番号サークル: 7 個
@@ -138,6 +140,19 @@ class WebPrimitiveRendererTest {
         assertEquals(15, count(json, """"type":"text","layer":"dim""""))
         // フラット配列であること
         assertTrue(json.startsWith("[") && json.endsWith("]"))
+    }
+
+    @Test
+    fun fill_color_index_follows_csv_column10() {
+        // 色の経路 pin: CSV 列 10 → CsvCodec.applyRowMeta:206 setColor → Triangle.mycolor →
+        // fill prim の color。アプリの FAB (MainActivity.kt:1375 mycolor = colorindex) と同じ写像
+        val csv = "1,3.0,3.0,3.0,-1,-1,,0,0,false,2\n"
+        val json = WebPrimitiveRenderer.renderCsv(csv, 1f)
+        assertTrue(json.contains(""""type":"fill","layer":"fill""""), "fill prim not found")
+        assertTrue(json.contains(""""color":2"""), "color index 2 (CSV col10) not in fill prim")
+        // 列 10 が無い最小形式は Triangle.mycolor 既定値 4 (Triangle.kt:147、アプリ colorindex 初期値と同じ)
+        val jsonDefault = WebPrimitiveRenderer.renderCsv("1,3.0,3.0,3.0,-1,-1\n", 1f)
+        assertTrue(jsonDefault.contains(""""color":4"""), "default color index 4 not in fill prim")
     }
 
     @Test

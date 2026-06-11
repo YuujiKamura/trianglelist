@@ -9,6 +9,9 @@ declare module '*/TriangleList-common-wasm-js.mjs' {
   export function renderCsvToPrimitivesWithOverrides(csv: string, scale: number, overridesJson: string): string;
   export function buildDxfTextWithOverrides(csv: string, overridesJson: string): string;
   export function buildSfcTextWithOverrides(csv: string, filename: string, overridesJson: string): string;
+  // 番号逆順 (アプリ保存ダイアログの NumReverse) 付き DXF/SFC。CSV 保存には影響しない
+  export function buildDxfTextNumReverse(csv: string, overridesJson: string, numReverse: boolean): string;
+  export function buildSfcTextNumReverse(csv: string, filename: string, overridesJson: string, numReverse: boolean): string;
   // ADR 0008: overrides 焼き込み済みの完全形式 28 列 CSV (手動配置の書き戻し)
   export function buildCsvTextWithOverrides(csv: string, overridesJson: string): string;
   // 控除編集: クリック位置 (モデル座標) に配置 → 13 列 Deduction CSV 行 (不正は空文字列)
