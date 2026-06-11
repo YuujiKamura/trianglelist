@@ -17,6 +17,7 @@
     "vitest": "^4.1.8"
   },
   "dependencies": {
+    "@zumer/snapdom": "^2.12.8",
     "dxf-viewer": "^1.0.48",
     "encoding-japanese": "^2.2.0",
     "exceljs": "^4.4.0"

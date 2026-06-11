@@ -68,8 +68,18 @@
       .fabcol button img { width: 26px; height: 26px; object-fit: contain; display: block; margin: 0 auto; pointer-events: none; }
       /* 削除 FAB の 2 タップ確認: 1 回目で赤点灯 (アプリ fab_minus colorTT2 相当) */
       #fabMinus.armed { background: #d22; border-color: #a00; color: #fff; }
-      /* 控除モード ON (アプリ setDeductionFab の白点灯相当を赤系で) */
-      #fabDeduction.modeon { background: #c0392b; border-color: #8e2418; color: #fff; }
+      /* 控除モード ON: アプリ setDeductionFab:1044 (colorWhite) 準拠の白点灯 + 赤枠 */
+      #fabDeduction.modeon { background: #ffffff; border-color: #c0392b; box-shadow: 0 0 0 2px #c0392b; }
+      /* 控除モード中の FAB 信号 (アプリ updateFabAppearance:1028 の web 版):
+         効く FAB = 旗 (白点灯、アイコンも flag.png に swap)・控除・全体表示。
+         web で控除モード未対応の FAB はグレーアウト + 無効化 (機能が無いのに点灯する嘘を避ける) */
+      body.dedmode #fabFlag { background: #ffffff; border-color: #c0392b; box-shadow: 0 0 0 2px #c0392b; }
+      body.dedmode #fabSetB, body.dedmode #fabSetC, body.dedmode #fabReplace,
+      body.dedmode #fabUndo, body.dedmode #fabDimW, body.dedmode #fabDimH,
+      body.dedmode #fabNijyuu, body.dedmode #fabFillColor, body.dedmode #fabMinus,
+      body.dedmode #fabRotL, body.dedmode #fabRotR, body.dedmode #fabUp, body.dedmode #fabDown {
+        opacity: 0.35; pointer-events: none;
+      }
       /* 控除一覧は赤系で三角形と区別 (アプリ titleDed カラー相当) */
       #dedTable td { color: #c0392b; }
       #dedTable tbody tr { cursor: pointer; }
