@@ -1,0 +1,6 @@
+このディレクトリの SVG アイコン (edit / undo / my_location / delete / flag) は
+Google Material Symbols (https://github.com/google/material-design-icons) 由来です。
+Apache License 2.0 (https://www.apache.org/licenses/LICENSE-2.0) のもとで再配布します。
+取得日: 2026-06-11。変更点: ルート svg 要素への fill 属性の追加のみ。
+アプリ (Android) 版の同等 FAB は @android システムアイコン (ic_menu_edit 等) を使用しており、
+その web 対応物として採用 (出典明記は敬意)。

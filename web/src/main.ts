@@ -1440,7 +1440,10 @@ function toggleDeductionMode(canvas: HTMLCanvasElement): void {
   // 色は CSS の body.dedmode が一括制御、旗アイコンはアプリ同様 flag_b ↔ flag を swap
   document.body.classList.toggle('dedmode', deductionMode);
   const flagImg = document.querySelector<HTMLImageElement>('#fabFlag img');
-  if (flagImg) flagImg.src = `${import.meta.env.BASE_URL}icons/${deductionMode ? 'flag' : 'flag_b'}.png`;
+  if (flagImg)
+    flagImg.src = deductionMode
+      ? `${import.meta.env.BASE_URL}icons/flag.png` // 赤 FLAG (アプリ共通 PNG、白点灯背景に映える)
+      : `${import.meta.env.BASE_URL}micons/flag.svg`; // Material flag (flag_b.png は縮小で潰れるため)
   const details = document.getElementById('dedDetails') as HTMLDetailsElement | null;
   if (details && deductionMode) details.open = true;
   if (!deductionMode) {
