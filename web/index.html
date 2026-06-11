@@ -32,7 +32,7 @@
       table.tri input[type="text"] { width: 64px; font-size: 12px; box-sizing: border-box; }
       table.tri select { font-size: 12px; }
       table.tri input:read-only { background: #f3f3f3; border: 1px solid #ddd; color: #555; }
-      /* 3 行ウィンドウフォーム (アプリ editor_table 同等): 上=新規入力行 / 中=カレント行 / 下=前行 */
+      /* 2 行フォーム (現行アプリ editor_table 同等): 上=新規入力行 / 下=カレント行 */
       #editorForm tr.formNew td { background: #f4fbf4; }
       #editorForm tr.formCur td { background: #dce9fb; }
       #listDetails { margin-top: 8px; }
@@ -76,7 +76,8 @@
         <section id="tablePanel">
           <h2>三角形リスト</h2>
           <label id="rosenLabel">路線名 <input id="rosenName" type="text" /></label>
-          <!-- 3 行ウィンドウフォーム: 新規入力行 (次番号プリセット) / カレント行 / 前行 -->
+          <!-- 2 行フォーム: 新規入力行 (次番号プリセット) / カレント行。
+               前行は廃止 (user 2026-06-11: 全行一覧があるので不要、現行スマホ版も 2 行) -->
           <!-- 接続はアプリの 11 択 spinner を「接続辺 × 形態 × 起点」の 3 列に分解
                (ConnParam の side × type × lcr と同型、user 設計 2026-06-11)。
                新規行に「独立」は無い — 最初の 1 個だけ自動で独立 (スマホ版と同じ、図面に 1 リスト) -->
@@ -146,16 +147,6 @@
                     <option value="0">左起点</option>
                   </select>
                 </td>
-              </tr>
-              <tr class="formPrev">
-                <th>前行</th>
-                <td><input id="prevNum" type="number" readonly /></td>
-                <td><input id="prevName" type="text" readonly /></td>
-                <td><input id="prevA" type="number" readonly /></td>
-                <td><input id="prevB" type="number" readonly /></td>
-                <td><input id="prevC" type="number" readonly /></td>
-                <td><input id="prevParent" type="number" readonly /></td>
-                <td colspan="3"><input id="prevConn" type="text" readonly /></td>
               </tr>
             </tbody>
           </table>
