@@ -28,6 +28,8 @@ import com.jpaver.trianglelist.setLengthStr
  *   {"type":"text","layer":"dim|num","text":"..","x":..,"y":..,"angle":deg,"size":..,"align":1|2|3}
  *     align は DXF 垂直コード: 1=点が文字の下端 (文字は点の上), 2=中央, 3=点が文字の上端
  *   {"type":"circle","layer":"num","cx":..,"cy":..,"r":..}
+ *   {"type":"fill","layer":"fill","x1":..,"y1":..,"x2":..,"y2":..,"x3":..,"y3":..,"color":idx,"tri":N}
+ *     color は CSV 列 10 (= Triangle.mycolor、既定 4) の index。実色は TS 側パレットが解決
  *
  * 段階2e (task #15) の識別フィールド: TS 側の当たり判定と W/H cycle のために
  *   - dim テキスト: 末尾に "tri":番号,"side":0|1|2,"h":水平値,"v":垂直値
@@ -39,6 +41,11 @@ object WebPrimitiveRenderer {
 
     /** 寸法文字高さ (モデル単位)。サンプル図面 (辺 2-6m) で読める大きさ */
     const val DEFAULT_TEXT_SIZE = 0.25f
+
+    /** アプリの textSize 初期値 (MyView.kt:117 `var textSize = 30f`)。
+     *  CSV の TextSize 行 (writeCSV:2785) はこの単位 (view px) で入るので、比率で
+     *  web のモデル単位文字高さへ写す。行が無い CSV は比率 1 = 従来出力 (golden 不変) */
+    const val APP_DEFAULT_TEXT_SIZE = 30f
 
     /** CSV 文字列から JSON プリミティブまで一気通貫 (wasmJs facade の本体) */
     fun renderCsv(csv: String, scale: Float): String = renderCsv(csv, scale, "")
@@ -55,7 +62,10 @@ object WebPrimitiveRenderer {
         val trilist = CsvCodec.build(doc)
         if (scale != 1f && scale > 0f) trilist.setScale(PointXY(0f, 0f), scale)
         WebOverrides.applyJson(trilist, overridesJson)
-        val textSize = DEFAULT_TEXT_SIZE * (if (scale > 0f) scale else 1f)
+        // CSV の TextSize 行 (アプリ texplus/minus FAB ±5f の保存値) を比率で反映。
+        // 0 以下は不正値として既定にフォールバック (アプリ adjustTextSize の下限クランプ相当)
+        val sizeRatio = (doc.textSize?.takeIf { it > 0f } ?: APP_DEFAULT_TEXT_SIZE) / APP_DEFAULT_TEXT_SIZE
+        val textSize = DEFAULT_TEXT_SIZE * sizeRatio * (if (scale > 0f) scale else 1f)
         return render(trilist, textSize, CsvCodec.buildDeductions(doc), if (scale > 0f) scale else 1f)
     }
 
@@ -74,6 +84,18 @@ object WebPrimitiveRenderer {
             if (!first) sb.append(',')
             sb.append(json)
             first = false
+        }
+
+        // 塗り (アプリ MyView.drawEntities:572-576 の写し — 全三角形を mycolor で塗ってから
+        // 線・文字を重ねる)。z-order をアプリと同じ「塗り全部 → 線・文字」にするため先に全部出す。
+        // 色は index のまま出す (CSV 列 10 = Triangle.mycolor、既定 4)。実色はパレットを持つ
+        // TS 側 (web/src/main.ts FILL_PALETTE) が解決する — アプリも index → 色配列の二段
+        // (MainActivity.resColors / MyView.darkColors_) で同じ構図
+        for (i in 1..trilist.size()) {
+            val tri = trilist.getBy(i)
+            item(
+                """{"type":"fill","layer":"fill","x1":${tri.point[0].x},"y1":${tri.point[0].y},"x2":${tri.pointAB.x},"y2":${tri.pointAB.y},"x3":${tri.pointBC.x},"y3":${tri.pointBC.y},"color":${tri.mycolor},"tri":${tri.mynumber}}"""
+            )
         }
 
         for (i in 1..trilist.size()) {

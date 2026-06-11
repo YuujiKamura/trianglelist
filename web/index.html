@@ -41,8 +41,9 @@
       #triTable tbody tr.selected td { background: #dce9fb; }
       #triTable button.del { font-size: 11px; }
       #addRow { margin-top: 8px; font-size: 12px; }
-      #exportBtns { margin-top: 8px; display: flex; gap: 6px; }
+      #exportBtns { margin-top: 8px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
       #exportBtns button { font-size: 12px; }
+      #exportBtns label { font-size: 12px; display: flex; align-items: center; gap: 2px; }
       /* touch-action: none — pointer events で pan/pinch を取るため、ブラウザ既定の
          タッチスクロール/ズームを canvas 上では止める */
       #canvasWrap { position: relative; max-width: 100%; }
@@ -201,6 +202,11 @@
             <button id="saveDxf" type="button">DXF 保存</button>
             <button id="saveSfc" type="button">SFC 保存</button>
             <button id="saveXlsx" type="button">XLSX 保存</button>
+            <!-- アプリ保存ダイアログの NumReverse ボタン相当。DXF/SFC の番号を逆順で書く
+                 (CSV はファイル仕様不変、XLSX はアプリも非対応) -->
+            <label title="DXF/SFC の三角形番号を逆順で書き出す (アプリの NumReverse)">
+              <input type="checkbox" id="numReverse" /> 番号逆順
+            </label>
           </div>
         </section>
         <div id="canvasWrap">
@@ -214,6 +220,9 @@
             </div>
             <button id="fabUp" type="button" title="リスト上 (前の三角形)">▲</button>
             <button id="fabDown" type="button" title="リスト下 (次の三角形)">▼</button>
+            <!-- アプリ fab_texplus/fab_texminus 相当: 寸法文字サイズ ±5 (初期値 30、8〜80) -->
+            <button id="fabTexPlus" type="button" title="寸法文字を大きく (+5)">T+</button>
+            <button id="fabTexMinus" type="button" title="寸法文字を小さく (−5)">T−</button>
           </div>
           <div class="fabcol" id="fabRight">
             <!-- アプリ fabs.xml と同じ並び: 上段横列 [B][C][✎]、下に縦列 [↶][W][H][旗][🗑] -->
@@ -233,6 +242,8 @@
             <button id="fabFlag" type="button" title="番号移動 (旗揚げ): 移動先をタップしてから押す">旗</button>
             <!-- アプリ fab_nijyuualign 相当: 二重断面/フロートの起点を 右→中央→左 で巡回 -->
             <button id="fabNijyuu" type="button" title="二重断面の起点を巡回 (右→中央→左)">二重</button>
+            <!-- アプリ fab_fillcolor 相当: 押すたび色が一周し選択三角形に塗る。背景 = 現在色 -->
+            <button id="fabFillColor" type="button" title="塗り色 (選択三角形、押すたび循環)">色</button>
             <!-- アプリ fab_deduction 相当: 控除モード切替。ON 中はクリック = 控除カーソル -->
             <button id="fabDeduction" type="button" title="控除モード切替 (クリックで位置決め → 控除リストの「追加」)">控除</button>
             <button id="fabMinus" type="button" title="削除 (2回タップ)">🗑</button>

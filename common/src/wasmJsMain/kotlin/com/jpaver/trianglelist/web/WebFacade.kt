@@ -66,6 +66,22 @@ fun buildSfcTextWithOverrides(csv: String, filename: String, overridesJson: Stri
     WebDrawingExport.buildSfcText(csv, filename, overridesJson)
 
 /**
+ * 番号逆順 (アプリ保存ダイアログの NumReverse、MainActivity.kt:2293) 付き DXF。
+ * 効き方は DxfFileWriter.writeEntities:319-323 (resetNumReverse + 控除 reverse) が正。
+ * CSV 保存には影響しない (ファイル仕様不変)
+ */
+@OptIn(ExperimentalJsExport::class)
+@JsExport
+fun buildDxfTextNumReverse(csv: String, overridesJson: String, numReverse: Boolean): String =
+    WebDrawingExport.buildDxfText(csv, overridesJson, numReverse)
+
+/** 番号逆順付き SFC (SfcWriter.kt:49-53 と同経路) */
+@OptIn(ExperimentalJsExport::class)
+@JsExport
+fun buildSfcTextNumReverse(csv: String, filename: String, overridesJson: String, numReverse: Boolean): String =
+    WebDrawingExport.buildSfcText(csv, filename, overridesJson, numReverse)
+
+/**
  * ADR 0008: overrides 焼き込み済みの完全形式 28 列 CSV。保存 CSV にも手動配置
  * (W/H フリップ・番号移動) が乗る — アプリで開いても手動配置が失われない
  */

@@ -110,7 +110,16 @@ object WebDrawingExport {
      * から writer を組む — W/H フリップ・番号移動が DXF にも乗る (ADR 0003 Decision C
      * 「描画と書き出しは同じ式⊕override の結果を消費する」)。空 overrides なら従来と同一出力。
      */
-    fun buildDxfText(csv: String, overridesJson: String): String {
+    fun buildDxfText(csv: String, overridesJson: String): String =
+        buildDxfText(csv, overridesJson, false)
+
+    /**
+     * 番号逆順付き経路 (アプリ保存ダイアログの NumReverse ボタン、MainActivity.kt:2293 →
+     * writer.isReverse_ = isNumberReverse:2578)。効き方は DxfFileWriter.writeEntities:319-323
+     * (番号の振り直し resetNumReverse + 控除リスト reverse) + :361-363 (面積計算書の行順) が正。
+     * CSV 保存には影響しない (ファイル仕様不変)。numReverse=false なら従来と同一出力
+     */
+    fun buildDxfText(csv: String, overridesJson: String, numReverse: Boolean): String {
         val header = parseHeader(csv)
         val trilist = readForExport(csv)
         WebOverrides.applyJson(trilist, overridesJson)
@@ -118,6 +127,7 @@ object WebDrawingExport {
             dedlist_ = dedsForExport(csv)
             viewscale_ = 1f // web の ded はビュー倍率 1 (アプリ既定 47.6 のままだと座標が 1/47.6 に縮む)
             startTriNumber_ = 1
+            isReverse_ = numReverse
         }
         writer.titleTri_ = TitleParamStr()
         writer.titleDed_ = TitleParamStr()
@@ -146,7 +156,11 @@ object WebDrawingExport {
     fun buildSfcText(csv: String, filename: String): String = buildSfcText(csv, filename, "")
 
     /** 段階2e (task #15): overrides 付き経路 (buildDxfText の overrides 版と同じ理屈) */
-    fun buildSfcText(csv: String, filename: String, overridesJson: String): String {
+    fun buildSfcText(csv: String, filename: String, overridesJson: String): String =
+        buildSfcText(csv, filename, overridesJson, false)
+
+    /** 番号逆順付き経路 (SfcWriter.kt:49-53 = DXF と同じ resetNumReverse + 控除 reverse) */
+    fun buildSfcText(csv: String, filename: String, overridesJson: String, numReverse: Boolean): String {
         val header = parseHeader(csv)
         val trilist = readForExport(csv)
         WebOverrides.applyJson(trilist, overridesJson)
@@ -157,7 +171,7 @@ object WebDrawingExport {
         writer.textscale_ = 500f
         writer.setNames(header.koujiname, header.rosenname, header.gyousyaname, header.zumennum)
         writer.setStartNumber(1)
-        writer.isReverse_ = false
+        writer.isReverse_ = numReverse
         return writer.buildSfcString()
     }
 }
