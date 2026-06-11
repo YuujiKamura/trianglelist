@@ -124,6 +124,28 @@ class WebDeductionTest {
     }
 
     @Test
+    fun rotate_shape_spins_box_in_place_without_moving_point() {
+        // 控除モードの rot FAB (アプリ fabRotate ded 分岐:1593-1600): 自身の中心回りに
+        // rotateShape — shapeAngle だけ動き、point/pointFlag (列 8-11) は不動
+        val line = "Deduction,2,集水桝,0.8,0.6,1,Box,0.0,1.0,0.0,2.0,0.0,10.0,FUTURE"
+        val out = WebDeduction.rotateDeductionShape(line, 5f)
+        val c = out.split(",")
+        assertEquals(5.0, c[12].toDouble(), 1e-4) // 10 + (-5)
+        assertEquals(1.0, c[8].toDouble(), 1e-4)
+        assertEquals(0.0, c[9].toDouble(), 1e-4)
+        assertEquals(2.0, c[10].toDouble(), 1e-4)
+        assertEquals(0.0, c[11].toDouble(), 1e-4)
+        assertEquals("FUTURE", c[13]) // 未知列の保持
+        // Circle は rotateShape の type ガードで無変化 (アプリと同じ)
+        val circle = "Deduction,1,仕切弁,0.23,0.0,1,Circle,0.0,1.0,0.0,2.0,0.0,0.0"
+        val outC = WebDeduction.rotateDeductionShape(circle, 5f).split(",")
+        assertEquals(0.0, outC[12].toDouble(), 1e-4)
+        assertEquals(1.0, outC[8].toDouble(), 1e-4)
+        // 非 Deduction 行はそのまま
+        assertEquals("1,3.0,3.0,3.0,-1,-1", WebDeduction.rotateDeductionShape("1,3.0,3.0,3.0,-1,-1", 5f))
+    }
+
+    @Test
     fun renderer_emits_ded_primitives_from_csv() {
         val (cx, cy) = interiorPoint()
         val line = WebDeduction.placeDeduction(csv, cx, cy, "仕切弁", 0.23f, 0f, 1)

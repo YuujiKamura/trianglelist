@@ -111,6 +111,15 @@ fun rotateDeductionLine(line: String, degrees: Double): String =
     WebDeduction.rotateDeductionLine(line, degrees.toFloat())
 
 /**
+ * 控除モードの rot FAB: 選択控除を自身の中心回りに回す (位置不動、Box の shapeAngle のみ。
+ * アプリ MainActivity.fabRotate の ded 分岐:1593-1600 と同式)
+ */
+@OptIn(ExperimentalJsExport::class)
+@JsExport
+fun rotateDeductionShape(line: String, degrees: Double): String =
+    WebDeduction.rotateDeductionShape(line, degrees.toFloat())
+
+/**
  * binaries.executable() のリンクに entry point が要るための no-op。
  * 段階1 は @JsExport 関数を JS から呼ぶだけで、起動時処理は無い。
  */

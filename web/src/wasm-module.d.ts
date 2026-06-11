@@ -18,4 +18,6 @@ declare module '*/TriangleList-common-wasm-js.mjs' {
   export function placeDeduction(csv: string, x: number, y: number, name: string, lenX: number, lenY: number, num: number): string;
   // 全体回転への控除連動: Deduction 行 1 本を degrees 回転して返す
   export function rotateDeductionLine(line: string, degrees: number): string;
+  // 控除モードの rot FAB: 選択控除を自身の中心回りに回す (位置不動、Box の shapeAngle のみ)
+  export function rotateDeductionShape(line: string, degrees: number): string;
 }

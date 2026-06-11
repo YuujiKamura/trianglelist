@@ -49,6 +49,7 @@ import {
   hitTriangle,
   placeDeduction,
   rotateDeductionLine,
+  rotateDeductionShape,
 } from '../wasm/TriangleList-common-wasm-js.mjs';
 // DXF/SFC は既存 app の出力と同じ Shift_JIS。ブラウザ標準 TextEncoder は UTF-8 専用なので
 // encoding-japanese (MIT, polygonplanet/encoding.js) で Unicode → SJIS バイト化する
@@ -1121,6 +1122,12 @@ function rewriteCurrent(canvas: HTMLCanvasElement): void {
 // 新規行の B が空 → カレント行の書換え / C だけ空 → 何もしない / 両方あり → 追加。
 // この 3 分岐の判定をそのまま写す (幾何の知識は CSV 再構築側 = common が持つ)
 function fabReplace(canvas: HTMLCanvasElement): void {
+  // 控除モード: 選択控除の書換え (アプリ fabReplace → processDedEditMode:1670 の edit 側。
+  // 追加はアプリと違い専用の「追加」ボタン (dedAdd) が既にあるので、FAB は書換え固定)
+  if (deductionMode) {
+    dedReplace(canvas);
+    return;
+  }
   const newB = input('newB').value.trim();
   const newC = input('newC').value.trim();
 
@@ -1270,6 +1277,11 @@ function fabMinus(canvas: HTMLCanvasElement): void {
     return;
   }
   disarmDelete();
+  // 控除モード: 選択中の控除を削除 (アプリ fab_minus は getList(deductionMode).remove:1283)
+  if (deductionMode) {
+    dedDelete(canvas);
+    return;
+  }
   if (rows.length === 0) return;
   deleteRow(canvas, current > 0 ? current : rows.length);
 }
@@ -1278,6 +1290,24 @@ function fabMinus(canvas: HTMLCanvasElement): void {
 // 回す。実体は listAngle の加算 1 つで、幾何は redraw → wasm の recoverState が全再構築で適用する。
 // アプリ同様 undo スナップは取らない (逆回転で戻せる)。view は据え置き (アプリも invalidate のみ)
 function fabRotate(canvas: HTMLCanvasElement, degrees: number): void {
+  // 控除モード: 選択中の Box 控除の形だけ ±5° (アプリ fabRotate の ded 分岐:1593-1600
+  // current_deduction.rotateShape — Circle は common 側の type==Box ガードで無変化)
+  if (deductionMode) {
+    if (dedSelected < 1) {
+      setStatus('回転: 先に控除を選択 (Box のみ回る)');
+      return;
+    }
+    const d = parseDedLine(dedLines[dedSelected - 1] ?? '');
+    if (d && d.type !== 'Box') {
+      setStatus(`回転: 控除 ${dedSelected} は ${d.type || '円'} — 回転は Box のみ`);
+      return;
+    }
+    dedLines[dedSelected - 1] = rotateDeductionShape(dedLines[dedSelected - 1] ?? '', degrees);
+    buildDedTable(canvas);
+    redraw(canvas);
+    setStatus(`控除 ${dedSelected} を回転`);
+    return;
+  }
   if (rows.length === 0) return;
   listAngle += degrees;
   // 控除の連動 (MainActivity.kt:1587 myDeductionList.rotate(origin, -degrees) 準拠)。
@@ -1342,9 +1372,38 @@ function fabUndo(canvas: HTMLCanvasElement): void {
   autosave();
 }
 
+// ズーム維持でモデル点を画面中央へ pan (アプリ MyView.resetView(point) 相当)。
+// view が未確定 (null) なら次の draw の bounds-fit に任せる
+function panTo(canvas: HTMLCanvasElement, x: number, y: number): void {
+  const v = view;
+  if (!v) {
+    draw(canvas, lastPrims);
+    return;
+  }
+  v.offsetX = canvas.width / 2 - x * v.scale;
+  v.offsetY = canvas.height / 2 + y * v.scale;
+  draw(canvas, lastPrims);
+}
+
+// 控除モードの上下 FAB: カレント控除を ±1 して、その控除へビューを寄せる
+// (アプリ fab_up/down の控除分岐 = myEditor.scroll ± resetViewToCurrentDeduction:1446-1466)
+function moveCurrentDed(canvas: HTMLCanvasElement, delta: number): void {
+  if (dedLines.length === 0) return;
+  const base = dedSelected > 0 ? dedSelected : dedLines.length;
+  const n = Math.min(Math.max(base + delta, 1), dedLines.length);
+  selectDed(canvas, n);
+  const d = parseDedLine(dedLines[n - 1] ?? '');
+  if (d && Number.isFinite(d.x) && Number.isFinite(d.y)) panTo(canvas, d.x, d.y);
+  setStatus(`控除 current: ${n}`);
+}
+
 // リスト上下 FAB (アプリ fab_up/down → EditorTable.scroll(±1) + moveTrilist:1691):
 // カレント行を ±1 して図の選択も追従させる
 function moveCurrent(canvas: HTMLCanvasElement, delta: number): void {
+  if (deductionMode) {
+    moveCurrentDed(canvas, delta);
+    return;
+  }
   if (rows.length === 0) return;
   const base = current > 0 ? current : rows.length;
   const n = Math.min(Math.max(base + delta, 1), rows.length);
@@ -1471,6 +1530,11 @@ function toggleDeductionMode(canvas: HTMLCanvasElement): void {
     flagImg.src = deductionMode
       ? `${import.meta.env.BASE_URL}icons/flag.png` // 赤 FLAG (アプリ共通 PNG、白点灯背景に映える)
       : `${import.meta.env.BASE_URL}micons/flag.svg`; // Material flag (flag_b.png は縮小で潰れるため)
+  // 回転 FAB アイコン swap (アプリ setDeductionFab:1049-1055 rot_dl/rot_dr ⇔ rot_l/rot_r)
+  const rotL = document.querySelector<HTMLImageElement>('#fabRotL img');
+  const rotR = document.querySelector<HTMLImageElement>('#fabRotR img');
+  if (rotL) rotL.src = `${import.meta.env.BASE_URL}icons/${deductionMode ? 'rot_dl' : 'rot_l'}.png`;
+  if (rotR) rotR.src = `${import.meta.env.BASE_URL}icons/${deductionMode ? 'rot_dr' : 'rot_r'}.png`;
   const details = document.getElementById('dedDetails') as HTMLDetailsElement | null;
   if (details && deductionMode) details.open = true;
   if (!deductionMode) {
@@ -1706,8 +1770,16 @@ function wireFabs(canvas: HTMLCanvasElement): void {
   el<HTMLButtonElement>('fabReplace').addEventListener('click', () => fabReplace(canvas));
   el<HTMLButtonElement>('fabUndo').addEventListener('click', () => fabUndo(canvas));
   el<HTMLButtonElement>('fabMinus').addEventListener('click', () => fabMinus(canvas));
-  // resetView FAB: 既存 dblclick fit と同じ動作のボタン化
+  // resetView FAB: 既存 dblclick fit と同じ動作のボタン化。控除モードで控除を選択中なら
+  // その控除へ寄せる (アプリ fab_resetView の resetViewToCurrentDeduction:1440 分岐)
   el<HTMLButtonElement>('fabResetView').addEventListener('click', () => {
+    if (deductionMode && dedSelected > 0) {
+      const d = parseDedLine(dedLines[dedSelected - 1] ?? '');
+      if (d && Number.isFinite(d.x) && Number.isFinite(d.y)) {
+        panTo(canvas, d.x, d.y);
+        return;
+      }
+    }
     view = null;
     draw(canvas, lastPrims);
   });
