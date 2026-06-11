@@ -396,6 +396,10 @@ function setEdgeVal(r: Row, k: EdgeKey, v: string): void {
 // 原文のまま保持し、直列化時に先頭へ戻す (どこにあっても reader は skip するので描画不変)
 let headerLines: string[] = [];
 let rows: Row[] = [];
+// 図形全体の回転角 (アプリ TriangleList.angle = 三角形1 の絶対角度、createNew は 0)。
+// 幾何への適用は wasm 側 WebCsvReader → recoverState (180° 基底からの全再構築) が担い、
+// TS はこの数値 1 個を持つだけ。CSV では ListAngle 行 (CsvLoader.readListParameter と同形)
+let listAngle = 0;
 
 // 測点名は CSV 列6 (CsvLoader.kt:242 のカラム表で確定)。extras[0] がそれに当たる。
 // WebCsvReader は列6を読まない (描画に出ない) が、round-trip と書き出しで保持する
@@ -424,9 +428,15 @@ function parseCsvToState(csv: string): void {
   headerLines = [];
   rows = [];
   edges = [];
+  listAngle = 0;
   for (const line of csv.split(/\r?\n/)) {
     if (line.trim() === '') continue;
     const chunks = line.split(',').map((s) => s.trim());
+    // ListAngle 行は headerLines に残さず数値 state に取り出す (serializeState が書き戻す)
+    if (chunks[0] === 'ListAngle') {
+      listAngle = parseFloat(chunks[1] ?? '') || 0;
+      continue;
+    }
     const num = chunks.length >= 4 ? intOrNull(chunks[0]) : null;
     if (num === null || num < 0) {
       headerLines.push(line);
@@ -469,6 +479,8 @@ function serializeState(): string {
       [String(i + 1), edgeVal(r, 'a'), edgeVal(r, 'b'), edgeVal(r, 'c'), r.parent, r.conn, ...r.extras].join(','),
     );
   });
+  // アプリ保存 (MainActivity.kt:2781) と同じく三角形行の後に ListAngle を書く
+  lines.push(`ListAngle, ${listAngle}`);
   return lines.join('\n') + '\n';
 }
 
@@ -1091,6 +1103,16 @@ function fabMinus(canvas: HTMLCanvasElement): void {
   deleteRow(canvas, current > 0 ? current : rows.length);
 }
 
+// 回転 FAB (MainActivity.kt:1394-1400 → fabRotate(±5f)): 図形全体を原点 (0,0) 回りに 5° 刻みで
+// 回す。実体は listAngle の加算 1 つで、幾何は redraw → wasm の recoverState が全再構築で適用する。
+// アプリ同様 undo スナップは取らない (逆回転で戻せる)。view は据え置き (アプリも invalidate のみ)
+function fabRotate(canvas: HTMLCanvasElement, degrees: number): void {
+  if (rows.length === 0) return;
+  listAngle += degrees;
+  setStatus(`回転: ${listAngle}°`);
+  redraw(canvas);
+}
+
 // undo FAB (MainActivity.kt:1352-1365): 1 段だけ戻して undo バッファを空にする
 function fabUndo(canvas: HTMLCanvasElement): void {
   if (undoSnap === null) {
@@ -1232,6 +1254,9 @@ function wireFabs(canvas: HTMLCanvasElement): void {
     view = null;
     draw(canvas, lastPrims);
   });
+  // 回転 FAB: アプリ fabs.xml 左上横列 [resetView][rot_l][rot_r] と同じ並び・同じ符号 (左=+5°)
+  el<HTMLButtonElement>('fabRotL').addEventListener('click', () => fabRotate(canvas, 5));
+  el<HTMLButtonElement>('fabRotR').addEventListener('click', () => fabRotate(canvas, -5));
   el<HTMLButtonElement>('fabUp').addEventListener('click', () => moveCurrent(canvas, -1));
   el<HTMLButtonElement>('fabDown').addEventListener('click', () => moveCurrent(canvas, 1));
 }
@@ -1773,7 +1798,7 @@ if (import.meta.hot) {
     }));
     hot.send('tlcp:state-res', {
       id: data.id,
-      state: { rows: rowsExpanded, edges, selected, current, overrides, csv: serializeState(), view, prims: lastPrims, fabs },
+      state: { rows: rowsExpanded, edges, selected, current, listAngle, overrides, csv: serializeState(), view, prims: lastPrims, fabs },
     });
   });
   // キー注入: 要素に値をセットして keydown を流す (Enter ナビ等のキーボード UX の検証口)。

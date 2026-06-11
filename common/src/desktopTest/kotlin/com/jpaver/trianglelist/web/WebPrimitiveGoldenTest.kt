@@ -24,7 +24,8 @@ import kotlin.test.fail
  */
 class WebPrimitiveGoldenTest {
 
-    /** WebDrawingExportGoldenTest.defaultFixtureCsv と同一 (golden DXF と同じ三角形リスト) */
+    /** WebDrawingExportGoldenTest.defaultFixtureCsv と同一 (golden DXF と同じ三角形リスト)。
+     *  ListAngle 180 = 採取時 (recoverState 導入前、180° 基底のまま) と同じ向きの明示指定 */
     private val defaultFixtureCsv = """
         市道○○号線 舗装打換工事
         市道○○号線
@@ -32,6 +33,7 @@ class WebPrimitiveGoldenTest {
         1/1
         1,10,2,10,-1,-1
         2,10,1,10,1,2
+        ListAngle, 180
     """.trimIndent() + "\n"
 
     /** web/src/main.ts:34-45 の SAMPLE_CSV と同一 */

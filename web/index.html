@@ -182,7 +182,12 @@
         <div id="canvasWrap">
           <canvas id="cv" width="1200" height="800"></canvas>
           <div class="fabcol" id="fabLeft">
-            <button id="fabResetView" type="button" title="全体表示">⛶</button>
+            <!-- アプリ fabs.xml 左上横列 [resetView][rot_l][rot_r] と同じ並び -->
+            <div class="fabrow">
+              <button id="fabResetView" type="button" title="全体表示">⛶</button>
+              <button id="fabRotL" type="button" title="左回転 (+5°)">⟲</button>
+              <button id="fabRotR" type="button" title="右回転 (−5°)">⟳</button>
+            </div>
             <button id="fabUp" type="button" title="リスト上 (前の三角形)">▲</button>
             <button id="fabDown" type="button" title="リスト下 (次の三角形)">▼</button>
           </div>

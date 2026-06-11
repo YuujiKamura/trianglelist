@@ -57,6 +57,26 @@ class WebPrimitiveRendererTest {
     }
 
     @Test
+    fun reader_applies_list_angle_via_recover_state() {
+        val base = "1,6.0,5.0,4.0,-1,-1\n"
+        // ListAngle 行なし → angle 0 (アプリ createNew と同じ向き、180° 基底から -180° 回転)
+        val t0 = WebCsvReader.read(base).getBy(1)
+        assertEquals(0f, t0.angle, 0.001f)
+        // 角度 0 = A辺が +x 方向: pointAB は (lenA, 0)
+        assertEquals(6.0, t0.pointAB.x, 0.001)
+        assertEquals(0.0, t0.pointAB.y, 0.001)
+        // ListAngle 180 → 180° 基底のまま (= recoverState 導入前の web と同じ向き)
+        val t180 = WebCsvReader.read(base + "ListAngle, 180\n").getBy(1)
+        assertEquals(180f, t180.angle, 0.001f)
+        assertEquals(-6.0, t180.pointAB.x, 0.001)
+        // 任意角度: ListAngle = 三角形1 の絶対角度 (4.11.csv で列22 と同値、その pin)
+        val t90 = WebCsvReader.read(base + "ListAngle, 90\n").getBy(1)
+        assertEquals(90f, t90.angle, 0.001f)
+        assertEquals(0.0, t90.pointAB.x, 0.001)
+        assertEquals(6.0, t90.pointAB.y, 0.001)
+    }
+
+    @Test
     fun render_emits_expected_primitive_counts() {
         val json = WebPrimitiveRenderer.renderCsv(sampleCsv, 1f)
         // 辺: 7 三角形 × 3 本
