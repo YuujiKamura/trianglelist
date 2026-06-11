@@ -552,7 +552,8 @@ function el<T extends HTMLElement>(id: string): T {
 const input = (id: string) => el<HTMLInputElement>(id);
 const select = (id: string) => el<HTMLSelectElement>(id);
 
-// 3 行フォームを state から書き直す (アプリ EditorTable.lineRewrite + scroll 相当)。
+// 2 行フォーム (新規 + カレント) を state から書き直す (アプリ EditorTable.lineRewrite + scroll 相当)。
+// 前行は廃止 (user 2026-06-11: web は全行一覧があるので不要、現行スマホ版も 2 行に簡略化済)。
 // 新規入力行の値はユーザーの書きかけなので触らない — 番号プリセットだけ更新する
 function syncForm(): void {
   input('newNum').value = String(rows.length + 1);
@@ -565,16 +566,6 @@ function syncForm(): void {
   input('curC').value = cur ? fmt2(edgeVal(cur, 'c')) : '';
   input('curParent').value = cur ? cur.parent : '';
   setConnSelects('cur', cur ? connPartsOf(cur) : null);
-
-  const prev = current >= 2 ? rows[current - 2] : null;
-  input('prevNum').value = prev ? String(current - 1) : '';
-  input('prevName').value = prev ? nameOf(prev) : '';
-  input('prevA').value = prev ? fmt2(edgeVal(prev, 'a')) : '';
-  input('prevB').value = prev ? fmt2(edgeVal(prev, 'b')) : '';
-  input('prevC').value = prev ? fmt2(edgeVal(prev, 'c')) : '';
-  input('prevParent').value = prev ? prev.parent : '';
-  // 前行は read-only 表示なので接続は select でなくラベル文字列で揃える
-  input('prevConn').value = prev ? (CONN_LABEL[prev.conn] ?? prev.conn) : '';
 }
 
 function updateRowHighlight(): void {
@@ -1427,7 +1418,7 @@ function syncEdgeInputs(ei: number, except?: HTMLInputElement): void {
   document.querySelectorAll<HTMLInputElement>(`#triRows input[data-edge="${ei}"]`).forEach((o) => {
     if (o !== except) o.value = fmt2(edges[ei]);
   });
-  syncForm(); // カレント行・前行のフォーム表示も追従
+  syncForm(); // カレント行のフォーム表示も追従
 }
 
 // 既に子が接続されている辺か (parent=tri, conn=side の行があるか)。
