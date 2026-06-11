@@ -1830,6 +1830,18 @@ if (import.meta.hot) {
       hot.send('tlcp:click-res', { id: data.id, state: { ok: false } });
     }
   });
+  // CSV 注入: ファイルダイアログを経ずに CSV を開く (loadCsv と同じ動線)。
+  // 完全形式 CSV (手動配置列 7-9/11-16/20-21、golden 比較) の e2e 検証口
+  hot.on('tlcp:load-req', (data: { id: string; csv?: string }) => {
+    const canvas = document.getElementById('cv') as HTMLCanvasElement | null;
+    if (canvas && typeof data.csv === 'string' && data.csv.trim() !== '') {
+      overrides = { dims: [], numbers: [] }; // ファイル開き (fileInput change) と同じ: 前データの override を持ち越さない
+      loadCsv(canvas, data.csv, 'cp-load');
+      hot.send('tlcp:load-res', { id: data.id, state: { ok: true, rows: rows.length, listAngle } });
+    } else {
+      hot.send('tlcp:load-res', { id: data.id, state: { ok: false } });
+    }
+  });
   // 編集注入: 一覧セル編集と同じ動線 (row 書換え → redraw) を踏む。
   // 三角不等式の共通関門が「図を据え置いて警告する」ことを CLI から実走検証する口
   hot.on('tlcp:edit-req', (data: { id: string; tri?: number; key?: string; value?: string }) => {

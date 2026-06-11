@@ -77,6 +77,42 @@ class WebPrimitiveRendererTest {
     }
 
     @Test
+    fun reader_restores_manual_placement_from_full_format_columns() {
+        // 完全形式の手動配置列 (CsvLoader.finalizeBuildTriangle と同順):
+        // 列7-9 = 番号サークル位置 (移動フラグ true 時のみ)、列11-16 = 寸法アライメント、
+        // 列20-21 = 寸法手動フラグ。子を持たない行なら保存値がそのまま残る
+        val single = "1,6.0,5.0,4.0,-1,-1,,4.0,-2.0,true,4,2,0,0,3,1,1\n"
+        val t1 = WebCsvReader.read(single).getBy(1)
+        // 番号サークル: 保存座標は絶対値、移動フラグが recoverState の回転から外すので据え置き
+        assertEquals(4.0, t1.pointnumber.x.toDouble(), 0.001)
+        assertEquals(-2.0, t1.pointnumber.y.toDouble(), 0.001)
+        assertTrue(t1.pointNumber.flag.isMovedByUser)
+        // 寸法アライメント: horizontal.a=2、vertical.a=3 が保存値どおり
+        assertEquals(2, t1.dim.horizontal.a)
+        assertEquals(3, t1.dim.vertical.a)
+    }
+
+    @Test
+    fun reader_saved_aligns_win_over_auto_inner_for_doubled_child() {
+        // 手動優先の順序: 二重断面の子 (conn 5) の A辺は add() の自動配置で内側(3) になるが、
+        // 保存値 (列14 = 1 = 外側) が「後」に適用されて勝つ — CsvLoader と同じ順序
+        val csv =
+            "1,6.0,5.0,4.0,-1,-1,,0,0,false,4,0,0,0,1,1,1\n" +
+                "2,5.0,4.0,3.0,1,5,,0,0,false,4,0,0,0,1,1,1,2,1,2,true,false\n"
+        val trilist = WebCsvReader.read(csv)
+        val t2 = trilist.getBy(2)
+        assertEquals(1, t2.dim.vertical.a)
+        assertTrue(t2.dim.flag[1].isMovedByUser)
+        assertTrue(!t2.dim.flag[2].isMovedByUser)
+        // 親 C辺: 二重断面の子は親の nodeC に登録されない (辺共有/フロートと違う) ので
+        // 子 add() の setDimsUnconnectedSideToOuter は触らず、保存値 1 (外側) が残る (app 同一コード)
+        assertEquals(1, trilist.getBy(1).dim.vertical.c)
+        // 描画にも乗る: tri2 side0 の寸法テキストが v=1 で出る
+        val json = WebPrimitiveRenderer.render(trilist, 0.25f)
+        assertTrue(json.contains(""""tri":2,"side":0,"h":0,"v":1"""), "saved v=1 not in render output")
+    }
+
+    @Test
     fun render_emits_expected_primitive_counts() {
         val json = WebPrimitiveRenderer.renderCsv(sampleCsv, 1f)
         // 辺: 7 三角形 × 3 本
