@@ -1671,6 +1671,7 @@ function newDrawing(canvas: HTMLCanvasElement): void {
   headerLines = ['無題工事', '新規路線', '', ''];
   edges = [];
   rows = [{ ea: newEdge('3.00'), eb: newEdge('3.00'), ec: newEdge('3.00'), parent: '-1', conn: '-1', extras: [] }];
+  listAngle = 0; // アプリ createNew は TriangleList を作り直す = angle 0 (回転 FAB の残留を消す)
   overrides = { dims: [], numbers: [] };
   lastTapModel = null;
   dedLines = [];
