@@ -3,7 +3,7 @@
 // ここは JSON プリミティブを素朴に描くだけ。
 // y 軸はモデル座標 (上向き) → 画面座標 (下向き) に反転する (MyView.makePath の -y と同じ向き)。
 
-type LinePrim = { type: 'line'; layer: string; x1: number; y1: number; x2: number; y2: number };
+type LinePrim = { type: 'line'; layer: string; x1: number; y1: number; x2: number; y2: number; ded?: number };
 type TextPrim = {
   type: 'text';
   layer: string;
@@ -19,8 +19,9 @@ type TextPrim = {
   side?: number;
   h?: number; // horizontal 実効値 (0..4、>2 で旗揚げ)。W cycle はここから次値を計算
   v?: number; // vertical 実効値 (1=外/3=内)
+  ded?: number; // 控除番号 (ded layer のみ)。選択中の控除の色替えに使う
 };
-type CirclePrim = { type: 'circle'; layer: string; cx: number; cy: number; r: number; tri?: number };
+type CirclePrim = { type: 'circle'; layer: string; cx: number; cy: number; r: number; tri?: number; ded?: number };
 // 三角形の塗り (アプリ MyView.drawEntities:572-576 の写し)。color は CSV 列 10 の index、
 // 実色は FILL_PALETTE が解決する
 type FillPrim = {
@@ -73,6 +74,8 @@ const COLORS: Record<string, string> = {
   num: '#1f5fbf',
   ded: '#c0392b', // 控除 = 赤系 (アプリ/DXF の RED 準拠)
 };
+// 選択中の控除の色 (図形・旗揚げ・テキストごと色替えして他の控除と見分ける)
+const DED_SELECT_COLOR = '#e67e22';
 
 // 三角形の塗りパレット (index = CSV 列 10 = Triangle.mycolor、既定 4)。
 // 色値はアプリの resColors (MainActivity.kt:218-224 → res/values/colors.xml:9-14) と同一 —
@@ -178,7 +181,7 @@ let dedSelected = 0; // 選択中の控除番号 (1-based、0 = 非選択)
 
 // Deduction CSV 行の表示用パース (列順は MainActivity.writeCSV:2795)。座標列 8/9 は
 // モデル座標 (y 上向き、保存時に Y 反転済みの値) なのでそのまま hit/マーカーに使える
-type DedView = { num: number; name: string; lenX: string; lenY: string; pn: string; type: string; x: number; y: number };
+type DedView = { num: number; name: string; lenX: string; lenY: string; pn: string; type: string; x: number; y: number; fx: number; fy: number };
 
 function parseDedLine(line: string): DedView | null {
   const c = line.split(',').map((s) => s.trim());
@@ -192,6 +195,8 @@ function parseDedLine(line: string): DedView | null {
     type: c[6] ?? '',
     x: parseFloat(c[8] ?? ''),
     y: parseFloat(c[9] ?? ''),
+    fx: parseFloat(c[10] ?? ''),
+    fy: parseFloat(c[11] ?? ''),
   };
 }
 
@@ -323,10 +328,12 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
 
   for (const p of prims) {
     if (p.type === 'fill') continue; // 塗りは最初のパスで描画済み
-    const color = COLORS[p.layer] ?? '#000000';
+    // 選択中の控除はプリミティブごと色替え (user 指定: 明示的に色替えして見分ける)
+    const isSelectedDed = p.layer === 'ded' && dedSelected > 0 && p.ded === dedSelected;
+    const color = isSelectedDed ? DED_SELECT_COLOR : (COLORS[p.layer] ?? '#000000');
     if (p.type === 'line') {
       ctx.strokeStyle = color;
-      ctx.lineWidth = p.layer === 'tri' ? 1.5 : 1;
+      ctx.lineWidth = isSelectedDed ? 2 : p.layer === 'tri' ? 1.5 : 1;
       ctx.beginPath();
       ctx.moveTo(sx(p.x1), sy(p.y1));
       ctx.lineTo(sx(p.x2), sy(p.y2));
@@ -450,17 +457,8 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
     ctx.stroke();
   }
 
-  // 選択中の控除に黄色リング (三角形の番号リングと同じ見せ方)
-  if (dedSelected > 0) {
-    const d = parseDedLine(dedLines[dedSelected - 1] ?? '');
-    if (d && Number.isFinite(d.x) && Number.isFinite(d.y)) {
-      ctx.strokeStyle = SELECT_YELLOW;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(sx(d.x), sy(d.y), Math.max((parseFloat(d.lenX) || 0.3) * 0.7 * s, 10), 0, Math.PI * 2);
-      ctx.stroke();
-    }
-  }
+  // 選択中の控除はプリミティブごと DED_SELECT_COLOR で色替え済み (上の描画ループ)。
+  // 旧黄色リングはそれに置換 (user 指定: 明示的に色替えしてやるとわかりやすい)
 }
 
 function renderCsv(canvas: HTMLCanvasElement, csv: string, label: string): void {
@@ -1365,6 +1363,27 @@ function flipDim(canvas: HTMLCanvasElement, axis: 'W' | 'H'): void {
 // 移動の実体は override (ADR 0003 の式⊕override 二層) — 遠すぎる点は common 側の
 // BORDER 判定で無視されるので、動いたかは描画後のサークル位置で判定して伝える
 function fabFlag(canvas: HTMLCanvasElement): void {
+  // 控除モード: 選択中の控除の名称フラッグ (pointFlag) をカーソル位置へ移動
+  // (アプリ fabFlag:1575-1582 → flagDeduction:1558-1566 の分岐。pointflag = pressedInModel)
+  if (deductionMode) {
+    if (dedSelected < 1) {
+      setStatus('旗揚げ: 先に控除を選択してください');
+      return;
+    }
+    if (!dedCursor) {
+      setStatus('旗揚げ: 移動先をクリックしてから押してください');
+      return;
+    }
+    const c = (dedLines[dedSelected - 1] ?? '').split(',').map((s) => s.trim());
+    if (c[0] !== 'Deduction' || c.length < 13) return;
+    // 列 10/11 = pointFlag (dedLines はモデル座標、WebDeduction.serializeDeduction:74-79 が SoT)
+    c[10] = String(dedCursor.x);
+    c[11] = String(dedCursor.y);
+    dedLines[dedSelected - 1] = c.join(',');
+    redraw(canvas);
+    setStatus(`控除 ${dedSelected} の旗揚げを移動した`);
+    return;
+  }
   const n = current > 0 ? current : 0;
   if (n < 1) {
     setStatus('旗揚げ: 先に三角形を選択してください');
@@ -1478,6 +1497,17 @@ function buildDedTable(canvas: HTMLCanvasElement): void {
       td.textContent = c;
       tr.appendChild(td);
     }
+    // 明示的な選択ボタン (行クリックでも選択できるが、ボタンで意図を見える化 — user 指定)
+    const tdSel = document.createElement('td');
+    const sel = document.createElement('button');
+    sel.type = 'button';
+    sel.textContent = '選択';
+    sel.addEventListener('click', (e) => {
+      e.stopPropagation();
+      selectDed(canvas, i + 1);
+    });
+    tdSel.appendChild(sel);
+    tr.appendChild(tdSel);
     const tdDel = document.createElement('td');
     const del = document.createElement('button');
     del.type = 'button';
@@ -1582,16 +1612,17 @@ function dedDelete(canvas: HTMLCanvasElement, n?: number): void {
 
 // 控除モード中のクリック: 既存控除の上なら選択、それ以外はカーソル位置決め
 function handleDedTap(canvas: HTMLCanvasElement, px: number, py: number, m: { x: number; y: number }): void {
-  const v = view;
-  if (v) {
-    for (let i = 0; i < dedLines.length; i++) {
-      const d = parseDedLine(dedLines[i]);
-      if (!d || !Number.isFinite(d.x) || !Number.isFinite(d.y)) continue;
-      const dist = Math.hypot(d.x * v.scale + v.offsetX - px, -d.y * v.scale + v.offsetY - py);
-      if (dist <= EDGE_TAP_PX) {
-        selectDed(canvas, i + 1);
-        return;
-      }
+  // 当たり判定はアプリ Deduction.getTap:144-150 準拠 (モデル単位、myscale=1):
+  // 図形中心から lengthX 以内、または名称フラッグから 0.5 以内でその控除を選択
+  for (let i = 0; i < dedLines.length; i++) {
+    const d = parseDedLine(dedLines[i]);
+    if (!d || !Number.isFinite(d.x) || !Number.isFinite(d.y)) continue;
+    const range = Math.max(parseFloat(d.lenX) || 0, 0.3); // 極小図形でも掴める下限
+    const hitShape = Math.hypot(d.x - m.x, d.y - m.y) <= range;
+    const hitFlag = Number.isFinite(d.fx) && Number.isFinite(d.fy) && Math.hypot(d.fx - m.x, d.fy - m.y) <= 0.5;
+    if (hitShape || hitFlag) {
+      selectDed(canvas, i + 1);
+      return;
     }
   }
   dedCursor = m;
