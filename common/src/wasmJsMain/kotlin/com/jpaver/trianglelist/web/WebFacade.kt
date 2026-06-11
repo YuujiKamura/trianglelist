@@ -120,6 +120,14 @@ fun rotateDeductionShape(line: String, degrees: Double): String =
     WebDeduction.rotateDeductionShape(line, degrees.toFloat())
 
 /**
+ * 図面枠 (A3、DXF と同じ writeDrawingFrame) を prim JSON 配列で返す。layer "frame"。
+ * 配置は「図形中心に枠中心を合わせる」(DXF が図形を枠へ動かすのと同じ相対配置)
+ */
+@OptIn(ExperimentalJsExport::class)
+@JsExport
+fun renderFrame(csv: String): String = WebFrame.renderFrame(csv)
+
+/**
  * binaries.executable() のリンクに entry point が要るための no-op。
  * 段階1 は @JsExport 関数を JS から呼ぶだけで、起動時処理は無い。
  */
