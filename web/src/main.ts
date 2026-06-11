@@ -361,14 +361,36 @@ function renderCsv(canvas: HTMLCanvasElement, csv: string, label: string): void 
 // 状態の真実は「行の配列」。編集のたび CSV へ直列化して renderCsv() に流す。
 // 接続・座標計算は common (WebCsvReader/WebPrimitiveRenderer) 側 — TS は表⇔CSV の糊だけ。
 
+// ---- 辺プール (ADR 0006 改訂: リーナスの「表現で特殊ケースを消す」の適用) ----
+// 1 本の物理辺の長さはプールに 1 個だけ持ち、行は辺への index を持つ。
+// 単純接続の子の A 辺は親の B/C と**同じ index を共有**するので、
+// 「親⇔子の伝播」はコードではなく構造が担う — 写す相手が存在しない。
+// (DCEL/half-edge の本質 1 点取り。面巡回等のフル機構は木構造には過剰なので持たない)
+let edges: string[] = [];
+
+function newEdge(v: string): number {
+  return edges.push(v) - 1;
+}
+
+type EdgeKey = 'a' | 'b' | 'c';
+const EKEY: Record<EdgeKey, 'ea' | 'eb' | 'ec'> = { a: 'ea', b: 'eb', c: 'ec' };
+
 type Row = {
-  a: string;
-  b: string;
-  c: string;
+  ea: number; // 辺A の edges index (単純接続では親の eb/ec と同一値)
+  eb: number;
+  ec: number;
   parent: string;
   conn: string;
   extras: string[]; // 7列目以降 (測点名等) を生のまま保持して round-trip で落とさない
 };
+
+function edgeVal(r: Row, k: EdgeKey): string {
+  return edges[r[EKEY[k]]];
+}
+
+function setEdgeVal(r: Row, k: EdgeKey, v: string): void {
+  edges[r[EKEY[k]]] = v;
+}
 
 // WebCsvReader が三角形行として読まない行 (ヘッダ・Deduction 等) は
 // 原文のまま保持し、直列化時に先頭へ戻す (どこにあっても reader は skip するので描画不変)
@@ -401,6 +423,7 @@ function fmt2(s: string): string {
 function parseCsvToState(csv: string): void {
   headerLines = [];
   rows = [];
+  edges = [];
   for (const line of csv.split(/\r?\n/)) {
     if (line.trim() === '') continue;
     const chunks = line.split(',').map((s) => s.trim());
@@ -409,13 +432,31 @@ function parseCsvToState(csv: string): void {
       headerLines.push(line);
       continue;
     }
+    const parent = chunks[4] ?? '-1';
+    const conn = chunks[5] ?? '-1';
+    const extras = chunks.slice(6);
+    const aStr = chunks[1] ?? '';
+    // 辺A の共有判定: 単純接続で数値が親辺と一致する時だけ束ねる。
+    // 一致しない CSV (手書き・古いデータ) は従来どおり別の値として保持し描画を変えない
+    const pn = intOrNull(parent) ?? -1;
+    const cn = intOrNull(conn);
+    const pRow = pn > 0 ? rows[pn - 1] : undefined;
+    let ea: number;
+    if (
+      pRow && (cn === 1 || cn === 2) && isSimpleConnection({ extras }) &&
+      parseFloat(aStr) === parseFloat(edges[cn === 1 ? pRow.eb : pRow.ec])
+    ) {
+      ea = cn === 1 ? pRow.eb : pRow.ec;
+    } else {
+      ea = newEdge(aStr);
+    }
     rows.push({
-      a: chunks[1] ?? '',
-      b: chunks[2] ?? '',
-      c: chunks[3] ?? '',
-      parent: chunks[4] ?? '-1',
-      conn: chunks[5] ?? '-1',
-      extras: chunks.slice(6),
+      ea,
+      eb: newEdge(chunks[2] ?? ''),
+      ec: newEdge(chunks[3] ?? ''),
+      parent,
+      conn,
+      extras,
     });
   }
 }
@@ -423,7 +464,10 @@ function parseCsvToState(csv: string): void {
 function serializeState(): string {
   const lines = [...headerLines];
   rows.forEach((r, i) => {
-    lines.push([String(i + 1), r.a, r.b, r.c, r.parent, r.conn, ...r.extras].join(','));
+    // 共有 index は CSV では従来どおり複製値に展開する (app との互換境界)
+    lines.push(
+      [String(i + 1), edgeVal(r, 'a'), edgeVal(r, 'b'), edgeVal(r, 'c'), r.parent, r.conn, ...r.extras].join(','),
+    );
   });
   return lines.join('\n') + '\n';
 }
@@ -459,7 +503,11 @@ function invalidTriangleReason(a: number, b: number, c: number): string | null {
 
 function findInvalidRow(rs: Row[]): { n: number; reason: string } | null {
   for (let i = 0; i < rs.length; i++) {
-    const reason = invalidTriangleReason(parseFloat(rs[i].a), parseFloat(rs[i].b), parseFloat(rs[i].c));
+    const reason = invalidTriangleReason(
+      parseFloat(edgeVal(rs[i], 'a')),
+      parseFloat(edgeVal(rs[i], 'b')),
+      parseFloat(edgeVal(rs[i], 'c')),
+    );
     if (reason) return { n: i + 1, reason };
   }
   return null;
@@ -500,18 +548,18 @@ function syncForm(): void {
   const cur = current >= 1 ? rows[current - 1] : null;
   input('curNum').value = cur ? String(current) : '';
   input('curName').value = cur ? nameOf(cur) : '';
-  input('curA').value = cur ? fmt2(cur.a) : '';
-  input('curB').value = cur ? fmt2(cur.b) : '';
-  input('curC').value = cur ? fmt2(cur.c) : '';
+  input('curA').value = cur ? fmt2(edgeVal(cur, 'a')) : '';
+  input('curB').value = cur ? fmt2(edgeVal(cur, 'b')) : '';
+  input('curC').value = cur ? fmt2(edgeVal(cur, 'c')) : '';
   input('curParent').value = cur ? cur.parent : '';
   select('curConn').value = cur ? cur.conn : '-1';
 
   const prev = current >= 2 ? rows[current - 2] : null;
   input('prevNum').value = prev ? String(current - 1) : '';
   input('prevName').value = prev ? nameOf(prev) : '';
-  input('prevA').value = prev ? fmt2(prev.a) : '';
-  input('prevB').value = prev ? fmt2(prev.b) : '';
-  input('prevC').value = prev ? fmt2(prev.c) : '';
+  input('prevA').value = prev ? fmt2(edgeVal(prev, 'a')) : '';
+  input('prevB').value = prev ? fmt2(edgeVal(prev, 'b')) : '';
+  input('prevC').value = prev ? fmt2(edgeVal(prev, 'c')) : '';
   input('prevParent').value = prev ? prev.parent : '';
   // 前行は read-only 表示なので接続は select でなくラベル文字列で揃える
   input('prevConn').value = prev ? (CONN_OPTIONS.find(([v]) => v === prev.conn)?.[1] ?? prev.conn) : '';
@@ -597,16 +645,18 @@ function buildTable(canvas: HTMLCanvasElement): void {
     for (const key of ['a', 'b', 'c'] as const) {
       const td = document.createElement('td');
       // 表示も保存値も fmt2 で 2 桁に揃える (入力途中の文字列は input イベントでは触らない)。
-      // 接続辺は編集のたび相手側 (親の B/C ⇔ 子の A) へ伝播する
-      const inp = numberInput(fmt2(row[key]), '0.01', (v) => {
-        row[key] = v;
-        refreshCells(propagateEdgeValue(i + 1, key));
+      // 値は辺プールに 1 個 — 共有辺 (子の A = 親の B/C) は書いた瞬間に両者の実体が変わるので
+      // 伝播処理は無い。同じ辺を表示している他のセルだけ syncEdgeInputs で追従させる
+      const inp = numberInput(fmt2(edgeVal(row, key)), '0.01', (v) => {
+        setEdgeVal(row, key, v);
+        syncEdgeInputs(row[EKEY[key]], inp);
         redraw(canvas);
       });
+      inp.dataset.edge = String(row[EKEY[key]]);
       inp.addEventListener('change', () => {
         inp.value = fmt2(inp.value);
-        row[key] = inp.value;
-        refreshCells(propagateEdgeValue(i + 1, key));
+        setEdgeVal(row, key, inp.value);
+        syncEdgeInputs(row[EKEY[key]], inp);
         redraw(canvas);
       });
       td.appendChild(inp);
@@ -614,12 +664,18 @@ function buildTable(canvas: HTMLCanvasElement): void {
     }
 
     const tdParent = document.createElement('td');
-    tdParent.appendChild(
-      numberInput(row.parent, '1', (v) => {
-        row.parent = v;
-        redraw(canvas);
-      }),
-    );
+    const parentInp = numberInput(row.parent, '1', (v) => {
+      row.parent = v;
+      relinkEdgeA(row); // 接続先が変わったので辺A の共有を張り直す
+      redraw(canvas);
+    });
+    // 入力確定 (blur) で表を組み直して data-edge を張り直す。入力中の組み直しはフォーカスを壊す
+    parentInp.addEventListener('change', () => {
+      buildTable(canvas);
+      syncForm();
+      redraw(canvas);
+    });
+    tdParent.appendChild(parentInp);
     tr.appendChild(tdParent);
 
     const tdConn = document.createElement('td');
@@ -640,6 +696,9 @@ function buildTable(canvas: HTMLCanvasElement): void {
     sel.value = row.conn;
     sel.addEventListener('change', () => {
       row.conn = sel.value;
+      relinkEdgeA(row); // 接続辺が変わったので辺A の共有を張り直す
+      buildTable(canvas); // select は離散操作なので組み直してよい (data-edge 更新)
+      syncForm();
       redraw(canvas);
     });
     tdConn.appendChild(sel);
@@ -669,12 +728,12 @@ function buildTable(canvas: HTMLCanvasElement): void {
 
 function addRow(canvas: HTMLCanvasElement): void {
   if (rows.length === 0) {
-    rows.push({ a: '3.0', b: '3.0', c: '3.0', parent: '-1', conn: '-1', extras: [] });
+    rows.push({ ea: newEdge('3.0'), eb: newEdge('3.0'), ec: newEdge('3.0'), parent: '-1', conn: '-1', extras: [] });
   } else {
-    // デフォルトは「直前の行の B 辺に接続」。辺A は親の接続先辺長と一致させる仕様
-    // (CLAUDE.md 三角形接続の仕様) なので、親行の B 値を写すだけ — 計算はしない
+    // デフォルトは「直前の行の B 辺に接続」。辺A は親の B 辺と同一の物理辺なので
+    // 値を写すのではなく同じ辺 index を共有する (辺プール)
     const parent = rows[rows.length - 1];
-    rows.push({ a: parent.b, b: '3.0', c: '3.0', parent: String(rows.length), conn: '1', extras: [] });
+    rows.push({ ea: parent.eb, eb: newEdge('3.0'), ec: newEdge('3.0'), parent: String(rows.length), conn: '1', extras: [] });
   }
   clearSelection(); // 行構成が変わるので選択解除
   buildTable(canvas);
@@ -712,7 +771,7 @@ function autoConnection(side: 1 | 2): void {
   select('newConn').value = String(side);
   parentInput.value = String(parentN);
   const p = rows[parentN - 1];
-  if (p) input('newA').value = side === 1 ? p.b : p.c;
+  if (p) input('newA').value = edgeVal(p, side === 1 ? 'b' : 'c');
   input('newB').focus();
 }
 
@@ -745,15 +804,18 @@ function fabReplace(canvas: HTMLCanvasElement): void {
     }
     takeUndoSnap();
     const r = rows[current - 1];
-    r.a = input('curA').value;
-    r.b = input('curB').value;
-    r.c = input('curC').value;
     const cp = input('curParent').value.trim();
-    r.parent = cp === '' ? '-1' : cp;
-    r.conn = select('curConn').value;
+    const newParentVal = cp === '' ? '-1' : cp;
+    // 接続 (parent/conn) が変わる場合は先に辺A の共有を張り直してから値を書く
+    if (newParentVal !== r.parent || select('curConn').value !== r.conn) {
+      r.parent = newParentVal;
+      r.conn = select('curConn').value;
+      relinkEdgeA(r);
+    }
+    setEdgeVal(r, 'a', input('curA').value); // 共有辺なら親の B/C も同時に変わる (実体が 1 個)
+    setEdgeVal(r, 'b', input('curB').value);
+    setEdgeVal(r, 'c', input('curC').value);
     setName(r, input('curName').value);
-    // 接続辺の伝播 (この後 buildTable が全組み直しするので refreshCells は不要)
-    (['a', 'b', 'c'] as const).forEach((k) => propagateEdgeValue(current, k));
     buildTable(canvas);
     syncForm();
     redraw(canvas);
@@ -774,7 +836,7 @@ function fabReplace(canvas: HTMLCanvasElement): void {
   if ((conn === '1' || conn === '2') && a === '') {
     // 辺A 空のまま CSV に流すと WebCsvReader が行ごと skip する — 親の接続先辺長を写す
     const p = rows[parseInt(parent, 10) - 1];
-    if (p) a = conn === '1' ? p.b : p.c;
+    if (p) a = edgeVal(p, conn === '1' ? 'b' : 'c');
   }
   // 共通関門: 不成立の値は行を足す前に却下 (undo スナップも消費しない)
   const addBad = invalidTriangleReason(parseFloat(a), parseFloat(newB), parseFloat(newC));
@@ -793,7 +855,11 @@ function fabReplace(canvas: HTMLCanvasElement): void {
   }
   takeUndoSnap();
   const name = input('newName').value;
-  rows.push({ a, b: newB, c: newC, parent, conn, extras: name !== '' ? [name] : [] });
+  // 単純接続は親の辺 index を共有 (辺A = 親辺は同一の物理辺)、独立は自分の辺を作る
+  const pRow = rows[parseInt(parent, 10) - 1];
+  const ea =
+    pRow && (conn === '1' || conn === '2') ? (conn === '1' ? pRow.eb : pRow.ec) : newEdge(a);
+  rows.push({ ea, eb: newEdge(newB), ec: newEdge(newC), parent, conn, extras: name !== '' ? [name] : [] });
 
   // 新規入力行をリセットして次の入力へ (アプリ finalizeReplace + editorResetBy 相当)
   input('newName').value = '';
@@ -931,7 +997,8 @@ function newDrawing(canvas: HTMLCanvasElement): void {
   if (rows.length > 0 && !window.confirm('現在の図を破棄して新規作成しますか?')) return;
   takeUndoSnap();
   headerLines = ['無題工事', '新規路線', '', ''];
-  rows = [{ a: '3.00', b: '3.00', c: '3.00', parent: '-1', conn: '-1', extras: [] }];
+  edges = [];
+  rows = [{ ea: newEdge('3.00'), eb: newEdge('3.00'), ec: newEdge('3.00'), parent: '-1', conn: '-1', extras: [] }];
   overrides = { dims: [], numbers: [] };
   lastTapModel = null;
   clearSelection();
@@ -1043,7 +1110,7 @@ function buildShadow(): void {
   if (!edgeSel) return;
   const p = rows[edgeSel.tri - 1];
   if (!p) return;
-  const aStr = edgeSel.side === 1 ? p.b : p.c;
+  const aStr = edgeVal(p, edgeSel.side === 1 ? 'b' : 'c');
   const L = parseFloat(aStr);
   if (!Number.isFinite(L) || L <= 0) return;
   const leg = (L * 0.75).toFixed(2);
@@ -1061,67 +1128,35 @@ function buildShadow(): void {
   }
 }
 
-// ---- 接続辺の伝播 (アプリ TriangleList.resetTriangles 群の web 版再設計) ----
-// アプリは位置・角度・形状を resetTriangles/resetMyChild/resetByParent で in-place に
-// 連鎖書き換えするが、web は毎描画 CSV から全再構築するので幾何の連鎖は不要。
-// 残る本質は不変条件 1 本だけ:「子の A 辺 ≡ 親の接続先辺 (conn 1=B, 2=C) は同一の物理辺」。
-// 編集起点から 1 hop だけ写せば足りる (A を編集→親の B/C へ、B/C を編集→その辺の子の A へ。
-// それ以外の辺は変わらないので再帰不要)。設計の経緯は docs/adr/latest/0006。
-//
 // 二重断面接続 (完全形式 CSV の cParam: type≠0 か lcr≠Center) は子 A ≠ 親辺長が正規の
-// 状態なので伝播しない — extras[12]=cp.type (列18), extras[13]=cp.lcr (列19)
-function isSimpleConnection(r: Row): boolean {
+// 状態なので、辺プールでは親と束ねず自分の辺を持つ —
+// extras[12]=cp.type (列18), extras[13]=cp.lcr (列19)
+function isSimpleConnection(r: { extras: string[] }): boolean {
   const cpType = r.extras[12];
   const cpLcr = r.extras[13];
   return (cpType === undefined || cpType === '' || cpType === '0') &&
     (cpLcr === undefined || cpLcr === '' || cpLcr === '2');
 }
 
-type EdgeKey = 'a' | 'b' | 'c';
-
-function propagateEdgeValue(tri: number, key: EdgeKey): Array<{ tri: number; key: EdgeKey }> {
-  const changed: Array<{ tri: number; key: EdgeKey }> = [];
-  const r = rows[tri - 1];
-  if (!r) return changed;
-  const val = r[key];
-  const n = parseFloat(val);
-  if (!Number.isFinite(n) || n <= 0) return changed; // 入力途中の値は伝播しない
-  if (key === 'a') {
-    // 子の A → 親の接続先辺へ (1 hop 上り)
-    if (!isSimpleConnection(r)) return changed;
-    const pn = intOrNull(r.parent) ?? -1;
-    const conn = intOrNull(r.conn);
-    const p = rows[pn - 1];
-    if (p && (conn === 1 || conn === 2)) {
-      const pkey: EdgeKey = conn === 1 ? 'b' : 'c';
-      if (p[pkey] !== val) {
-        p[pkey] = val;
-        changed.push({ tri: pn, key: pkey });
-      }
-    }
+// 接続 (parent/conn) が編集で変わった時に辺A の共有先を張り直す。
+// 単純接続 → 親の B/C と同じ辺を共有、独立/二重断面 → 現値を複製して自分の辺に切り出す
+function relinkEdgeA(r: Row): void {
+  const pn = intOrNull(r.parent) ?? -1;
+  const conn = intOrNull(r.conn);
+  const p = rows[pn - 1];
+  if (p && p !== r && (conn === 1 || conn === 2) && isSimpleConnection(r)) {
+    r.ea = conn === 1 ? p.eb : p.ec;
   } else {
-    // 親の B/C → その辺に接続している子の A へ (1 hop 下り)
-    const child = edgeOccupiedBy(tri, key === 'b' ? 1 : 2);
-    const c = rows[child - 1];
-    if (c && isSimpleConnection(c) && c.a !== val) {
-      c.a = val;
-      changed.push({ tri: child, key: 'a' });
-    }
+    r.ea = newEdge(edges[r.ea] ?? '');
   }
-  return changed;
 }
 
-// 伝播で変わった値を画面の入力欄へ反映する。編集中のセルにはフォーカスがあるので
-// 表全体は組み直さず、相手側のセルだけ書き換える (行内 number input は [A,B,C,親] の生成順)
-const CELL_INDEX: Record<EdgeKey, number> = { a: 0, b: 1, c: 2 };
-
-function refreshCells(changes: Array<{ tri: number; key: EdgeKey }>): void {
-  if (changes.length === 0) return;
-  for (const ch of changes) {
-    const tr = document.getElementById('triRows')?.children[ch.tri - 1];
-    const inp = tr?.querySelectorAll<HTMLInputElement>('input[type="number"]')[CELL_INDEX[ch.key]];
-    if (inp) inp.value = fmt2(rows[ch.tri - 1][ch.key]);
-  }
+// 同じ辺を表示している他の入力欄を追従させる (データは edges に 1 個、表示だけ複数)。
+// 編集中のセルはフォーカスを壊さないため except で除く
+function syncEdgeInputs(ei: number, except?: HTMLInputElement): void {
+  document.querySelectorAll<HTMLInputElement>(`#triRows input[data-edge="${ei}"]`).forEach((o) => {
+    if (o !== except) o.value = fmt2(edges[ei]);
+  });
   syncForm(); // カレント行・前行のフォーム表示も追従
 }
 
@@ -1156,7 +1191,7 @@ function selectEdge(canvas: HTMLCanvasElement, tri: number, side: 1 | 2): void {
   input('newParent').value = String(tri);
   select('newConn').value = String(side);
   const p = rows[tri - 1];
-  if (p) input('newA').value = fmt2(side === 1 ? p.b : p.c);
+  if (p) input('newA').value = fmt2(edgeVal(p, side === 1 ? 'b' : 'c'));
   edgeSel = { tri, side };
   buildShadow();
   updateRowHighlight();
@@ -1471,9 +1506,21 @@ if (import.meta.hot) {
       const r = b.getBoundingClientRect();
       return { id: b.id, x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) };
     });
+    // rows は CP 消費側の互換のため a/b/c 展開形で出す (内部は辺 index)。edges も生で添える
+    const rowsExpanded = rows.map((r) => ({
+      a: edgeVal(r, 'a'),
+      b: edgeVal(r, 'b'),
+      c: edgeVal(r, 'c'),
+      ea: r.ea,
+      eb: r.eb,
+      ec: r.ec,
+      parent: r.parent,
+      conn: r.conn,
+      extras: r.extras,
+    }));
     hot.send('tlcp:state-res', {
       id: data.id,
-      state: { rows, selected, current, overrides, csv: serializeState(), view, prims: lastPrims, fabs },
+      state: { rows: rowsExpanded, edges, selected, current, overrides, csv: serializeState(), view, prims: lastPrims, fabs },
     });
   });
   // 編集注入: 一覧セル編集と同じ動線 (row 書換え → redraw) を踏む。
@@ -1483,8 +1530,8 @@ if (import.meta.hot) {
     const r = typeof data.tri === 'number' ? rows[data.tri - 1] : undefined;
     if (canvas && r && (data.key === 'a' || data.key === 'b' || data.key === 'c') && typeof data.value === 'string') {
       const primsBefore = lastPrims;
-      r[data.key] = data.value;
-      refreshCells(propagateEdgeValue(data.tri!, data.key));
+      setEdgeVal(r, data.key, data.value); // 共有辺なら相手側も同時に変わる (実体 1 個)
+      syncEdgeInputs(r[EKEY[data.key]]);
       redraw(canvas);
       hot.send('tlcp:edit-res', {
         id: data.id,
