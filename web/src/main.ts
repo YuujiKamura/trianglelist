@@ -552,7 +552,7 @@ function syncForm(): void {
   input('curB').value = cur ? fmt2(edgeVal(cur, 'b')) : '';
   input('curC').value = cur ? fmt2(edgeVal(cur, 'c')) : '';
   input('curParent').value = cur ? cur.parent : '';
-  select('curConn').value = cur ? cur.conn : '-1';
+  setConnSelects('cur', cur ? cur.conn : '-1');
 
   const prev = current >= 2 ? rows[current - 2] : null;
   input('prevNum').value = prev ? String(current - 1) : '';
@@ -562,7 +562,7 @@ function syncForm(): void {
   input('prevC').value = prev ? fmt2(edgeVal(prev, 'c')) : '';
   input('prevParent').value = prev ? prev.parent : '';
   // 前行は read-only 表示なので接続は select でなくラベル文字列で揃える
-  input('prevConn').value = prev ? (CONN_OPTIONS.find(([v]) => v === prev.conn)?.[1] ?? prev.conn) : '';
+  input('prevConn').value = prev ? (CONN_LABEL[prev.conn] ?? prev.conn) : '';
 }
 
 function updateRowHighlight(): void {
@@ -598,11 +598,91 @@ function clearSelection(): void {
   updateRowHighlight();
 }
 
-const CONN_OPTIONS: Array<[string, string]> = [
-  ['-1', '独立'],
-  ['1', '親のB辺'],
-  ['2', '親のC辺'],
+// ---- 接続コード (CSV 列5 = アプリ ParentList spinner 位置) ⇔ 接続辺×形態×起点 ----
+// UI はアプリの 11 択 spinner を 3 列に分解する (user 設計 2026-06-11: 「親のB辺/C辺」の
+// 直感性を保ったまま、形態 [辺共有/二重断面/フロート] と起点 [右/中央/左] を列で持つ)。
+// 写像表の SoT は common の ConnCode.kt (TriangleSetters.setCParamFromParentBC と同表)
+type ConnParts = { side: number; type: number; lcr: number };
+
+const CONN_DECODE: Record<number, ConnParts> = {
+  1: { side: 1, type: 0, lcr: 2 },
+  2: { side: 2, type: 0, lcr: 2 },
+  3: { side: 1, type: 1, lcr: 2 },
+  4: { side: 1, type: 1, lcr: 0 },
+  7: { side: 1, type: 1, lcr: 1 },
+  5: { side: 2, type: 1, lcr: 2 },
+  6: { side: 2, type: 1, lcr: 0 },
+  8: { side: 2, type: 1, lcr: 1 },
+  9: { side: 1, type: 2, lcr: 2 },
+  10: { side: 2, type: 2, lcr: 2 },
+};
+
+function decodeConn(conn: string): ConnParts | null {
+  const code = intOrNull(conn);
+  return code !== null ? (CONN_DECODE[code] ?? null) : null;
+}
+
+function encodeConn(p: ConnParts): number {
+  if (p.type === 0) return p.side;
+  if (p.type === 1) {
+    if (p.lcr === 2) return p.side === 1 ? 3 : 5;
+    if (p.lcr === 0) return p.side === 1 ? 4 : 6;
+    return p.side === 1 ? 7 : 8;
+  }
+  return p.side === 1 ? 9 : 10;
+}
+
+const CONN_LABEL: Record<string, string> = {
+  '-1': '独立',
+  '1': '親のB辺',
+  '2': '親のC辺',
+  '3': 'B二重・右',
+  '4': 'B二重・左',
+  '7': 'B二重・中央',
+  '5': 'C二重・右',
+  '6': 'C二重・左',
+  '8': 'C二重・中央',
+  '9': 'Bフロート',
+  '10': 'Cフロート',
+};
+
+const CTYPE_OPTIONS: Array<[string, string]> = [
+  ['0', '辺共有'],
+  ['1', '二重断面'],
+  ['2', 'フロート'],
 ];
+const LCR_OPTIONS: Array<[string, string]> = [
+  ['2', '右起点'],
+  ['1', '中央'],
+  ['0', '左起点'],
+];
+
+// 起点は二重断面/フロートのみ意味を持つ (辺共有は常に全長一致なので無効化)
+function syncLcrDisabled(prefix: 'new' | 'cur'): void {
+  select(`${prefix}Lcr`).disabled = select(`${prefix}CType`).value === '0';
+}
+
+function setConnSelects(prefix: 'new' | 'cur', conn: string): void {
+  const p = decodeConn(conn);
+  if (!p) {
+    if (prefix === 'cur') select('curConn').value = '-1';
+    select(`${prefix}CType`).value = '0';
+    select(`${prefix}Lcr`).value = '2';
+  } else {
+    select(`${prefix}Conn`).value = String(p.side);
+    select(`${prefix}CType`).value = String(p.type);
+    select(`${prefix}Lcr`).value = String(p.lcr);
+  }
+  syncLcrDisabled(prefix);
+}
+
+function readConnSelects(prefix: 'new' | 'cur'): string {
+  const side = intOrNull(select(`${prefix}Conn`).value) ?? -1;
+  if (side < 1) return '-1';
+  const type = intOrNull(select(`${prefix}CType`).value) ?? 0;
+  const lcr = intOrNull(select(`${prefix}Lcr`).value) ?? 2;
+  return String(encodeConn({ side, type, lcr }));
+}
 
 function numberInput(value: string, step: string, onInput: (v: string) => void): HTMLInputElement {
   const inp = document.createElement('input');
@@ -678,31 +758,51 @@ function buildTable(canvas: HTMLCanvasElement): void {
     tdParent.appendChild(parentInp);
     tr.appendChild(tdParent);
 
-    const tdConn = document.createElement('td');
-    const sel = document.createElement('select');
-    for (const [value, label] of CONN_OPTIONS) {
-      const opt = document.createElement('option');
-      opt.value = value;
-      opt.textContent = label;
-      sel.appendChild(opt);
+    // 接続辺 × 形態 × 起点 の 3 列 (独立行は表示のみ — 図面に 1 リストの形態なので
+    // 既存行を独立に変える操作は提供しない、スマホ版同様)
+    const parts = decodeConn(row.conn);
+    if (!parts) {
+      const tdInd = document.createElement('td');
+      tdInd.textContent = CONN_LABEL[row.conn] ?? row.conn;
+      tr.appendChild(tdInd);
+      tr.appendChild(document.createElement('td'));
+      tr.appendChild(document.createElement('td'));
+    } else {
+      const mkSel = (options: Array<[string, string]>, value: string): HTMLSelectElement => {
+        const s = document.createElement('select');
+        for (const [v, label] of options) {
+          const opt = document.createElement('option');
+          opt.value = v;
+          opt.textContent = label;
+          s.appendChild(opt);
+        }
+        s.value = value;
+        return s;
+      };
+      const sideSel = mkSel([['1', '親のB辺'], ['2', '親のC辺']], String(parts.side));
+      const typeSel = mkSel(CTYPE_OPTIONS, String(parts.type));
+      const lcrSel = mkSel(LCR_OPTIONS, String(parts.lcr));
+      lcrSel.disabled = parts.type === 0;
+      const apply = () => {
+        row.conn = String(
+          encodeConn({
+            side: intOrNull(sideSel.value) ?? 1,
+            type: intOrNull(typeSel.value) ?? 0,
+            lcr: intOrNull(lcrSel.value) ?? 2,
+          }),
+        );
+        relinkEdgeA(row); // 接続の形が変わったので辺A の共有を張り直す
+        buildTable(canvas); // select は離散操作なので組み直してよい (data-edge 更新)
+        syncForm();
+        redraw(canvas);
+      };
+      for (const s of [sideSel, typeSel, lcrSel]) {
+        s.addEventListener('change', apply);
+        const td = document.createElement('td');
+        td.appendChild(s);
+        tr.appendChild(td);
+      }
     }
-    if (!CONN_OPTIONS.some(([v]) => v === row.conn)) {
-      // 既存 CSV に -1/1/2 以外 (例: 0) が来ても値を壊さず保持する
-      const opt = document.createElement('option');
-      opt.value = row.conn;
-      opt.textContent = row.conn;
-      sel.appendChild(opt);
-    }
-    sel.value = row.conn;
-    sel.addEventListener('change', () => {
-      row.conn = sel.value;
-      relinkEdgeA(row); // 接続辺が変わったので辺A の共有を張り直す
-      buildTable(canvas); // select は離散操作なので組み直してよい (data-edge 更新)
-      syncForm();
-      redraw(canvas);
-    });
-    tdConn.appendChild(sel);
-    tr.appendChild(tdConn);
 
     const tdDel = document.createElement('td');
     const del = document.createElement('button');
@@ -762,7 +862,10 @@ function autoConnection(side: 1 | 2): void {
     setStatus(`⚠ 三角形 ${parentN} の ${side === 1 ? 'B' : 'C'} 辺 — 三角形 ${child} が接続済みのため追加できません`);
     return;
   }
+  // B/C FAB は辺共有接続のショートカット (アプリ setB/setC と同じ) — 形態は辺共有に戻す
   select('newConn').value = String(side);
+  select('newCType').value = '0';
+  syncLcrDisabled('new');
   parentInput.value = String(parentN);
   const p = rows[parentN - 1];
   if (p) input('newA').value = edgeVal(p, side === 1 ? 'b' : 'c');
@@ -801,9 +904,10 @@ function fabReplace(canvas: HTMLCanvasElement): void {
     const cp = input('curParent').value.trim();
     const newParentVal = cp === '' ? '-1' : cp;
     // 接続 (parent/conn) が変わる場合は先に辺A の共有を張り直してから値を書く
-    if (newParentVal !== r.parent || select('curConn').value !== r.conn) {
+    const newConnVal = readConnSelects('cur');
+    if (newParentVal !== r.parent || newConnVal !== r.conn) {
       r.parent = newParentVal;
-      r.conn = select('curConn').value;
+      r.conn = newConnVal;
       relinkEdgeA(r);
     }
     setEdgeVal(r, 'a', input('curA').value); // 共有辺なら親の B/C も同時に変わる (実体が 1 個)
@@ -819,14 +923,13 @@ function fabReplace(canvas: HTMLCanvasElement): void {
   if (newC === '') return; // アプリと同じ: B だけでは何もしない (strAddLineC.isEmpty -> return)
 
   // Add (アプリ addTriangleBy 相当 — 行を足して CSV 再構築に任せる)
-  let conn = select('newConn').value;
+  let conn = readConnSelects('new');
   let parent = input('newParent').value.trim();
   if (rows.length === 0) {
-    // リストが空なら最初の 1 個は必ず独立 — 全削除後に残留した接続プリセットで
-    // 「存在しない親に繋がる行」を作らせない (作ると以降の追加が全部 skip 連鎖で消える)
+    // 最初の 1 個は必ず独立 (スマホ版同様、図面に 1 リスト)。新規行に独立の選択肢は無く、
+    // 空リストへの追加だけが独立になる。残留プリセットによる「存在しない親」も同時に防ぐ
     conn = '-1';
     parent = '-1';
-    select('newConn').value = '-1';
     input('newParent').value = '';
   }
   if (conn === '-1') {
@@ -834,12 +937,13 @@ function fabReplace(canvas: HTMLCanvasElement): void {
   } else if (parent === '') {
     parent = String(current > 0 ? current : rows.length);
   }
+  const connCode = intOrNull(conn) ?? -1;
   // 親の実在関門: 三角不等式・占有と同列の追加前チェック。存在しない親への接続行は
   // WebCsvReader が skip するので、リストに居るのに描画されない行が生まれてしまう
-  if (conn === '1' || conn === '2') {
+  if (connCode >= 1) {
     const pn = parseInt(parent, 10);
     if (!(pn >= 1 && pn <= rows.length)) {
-      setStatus(`⚠ 親番号 ${parent} の三角形が存在しません — 追加を中止 (独立で足すなら接続を「独立」に)`);
+      setStatus(`⚠ 親番号 ${parent} の三角形が存在しません — 追加を中止`);
       return;
     }
   }
@@ -848,6 +952,12 @@ function fabReplace(canvas: HTMLCanvasElement): void {
     // 辺A 空のまま CSV に流すと WebCsvReader が行ごと skip する — 親の接続先辺長を写す
     const p = rows[parseInt(parent, 10) - 1];
     if (p) a = edgeVal(p, conn === '1' ? 'b' : 'c');
+  }
+  if (connCode >= 3 && a === '') {
+    // 二重断面/フロートは子 A = 断面幅が独立値 (親辺長と一致しない) なので手入力必須
+    setStatus('⚠ 二重断面/フロートは辺A (断面幅) の入力が必要です');
+    input('newA').focus();
+    return;
   }
   // 共通関門: 不成立の値は行を足す前に却下 (undo スナップも消費しない)
   const addBad = invalidTriangleReason(parseFloat(a), parseFloat(newB), parseFloat(newC));
@@ -1029,6 +1139,32 @@ function fabFlag(canvas: HTMLCanvasElement): void {
   setStatus(moved ? `番号 ${n} を移動した` : `番号 ${n}: 中心から遠すぎるため移動せず`);
 }
 
+// 二重 FAB (アプリ fab_nijyuualign → rotateCurrentTriLCR、MainActivity.kt:1322 相当):
+// カレント行の起点を 右→中央→左 で巡回する。アプリは in-place の連鎖書き換え
+// (TriangleList.kt:488-513) だが、web は conn コードを書き換えて再構築するだけ —
+// 毎描画全再構築 + 辺プールの設計の配当
+function fabNijyuu(canvas: HTMLCanvasElement): void {
+  const n = current > 0 ? current : 0;
+  const r = rows[n - 1];
+  if (!r) {
+    setStatus('二重: 先に三角形を選択してください');
+    return;
+  }
+  const p = decodeConn(r.conn);
+  if (!p || p.type === 0) {
+    // アプリのガード (子A=親辺長なら何もしない) と同義 — web では形態で明示されている
+    setStatus('二重: 対象は二重断面/フロートの行のみ (形態列で変更できます)');
+    return;
+  }
+  takeUndoSnap();
+  p.lcr = p.lcr === 0 ? 2 : p.lcr - 1; // アプリ rotateLCR と同じ巡回: 右(2)→中央(1)→左(0)→右
+  r.conn = String(encodeConn(p));
+  buildTable(canvas);
+  syncForm();
+  redraw(canvas);
+  setStatus(`二重: 三角形 ${n} の起点 → ${['左', '中央', '右'][p.lcr]}`);
+}
+
 // 新規作成 (段階2f): 現在の図を捨て、最初の 1 個 (独立 3.00/3.00/3.00) を生成して
 // 全体フィットから始める (空画面でなく即編集に入れる形)。誤爆は confirm + undo 1 段で守る
 function newDrawing(canvas: HTMLCanvasElement): void {
@@ -1056,6 +1192,7 @@ function wireFabs(canvas: HTMLCanvasElement): void {
   el<HTMLButtonElement>('fabDimW').addEventListener('click', () => flipDim(canvas, 'W'));
   el<HTMLButtonElement>('fabDimH').addEventListener('click', () => flipDim(canvas, 'H'));
   el<HTMLButtonElement>('fabFlag').addEventListener('click', () => fabFlag(canvas));
+  el<HTMLButtonElement>('fabNijyuu').addEventListener('click', () => fabNijyuu(canvas));
   el<HTMLButtonElement>('fabReplace').addEventListener('click', () => fabReplace(canvas));
   el<HTMLButtonElement>('fabUndo').addEventListener('click', () => fabUndo(canvas));
   el<HTMLButtonElement>('fabMinus').addEventListener('click', () => fabMinus(canvas));
@@ -1266,7 +1403,10 @@ function selectEdge(canvas: HTMLCanvasElement, tri: number, side: 1 | 2): void {
   // アプリの lastTapSide と同じく、タップした辺はそのまま W/H フリップの対象にもなる
   selectedDim = { tri, side };
   input('newParent').value = String(tri);
+  // 辺タップは辺共有接続のプリセット (シャドーも辺共有の形) — 形態は辺共有に戻す
   select('newConn').value = String(side);
+  select('newCType').value = '0';
+  syncLcrDisabled('new');
   const p = rows[tri - 1];
   if (p) input('newA').value = fmt2(edgeVal(p, side === 1 ? 'b' : 'c'));
   edgeSel = { tri, side };
@@ -1549,6 +1689,10 @@ function main(): void {
   wireFabs(canvas);
   wireRosenName();
   wireNewRowEnter(canvas);
+  // 形態 select の変化で起点 select の有効/無効を追従 (辺共有では起点に意味が無い)
+  select('newCType').addEventListener('change', () => syncLcrDisabled('new'));
+  select('curCType').addEventListener('change', () => syncLcrDisabled('cur'));
+  syncLcrDisabled('new');
 
   fileInput.addEventListener('change', () => {
     const file = fileInput.files?.[0];

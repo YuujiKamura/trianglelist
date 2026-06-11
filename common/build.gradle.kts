@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     id("org.jetbrains.kotlin.multiplatform")
     id("com.android.library")
@@ -18,10 +20,8 @@ composeCompiler {
 
 kotlin {
     androidTarget {
-        compilations.all {
-            kotlinOptions {
-                jvmTarget = "1.8"
-            }
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_1_8)
         }
     }
 
@@ -32,6 +32,10 @@ kotlin {
     // web/ の Vite シェルが static asset として取り込む (kotlin-wasm-browser-template の流儀)。
     @OptIn(org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalWasmDsl::class)
     wasmJs {
+        // Kotlin 2.2.x で既定の出力名が "<project>" に変わった (旧: "<project>-wasm-js")。
+        // web/ の import・fetch パス (sync-wasm.mjs / main.ts / uninstantiated の wasm 相対参照)
+        // は旧名で固定済みなので、出力名を明示して互換を維持する
+        outputModuleName.set("TriangleList-common-wasm-js")
         browser()
         binaries.executable()
         generateTypeScriptDefinitions()

@@ -1,6 +1,7 @@
 package com.jpaver.trianglelist.datamanager
 
 import com.example.trilib.PointXY
+import com.jpaver.trianglelist.editmodel.ConnCode
 import com.jpaver.trianglelist.editmodel.ConnParam
 import com.jpaver.trianglelist.editmodel.Deduction
 import com.jpaver.trianglelist.editmodel.DeductionList
@@ -219,14 +220,11 @@ class CsvLoader {
             val cp = if (chunks.has(TriangleColumn.CONN_PARAM_LCR)) {
                 readCParamSafe(chunks)  // 完全形式
             } else {
-                // 最小形式: CONNECTION_TYPE(1=B辺, 2=C辺)をそのまま使用
-                // getParentPointByLCRはpbc=1(B辺), pbc=2(C辺)のみ対応
-                ConnParam(
-                    side = connectionType,      // 1→B辺, 2→C辺
-                    type = 0,
-                    lcr = 2,                    // Center（デフォルト）
-                    lenA = lengthA              // 共有辺の長さ
-                )
+                // 最小形式: 接続コード (1/2=辺共有, 3-8=二重断面, 9/10=フロート) を
+                // common の ConnCode (setCParamFromParentBC と同表) で写像 — web 版が書く
+                // 6 列 CSV と互換。未知コードは従来どおり side にそのまま入れて続行
+                ConnCode.toConnParam(connectionType, lengthA)
+                    ?: ConnParam(side = connectionType, type = 0, lcr = 2, lenA = lengthA)
             }
             trilist.add(
                 Triangle(ptri, cp, lengthB, lengthC),
