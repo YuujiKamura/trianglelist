@@ -47,10 +47,12 @@
          タッチスクロール/ズームを canvas 上では止める */
       #canvasWrap { position: relative; max-width: 100%; }
       canvas { background: #fff; border: 1px solid #ccc; touch-action: none; cursor: grab; max-width: 100%; }
-      /* FAB 群 (アプリ fabs.xml に倣う): 右列=編集系、左列=ビュー系。丸ボタンで十分 (素材なし) */
-      .fabcol { position: absolute; bottom: 12px; display: flex; flex-direction: column; gap: 8px; }
+      /* FAB 群 (アプリ fabs.xml と同じ配置): 上端起点。右= [B][C][✎] 横並び + その下に縦列
+         (undo→W→H→旗→削除、fabs.xml の constraint チェーン順)。左= ⛶ の下に ▲▼。間隔は詰め気味 */
+      .fabcol { position: absolute; top: 12px; display: flex; flex-direction: column; gap: 6px; }
       #fabLeft { left: 12px; }
-      #fabRight { right: 12px; }
+      #fabRight { right: 12px; align-items: flex-end; }
+      .fabrow { display: flex; gap: 6px; }
       .fabcol button {
         width: 44px; height: 44px; border-radius: 50%; border: 1px solid #1f3a5f;
         background: #eef2f7; color: #1f3a5f; font-size: 16px; cursor: pointer;
@@ -155,18 +157,21 @@
             <button id="fabDown" type="button" title="リスト下 (次の三角形)">▼</button>
           </div>
           <div class="fabcol" id="fabRight">
-            <button id="fabSetB" type="button" title="親のB辺に接続">B</button>
-            <button id="fabSetC" type="button" title="親のC辺に接続">C</button>
-            <!-- 段階2e: 寸法 W/H フリップ (アプリ MainViewModel の "W"/"H" と同じ語彙)。
-                 寸法値をタップで選択してから押す。W=水平サイクル (旗揚げ含む)、H=内/外 -->
+            <!-- アプリ fabs.xml と同じ並び: 上段横列 [B][C][✎]、下に縦列 [↶][W][H][旗][🗑] -->
+            <div class="fabrow">
+              <button id="fabSetB" type="button" title="親のB辺に接続">B</button>
+              <button id="fabSetC" type="button" title="親のC辺に接続">C</button>
+              <!-- アプリのペンシル FAB。⏎ だと undo に見える (user 指摘 2026-06-11) ので鉛筆に -->
+              <button id="fabReplace" type="button" title="書込み: 追加 / 書換え (アプリのペンシル)">✎</button>
+            </div>
+            <button id="fabUndo" type="button" title="元に戻す (1段)">↶</button>
+            <!-- 寸法 W/H フリップ (アプリ MainViewModel の "W"/"H" と同じ語彙)。
+                 辺か寸法値をタップで選択してから押す。W=水平サイクル (旗揚げ含む)、H=内/外 -->
             <button id="fabDimW" type="button" title="寸法 W フリップ (水平サイクル、旗揚げ含む)">W</button>
             <button id="fabDimH" type="button" title="寸法 H フリップ (内/外)">H</button>
-            <!-- 段階2f: アプリ fab_flag と同じ明示操作 — 移動先をタップしてからこれを押すと
+            <!-- アプリ fab_flag と同じ明示操作 — 移動先をタップしてからこれを押すと
                  現在行の番号サークルがそこへ動く (MainActivity.flagTriangle 相当) -->
             <button id="fabFlag" type="button" title="番号移動 (旗揚げ): 移動先をタップしてから押す">旗</button>
-            <!-- アプリのペンシル FAB。⏎ だと undo に見える (user 指摘 2026-06-11) ので鉛筆に -->
-            <button id="fabReplace" type="button" title="書込み: 追加 / 書換え (アプリのペンシル)">✎</button>
-            <button id="fabUndo" type="button" title="元に戻す (1段)">↶</button>
             <button id="fabMinus" type="button" title="削除 (2回タップ)">🗑</button>
           </div>
         </div>

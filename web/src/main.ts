@@ -56,10 +56,15 @@ const COLORS: Record<string, string> = {
 };
 
 const SELECT_FILL = 'rgba(31, 95, 191, 0.25)'; // 選択三角形の塗り (半透明青)
+const SELECT_YELLOW = '#e6b800'; // 選択辺・番号リング・寸法ボックス (app paintYellow 相当、白地で読める濃さ)
 
 function setStatus(msg: string): void {
   const el = document.getElementById('status');
-  if (el) el.textContent = msg;
+  if (!el) return;
+  el.textContent = msg;
+  // ⚠ 始まり = 警告 (三角形不成立等)。ヘッダ上で目に入るよう色を変える
+  el.style.color = msg.startsWith('⚠') ? '#ffb3b3' : '';
+  el.style.fontWeight = msg.startsWith('⚠') ? '700' : '';
 }
 
 function bounds(prims: Prim[]): { minX: number; minY: number; maxX: number; maxY: number } {
@@ -215,8 +220,8 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
   // 選択三角形の塗り (線より下に敷く)。WebPrimitiveRenderer.render は三角形ごとに
   // 'tri' layer の line を 3 本連続で出す (WebPrimitiveRenderer.kt:62-65) ので、
   // 番号 n の頂点は tri 線群の [3(n-1), 3n) から拾える — 表示専用の導出で幾何判定はしない
+  const triLines = prims.filter((p): p is LinePrim => p.type === 'line' && p.layer === 'tri');
   if (selected > 0) {
-    const triLines = prims.filter((p): p is LinePrim => p.type === 'line' && p.layer === 'tri');
     const base = (selected - 1) * 3;
     if (base + 2 < triLines.length) {
       ctx.fillStyle = SELECT_FILL;
@@ -283,22 +288,59 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
     ctx.fillText(`C ${cv}`, sx((scLine.x1 + scLine.x2) / 2), sy((scLine.y1 + scLine.y2) / 2));
   }
 
-  // 段階2e: 選択中の寸法テキスト / 移動モード中の番号サークルをオレンジ破線で示す
-  const marker = (cx: number, cy: number, r: number) => {
-    ctx.strokeStyle = '#e67e22';
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([4, 3]);
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.setLineDash([]);
-  };
+  // 段階2g: 選択表示 (アプリ MyView.drawBlinkLine:794-818 の写し):
+  //   1) 選択辺を黄色線で強調 (app: lastTapSide の辺を paintYellow で上書き)
+  //   2) 番号サークルに黄色リング (app: pointnumber に paintTexS.textSize*0.8 の stroke circle)
+  //   3) 寸法テキストは measureText の境界ボックス + 辺名 A/B/C を併記
+  //      (旧オレンジ破線サークルは廃止 — user 指摘 2026-06-11「サークルを描く意味がない」)
   if (selectedDim) {
+    const { tri, side } = selectedDim;
+    ctx.strokeStyle = SELECT_YELLOW;
+
+    // 1) 選択辺の黄色線。tri 線群の並びは [A,B,C] (nearestEdge と同じ index 規約)
+    const li = (tri - 1) * 3 + side;
+    if (li < triLines.length) {
+      const l = triLines[li];
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(sx(l.x1), sy(l.y1));
+      ctx.lineTo(sx(l.x2), sy(l.y2));
+      ctx.stroke();
+    }
+
+    // 2) 番号サークルの黄色リング (サークル半径の 1.3 倍 ≈ app の textSize*0.8 / 0.6 比)
+    const nc = prims.find((q): q is CirclePrim => q.type === 'circle' && q.tri === tri);
+    if (nc) {
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(sx(nc.cx), sy(nc.cy), nc.r * s * 1.3, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // 3) 寸法テキストの境界ボックス + 辺名 (テキストと同じ変換系で measureText を鏡にする —
+    //    LabelMetrics の「描画が真実、箱はその鏡」の canvas 版)
     const p = prims.find(
-      (q): q is TextPrim =>
-        q.type === 'text' && q.layer === 'dim' && q.tri === selectedDim!.tri && q.side === selectedDim!.side,
+      (q): q is TextPrim => q.type === 'text' && q.layer === 'dim' && q.tri === tri && q.side === side,
     );
-    if (p) marker(sx(p.x), sy(p.y), Math.max(p.size * s * 1.4, 14));
+    if (p) {
+      const fh = Math.max(p.size * s, 8);
+      ctx.font = `${fh}px sans-serif`;
+      const w = ctx.measureText(p.text).width;
+      const pad = 3;
+      // fillText と同じ baseline 規約: align 1 = 点の上に文字 (box は -h..0)、3 = 下、2 = 中央
+      const top = p.align === 1 ? -fh : p.align === 3 ? 0 : -fh / 2;
+      ctx.save();
+      ctx.translate(sx(p.x), sy(p.y));
+      ctx.rotate((-p.angle * Math.PI) / 180);
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(-w / 2 - pad, top - pad, w + pad * 2, fh + pad * 2);
+      ctx.fillStyle = SELECT_YELLOW;
+      ctx.font = `bold ${fh}px sans-serif`;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(['A', 'B', 'C'][side] ?? '', w / 2 + pad + 4, top + fh / 2);
+      ctx.restore();
+    }
   }
 }
 
@@ -402,7 +444,35 @@ function autosave(): void {
   }
 }
 
+// ---- 三角形成立判定 (共通関門) ----
+// 数値の組み合わせが三角形として成立しない場合の処理は動線が複数ある
+// (一覧セル編集 / 3行フォームの書換え・追加 / 寸法ダブルクリック編集 / CSV 読込)。
+// 編集系の動線は全て redraw() を通る設計なので、ここを単一の関門にして
+// 「キャンバスは書き換えず警告を出す」を一括で守る。事前却下できる動線
+// (fabReplace の書換え/追加) は state を汚す前にこの判定で弾く。
+function invalidTriangleReason(a: number, b: number, c: number): string | null {
+  if (!Number.isFinite(a) || !Number.isFinite(b) || !Number.isFinite(c)) return '辺の値が数値ではありません';
+  if (a <= 0 || b <= 0 || c <= 0) return '辺の長さは正の数が必要です';
+  if (a + b <= c || b + c <= a || c + a <= b) return '二辺の和が他の一辺以下です (三角形になりません)';
+  return null;
+}
+
+function findInvalidRow(rs: Row[]): { n: number; reason: string } | null {
+  for (let i = 0; i < rs.length; i++) {
+    const reason = invalidTriangleReason(parseFloat(rs[i].a), parseFloat(rs[i].b), parseFloat(rs[i].c));
+    if (reason) return { n: i + 1, reason };
+  }
+  return null;
+}
+
 function redraw(canvas: HTMLCanvasElement): void {
+  const bad = findInvalidRow(rows);
+  if (bad) {
+    // キャンバスは直前の正しい状態のまま据え置き、autosave も汚さない。
+    // 値を直せば次の入力イベントでそのまま再描画に戻る
+    setStatus(`⚠ 三角形 ${bad.n}: ${bad.reason} — 図は更新しません`);
+    return;
+  }
   renderCsv(canvas, serializeState(), `table (${rows.length} rows)`);
   autosave();
 }
@@ -653,6 +723,16 @@ function fabReplace(canvas: HTMLCanvasElement): void {
       setStatus('Cannot edit: カレント行がありません。図か一覧で選択してください');
       return;
     }
+    // 共通関門: 不成立の値は state を汚す前に却下 (undo スナップも消費しない)
+    const editBad = invalidTriangleReason(
+      parseFloat(input('curA').value),
+      parseFloat(input('curB').value),
+      parseFloat(input('curC').value),
+    );
+    if (editBad) {
+      setStatus(`⚠ 三角形 ${current}: ${editBad} — 書換えを中止`);
+      return;
+    }
     takeUndoSnap();
     const r = rows[current - 1];
     r.a = input('curA').value;
@@ -671,7 +751,6 @@ function fabReplace(canvas: HTMLCanvasElement): void {
   if (newC === '') return; // アプリと同じ: B だけでは何もしない (strAddLineC.isEmpty -> return)
 
   // Add (アプリ addTriangleBy 相当 — 行を足して CSV 再構築に任せる)
-  takeUndoSnap();
   const conn = select('newConn').value;
   let parent = input('newParent').value.trim();
   if (conn === '-1') {
@@ -685,6 +764,13 @@ function fabReplace(canvas: HTMLCanvasElement): void {
     const p = rows[parseInt(parent, 10) - 1];
     if (p) a = conn === '1' ? p.b : p.c;
   }
+  // 共通関門: 不成立の値は行を足す前に却下 (undo スナップも消費しない)
+  const addBad = invalidTriangleReason(parseFloat(a), parseFloat(newB), parseFloat(newC));
+  if (addBad) {
+    setStatus(`⚠ 新規行: ${addBad} — 追加を中止`);
+    return;
+  }
+  takeUndoSnap();
   const name = input('newName').value;
   rows.push({ a, b: newB, c: newC, parent, conn, extras: name !== '' ? [name] : [] });
 
@@ -974,6 +1060,27 @@ function selectEdge(canvas: HTMLCanvasElement, tri: number, side: 1 | 2): void {
   input('newB').focus();
 }
 
+// 寸法ダブルクリック → 一覧の該当セル (辺A/B/C の input) にフォーカスして直接編集へ。
+// 一覧の input は input/change → redraw() まで配線済みなので、フォーカスを移すだけで
+// 「書き換えが図に反映される」(不成立値は redraw の共通関門が図を据え置いて警告)
+function focusListCell(canvas: HTMLCanvasElement, tri: number, side: number): void {
+  selectTriangle(canvas, tri);
+  // どの辺を編集中かは図側でも黄色強調 (辺線 + 寸法ボックス + 辺名) で見え続けるようにする
+  selectedDim = { tri, side };
+  draw(canvas, lastPrims);
+  const details = document.getElementById('listDetails') as HTMLDetailsElement | null;
+  if (details) details.open = true;
+  const tr = document.getElementById('triRows')?.children[tri - 1];
+  if (!tr) return;
+  // 行内の number input は [辺A, 辺B, 辺C, 親番号] の生成順 — side 0/1/2 がそのまま添字
+  const inp = tr.querySelectorAll<HTMLInputElement>('input[type="number"]')[side];
+  if (!inp) return;
+  inp.focus();
+  inp.select();
+  inp.scrollIntoView({ block: 'nearest' });
+  setStatus(`三角形 ${tri} の ${['A', 'B', 'C'][side]} 辺 — セルを直接編集 (入力すると図に即反映)`);
+}
+
 function handleTap(canvas: HTMLCanvasElement, px: number, py: number): void {
   if (!view) return;
   const m = toModel(view, px, py);
@@ -1122,8 +1229,15 @@ function wireCanvasEvents(canvas: HTMLCanvasElement): void {
   canvas.addEventListener('pointerup', release);
   canvas.addEventListener('pointercancel', release);
 
-  // ダブルクリックで全体 fit に戻す
-  canvas.addEventListener('dblclick', () => {
+  // ダブルクリック: 寸法値の上なら一覧の該当セルへフォーカス (直接書き換え動線)、
+  // それ以外は従来どおり全体 fit に戻す
+  canvas.addEventListener('dblclick', (e) => {
+    const p = canvasPx(canvas, e);
+    const dim = nearestDimText(p.x, p.y);
+    if (dim && dim.prim.tri !== undefined && dim.prim.side !== undefined) {
+      focusListCell(canvas, dim.prim.tri, dim.prim.side);
+      return;
+    }
     view = null;
     draw(canvas, lastPrims);
   });
@@ -1181,6 +1295,10 @@ function loadCsv(canvas: HTMLCanvasElement, csv: string, label: string): void {
   syncForm();
   syncRosenName();
   renderCsv(canvas, serializeState(), label);
+  // 読込動線も共通関門に通す: 読込自体は止めない (既存ファイルは開けるべき) が、
+  // 不成立行があれば編集前に気づけるよう警告だけ重ねる
+  const bad = findInvalidRow(rows);
+  if (bad) setStatus(`⚠ 読込: 三角形 ${bad.n} は ${bad.reason}`);
 }
 
 function main(): void {
@@ -1241,10 +1359,37 @@ if (import.meta.hot) {
     hot.send('tlcp:capture-res', { id: data.id, png: canvas?.toDataURL('image/png') ?? '' });
   });
   hot.on('tlcp:state-req', (data: { id: string }) => {
+    // fabs: FAB の実測 DOM 矩形。canvas 外のレイアウト (配置順・間隔) を CLI から
+    // 数値検証する口 (capture は canvas.toDataURL なので DOM が写らない)
+    const fabs = Array.from(document.querySelectorAll<HTMLButtonElement>('.fabcol button')).map((b) => {
+      const r = b.getBoundingClientRect();
+      return { id: b.id, x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) };
+    });
     hot.send('tlcp:state-res', {
       id: data.id,
-      state: { rows, selected, current, overrides, csv: serializeState(), view, prims: lastPrims },
+      state: { rows, selected, current, overrides, csv: serializeState(), view, prims: lastPrims, fabs },
     });
+  });
+  // 編集注入: 一覧セル編集と同じ動線 (row 書換え → redraw) を踏む。
+  // 三角不等式の共通関門が「図を据え置いて警告する」ことを CLI から実走検証する口
+  hot.on('tlcp:edit-req', (data: { id: string; tri?: number; key?: string; value?: string }) => {
+    const canvas = document.getElementById('cv') as HTMLCanvasElement | null;
+    const r = typeof data.tri === 'number' ? rows[data.tri - 1] : undefined;
+    if (canvas && r && (data.key === 'a' || data.key === 'b' || data.key === 'c') && typeof data.value === 'string') {
+      const primsBefore = lastPrims;
+      r[data.key] = data.value;
+      redraw(canvas);
+      hot.send('tlcp:edit-res', {
+        id: data.id,
+        state: {
+          ok: true,
+          rerendered: lastPrims !== primsBefore, // 関門が通れば新 prims、弾かれれば据え置き
+          status: document.getElementById('status')?.textContent ?? '',
+        },
+      });
+    } else {
+      hot.send('tlcp:edit-res', { id: data.id, state: { ok: false } });
+    }
   });
   // タップ注入 (モデル座標)。辺タップ・シャドー・選択の UX を CLI から再現検証する口
   hot.on('tlcp:tap-req', (data: { id: string; x?: number; y?: number }) => {
