@@ -12,7 +12,12 @@ import com.jpaver.trianglelist.editmodel.TriangleList
  * app/datamanager/CsvLoader.parseCSV は BufferedReader (java.io) に結合しているため
  * commonMain に置けない。三角形生成の中核 (buildTriangle の最小形式 + 接続形式の分岐) だけを
  * CsvLoader.kt:191-238 と同じロジックで再実装する。完全形式 (28カラム) のレイアウト復元・
- * Deduction・ListAngle/ListScale/TextSize 行は段階1 のスコープ外 (スキップ)。
+ * Deduction・ListScale/TextSize 行はスコープ外 (スキップ)。
+ *
+ * ListAngle 行 (= 三角形1 の絶対角度。アプリ createNew は 0、保存時に列22 と同値) は読む:
+ * CsvLoader.readListParameter:396 と同じく trilist.angle に入れ、アプリの load 経路
+ * (MainActivity.setEditLists:2909) と同じく最後に recoverState で 180° 基底から絶対角度へ回す。
+ * 行が無い CSV は angle=0 → -180° 回転で、アプリが同じ CSV を開いた時と同じ向きになる。
  *
  * 対応形式 (desktop/sample/sample_triangles.csv と同形):
  *   番号, 辺A, 辺B, 辺C [, 親番号, 接続タイプ]
@@ -25,6 +30,11 @@ object WebCsvReader {
         val trilist = TriangleList()
         for (line in csv.lineSequence()) {
             val chunks = line.split(",").map { it.trim() }
+            // ListAngle 行は 2 チャンクなので size<4 ガードより先に読む
+            if (chunks.firstOrNull() == "ListAngle") {
+                trilist.angle = chunks.getOrNull(1)?.toFloatOrNull() ?: trilist.angle
+                continue
+            }
             if (chunks.size < 4) continue
 
             // 数値でない行 (ヘッダー, ListAngle, Deduction 等) はスキップ (CsvLoader.buildTriangle と同じ)
@@ -63,6 +73,8 @@ object WebCsvReader {
             // 接続タイプの記録 (CsvLoader.finalizeBuildTriangle と同じ)
             trilist.getBy(trilist.size()).connectionSide = connectionType
         }
+        // 180° 基底で組んだ三角形を絶対角度へ回す (TriangleList.kt:340、回転量 = angle - 180)
+        trilist.recoverState(PointXY(0f, 0f))
         return trilist
     }
 }

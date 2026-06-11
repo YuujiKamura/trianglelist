@@ -34,7 +34,9 @@ class WebDrawingExportGoldenTest {
     private val datePattern = Regex("""\d+ 年 \d+ 月 \d+ 日""")
     private val numericTolerance = 1e-3 + 1e-9
 
-    /** DxfDimensionLayoutGoldenTest.defaultTriList + setNames と同じ内容の最小形式 CSV */
+    /** DxfDimensionLayoutGoldenTest.defaultTriList + setNames と同じ内容の最小形式 CSV。
+     *  golden は in-test の Triangle 直組み (デフォルト角度 180、recoverState なし) から採取
+     *  されているので、ListAngle 180 を明記して回転 0 (= 採取時と同じ向き) を指定する */
     private val defaultFixtureCsv = """
         市道○○号線 舗装打換工事
         市道○○号線
@@ -42,6 +44,7 @@ class WebDrawingExportGoldenTest {
         1/1
         1,10,2,10,-1,-1
         2,10,1,10,1,2
+        ListAngle, 180
     """.trimIndent() + "\n"
 
     // ---- golden 機構 ----
