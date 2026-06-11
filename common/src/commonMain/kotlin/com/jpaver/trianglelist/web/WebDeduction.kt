@@ -71,6 +71,24 @@ object WebDeduction {
         return serializeDeduction(ded) + extras
     }
 
+    /**
+     * 選択控除の個別回転 (控除モードの rot FAB)。アプリ MainActivity.fabRotate の ded 分岐
+     * :1593-1600 — 控除自身の中心 (point) 回りに rotateShape だけ当てる。位置・旗は不動、
+     * 回るのは Box の shapeAngle のみ (Circle は Deduction.rotateShape の type ガードで無変化)。
+     * 符号はアプリと同じ -degrees (ビュー空間)。14 列目以降の未知列は保持
+     */
+    fun rotateDeductionShape(line: String, degrees: Float): String {
+        val chunks = line.split(",").map { it.trim() }
+        if (chunks.firstOrNull() != "Deduction" || chunks.size < 13) return line
+        val doc = CsvCodec.CsvDoc(emptyList(), emptyList(), null, emptyList(), listOf(CsvCodec.CsvRow(chunks)))
+        val dedlist = CsvCodec.buildDeductions(doc)
+        if (dedlist.size() < 1) return line
+        val ded = dedlist.get(1)
+        ded.rotateShape(ded.point, (-degrees).toDouble())
+        val extras = if (chunks.size > 13) "," + chunks.drop(13).joinToString(",") else ""
+        return serializeDeduction(ded) + extras
+    }
+
     /** MainActivity.writeCSV:2795 と同列順 (viewscale=1、point/pointFlag は Y 反転で書く) */
     private fun serializeDeduction(ded: Deduction): String {
         val p = ded.point.scale(1.0, -1.0)
