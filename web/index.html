@@ -77,11 +77,14 @@
           <h2>三角形リスト</h2>
           <label id="rosenLabel">路線名 <input id="rosenName" type="text" /></label>
           <!-- 3 行ウィンドウフォーム: 新規入力行 (次番号プリセット) / カレント行 / 前行 -->
+          <!-- 接続はアプリの 11 択 spinner を「接続辺 × 形態 × 起点」の 3 列に分解
+               (ConnParam の side × type × lcr と同型、user 設計 2026-06-11)。
+               新規行に「独立」は無い — 最初の 1 個だけ自動で独立 (スマホ版と同じ、図面に 1 リスト) -->
           <table class="tri" id="editorForm">
             <thead>
               <tr>
                 <th></th><th>番号</th><th>測点名</th><th>辺A</th><th>辺B</th><th>辺C</th>
-                <th>親番号</th><th>接続</th>
+                <th>親番号</th><th>接続辺</th><th>形態</th><th>起点</th>
               </tr>
             </thead>
             <tbody>
@@ -95,9 +98,22 @@
                 <td><input id="newParent" type="number" step="1" /></td>
                 <td>
                   <select id="newConn">
-                    <option value="-1">独立</option>
                     <option value="1">親のB辺</option>
                     <option value="2">親のC辺</option>
+                  </select>
+                </td>
+                <td>
+                  <select id="newCType">
+                    <option value="0">辺共有</option>
+                    <option value="1">二重断面</option>
+                    <option value="2">フロート</option>
+                  </select>
+                </td>
+                <td>
+                  <select id="newLcr">
+                    <option value="2">右起点</option>
+                    <option value="1">中央</option>
+                    <option value="0">左起点</option>
                   </select>
                 </td>
               </tr>
@@ -116,6 +132,20 @@
                     <option value="2">親のC辺</option>
                   </select>
                 </td>
+                <td>
+                  <select id="curCType">
+                    <option value="0">辺共有</option>
+                    <option value="1">二重断面</option>
+                    <option value="2">フロート</option>
+                  </select>
+                </td>
+                <td>
+                  <select id="curLcr">
+                    <option value="2">右起点</option>
+                    <option value="1">中央</option>
+                    <option value="0">左起点</option>
+                  </select>
+                </td>
               </tr>
               <tr class="formPrev">
                 <th>前行</th>
@@ -125,7 +155,7 @@
                 <td><input id="prevB" type="number" readonly /></td>
                 <td><input id="prevC" type="number" readonly /></td>
                 <td><input id="prevParent" type="number" readonly /></td>
-                <td><input id="prevConn" type="text" readonly /></td>
+                <td colspan="3"><input id="prevConn" type="text" readonly /></td>
               </tr>
             </tbody>
           </table>
@@ -136,7 +166,7 @@
               <thead>
                 <tr>
                   <th>番号</th><th>測点名</th><th>辺A</th><th>辺B</th><th>辺C</th>
-                  <th>親番号</th><th>接続</th><th></th>
+                  <th>親番号</th><th>接続辺</th><th>形態</th><th>起点</th><th></th>
                 </tr>
               </thead>
               <tbody id="triRows"></tbody>
@@ -172,6 +202,8 @@
             <!-- アプリ fab_flag と同じ明示操作 — 移動先をタップしてからこれを押すと
                  現在行の番号サークルがそこへ動く (MainActivity.flagTriangle 相当) -->
             <button id="fabFlag" type="button" title="番号移動 (旗揚げ): 移動先をタップしてから押す">旗</button>
+            <!-- アプリ fab_nijyuualign 相当: 二重断面/フロートの起点を 右→中央→左 で巡回 -->
+            <button id="fabNijyuu" type="button" title="二重断面の起点を巡回 (右→中央→左)">二重</button>
             <button id="fabMinus" type="button" title="削除 (2回タップ)">🗑</button>
           </div>
         </div>

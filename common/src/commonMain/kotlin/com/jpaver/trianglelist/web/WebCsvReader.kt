@@ -1,6 +1,7 @@
 package com.jpaver.trianglelist.web
 
 import com.example.trilib.PointXY
+import com.jpaver.trianglelist.editmodel.ConnCode
 import com.jpaver.trianglelist.editmodel.ConnParam
 import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
@@ -43,14 +44,20 @@ object WebCsvReader {
                     true
                 )
             }
-            // 接続 — 最小形式: CONNECTION_TYPE(1=B辺, 2=C辺) をそのまま使用、lcr=2 (Center)
+            // 接続 — コード 1/2 = 辺共有、3-8 = 二重断面 (右/左/中央)、9/10 = フロート。
+            // 完全形式 (列17-19 = cp.side/type/lcr) があればそれを優先 (CsvLoader.readCParamSafe と同形)
             else {
                 if (parent < 1 || parent > trilist.size()) continue
                 val ptri = trilist.getBy(parent)
-                trilist.add(
-                    Triangle(ptri, ConnParam(side = connectionType, type = 0, lcr = 2, lenA = lengthA), lengthB, lengthC),
-                    true
-                )
+                val cpSide = chunks.getOrNull(17)?.toIntOrNull()
+                val cpType = chunks.getOrNull(18)?.toIntOrNull()
+                val cpLcr = chunks.getOrNull(19)?.toIntOrNull()
+                val cp = if (cpSide != null && cpType != null && cpLcr != null) {
+                    ConnParam(cpSide, cpType, cpLcr, lengthA)
+                } else {
+                    ConnCode.toConnParam(connectionType, lengthA) ?: continue
+                }
+                trilist.add(Triangle(ptri, cp, lengthB, lengthC), true)
             }
 
             // 接続タイプの記録 (CsvLoader.finalizeBuildTriangle と同じ)

@@ -38,6 +38,11 @@ for (const f of jsFiles) {
   copyFileSync(resolve(src, f), resolve(jsDst, f));
 }
 for (const f of wasmFiles) {
-  if (existsSync(resolve(src, f))) copyFileSync(resolve(src, f), resolve(publicDst, f));
+  if (!existsSync(resolve(src, f))) continue;
+  // Kotlin 2.2.x の uninstantiated.mjs は .wasm を new URL('./...', import.meta.url) =
+  // モジュール相対で fetch する (旧: document base 相対)。.mjs と同じ web/wasm/ に置くのが本命。
+  // public 直下にも残すのは旧版キャッシュ/直リンク互換のため (無害)
+  copyFileSync(resolve(src, f), resolve(jsDst, f));
+  copyFileSync(resolve(src, f), resolve(publicDst, f));
 }
-console.log(`synced: ${jsFiles.length} js files -> ${jsDst}, wasm -> ${publicDst}`);
+console.log(`synced: ${jsFiles.length} js files -> ${jsDst}, wasm -> ${jsDst} + ${publicDst}`);
