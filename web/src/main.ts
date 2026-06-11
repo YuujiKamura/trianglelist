@@ -2225,7 +2225,9 @@ function main(): void {
   const addBtn = document.getElementById('addRow');
   if (!canvas || !fileInput) return;
 
-  // autosave があればそこから復元、無ければ内蔵サンプル (アプリ起動時の private CSV 復元と同じ)。
+  // autosave があればそこから復元、無ければ新規作成と同じ 1 個スタート
+  // (アプリ resumeCSV → file 無しなら createNew = 三角形 1 個、MainActivity.kt:2926-2940。
+  //  内蔵サンプル 7 個を出すのは段階1 の描画パイプ確認の名残でアプリと違った)。
   // 段階2e の封筒 JSON ({csv, overrides}) を先に試し、旧形式 (raw CSV) はフォールバック
   const saved = localStorage.getItem(AUTOSAVE_KEY);
   let savedCsv: string | null = saved;
@@ -2240,7 +2242,11 @@ function main(): void {
       // 旧形式 raw CSV — そのまま使う (overrides は空のまま)
     }
   }
-  loadCsv(canvas, savedCsv ?? SAMPLE_CSV, saved !== null ? 'autosave' : 'sample');
+  if (savedCsv !== null) {
+    loadCsv(canvas, savedCsv, 'autosave');
+  } else {
+    newDrawing(canvas); // rows が空なので confirm は出ない
+  }
 
   addBtn?.addEventListener('click', () => addRow(canvas));
   document.getElementById('newDrawing')?.addEventListener('click', () => newDrawing(canvas));
