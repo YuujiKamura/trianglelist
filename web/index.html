@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TriangleList Web (段階2e)</title>
+    <title>TriangleList Web (段階2f)</title>
     <style>
       :root { color-scheme: light; }
       body { margin: 0; font-family: system-ui, sans-serif; background: #fafafa; }
@@ -64,7 +64,8 @@
   </head>
   <body>
     <header>
-      <h1>TriangleList Web — 段階2e (寸法 W/H フリップ + 番号サークル移動)</h1>
+      <h1>TriangleList Web — 段階2f (新規作成 + 旗揚げFAB)</h1>
+      <button id="newDrawing" type="button">新規作成</button>
       <input id="file" type="file" accept=".csv,text/csv" />
       <span id="status">loading wasm...</span>
     </header>
@@ -86,9 +87,9 @@
                 <th>新規</th>
                 <td><input id="newNum" type="number" readonly /></td>
                 <td><input id="newName" type="text" /></td>
-                <td><input id="newA" type="number" step="0.1" /></td>
-                <td><input id="newB" type="number" step="0.1" /></td>
-                <td><input id="newC" type="number" step="0.1" /></td>
+                <td><input id="newA" type="number" step="0.01" /></td>
+                <td><input id="newB" type="number" step="0.01" /></td>
+                <td><input id="newC" type="number" step="0.01" /></td>
                 <td><input id="newParent" type="number" step="1" /></td>
                 <td>
                   <select id="newConn">
@@ -102,9 +103,9 @@
                 <th>現在</th>
                 <td><input id="curNum" type="number" readonly /></td>
                 <td><input id="curName" type="text" /></td>
-                <td><input id="curA" type="number" step="0.1" /></td>
-                <td><input id="curB" type="number" step="0.1" /></td>
-                <td><input id="curC" type="number" step="0.1" /></td>
+                <td><input id="curA" type="number" step="0.01" /></td>
+                <td><input id="curB" type="number" step="0.01" /></td>
+                <td><input id="curC" type="number" step="0.01" /></td>
                 <td><input id="curParent" type="number" step="1" /></td>
                 <td>
                   <select id="curConn">
@@ -160,6 +161,9 @@
                  寸法値をタップで選択してから押す。W=水平サイクル (旗揚げ含む)、H=内/外 -->
             <button id="fabDimW" type="button" title="寸法 W フリップ (水平サイクル、旗揚げ含む)">W</button>
             <button id="fabDimH" type="button" title="寸法 H フリップ (内/外)">H</button>
+            <!-- 段階2f: アプリ fab_flag と同じ明示操作 — 移動先をタップしてからこれを押すと
+                 現在行の番号サークルがそこへ動く (MainActivity.flagTriangle 相当) -->
+            <button id="fabFlag" type="button" title="番号移動 (旗揚げ): 移動先をタップしてから押す">旗</button>
             <button id="fabReplace" type="button" title="追加 / 書換え (replace)">⏎</button>
             <button id="fabUndo" type="button" title="元に戻す (1段)">↶</button>
             <button id="fabMinus" type="button" title="削除 (2回タップ)">🗑</button>
