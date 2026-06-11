@@ -112,7 +112,10 @@ type Overrides = { dims: DimOverride[]; numbers: NumberOverride[] };
 let overrides: Overrides = { dims: [], numbers: [] };
 
 let selectedDim: { tri: number; side: number } | null = null; // W/H ボタンの対象
-let numberMoveTri = 0; // >0 = 番号サークル移動モード (次のタップが移動先)
+// 段階2f: 番号移動はアプリと同じ明示操作 (移動先をタップ → 旗 FAB)。
+// 暗黙の移動モード (番号タップで遷移) は廃止し、最後のタップ位置だけ覚える
+// (アプリ myview.pressedInModel 相当 — MainActivity.flagTriangle:1570)
+let lastTapModel: { x: number; y: number } | null = null;
 
 function overridesJson(): string {
   return JSON.stringify(overrides);
@@ -265,10 +268,6 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
     );
     if (p) marker(sx(p.x), sy(p.y), Math.max(p.size * s * 1.4, 14));
   }
-  if (numberMoveTri > 0) {
-    const c = prims.find((q): q is CirclePrim => q.type === 'circle' && q.tri === numberMoveTri);
-    if (c) marker(sx(c.cx), sy(c.cy), c.r * s + 6);
-  }
 }
 
 function renderCsv(canvas: HTMLCanvasElement, csv: string, label: string): void {
@@ -316,6 +315,13 @@ function setName(row: Row, v: string): void {
 // Kotlin の toIntOrNull と同じ判定 (parseInt は '1.5'→1 になるので regex で厳密に)
 function intOrNull(s: string): number | null {
   return /^[+-]?\d+$/.test(s) ? parseInt(s, 10) : null;
+}
+
+// 段階2f: 辺長の表示は小数 2 桁に統一 (step=0.01 と対)。CSV 由来の "3"/"3.0" 混在を
+// 表示と保存値の両方で揃える。数値でない文字列はそのまま (壊さない)
+function fmt2(s: string): string {
+  const n = parseFloat(s);
+  return Number.isFinite(n) ? n.toFixed(2) : s;
 }
 
 function parseCsvToState(csv: string): void {
@@ -392,18 +398,18 @@ function syncForm(): void {
   const cur = current >= 1 ? rows[current - 1] : null;
   input('curNum').value = cur ? String(current) : '';
   input('curName').value = cur ? nameOf(cur) : '';
-  input('curA').value = cur ? cur.a : '';
-  input('curB').value = cur ? cur.b : '';
-  input('curC').value = cur ? cur.c : '';
+  input('curA').value = cur ? fmt2(cur.a) : '';
+  input('curB').value = cur ? fmt2(cur.b) : '';
+  input('curC').value = cur ? fmt2(cur.c) : '';
   input('curParent').value = cur ? cur.parent : '';
   select('curConn').value = cur ? cur.conn : '-1';
 
   const prev = current >= 2 ? rows[current - 2] : null;
   input('prevNum').value = prev ? String(current - 1) : '';
   input('prevName').value = prev ? nameOf(prev) : '';
-  input('prevA').value = prev ? prev.a : '';
-  input('prevB').value = prev ? prev.b : '';
-  input('prevC').value = prev ? prev.c : '';
+  input('prevA').value = prev ? fmt2(prev.a) : '';
+  input('prevB').value = prev ? fmt2(prev.b) : '';
+  input('prevC').value = prev ? fmt2(prev.c) : '';
   input('prevParent').value = prev ? prev.parent : '';
   // 前行は read-only 表示なので接続は select でなくラベル文字列で揃える
   input('prevConn').value = prev ? (CONN_OPTIONS.find(([v]) => v === prev.conn)?.[1] ?? prev.conn) : '';
@@ -422,7 +428,6 @@ function updateRowHighlight(): void {
 function selectTriangle(canvas: HTMLCanvasElement, n: number): void {
   selected = n;
   selectedDim = null; // 三角形を選び直したら寸法選択は解除
-  numberMoveTri = 0;
   if (n > 0) {
     current = n;
     input('newParent').value = String(n);
@@ -436,7 +441,6 @@ function selectTriangle(canvas: HTMLCanvasElement, n: number): void {
 function clearSelection(): void {
   selected = 0;
   selectedDim = null;
-  numberMoveTri = 0;
   updateRowHighlight();
 }
 
@@ -486,12 +490,17 @@ function buildTable(canvas: HTMLCanvasElement): void {
 
     for (const key of ['a', 'b', 'c'] as const) {
       const td = document.createElement('td');
-      td.appendChild(
-        numberInput(row[key], '0.1', (v) => {
-          row[key] = v;
-          redraw(canvas);
-        }),
-      );
+      // 表示も保存値も fmt2 で 2 桁に揃える (入力途中の文字列は input イベントでは触らない)
+      const inp = numberInput(fmt2(row[key]), '0.01', (v) => {
+        row[key] = v;
+        redraw(canvas);
+      });
+      inp.addEventListener('change', () => {
+        inp.value = fmt2(inp.value);
+        row[key] = inp.value;
+        redraw(canvas);
+      });
+      td.appendChild(inp);
       tr.appendChild(td);
     }
 
@@ -749,11 +758,54 @@ function flipDim(canvas: HTMLCanvasElement, axis: 'W' | 'H'): void {
   }
 }
 
+// 旗 FAB (アプリ fab_flag → flagTriangle、MainActivity.kt:1568-1582 と同じ明示操作):
+// 移動先を先にタップしておき、これを押すとカレント行の番号サークルがそこへ動く。
+// 移動の実体は override (ADR 0003 の式⊕override 二層) — 遠すぎる点は common 側の
+// BORDER 判定で無視されるので、動いたかは描画後のサークル位置で判定して伝える
+function fabFlag(canvas: HTMLCanvasElement): void {
+  const n = current > 0 ? current : 0;
+  if (n < 1) {
+    setStatus('旗揚げ: 先に三角形を選択してください');
+    return;
+  }
+  if (!lastTapModel) {
+    setStatus('旗揚げ: 移動先をタップしてから押してください');
+    return;
+  }
+  const dest = lastTapModel;
+  upsertNumberOverride(n, dest.x, dest.y);
+  redraw(canvas);
+  const c = findNumberCircle(n);
+  const moved = c && Math.hypot(c.cx - dest.x, c.cy - dest.y) < 1e-6;
+  setStatus(moved ? `番号 ${n} を移動した` : `番号 ${n}: 中心から遠すぎるため移動せず`);
+}
+
+// 新規作成 (段階2f): 現在の図を捨て、最初の 1 個 (独立 3.00/3.00/3.00) を生成して
+// 全体フィットから始める (空画面でなく即編集に入れる形)。誤爆は confirm + undo 1 段で守る
+function newDrawing(canvas: HTMLCanvasElement): void {
+  if (rows.length > 0 && !window.confirm('現在の図を破棄して新規作成しますか?')) return;
+  takeUndoSnap();
+  headerLines = ['無題工事', '新規路線', '', ''];
+  rows = [{ a: '3.00', b: '3.00', c: '3.00', parent: '-1', conn: '-1', extras: [] }];
+  overrides = { dims: [], numbers: [] };
+  lastTapModel = null;
+  clearSelection();
+  selected = 1;
+  current = 1;
+  view = null; // 次の描画で 1 個目に全体フィット
+  buildTable(canvas);
+  syncForm();
+  syncRosenName();
+  redraw(canvas);
+  setStatus('新規作成 — 三角形 1 を生成。3行フォームと B/C ボタンで継ぎ足し');
+}
+
 function wireFabs(canvas: HTMLCanvasElement): void {
   el<HTMLButtonElement>('fabSetB').addEventListener('click', () => autoConnection(1));
   el<HTMLButtonElement>('fabSetC').addEventListener('click', () => autoConnection(2));
   el<HTMLButtonElement>('fabDimW').addEventListener('click', () => flipDim(canvas, 'W'));
   el<HTMLButtonElement>('fabDimH').addEventListener('click', () => flipDim(canvas, 'H'));
+  el<HTMLButtonElement>('fabFlag').addEventListener('click', () => fabFlag(canvas));
   el<HTMLButtonElement>('fabReplace').addEventListener('click', () => fabReplace(canvas));
   el<HTMLButtonElement>('fabUndo').addEventListener('click', () => fabUndo(canvas));
   el<HTMLButtonElement>('fabMinus').addEventListener('click', () => fabMinus(canvas));
@@ -809,53 +861,16 @@ function nearestDimText(px: number, py: number): TextPrim | null {
   return best;
 }
 
-function nearestNumberCircle(px: number, py: number): CirclePrim | null {
-  const v = view;
-  if (!v) return null;
-  let best: CirclePrim | null = null;
-  let bestD = Infinity;
-  for (const p of lastPrims) {
-    if (p.type !== 'circle' || p.tri === undefined) continue;
-    const d = Math.hypot(p.cx * v.scale + v.offsetX - px, -p.cy * v.scale + v.offsetY - py);
-    if (d <= p.r * v.scale + 8 && d < bestD) {
-      best = p;
-      bestD = d;
-    }
-  }
-  return best;
-}
-
 function handleTap(canvas: HTMLCanvasElement, px: number, py: number): void {
   if (!view) return;
   const m = toModel(view, px, py);
-
-  // 番号移動モード中: このタップが移動先 (タップ→タップ先指定、brief の「簡単な方」)
-  if (numberMoveTri > 0) {
-    const tri = numberMoveTri;
-    numberMoveTri = 0;
-    upsertNumberOverride(tri, m.x, m.y);
-    redraw(canvas); // autosave 込み。遠すぎる点は common 側 BORDER 判定で無視される
-    const c = findNumberCircle(tri);
-    const movedToTarget = c && Math.hypot(c.cx - m.x, c.cy - m.y) < 1e-6;
-    setStatus(movedToTarget ? `番号 ${tri} を移動した` : `番号 ${tri}: 中心から遠すぎるため移動せず`);
-    return;
-  }
-
-  // 番号サークル → 移動モードに入る
-  const circle = nearestNumberCircle(px, py);
-  if (circle && circle.tri !== undefined) {
-    numberMoveTri = circle.tri;
-    selectedDim = null;
-    draw(canvas, lastPrims);
-    setStatus(`番号 ${circle.tri}: 移動先をタップ`);
-    return;
-  }
+  // 段階2f: 全タップの位置を覚える (アプリ pressedInModel 相当)。旗 FAB がこれを移動先に使う
+  lastTapModel = m;
 
   // 寸法テキスト → W/H ボタンの対象に
   const dim = nearestDimText(px, py);
   if (dim && dim.tri !== undefined && dim.side !== undefined) {
     selectedDim = { tri: dim.tri, side: dim.side };
-    numberMoveTri = 0;
     draw(canvas, lastPrims);
     setStatus(`寸法選択: 三角形 ${dim.tri} の ${['A', 'B', 'C'][dim.side] ?? dim.side} 辺 (W/H でフリップ)`);
     return;
@@ -1033,6 +1048,7 @@ function main(): void {
   loadCsv(canvas, savedCsv ?? SAMPLE_CSV, saved !== null ? 'autosave' : 'sample');
 
   addBtn?.addEventListener('click', () => addRow(canvas));
+  document.getElementById('newDrawing')?.addEventListener('click', () => newDrawing(canvas));
   wireExportButtons();
   wireCanvasEvents(canvas);
   wireFabs(canvas);
@@ -1053,3 +1069,22 @@ function main(): void {
 }
 
 main();
+
+// ---- 段階2f: dev CP (control protocol) ----
+// vite.config.ts の tlcp プラグインと対。CLI から
+//   curl http://localhost:5173/__tlcp/capture -o shot.png  (canvas のピクセル)
+//   curl http://localhost:5173/__tlcp/state                (rows/selected/current/overrides/csv)
+// が取れる検証口。import.meta.hot は dev 限定なので prod build には一切乗らない
+if (import.meta.hot) {
+  const hot = import.meta.hot;
+  hot.on('tlcp:capture-req', (data: { id: string }) => {
+    const canvas = document.getElementById('cv') as HTMLCanvasElement | null;
+    hot.send('tlcp:capture-res', { id: data.id, png: canvas?.toDataURL('image/png') ?? '' });
+  });
+  hot.on('tlcp:state-req', (data: { id: string }) => {
+    hot.send('tlcp:state-res', {
+      id: data.id,
+      state: { rows, selected, current, overrides, csv: serializeState() },
+    });
+  });
+}
