@@ -271,7 +271,10 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
     ctx.closePath();
     ctx.fill();
     ctx.fillStyle = '#e67e22';
-    ctx.font = 'bold 18px sans-serif';
+    // 寸法テキストと同じスケール感 (モデル単位の文字高さ × ズーム倍率) に合わせる
+    const dimSize =
+      lastPrims.find((q): q is TextPrim => q.type === 'text' && q.layer === 'dim')?.size ?? 0.25;
+    ctx.font = `${Math.max(dimSize * s, 8)}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     const bv = (document.getElementById('newB') as HTMLInputElement | null)?.value ?? '';
@@ -956,7 +959,8 @@ function buildShadow(): void {
 function selectEdge(canvas: HTMLCanvasElement, tri: number, side: 1 | 2): void {
   selected = tri;
   current = tri;
-  selectedDim = null;
+  // アプリの lastTapSide と同じく、タップした辺はそのまま W/H フリップの対象にもなる
+  selectedDim = { tri, side };
   input('newParent').value = String(tri);
   select('newConn').value = String(side);
   const p = rows[tri - 1];
@@ -997,12 +1001,25 @@ function handleTap(canvas: HTMLCanvasElement, px: number, py: number): void {
   const dim = nearestDimText(px, py);
   const edge = nearestEdge(px, py);
 
+  // 寸法値タップは「その辺をタップした」のと同じ扱いに統一 (段階2e の独自発明だった
+  // 寸法単独選択は廃止 — アプリは lastTapSide 一本で接続プリセットと W/H 対象を兼ねる)
   if (dim && (!edge || dim.d <= edge.d)) {
     const p = dim.prim;
     if (p.tri !== undefined && p.side !== undefined) {
-      selectedDim = { tri: p.tri, side: p.side };
+      if (p.side === 1 || p.side === 2) {
+        selectEdge(canvas, p.tri, p.side);
+        return;
+      }
+      // A 辺の寸法: 接続には使えないが W/H の対象にはなる
+      selected = p.tri;
+      current = p.tri;
+      selectedDim = { tri: p.tri, side: 0 };
+      edgeSel = null;
+      shadowPrims = null;
+      updateRowHighlight();
+      syncForm();
       draw(canvas, lastPrims);
-      setStatus(`寸法選択: 三角形 ${p.tri} の ${['A', 'B', 'C'][p.side] ?? p.side} 辺 (W/H でフリップ)`);
+      setStatus(`三角形 ${p.tri} の A 辺 — W/H でフリップ、旗で番号移動`);
       return;
     }
   }
