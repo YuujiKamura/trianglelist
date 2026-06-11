@@ -29,6 +29,7 @@ import {
   renderCsvToPrimitivesWithOverrides,
   buildDxfTextWithOverrides,
   buildSfcTextWithOverrides,
+  buildCsvTextWithOverrides,
   hitTriangle,
 } from '../wasm/TriangleList-common-wasm-js.mjs';
 // DXF/SFC は既存 app の出力と同じ Shift_JIS。ブラウザ標準 TextEncoder は UTF-8 専用なので
@@ -1676,9 +1677,13 @@ function exportFile(label: string, filename: string, build: () => Blob): void {
 }
 
 function wireExportButtons(): void {
-  // CSV は UTF-8 のまま (読込側 FileReader.readAsText の UTF-8 想定と対称)
+  // ADR 0008: CSV も overrides 焼き込み (完全形式 28 列) + Shift-JIS で書く —
+  // アプリの保存 (writeCSV) と同列・同エンコーディングなので、アプリで開いても
+  // W/H フリップ・番号移動・日本語測点名が失われない
   document.getElementById('saveCsv')?.addEventListener('click', () => {
-    exportFile('CSV', 'triangles.csv', () => new Blob([serializeState()], { type: 'text/csv' }));
+    exportFile('CSV', 'triangles.csv', () =>
+      toSjisBlob(buildCsvTextWithOverrides(serializeState(), overridesJson())),
+    );
   });
   // 段階2e: overrides 付き経路に切替 — W/H フリップ・番号移動が図面ファイルにも乗る
   document.getElementById('saveDxf')?.addEventListener('click', () => {
@@ -1744,14 +1749,19 @@ function main(): void {
   fileInput.addEventListener('change', () => {
     const file = fileInput.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      // 注: 既存 app の CSV は Shift_JIS の場合があるが、段階1 同様 UTF-8 読みのみ
+    // アプリの CSV は Shift-JIS、web 旧版の CSV は UTF-8。strict UTF-8 で試して
+    // 化けるバイト列なら Shift-JIS として読み直す (アプリ loadFileWithEncoding の web 版)
+    void file.arrayBuffer().then((buf) => {
+      let text: string;
+      try {
+        text = new TextDecoder('utf-8', { fatal: true }).decode(buf);
+      } catch {
+        text = new TextDecoder('shift_jis').decode(buf);
+      }
       overrides = { dims: [], numbers: [] }; // 新しいファイルに前データの override を持ち越さない
-      loadCsv(canvas, String(reader.result ?? ''), file.name);
+      loadCsv(canvas, text, file.name);
       autosave(); // 読み込んだファイルも次回リロードで復元できるように
-    };
-    reader.readAsText(file);
+    });
   });
 }
 
@@ -1789,7 +1799,13 @@ if (import.meta.hot) {
     }));
     hot.send('tlcp:state-res', {
       id: data.id,
-      state: { rows: rowsExpanded, edges, selected, current, listAngle, overrides, csv: serializeState(), view, prims: lastPrims, fabs },
+      state: {
+        rows: rowsExpanded, edges, selected, current, listAngle, overrides,
+        csv: serializeState(),
+        // 保存ボタンが書く実物 (overrides 焼き込み済み完全形式)。書き戻しの検証口
+        csvBaked: buildCsvTextWithOverrides(serializeState(), overridesJson()),
+        view, prims: lastPrims, fabs,
+      },
     });
   });
   // キー注入: 要素に値をセットして keydown を流す (Enter ナビ等のキーボード UX の検証口)。
