@@ -150,6 +150,9 @@ function tlcpPlugin(): Plugin {
 // 実行時に dynamic import する方式 (bundler 統合を避ける、kotlin-wasm-browser-template 準拠)。
 // そのため特別な wasm プラグインは不要。
 export default defineConfig({
+  // GitHub Pages (project site = /trianglelist/) 用に base を環境変数で差し替える。
+  // dev とローカル build は従来どおり '/'。
+  base: process.env.VITE_BASE ?? '/',
   plugins: [tlcpPlugin()],
   build: {
     target: 'esnext',
