@@ -1,16 +1,14 @@
 # GitHub Actions - GitHub Pages デプロイワークフロー
-# trianglelist-web (Rust + WebAssembly + Trunk) のビルドとデプロイ
+# web/ (Vite + Kotlin/Wasm) のビルドとデプロイ。
+# 旧 trianglelist-web (Rust + Trunk) 版を置き換え (2026-06-11、web 段階2)。
+#
+# リリース手順 (user 操作):
+#   GitHub → Actions → "Deploy web to GitHub Pages" → Run workflow → branch を選んで実行
+#   (デプロイは意図的に手動起動のみ。push では公開されない)
 
-name: Deploy to GitHub Pages
+name: Deploy web to GitHub Pages
 
 on:
-  push:
-    branches:
-      - main
-      - feature/issue-44-text-rotation
-    paths:
-      - 'trianglelist-web/**'
-      - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
 permissions:
@@ -30,52 +28,42 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
         with:
-          targets: wasm32-unknown-unknown
+          distribution: temurin
+          java-version: 21
 
-      - name: Cache Cargo dependencies
-        uses: Swatinem/rust-cache@v2
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build Kotlin/Wasm distribution
+        run: ./gradlew :common:wasmJsBrowserDistribution --no-daemon
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          workspaces: trianglelist-web -> target
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
 
-      - name: Install Trunk (cached)
-        uses: baptiste0928/cargo-install@v3
-        with:
-          crate: trunk
-          locked: true
+      - name: Install web dependencies
+        working-directory: web
+        run: npm ci
 
-      - name: Install binaryen and create wasm-opt wrapper
-        run: |
-          # Download and install binaryen
-          wget -q https://github.com/WebAssembly/binaryen/releases/download/version_125/binaryen-version_125-x86_64-linux.tar.gz
-          tar -xzf binaryen-version_125-x86_64-linux.tar.gz
-          REAL_WASM_OPT=$(pwd)/binaryen-version_125/bin/wasm-opt
-
-          # Create Trunk's cache directory structure
-          mkdir -p $HOME/.cache/trunk/wasm-opt-version_125/bin
-
-          # Create wrapper script that adds required WASM features
-          cat > $HOME/.cache/trunk/wasm-opt-version_125/bin/wasm-opt << WRAPPER
-          #!/bin/bash
-          exec $REAL_WASM_OPT --enable-bulk-memory --enable-nontrapping-float-to-int "\$@"
-          WRAPPER
-          chmod +x $HOME/.cache/trunk/wasm-opt-version_125/bin/wasm-opt
-
-      - name: Build WASM with Trunk
-        working-directory: trianglelist-web
+      - name: Build web (base=/trianglelist/)
+        working-directory: web
         env:
-          TRUNK_TOOLS_WASM_OPT: "version_125"
-        run: trunk build --release
+          VITE_BASE: /trianglelist/
+        run: npm run build
 
       - name: Setup Pages
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v5
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: trianglelist-web/dist
+          path: web/dist
 
   deploy:
     needs: build
