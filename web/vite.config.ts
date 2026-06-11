@@ -12,7 +12,7 @@ function tlcpPlugin(): Plugin {
   const pending = new Map<string, Pending>();
   let seq = 0;
 
-  const request = (server: ViteDevServer, channel: 'capture' | 'state' | 'tap' | 'edit' | 'key' | 'click', payload: Record<string, unknown> = {}) =>
+  const request = (server: ViteDevServer, channel: 'capture' | 'state' | 'tap' | 'edit' | 'key' | 'click' | 'load', payload: Record<string, unknown> = {}) =>
     new Promise<Record<string, unknown>>((resolve, reject) => {
       const id = String(++seq);
       const timer = setTimeout(() => {
@@ -26,7 +26,7 @@ function tlcpPlugin(): Plugin {
   return {
     name: 'tlcp',
     configureServer(server) {
-      for (const channel of ['capture', 'state', 'tap', 'edit', 'key', 'click'] as const) {
+      for (const channel of ['capture', 'state', 'tap', 'edit', 'key', 'click', 'load'] as const) {
         server.ws.on(`tlcp:${channel}-res`, (data: { id: string }) => {
           const p = pending.get(data.id);
           if (!p) return; // タブが複数開いていたら最初の応答だけ採用
@@ -100,6 +100,22 @@ function tlcpPlugin(): Plugin {
           try {
             const q = new URL(req.url, 'http://localhost').searchParams;
             const data = await request(server, 'click', { target: q.get('target') });
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify(data.state));
+          } catch (e) {
+            res.statusCode = 503;
+            res.end(String(e));
+          }
+          return;
+        }
+        // CSV 注入: POST /__tlcp/load (body = CSV テキスト) — ファイルダイアログを経ずに
+        // CSV を開く検証口。完全形式 CSV (手動配置列・golden 比較) の e2e に使う
+        if (req.url.startsWith('/__tlcp/load')) {
+          try {
+            const chunks: Buffer[] = [];
+            for await (const c of req) chunks.push(c as Buffer);
+            const csv = Buffer.concat(chunks).toString('utf-8');
+            const data = await request(server, 'load', { csv });
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify(data.state));
           } catch (e) {

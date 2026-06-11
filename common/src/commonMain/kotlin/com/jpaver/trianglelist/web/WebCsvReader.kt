@@ -5,14 +5,18 @@ import com.jpaver.trianglelist.editmodel.ConnCode
 import com.jpaver.trianglelist.editmodel.ConnParam
 import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
+import com.jpaver.trianglelist.setDimAligns
+import com.jpaver.trianglelist.setPointNumber
 
 /**
  * Web 段階1 用の最小 CSV リーダー (insight #61)。
  *
  * app/datamanager/CsvLoader.parseCSV は BufferedReader (java.io) に結合しているため
- * commonMain に置けない。三角形生成の中核 (buildTriangle の最小形式 + 接続形式の分岐) だけを
- * CsvLoader.kt:191-238 と同じロジックで再実装する。完全形式 (28カラム) のレイアウト復元・
- * Deduction・ListScale/TextSize 行はスコープ外 (スキップ)。
+ * commonMain に置けない。三角形生成の中核 (buildTriangle の最小形式 + 接続形式の分岐) と、
+ * 手動配置の復元 (finalizeBuildTriangle の番号サークル位置 列7-9・寸法アライメント 列11-16・
+ * 手動フラグ 列20-21) を CsvLoader.kt:191-307 と同じロジック・同じ順序で再実装する。
+ * 残りスコープ外 (スキップ): name/color (列6/10、描画未対応)、幾何キャッシュ (列22-25、
+ * 再計算で復元)、測点 (列26-27)、Deduction・ListScale/TextSize 行。
  *
  * ListAngle 行 (= 三角形1 の絶対角度。アプリ createNew は 0、保存時に列22 と同値) は読む:
  * CsvLoader.readListParameter:396 と同じく trilist.angle に入れ、アプリの load 経路
@@ -71,7 +75,30 @@ object WebCsvReader {
             }
 
             // 接続タイプの記録 (CsvLoader.finalizeBuildTriangle と同じ)
-            trilist.getBy(trilist.size()).connectionSide = connectionType
+            val tri = trilist.getBy(trilist.size())
+            tri.connectionSide = connectionType
+
+            // 手動配置の復元 (CsvLoader.finalizeBuildTriangle と同順・同条件)。
+            // add() の自動配置 (setDimsUnconnectedSideToOuter) の「後」に適用するから
+            // 保存された手動操作が自動値に勝つ — アプリの優先機構は順序そのもの
+            // 番号サークル位置 (列 7-9、ユーザー移動時のみ。座標は絶対値なので
+            // flag=true が recoverState の回転対象から外す)
+            if (chunks.getOrNull(9)?.toBoolean() == true) {
+                val px = chunks.getOrNull(7)?.toFloatOrNull()
+                val py = chunks.getOrNull(8)?.toFloatOrNull()
+                if (px != null && py != null) tri.setPointNumber(PointXY(px, py), true)
+            }
+            // 寸法アライメント (列 11-16 = horizontal.a/b/c + vertical.a/b/c)
+            val aligns = (11..16).map { chunks.getOrNull(it)?.toIntOrNull() }
+            if (aligns.all { it != null }) {
+                tri.setDimAligns(aligns[0]!!, aligns[1]!!, aligns[2]!!, aligns[3]!!, aligns[4]!!, aligns[5]!!)
+            }
+            // 寸法の手動フラグ (列 20-21 = flag[1]/flag[2].isMovedByUser)。
+            // scale 経路の arrangeDims(isVertical) が再自動配置するときの skip 判定に効く
+            if (chunks.getOrNull(21) != null) {
+                tri.dim.flag[1].isMovedByUser = chunks.getOrNull(20)?.toBoolean() ?: false
+                tri.dim.flag[2].isMovedByUser = chunks.getOrNull(21)?.toBoolean() ?: false
+            }
         }
         // 180° 基底で組んだ三角形を絶対角度へ回す (TriangleList.kt:340、回転量 = angle - 180)
         trilist.recoverState(PointXY(0f, 0f))
