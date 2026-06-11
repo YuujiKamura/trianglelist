@@ -97,19 +97,32 @@ class WebPrimitiveRendererTest {
         // 手動優先の順序: 二重断面の子 (conn 5) の A辺は add() の自動配置で内側(3) になるが、
         // 保存値 (列14 = 1 = 外側) が「後」に適用されて勝つ — CsvLoader と同じ順序
         val csv =
-            "1,6.0,5.0,4.0,-1,-1,,0,0,false,4,0,0,0,1,1,1\n" +
+            "1,6.0,5.0,4.0,-1,-1\n" +
                 "2,5.0,4.0,3.0,1,5,,0,0,false,4,0,0,0,1,1,1,2,1,2,true,false\n"
         val trilist = WebCsvReader.read(csv)
         val t2 = trilist.getBy(2)
         assertEquals(1, t2.dim.vertical.a)
         assertTrue(t2.dim.flag[1].isMovedByUser)
         assertTrue(!t2.dim.flag[2].isMovedByUser)
-        // 親 C辺: 二重断面の子は親の nodeC に登録されない (辺共有/フロートと違う) ので
-        // 子 add() の setDimsUnconnectedSideToOuter は触らず、保存値 1 (外側) が残る (app 同一コード)
-        assertEquals(1, trilist.getBy(1).dim.vertical.c)
+        // 親 C辺: 二重断面の子が付いたら親側の寸法も親の内側(3) へ — 重なる 2 寸法の帰属を
+        // 分けるため (2026-06-11 user バグ判定で修正)。ロード経路でも効くことを pin
+        // (旧バグ: connectionSide コードが add() 後にしか入らず、ロード時だけ外れていた)
+        assertEquals(3, trilist.getBy(1).dim.vertical.c)
         // 描画にも乗る: tri2 side0 の寸法テキストが v=1 で出る
         val json = WebPrimitiveRenderer.render(trilist, 0.25f)
         assertTrue(json.contains(""""tri":2,"side":0,"h":0,"v":1"""), "saved v=1 not in render output")
+    }
+
+    @Test
+    fun parent_manual_flag_beats_auto_inner_on_connected_edge() {
+        // 親 C辺に手動フラグ (列21=true) + 保存値 1 (外側) があるとき、後続の二重断面の子の
+        // add() が自動内側化で潰さない — 手動配置優先のガード
+        val csv =
+            "1,6.0,5.0,4.0,-1,-1,,0,0,false,4,0,0,0,1,1,1,0,0,2,false,true\n" +
+                "2,5.0,4.0,3.0,1,5,,0,0,false,4,0,0,0,1,1,1,2,1,2,false,false\n"
+        val trilist = WebCsvReader.read(csv)
+        assertEquals(1, trilist.getBy(1).dim.vertical.c)
+        assertTrue(trilist.getBy(1).dim.flag[2].isMovedByUser)
     }
 
     @Test

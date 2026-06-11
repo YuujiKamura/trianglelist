@@ -333,8 +333,23 @@ open class TriangleList : EditList {
     fun setDimsUnconnectedSideToOuter(target: Triangle?) {
         if(target == null ) return
         if (target.nodeA == null) target.dim.vertical.a = 1 else target.dim.vertical.a = 3
-        if (target.nodeB == null) target.dim.vertical.b = 1 else if (target.nodeB!!.connectionSide > 2 ) target.dim.vertical.b = 3
-        if (target.nodeC == null) target.dim.vertical.c = 1 else if (target.nodeC!!.connectionSide > 2 ) target.dim.vertical.c = 3
+        // 子が特殊接続 (二重断面 type1 / フロート type2) なら親側の接続辺寸法も親の内側へ —
+        // 重なる 2 つの寸法値がどちらの三角形のものか判別できなくなるため (2026-06-11 user バグ判定)。
+        // 判定は connectionSide のコード (3-10) でなく connectionType_ (ConnParam.type) も見る:
+        // CSV ロード経路 (ConnParam コンストラクタ → setConnectionType) は connectionSide に
+        // コードを入れず、ローダの finalize (= add() の後) で入るため、コードだけ見ると
+        // ロード時に必ず外れる (対話操作では効くのにロード後は戻る、の原因)。
+        // 手動フラグが立っている辺は触らない — 手動配置優先
+        val nb = target.nodeB
+        if (!target.dim.flag[1].isMovedByUser) {
+            if (nb == null) target.dim.vertical.b = 1
+            else if (nb.connectionSide > 2 || nb.connectionType_ > 0) target.dim.vertical.b = 3
+        }
+        val nc = target.nodeC
+        if (!target.dim.flag[2].isMovedByUser) {
+            if (nc == null) target.dim.vertical.c = 1
+            else if (nc.connectionSide > 2 || nc.connectionType_ > 0) target.dim.vertical.c = 3
+        }
     }
 
     fun recoverState(bp: com.example.trilib.PointXY = com.example.trilib.PointXY(0f, 0f)) {
