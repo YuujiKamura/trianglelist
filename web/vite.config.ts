@@ -12,13 +12,13 @@ function tlcpPlugin(): Plugin {
   const pending = new Map<string, Pending>();
   let seq = 0;
 
-  const request = (server: ViteDevServer, channel: 'capture' | 'state' | 'tap' | 'edit' | 'key' | 'click' | 'load', payload: Record<string, unknown> = {}) =>
+  const request = (server: ViteDevServer, channel: 'capture' | 'state' | 'tap' | 'edit' | 'key' | 'click' | 'load' | 'page', payload: Record<string, unknown> = {}, timeoutMs = 3000) =>
     new Promise<Record<string, unknown>>((resolve, reject) => {
       const id = String(++seq);
       const timer = setTimeout(() => {
         pending.delete(id);
-        reject(new Error('tlcp: page did not respond in 3s (ブラウザでページが開いているか確認)'));
-      }, 3000);
+        reject(new Error(`tlcp: page did not respond in ${timeoutMs}ms (ブラウザでページが開いているか確認)`));
+      }, timeoutMs);
       pending.set(id, { resolve: resolve as (data: unknown) => void, timer });
       server.ws.send(`tlcp:${channel}-req`, { id, ...payload });
     });
@@ -26,7 +26,7 @@ function tlcpPlugin(): Plugin {
   return {
     name: 'tlcp',
     configureServer(server) {
-      for (const channel of ['capture', 'state', 'tap', 'edit', 'key', 'click', 'load'] as const) {
+      for (const channel of ['capture', 'state', 'tap', 'edit', 'key', 'click', 'load', 'page'] as const) {
         server.ws.on(`tlcp:${channel}-res`, (data: { id: string }) => {
           const p = pending.get(data.id);
           if (!p) return; // タブが複数開いていたら最初の応答だけ採用
@@ -40,6 +40,21 @@ function tlcpPlugin(): Plugin {
         if (req.url.startsWith('/__tlcp/capture')) {
           try {
             const data = await request(server, 'capture');
+            const b64 = String(data.png ?? '').split(',')[1] ?? '';
+            res.setHeader('Content-Type', 'image/png');
+            res.end(Buffer.from(b64, 'base64'));
+          } catch (e) {
+            res.statusCode = 503;
+            res.end(String(e));
+          }
+          return;
+        }
+        // ページ全体スクショ: GET /__tlcp/page — canvas だけの capture と違い、FAB 等の
+        // DOM 込みで撮る (snapDOM が DOM を SVG 経由でラスタライズ。フロントバッファの
+        // 厳密なピクセルではないが UI 検証には十分)。timeout はラスタライズ分長め
+        if (req.url.startsWith('/__tlcp/page')) {
+          try {
+            const data = await request(server, 'page', {}, 10000);
             const b64 = String(data.png ?? '').split(',')[1] ?? '';
             res.setHeader('Content-Type', 'image/png');
             res.end(Buffer.from(b64, 'base64'));

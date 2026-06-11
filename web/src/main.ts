@@ -1436,6 +1436,11 @@ function fabNijyuu(canvas: HTMLCanvasElement): void {
 function toggleDeductionMode(canvas: HTMLCanvasElement): void {
   deductionMode = !deductionMode;
   el<HTMLButtonElement>('fabDeduction').classList.toggle('modeon', deductionMode);
+  // FAB 群の見かけ変更 (アプリ updateFabAppearance:1028 / setDeductionFab:1037 の web 版)。
+  // 色は CSS の body.dedmode が一括制御、旗アイコンはアプリ同様 flag_b ↔ flag を swap
+  document.body.classList.toggle('dedmode', deductionMode);
+  const flagImg = document.querySelector<HTMLImageElement>('#fabFlag img');
+  if (flagImg) flagImg.src = `${import.meta.env.BASE_URL}icons/${deductionMode ? 'flag' : 'flag_b'}.png`;
   const details = document.getElementById('dedDetails') as HTMLDetailsElement | null;
   if (details && deductionMode) details.open = true;
   if (!deductionMode) {
@@ -2240,6 +2245,22 @@ if (import.meta.hot) {
   hot.on('tlcp:capture-req', (data: { id: string }) => {
     const canvas = document.getElementById('cv') as HTMLCanvasElement | null;
     hot.send('tlcp:capture-res', { id: data.id, png: canvas?.toDataURL('image/png') ?? '' });
+  });
+  // ページ全体スクショ (FAB 等の DOM 込み)。snapDOM が DOM を SVG 経由でラスタライズする —
+  // capture (canvas.toDataURL) と違い UI 全体の見た目検証ができる。dev 専用 dynamic import
+  // なので prod バンドルには乗らない (出典: https://snapdom.dev/ — html2canvas 系の後継定石)
+  hot.on('tlcp:page-req', (data: { id: string }) => {
+    void (async () => {
+      try {
+        const { snapdom } = await import('@zumer/snapdom');
+        const result = await snapdom(document.body, { scale: 1 });
+        const img = await result.toPng();
+        hot.send('tlcp:page-res', { id: data.id, png: img.src });
+      } catch (e) {
+        console.error('tlcp:page failed', e);
+        hot.send('tlcp:page-res', { id: data.id, png: '' });
+      }
+    })();
   });
   hot.on('tlcp:state-req', (data: { id: string }) => {
     // fabs: FAB の実測 DOM 矩形。canvas 外のレイアウト (配置順・間隔) を CLI から
