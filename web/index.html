@@ -164,7 +164,8 @@
             <!-- 段階2f: アプリ fab_flag と同じ明示操作 — 移動先をタップしてからこれを押すと
                  現在行の番号サークルがそこへ動く (MainActivity.flagTriangle 相当) -->
             <button id="fabFlag" type="button" title="番号移動 (旗揚げ): 移動先をタップしてから押す">旗</button>
-            <button id="fabReplace" type="button" title="追加 / 書換え (replace)">⏎</button>
+            <!-- アプリのペンシル FAB。⏎ だと undo に見える (user 指摘 2026-06-11) ので鉛筆に -->
+            <button id="fabReplace" type="button" title="書込み: 追加 / 書換え (アプリのペンシル)">✎</button>
             <button id="fabUndo" type="button" title="元に戻す (1段)">↶</button>
             <button id="fabMinus" type="button" title="削除 (2回タップ)">🗑</button>
           </div>

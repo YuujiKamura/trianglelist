@@ -12,7 +12,7 @@ function tlcpPlugin(): Plugin {
   const pending = new Map<string, Pending>();
   let seq = 0;
 
-  const request = (server: ViteDevServer, channel: 'capture' | 'state') =>
+  const request = (server: ViteDevServer, channel: 'capture' | 'state' | 'tap', payload: Record<string, unknown> = {}) =>
     new Promise<Record<string, unknown>>((resolve, reject) => {
       const id = String(++seq);
       const timer = setTimeout(() => {
@@ -20,13 +20,13 @@ function tlcpPlugin(): Plugin {
         reject(new Error('tlcp: page did not respond in 3s (ブラウザでページが開いているか確認)'));
       }, 3000);
       pending.set(id, { resolve: resolve as (data: unknown) => void, timer });
-      server.ws.send(`tlcp:${channel}-req`, { id });
+      server.ws.send(`tlcp:${channel}-req`, { id, ...payload });
     });
 
   return {
     name: 'tlcp',
     configureServer(server) {
-      for (const channel of ['capture', 'state'] as const) {
+      for (const channel of ['capture', 'state', 'tap'] as const) {
         server.ws.on(`tlcp:${channel}-res`, (data: { id: string }) => {
           const p = pending.get(data.id);
           if (!p) return; // タブが複数開いていたら最初の応答だけ採用
@@ -52,6 +52,22 @@ function tlcpPlugin(): Plugin {
         if (req.url.startsWith('/__tlcp/state')) {
           try {
             const data = await request(server, 'state');
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify(data.state));
+          } catch (e) {
+            res.statusCode = 503;
+            res.end(String(e));
+          }
+          return;
+        }
+        // タップ注入: GET /__tlcp/tap?x=<model x>&y=<model y> — UX 検証をスクリプト化する口
+        if (req.url.startsWith('/__tlcp/tap')) {
+          try {
+            const q = new URL(req.url, 'http://localhost').searchParams;
+            const data = await request(server, 'tap', {
+              x: Number(q.get('x')),
+              y: Number(q.get('y')),
+            });
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify(data.state));
           } catch (e) {
