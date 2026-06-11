@@ -3,7 +3,6 @@ package com.jpaver.trianglelist.web
 import com.jpaver.trianglelist.datamanager.CsvCodec
 import com.jpaver.trianglelist.datamanager.DxfFileWriter
 import com.jpaver.trianglelist.datamanager.SfcWriter
-import com.jpaver.trianglelist.editmodel.DeductionList
 import com.jpaver.trianglelist.editmodel.ZumenInfo
 import com.jpaver.trianglelist.viewmodel.TitleParamStr
 
@@ -94,6 +93,15 @@ object WebDrawingExport {
     private fun readForExport(csv: String) =
         WebCsvReader.read(csv).apply { setChildsToAllParents() }
 
+    /**
+     * CSV の Deduction 行 → 書き出し用 DeductionList (CsvCodec.buildDeductions、viewscale=1)。
+     * アプリは saveDXF/saveSFC で myDeductionList.clone() を渡す (MainActivity.kt:2573/2588) —
+     * web も同じ口に CSV 由来の dedlist を渡す。座標はビュー空間 (y 下向き) で、writer 側が
+     * Y 反転する (DxfFileWriter.writeEntities:299 / SfcWriter:35)。viewscale=1 なので
+     * DxfFileWriter の viewscale_ (既定 47.6 = アプリのビュー倍率) は 1f に明示する
+     */
+    private fun dedsForExport(csv: String) = CsvCodec.buildDeductions(CsvCodec.parse(csv))
+
     /** CSV → DXF 全文 (SJIS エンコード前の String)。初期化列は DxfDimensionLayoutGoldenTest.newWriter と同一 */
     fun buildDxfText(csv: String): String = buildDxfText(csv, "")
 
@@ -107,7 +115,8 @@ object WebDrawingExport {
         val trilist = readForExport(csv)
         WebOverrides.applyJson(trilist, overridesJson)
         val writer = DxfFileWriter(trilist).apply {
-            dedlist_ = DeductionList()
+            dedlist_ = dedsForExport(csv)
+            viewscale_ = 1f // web の ded はビュー倍率 1 (アプリ既定 47.6 のままだと座標が 1/47.6 に縮む)
             startTriNumber_ = 1
         }
         writer.titleTri_ = TitleParamStr()
@@ -141,7 +150,7 @@ object WebDrawingExport {
         val header = parseHeader(csv)
         val trilist = readForExport(csv)
         WebOverrides.applyJson(trilist, overridesJson)
-        val writer = SfcWriter(trilist, DeductionList(), filename, 1, 1f)
+        val writer = SfcWriter(trilist, dedsForExport(csv), filename, 1, 1f)
         writer.titleTri_ = TitleParamStr()
         writer.titleDed_ = TitleParamStr()
         writer.zumeninfo = defaultZumenInfo()

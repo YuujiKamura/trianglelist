@@ -75,6 +75,26 @@ fun buildCsvTextWithOverrides(csv: String, overridesJson: String): String =
     WebDrawingExport.buildCsvText(csv, overridesJson)
 
 /**
+ * 控除の配置 (web 控除編集): クリック位置 (モデル座標、y 上向き — hitTriangle と同系) に
+ * 控除を置き、完成した 13 列 Deduction CSV 行を返す。pn=isCollide、pointFlag/shapeAngle=
+ * flag(parent)、形状自動判定 (lenY>0 → Box)。不正パラメータは空文字列。
+ * 幾何は common の WebDeduction (アプリ MainActivity.flagDeduction:1773-1820 と同式)
+ */
+@OptIn(ExperimentalJsExport::class)
+@JsExport
+fun placeDeduction(csv: String, x: Double, y: Double, name: String, lenX: Double, lenY: Double, num: Int): String =
+    WebDeduction.placeDeduction(csv, x.toFloat(), y.toFloat(), name, lenX.toFloat(), lenY.toFloat(), num)
+
+/**
+ * 全体回転 (fabRotate) への控除連動: Deduction CSV 行 1 本を degrees 回転して返す
+ * (アプリ MainActivity.kt:1587 の dedlist.rotate(origin, -degrees) と同値)
+ */
+@OptIn(ExperimentalJsExport::class)
+@JsExport
+fun rotateDeductionLine(line: String, degrees: Double): String =
+    WebDeduction.rotateDeductionLine(line, degrees.toFloat())
+
+/**
  * binaries.executable() のリンクに entry point が要るための no-op。
  * 段階1 は @JsExport 関数を JS から呼ぶだけで、起動時処理は無い。
  */

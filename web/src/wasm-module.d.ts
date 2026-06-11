@@ -11,4 +11,8 @@ declare module '*/TriangleList-common-wasm-js.mjs' {
   export function buildSfcTextWithOverrides(csv: string, filename: string, overridesJson: string): string;
   // ADR 0008: overrides 焼き込み済みの完全形式 28 列 CSV (手動配置の書き戻し)
   export function buildCsvTextWithOverrides(csv: string, overridesJson: string): string;
+  // 控除編集: クリック位置 (モデル座標) に配置 → 13 列 Deduction CSV 行 (不正は空文字列)
+  export function placeDeduction(csv: string, x: number, y: number, name: string, lenX: number, lenY: number, num: number): string;
+  // 全体回転への控除連動: Deduction 行 1 本を degrees 回転して返す
+  export function rotateDeductionLine(line: string, degrees: number): string;
 }
