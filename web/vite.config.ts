@@ -12,7 +12,7 @@ function tlcpPlugin(): Plugin {
   const pending = new Map<string, Pending>();
   let seq = 0;
 
-  const request = (server: ViteDevServer, channel: 'capture' | 'state' | 'tap' | 'edit', payload: Record<string, unknown> = {}) =>
+  const request = (server: ViteDevServer, channel: 'capture' | 'state' | 'tap' | 'edit' | 'key' | 'click', payload: Record<string, unknown> = {}) =>
     new Promise<Record<string, unknown>>((resolve, reject) => {
       const id = String(++seq);
       const timer = setTimeout(() => {
@@ -26,7 +26,7 @@ function tlcpPlugin(): Plugin {
   return {
     name: 'tlcp',
     configureServer(server) {
-      for (const channel of ['capture', 'state', 'tap', 'edit'] as const) {
+      for (const channel of ['capture', 'state', 'tap', 'edit', 'key', 'click'] as const) {
         server.ws.on(`tlcp:${channel}-res`, (data: { id: string }) => {
           const p = pending.get(data.id);
           if (!p) return; // タブが複数開いていたら最初の応答だけ採用
@@ -70,6 +70,36 @@ function tlcpPlugin(): Plugin {
               key: q.get('key'),
               value: q.get('value'),
             });
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify(data.state));
+          } catch (e) {
+            res.statusCode = 503;
+            res.end(String(e));
+          }
+          return;
+        }
+        // キー注入: GET /__tlcp/key?target=<要素id>&value=<値>&key=Enter — キーボード UX の検証口
+        if (req.url.startsWith('/__tlcp/key')) {
+          try {
+            const q = new URL(req.url, 'http://localhost').searchParams;
+            const data = await request(server, 'key', {
+              target: q.get('target'),
+              key: q.get('key') ?? undefined,
+              value: q.get('value') ?? undefined,
+            });
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify(data.state));
+          } catch (e) {
+            res.statusCode = 503;
+            res.end(String(e));
+          }
+          return;
+        }
+        // クリック注入: GET /__tlcp/click?target=<要素id> — ボタン動線の検証口
+        if (req.url.startsWith('/__tlcp/click')) {
+          try {
+            const q = new URL(req.url, 'http://localhost').searchParams;
+            const data = await request(server, 'click', { target: q.get('target') });
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify(data.state));
           } catch (e) {

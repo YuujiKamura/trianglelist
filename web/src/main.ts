@@ -711,13 +711,7 @@ function buildTable(canvas: HTMLCanvasElement): void {
     del.textContent = '削除';
     del.addEventListener('click', (e) => {
       e.stopPropagation(); // 行クリック選択を発火させない
-      rows.splice(i, 1);
-      shiftOverridesAfterDelete(i + 1); // 番号が振り直されるので override も追従
-      clearSelection(); // 番号が振り直されるので選択解除
-      if (current > rows.length) current = rows.length;
-      buildTable(canvas); // 番号が振り直されるので組み直し
-      syncForm();
-      redraw(canvas);
+      deleteRow(canvas, i + 1);
     });
     tdDel.appendChild(del);
     tr.appendChild(tdDel);
@@ -825,12 +819,29 @@ function fabReplace(canvas: HTMLCanvasElement): void {
   if (newC === '') return; // アプリと同じ: B だけでは何もしない (strAddLineC.isEmpty -> return)
 
   // Add (アプリ addTriangleBy 相当 — 行を足して CSV 再構築に任せる)
-  const conn = select('newConn').value;
+  let conn = select('newConn').value;
   let parent = input('newParent').value.trim();
+  if (rows.length === 0) {
+    // リストが空なら最初の 1 個は必ず独立 — 全削除後に残留した接続プリセットで
+    // 「存在しない親に繋がる行」を作らせない (作ると以降の追加が全部 skip 連鎖で消える)
+    conn = '-1';
+    parent = '-1';
+    select('newConn').value = '-1';
+    input('newParent').value = '';
+  }
   if (conn === '-1') {
     parent = '-1';
   } else if (parent === '') {
     parent = String(current > 0 ? current : rows.length);
+  }
+  // 親の実在関門: 三角不等式・占有と同列の追加前チェック。存在しない親への接続行は
+  // WebCsvReader が skip するので、リストに居るのに描画されない行が生まれてしまう
+  if (conn === '1' || conn === '2') {
+    const pn = parseInt(parent, 10);
+    if (!(pn >= 1 && pn <= rows.length)) {
+      setStatus(`⚠ 親番号 ${parent} の三角形が存在しません — 追加を中止 (独立で足すなら接続を「独立」に)`);
+      return;
+    }
   }
   let a = input('newA').value.trim();
   if ((conn === '1' || conn === '2') && a === '') {
@@ -879,6 +890,42 @@ function fabReplace(canvas: HTMLCanvasElement): void {
   setStatus(`Add Triangle ${rows.length}`);
 }
 
+// 行削除の共通処理 (行の削除ボタン / fabMinus の両動線)。番号の振り直しに合わせて
+// 残存行の親参照も振り直す — これを怠ると「存在しない親に繋がる行」が残り、
+// WebCsvReader が行ごと skip して『何を足しても描画されない』連鎖になる
+// (2026-06-11 user 報告: 全削除→ペンシル/行追加で表示されない、の根因)
+function deleteRow(canvas: HTMLCanvasElement, n: number): void {
+  if (n < 1 || n > rows.length) return;
+  takeUndoSnap();
+  rows.splice(n - 1, 1);
+  for (const r of rows) {
+    const pn = intOrNull(r.parent);
+    if (pn === null) continue;
+    if (pn === n) {
+      // 親を失った子は独立に落とす (現値を保ったまま辺A を自分の辺に切り出す)
+      r.parent = '-1';
+      r.conn = '-1';
+      relinkEdgeA(r);
+    } else if (pn > n) {
+      r.parent = String(pn - 1); // 後続番号が 1 ずれるので追従
+    }
+  }
+  shiftOverridesAfterDelete(n); // 番号が振り直されるので override も追従
+  clearSelection(); // 番号が振り直されるので選択解除
+  current = Math.min(n, rows.length); // 消した位置の次 (なければ末尾) をカレントに
+  // 新規行フォームの残留プリセット (消えた三角形への親番号/接続) を掃除する
+  const np = intOrNull(input('newParent').value.trim());
+  if (np !== null && (np < 1 || np > rows.length)) {
+    input('newParent').value = '';
+    select('newConn').value = '-1';
+    input('newA').value = '';
+  }
+  buildTable(canvas); // 番号が振り直されるので組み直し
+  syncForm();
+  redraw(canvas);
+  setStatus(`Delete Triangle ${n}`);
+}
+
 // 削除 FAB (MainActivity.kt:1331-1350): 2 タップ確認式。1 回目で赤点灯 + 3 秒タイマー、
 // 2 回目で performDelete (1275) — カレント (lastTapNumber 相当) を消す
 let deleteArmed = false;
@@ -901,16 +948,7 @@ function fabMinus(canvas: HTMLCanvasElement): void {
   }
   disarmDelete();
   if (rows.length === 0) return;
-  const n = current > 0 ? current : rows.length;
-  takeUndoSnap();
-  rows.splice(n - 1, 1);
-  shiftOverridesAfterDelete(n); // 番号が振り直されるので override も追従
-  clearSelection();
-  current = Math.min(n, rows.length); // 消した位置の次 (なければ末尾) をカレントに
-  buildTable(canvas);
-  syncForm();
-  redraw(canvas);
-  setStatus(`Delete Triangle ${n}`);
+  deleteRow(canvas, current > 0 ? current : rows.length);
 }
 
 // undo FAB (MainActivity.kt:1352-1365): 1 段だけ戻して undo バッファを空にする
@@ -1028,6 +1066,45 @@ function wireFabs(canvas: HTMLCanvasElement): void {
   });
   el<HTMLButtonElement>('fabUp').addEventListener('click', () => moveCurrent(canvas, -1));
   el<HTMLButtonElement>('fabDown').addEventListener('click', () => moveCurrent(canvas, 1));
+}
+
+// 新規行の Enter ナビゲーション (アプリの EditText imeOptions=actionNext 相当):
+// Enter で隣のセルへ移動し、辺C で Enter すると新規三角形を確定して追加・再描画する。
+// IME 変換確定の Enter (isComposing) は無視する (測点名の日本語入力を壊さない)
+function wireNewRowEnter(canvas: HTMLCanvasElement): void {
+  const moveTo = (toId: string) => {
+    const t = document.getElementById(toId);
+    if (t instanceof HTMLInputElement || t instanceof HTMLSelectElement) {
+      t.focus();
+      if (t instanceof HTMLInputElement) t.select();
+    }
+  };
+  const chain: Array<[string, string]> = [
+    ['newName', 'newA'],
+    ['newA', 'newB'],
+    ['newB', 'newC'],
+    ['newParent', 'newConn'],
+  ];
+  for (const [from, to] of chain) {
+    input(from).addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' || e.isComposing) return;
+      e.preventDefault();
+      moveTo(to);
+    });
+  }
+  input('newC').addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' || e.isComposing) return;
+    e.preventDefault();
+    if (input('newB').value.trim() === '') {
+      // B 空のまま fabReplace を呼ぶと「カレント行の書換え」分岐に入ってしまうので先に弾く
+      moveTo('newB');
+      setStatus('辺B が空です — B を入力してから C のエンターで追加確定');
+      return;
+    }
+    const before = rows.length;
+    fabReplace(canvas);
+    if (rows.length > before) moveTo('newB'); // 追加成功 → 次の入力へ (連続追加の流れ)
+  });
 }
 
 // 路線名: アプリの editor_table の路線名欄に相当。sample_triangles.csv 形式では
@@ -1471,6 +1548,7 @@ function main(): void {
   wireCanvasEvents(canvas);
   wireFabs(canvas);
   wireRosenName();
+  wireNewRowEnter(canvas);
 
   fileInput.addEventListener('change', () => {
     const file = fileInput.files?.[0];
@@ -1522,6 +1600,35 @@ if (import.meta.hot) {
       id: data.id,
       state: { rows: rowsExpanded, edges, selected, current, overrides, csv: serializeState(), view, prims: lastPrims, fabs },
     });
+  });
+  // キー注入: 要素に値をセットして keydown を流す (Enter ナビ等のキーボード UX の検証口)。
+  // 合成イベントはブラウザ既定動作を起こさないが、こちらの handler は preventDefault 前提なので等価
+  hot.on('tlcp:key-req', (data: { id: string; target?: string; key?: string; value?: string }) => {
+    const t = document.getElementById(String(data.target ?? ''));
+    if (t instanceof HTMLInputElement || t instanceof HTMLSelectElement) {
+      if (typeof data.value === 'string') t.value = data.value;
+      t.focus();
+      if (data.key) t.dispatchEvent(new KeyboardEvent('keydown', { key: data.key, bubbles: true, cancelable: true }));
+      hot.send('tlcp:key-res', {
+        id: data.id,
+        state: { ok: true, active: document.activeElement?.id ?? '', rows: rows.length },
+      });
+    } else {
+      hot.send('tlcp:key-res', { id: data.id, state: { ok: false } });
+    }
+  });
+  // クリック注入: ボタン UX (FAB・削除等) の動線を CLI から踏む口
+  hot.on('tlcp:click-req', (data: { id: string; target?: string }) => {
+    const t = document.getElementById(String(data.target ?? ''));
+    if (t instanceof HTMLElement) {
+      t.click();
+      hot.send('tlcp:click-res', {
+        id: data.id,
+        state: { ok: true, rows: rows.length, status: document.getElementById('status')?.textContent ?? '' },
+      });
+    } else {
+      hot.send('tlcp:click-res', { id: data.id, state: { ok: false } });
+    }
   });
   // 編集注入: 一覧セル編集と同じ動線 (row 書換え → redraw) を踏む。
   // 三角不等式の共通関門が「図を据え置いて警告する」ことを CLI から実走検証する口
