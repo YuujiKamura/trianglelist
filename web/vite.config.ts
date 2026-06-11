@@ -12,7 +12,7 @@ function tlcpPlugin(): Plugin {
   const pending = new Map<string, Pending>();
   let seq = 0;
 
-  const request = (server: ViteDevServer, channel: 'capture' | 'state' | 'tap', payload: Record<string, unknown> = {}) =>
+  const request = (server: ViteDevServer, channel: 'capture' | 'state' | 'tap' | 'edit', payload: Record<string, unknown> = {}) =>
     new Promise<Record<string, unknown>>((resolve, reject) => {
       const id = String(++seq);
       const timer = setTimeout(() => {
@@ -26,7 +26,7 @@ function tlcpPlugin(): Plugin {
   return {
     name: 'tlcp',
     configureServer(server) {
-      for (const channel of ['capture', 'state', 'tap'] as const) {
+      for (const channel of ['capture', 'state', 'tap', 'edit'] as const) {
         server.ws.on(`tlcp:${channel}-res`, (data: { id: string }) => {
           const p = pending.get(data.id);
           if (!p) return; // タブが複数開いていたら最初の応答だけ採用
@@ -52,6 +52,24 @@ function tlcpPlugin(): Plugin {
         if (req.url.startsWith('/__tlcp/state')) {
           try {
             const data = await request(server, 'state');
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify(data.state));
+          } catch (e) {
+            res.statusCode = 503;
+            res.end(String(e));
+          }
+          return;
+        }
+        // 編集注入: GET /__tlcp/edit?tri=<番号>&key=<a|b|c>&value=<長さ> — 一覧セル編集と
+        // 同じ動線 (row 書換え → redraw) を CLI から踏む。三角不等式関門の実走検証口
+        if (req.url.startsWith('/__tlcp/edit')) {
+          try {
+            const q = new URL(req.url, 'http://localhost').searchParams;
+            const data = await request(server, 'edit', {
+              tri: Number(q.get('tri')),
+              key: q.get('key'),
+              value: q.get('value'),
+            });
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify(data.state));
           } catch (e) {
