@@ -6,14 +6,17 @@ pluginManagement {
         gradlePluginPortal()
     }
     plugins {
-        id("com.android.application") version "8.11.2"
-        id("com.android.library") version "8.11.2"
-        id("org.jetbrains.kotlin.android") version "2.0.0"
+        id("com.android.application") version "9.2.1"
+        id("com.android.library") version "9.2.1"
+        id("org.jetbrains.kotlin.android") version "2.2.10"
         id("org.jetbrains.kotlin.jvm") version "2.0.0"
         id("org.jetbrains.kotlin.multiplatform") version "2.0.0"
-        id("org.jetbrains.kotlin.plugin.compose") version "2.0.0"
+        id("org.jetbrains.kotlin.plugin.compose") version "2.2.10"
         id("org.jetbrains.compose") version "1.7.0"
     }
+}
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention") version "0.10.0"
 }
 
 dependencyResolutionManagement {
