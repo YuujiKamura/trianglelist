@@ -1071,6 +1071,50 @@ function autoConnection(side: 1 | 2): void {
   input('newB').focus();
 }
 
+// カレント行フォームの値で current 三角形を書き換える (processTriEditMode の edit 側)。
+// fabReplace (新規行 B が空のとき) と curC の Enter 確定の 2 動線から呼ばれる
+function rewriteCurrent(canvas: HTMLCanvasElement): void {
+  if (rows.length === 0) {
+    setStatus('Cannot edit: リストが空です。先に追加してください');
+    return;
+  }
+  if (current < 1) {
+    setStatus('Cannot edit: カレント行がありません。図か一覧で選択してください');
+    return;
+  }
+  // 共通関門: 不成立の値は state を汚す前に却下 (undo スナップも消費しない)
+  const editBad = invalidTriangleReason(
+    parseFloat(input('curA').value),
+    parseFloat(input('curB').value),
+    parseFloat(input('curC').value),
+  );
+  if (editBad) {
+    setStatus(`⚠ 三角形 ${current}: ${editBad} — 書換えを中止`);
+    return;
+  }
+  takeUndoSnap();
+  const r = rows[current - 1];
+  const cp = input('curParent').value.trim();
+  const newParentVal = cp === '' ? '-1' : cp;
+  // 接続 (parent/conn) が変わる場合は先に辺A の共有を張り直してから値を書く
+  const curParts = readConnParts('cur');
+  const newConnVal = curParts ? String(encodeConn(curParts)) : '-1';
+  if (newParentVal !== r.parent || newConnVal !== r.conn) {
+    r.parent = newParentVal;
+    r.conn = newConnVal;
+    relinkEdgeA(r);
+  }
+  writeCpExtras(r, curParts); // フロートの lcr 変更はコードに乗らない (列 17-19 が SoT)
+  setEdgeVal(r, 'a', input('curA').value); // 共有辺なら親の B/C も同時に変わる (実体が 1 個)
+  setEdgeVal(r, 'b', input('curB').value);
+  setEdgeVal(r, 'c', input('curC').value);
+  setName(r, input('curName').value);
+  buildTable(canvas);
+  syncForm();
+  redraw(canvas);
+  setStatus(`Rewrite Triangle ${current}`);
+}
+
 // replace (MainActivity.kt:1614 fabReplace → processTriEditMode:1652):
 // 新規行の B が空 → カレント行の書換え / C だけ空 → 何もしない / 両方あり → 追加。
 // この 3 分岐の判定をそのまま写す (幾何の知識は CSV 再構築側 = common が持つ)
@@ -1080,45 +1124,7 @@ function fabReplace(canvas: HTMLCanvasElement): void {
 
   if (newB === '') {
     // Edit attempt (processTriEditMode: strAddLineB.isEmpty)
-    if (rows.length === 0) {
-      setStatus('Cannot edit: リストが空です。先に追加してください');
-      return;
-    }
-    if (current < 1) {
-      setStatus('Cannot edit: カレント行がありません。図か一覧で選択してください');
-      return;
-    }
-    // 共通関門: 不成立の値は state を汚す前に却下 (undo スナップも消費しない)
-    const editBad = invalidTriangleReason(
-      parseFloat(input('curA').value),
-      parseFloat(input('curB').value),
-      parseFloat(input('curC').value),
-    );
-    if (editBad) {
-      setStatus(`⚠ 三角形 ${current}: ${editBad} — 書換えを中止`);
-      return;
-    }
-    takeUndoSnap();
-    const r = rows[current - 1];
-    const cp = input('curParent').value.trim();
-    const newParentVal = cp === '' ? '-1' : cp;
-    // 接続 (parent/conn) が変わる場合は先に辺A の共有を張り直してから値を書く
-    const curParts = readConnParts('cur');
-    const newConnVal = curParts ? String(encodeConn(curParts)) : '-1';
-    if (newParentVal !== r.parent || newConnVal !== r.conn) {
-      r.parent = newParentVal;
-      r.conn = newConnVal;
-      relinkEdgeA(r);
-    }
-    writeCpExtras(r, curParts); // フロートの lcr 変更はコードに乗らない (列 17-19 が SoT)
-    setEdgeVal(r, 'a', input('curA').value); // 共有辺なら親の B/C も同時に変わる (実体が 1 個)
-    setEdgeVal(r, 'b', input('curB').value);
-    setEdgeVal(r, 'c', input('curC').value);
-    setName(r, input('curName').value);
-    buildTable(canvas);
-    syncForm();
-    redraw(canvas);
-    setStatus(`Rewrite Triangle ${current}`);
+    rewriteCurrent(canvas);
     return;
   }
   if (newC === '') return; // アプリと同じ: B だけでは何もしない (strAddLineC.isEmpty -> return)
@@ -1714,8 +1720,9 @@ function wireFabs(canvas: HTMLCanvasElement): void {
   el<HTMLButtonElement>('dedDelete').addEventListener('click', () => dedDelete(canvas));
 }
 
-// 新規行の Enter ナビゲーション (アプリの EditText imeOptions=actionNext 相当):
-// Enter で隣のセルへ移動し、辺C で Enter すると新規三角形を確定して追加・再描画する。
+// 新規行・カレント行の Enter ナビゲーション (アプリの EditText imeOptions=actionNext 相当):
+// Enter で隣のセルへ移動し、辺C で Enter すると確定する — 新規行は三角形を追加、
+// カレント行は current 三角形の書換え (rewriteCurrent)。
 // IME 変換確定の Enter (isComposing) は無視する (測点名の日本語入力を壊さない)
 function wireNewRowEnter(canvas: HTMLCanvasElement): void {
   const moveTo = (toId: string) => {
@@ -1730,6 +1737,10 @@ function wireNewRowEnter(canvas: HTMLCanvasElement): void {
     ['newA', 'newB'],
     ['newB', 'newC'],
     ['newParent', 'newConn'],
+    ['curName', 'curA'],
+    ['curA', 'curB'],
+    ['curB', 'curC'],
+    ['curParent', 'curConn'],
   ];
   for (const [from, to] of chain) {
     input(from).addEventListener('keydown', (e) => {
@@ -1750,6 +1761,13 @@ function wireNewRowEnter(canvas: HTMLCanvasElement): void {
     const before = rows.length;
     fabReplace(canvas);
     if (rows.length > before) moveTo('newB'); // 追加成功 → 次の入力へ (連続追加の流れ)
+  });
+  // カレント行の辺C で Enter = 書換え確定。fabReplace 経由だと新規行 B の残値で
+  // 「追加」分岐に化けるので、書換えを直接呼ぶ
+  input('curC').addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' || e.isComposing) return;
+    e.preventDefault();
+    rewriteCurrent(canvas);
   });
 }
 
