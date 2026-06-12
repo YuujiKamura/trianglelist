@@ -287,7 +287,53 @@ open class DrawingFileWriter {
 
     }
 
-    open fun writeDeduction( ded: Deduction){}
+    /**
+     * 控除 (欠損) 1 つの描画 (DXF/SFC 共通、DXF を正として集約)。
+     * 単位は subclass のプリミティブが吸収するのでモデル座標 (実寸) のまま扱う。
+     * 旗線・情報テキスト・円 (Circle) / 矩形 (Box) を RED で描く。
+     */
+    open fun writeDeduction( ded: Deduction){
+        val textSize = textscale_
+        val infoStrLength = ded.infoStr.length * textSize + 0.3f
+        val point = ded.point
+        val pointFlag = ded.pointFlag
+        var textOffsetX = 0f
+        if (ded.type == "Box") textOffsetX = -0.5f
+
+        if (point.x <= pointFlag.x) {  // pointFlag が pt より右
+            writeLine(point, pointFlag, RED)
+            writeTextAndLine(
+                ded.infoStr,
+                pointFlag,
+                pointFlag.plus((infoStrLength + textOffsetX).toDouble(), 0.0),
+                textSize,
+                1f
+            )
+        } else {                       // pointFlag が pt より左
+            writeLine(point, pointFlag, RED)
+            writeTextAndLine(
+                ded.infoStr,
+                pointFlag.plus((-ded.getInfo().length * textSize - textOffsetX).toDouble(), 0.0),
+                pointFlag,
+                textSize,
+                1f
+            )
+        }
+
+        if (ded.type == "Circle") writeCircle(point, ded.lengthX / 2, RED, 1f)
+        if (ded.type == "Box") writeDedRect(ded)
+    }
+
+    /** Box 控除の矩形 4 辺。setBox はモデル単位 1.0 で箱を作る (DXF を正) */
+    private fun writeDedRect(ded: Deduction){
+        val color = RED
+        ded.shapeAngle = -ded.shapeAngle // 逆回転
+        ded.setBox(1.0)
+        writeLine(ded.pLTop, ded.pLBtm, color)
+        writeLine(ded.pLTop, ded.pRTop, color)
+        writeLine(ded.pRTop, ded.pRBtm, color)
+        writeLine(ded.pLBtm, ded.pRBtm, color)
+    }
 
     open fun writeTextAndLine(st: String, p1: com.example.trilib.PointXY, p2: com.example.trilib.PointXY, textsize: Float, scale: Float) {}
 

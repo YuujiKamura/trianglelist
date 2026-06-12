@@ -2588,8 +2588,9 @@ class MainActivity : AppCompatActivity(),
         val writer = SfcWriter(trianglelist.clone(), myDeductionList.clone(), filename, drawingStartNumber, 47.6f)
         writer.setNames(koujiname, rosenname, gyousyaname, zumennum)
         writer.zumeninfo = rStr
-        // 20 = 元 JIS 物理基準 14 (= paper 0.35mm 文字 × SFC unit) を目視 +43% 調整した値。 詳細は ADR 0001。
-        writer.textscale_ = myview.textSize * 20f
+        // textscale は内部値 (getPrintTextScale) を使う = DXF と同一。単位モデル統一 (ADR 0010 段4) で
+        // SFC も「モデル実寸 + primitive ×unitscale」流儀になり、旧 textSize*20 (ADR 0001 の SFC 専用
+        // JIS 較正) は二重スケールになるため廃止。SFC 文字サイズは DXF と一致する。
         writer.titleTri_ = titleTriStr
         writer.titleDed_ = titleDedStr
 
