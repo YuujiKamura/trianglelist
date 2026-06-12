@@ -337,11 +337,38 @@ open class DrawingFileWriter {
 
     open fun writeTextAndLine(st: String, p1: com.example.trilib.PointXY, p2: com.example.trilib.PointXY, textsize: Float, scale: Float) {}
 
+    /**
+     * DrawPrim のリストを各 backend のプリミティブ実装へ 1:1 でディスパッチ (ADR 0010 段A)。
+     * sealed なので when は全 prim を網羅し、新 prim 追加時の漏れはコンパイルエラーで止まる。
+     * インライン呼び出しと同じプリミティブを同じ順序で呼ぶため、出力はバイト単位で不変。
+     */
+    protected fun drawScene(prims: List<DrawPrim>) {
+        for (p in prims) when (p) {
+            is DrawPrim.Line   -> writeLine(p.p1, p.p2, p.color, p.scale)
+            is DrawPrim.Rect   -> writeRect(p.center, p.sizeX, p.sizeY, p.color, p.scale)
+            is DrawPrim.Circle -> writeCircle(p.center, p.size, p.color, p.scale)
+            is DrawPrim.Text   -> writeTextHV(p.text, p.pos, p.color, p.size, p.alignH, p.alignV, p.angle, p.scale)
+        }
+    }
+
+    /** 改行付きテキスト (題字の工事名) を DrawPrim.Text 群に展開 (旧 writeTextWithKaigyou/splitAndWriteText の純粋版) */
+    private fun kaigyouPrims(str: String, iKaigyou: Int, xr: Float, yb: Float, yo: Float, color: Int, textsize: Float): List<DrawPrim.Text> {
+        if (str.length <= iKaigyou) {
+            return listOf(DrawPrim.Text(str, com.example.trilib.PointXY(xr, yb), color, textsize, 0, 0, 0.0, 1f))
+        }
+        val parts = if (str.contains(" ")) str.split(' ', limit = 2)
+                    else listOf(str.substring(0, iKaigyou), str.substring(iKaigyou))
+        val out = mutableListOf(DrawPrim.Text(parts[0], com.example.trilib.PointXY(xr, yb + yo), color, textsize, 0, 0, 0.0, 1f))
+        if (parts.size > 1) out.add(DrawPrim.Text(parts[1], com.example.trilib.PointXY(xr, yb - yo), color, textsize, 0, 0, 0.0, 1f))
+        return out
+    }
+
     fun writeOuterFrame(scale: Float = 1f){
         // 外枠描画 (用紙中央・用紙より一回り内側)。A3: 中心(21,14.85)・40×27cm と同値
         val cx = paperWcm / 2f; val cy = paperHcm / 2f
-        writeRect(com.example.trilib.PointXY(cx, cy, scale), (paperWcm - 2f) * scale, (paperHcm - 2.7f) * scale,  WHITE, scale)
-
+        drawScene(listOf(
+            DrawPrim.Rect(com.example.trilib.PointXY(cx, cy, scale), (paperWcm - 2f) * scale, (paperHcm - 2.7f) * scale, WHITE, scale)
+        ))
     }
 
     fun writeTopTitle(scale: Float = 1f, textsize: Float ){
@@ -351,18 +378,12 @@ open class DrawingFileWriter {
         // DXF は scale=1f (printscale は unitscale 側) なので不変、SFC は scale=printscale_ で
         // 枠内テキストと同じ実効サイズになる (これが無いと SFC の上中央タイトルだけ printscale 分小さい)。
         val titleTextSize = textsize * scale
-        writeTextHV(zumeninfo.zumentitle,
-            com.example.trilib.PointXY(cx, paperHcm - 2.6f, scale),  WHITE, titleTextSize, 1, 1, 0.0, scale)
-        writeTextHV(rosenname_,
-            com.example.trilib.PointXY(cx, paperHcm - 3.7f, scale), WHITE, titleTextSize, 1, 1, 0.0, scale)
-
-        writeLine(
-            com.example.trilib.PointXY(cx - 2f, paperHcm - 2.7f, scale),
-            com.example.trilib.PointXY(cx + 2f, paperHcm - 2.7f, scale), WHITE, scale)
-        writeLine(
-            com.example.trilib.PointXY(cx - 2f, paperHcm - 2.8f, scale),
-            com.example.trilib.PointXY(cx + 2f, paperHcm - 2.8f, scale), WHITE, scale)
-
+        drawScene(listOf(
+            DrawPrim.Text(zumeninfo.zumentitle, com.example.trilib.PointXY(cx, paperHcm - 2.6f, scale), WHITE, titleTextSize, 1, 1, 0.0, scale),
+            DrawPrim.Text(rosenname_, com.example.trilib.PointXY(cx, paperHcm - 3.7f, scale), WHITE, titleTextSize, 1, 1, 0.0, scale),
+            DrawPrim.Line(com.example.trilib.PointXY(cx - 2f, paperHcm - 2.7f, scale), com.example.trilib.PointXY(cx + 2f, paperHcm - 2.7f, scale), WHITE, scale),
+            DrawPrim.Line(com.example.trilib.PointXY(cx - 2f, paperHcm - 2.8f, scale), com.example.trilib.PointXY(cx + 2f, paperHcm - 2.8f, scale), WHITE, scale),
+        ))
     }
 
     open fun writeDrawingFrame(scale: Float = 1f, textsize: Float){
@@ -373,113 +394,53 @@ open class DrawingFileWriter {
         writeOuterFrame(scale)
 
         // 右下のタイトル枠 (用紙右端アンカー)。rx=用紙右端、A3 では rx-1=41 等で従来と同値。
-        // Y は用紙下端 (0) 基準のまま (表題欄は規格上どの用紙でも下端固定サイズ)
+        // Y は用紙下端 (0) 基準のまま (表題欄は規格上どの用紙でも下端固定サイズ)。
+        // 段A: 枠線・題字・内容を DrawPrim のリスト (= 何を何処に) に集約し drawScene に流す。
+        // インライン writeLine/writeTextHV と同じ呼び出し・同じ順序なので DXF byte 不変。
         val rx = paperWcm
-        writeLine(
-            com.example.trilib.PointXY(rx - 11f, 7.35f, scale),
-            com.example.trilib.PointXY(rx - 1f, 7.35f, scale), WHITE ) //yoko
-        writeLine(
-            com.example.trilib.PointXY(rx - 11f, 1.35f, scale),
-            com.example.trilib.PointXY(rx - 11f, 7.35f, scale), WHITE ) //tate
-        writeLine(
-            com.example.trilib.PointXY(rx - 9f, 1.35f, scale),
-            com.example.trilib.PointXY(rx - 9f, 7.35f, scale), WHITE ) //uchi-tate
-
-        writeLine(
-            com.example.trilib.PointXY(rx - 11f, 6.35f, scale),
-            com.example.trilib.PointXY(rx - 1f, 6.35f, scale), WHITE )
-        writeLine(
-            com.example.trilib.PointXY(rx - 11f, 5.35f, scale),
-            com.example.trilib.PointXY(rx - 1f, 5.35f, scale), WHITE )
-        writeLine(
-            com.example.trilib.PointXY(rx - 11f, 4.35f, scale),
-            com.example.trilib.PointXY(rx - 1f, 4.35f, scale), WHITE )
-        writeLine(
-            com.example.trilib.PointXY(rx - 11f, 3.35f, scale),
-            com.example.trilib.PointXY(rx - 1f, 3.35f, scale), WHITE )
-        writeLine(
-            com.example.trilib.PointXY(rx - 11f, 2.35f, scale),
-            com.example.trilib.PointXY(rx - 1f, 2.35f, scale), WHITE )
-        writeLine(
-            com.example.trilib.PointXY(rx - 6f, 2.35f, scale),
-            com.example.trilib.PointXY(rx - 6f, 3.35f, scale), WHITE )
-        writeLine(
-            com.example.trilib.PointXY(rx - 4f, 2.35f, scale),
-            com.example.trilib.PointXY(rx - 4f, 3.35f, scale), WHITE )
-
         val st = printscale_*100f
         val strx = (rx - 8.5f) * scale
-
         val yKOUJIMEI = 6.7f * scale
         val yo = 0.2f * scale
-
-        // 題字(工事名　路線名　など）
-        writeTextHV(zumeninfo.koujiname,
-            com.example.trilib.PointXY(rx - 10f, 6.7f, scale), WHITE, frameTextSize, 1, 0, 0.0, 1f)
-        writeTextHV(zumeninfo.tDtype_,
-            com.example.trilib.PointXY(rx - 10f, 5.7f, scale), WHITE, frameTextSize, 1, 0, 0.0, 1f)
-        writeTextHV(zumeninfo.tDname_,
-            com.example.trilib.PointXY(rx - 10f, 4.7f, scale), WHITE, frameTextSize, 1, 0, 0.0, 1f)
-        writeTextHV(zumeninfo.tDateHeader_,
-            com.example.trilib.PointXY(rx - 10f, 3.7f, scale), WHITE, frameTextSize, 1, 0, 0.0, 1f)
-        writeTextHV(zumeninfo.tScale_,
-            com.example.trilib.PointXY(rx - 10f, 2.7f, scale), WHITE, frameTextSize, 1, 0, 0.0, 1f)
-        writeTextHV(zumeninfo.tNum_,
-            com.example.trilib.PointXY(rx - 5f, 2.7f, scale), WHITE, frameTextSize, 1, 0, 0.0, 1f)
-        writeTextHV(zumeninfo.tAname_,
-            com.example.trilib.PointXY(rx - 10f, 1.7f, scale), WHITE, frameTextSize, 1, 0, 0.0, 1f)
-        writeTextHV(zumeninfo.tCredit_,
-            com.example.trilib.PointXY(8f, 1f, scale), WHITE, frameTextSize, 1, 0, 0.0, 1f)
-
-        // 内容
-        // 工事名
-        writeTextWithKaigyou(koujiname_, 25, strx, yKOUJIMEI, yo, WHITE, frameTextSize)
-
-        //writeText(koujiname_, PointXY(strx, yKOUJIMEI ), iWhite_, textsize, 0, 0, 0.0, 1f)
-
-
         val nengappi = currentDateStringJp()
+        val w = WHITE
 
-        writeTextHV(zumeninfo.zumentitle,
-            com.example.trilib.PointXY(strx, 5.7f * scale), WHITE, frameTextSize, 0, 0, 0.0, 1f)
-        writeTextHV(rosenname_,
-            com.example.trilib.PointXY(strx, 4.7f * scale), WHITE, frameTextSize, 0, 0, 0.0, 1f)
-        writeTextHV(nengappi,
-            com.example.trilib.PointXY(strx, 3.7f * scale), WHITE, frameTextSize, 0, 0, 0.0, 1f)
-        writeTextHV("1/${st.toInt()} ($paperName)",
-            com.example.trilib.PointXY(rx - 7.5f, 2.7f, scale), WHITE, frameTextSize, 1, 0, 0.0, 1f)
-        writeTextHV(zumennum_,
-            com.example.trilib.PointXY(rx - 2.5f, 2.7f, scale), WHITE, frameTextSize, 1, 0, 0.0, 1f)
-        writeTextHV(gyousyaname_,
-            com.example.trilib.PointXY(strx, 1.7f * scale), WHITE, frameTextSize, 0, 0, 0.0, 1f)
+        val prims = mutableListOf<DrawPrim>(
+            // 枠線 (yoko/tate/uchi-tate + 行罫線 + 図面番号欄の縦罫)
+            DrawPrim.Line(com.example.trilib.PointXY(rx - 11f, 7.35f, scale), com.example.trilib.PointXY(rx - 1f, 7.35f, scale), w),
+            DrawPrim.Line(com.example.trilib.PointXY(rx - 11f, 1.35f, scale), com.example.trilib.PointXY(rx - 11f, 7.35f, scale), w),
+            DrawPrim.Line(com.example.trilib.PointXY(rx - 9f, 1.35f, scale), com.example.trilib.PointXY(rx - 9f, 7.35f, scale), w),
+            DrawPrim.Line(com.example.trilib.PointXY(rx - 11f, 6.35f, scale), com.example.trilib.PointXY(rx - 1f, 6.35f, scale), w),
+            DrawPrim.Line(com.example.trilib.PointXY(rx - 11f, 5.35f, scale), com.example.trilib.PointXY(rx - 1f, 5.35f, scale), w),
+            DrawPrim.Line(com.example.trilib.PointXY(rx - 11f, 4.35f, scale), com.example.trilib.PointXY(rx - 1f, 4.35f, scale), w),
+            DrawPrim.Line(com.example.trilib.PointXY(rx - 11f, 3.35f, scale), com.example.trilib.PointXY(rx - 1f, 3.35f, scale), w),
+            DrawPrim.Line(com.example.trilib.PointXY(rx - 11f, 2.35f, scale), com.example.trilib.PointXY(rx - 1f, 2.35f, scale), w),
+            DrawPrim.Line(com.example.trilib.PointXY(rx - 6f, 2.35f, scale), com.example.trilib.PointXY(rx - 6f, 3.35f, scale), w),
+            DrawPrim.Line(com.example.trilib.PointXY(rx - 4f, 2.35f, scale), com.example.trilib.PointXY(rx - 4f, 3.35f, scale), w),
+            // 題字 (工事名・路線名 など、左端ラベル列)
+            DrawPrim.Text(zumeninfo.koujiname, com.example.trilib.PointXY(rx - 10f, 6.7f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tDtype_, com.example.trilib.PointXY(rx - 10f, 5.7f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tDname_, com.example.trilib.PointXY(rx - 10f, 4.7f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tDateHeader_, com.example.trilib.PointXY(rx - 10f, 3.7f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tScale_, com.example.trilib.PointXY(rx - 10f, 2.7f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tNum_, com.example.trilib.PointXY(rx - 5f, 2.7f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tAname_, com.example.trilib.PointXY(rx - 10f, 1.7f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tCredit_, com.example.trilib.PointXY(8f, 1f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
+        )
+        // 内容: 工事名 (長ければ改行) → 図面名・路線名・作成日・縮尺・図面番号・施工者
+        prims.addAll(kaigyouPrims(koujiname_, 25, strx, yKOUJIMEI, yo, w, frameTextSize))
+        prims.add(DrawPrim.Text(zumeninfo.zumentitle, com.example.trilib.PointXY(strx, 5.7f * scale), w, frameTextSize, 0, 0, 0.0, 1f))
+        prims.add(DrawPrim.Text(rosenname_, com.example.trilib.PointXY(strx, 4.7f * scale), w, frameTextSize, 0, 0, 0.0, 1f))
+        prims.add(DrawPrim.Text(nengappi, com.example.trilib.PointXY(strx, 3.7f * scale), w, frameTextSize, 0, 0, 0.0, 1f))
+        prims.add(DrawPrim.Text("1/${st.toInt()} ($paperName)", com.example.trilib.PointXY(rx - 7.5f, 2.7f, scale), w, frameTextSize, 1, 0, 0.0, 1f))
+        prims.add(DrawPrim.Text(zumennum_, com.example.trilib.PointXY(rx - 2.5f, 2.7f, scale), w, frameTextSize, 1, 0, 0.0, 1f))
+        prims.add(DrawPrim.Text(gyousyaname_, com.example.trilib.PointXY(strx, 1.7f * scale), w, frameTextSize, 0, 0, 0.0, 1f))
 
-        //myDXFscale = 1000f  // 1:1
+        drawScene(prims)
     }
 
-    fun writeTextWithKaigyou(str: String, iKaigyou: Int, xr: Float, yb: Float, yo: Float, iColor: Int, textsize: Float) {
-
-        if (str.length > iKaigyou ) {
-            splitAndWriteText(str, iKaigyou, xr, yb, yo, iColor, textsize)
-        } else {
-            writeTextHV(str, com.example.trilib.PointXY(xr, yb), iColor, textsize, 0, 0,0.0, 1f)
-        }
-    }
-
-    private fun splitAndWriteText(str: String, iKaigyou: Int, xr: Float, yb: Float, yo: Float, iColor: Int, textsize: Float) {
-
-        val parts = if (str.contains(" ")) {
-            str.split(' ', limit = 2)
-        } else {
-            listOf(str.substring(0, iKaigyou), str.substring(iKaigyou))
-        }
-
-        writeTextHV(parts[0], com.example.trilib.PointXY(xr, yb + yo), iColor, textsize, 0, 0,0.0, 1f)
-        // Check if there is a second part to avoid IndexOutOfBoundsException
-        if (parts.size > 1) {
-            writeTextHV(parts[1],
-                com.example.trilib.PointXY(xr, yb - yo), iColor, textsize, 0, 0,0.0, 1f)
-        }
-    }
+    // 旧 writeTextWithKaigyou / splitAndWriteText は段A で kaigyouPrims (DrawPrim.Text を返す純粋版)
+    // に置き換え済み。同じ分割ロジックの 2 重持ちを避けるため削除した (一元化の意図そのもの)。
 
     fun writeCalcSheet(
         scale: Float = 1f,
