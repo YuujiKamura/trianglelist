@@ -32,12 +32,15 @@ open class DrawingFileWriter {
 
     open var textscale_ = 5f//trilist_.getPrintTextScale( 1f , "dxf") * drawscale_
 
-    // 用紙サイズの単一の出所 (cm)。枠・タイトル欄・図形センタリングは全てここから導出する。
-    // 既定は A3 横 (42×29.7cm)。用紙を変えたい subclass / 呼び出し側はこの 2 値だけ差し替える。
+    // 用紙サイズの単一の出所 = paper フィールド (mm)。枠・タイトル欄・図形センタリング・
+    // ビューポートは全てここから導出する。paperWcm/Hcm/Name は派生 (cm / 名前)。
+    // 世界標準: モデルは実寸 mm、用紙寸法は 1 箇所で持つ (SXF / AutoCAD の作法、ADR 0009)。
+    // 既定は A3 横。用紙を変えたい呼び出し側は paper だけ差し替える。
     // 注: 枠座標は「用紙端からのアンカー」(右端=paperWcm-1 等) で書くので、A3 では従来と同値。
-    open var paperWcm = 42f
-    open var paperHcm = 29.7f
-    open var paperName = "A3"
+    open var paper: Paper = Paper.A3_LAND
+    open val paperWcm get() = paper.width / 10f   // mm → cm
+    open val paperHcm get() = paper.height / 10f
+    open val paperName get() = paper.name
 
     // sizeX_ は cm→出力単位への変換。基底/PDF/SFC は ×10 (mm)、DXF は ×1000 (DXF mm)。
     open val sizeX_ get() = paperWcm * 10f * printscale_ // カスタムゲッター
