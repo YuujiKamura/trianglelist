@@ -2664,6 +2664,16 @@ function main(): void {
   select('newCType').addEventListener('change', () => syncLcrDisabled('new'));
   select('curCType').addEventListener('change', () => syncLcrDisabled('cur'));
   syncLcrDisabled('new');
+  // 「現在」行フォームの編集を即時確定する (user 2026-06-12: 一覧フォームで二重断面や
+  // 起点・A 辺を変えてもキャンバスに反映されない)。原因は formCur の接続 select と辺入力に
+  // change handler が無く、確定が FAB / 辺C-Enter の 2 動線だけだったこと。一方すぐ下の
+  // 一覧表はインライン編集が即時反映 (buildTable の apply / セルの change) なので、同じ表内で
+  // 「現在」行だけ FAB 必須では UX が食い違う。変更の瞬間に rewriteCurrent (= FAB と同じ確定
+  // 経路: 接続の張り直し relinkEdgeA + cp 列 writeCpExtras + 三角不等式関門 + redraw) を走らせて
+  // 一覧表と同じ即時反映に揃える。辺C は Enter 確定 (1976) と二重になるが rewriteCurrent は冪等。
+  for (const id of ['curName', 'curA', 'curB', 'curC', 'curParent', 'curConn', 'curCType', 'curLcr']) {
+    document.getElementById(id)?.addEventListener('change', () => rewriteCurrent(canvas));
+  }
 
   fileInput.addEventListener('change', () => {
     const file = fileInput.files?.[0];
@@ -2758,7 +2768,14 @@ if (import.meta.hot) {
       }
     }
     if (t instanceof HTMLInputElement || t instanceof HTMLSelectElement) {
-      if (typeof data.value === 'string') t.value = data.value;
+      if (typeof data.value === 'string') {
+        t.value = data.value;
+        // プログラム的な value 代入は input/change を発火しない。実ブラウザの blur 確定や
+        // select 選択と同じく編集系 change handler (formCur の即時確定等) を検証できるよう
+        // 明示発火する。これがないと「現在」行フォームの change 駆動の確定を CLI から踏めない
+        t.dispatchEvent(new Event('input', { bubbles: true }));
+        t.dispatchEvent(new Event('change', { bubbles: true }));
+      }
       t.focus();
       if (data.key) t.dispatchEvent(new KeyboardEvent('keydown', { key: data.key, bubbles: true, cancelable: true }));
       const a = document.activeElement;
