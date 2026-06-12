@@ -145,4 +145,33 @@ class DxfFileWriterTest {
         // 辺長 170m 前後 → 1/500 想定 (printscale_ ≈ 5.0)
         writeAndValidate(newWriter(sideLength = 170f), "test-scale-practical-500.dxf")
     }
+
+    // ---- ペーパー空間の縮尺 (2026-06-12 追加) ----
+    // DXF のモデル空間は縮尺を持てないため、レイアウトの VIEWPORT (紙上高さ 41 /
+    // モデル表示高さ 45 = 1/分母) と PLOTSETTINGS (142/143) で運ぶ。
+    // CADWe'll 土木 11 等の「モデル・レイアウト・ビューポート・縮尺を保持して読む」CAD が対象。
+
+    @Test
+    fun writeDxf_paperSpaceViewport_carriesScale() {
+        for (sideLength in listOf(10f, 70f)) {  // 1/50 と 1/200 (practical) の両域
+            val w = newWriter(sideLength)
+            val sb = StringBuilder()
+            w.writer = sb
+            w.save()
+            val text = sb.toString()
+            val den = w.printscale_ * 100f  // getPrintScale: 0.5→1/50, 2.0→1/200
+
+            // メイン (id=1) + 内容 (id=2) の 2 枚が必須。id=1 が無いと CADWe'll が
+            // 尺度付きビューポートシートを構築しない (2026-06-12 実機検証)
+            val vpCount = Regex("\\nVIEWPORT\\n").findAll(text).count()
+            assertTrue("VIEWPORT が 2 枚 (メイン+内容、1/${den.toInt()}) — 実際 $vpCount",
+                vpCount == 2)
+            assertTrue("メインビューポート id=1/status=1 がある (1/${den.toInt()})",
+                text.contains("\n 68\n1\n 69\n1\n"))
+            assertTrue("内容ビューポートのモデル表示高さ 45 = 297×分母 (1/${den.toInt()})",
+                text.contains("\n 45\n${297f * den}\n"))
+            assertTrue("PLOTSETTINGS の印刷縮尺分母 143 = ${den} (1/${den.toInt()})",
+                text.contains("\n143\n$den\n"))
+        }
+    }
 }

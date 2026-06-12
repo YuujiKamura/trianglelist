@@ -54,16 +54,21 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
     var paper: Paper = Paper.A3_LAND
     var customPrintScale: PrintScale? = null
 
+    // save() で確定した縮尺。writeEntities のペーパー空間 VIEWPORT が同じ値を使う
+    private var currentPrintScale: PrintScale = PrintScale(1f, 50f)
+
     //endregion parameters
 
     override fun save(){
         // Initialize entity writer
         dxfEntity = DxfEntity(handleGen, unitscale_, activeLayer)
-        
+
         // Use configured paper and print scale
-        // printscale_=0.5は1/50を意味するので、50 = 1/(printscale_*0.02) または別の変換式が必要
-        val actualScale = if (printscale_ == 0.5f) 50f else 1f/printscale_  // 0.5→50への特別変換
-        val printScale = customPrintScale ?: PrintScale(1f, actualScale)  // カスタム設定 or 従来値(0.5=1/50)から変換
+        // getPrintScale は 0.5→1/50, 2.0→1/200, 5.0→1/500 (縮尺分母 = printscale_ * 100)。
+        // 図面枠の実寸 sizeX_ = 42000*printscale_ = 420mm*分母 とも一致する
+        val actualScale = printscale_ * 100f
+        val printScale = customPrintScale ?: PrintScale(1f, actualScale)
+        currentPrintScale = printScale
 
         // ログ出力：設定値を確認
         println("=== DXF生成設定 ===")
@@ -364,6 +369,10 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         // calcSheet
         writeCalcSheet(1f, textscale_, trilistNumbered, myDXFDedList )
 
+        // ペーパー空間 VIEWPORT: レイアウト側で図面枠が縮尺どおり (例 1/50) に見えるようにする。
+        // これが無いと PLOTSETTINGS の縮尺だけでは CAD はレイアウト表示倍率を決められない
+        writePaperSpaceViewport()
+
         //一番最後に書く
         writer.append("""
             0
@@ -371,6 +380,80 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         """.trimIndent())
         writer.append('\n')
 
+    }
+
+    /**
+     * Layout1 (ペーパー空間) に VIEWPORT を 2 枚書く。
+     * AutoCAD R2000 (AC1015) のレイアウトは「メインビューポート (id=1, status=1)」が
+     * 必須で、これが無いと CADWe'll 土木等は尺度付きビューポートシートを構築しない
+     * (検証 2026-06-12: ezdxf 1.4.1 生成ファイルは id=1 と id=2 の 2 枚を持ち
+     *  CADWe'll で "Layout1 1/50" シートが生成される。id=1 を欠いた当初版は
+     *  「モデル/ベース」しか出ず尺度が伝わらなかった)。
+     * 1 枚目: 紙面全体を映すメインビューポート (ezdxf の既定値に倣う)。
+     * 2 枚目: 図面を縮尺どおり映す内容ビューポート。倍率は 41 (紙上の高さ mm)
+     *  / 45 (モデル空間の表示高さ mm) = 1/分母 で表現される。モデル空間の図面枠は
+     *  原点起点・紙寸×分母 (A3 1/50 なら 21000×14850mm) なので、ビュー中心は枠中央、
+     *  表示高さは紙高×分母にする。
+     */
+    private fun writePaperSpaceViewport() {
+        val den = currentPrintScale.paper / currentPrintScale.model
+
+        // メインビューポート (id=1): 紙面全体。ezdxf の page_setup 既定 (中心=紙×25,
+        // 大きさ=紙×55, status flags=557088) をそのまま借用する
+        writeViewportEntity(
+            centerX = paper.width * 25f, centerY = paper.height * 25f,
+            paperW = paper.width * 55f, paperH = paper.height * 55f,
+            viewCenterX = paper.width * 25f, viewCenterY = paper.height * 25f,
+            viewHeight = paper.height * 55f,
+            status = 1, id = 1, flags = 557088
+        )
+
+        // 内容ビューポート (id=2): 図面枠を縮尺どおり (1/den) に映す
+        writeViewportEntity(
+            centerX = paper.width / 2f, centerY = paper.height / 2f,
+            paperW = paper.width, paperH = paper.height,
+            viewCenterX = paper.width * den / 2f, viewCenterY = paper.height * den / 2f,
+            viewHeight = paper.height * den,
+            status = 2, id = 2, flags = 0
+        )
+    }
+
+    private fun writeViewportEntity(
+        centerX: Float, centerY: Float,
+        paperW: Float, paperH: Float,
+        viewCenterX: Float, viewCenterY: Float,
+        viewHeight: Float,
+        status: Int, id: Int, flags: Int
+    ) {
+        fun p(gc: Int, v: Any) { writer.append("${gc.toString().padStart(3)}\n$v\n") }
+
+        p(0, "VIEWPORT"); p(5, handleGen.new())
+        p(330, "32")                 // owner: *Paper_Space BLOCK_RECORD (TablesBuilder 固定値)
+        p(100, "AcDbEntity")
+        p(67, 1)                     // paper space entity
+        p(8, "VIEWPORTS")
+        p(100, "AcDbViewport")
+        p(10, centerX); p(20, centerY); p(30, 0.0)   // 紙上の中心
+        p(40, paperW); p(41, paperH)                 // 紙上の大きさ
+        p(68, status); p(69, id)                     // status / viewport id
+        p(12, viewCenterX); p(22, viewCenterY)       // モデル空間のビュー中心
+        p(13, 0.0); p(23, 0.0)       // snap base
+        p(14, 10.0); p(24, 10.0)     // snap spacing
+        p(15, 10.0); p(25, 10.0)     // grid spacing
+        p(16, 0.0); p(26, 0.0); p(36, 1.0)   // view direction
+        p(17, 0.0); p(27, 0.0); p(37, 0.0)   // view target
+        p(42, 50.0)                  // lens length
+        p(43, 0.0); p(44, 0.0)       // clip planes
+        p(45, viewHeight)            // モデル空間の表示高さ → 倍率 = 41/45
+        p(50, 0.0); p(51, 0.0)       // snap angle / view twist
+        p(72, 100)                   // circle zoom percent
+        p(90, flags)                 // viewport status flags
+        p(1, "")                     // plot style sheet
+        p(281, 0); p(71, 0); p(74, 0)
+        p(110, 0.0); p(120, 0.0); p(130, 0.0)   // UCS origin
+        p(111, 1.0); p(121, 0.0); p(131, 0.0)   // UCS X axis
+        p(112, 0.0); p(122, 1.0); p(132, 0.0)   // UCS Y axis
+        p(79, 0); p(146, 0.0)
     }
 
 
