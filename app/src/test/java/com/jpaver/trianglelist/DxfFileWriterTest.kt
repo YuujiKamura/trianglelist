@@ -146,6 +146,36 @@ class DxfFileWriterTest {
         writeAndValidate(newWriter(sideLength = 170f), "test-scale-practical-500.dxf")
     }
 
+    // ---- ハンドル一意性 (2026-06-12 追加) ----
+    // ezdxf recover が "Non-unique entity handle #74" を警告していた件。
+    // TablesBuilder/DxfTable の LAYER テーブルで C-COL-COL1 と C-TTL-FRAM が
+    // 両方ハンドル 74 を持つコピペバグが原因 → C-TTL-FRAM を 75 に分離。
+    // group code 5 (entity handle) は DXF 全体で一意でなければならない。
+
+    @Test
+    fun writeDxf_entityHandles_areUnique() {
+        val w = newWriter(sideLength = 10f)
+        val sb = StringBuilder()
+        w.writer = sb
+        w.save()
+        // code/value を厳密に対で読み、group code 5 (実体ハンドル) の値を集める。
+        // HEADER の $HANDSEED も group code 5 だが実体ハンドルではない (次に割り当てる
+        // 値を指す変数) ので、TABLES 以降だけを対象にする。DXF は code/value が交互。
+        val tokens = sb.toString().split("\n").map { it.trim() }
+        val start = tokens.indexOfFirst { it == "0" }  // 最初の code でパリティを合わせる
+        val handles = mutableListOf<String>()
+        var started = false
+        var i = start
+        while (i + 1 < tokens.size) {
+            val code = tokens[i]; val value = tokens[i + 1]
+            if (code == "2" && value == "TABLES") started = true  // HEADER を抜けた
+            if (started && code == "5") handles.add(value)
+            i += 2
+        }
+        val dups = handles.groupingBy { it }.eachCount().filter { it.value > 1 }
+        assertTrue("entity handle が重複している: $dups", dups.isEmpty())
+    }
+
     // ---- ペーパー空間の縮尺 (2026-06-12 追加) ----
     // DXF のモデル空間は縮尺を持てないため、レイアウトの VIEWPORT (紙上高さ 41 /
     // モデル表示高さ 45 = 1/分母) と PLOTSETTINGS (142/143) で運ぶ。
