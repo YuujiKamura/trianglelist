@@ -176,7 +176,9 @@ class ObjectsBuilder(private val h: HandleGen) {
         val (num, den) = printScale.model to printScale.paper
 
         /* PlotSettings */
-        p(0, "PLOTSETTINGS"); p(5, plotSettings); p(100, "AcDbPlotSettings")
+        p(0, "PLOTSETTINGS"); p(5, plotSettings)
+        p(330, plotDict)  // owner: ACAD_PLOTSETTINGS 辞書 (これが無いと ezdxf が owner を自動修復)
+        p(100, "AcDbPlotSettings")
         p(1, "${paper.name}_${num.toInt()}_${den.toInt()}")  // 任意名: A3_1_50 等
         p(2, "none_device")                        // プリンタ名
         p(4, paper.isoName)                       // 用紙名（ISO標準形式）
@@ -194,6 +196,7 @@ class ObjectsBuilder(private val h: HandleGen) {
 
         /* Model Layout (AcDbPlotSettings + AcDbLayout) */
         p(0, "LAYOUT"); p(5, modelLayout)
+        p(330, layoutDict)  // owner: ACAD_LAYOUT 辞書
         p(100, "AcDbPlotSettings")
         p(1, ""); p(2, "none_device"); p(4, paper.isoName); p(6, "")
         p(40, 0.0); p(41, 0.0); p(42, 0.0); p(43, 0.0)
@@ -217,6 +220,7 @@ class ObjectsBuilder(private val h: HandleGen) {
 
         /* Layout (AcDbPlotSettings + AcDbLayout) */
         p(0, "LAYOUT"); p(5, layout)
+        p(330, layoutDict)  // owner: ACAD_LAYOUT 辞書
         p(100, "AcDbPlotSettings")
         p(1, ""); p(2, "none_device"); p(4, paper.isoName); p(6, "")
         p(40, 0.0); p(41, 0.0); p(42, 0.0); p(43, 0.0)

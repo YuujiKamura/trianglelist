@@ -5916,6 +5916,8 @@ Normal
 PLOTSETTINGS
   5
 218
+330
+212
 100
 AcDbPlotSettings
   1
@@ -5982,6 +5984,8 @@ ISO_A3_(297.00_x_420.00_MM)
 LAYOUT
   5
 220
+330
+209
 100
 AcDbPlotSettings
   1
@@ -6106,6 +6110,8 @@ Model
 LAYOUT
   5
 219
+330
+209
 100
 AcDbPlotSettings
   1
