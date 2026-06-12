@@ -347,10 +347,14 @@ open class DrawingFileWriter {
     fun writeTopTitle(scale: Float = 1f, textsize: Float ){
         // 上のタイトル (用紙上中央アンカー)。A3: x=21=W/2, y は上端基準
         val cx = paperWcm / 2f
+        // 文字高は writeDrawingFrame の frameTextSize と同じ textsize×scale 規約に揃える。
+        // DXF は scale=1f (printscale は unitscale 側) なので不変、SFC は scale=printscale_ で
+        // 枠内テキストと同じ実効サイズになる (これが無いと SFC の上中央タイトルだけ printscale 分小さい)。
+        val titleTextSize = textsize * scale
         writeTextHV(zumeninfo.zumentitle,
-            com.example.trilib.PointXY(cx, paperHcm - 2.6f, scale),  WHITE, textsize, 1, 1, 0.0, scale)
+            com.example.trilib.PointXY(cx, paperHcm - 2.6f, scale),  WHITE, titleTextSize, 1, 1, 0.0, scale)
         writeTextHV(rosenname_,
-            com.example.trilib.PointXY(cx, paperHcm - 3.7f, scale), WHITE, textsize, 1, 1, 0.0, scale)
+            com.example.trilib.PointXY(cx, paperHcm - 3.7f, scale), WHITE, titleTextSize, 1, 1, 0.0, scale)
 
         writeLine(
             com.example.trilib.PointXY(cx - 2f, paperHcm - 2.7f, scale),
