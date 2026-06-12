@@ -14,6 +14,12 @@
       header h1 { font-size: 14px; margin: 0; font-weight: 600; }
       header input[type="file"] { font-size: 12px; }
       #status { font-size: 12px; opacity: 0.85; }
+      /* ビルド識別 (右上): どのコミットがいつ生成したビルドか。Pages は手動デプロイなので
+         反映済みかの目印になる。margin-left:auto で右端へ寄せる */
+      #buildInfo {
+        margin-left: auto; font-size: 11px; opacity: 0.65;
+        font-family: ui-monospace, monospace; white-space: nowrap;
+      }
       #layout {
         display: flex; flex-wrap: wrap; gap: 12px;
         padding: 12px; align-items: flex-start; justify-content: center;
@@ -105,6 +111,7 @@
       <input id="file" type="file" accept=".csv,text/csv" />
       <label id="frameLabel"><input id="frameToggle" type="checkbox" checked /> 図面枠</label>
       <span id="status">loading wasm...</span>
+      <span id="buildInfo" title="このページのビルド元コミットと生成日時 (JST)"></span>
     </header>
     <main>
       <div id="layout">

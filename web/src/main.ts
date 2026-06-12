@@ -105,6 +105,13 @@ function setStatus(msg: string): void {
   el.style.fontWeight = msg.startsWith('⚠') ? '700' : '';
 }
 
+// ヘッダ右上のビルド識別を埋める。値は vite.config.ts の define でビルド時に焼き込んだ
+// コミット ID と生成時刻 (JST)。Pages は手動デプロイなので、これで反映済みか一目で分かる。
+{
+  const bi = document.getElementById('buildInfo');
+  if (bi) bi.textContent = `${__BUILD_COMMIT__} · ${__BUILD_TIME__}`;
+}
+
 function bounds(prims: Prim[]): { minX: number; minY: number; maxX: number; maxY: number } {
   let minX = Infinity;
   let minY = Infinity;
