@@ -383,11 +383,29 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
       lastPrims.find((q): q is TextPrim => q.type === 'text' && q.layer === 'dim')?.size ?? 0.25;
     ctx.font = `${Math.max(dimSize * s, 8)}px sans-serif`;
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+    // 入力中の値をそのまま表示 (アプリ watchedB1_/watchedC1_ と同じくタイプに追従。
+    // 再描画は newB/newC の input イベントが起こす — wireNewRowEnter)
     const bv = (document.getElementById('newB') as HTMLInputElement | null)?.value ?? '';
     const cv = (document.getElementById('newC') as HTMLInputElement | null)?.value ?? '';
-    ctx.fillText(`B ${bv}`, sx((sbLine.x1 + sbLine.x2) / 2), sy((sbLine.y1 + sbLine.y2) / 2));
-    ctx.fillText(`C ${cv}`, sx((scLine.x1 + scLine.x2) / 2), sy((scLine.y1 + scLine.y2) / 2));
+    // ラベルは他の寸法値と同じく辺に沿って傾ける (2026-06-12 user 要望)。
+    // 上下が逆さにならないよう ±90° に正規化し、線から少し浮かせて重なりを避ける
+    const edgeLabel = (line: LinePrim, label: string) => {
+      const x1 = sx(line.x1);
+      const y1 = sy(line.y1);
+      const x2 = sx(line.x2);
+      const y2 = sy(line.y2);
+      let ang = Math.atan2(y2 - y1, x2 - x1);
+      if (ang > Math.PI / 2) ang -= Math.PI;
+      else if (ang < -Math.PI / 2) ang += Math.PI;
+      ctx.save();
+      ctx.translate((x1 + x2) / 2, (y1 + y2) / 2);
+      ctx.rotate(ang);
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(label, 0, -3);
+      ctx.restore();
+    };
+    edgeLabel(sbLine, `B ${bv}`.trim());
+    edgeLabel(scLine, `C ${cv}`.trim());
   }
 
   // 段階2g: 選択表示 (アプリ MyView.drawBlinkLine:794-818 の写し):
@@ -447,10 +465,15 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
       ctx.rotate((-p.angle * Math.PI) / 180);
       ctx.lineWidth = 1.5;
       ctx.strokeRect(-w / 2 - pad, top - pad, w + pad * 2, fh + pad * 2);
-      ctx.fillStyle = SELECT_YELLOW;
       ctx.font = `bold ${fh}px sans-serif`;
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
+      // 辺名の文字もシャドーのグレーに溶けるので暗縁取り (選択辺の線と同じ halo)
+      ctx.strokeStyle = '#5c4a00';
+      ctx.lineWidth = 3;
+      ctx.lineJoin = 'round';
+      ctx.strokeText(['A', 'B', 'C'][side] ?? '', w / 2 + pad + 4, top + fh / 2);
+      ctx.fillStyle = SELECT_YELLOW;
       ctx.fillText(['A', 'B', 'C'][side] ?? '', w / 2 + pad + 4, top + fh / 2);
       ctx.restore();
     }
@@ -1897,6 +1920,13 @@ function wireFabs(canvas: HTMLCanvasElement): void {
 // カレント行は current 三角形の書換え (rewriteCurrent)。
 // IME 変換確定の Enter (isComposing) は無視する (測点名の日本語入力を壊さない)
 function wireNewRowEnter(canvas: HTMLCanvasElement): void {
+  // シャドーの B/C ラベルはタイプ中の値を写す (draw が newB/newC を都度読む) —
+  // 入力のたび再描画してアプリの watched strings と同じライブ追従にする
+  for (const id of ['newB', 'newC']) {
+    input(id).addEventListener('input', () => {
+      if (shadowPrims) draw(canvas, lastPrims);
+    });
+  }
   const moveTo = (toId: string) => {
     const t = document.getElementById(toId);
     if (t instanceof HTMLInputElement || t instanceof HTMLSelectElement) {
