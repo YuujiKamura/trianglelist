@@ -1332,6 +1332,12 @@ function fabRotate(canvas: HTMLCanvasElement, degrees: number): void {
     return;
   }
   if (rows.length === 0) return;
+  // 回転の見かけの起点 = 図形全体 (図面枠を除く) の境界ボックス中央 (2026-06-12 user 要望)。
+  // 幾何は listAngle → recoverState が三角形 1 基準で回すので、画面上では図形が振り回される —
+  // 回転前後の bbox 中央が同じ画面点に写るよう view を平行移動して「中央起点の回転」に見せる。
+  // 幾何・CSV・DXF には触れない view 層だけの補正
+  const v = view;
+  const before = v ? figureCenter(lastPrims) : null;
   listAngle += degrees;
   // 控除の連動 (MainActivity.kt:1587 myDeductionList.rotate(origin, -degrees) 準拠)。
   // 三角形は listAngle → recoverState が回すが、控除の CSV 座標は絶対値なので
@@ -1340,6 +1346,46 @@ function fabRotate(canvas: HTMLCanvasElement, degrees: number): void {
   buildDedTable(canvas);
   setStatus(`回転: ${listAngle}°`);
   redraw(canvas);
+  if (v && before) {
+    const after = figureCenter(lastPrims);
+    v.offsetX += (before.x - after.x) * v.scale;
+    v.offsetY += (after.y - before.y) * v.scale; // 画面 y は反転系 (py = -y*scale + offsetY)
+    draw(canvas, lastPrims);
+  }
+}
+
+// 図形全体 (図面枠を除く) の境界ボックス中央。枠は図形中心に追従して動くので
+// 含めると補正が自己参照になる — 図形本体だけで取る
+function figureCenter(prims: Prim[]): { x: number; y: number } {
+  const b = bounds(prims.filter((p) => p.layer !== 'frame'));
+  return { x: (b.minX + b.maxX) / 2, y: (b.minY + b.maxY) / 2 };
+}
+
+// 押しっぱなしリピート: pointerdown で即 1 ステップ → 350ms 後から 120ms 間隔で連発。
+// pointer capture で押下中にポインタがボタンを外れても up を取りこぼさない
+function wireHoldRepeat(btn: HTMLButtonElement, step: () => void): void {
+  let delay: number | null = null;
+  let timer: number | null = null;
+  const stop = () => {
+    if (delay !== null) clearTimeout(delay);
+    if (timer !== null) clearInterval(timer);
+    delay = null;
+    timer = null;
+  };
+  btn.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    try {
+      btn.setPointerCapture(e.pointerId);
+    } catch {
+      // 合成イベント (CP/E2E) は capture 不能でもリピート自体は成立する
+    }
+    step();
+    delay = window.setTimeout(() => {
+      timer = window.setInterval(step, 120);
+    }, 350);
+  });
+  btn.addEventListener('pointerup', stop);
+  btn.addEventListener('pointercancel', stop);
 }
 
 // 塗り色 FAB (MainActivity.kt:1367-1377 setCommonFabListener(fab_fillcolor) の写し):
@@ -1822,8 +1868,10 @@ function wireFabs(canvas: HTMLCanvasElement): void {
     draw(canvas, lastPrims);
   });
   // 回転 FAB: アプリ fabs.xml 左上横列 [resetView][rot_l][rot_r] と同じ並び・同じ符号 (左=+5°)
-  el<HTMLButtonElement>('fabRotL').addEventListener('click', () => fabRotate(canvas, 5));
-  el<HTMLButtonElement>('fabRotR').addEventListener('click', () => fabRotate(canvas, -5));
+  // 回転は押しっぱなしで継続 (2026-06-12 user 要望)。pointerdown で 1 ステップ +
+  // 長押しでリピート — click 配線だと離した時にもう 1 ステップ入るので click は使わない
+  wireHoldRepeat(el<HTMLButtonElement>('fabRotL'), () => fabRotate(canvas, 5));
+  wireHoldRepeat(el<HTMLButtonElement>('fabRotR'), () => fabRotate(canvas, -5));
   el<HTMLButtonElement>('fabUp').addEventListener('click', () => moveCurrent(canvas, -1));
   el<HTMLButtonElement>('fabDown').addEventListener('click', () => moveCurrent(canvas, 1));
   // 控除モード (アプリ fab_deduction → flipDeductionMode 相当)
