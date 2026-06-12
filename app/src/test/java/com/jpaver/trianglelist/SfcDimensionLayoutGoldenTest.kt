@@ -1,7 +1,9 @@
 package com.jpaver.trianglelist
 
+import com.example.trilib.PointXY
 import com.jpaver.trianglelist.datamanager.SfcWriter
 import com.jpaver.trianglelist.datamanager.saveTo
+import com.jpaver.trianglelist.editmodel.Deduction
 import com.jpaver.trianglelist.editmodel.DeductionList
 import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
@@ -97,10 +99,21 @@ class SfcDimensionLayoutGoldenTest {
         tCredit_ = "http://trianglelist.home.blog"
     )
 
-    private fun writeSfcString(tList: TriangleList): String {
+    /**
+     * 控除 fixture: Circle 1 + Box 1。writeDeduction の旗線・円・矩形・情報テキストの
+     * 各パスを通す (DxfDimensionLayoutGoldenTest.dedFixture と同一座標)。
+     */
+    private fun dedFixture(): DeductionList {
+        val d = DeductionList()
+        d.add(Deduction(1, "仕切弁", 0.23f, 0f, 0, "Circle", 0f, PointXY(5f, 5f), PointXY(7f, 6f)))
+        d.add(Deduction(2, "桝", 0.5f, 0.5f, 0, "Box", 0f, PointXY(4f, 4f), PointXY(2f, 3f)))
+        return d
+    }
+
+    private fun writeSfcString(tList: TriangleList, dedlist: DeductionList = DeductionList()): String {
         val outFile = tempFolder.newFile("out.sfc")
         val os = outFile.outputStream().buffered()
-        val w = SfcWriter(tList, DeductionList(), "test.sfc", 1, 1f)
+        val w = SfcWriter(tList, dedlist, "test.sfc", 1, 1f)
         w.titleTri_ = TitleParamStr()
         w.titleDed_ = TitleParamStr()
         w.zumeninfo = newZumenInfo()
@@ -196,5 +209,10 @@ class SfcDimensionLayoutGoldenTest {
     @Test
     fun goldenDimVariantsFixture() {
         assertGolden("sfc-golden-dimvariants.sfc", writeSfcString(dimVariantsTriList()))
+    }
+
+    @Test
+    fun goldenDeductionsFixture() {
+        assertGolden("sfc-golden-deductions.sfc", writeSfcString(defaultTriList(), dedFixture()))
     }
 }
