@@ -1,7 +1,9 @@
 package com.jpaver.trianglelist
 
+import com.example.trilib.PointXY
 import com.jpaver.trianglelist.datamanager.DxfFileWriter
 import com.jpaver.trianglelist.datamanager.saveTo
+import com.jpaver.trianglelist.editmodel.Deduction
 import com.jpaver.trianglelist.editmodel.DeductionList
 import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
@@ -76,6 +78,17 @@ class DxfDimensionLayoutGoldenTest {
         tList[1].name = "No.0"
         tList[2].name = "No.1"
         return tList
+    }
+
+    /**
+     * 控除 fixture: Circle 1 + Box 1。writeDeduction の旗線・円・矩形・情報テキストの
+     * 各パスを通す。point/pointFlag は三角形 fixture と同じ座標系 (m) で明示。
+     */
+    private fun dedFixture(): DeductionList {
+        val d = DeductionList()
+        d.add(Deduction(1, "仕切弁", 0.23f, 0f, 0, "Circle", 0f, PointXY(5f, 5f), PointXY(7f, 6f)))
+        d.add(Deduction(2, "桝", 0.5f, 0.5f, 0, "Box", 0f, PointXY(4f, 4f), PointXY(2f, 3f)))
+        return d
     }
 
     private fun newWriter(tList: TriangleList): DxfFileWriter {
@@ -193,5 +206,12 @@ class DxfDimensionLayoutGoldenTest {
     @Test
     fun goldenDimVariantsFixture() {
         assertGolden("dxf-golden-dimvariants.dxf", writeDxfString(newWriter(dimVariantsTriList())))
+    }
+
+    @Test
+    fun goldenDeductionsFixture() {
+        val w = newWriter(defaultTriList())
+        w.dedlist_ = dedFixture()
+        assertGolden("dxf-golden-deductions.dxf", writeDxfString(w))
     }
 }
