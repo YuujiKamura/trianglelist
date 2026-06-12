@@ -1,5 +1,24 @@
 import { defineConfig, type Plugin, type ViteDevServer } from 'vite';
 import { fileURLToPath } from 'node:url';
+import { execSync } from 'node:child_process';
+
+// ビルド識別: 「どのコミットが・いつ生成したビルドか」をヘッダ右上に出すための値。
+// Pages は手動デプロイ (deploy.yml の workflow_dispatch) なので、画面を見れば反映済みか
+// 一目で分かるようにする。値はビルド時に焼き込み、main.ts の __BUILD_COMMIT__/__BUILD_TIME__
+// (下の define) として参照する。CI の checkout でも git は使えるのでローカルと同じ経路。
+function gitShortCommit(): string {
+  try {
+    return execSync('git rev-parse --short HEAD').toString().trim();
+  } catch {
+    return 'unknown';
+  }
+}
+const BUILD_COMMIT = process.env.VITE_BUILD_COMMIT ?? gitShortCommit();
+// 生成時刻は JST で "YYYY-MM-DD HH:mm" に整形 (CI runner は UTC なので timeZone を明示)。
+const BUILD_TIME =
+  process.env.VITE_BUILD_TIME ??
+  new Date()
+    .toLocaleString('sv-SE', { timeZone: 'Asia/Tokyo', dateStyle: 'short', timeStyle: 'short' });
 
 // __tlcp: dev 専用の control protocol (keysynth の gui_cp と同じ思想の web 版)。
 // 物理カメラ越しでなく canvas のピクセルそのものと UI state を CLI から取る検証口。
@@ -168,6 +187,10 @@ export default defineConfig({
   // GitHub Pages (project site = /trianglelist/) 用に base を環境変数で差し替える。
   // dev とローカル build は従来どおり '/'。
   base: process.env.VITE_BASE ?? '/',
+  define: {
+    __BUILD_COMMIT__: JSON.stringify(BUILD_COMMIT),
+    __BUILD_TIME__: JSON.stringify(BUILD_TIME),
+  },
   plugins: [tlcpPlugin()],
   build: {
     target: 'esnext',
