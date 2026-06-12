@@ -445,12 +445,14 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
     }
   }
 
-  // 控除モード: クリック位置の十字マーカー (アプリの pressedInModel は不可視 —
-  // web は「次の追加がどこに置かれるか」を見える化する改善)
-  if (deductionMode && dedCursor) {
-    const cx = sx(dedCursor.x);
-    const cy = sy(dedCursor.y);
-    ctx.strokeStyle = COLORS.ded;
+  // クリック位置の十字マーカー (アプリの pressedInModel は不可視 — web は「次の操作が
+  // どこに効くか」を見える化する改善)。控除モード = 赤 (次の控除の置き場)、
+  // 三角形編集モード = 青 (旗 FAB の番号移動先。2026-06-12 user 要望で常時 ON)
+  const cross = deductionMode ? dedCursor : lastTapModel;
+  if (cross) {
+    const cx = sx(cross.x);
+    const cy = sy(cross.y);
+    ctx.strokeStyle = deductionMode ? COLORS.ded : COLORS.num;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(cx - 12, cy);
@@ -1501,6 +1503,19 @@ function fabFlag(canvas: HTMLCanvasElement): void {
     return;
   }
   const dest = lastTapModel;
+  // 移動先がカレント三角形の内側なら手動旗揚げを解除して自動配置に戻す
+  // (2026-06-12 user 要望「内側にあるときは手動旗揚げが OFF」)。当たり判定は
+  // handleTap と同じ common の isCollide (WebHitTest.hitTriangle)
+  if (hitTriangle(serializeState(), dest.x, dest.y) === n) {
+    overrides.numbers = overrides.numbers.filter((o) => o.tri !== n);
+    // ロード CSV に焼き込まれた手動配置 (列 9 = 移動フラグ、CsvCodec.applyRowMeta:219-223
+    // が true のとき列 7/8 を当てる) も倒す。列 7/8 の座標値はフラグ false なら読まれない
+    const r = rows[n - 1];
+    if (r && r.extras.length > 3) r.extras[3] = 'false';
+    redraw(canvas);
+    setStatus(`番号 ${n} の旗揚げを解除した (自動配置に戻る)`);
+    return;
+  }
   upsertNumberOverride(n, dest.x, dest.y);
   redraw(canvas);
   const c = findNumberCircle(n);
