@@ -17,10 +17,8 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, filename: String,
 
     override var viewscale_ = viewscale //初期化時に指定する
     override var textscale_ = trilist_.getPrintTextScale( 1f , "dxf") * 1.2f * unitscale_
-    override var sizeX_ = 420 * printscale_
-    override var sizeY_ = 297 * printscale_
-    override var centerX_ = sizeX_ * 0.5f
-    override var centerY_ = sizeY_ * 0.5f
+    // 用紙寸法は基底の paper フィールドが唯一の出所。sizeX_/sizeY_/centerX_/centerY_ の
+    // 旧 override は footer の用紙宣言以外で使われていなかったので削除し、footer は paper を直接読む。
     var circleSize = textscale_ * 0.8f
 
 
@@ -365,7 +363,7 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, filename: String,
     override fun writeFooter(){
         adas( "sfig_org_feature(\\'ﾍﾞｰｽ\\','2')" )
         adas( "sfig_locate_feature('0',\\'ﾍﾞｰｽ\\','0.000000','0.000000','0.00000000000000','0.01000000000000','0.01000000000000')" )
-        adas( "drawing_sheet_feature(\\'\\','3','1','${sizeX_}','${sizeY_}')" )
+        adas( "drawing_sheet_feature(\\'\\','3','1','${paper.width}','${paper.height}')" )
         adas( "layer_feature(\'通常\','1')" )
         apnd( "ENDSEC;" )
         apnd( "END-ISO-10303-21;" )

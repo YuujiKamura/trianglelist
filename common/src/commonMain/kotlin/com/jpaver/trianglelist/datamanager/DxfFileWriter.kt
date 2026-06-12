@@ -52,8 +52,7 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
 
     var activeLayer = "0"
 
-    // 用紙サイズと縮尺の設定（外部から変更可能）
-    var paper: Paper = Paper.A3_LAND
+    // 用紙サイズは基底の paper フィールドを使う (唯一の出所)。縮尺の上書き設定:
     var customPrintScale: PrintScale? = null
 
     // save() で確定した縮尺。writeEntities のペーパー空間 VIEWPORT が同じ値を使う
@@ -62,11 +61,8 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
     //endregion parameters
 
     override fun save(){
-        // 用紙サイズの単一の出所 = paper フィールド。枠・タイトル欄・図形センタリング・
-        // ビューポートすべてここから導出する (基底 paperWcm/paperHcm/paperName へ伝播)
-        paperWcm = paper.width / 10f
-        paperHcm = paper.height / 10f
-        paperName = paper.name
+        // 用紙サイズの単一の出所 = 基底 paper フィールド。paperWcm/Hcm/Name は派生 getter
+        // なので手動コピー不要。枠・タイトル欄・図形センタリング・ビューポートが全部追従する。
 
         // Initialize entity writer
         dxfEntity = DxfEntity(handleGen, unitscale_, activeLayer)
