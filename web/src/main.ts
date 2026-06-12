@@ -20,6 +20,7 @@ type TextPrim = {
   h?: number; // horizontal 実効値 (0..4、>2 で旗揚げ)。W cycle はここから次値を計算
   v?: number; // vertical 実効値 (1=外/3=内)
   ded?: number; // 控除番号 (ded layer のみ)。選択中の控除の色替えに使う
+  field?: string; // 図面枠タイトル欄の識別子 (frame layer のみ、WebFrame.fieldAt)。空欄でも prim が出る
 };
 type CirclePrim = { type: 'circle'; layer: string; cx: number; cy: number; r: number; tri?: number; ded?: number };
 // 三角形の塗り (アプリ MyView.drawEntities:572-576 の写し)。color は CSV 列 10 の index、
@@ -640,7 +641,11 @@ function parseCsvToState(csv: string): void {
 }
 
 function serializeState(): string {
-  const lines = [...headerLines];
+  // ヘッダ 4 欄はアプリ完全形式と同じラベル付き (koujiname,<値>) で書く — 値が空白でも
+  // 行が残るので round-trip で欄がずれない (空白デフォルト 2026-06-12)。
+  // 5 行目以降の未知行は原文のまま保持 (CsvCodec の schema evolution 定石と同じ)
+  const lines = HEADER_LABELS.map((label, i) => `${label},${headerValueAt(i)}`);
+  lines.push(...headerLines.slice(4));
   rows.forEach((r, i) => {
     // 共有 index は CSV では従来どおり複製値に展開する (app との互換境界)
     lines.push(
@@ -1750,7 +1755,9 @@ function handleDedTap(canvas: HTMLCanvasElement, px: number, py: number, m: { x:
 function newDrawing(canvas: HTMLCanvasElement): void {
   if (rows.length > 0 && !window.confirm('現在の図を破棄して新規作成しますか?')) return;
   takeUndoSnap();
-  headerLines = ['無題工事', '新規路線', '', ''];
+  // ヘッダはデフォルト空白 — 図面枠の欄を dblclick すればその場で書ける
+  // (「無題工事とか書くより空白にしておいた方が良い」2026-06-12 user 指示)
+  headerLines = ['koujiname,', 'rosenname,', 'gyousyaname,', 'zumennum,'];
   edges = [];
   rows = [{ ea: newEdge('3.00'), eb: newEdge('3.00'), ec: newEdge('3.00'), parent: '-1', conn: '-1', extras: [] }];
   listAngle = 0; // アプリ createNew は TriangleList を作り直す = angle 0 (回転 FAB の残留を消す)
@@ -1862,20 +1869,43 @@ function wireNewRowEnter(canvas: HTMLCanvasElement): void {
   });
 }
 
-// 路線名: アプリの editor_table の路線名欄に相当。sample_triangles.csv 形式では
-// ヘッダ 2 行目 (工事名/路線名/業者名/測点) — 描画には出ないが round-trip で保持する
-function syncRosenName(): void {
-  input('rosenName').value = headerLines[1] ?? '';
+// ---- ヘッダ 4 行 (工事名/路線名/業者名/図面番号) の読み書き ----
+// 値の取り出しは WebDrawingExport.parseHeader と同じ二形式対応:
+// web 最小形式 = 行全体が値、app 完全形式 = `koujiname,<値>` の 2 カラム目が値
+const HEADER_LABELS = ['koujiname', 'rosenname', 'gyousyaname', 'zumennum'];
+
+function headerValueAt(i: number): string {
+  const line = headerLines[i] ?? '';
+  const chunks = line.split(',').map((s) => s.trim());
+  return HEADER_LABELS.includes(chunks[0]) ? (chunks[1] ?? '') : line.trim();
 }
 
-function wireRosenName(): void {
+function setHeaderValueAt(i: number, v: string): void {
+  while (headerLines.length <= i) {
+    // ヘッダの無い最小 CSV に途中の欄を書いたらラベル付きの空欄で補う —
+    // 空でも行が残るので round-trip で欄がずれない
+    headerLines.push(`${HEADER_LABELS[headerLines.length]},`);
+  }
+  const chunks = (headerLines[i] ?? '').split(',').map((s) => s.trim());
+  headerLines[i] = HEADER_LABELS.includes(chunks[0])
+    ? `${chunks[0]},${v.replace(/,/g, ' ')}` // ラベル形式は区切りを壊す comma を空白へ
+    : v;
+}
+
+// 路線名: アプリの editor_table の路線名欄に相当 (ヘッダ 2 行目)。
+// 図面枠 ON のときは枠タイトルにも印字される (WebFrame.renderFrame) ので、
+// タイプのたび redraw して図に追従させる (2026-06-12 user 要望)
+function syncRosenName(): void {
+  input('rosenName').value = headerValueAt(1);
+}
+
+function wireRosenName(canvas: HTMLCanvasElement): void {
   input('rosenName').addEventListener('input', () => {
-    while (headerLines.length < 2) {
-      // ヘッダの無い最小 CSV に路線名を書いたら工事名行から補う (空行は再読込で落ちるため)
-      headerLines.push(headerLines.length === 0 ? '無題' : '');
-    }
-    headerLines[1] = input('rosenName').value;
-    autosave();
+    setHeaderValueAt(1, input('rosenName').value);
+    redraw(canvas); // autosave は redraw 内で走る
+  });
+  input('rosenName').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.isComposing) input('rosenName').blur();
   });
 }
 
@@ -2036,25 +2066,193 @@ function selectEdge(canvas: HTMLCanvasElement, tri: number, side: 1 | 2): void {
   input('newB').focus();
 }
 
-// 寸法ダブルクリック → 一覧の該当セル (辺A/B/C の input) にフォーカスして直接編集へ。
-// 一覧の input は input/change → redraw() まで配線済みなので、フォーカスを移すだけで
-// 「書き換えが図に反映される」(不成立値は redraw の共通関門が図を据え置いて警告)
-function focusListCell(canvas: HTMLCanvasElement, tri: number, side: number): void {
-  selectTriangle(canvas, tri);
-  // どの辺を編集中かは図側でも黄色強調 (辺線 + 寸法ボックス + 辺名) で見え続けるようにする
-  selectedDim = { tri, side };
-  draw(canvas, lastPrims);
-  const details = document.getElementById('listDetails') as HTMLDetailsElement | null;
-  if (details) details.open = true;
-  const tr = document.getElementById('triRows')?.children[tri - 1];
-  if (!tr) return;
-  // 行内の number input は [辺A, 辺B, 辺C, 親番号] の生成順 — side 0/1/2 がそのまま添字
-  const inp = tr.querySelectorAll<HTMLInputElement>('input[type="number"]')[side];
-  if (!inp) return;
+// ---- キャンバス内テキストの in-place 編集 (2026-06-12 user 要望) ----
+// dblclick したテキストの真上に境界ボックス (黄枠) 付き input を重ね、Enter/blur で確定、
+// Esc で取消。書き戻し先はテキストの素性で分岐する:
+//   寸法 (dim, tri/side) = 辺プール (旧「一覧セルへジャンプ」を包含 — 表は syncEdgeInputs 追従)
+//   控除 (ded, num)      = dedLines の名前列 (infoStr の番号・寸法は導出値なので名前だけ)
+//   図面枠 (frame)        = headerLines (工事名/路線名/業者名/図面番号と値一致した行)
+// 番号サークルの数字は自動採番なので対象外
+type TextEditTarget =
+  | { kind: 'dim'; prim: TextPrim; tri: number; side: 0 | 1 | 2 }
+  | { kind: 'ded'; prim: TextPrim; num: number }
+  | { kind: 'header'; prim: TextPrim; field: number };
+
+function dedLineIndexByNum(num: number): number {
+  return dedLines.findIndex((l) => intOrNull(l.split(',')[1]?.trim() ?? '') === num);
+}
+
+function textEditTarget(p: Prim): TextEditTarget | null {
+  if (p.type !== 'text') return null;
+  if (p.layer === 'dim' && p.tri !== undefined && p.side !== undefined) {
+    return { kind: 'dim', prim: p, tri: p.tri, side: p.side as 0 | 1 | 2 };
+  }
+  if (p.layer === 'ded' && p.ded !== undefined && dedLineIndexByNum(p.ded) >= 0) {
+    return { kind: 'ded', prim: p, num: p.ded };
+  }
+  if (p.layer === 'frame' && p.field !== undefined) {
+    // 枠のタイトル欄は WebFrame.fieldAt が field タグを付けて出す (値が空欄でも出る —
+    // 「空白にしておいて枠内 dblclick で書換え」2026-06-12 user 要望)。
+    // 固定ラベル (「工 事 名」等) はタグ無しなので対象外
+    const i = HEADER_LABELS.indexOf(p.field);
+    if (i >= 0) return { kind: 'header', prim: p, field: i };
+  }
+  return null;
+}
+
+// テキストの画面上の境界ボックス: アンカー画面 px + 回転前ローカル系での矩形。
+// 幅は draw() と同じ font 設定の measureText (「描画が真実、箱はその鏡」)
+function textScreenBox(
+  canvas: HTMLCanvasElement,
+  p: TextPrim,
+): { ax: number; ay: number; left: number; top: number; w: number; fh: number } | null {
+  const v = view;
+  const ctx = canvas.getContext('2d');
+  if (!v || !ctx) return null;
+  const fh = Math.max(p.size * v.scale, 8);
+  ctx.font = `${fh}px sans-serif`;
+  // 空欄の枠タイトル (field タグ付き・text="") にも文字 3 つ分の当たり/編集ボックスを与える
+  const w = Math.max(ctx.measureText(p.text).width, fh * 3);
+  return {
+    ax: p.x * v.scale + v.offsetX,
+    ay: -p.y * v.scale + v.offsetY,
+    left: p.alignH === 0 ? 0 : -w / 2,
+    top: p.align === 1 ? -fh : p.align === 3 ? 0 : -fh / 2,
+    w,
+    fh,
+  };
+}
+
+// dblclick 位置に重なる編集可能テキストを探す (回転テキストはローカル系に逆回転して矩形判定)
+function hitEditableText(canvas: HTMLCanvasElement, px: number, py: number): TextEditTarget | null {
+  let best: { t: TextEditTarget; d: number } | null = null;
+  for (const p of lastPrims) {
+    const t = textEditTarget(p);
+    if (!t) continue;
+    const box = textScreenBox(canvas, t.prim);
+    if (!box) continue;
+    // 描画は rotate(-angle) なので、逆変換 = +angle 回転でローカル系へ
+    const th = (t.prim.angle * Math.PI) / 180;
+    const dx = px - box.ax;
+    const dy = py - box.ay;
+    const lx = dx * Math.cos(th) - dy * Math.sin(th);
+    const ly = dx * Math.sin(th) + dy * Math.cos(th);
+    const pad = 6;
+    if (lx < box.left - pad || lx > box.left + box.w + pad) continue;
+    if (ly < box.top - pad || ly > box.top + box.fh + pad) continue;
+    const d = Math.hypot(lx - (box.left + box.w / 2), ly - (box.top + box.fh / 2));
+    if (!best || d < best.d) best = { t, d };
+  }
+  return best?.t ?? null;
+}
+
+let inplaceEditor: HTMLInputElement | null = null;
+
+function closeInplaceEditor(): void {
+  inplaceEditor?.remove();
+  inplaceEditor = null;
+}
+
+function openTextEditor(canvas: HTMLCanvasElement, target: TextEditTarget): void {
+  closeInplaceEditor();
+  const wrap = document.getElementById('canvasWrap');
+  const box = textScreenBox(canvas, target.prim);
+  if (!wrap || !box) return;
+
+  // 初期値と確定処理 (書き戻し先) を素性で決める
+  let initial: string;
+  let hint: string;
+  let commit: (val: string) => void;
+  if (target.kind === 'dim') {
+    const row = rows[target.tri - 1];
+    if (!row) return;
+    const key = (['a', 'b', 'c'] as const)[target.side];
+    initial = fmt2(edgeVal(row, key));
+    hint = `三角形 ${target.tri} の ${['A', 'B', 'C'][target.side]} 辺`;
+    commit = (val) => {
+      setEdgeVal(row, key, fmt2(val));
+      syncEdgeInputs(row[EKEY[key]]); // 一覧セル・カレント行フォームを追従
+      redraw(canvas); // 不成立値は共通関門が図を据え置いて警告
+    };
+    // 編集対象の辺は図側でも黄色強調 (旧 focusListCell と同じ見せ方)
+    selected = target.tri;
+    current = target.tri;
+    selectedDim = { tri: target.tri, side: target.side };
+    edgeSel = null;
+    shadowPrims = null;
+    updateRowHighlight();
+    syncForm();
+    draw(canvas, lastPrims);
+  } else if (target.kind === 'ded') {
+    const li = dedLineIndexByNum(target.num);
+    if (li < 0) return;
+    const chunks = dedLines[li].split(',').map((s) => s.trim());
+    initial = chunks[2] ?? '';
+    hint = `控除 ${target.num} の名前`;
+    commit = (val) => {
+      chunks[2] = val.replace(/,/g, ' '); // CSV 区切りを壊す comma は空白へ
+      dedLines[li] = chunks.join(',');
+      buildDedTable(canvas);
+      redraw(canvas);
+    };
+  } else {
+    const field = target.field;
+    initial = headerValueAt(field);
+    hint = ['工事名', '路線名', '業者名', '図面番号'][field];
+    commit = (val) => {
+      setHeaderValueAt(field, val);
+      if (field === 1) syncRosenName(); // テーブル側の路線名欄も追従
+      redraw(canvas);
+    };
+  }
+
+  // canvas 内部 px → CSS px (表示縮尺) に換算して、テキストの境界ボックスに重ねる。
+  // 回転テキストは CSS transform で同じ角度に倒す (rotate → ローカル系 translate の順)
+  const rect = canvas.getBoundingClientRect();
+  const k = rect.width / canvas.width;
+  const pad = 4;
+  const inp = document.createElement('input');
+  inp.type = 'text';
+  inp.value = initial;
+  inp.style.position = 'absolute';
+  inp.style.left = `${canvas.offsetLeft + box.ax * k}px`;
+  inp.style.top = `${canvas.offsetTop + box.ay * k}px`;
+  inp.style.transformOrigin = '0 0';
+  inp.style.transform = `rotate(${-target.prim.angle}deg) translate(${(box.left - pad) * k}px, ${(box.top - pad) * k}px)`;
+  inp.style.width = `${Math.max((box.w + pad * 2) * k, 48) + 24}px`;
+  inp.style.font = `${Math.max(box.fh * k, 11)}px sans-serif`;
+  inp.style.padding = '2px 4px';
+  inp.style.border = `2px solid ${SELECT_YELLOW}`;
+  inp.style.borderRadius = '3px';
+  inp.style.background = 'rgba(255, 255, 255, 0.95)';
+  inp.style.color = '#222';
+  inp.style.zIndex = '10';
+
+  let done = false;
+  const finish = (apply: boolean) => {
+    if (done) return;
+    done = true;
+    const val = inp.value;
+    closeInplaceEditor();
+    if (apply && val !== initial) commit(val);
+  };
+  inp.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.isComposing) {
+      e.preventDefault();
+      finish(true);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      finish(false);
+    }
+  });
+  inp.addEventListener('blur', () => finish(true));
+  // クリックが下の canvas に流れて選択/パンを起こさないように
+  inp.addEventListener('pointerdown', (e) => e.stopPropagation());
+  wrap.appendChild(inp);
+  inplaceEditor = inp;
   inp.focus();
   inp.select();
-  inp.scrollIntoView({ block: 'nearest' });
-  setStatus(`三角形 ${tri} の ${['A', 'B', 'C'][side]} 辺 — セルを直接編集 (入力すると図に即反映)`);
+  setStatus(`${hint} — Enter で確定、Esc で取消`);
 }
 
 function handleTap(canvas: HTMLCanvasElement, px: number, py: number): void {
@@ -2212,13 +2410,13 @@ function wireCanvasEvents(canvas: HTMLCanvasElement): void {
   canvas.addEventListener('pointerup', release);
   canvas.addEventListener('pointercancel', release);
 
-  // ダブルクリック: 寸法値の上なら一覧の該当セルへフォーカス (直接書き換え動線)、
+  // ダブルクリック: テキストの上なら境界ボックス付き in-place 編集 (寸法/控除名/図面枠)、
   // それ以外は従来どおり全体 fit に戻す
   canvas.addEventListener('dblclick', (e) => {
     const p = canvasPx(canvas, e);
-    const dim = nearestDimText(p.x, p.y);
-    if (dim && dim.prim.tri !== undefined && dim.prim.side !== undefined) {
-      focusListCell(canvas, dim.prim.tri, dim.prim.side);
+    const hit = hitEditableText(canvas, p.x, p.y);
+    if (hit) {
+      openTextEditor(canvas, hit);
       return;
     }
     view = null;
@@ -2349,7 +2547,7 @@ function main(): void {
   wireExportButtons();
   wireCanvasEvents(canvas);
   wireFabs(canvas);
-  wireRosenName();
+  wireRosenName(canvas);
   wireNewRowEnter(canvas);
   // 形態 select の変化で起点 select の有効/無効を追従 (辺共有では起点に意味が無い)
   select('newCType').addEventListener('change', () => syncLcrDisabled('new'));
