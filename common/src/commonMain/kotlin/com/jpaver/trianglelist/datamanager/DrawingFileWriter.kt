@@ -8,6 +8,8 @@ import com.jpaver.trianglelist.editmodel.EditObject
 import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
 import com.jpaver.trianglelist.editmodel.ZumenInfo
+import com.jpaver.trianglelist.label.DimensionLayout
+import com.jpaver.trianglelist.label.DimensionPlacement
 import com.jpaver.trianglelist.viewmodel.TitleParamStr
 import com.jpaver.trianglelist.viewmodel.formattedString
 import com.jpaver.trianglelist.editmodel.isCollide
@@ -138,7 +140,102 @@ open class DrawingFileWriter {
 
     open fun save(){}
 
-    open fun writeTriangle(tri: Triangle){}
+    // 寸法ラベルにアライメントコードを焼き込むデバッグ表示 (DXF で使用、既定 off)
+    open var isDebug = false
+
+    /**
+     * 三角形 1 つの描画 (DXF/SFC/Web 共通)。座標の単位は subclass のプリミティブが
+     * 吸収するので、ここはモデル座標をそのまま writeLine/writeTextHV へ渡すだけ
+     * (DXF=cm を entity で ×1000、SFC=mm をそのまま、と各 writer が自分の流儀で処理)。
+     * 寸法/測点の文字揃えは DimensionPlacement.verticalDxf + writeTextHV に統一
+     * (SFC の writeTextHV override がテンキー式へ翻訳する)。色は WHITE/BLUE の override 任せ。
+     */
+    open fun writeTriangle(tri: Triangle){
+        val (pca, pab, pbc) = xyPointXYTriple(tri)
+        val (placeA, placeB, placeC) = layoutTriple(tri)
+        var (la, lb, lc) = stringTriple(tri)
+
+        val textSize: Float = textscale_
+
+        // 三角形の 3 辺
+        writeTriangleLines(tri, WHITE)
+
+        if (isDebug) {
+            la += "A${placeA.verticalDxf}"
+            lb += "B${placeB.verticalDxf}"
+            lc += "C${placeC.verticalDxf}"
+        }
+
+        // 寸法値
+        if (tri.mynumber == 1 || tri.connectionSide > 2)
+            writeTextDimension(placeA.verticalDxf, la, placeA.dimpoint, pab.calcDimAngle(pca))
+        writeTextDimension(placeB.verticalDxf, lb, placeB.dimpoint, pbc.calcDimAngle(pab))
+        writeTextDimension(placeC.verticalDxf, lc, placeC.dimpoint, pca.calcDimAngle(pbc))
+
+        // 旗揚げ線
+        writeDimFlagsFromLayout(tri, placeA, placeB, placeC, WHITE)
+
+        // 番号
+        writePointNumber(tri, textSize, BLUE, 1, 2, textSize * 0.85f)
+
+        // 測点
+        if (tri.name != "") {
+            writeSokutenFromLayout(tri, trilist_.sokutenListVector, textSize, BLUE, 1, 1)
+        }
+    }
+
+    /**
+     * 3 辺の寸法配置を DimensionLayout で計算する。入力は Triangle のキャッシュ (setDimPath) と同じ:
+     * A=(pointAB,point[0]), B=(pointBC,pointAB), C=(point[0],pointBC) + dim の縦横コード。
+     * gapPaperMm=0 なのでキャッシュ由来と同値 (ADR 0003 Phase 2)。
+     */
+    private fun layoutTriple(tri: Triangle): Triple<DimensionPlacement, DimensionPlacement, DimensionPlacement> {
+        val scale = tri.scaleFactor.toDouble()
+        val dimheight = tri.dimHeight.toDouble()
+        return Triple(
+            DimensionLayout.layout(tri.pointAB, tri.point[0], tri.dim.vertical.a, tri.dim.horizontal.a, scale, dimheight, 0.0),
+            DimensionLayout.layout(tri.pointBC, tri.pointAB, tri.dim.vertical.b, tri.dim.horizontal.b, scale, dimheight, 0.0),
+            DimensionLayout.layout(tri.point[0], tri.pointBC, tri.dim.vertical.c, tri.dim.horizontal.c, scale, dimheight, 0.0)
+        )
+    }
+
+    /** 旗揚げ線の両端を DimensionLayout の計算結果から取る */
+    private fun writeDimFlagsFromLayout(
+        tri: Triangle,
+        placeA: DimensionPlacement,
+        placeB: DimensionPlacement,
+        placeC: DimensionPlacement,
+        color: Int
+    ) {
+        if (tri.dim.horizontal.a > 2) writeLine(placeA.pointA, placeA.pointB, color)
+        if (tri.dim.horizontal.b > 2) writeLine(placeB.pointA, placeB.pointB, color)
+        if (tri.dim.horizontal.c > 2) writeLine(placeC.pointA, placeC.pointB, color)
+    }
+
+    /** 測点名の位置を DimensionLayout (SIDE_SOKUTEN) から取る */
+    private fun writeSokutenFromLayout(
+        tri: Triangle,
+        normalizedvector: Int,
+        ts: Float,
+        color: Int,
+        align1: Int,
+        align2: Int
+    ) {
+        val place = DimensionLayout.layout(
+            tri.pointAB, tri.point[0],
+            DimensionLayout.SIDE_SOKUTEN, tri.dim.horizontal.s,
+            tri.scaleFactor.toDouble(), tri.dimHeight.toDouble(), 0.0
+        )
+        val pa = place.pointA
+        val pb = place.pointB
+        writeTextSwitch(tri.name, place.dimpoint, ts, color, align1, align2, pb.calcSokAngle(pa, normalizedvector))
+        writeLine(pa, pb, color)
+    }
+
+    /** 寸法値テキスト 1 つ。縦揃えは verticalDxf、横は中央 (1) で writeTextHV へ */
+    private fun writeTextDimension(verticalAlign: Int, len: String, p1: com.example.trilib.PointXY, angle: Double){
+        writeTextHV(len, p1, WHITE, textscale_, 1, verticalAlign, angle, 1f)
+    }
 
     open fun writeLine(p1: com.example.trilib.PointXY, p2: com.example.trilib.PointXY, color: Int, scale: Float = 1f ){
     }
