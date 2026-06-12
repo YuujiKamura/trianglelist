@@ -95,6 +95,29 @@ user 指摘 (2026-06-12 Pages 目視)「SFC だと図面上部センターのタ
   「同一座標でサイズが異なるテキスト = 0 件」を確認 (サイズは 125/250 の 2 値に両者収束)。
   上中央タイトル 2 本が DXF と同一座標 (10500,13000)/(10500,13550) に追加されたことも確認。
 
+## 段A (済) — DrawPrim による frontend/backend 分離の foundation
+
+user 指摘「Kotlin の機能で『何を何処に描く』を 1 か所で管理できる気がする。今後形式を増やしたり
+調整しやすい形にしたい」。外部の定石 ([ezdxf](https://ezdxf.readthedocs.io/en/stable/addons/drawing.html)
+の frontend/backend、[retained mode](https://grokipedia.com/page/Retained_mode)) に倣い、Kotlin の
+[sealed class](https://kotlinlang.org/docs/sealed-classes.html) で描画プリミティブをデータ化する第一歩を入れた。
+
+- **`DrawPrim` (sealed interface)**: Line / Rect / Circle / Text。実寸座標 + スタイルだけのデータで
+  形式非依存 (`DrawPrim.kt` 新規)。
+- **`drawScene(prims)` (基底)**: prim を 1:1 で既存プリミティブ (writeLine/writeRect/writeCircle/
+  writeTextHV) へディスパッチ。sealed の網羅 when なので prim 追加漏れはコンパイルエラーで止まる。
+- **図枠の frontend 化**: `writeOuterFrame` / `writeTopTitle` / `writeDrawingFrame` を「prim の
+  リストを組んで drawScene に流す」形へ。これで「何を何処に」が純粋なデータとして 1 か所に集まる。
+  旧 `writeTextWithKaigyou` / `splitAndWriteText` は `kaigyouPrims` (DrawPrim.Text を返す純粋版) に
+  置換し削除 (分割ロジックの 2 重持ちを解消)。
+- **バイト不変の根拠**: drawScene は同じプリミティブを同じ順序で呼ぶだけなので、リスト化しても
+  出力は不変。DXF golden (byte) / SFC golden (semantic) / DxfFileWriterTest が**再生成なしで pass**、
+  common desktopTest・wasmJs compile も green。
+- **次段 (段B 予定)**: writeTriangle / writeDeduction / writeCalcSheet も prim 化し、各 writer の
+  プリミティブ実装を「prim を各形式へ翻訳する backend」に寄せる。その時点で「同一 scene を全形式が
+  食う」が完成し、下記の寸法/計算書の位置オフセット (各 writer が独立に座標変換するため発生) が
+  構造的に消える。
+
 ## 残課題 (将来)
 
 - **寸法文字・計算書テキストの位置オフセット**: DXF と SFC で一部の寸法値テキスト (7 本) と
