@@ -117,7 +117,8 @@ class SfcDimensionLayoutGoldenTest {
         w.titleTri_ = TitleParamStr()
         w.titleDed_ = TitleParamStr()
         w.zumeninfo = newZumenInfo()
-        w.textscale_ = 500f
+        // textscale は内部値 (getPrintTextScale) を使う。単位モデル統一後は DXF と同じ実寸基準で、
+        // 旧来の 500 (mm 直値) 上書きは primitive の ×unitscale と二重になるため外す。
         w.setNames("市道○○号線 舗装打換工事", "市道○○号線", "○○建設株式会社", "1/1")
         w.setStartNumber(1)
         w.isReverse_ = false

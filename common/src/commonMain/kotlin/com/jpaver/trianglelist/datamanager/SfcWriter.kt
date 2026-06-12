@@ -14,7 +14,9 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, filename: String,
     var assembryNumber_ = 10
 
     override var viewscale_ = viewscale //初期化時に指定する
-    override var textscale_ = trilist_.getPrintTextScale( 1f , "dxf") * 1.2f * unitscale_
+    // 単位モデル統一 (段4): SFC も DXF と同じ「モデル座標は実寸、単位変換は primitive で ×unitscale」
+    // 流儀。textscale も DXF と同一 (getPrintTextScale)。旧 ×1.2 / ×unitscale は偶発的な澱なので除去。
+    override var textscale_ = trilist_.getPrintTextScale( 1f , "dxf")
     // 用紙寸法は基底の paper フィールドが唯一の出所。sizeX_/sizeY_/centerX_/centerY_ の
     // 旧 override は footer の用紙宣言以外で使われていなかったので削除し、footer は paper を直接読む。
     var circleSize = textscale_ * 0.8f
@@ -27,14 +29,15 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, filename: String,
         // printscale
         printscale_ = trilist_.getPrintScale(1f)
 
-        trilist_.scale(com.example.trilib.PointXY(0f, 0f), unitscale_ )
-        dedlist_.scale(com.example.trilib.PointXY(0f, 0f), unitscale_/viewscale_, -unitscale_/viewscale_ )
-        // アプリの画面に合わせて拡大されているのを戻し、Y軸も反転
+        // 単位モデル統一 (段4): モデル座標は実寸のまま持ち、mm への変換は primitive (writeLine 等) で
+        // ×unitscale する DXF 流儀に揃えた。よって trilist は scale せず、dedlist は viewscale で割り戻す
+        // のみ (Y 反転込み、×unitscale は付けない)。DxfFileWriter.writeEntities と同形。
+        dedlist_.scale(com.example.trilib.PointXY(0f, 0f), 1f/viewscale_, -1f/viewscale_ )
 
-        //シートの中心へ動かす
+        //シートの中心へ動かす (用紙中央、実寸。paperWcm/Hcm は paper 由来)
         val center = com.example.trilib.PointXY(
-            21000f * printscale_,
-            14850f * printscale_
+            paperWcm / 2f * printscale_,
+            paperHcm / 2f * printscale_
         )
 
         val tricenter = trilist_.center
@@ -57,15 +60,15 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, filename: String,
             writeDeduction( dedlist_.get(dednumber) )
         }
 
-        //writeFrame( sheetscale_ * 0.1f * scale_, scale_, centerX_, centerY_, sizeX_, sizeY_ )
-        writeDrawingFrame(unitscale_ * printscale_, 0.35f)
+        // 図面枠: 縮尺は枠の scale 引数 (printscale) だけに乗せる。primitive が ×unitscale するので
+        // 枠座標は printscale 倍で渡す (DXF が unitscale*=printscale でやっているのと同じ最終倍率)。
+        writeDrawingFrame(printscale_, textscale_)
 
-        // calcSheet
+        // calcSheet (DXF と同形: scale=1・textsize=textscale_。単位は primitive が吸収)
         if( isReverse_ == true ) {
             trilistNumbered = trilistNumbered.reverse()
         }
-        trilistNumbered.scale(com.example.trilib.PointXY(0f, 0f), 1/unitscale_ )
-        writeCalcSheet(1000f, textscale_/unitscale_, trilistNumbered, dedlist_ )
+        writeCalcSheet(1f, textscale_, trilistNumbered, dedlist_ )
 
     }
 
@@ -124,45 +127,8 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, filename: String,
         )
     }
 
-    override fun writeDeduction( ded: Deduction){
-
-        //val ded = dedlist_.get( dednumber )
-        //val textsize: Float = textscale_
-        val infoStrLength = ded.infoStr.length*textscale_*0.7f
-        val point = ded.point
-        val pointFlag = ded.pointFlag
-        val textOffsetX = 0f
-        //if( ded.type == "Box" ) textOffsetX = -500f
-
-        if(point.x <= pointFlag.x) {  //ptFlag is RIGHT from pt
-            writeLine(point, pointFlag, 2)
-            writeTextAndLine(
-                ded.infoStr,
-                pointFlag,
-                pointFlag.plus( (infoStrLength + textOffsetX).toDouble(),0.0 ),
-                textscale_,
-                1f
-            )
-//            writeLine( 2, pointFlag.plus(infoStrLength,0f), pointFlag )
-//            writeText( 2, ded.info_, pointFlag.plus( textOffsetX,0f ), textscale_, 0f, 1)
-        } else {                     //ptFlag is LEFT from pt
-            writeLine(point, pointFlag, 2)
-            writeTextAndLine(
-                ded.infoStr,
-                pointFlag.plus( (-infoStrLength - textOffsetX).toDouble(),0.0 ),
-                pointFlag,
-                textscale_,
-                1f
-            )
-
-            //writeLine( 2, pointFlag.plus(-infoStrLength,0f), pointFlag )
-            //writeText( 2, ded.info_, pointFlag.plus(-infoStrLength + textOffsetX,0f), textscale_, 0f, 1)
-        }
-
-        if(ded.type == "Circle") writeCircle(point, ded.lengthX/2*1000f, 2, 1f)
-        if(ded.type == "Box")    writeDedRect( 2, ded )
-
-    }
+    // writeDeduction / writeDedRect は基底 DrawingFileWriter に集約 (段4、DXF を正)。
+    // SFC は単位を primitive で吸収する流儀に揃えたので基底版がそのまま使える。
 
     override fun writeTextAndLine(
         st: String,
@@ -171,20 +137,11 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, filename: String,
         textsize: Float,
         scale: Float
     ){
-        writeLine( p1, p2, 2, scale )
-        writeTextA9(st, p1.plus( 200.0, 100.0 ), 2, textscale_, 1, 0.0, scale )
-
-        //writeDXFText(writer_, st, p1.plus(0.2f,0.1f), 1, textsize, 0)
-        //writeLine(writer_, p1, p2, 1)
-    }
-
-    fun writeDedRect( color: Int, ded: Deduction){
-        ded.shapeAngle = -ded.shapeAngle // 逆回転
-        ded.setBox( 1000.0 )
-        writeLine(ded.pLTop, ded.pLBtm, color)
-        writeLine(ded.pLTop, ded.pRTop, color)
-        writeLine(ded.pRTop, ded.pRBtm, color)
-        writeLine(ded.pLBtm, ded.pRBtm, color)
+        // DXF (dxfEntity.writeTextAndLine) と同ロジック: テキストを (textsize, textsize*0.2) ずらし
+        // alignH=0/alignV=1 で書き、下線 p1→p2 を引く。色は RED。旧 SFC の (200,100) 固定オフセットは
+        // 偶発的な澱なので廃止。
+        writeTextHV(st, p1.plus(textsize.toDouble(), textsize.toDouble() * 0.2), RED, textsize, 0, 1, 0.0, scale)
+        writeLine(p1, p2, RED, scale)
     }
 
     // writeTriangle / layoutTriple / writeDimFlagsFromLayout / writeSokutenFromLayout は
@@ -194,12 +151,20 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, filename: String,
 
 
     override fun writeCircle(point: com.example.trilib.PointXY, size: Float, color: Int, scale: Float){
-        adas( "circle_feature('1','${color}','1','1','${point.x}','${point.y}','${size}')" )
+        // 単位変換は primitive で 1 回 (×unitscale)。モデル座標は実寸で受ける (DXF dxfEntity と同形)
+        val x = point.x * unitscale_
+        val y = point.y * unitscale_
+        val s = size * unitscale_
+        adas( "circle_feature('1','${color}','1','1','${x}','${y}','${s}')" )
         //レイヤ、２番目がプリセット色指定(８が白、４が青、２が赤)、続いて、線種、線幅、座標XYと、半径
     }
 
     override fun writeLine(p1: com.example.trilib.PointXY, p2: com.example.trilib.PointXY, color: Int, scale: Float ){
-        adas("line_feature('1','${color}','1','1','${p1.x}','${p1.y}','${p2.x}','${p2.y}')" )
+        val ax = p1.x * unitscale_
+        val ay = p1.y * unitscale_
+        val bx = p2.x * unitscale_
+        val by = p2.y * unitscale_
+        adas("line_feature('1','${color}','1','1','${ax}','${ay}','${bx}','${by}')" )
         //レイヤ、色、線種、線幅、始点ＸＹ、終点ＸＹ SXF*/
     }
 
@@ -239,10 +204,13 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, filename: String,
         angle: Double,
         scale: Float
     ){
-        val tsxb = sjisByteLength(text) * tsy * 0.5f
+        val x = point.x * unitscale_
+        val y = point.y * unitscale_
+        val ts = tsy * unitscale_
+        val tsxb = sjisByteLength(text) * ts * 0.5f
         var positiveangle = angle
         if( angle < 0 ) positiveangle = 360 + angle
-        adas("text_string_feature('1','${color}','1',\'${text}\','${point.x}','${point.y}','${tsy}','${tsxb}','0.00','${positiveangle}','0.00','${align}','1')" )
+        adas("text_string_feature('1','${color}','1',\'${text}\','${x}','${y}','${ts}','${tsxb}','0.00','${positiveangle}','0.00','${align}','1')" )
         //レイヤ、色、フォントコード、文字内容、座標ＸＹ、大きさ縦横、文字間隔、文字回転角、スラント角、配置９方向で指定２が上センター８が下センター、１が左、書き出し方向　SXF*/
     }
 

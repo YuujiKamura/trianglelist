@@ -176,7 +176,8 @@ object WebDrawingExport {
         writer.titleTri_ = TitleParamStr()
         writer.titleDed_ = TitleParamStr()
         writer.zumeninfo = defaultZumenInfo()
-        writer.textscale_ = 500f
+        // textscale は内部値 (getPrintTextScale = DXF と同一)。単位モデル統一 (段4) 後は
+        // 500 直値上書きは primitive の ×unitscale と二重になるため外す。
         writer.setNames(header.koujiname, header.rosenname, header.gyousyaname, header.zumennum)
         writer.setStartNumber(1)
         writer.isReverse_ = numReverse

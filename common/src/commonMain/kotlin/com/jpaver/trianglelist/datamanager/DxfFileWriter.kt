@@ -146,49 +146,8 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         dxfEntity.writeTextAndLine(writer, st, p1, p2, textsize)
     }
 
-    override fun writeDeduction( ded: Deduction){
-
-        //val ded = dedlist_.get( dednumber )
-        val textSize = textscale_
-        val infoStrLength = ded.infoStr.length*textSize+0.3f
-        val point = ded.point
-        val pointFlag = ded.pointFlag
-        var textOffsetX = 0f
-        if( ded.type == "Box" ) textOffsetX = -0.5f
-
-        if(point.x <= pointFlag.x) {  //ptFlag is RIGHT from pt
-            writeLine( point, pointFlag, RED)
-            writeTextAndLine(
-                ded.infoStr,
-                pointFlag,
-                pointFlag.plus((infoStrLength + textOffsetX).toDouble(),0.0),
-                textSize,
-                1f
-            )
-        } else {                     //ptFlag is LEFT from pt
-            writeLine( point, pointFlag, RED)
-            writeTextAndLine(
-                ded.infoStr,
-                pointFlag.plus((-ded.getInfo().length*textSize - textOffsetX).toDouble(),0.0),
-                pointFlag,
-                textSize,
-                1f
-            )
-        }
-
-        if(ded.type == "Circle") writeCircle(point, ded.lengthX/2, RED, 1f)
-        if(ded.type == "Box")    writeDedRect(ded)//writeDXFRect(writer, point, ded.lengthX, ded.lengthY, 1)
-    }
-
-    private fun writeDedRect(ded: Deduction){
-        val color = RED
-        ded.shapeAngle = -ded.shapeAngle // 逆回転
-        ded.setBox( 1.0 )
-        writeLine( ded.pLTop, ded.pLBtm, color)
-        writeLine( ded.pLTop, ded.pRTop, color)
-        writeLine( ded.pRTop, ded.pRBtm, color)
-        writeLine( ded.pLBtm, ded.pRBtm, color)
-    }
+    // writeDeduction / writeDedRect は基底 DrawingFileWriter に集約 (段4、DXF を正として移動)。
+    // DXF は基底版をそのまま継承 (出力不変)。
 
     override fun writeEntities(){
 
