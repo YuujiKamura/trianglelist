@@ -41,8 +41,10 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
     override var textscale_ = trilist_.getPrintTextScale( 1f , "dxf")
     override var printscale_ = trilist_.getPrintScale(1f)
     // 注意: printscale_は縮尺分母の逆数 (0.5 = 1/50, 0.04 = 1/25など)
-    override var sizeX_ = 42000f * printscale_
-    override var sizeY_ = 29700f * printscale_
+    // DXF はモデル空間 mm 単位なので cm→出力は ×1000 (基底/PDF/SFC の ×10 とは違う)。
+    // paperWcm は save() で paper フィールドから設定 (A3: 42 → sizeX_=42000*ps と同値)
+    override val sizeX_ get() = paperWcm * 1000f * printscale_
+    override val sizeY_ get() = paperHcm * 1000f * printscale_
 
     override var WHITE = DxfConstants.Colors.WHITE
     override var BLUE = DxfConstants.Colors.BLUE
@@ -60,6 +62,12 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
     //endregion parameters
 
     override fun save(){
+        // 用紙サイズの単一の出所 = paper フィールド。枠・タイトル欄・図形センタリング・
+        // ビューポートすべてここから導出する (基底 paperWcm/paperHcm/paperName へ伝播)
+        paperWcm = paper.width / 10f
+        paperHcm = paper.height / 10f
+        paperName = paper.name
+
         // Initialize entity writer
         dxfEntity = DxfEntity(handleGen, unitscale_, activeLayer)
 
@@ -304,8 +312,8 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         myDXFDedList.scale(com.example.trilib.PointXY(0f, 0f),1/ viewscale_,-1/ viewscale_)
 
         val center = com.example.trilib.PointXY(
-            21f * printscale_,
-            14.85f * printscale_
+            paperWcm / 2f * printscale_,
+            paperHcm / 2f * printscale_
         )
         val tricenter = myDXFTriList.center
         myDXFDedList.move(

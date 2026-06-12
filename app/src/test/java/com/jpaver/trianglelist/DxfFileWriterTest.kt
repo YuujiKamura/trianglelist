@@ -146,6 +146,48 @@ class DxfFileWriterTest {
         writeAndValidate(newWriter(sideLength = 170f), "test-scale-practical-500.dxf")
     }
 
+    // ---- 用紙サイズ可変 (2026-06-12 追加) ----
+    // 用紙の出所は paper フィールド 1 つ。枠・タイトル欄・ビューポート・図形センターが
+    // すべてそこから追従する。A3 は従来と byte 同値 (既存 golden が再採取なしで通る)。
+
+    @Test
+    fun writeDxf_paperSize_A2_fixture() {
+        // viewer / CADWe'll 実機目視用の A2 fixture
+        val w = newWriter(sideLength = 10f)
+        w.paper = com.jpaver.trianglelist.datamanager.Paper.A2_LAND
+        writeAndValidate(w, "test-a2-scale.dxf")
+    }
+
+    @Test
+    fun writeDxf_paperSize_isVariable_andDrivesEverything() {
+        // A2 (594×420mm) で出力 → A3 と違う寸法が枠・ビューポート・PLOTSETTINGS に出る
+        val w = newWriter(sideLength = 10f)
+        w.paper = com.jpaver.trianglelist.datamanager.Paper.A2_LAND
+        val sb = StringBuilder()
+        w.writer = sb
+        w.save()
+        val text = sb.toString()
+
+        // PLOTSETTINGS の用紙サイズ (44=高さ, 45=幅) が A2 = 420 / 594
+        assertTrue("PLOTSETTINGS 用紙高 44 = 420 (A2)", text.contains("\n 44\n420.0\n"))
+        assertTrue("PLOTSETTINGS 用紙幅 45 = 594 (A2)", text.contains("\n 45\n594.0\n"))
+        // メインビューポートの紙上サイズ 40/41 = 紙×55 = 594×55 / 420×55
+        assertTrue("メインビューポート 41 = 420×55 (A2)", text.contains("\n 41\n${420f * 55f}\n"))
+        // タイトル欄の縮尺ラベルが (A2) になっている
+        assertTrue("縮尺ラベルが (A2)", text.contains("(A2)"))
+        // ハンドル一意性は用紙を変えても保たれる
+        val toks = text.split("\n").map { it.trim() }
+        val start = toks.indexOfFirst { it == "0" }
+        val handles = mutableListOf<String>()
+        var started = false; var i = start
+        while (i + 1 < toks.size) {
+            if (toks[i] == "2" && toks[i + 1] == "TABLES") started = true
+            if (started && toks[i] == "5") handles.add(toks[i + 1])
+            i += 2
+        }
+        assertTrue("A2 でもハンドル重複なし", handles.groupingBy { it }.eachCount().none { it.value > 1 })
+    }
+
     // ---- ハンドル一意性 (2026-06-12 追加) ----
     // ezdxf recover が "Non-unique entity handle #74" を警告していた件。
     // TablesBuilder/DxfTable の LAYER テーブルで C-COL-COL1 と C-TTL-FRAM が

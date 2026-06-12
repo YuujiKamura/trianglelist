@@ -31,8 +31,17 @@ open class DrawingFileWriter {
     var isReverse_ = false
 
     open var textscale_ = 5f//trilist_.getPrintTextScale( 1f , "dxf") * drawscale_
-    open val sizeX_ get() = 420 * printscale_ // カスタムゲッター
-    open val sizeY_ get() = 297 * printscale_ // カスタムゲッター
+
+    // 用紙サイズの単一の出所 (cm)。枠・タイトル欄・図形センタリングは全てここから導出する。
+    // 既定は A3 横 (42×29.7cm)。用紙を変えたい subclass / 呼び出し側はこの 2 値だけ差し替える。
+    // 注: 枠座標は「用紙端からのアンカー」(右端=paperWcm-1 等) で書くので、A3 では従来と同値。
+    open var paperWcm = 42f
+    open var paperHcm = 29.7f
+    open var paperName = "A3"
+
+    // sizeX_ は cm→出力単位への変換。基底/PDF/SFC は ×10 (mm)、DXF は ×1000 (DXF mm)。
+    open val sizeX_ get() = paperWcm * 10f * printscale_ // カスタムゲッター
+    open val sizeY_ get() = paperHcm * 10f * printscale_ // カスタムゲッター
     open val centerX_ get() = sizeX_ * 0.5f   // カスタムゲッター
     open val centerY_ get() = sizeY_ * 0.5f   // カスタムゲッター
 
@@ -183,24 +192,26 @@ open class DrawingFileWriter {
     open fun writeTextAndLine(st: String, p1: com.example.trilib.PointXY, p2: com.example.trilib.PointXY, textsize: Float, scale: Float) {}
 
     fun writeOuterFrame(scale: Float = 1f){
-        // 外枠描画
-        writeRect(com.example.trilib.PointXY(21f, 14.85f, scale), 40f * scale, 27f * scale,  WHITE, scale)
+        // 外枠描画 (用紙中央・用紙より一回り内側)。A3: 中心(21,14.85)・40×27cm と同値
+        val cx = paperWcm / 2f; val cy = paperHcm / 2f
+        writeRect(com.example.trilib.PointXY(cx, cy, scale), (paperWcm - 2f) * scale, (paperHcm - 2.7f) * scale,  WHITE, scale)
 
     }
 
     fun writeTopTitle(scale: Float = 1f, textsize: Float ){
-        // 上のタイトル
+        // 上のタイトル (用紙上中央アンカー)。A3: x=21=W/2, y は上端基準
+        val cx = paperWcm / 2f
         writeTextHV(zumeninfo.zumentitle,
-            com.example.trilib.PointXY(21f, 27.1f, scale),  WHITE, textsize, 1, 1, 0.0, scale)
+            com.example.trilib.PointXY(cx, paperHcm - 2.6f, scale),  WHITE, textsize, 1, 1, 0.0, scale)
         writeTextHV(rosenname_,
-            com.example.trilib.PointXY(21f, 26f, scale), WHITE, textsize, 1, 1, 0.0, scale)
+            com.example.trilib.PointXY(cx, paperHcm - 3.7f, scale), WHITE, textsize, 1, 1, 0.0, scale)
 
         writeLine(
-            com.example.trilib.PointXY(19f, 27f, scale),
-            com.example.trilib.PointXY(23f, 27f, scale), WHITE, scale)
+            com.example.trilib.PointXY(cx - 2f, paperHcm - 2.7f, scale),
+            com.example.trilib.PointXY(cx + 2f, paperHcm - 2.7f, scale), WHITE, scale)
         writeLine(
-            com.example.trilib.PointXY(19f, 26.9f, scale),
-            com.example.trilib.PointXY(23f, 26.9f, scale), WHITE, scale)
+            com.example.trilib.PointXY(cx - 2f, paperHcm - 2.8f, scale),
+            com.example.trilib.PointXY(cx + 2f, paperHcm - 2.8f, scale), WHITE, scale)
 
     }
 
@@ -211,60 +222,62 @@ open class DrawingFileWriter {
         //外枠と上部のタイトル
         writeOuterFrame(scale)
 
-        //右下のタイトル枠
+        // 右下のタイトル枠 (用紙右端アンカー)。rx=用紙右端、A3 では rx-1=41 等で従来と同値。
+        // Y は用紙下端 (0) 基準のまま (表題欄は規格上どの用紙でも下端固定サイズ)
+        val rx = paperWcm
         writeLine(
-            com.example.trilib.PointXY(31f, 7.35f, scale),
-            com.example.trilib.PointXY(41f, 7.35f, scale), WHITE ) //yoko
+            com.example.trilib.PointXY(rx - 11f, 7.35f, scale),
+            com.example.trilib.PointXY(rx - 1f, 7.35f, scale), WHITE ) //yoko
         writeLine(
-            com.example.trilib.PointXY(31f, 1.35f, scale),
-            com.example.trilib.PointXY(31f, 7.35f, scale), WHITE ) //tate
+            com.example.trilib.PointXY(rx - 11f, 1.35f, scale),
+            com.example.trilib.PointXY(rx - 11f, 7.35f, scale), WHITE ) //tate
         writeLine(
-            com.example.trilib.PointXY(33f, 1.35f, scale),
-            com.example.trilib.PointXY(33f, 7.35f, scale), WHITE ) //uchi-tate
+            com.example.trilib.PointXY(rx - 9f, 1.35f, scale),
+            com.example.trilib.PointXY(rx - 9f, 7.35f, scale), WHITE ) //uchi-tate
 
         writeLine(
-            com.example.trilib.PointXY(31f, 6.35f, scale),
-            com.example.trilib.PointXY(41f, 6.35f, scale), WHITE )
+            com.example.trilib.PointXY(rx - 11f, 6.35f, scale),
+            com.example.trilib.PointXY(rx - 1f, 6.35f, scale), WHITE )
         writeLine(
-            com.example.trilib.PointXY(31f, 5.35f, scale),
-            com.example.trilib.PointXY(41f, 5.35f, scale), WHITE )
+            com.example.trilib.PointXY(rx - 11f, 5.35f, scale),
+            com.example.trilib.PointXY(rx - 1f, 5.35f, scale), WHITE )
         writeLine(
-            com.example.trilib.PointXY(31f, 4.35f, scale),
-            com.example.trilib.PointXY(41f, 4.35f, scale), WHITE )
+            com.example.trilib.PointXY(rx - 11f, 4.35f, scale),
+            com.example.trilib.PointXY(rx - 1f, 4.35f, scale), WHITE )
         writeLine(
-            com.example.trilib.PointXY(31f, 3.35f, scale),
-            com.example.trilib.PointXY(41f, 3.35f, scale), WHITE )
+            com.example.trilib.PointXY(rx - 11f, 3.35f, scale),
+            com.example.trilib.PointXY(rx - 1f, 3.35f, scale), WHITE )
         writeLine(
-            com.example.trilib.PointXY(31f, 2.35f, scale),
-            com.example.trilib.PointXY(41f, 2.35f, scale), WHITE )
+            com.example.trilib.PointXY(rx - 11f, 2.35f, scale),
+            com.example.trilib.PointXY(rx - 1f, 2.35f, scale), WHITE )
         writeLine(
-            com.example.trilib.PointXY(36f, 2.35f, scale),
-            com.example.trilib.PointXY(36f, 3.35f, scale), WHITE )
+            com.example.trilib.PointXY(rx - 6f, 2.35f, scale),
+            com.example.trilib.PointXY(rx - 6f, 3.35f, scale), WHITE )
         writeLine(
-            com.example.trilib.PointXY(38f, 2.35f, scale),
-            com.example.trilib.PointXY(38f, 3.35f, scale), WHITE )
+            com.example.trilib.PointXY(rx - 4f, 2.35f, scale),
+            com.example.trilib.PointXY(rx - 4f, 3.35f, scale), WHITE )
 
         val st = printscale_*100f
-        val strx = 33.5f * scale
+        val strx = (rx - 8.5f) * scale
 
         val yKOUJIMEI = 6.7f * scale
         val yo = 0.2f * scale
 
         // 題字(工事名　路線名　など）
         writeTextHV(zumeninfo.koujiname,
-            com.example.trilib.PointXY(32f, 6.7f, scale), WHITE, frameTextSize, 1, 0, 0.0, 1f)
+            com.example.trilib.PointXY(rx - 10f, 6.7f, scale), WHITE, frameTextSize, 1, 0, 0.0, 1f)
         writeTextHV(zumeninfo.tDtype_,
-            com.example.trilib.PointXY(32f, 5.7f, scale), WHITE, frameTextSize, 1, 0, 0.0, 1f)
+            com.example.trilib.PointXY(rx - 10f, 5.7f, scale), WHITE, frameTextSize, 1, 0, 0.0, 1f)
         writeTextHV(zumeninfo.tDname_,
-            com.example.trilib.PointXY(32f, 4.7f, scale), WHITE, frameTextSize, 1, 0, 0.0, 1f)
+            com.example.trilib.PointXY(rx - 10f, 4.7f, scale), WHITE, frameTextSize, 1, 0, 0.0, 1f)
         writeTextHV(zumeninfo.tDateHeader_,
-            com.example.trilib.PointXY(32f, 3.7f, scale), WHITE, frameTextSize, 1, 0, 0.0, 1f)
+            com.example.trilib.PointXY(rx - 10f, 3.7f, scale), WHITE, frameTextSize, 1, 0, 0.0, 1f)
         writeTextHV(zumeninfo.tScale_,
-            com.example.trilib.PointXY(32f, 2.7f, scale), WHITE, frameTextSize, 1, 0, 0.0, 1f)
+            com.example.trilib.PointXY(rx - 10f, 2.7f, scale), WHITE, frameTextSize, 1, 0, 0.0, 1f)
         writeTextHV(zumeninfo.tNum_,
-            com.example.trilib.PointXY(37f, 2.7f, scale), WHITE, frameTextSize, 1, 0, 0.0, 1f)
+            com.example.trilib.PointXY(rx - 5f, 2.7f, scale), WHITE, frameTextSize, 1, 0, 0.0, 1f)
         writeTextHV(zumeninfo.tAname_,
-            com.example.trilib.PointXY(32f, 1.7f, scale), WHITE, frameTextSize, 1, 0, 0.0, 1f)
+            com.example.trilib.PointXY(rx - 10f, 1.7f, scale), WHITE, frameTextSize, 1, 0, 0.0, 1f)
         writeTextHV(zumeninfo.tCredit_,
             com.example.trilib.PointXY(8f, 1f, scale), WHITE, frameTextSize, 1, 0, 0.0, 1f)
 
@@ -283,10 +296,10 @@ open class DrawingFileWriter {
             com.example.trilib.PointXY(strx, 4.7f * scale), WHITE, frameTextSize, 0, 0, 0.0, 1f)
         writeTextHV(nengappi,
             com.example.trilib.PointXY(strx, 3.7f * scale), WHITE, frameTextSize, 0, 0, 0.0, 1f)
-        writeTextHV("1/${st.toInt()} (A3)",
-            com.example.trilib.PointXY(34.5f, 2.7f, scale), WHITE, frameTextSize, 1, 0, 0.0, 1f)
+        writeTextHV("1/${st.toInt()} ($paperName)",
+            com.example.trilib.PointXY(rx - 7.5f, 2.7f, scale), WHITE, frameTextSize, 1, 0, 0.0, 1f)
         writeTextHV(zumennum_,
-            com.example.trilib.PointXY(39.5f, 2.7f, scale), WHITE, frameTextSize, 1, 0, 0.0, 1f)
+            com.example.trilib.PointXY(rx - 2.5f, 2.7f, scale), WHITE, frameTextSize, 1, 0, 0.0, 1f)
         writeTextHV(gyousyaname_,
             com.example.trilib.PointXY(strx, 1.7f * scale), WHITE, frameTextSize, 0, 0, 0.0, 1f)
 
