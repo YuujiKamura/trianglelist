@@ -54,6 +54,25 @@ object WebFrame {
             out.add("""{"type":"line","layer":"frame","x1":${a.x},"y1":${a.y},"x2":${b.x},"y2":${b.y}}""")
         }
 
+        /**
+         * タイトル欄の「値」テキストの paper-cm アンカー (DrawingFileWriter の書込み座標の鏡):
+         * 工事名 writeDrawingFrame:273 (33.5, 6.7) / 路線名 :282 (33.5, 4.7) + writeTopTitle:195 (21, 26) /
+         * 図面番号 :288 (39.5, 2.7) / 業者名 :290 (33.5, 1.7)。
+         * web の dblclick 編集 (web/src/main.ts textEditTarget) が欄を特定する識別子で、
+         * 値が空でも欄はクリックできる必要があるため、blank でもタグ付き prim は emit する
+         * (デフォルト空白 + 枠内 dblclick で書換え、2026-06-12 user 要望)
+         */
+        private fun fieldAt(p: PointXY): String? = when {
+            near(p, 33.5f, 6.7f) -> "koujiname"
+            near(p, 33.5f, 4.7f) || near(p, 21f, 26f) -> "rosenname"
+            near(p, 39.5f, 2.7f) -> "zumennum"
+            near(p, 33.5f, 1.7f) -> "gyousyaname"
+            else -> null
+        }
+
+        private fun near(p: PointXY, x: Float, y: Float): Boolean =
+            kotlin.math.abs(p.x - x) < 0.01f && kotlin.math.abs(p.y - y) < 0.01f
+
         override fun writeTextHV(
             text: String,
             point: PointXY,
@@ -64,7 +83,8 @@ object WebFrame {
             angle: Double,
             scale: Float,
         ) {
-            if (text.isBlank()) return
+            val field = fieldAt(point)
+            if (text.isBlank() && field == null) return
             val p = mx(point)
             // DXF 72 (0=left,1=center) → prim alignH (0=left, 省略=center)。
             // DXF 73 (0=baseline,1=bottom,2=middle,3=top) → prim align (1=下端,2=中央,3=上端)
@@ -74,9 +94,10 @@ object WebFrame {
                 3 -> 3
                 else -> 1 // baseline/bottom は「点が文字の下端」
             }
+            val f = if (field != null) ""","field":"$field"""" else ""
             val esc = text.replace("\\", "\\\\").replace("\"", "\\\"")
             out.add(
-                """{"type":"text","layer":"frame","text":"$esc","x":${p.x},"y":${p.y},"angle":$angle,"size":${textsize * ps},"align":$v$h}"""
+                """{"type":"text","layer":"frame","text":"$esc","x":${p.x},"y":${p.y},"angle":$angle,"size":${textsize * ps},"align":$v$h$f}"""
             )
         }
     }

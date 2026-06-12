@@ -51,6 +51,21 @@ class WebFrameTest {
     }
 
     @Test
+    fun frame_tags_title_fields_and_emits_blank_cells() {
+        // タイトル欄の値テキストは field タグ付き、空欄でも prim が出る —
+        // web の「空白デフォルト + 枠内 dblclick で書換え」(2026-06-12) の前提
+        val labeled = "koujiname,テスト工事\nrosenname,\ngyousyaname,\nzumennum,\n" + csv
+        val json = WebFrame.renderFrame(labeled)
+        assertTrue(json.contains(""""text":"テスト工事"""), "koujiname value expected: $json")
+        assertTrue(json.contains(""""field":"koujiname""""), "koujiname tag expected")
+        assertTrue(json.contains(""""field":"rosenname""""), "blank rosenname cell expected")
+        assertTrue(json.contains(""""field":"gyousyaname""""), "blank gyousyaname cell expected")
+        assertTrue(json.contains(""""field":"zumennum""""), "blank zumennum cell expected")
+        // 固定ラベル (題字) にはタグが付かない
+        assertTrue(!json.contains(""""text":"図 面 名","x":[^,]+,"y":[^,]+,[^}]*"field"""".toRegex()))
+    }
+
+    @Test
     fun frame_carries_header_titles_and_empty_csv_yields_empty() {
         // ヘッダ付き CSV → 工事名・路線名が題字テキストに乗る (writeDrawingFrame の内容欄)
         val withHeader = "テスト工事\n路線A\n業者B\n1/1\n" + csv
