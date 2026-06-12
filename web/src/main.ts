@@ -399,10 +399,21 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
     const { tri, side } = selectedDim;
     ctx.strokeStyle = SELECT_YELLOW;
 
-    // 1) 選択辺の黄色線。tri 線群の並びは [A,B,C] (nearestEdge と同じ index 規約)
+    // 1) 選択辺の黄色線。tri 線群の並びは [A,B,C] (nearestEdge と同じ index 規約)。
+    // 黄色 (#e6b800) はシャドーのグレー (rgba 128/0.35 ≈ 白地で明度ほぼ同等) と溶けるので、
+    // 暗い縁取りを下に敷いて背景によらず局所コントラストを作る (2026-06-12 user 指摘。
+    // 代替案 = 選択色のアンバー化はシャドーの B/C ラベル #e67e22 と同系色化、シャドー薄化は
+    // 「次の三角形がどこに付くか」の存在感を失う — 3 案スクショ比較で縁取りを採用)
     const li = (tri - 1) * 3 + side;
     if (li < triLines.length) {
       const l = triLines[li];
+      ctx.strokeStyle = '#5c4a00';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(sx(l.x1), sy(l.y1));
+      ctx.lineTo(sx(l.x2), sy(l.y2));
+      ctx.stroke();
+      ctx.strokeStyle = SELECT_YELLOW;
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.moveTo(sx(l.x1), sy(l.y1));
