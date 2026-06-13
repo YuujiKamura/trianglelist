@@ -261,6 +261,27 @@ class Triangle : EditObject, Cloneable<Triangle> {
         val baseAngle = base.getAngle().toFloat()
         initBasicArguments(a, B, C, base.left, baseAngle)
         calcPoints(base.left, baseAngle)
+        // 台形(Rectangle)を親にすると、getLine の辺向き(winding)が辺ごとに揃っていない (B/C/D マッピングは
+        // 寸法ラベル基準で決めたため、calcPoints が頂点を固定側 (+CCW) に置く規約と噛み合わない辺がある)。
+        // そのままだと子三角形の頂点が親台形の内部に潜って図形が重なる。頂点が親重心と base 線の同じ側に
+        // 来る (=内向き) なら base を反転 (始点↔終点・B↔C 入替) して外側へ出す。三角形親は従来どおり (getLine が外向き)。
+        if (parent is Rectangle && apexTowardRectInterior(parent, base)) {
+            initBasicArguments(a, C, B, base.right, baseAngle + 180f)
+            calcPoints(base.right, baseAngle + 180f)
+        }
+    }
+
+    // 子三角形の頂点 (pointBC) が親台形の内部を向いているか。base 線に対し「頂点」と「台形重心」が
+    // 同じ側 (cross 積が同符号) なら内向き。calcPoints 実行後に呼ぶ (pointBC が確定している前提)。
+    private fun apexTowardRectInterior(rect: Rectangle, base: Line): Boolean {
+        val lp = rect.calcPoint()
+        val cx = (lp.a.left.x + lp.a.right.x + lp.b.left.x + lp.b.right.x) / 4f
+        val cy = (lp.a.left.y + lp.a.right.y + lp.b.left.y + lp.b.right.y) / 4f
+        val dx = base.right.x - base.left.x
+        val dy = base.right.y - base.left.y
+        val apexSide = dx * (pointBC.y - base.left.y) - dy * (pointBC.x - base.left.x)
+        val centSide = dx * (cy - base.left.y) - dy * (cx - base.left.x)
+        return apexSide * centSide > 0f
     }
 
     constructor(myParent: Triangle?, dP: InputParameter) {
