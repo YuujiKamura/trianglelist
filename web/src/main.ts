@@ -584,6 +584,10 @@ type Row = {
   // 台形のみ: 上辺アライメント (0左/1中/2右)。既存の起点(lcr)列を流用 (trap-design.md 段3)。
   // 三角形では未使用。省略時 0 で後方互換 (R1 の 7 列 Trapezoid CSV は左寄せ)
   align?: number;
+  // 台形のみ: 親の種別 (0三角形/1台形)。CSV 9 列目 parentKind (R4 で common が getOrNull(8) で読む形)。
+  // parentKind=1 のとき parent は台形番号 (台形群内の構築順 1 始まり)、接続辺 side に D(3) が増える。
+  // 三角形では未使用。省略時 0 で後方互換 (R2 の 8 列 Trapezoid CSV は親=三角形のまま不変)
+  parentKind?: number;
 };
 
 // 三角形の数 (= rows[] 中の三角形 prefix の長さ)。不変条件により台形は必ずこの index 以降。
@@ -691,15 +695,17 @@ function parseCsvToState(csv: string): void {
     // するので捨てる (common も num は描画に使わず withIndex で振る)。辺は辺A=底辺/辺B=延長/辺C=上辺。
     if (chunks[0] === 'Trapezoid') {
       const al = intOrNull(chunks[7] ?? '') ?? 0; // 8列目 align、省略時0で後方互換
+      const pk = intOrNull(chunks[8] ?? '') ?? 0; // 9列目 parentKind (0三角形/1台形)、省略時0で後方互換
       trapRows.push({
         kind: 'trapezoid',
         ea: newEdge(chunks[3] ?? ''), // 底辺(widthA)
         eb: newEdge(chunks[2] ?? ''), // 延長(length)
         ec: newEdge(chunks[4] ?? ''), // 上辺(widthB)
         parent: chunks[5] ?? '-1',
-        conn: chunks[6] ?? '0', // side
+        conn: chunks[6] ?? '0', // side (1=B/2=C/3=D、3 は parentKind=1 の台形親のみ)
         extras: [],
         align: al >= 0 && al <= 2 ? al : 0,
+        parentKind: pk >= 0 && pk <= 1 ? pk : 0,
       });
       continue;
     }
@@ -761,15 +767,16 @@ function serializeState(): string {
   lines.push(`ListAngle, ${listAngle}`);
   // 寸法文字サイズ (アプリ writeCSV:2785 と同形)。CsvCodec.parse が textSize に昇格して読む
   lines.push(`TextSize, ${textSizeCsv}`);
-  // 台形行 (混在リスト段1+2+3)。CSV contract: Trapezoid, num, length, widthA, widthB, parent, side, align。
+  // 台形行 (混在リスト段1+2+3+4-3)。CSV contract: Trapezoid, num, length, widthA, widthB, parent, side, align, parentKind。
   // num は台形内連番で再採番 (common は num を描画に使わず withIndex で振る)。reader は先頭
-  // prefix で分岐するので順不同で安全 (dedLines の前に置く)。align は上辺寄せ(0左/1中/2右)
+  // prefix で分岐するので順不同で安全 (dedLines の前に置く)。align は上辺寄せ(0左/1中/2右)、
+  // parentKind は親種別(0三角形/1台形)で common が getOrNull(8) で読み台形親を result から解決する (R4)
   let trapNum = 0;
   rows.forEach((r) => {
     if (r.kind !== 'trapezoid') return;
     trapNum++;
     lines.push(
-      `Trapezoid, ${trapNum}, ${edgeVal(r, 'b')}, ${edgeVal(r, 'a')}, ${edgeVal(r, 'c')}, ${r.parent}, ${r.conn}, ${r.align ?? 0}`,
+      `Trapezoid, ${trapNum}, ${edgeVal(r, 'b')}, ${edgeVal(r, 'a')}, ${edgeVal(r, 'c')}, ${r.parent}, ${r.conn}, ${r.align ?? 0}, ${r.parentKind ?? 0}`,
     );
   });
   // 控除はアプリ保存 (MainActivity.kt:2790-2797) と同じく末尾に書く
@@ -893,25 +900,36 @@ function syncForm(): void {
   input('curC').value = cur ? fmt2(edgeVal(cur, 'c')) : '';
   input('curParent').value = cur ? cur.parent : '';
   if (cur && cur.kind === 'trapezoid') {
-    // 台形の接続は side のみ (1=B/2=C)。形態は段4 なので無効化。
-    // 起点(lcr)列は「上辺の寄せ(0左/1中/2右)」として常時有効化し、Row.align を表示・編集する
-    // (二重断面の lcr と同じ列・同じ整数値を流用 — trap-design.md 段3)
-    select('curConn').value = (intOrNull(cur.parent) ?? -1) >= 1 ? (cur.conn === '2' ? '2' : '1') : '-1';
-    select('curCType').value = '0';
-    select('curCType').disabled = true;
+    // 形態(CType)列を「親種別 (0三角形/1台形)」に流用 (R5)。起点(lcr)列は「上辺の寄せ(0左/1中/2右)」
+    // として常時有効化し Row.align を表示・編集する (二重断面の lcr と同じ列・同じ整数値を流用 — 段3)。
+    // 接続辺(Conn)は side。親=台形(pk=1)なら D(3) も出す
+    const pk = cur.parentKind ?? 0;
+    setSelectOptions(select('curCType'), PARENTKIND_OPTIONS, String(pk));
+    select('curCType').disabled = false;
+    setSelectOptions(select('curConn'), connOptionsFor('cur', pk));
+    select('curConn').value = (intOrNull(cur.parent) ?? -1) >= 1 ? trapSideValue(cur.conn, pk) : '-1';
     select('curLcr').value = String(cur.align ?? 0);
     select('curLcr').disabled = false;
   } else {
+    // 三角形: 形態(辺共有/二重断面/フロート)・接続辺(独立/B/C) を従来の選択肢に戻す (台形編集後の取り違え防止)
+    setSelectOptions(select('curCType'), CTYPE_OPTIONS);
     select('curCType').disabled = false;
+    setSelectOptions(select('curConn'), connOptionsFor('cur', 0));
     setConnSelects('cur', cur ? connPartsOf(cur) : null);
   }
-  // 新規入力行の起点列: 台形モードでは上辺寄せとして常時有効、三角形では形態に従う
+  // 新規入力行: 台形モードでは形態列=親種別・接続辺=B/C/D・起点=上辺寄せ(常時有効)、三角形では従来どおり
   if (isTrap) {
-    select('newCType').value = '0';
-    select('newCType').disabled = true;
+    // 親種別は newCType select 自身が状態を保持 (新規行に Row 実体が無いため)。三角形→台形 切替直後は
+    // 形態値(0/1/2)が残るので parentKind に無い値は 0 (親:三角形) に落とす
+    const newPk = (intOrNull(select('newCType').value) ?? 0) === 1 ? '1' : '0';
+    setSelectOptions(select('newCType'), PARENTKIND_OPTIONS, newPk);
+    select('newCType').disabled = false;
+    setSelectOptions(select('newConn'), connOptionsFor('new', intOrNull(select('newCType').value) ?? 0));
     select('newLcr').disabled = false;
   } else {
+    setSelectOptions(select('newCType'), CTYPE_OPTIONS);
     select('newCType').disabled = false;
+    setSelectOptions(select('newConn'), connOptionsFor('new', 0));
     syncLcrDisabled('new');
   }
 }
@@ -1008,9 +1026,65 @@ const LCR_OPTIONS: Array<[string, string]> = [
   ['0', '左起点'],
 ];
 
+// 台形フォームで「形態(CType)」列を親種別に流用する選択肢 (trap-design.md 段4-3 / R5)。
+// R2 で起点列を align に流用したのと同じ思想 — 新しい UI コントロールを足さず既存3列を使い回す。
+// 三角形では従来の CTYPE_OPTIONS (辺共有/二重断面/フロート) を使う
+const PARENTKIND_OPTIONS: Array<[string, string]> = [
+  ['0', '親:三角形'],
+  ['1', '親:台形'],
+];
+
+// 接続辺(Conn)列の選択肢。親=三角形(parentKind=0)は B/C、親=台形(parentKind=1)は B/C/D (D=右脚 side=3)。
+// 'cur' は独立 option を持つ (現在行は独立に戻せる)、'new' は持たない (新規は空親で独立を表す、従来どおり)
+function connOptionsFor(prefix: 'new' | 'cur', parentKind: number): Array<[string, string]> {
+  const opts: Array<[string, string]> = prefix === 'cur' ? [['-1', '独立']] : [];
+  opts.push(['1', '親のB辺'], ['2', '親のC辺']);
+  if (parentKind === 1) opts.push(['3', '親のD辺']);
+  return opts;
+}
+
+// select の option を動的に入れ替える。index.html の静的 option を main.ts から書き換えるのは、
+// 三角形⇄台形でフォーム列の意味 (形態 ⇄ 親種別、接続辺 B/C ⇄ B/C/D) が変わるため。kind ごとに
+// option 集合を所有して取り違え (台形の親種別値で三角形を編集する等) を防ぐ。value を渡せば
+// その値を選ぶ。新 option 集合に無ければ先頭に落とす (D→B/C 切替で値が消えても破綻しない)
+function setSelectOptions(sel: HTMLSelectElement, opts: Array<[string, string]>, value?: string): void {
+  const want = value ?? sel.value;
+  sel.textContent = '';
+  for (const [v, label] of opts) {
+    const opt = document.createElement('option');
+    opt.value = v;
+    opt.textContent = label;
+    sel.appendChild(opt);
+  }
+  if (opts.some(([v]) => v === want)) sel.value = want;
+  else if (opts.length > 0) sel.value = opts[0][0];
+}
+
+// 台形の接続辺 side 値を option 集合に収める (1=B/2=C、parentKind=1 のときのみ 3=D を許す)
+function trapSideValue(conn: string, parentKind: number): string {
+  const s = intOrNull(conn) ?? 1;
+  if (parentKind === 1 && s === 3) return '3';
+  return s === 2 ? '2' : '1';
+}
+
 // 起点は二重断面/フロートのみ意味を持つ (辺共有は常に全長一致なので無効化)
 function syncLcrDisabled(prefix: 'new' | 'cur'): void {
   select(`${prefix}Lcr`).disabled = select(`${prefix}CType`).value === '0';
+}
+
+// 形態(CType)列の change 時の追従。三角形では起点(lcr)の有効/無効を更新するが、台形では CType は
+// 「親種別」なので、選んだ種別に応じて接続辺(Conn)の D(3) option を出し直す (起点=上辺寄せは据え置き)。
+// 'new' の台形文脈は figureKind、'cur' は現在行の kind で判定
+function onCTypeChange(prefix: 'new' | 'cur'): void {
+  const isTrapCtx = prefix === 'new'
+    ? figureKind === 'trapezoid'
+    : current >= 1 && rows[current - 1]?.kind === 'trapezoid';
+  if (isTrapCtx) {
+    const pk = (intOrNull(select(`${prefix}CType`).value) ?? 0) === 1 ? 1 : 0;
+    setSelectOptions(select(`${prefix}Conn`), connOptionsFor(prefix, pk));
+  } else {
+    syncLcrDisabled(prefix);
+  }
 }
 
 function setConnSelects(prefix: 'new' | 'cur', p: ConnParts | null): void {
@@ -1104,23 +1178,24 @@ function buildTrapRowCells(tr: HTMLTableRowElement, row: Row, i: number, canvas:
   tdParent.appendChild(parentInp);
   tr.appendChild(tdParent);
 
-  // 接続辺 (side): 独立なら表示のみ、接続済みなら B/C 選択。形態列(段4)は空。
+  // 接続辺 (side): 独立なら表示のみ、接続済みなら選択。親=三角形は B/C、親=台形(parentKind=1)は B/C/D (R5)。
+  // 形態列は「親種別 (親:三角形/親:台形)」に流用 — change で D の有無が変わるので buildTable で組み直す。
   // 起点列は「上辺の寄せ(0左/1中/2右)」として流用 (trap-design.md 段3) — 独立・接続とも常時有効
   const pn = intOrNull(row.parent) ?? -1;
+  const pk = row.parentKind ?? 0;
   if (pn < 1) {
     const tdInd = document.createElement('td');
     tdInd.textContent = '独立';
     tr.appendChild(tdInd);
-    tr.appendChild(document.createElement('td')); // 形態 (段4)
   } else {
     const sideSel = document.createElement('select');
-    for (const [v, label] of [['1', '親のB辺'], ['2', '親のC辺']] as Array<[string, string]>) {
+    for (const [v, label] of connOptionsFor('new', pk)) {
       const opt = document.createElement('option');
       opt.value = v;
       opt.textContent = label;
       sideSel.appendChild(opt);
     }
-    sideSel.value = row.conn === '2' ? '2' : '1';
+    sideSel.value = trapSideValue(row.conn, pk);
     sideSel.addEventListener('change', () => {
       row.conn = sideSel.value;
       redraw(canvas);
@@ -1128,8 +1203,25 @@ function buildTrapRowCells(tr: HTMLTableRowElement, row: Row, i: number, canvas:
     const tdSide = document.createElement('td');
     tdSide.appendChild(sideSel);
     tr.appendChild(tdSide);
-    tr.appendChild(document.createElement('td')); // 形態 (段4)
   }
+  // 形態列 = 親種別 (0三角形/1台形)。change で row.parentKind を書き、接続辺 select の D 有無が変わるため
+  // buildTable で表全体を組み直す (台形親なら parent は台形番号と解釈される — common が result から解決)
+  const kindSel = document.createElement('select');
+  for (const [v, label] of PARENTKIND_OPTIONS) {
+    const opt = document.createElement('option');
+    opt.value = v;
+    opt.textContent = label;
+    kindSel.appendChild(opt);
+  }
+  kindSel.value = String(pk);
+  kindSel.addEventListener('change', () => {
+    row.parentKind = (intOrNull(kindSel.value) ?? 0) === 1 ? 1 : 0;
+    buildTable(canvas);
+    redraw(canvas);
+  });
+  const tdKind = document.createElement('td');
+  tdKind.appendChild(kindSel);
+  tr.appendChild(tdKind);
   // 起点列 = 上辺寄せ (LCR_OPTIONS を流用: 値 2右/1中/0左 = align 整数と同値)
   const alignSel = document.createElement('select');
   for (const [v, label] of LCR_OPTIONS) {
@@ -1433,19 +1525,23 @@ function rewriteCurrentTrapezoid(canvas: HTMLCanvasElement): void {
     setStatus(`⚠ 台形: ${editBad} — 書換えを中止`);
     return;
   }
-  // 親番号と side。空/-1 は独立。親は三角形番号なので triCount で実在判定
+  // 親種別 = 形態(CType)列を流用 (0三角形/1台形、R5)。親番号の解釈と side の D 有無が変わる
+  const parentKind = (intOrNull(select('curCType').value) ?? 0) === 1 ? 1 : 0;
+  // 親番号と side。空/-1 は独立。親=三角形なら triCount、親=台形なら「自分より前の台形」で実在判定。
+  // 自分の台形連番 = current - triCount() なので有効な台形親は 1..(current - triCount() - 1)
   const cp = input('curParent').value.trim();
   const pn = cp === '' ? -1 : (intOrNull(cp) ?? -1);
   let parent = -1;
   let side = 0;
   if (pn >= 1) {
-    if (pn > triCount()) {
-      setStatus(`⚠ 親番号 ${pn} の三角形が存在しません — 書換えを中止`);
+    const maxParent = parentKind === 1 ? current - triCount() - 1 : triCount();
+    if (maxParent < 1 || pn > maxParent) {
+      setStatus(`⚠ 親番号 ${pn} の${parentKind === 1 ? '台形' : '三角形'}が存在しません — 書換えを中止`);
       return;
     }
     parent = pn;
     const s = intOrNull(select('curConn').value) ?? 1;
-    side = s === 2 ? 2 : 1;
+    side = parentKind === 1 ? (s === 2 ? 2 : s === 3 ? 3 : 1) : (s === 2 ? 2 : 1);
   }
   // 上辺の寄せ = 起点(lcr)列を流用 (0左/1中/2右)。台形カレント行では常時有効 (syncForm)
   const align = intOrNull(select('curLcr').value) ?? 0;
@@ -1456,6 +1552,7 @@ function rewriteCurrentTrapezoid(canvas: HTMLCanvasElement): void {
   r.parent = String(parent);
   r.conn = String(side);
   r.align = align >= 0 && align <= 2 ? align : 0;
+  r.parentKind = parent >= 1 ? parentKind : 0;
   setName(r, input('curName').value);
   buildTable(canvas);
   syncForm();
@@ -1588,19 +1685,25 @@ function addTrapezoid(canvas: HTMLCanvasElement): void {
     setStatus(`⚠ 台形: ${bad} — 追加を中止`);
     return;
   }
-  // 親番号 (空 = 独立) と接続辺 (newConn: 1=B, 2=C)。独立なら parent=-1, side=0。
-  // 親は三角形番号なので t=triCount() で実在判定する
+  // 親種別 = 形態(CType)列を流用 (0三角形/1台形、R5)。親番号の解釈と side の D 有無が変わる
+  const parentKind = (intOrNull(select('newCType').value) ?? 0) === 1 ? 1 : 0;
+  // 親番号 (空 = 独立) と接続辺 (newConn: 1=B, 2=C, 3=D[台形親のみ])。独立なら parent=-1, side=0。
+  // 親=三角形は t=triCount()、親=台形は「既存の台形」で実在判定 (新規台形は suffix 末尾に積まれるので
+  // 有効な台形親は 1..(rows.length - t) = 現存する台形連番)
   const t = triCount();
   const parentStr = input('newParent').value.trim();
   let parent = parentStr === '' ? -1 : (intOrNull(parentStr) ?? -1);
   let side = intOrNull(select('newConn').value) ?? 0;
   if (parent >= 1) {
-    // 親の実在関門 (三角形側と同じ — 存在しない親に繋ぐと renderer が行を落とす)
-    if (parent > t) {
-      setStatus(`⚠ 親番号 ${parent} の三角形が存在しません — 追加を中止`);
+    // 親の実在関門 (存在しない親に繋ぐと renderer が行を落とす)
+    const maxParent = parentKind === 1 ? rows.length - t : t;
+    if (maxParent < 1 || parent > maxParent) {
+      setStatus(`⚠ 親番号 ${parent} の${parentKind === 1 ? '台形' : '三角形'}が存在しません — 追加を中止`);
       return;
     }
-    if (side !== 1 && side !== 2) side = 1;
+    if (parentKind === 1) {
+      if (side !== 1 && side !== 2 && side !== 3) side = 1;
+    } else if (side !== 1 && side !== 2) side = 1;
   } else {
     parent = -1;
     side = 0;
@@ -1608,7 +1711,7 @@ function addTrapezoid(canvas: HTMLCanvasElement): void {
   // 上辺の寄せ = 起点(lcr)列を流用 (0左/1中/2右)。台形モードで常時有効化済 (syncForm)
   const align = intOrNull(select('newLcr').value) ?? 0;
   takeUndoSnap();
-  // 台形 Row を suffix 末尾へ (辺A=底辺/辺B=延長/辺C=上辺、conn=side、align=上辺寄せ)
+  // 台形 Row を suffix 末尾へ (辺A=底辺/辺B=延長/辺C=上辺、conn=side、align=上辺寄せ、parentKind=親種別)
   rows.push({
     kind: 'trapezoid',
     ea: newEdge(widthAStr),
@@ -1618,6 +1721,7 @@ function addTrapezoid(canvas: HTMLCanvasElement): void {
     conn: String(side),
     extras: [],
     align: align >= 0 && align <= 2 ? align : 0,
+    parentKind: parent >= 1 ? parentKind : 0,
   });
   const num = rows.length - t; // 台形内連番 (suffix での位置)
   // 新規入力行をリセット (三角形追加と同じ後始末)
@@ -1632,7 +1736,8 @@ function addTrapezoid(canvas: HTMLCanvasElement): void {
   buildTable(canvas);
   syncForm();
   redraw(canvas);
-  setStatus(`台形 ${num} を追加 (${parent > 0 ? `三角形 ${parent} の ${side === 1 ? 'B' : 'C'} 辺` : '独立'})`);
+  const sideLabel = side === 3 ? 'D' : side === 2 ? 'C' : 'B';
+  setStatus(`台形 ${num} を追加 (${parent > 0 ? `${parentKind === 1 ? '台形' : '三角形'} ${parent} の ${sideLabel} 辺` : '独立'})`);
 }
 
 // FAB の表示を現在の図形種別に合わせる (押す前から「今どちらを追加するか」が見える)。
@@ -1649,6 +1754,9 @@ function updateFigureKindFab(): void {
 // 新規図形の種別をトグル (三角形⇄台形)。ラベル・FAB 表示を更新して setStatus
 function toggleFigureKind(): void {
   figureKind = figureKind === 'triangle' ? 'trapezoid' : 'triangle';
+  // 形態(CType)列の値は三角形(辺共有/二重断面/フロート)と台形(親種別)で意味が違う。モード切替で
+  // 旧モードの値が漏れて誤解釈される (例: 二重断面[1] → 親:台形[1]) のを防ぎ、既定 '0' に戻す
+  select('newCType').value = '0';
   updateFigureKindFab();
   syncForm(); // 辺ラベル (底辺/延長/上辺 ⇄ 辺A/B/C) を切替える
   setStatus(figureKind === 'trapezoid' ? '新規図形: 台形 (辺A=底辺 / 辺B=延長 / 辺C=上辺)' : '新規図形: 三角形');
@@ -3050,9 +3158,9 @@ function main(): void {
   wireFabs(canvas);
   wireRosenName(canvas);
   wireNewRowEnter(canvas);
-  // 形態 select の変化で起点 select の有効/無効を追従 (辺共有では起点に意味が無い)
-  select('newCType').addEventListener('change', () => syncLcrDisabled('new'));
-  select('curCType').addEventListener('change', () => syncLcrDisabled('cur'));
+  // 形態 select の変化で追従: 三角形は起点 select の有効/無効、台形は親種別なので接続辺の D 有無 (onCTypeChange)
+  select('newCType').addEventListener('change', () => onCTypeChange('new'));
+  select('curCType').addEventListener('change', () => onCTypeChange('cur'));
   syncLcrDisabled('new');
   // 「現在」行フォームの編集を即時確定する (user 2026-06-12: 一覧フォームで二重断面や
   // 起点・A 辺を変えてもキャンバスに反映されない)。原因は formCur の接続 select と辺入力に
@@ -3132,6 +3240,9 @@ if (import.meta.hot) {
       parent: r.parent,
       conn: r.conn,
       extras: r.extras,
+      // 台形のみ: 上辺寄せ(align) と親種別(parentKind)。台形チェーン (parentKind=1) の検証口
+      align: r.align,
+      parentKind: r.parentKind,
     }));
     hot.send('tlcp:state-res', {
       id: data.id,
