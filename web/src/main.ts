@@ -581,6 +581,9 @@ type Row = {
   parent: string;
   conn: string;
   extras: string[]; // 7列目以降 (測点名等) を生のまま保持して round-trip で落とさない
+  // 台形のみ: 上辺アライメント (0左/1中/2右)。既存の起点(lcr)列を流用 (trap-design.md 段3)。
+  // 三角形では未使用。省略時 0 で後方互換 (R1 の 7 列 Trapezoid CSV は左寄せ)
+  align?: number;
 };
 
 // 三角形の数 (= rows[] 中の三角形 prefix の長さ)。不変条件により台形は必ずこの index 以降。
@@ -684,9 +687,10 @@ function parseCsvToState(csv: string): void {
       continue;
     }
     // 台形行 → 台形 Row。列 (contract): Trapezoid, num, length(延長/辺B), widthA(底辺/辺A),
-    // widthB(上辺/辺C), parent(三角形番号), side(1=B/2=C/0独立)。num は再採番するので捨てる
-    // (common も num は描画に使わず withIndex で振る)。辺は辺A=底辺/辺B=延長/辺C=上辺で持つ。
+    // widthB(上辺/辺C), parent(三角形番号), side(1=B/2=C/0独立), align(0左/1中/2右)。num は再採番
+    // するので捨てる (common も num は描画に使わず withIndex で振る)。辺は辺A=底辺/辺B=延長/辺C=上辺。
     if (chunks[0] === 'Trapezoid') {
+      const al = intOrNull(chunks[7] ?? '') ?? 0; // 8列目 align、省略時0で後方互換
       trapRows.push({
         kind: 'trapezoid',
         ea: newEdge(chunks[3] ?? ''), // 底辺(widthA)
@@ -695,6 +699,7 @@ function parseCsvToState(csv: string): void {
         parent: chunks[5] ?? '-1',
         conn: chunks[6] ?? '0', // side
         extras: [],
+        align: al >= 0 && al <= 2 ? al : 0,
       });
       continue;
     }
@@ -756,15 +761,15 @@ function serializeState(): string {
   lines.push(`ListAngle, ${listAngle}`);
   // 寸法文字サイズ (アプリ writeCSV:2785 と同形)。CsvCodec.parse が textSize に昇格して読む
   lines.push(`TextSize, ${textSizeCsv}`);
-  // 台形行 (混在リスト段1+2)。CSV contract: Trapezoid, num, length, widthA, widthB, parent, side。
+  // 台形行 (混在リスト段1+2+3)。CSV contract: Trapezoid, num, length, widthA, widthB, parent, side, align。
   // num は台形内連番で再採番 (common は num を描画に使わず withIndex で振る)。reader は先頭
-  // prefix で分岐するので順不同で安全 (dedLines の前に置く)
+  // prefix で分岐するので順不同で安全 (dedLines の前に置く)。align は上辺寄せ(0左/1中/2右)
   let trapNum = 0;
   rows.forEach((r) => {
     if (r.kind !== 'trapezoid') return;
     trapNum++;
     lines.push(
-      `Trapezoid, ${trapNum}, ${edgeVal(r, 'b')}, ${edgeVal(r, 'a')}, ${edgeVal(r, 'c')}, ${r.parent}, ${r.conn}`,
+      `Trapezoid, ${trapNum}, ${edgeVal(r, 'b')}, ${edgeVal(r, 'a')}, ${edgeVal(r, 'c')}, ${r.parent}, ${r.conn}, ${r.align ?? 0}`,
     );
   });
   // 控除はアプリ保存 (MainActivity.kt:2790-2797) と同じく末尾に書く
@@ -888,15 +893,26 @@ function syncForm(): void {
   input('curC').value = cur ? fmt2(edgeVal(cur, 'c')) : '';
   input('curParent').value = cur ? cur.parent : '';
   if (cur && cur.kind === 'trapezoid') {
-    // 台形の接続は side のみ (1=B/2=C)。形態/起点は段4 なので無効化して side だけ表示
+    // 台形の接続は side のみ (1=B/2=C)。形態は段4 なので無効化。
+    // 起点(lcr)列は「上辺の寄せ(0左/1中/2右)」として常時有効化し、Row.align を表示・編集する
+    // (二重断面の lcr と同じ列・同じ整数値を流用 — trap-design.md 段3)
     select('curConn').value = (intOrNull(cur.parent) ?? -1) >= 1 ? (cur.conn === '2' ? '2' : '1') : '-1';
     select('curCType').value = '0';
-    select('curLcr').value = '2';
     select('curCType').disabled = true;
-    select('curLcr').disabled = true;
+    select('curLcr').value = String(cur.align ?? 0);
+    select('curLcr').disabled = false;
   } else {
     select('curCType').disabled = false;
     setConnSelects('cur', cur ? connPartsOf(cur) : null);
+  }
+  // 新規入力行の起点列: 台形モードでは上辺寄せとして常時有効、三角形では形態に従う
+  if (isTrap) {
+    select('newCType').value = '0';
+    select('newCType').disabled = true;
+    select('newLcr').disabled = false;
+  } else {
+    select('newCType').disabled = false;
+    syncLcrDisabled('new');
   }
 }
 
@@ -1088,14 +1104,14 @@ function buildTrapRowCells(tr: HTMLTableRowElement, row: Row, i: number, canvas:
   tdParent.appendChild(parentInp);
   tr.appendChild(tdParent);
 
-  // 接続辺 (side): 独立なら表示のみ、接続済みなら B/C 選択。形態・起点列は段4 なので空
+  // 接続辺 (side): 独立なら表示のみ、接続済みなら B/C 選択。形態列(段4)は空。
+  // 起点列は「上辺の寄せ(0左/1中/2右)」として流用 (trap-design.md 段3) — 独立・接続とも常時有効
   const pn = intOrNull(row.parent) ?? -1;
   if (pn < 1) {
     const tdInd = document.createElement('td');
     tdInd.textContent = '独立';
     tr.appendChild(tdInd);
-    tr.appendChild(document.createElement('td'));
-    tr.appendChild(document.createElement('td'));
+    tr.appendChild(document.createElement('td')); // 形態 (段4)
   } else {
     const sideSel = document.createElement('select');
     for (const [v, label] of [['1', '親のB辺'], ['2', '親のC辺']] as Array<[string, string]>) {
@@ -1112,9 +1128,25 @@ function buildTrapRowCells(tr: HTMLTableRowElement, row: Row, i: number, canvas:
     const tdSide = document.createElement('td');
     tdSide.appendChild(sideSel);
     tr.appendChild(tdSide);
-    tr.appendChild(document.createElement('td'));
-    tr.appendChild(document.createElement('td'));
+    tr.appendChild(document.createElement('td')); // 形態 (段4)
   }
+  // 起点列 = 上辺寄せ (LCR_OPTIONS を流用: 値 2右/1中/0左 = align 整数と同値)
+  const alignSel = document.createElement('select');
+  for (const [v, label] of LCR_OPTIONS) {
+    const opt = document.createElement('option');
+    opt.value = v;
+    opt.textContent = label;
+    alignSel.appendChild(opt);
+  }
+  alignSel.value = String(row.align ?? 0);
+  alignSel.addEventListener('change', () => {
+    const a = intOrNull(alignSel.value) ?? 0;
+    row.align = a >= 0 && a <= 2 ? a : 0;
+    redraw(canvas);
+  });
+  const tdAlign = document.createElement('td');
+  tdAlign.appendChild(alignSel);
+  tr.appendChild(tdAlign);
 
   // 削除 (三角形と同じ deleteRow)
   const tdDel = document.createElement('td');
@@ -1415,12 +1447,15 @@ function rewriteCurrentTrapezoid(canvas: HTMLCanvasElement): void {
     const s = intOrNull(select('curConn').value) ?? 1;
     side = s === 2 ? 2 : 1;
   }
+  // 上辺の寄せ = 起点(lcr)列を流用 (0左/1中/2右)。台形カレント行では常時有効 (syncForm)
+  const align = intOrNull(select('curLcr').value) ?? 0;
   takeUndoSnap();
   setEdgeVal(r, 'a', fmt2(input('curA').value));
   setEdgeVal(r, 'b', fmt2(input('curB').value));
   setEdgeVal(r, 'c', fmt2(input('curC').value));
   r.parent = String(parent);
   r.conn = String(side);
+  r.align = align >= 0 && align <= 2 ? align : 0;
   setName(r, input('curName').value);
   buildTable(canvas);
   syncForm();
@@ -1570,8 +1605,10 @@ function addTrapezoid(canvas: HTMLCanvasElement): void {
     parent = -1;
     side = 0;
   }
+  // 上辺の寄せ = 起点(lcr)列を流用 (0左/1中/2右)。台形モードで常時有効化済 (syncForm)
+  const align = intOrNull(select('newLcr').value) ?? 0;
   takeUndoSnap();
-  // 台形 Row を suffix 末尾へ (辺A=底辺/辺B=延長/辺C=上辺、conn=side)
+  // 台形 Row を suffix 末尾へ (辺A=底辺/辺B=延長/辺C=上辺、conn=side、align=上辺寄せ)
   rows.push({
     kind: 'trapezoid',
     ea: newEdge(widthAStr),
@@ -1580,6 +1617,7 @@ function addTrapezoid(canvas: HTMLCanvasElement): void {
     parent: String(parent),
     conn: String(side),
     extras: [],
+    align: align >= 0 && align <= 2 ? align : 0,
   });
   const num = rows.length - t; // 台形内連番 (suffix での位置)
   // 新規入力行をリセット (三角形追加と同じ後始末)
