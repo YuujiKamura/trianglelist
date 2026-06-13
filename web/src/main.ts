@@ -1380,6 +1380,10 @@ function fabRotate(canvas: HTMLCanvasElement, degrees: number): void {
   const v = view;
   const before = v ? figureCenter(lastPrims) : null;
   listAngle += degrees;
+  // シャドー三角形は親辺の現座標を借りて組むので、回転で親辺が動いたら組み直さないと
+  // 旧座標のまま置き去りになる (2026-06-13 user 報告)。serializeState は更新後の listAngle を
+  // 書くので、ここで buildShadow すれば回転後の親辺に乗る。edgeSel が立つ時だけ再構築
+  if (edgeSel) buildShadow();
   // 控除の連動 (MainActivity.kt:1587 myDeductionList.rotate(origin, -degrees) 準拠)。
   // 三角形は listAngle → recoverState が回すが、控除の CSV 座標は絶対値なので
   // 行自体を common (rotateDeductionLine) で回して書き直す
