@@ -170,9 +170,11 @@ object WebPrimitiveRenderer {
             for (n in 1..dedModel.size()) renderDeduction(dedModel.get(n), textSize, scale, ::item)
         }
 
-        // 台形 (混在リスト段1)。三角形・控除を全部描いた後に最後に重ねるだけ。
+        // 台形 (混在リスト)。三角形・控除を全部描いた後に最後に重ねるだけ。
         // 既存の三角形描画・控除描画・z-order (塗り→線→文字) は一切触らない。
-        for ((idx, rect) in traps.withIndex()) renderTrapezoid(rect, idx + 1, textSize, scale, ::item)
+        // 番号は三角形からの通し: 三角形が N 個なら台形は N+1, N+2... (図形種別を意識しない統合採番)。
+        val triCount = trilist.size()
+        for ((idx, rect) in traps.withIndex()) renderTrapezoid(rect, triCount + idx + 1, textSize, scale, ::item)
 
         sb.append(']')
         return sb.toString()
@@ -186,7 +188,7 @@ object WebPrimitiveRenderer {
      * 4 辺は BL→BR(底辺A)→TR(傾斜側)→TL(上辺C)→BL(延長B) で閉じる。
      * 寸法は実辺長を測って /scale で実寸へ戻して表示 (接続台形は底辺=親辺長になるため、
      * widthA をそのまま出すより実測の方が正しい)。傾斜側 (BR→TR) は派生辺なので寸法なし。
-     * 旗揚げ・内外フリップは段階外 (B1 スコープ外)。番号は三角形と別系列 "T{n}"。
+     * 旗揚げ・内外フリップは段階外。番号は三角形からの通し (num は呼び出し側で triCount+idx+1)。
      */
     private fun renderTrapezoid(rect: Rectangle, num: Int, textSize: Float, scale: Float, item: (String) -> Unit) {
         val lp = rect.calcPoint()
@@ -212,7 +214,7 @@ object WebPrimitiveRenderer {
         val center = PointXY(cx, cy)
         val circleR = textSize * 0.85f
         item("""{"type":"circle","layer":"num","cx":${center.x},"cy":${center.y},"r":$circleR}""")
-        item(text("T$num", center, 0.0, textSize, 2, "num"))
+        item(text("$num", center, 0.0, textSize, 2, "num"))
     }
 
     /** 台形の辺 p1→p2 の中点に実辺長 (/scale で実寸) を寸法文字 (layer "dim") で出す */

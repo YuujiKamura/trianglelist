@@ -41,9 +41,9 @@ class WebTrapezoidTest {
     fun independent_trapezoid_emits_four_tri_lines() {
         val json = WebPrimitiveRenderer.renderCsv("Trapezoid,1,5,4,3,-1,0\n", 1f)
         assertEquals(4, count(json, """"layer":"tri""""), "台形は 4 辺ちょうど: $json")
-        // 番号サークル 1 + 番号 "T1" + 3 寸法
+        // 番号サークル 1 + 番号 "1" (三角形0個 → 通し番号の先頭) + 3 寸法
         assertEquals(1, count(json, """"type":"circle""""))
-        assertTrue(json.contains(""""text":"T1""""), "番号 T1 が出る: $json")
+        assertTrue(json.contains(""""text":"1""""), "番号 1 が出る (T接頭辞なし・三角形からの通し): $json")
         assertEquals(3, count(json, """"layer":"dim""""), "底辺A・上辺C・延長B の 3 寸法: $json")
     }
 
@@ -252,6 +252,18 @@ class WebTrapezoidTest {
         val json = WebPrimitiveRenderer.renderCsv(chainCsv, 1f)
         assertEquals(8, count(json, """"layer":"tri""""), "台形 2 個で 4本×2=8 本の tri 線: $json")
         assertEquals(2, count(json, """"type":"circle""""), "番号サークル 2 個")
-        assertTrue(json.contains(""""text":"T2""""), "2 個目の番号 T2 が出る: $json")
+        assertTrue(json.contains(""""text":"1""""), "1 個目の番号 1 が出る: $json")
+        assertTrue(json.contains(""""text":"2""""), "2 個目の番号 2 が出る (T接頭辞なし): $json")
+    }
+
+    /** 統合採番: 三角形 N 個の後の台形は N+1 から番号が続く (図形種別を意識しない通し番号) */
+    @Test
+    fun trapezoid_number_continues_from_triangle_count() {
+        // 三角形 2 個 (番号 1,2) + 独立台形 1 個 → 台形は番号 3
+        val csv = "1,6.0,5.0,4.0,-1,-1\n2,5.0,4.0,3.0,1,1\nTrapezoid,1,5,4,3,-1,0\n"
+        val json = WebPrimitiveRenderer.renderCsv(csv, 1f)
+        assertTrue(json.contains(""""text":"3""""), "台形は三角形2個の次=番号3が出る: $json")
+        // "T3" のような接頭辞付きは出ない (誤った別系列採番の残骸チェック)
+        assertTrue(!json.contains(""""text":"T"""), "T接頭辞付き番号は出ない: $json")
     }
 }
