@@ -251,6 +251,18 @@ class Triangle : EditObject, Cloneable<Triangle> {
         setOn(parent, pbc, B, C)
     }
 
+    // 親 (三角形でも台形でも) の共有辺に底辺(A)を乗せて構築する。混在リストの接続土台:
+    // initByParent (EditObject 共通の継ぎ目) が親種別を問わず getLine(side) で辺を返し node も繋ぐ。
+    // これで「台形に三角形を接続」が三角形側でも成立する (Rectangle は既に同じ継ぎ目を使う)。
+    // side は親の辺番号 (台形 1=B/2=C/3=D、三角形 1=B/2=C)。A長は共有辺の実長になる。
+    constructor(parent: EditObject, side: Int, B: Float, C: Float) {
+        val base = initByParent(parent, side)
+        val a = base.left.lengthTo(base.right).toFloat()
+        val baseAngle = base.getAngle().toFloat()
+        initBasicArguments(a, B, C, base.left, baseAngle)
+        calcPoints(base.left, baseAngle)
+    }
+
     constructor(myParent: Triangle?, dP: InputParameter) {
         setOn(myParent, dP.pl, dP.a, dP.b, dP.c)
         name = dP.name

@@ -1,7 +1,9 @@
 package com.jpaver.trianglelist.web
 
 import com.jpaver.trianglelist.datamanager.CsvCodec
+import com.jpaver.trianglelist.editmodel.EditObject
 import com.jpaver.trianglelist.editmodel.Rectangle
+import com.jpaver.trianglelist.editmodel.Triangle
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -286,5 +288,24 @@ class WebTrapezoidTest {
         val json = WebPrimitiveRenderer.renderCsv("Trapezoid,1,5,4,3,-1,0,0\n", 1f)
         assertEquals(0, count(json, """"layer":"guide""""), "左寄せはガイド不要 (左脚=垂線): $json")
         assertTrue(json.contains(""""text":" 5.0""""), "延長 5.0 は左寄せでも出る: $json")
+    }
+
+    // ---- 混在接続の土台 (逆方向): 三角形を台形の辺に乗せる ----
+
+    /**
+     * 三角形が台形 (EditObject) の任意の辺に底辺(A)を乗せて構築できる。
+     * Triangle(parent: EditObject, side, B, C) が共通の継ぎ目 initByParent→getLine(side) を使うので、
+     * build()/buildTrapezoids() の別リスト・順序とは独立に、三角形側でも台形を親に取れることを直接検証。
+     */
+    @Test
+    fun triangle_can_attach_to_trapezoid_edge() {
+        val trap = Rectangle(5.0, 10.0, 7.0)   // 独立台形 (延長5/底辺10/上辺7、angle=0)
+        for (side in 1..3) {
+            val edge = trap.getLine(side)
+            val tri = Triangle(trap as EditObject, side, 6f, 6f)
+            // 三角形のA辺 = point[0]→pointAB が親台形の getLine(side) の両端に乗る
+            assertTrue(tri.point[0].nearBy(edge.left, 0.001), "side=$side: 三角形A辺左 ${tri.point[0]} != 台形辺左 ${edge.left}")
+            assertTrue(tri.pointAB.nearBy(edge.right, 0.001), "side=$side: 三角形A辺右 ${tri.pointAB} != 台形辺右 ${edge.right}")
+        }
     }
 }
