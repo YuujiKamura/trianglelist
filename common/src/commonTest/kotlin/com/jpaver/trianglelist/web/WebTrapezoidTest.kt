@@ -308,4 +308,17 @@ class WebTrapezoidTest {
             assertTrue(tri.pointAB.nearBy(edge.right, 0.001), "side=$side: 三角形A辺右 ${tri.pointAB} != 台形辺右 ${edge.right}")
         }
     }
+
+    /** 位置順ビルドの土台: parse が図形行を CSV 出現順で保持する (rows/trapRows 分離では失われる行順)。
+     *  三角形→台形→三角形 の混在で、figureRows がその順序を保つ (親が子より先に在ることを後で使う)。 */
+    @Test
+    fun parse_preserves_figure_row_order() {
+        val csv = "1,6.0,5.0,4.0,-1,-1\nTrapezoid,1,5,4,3,1,1\n2,5.0,4.0,3.0,1,1\n"
+        val doc = CsvCodec.parse(csv)
+        val kinds = doc.figureRows.map { if (it.chunks.firstOrNull() == "Trapezoid") "trap" else "tri" }
+        assertEquals(listOf("tri", "trap", "tri"), kinds, "図形行は CSV 出現順 (三角形→台形→三角形): $kinds")
+        // 既存の種別分離も不変 (三角形2 + 台形1)
+        assertEquals(2, doc.rows.size)
+        assertEquals(1, doc.trapRows.size)
+    }
 }
