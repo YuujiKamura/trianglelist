@@ -22,6 +22,15 @@ data class Rectangle(
     var alignment: Int = 0
 ) : EditObject(){
 
+    // 寸法アライメント — 三角形と同じ共通の式層 (DimensionLayout) に乗せるための、図形に
+    // 貼り付かない純データ (Triangle の Dims が持つ DimAligns と同じ型を直接持つ)。
+    // a=底辺A, b=延長/左脚B, c=上辺C (D右脚は寸法なし)。既定は三角形の既定と同値
+    // (vertical=外1, horizontal=中央0)。将来 Dims を Triangle から切り離せば共有する (段B)。
+    var dimVertical = DimAligns(1, 1, 1, 1)
+    var dimHorizontal = DimAligns(0, 0, 0, 0)
+    var dimHeight: Float = 0f
+    var dimScale: Float = 1f
+
     fun calcPoint(): Line2 {
         var baseline = Line( basepoint, basepoint.moveX(widthA,angle) )
 
