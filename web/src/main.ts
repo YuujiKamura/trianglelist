@@ -614,7 +614,10 @@ type Row = {
   // kind='trapezoid': ea=底辺(widthA), eb=延長(length), ec=上辺(widthB),
   //   parent=接続先三角形番号, conn=接続辺 side('0'独立/'1'=B/'2'=C)。
   // 辺プールは両者で共用。台形は段1+2では辺共有 (single side) のみ — 形態/起点は段4。
-  kind: 'triangle' | 'trapezoid';
+  // kind='tritrap': 台形を親に持つ三角形 (CSV "TriTrap" 行)。ea=底辺(台形辺で上書き・情報),
+  //   eb=B, ec=C, parent=台形群index(1始まり), conn=接続辺 side(1=左脚/2=上辺/3=右脚)。
+  //   rows[] では台形 suffix の更に後ろに積む (親=台形が先に在る不変条件)。番号は通しで三角形扱い。
+  kind: 'triangle' | 'trapezoid' | 'tritrap';
   ea: number; // 辺A の edges index (単純接続では親の eb/ec と同一値)
   eb: number;
   ec: number;
@@ -711,6 +714,7 @@ function parseCsvToState(csv: string): void {
   // 三角形読み中の rows[pn-1] 親引きが台形に当たらないように、かつ手書き CSV で Trapezoid が
   // 先頭に来ても prefix が崩れないように)
   const trapRows: Row[] = [];
+  const tritrapRows: Row[] = []; // 台形を親に持つ三角形 ("TriTrap")。台形 suffix の更に後ろに積む
   for (const line of csv.split(/\r?\n/)) {
     if (line.trim() === '') continue;
     const chunks = line.split(',').map((s) => s.trim());
@@ -749,6 +753,20 @@ function parseCsvToState(csv: string): void {
       });
       continue;
     }
+    // 台形を親に持つ三角形。列: TriTrap, num, ea(底辺/情報), eb(=B), ec(=C), parent(台形群index), side。
+    // common (CsvCodec) と同じ綴り。rows[] では台形 suffix の後ろ (親=台形が先) に積む。
+    if (chunks[0] === 'TriTrap') {
+      tritrapRows.push({
+        kind: 'tritrap',
+        ea: newEdge(chunks[2] ?? ''), // 底辺 (台形辺で上書きされる・情報)
+        eb: newEdge(chunks[3] ?? ''), // B
+        ec: newEdge(chunks[4] ?? ''), // C
+        parent: chunks[5] ?? '-1',    // 台形群 index (1 始まり)
+        conn: chunks[6] ?? '1',       // side (1=左脚/2=上辺/3=右脚)
+        extras: [],
+      });
+      continue;
+    }
     const num = chunks.length >= 4 ? intOrNull(chunks[0]) : null;
     if (num === null || num < 0) {
       headerLines.push(line);
@@ -784,6 +802,8 @@ function parseCsvToState(csv: string): void {
   }
   // 台形を三角形 prefix の後ろに積む (不変条件: 三角形 prefix + 台形 suffix)
   rows.push(...trapRows);
+  // 台形を親に持つ三角形は更にその後ろ (親=台形が先に在る → 読み戻しても解決可)
+  rows.push(...tritrapRows);
 }
 
 function serializeState(): string {
@@ -817,6 +837,17 @@ function serializeState(): string {
     trapNum++;
     lines.push(
       `Trapezoid, ${trapNum}, ${edgeVal(r, 'b')}, ${edgeVal(r, 'a')}, ${edgeVal(r, 'c')}, ${r.parent}, ${r.conn}, ${r.align ?? 0}, ${r.parentKind ?? 0}`,
+    );
+  });
+  // 台形を親に持つ三角形 ("TriTrap" 行)。台形行の後に書く (親=台形が先 = common が解決可)。
+  // 列: TriTrap, num, ea(底辺/情報), eb(=B), ec(=C), parent(台形群index), side。common の
+  // CsvCodec.buildTrapParentedTriangles が col3=B/col4=C/col5=parent/col6=side で読む。
+  let tritrapNum = 0;
+  rows.forEach((r) => {
+    if (r.kind !== 'tritrap') return;
+    tritrapNum++;
+    lines.push(
+      `TriTrap, ${tritrapNum}, ${edgeVal(r, 'a')}, ${edgeVal(r, 'b')}, ${edgeVal(r, 'c')}, ${r.parent}, ${r.conn}`,
     );
   });
   // 控除はアプリ保存 (MainActivity.kt:2790-2797) と同じく末尾に書く
