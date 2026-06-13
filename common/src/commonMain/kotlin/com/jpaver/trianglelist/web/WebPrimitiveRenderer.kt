@@ -10,6 +10,7 @@ import com.jpaver.trianglelist.editmodel.TriangleList
 import com.jpaver.trianglelist.editmodel.isCollide
 import com.jpaver.trianglelist.label.DimensionLayout
 import com.jpaver.trianglelist.label.DimensionPlacement
+import com.jpaver.trianglelist.setDimPath
 import com.jpaver.trianglelist.setLengthStr
 import com.jpaver.trianglelist.viewmodel.formattedString
 
@@ -73,7 +74,10 @@ object WebPrimitiveRenderer {
         // 混在リスト段1: 台形は三角形パイプラインの外で構築し、render の最後に重ねる
         // (trapRows が空 = 従来 CSV なら traps も空 → 出力は完全に従来と同一、golden 不変)
         val traps = CsvCodec.buildTrapezoids(doc, trilist, effScale)
-        return render(trilist, textSize, CsvCodec.buildDeductions(doc), effScale, traps)
+        // 台形を親に持つ三角形 (TriTrap 行)。台形ビルド後に構築 (親=台形が先に在る)。trapParentedTriRows
+        // が空 (= 三角形のみ / 既存混在 CSV) なら空リスト → 出力は従来どおり (golden 不変)。
+        val trapTris = CsvCodec.buildTrapParentedTriangles(doc, traps, effScale)
+        return render(trilist, textSize, CsvCodec.buildDeductions(doc), effScale, traps, trapTris)
     }
 
     fun render(trilist: TriangleList, textSize: Float): String =
@@ -85,6 +89,7 @@ object WebPrimitiveRenderer {
         dedlist: DeductionList,
         scale: Float,
         traps: List<Rectangle> = emptyList(),
+        trapTris: List<Triangle> = emptyList(),
     ): String {
         // MyView.setAllTextSize → trianglelist.setDimPathTextSize と同じ経路で dimHeight を配る
         trilist.setDimPathTextSize(textSize)
@@ -108,6 +113,19 @@ object WebPrimitiveRenderer {
             val tri = trilist.getBy(i)
             item(
                 """{"type":"fill","layer":"fill","x1":${tri.point[0].x},"y1":${tri.point[0].y},"x2":${tri.pointAB.x},"y2":${tri.pointAB.y},"x3":${tri.pointBC.x},"y3":${tri.pointBC.y},"color":${tri.mycolor},"tri":${tri.mynumber}}"""
+            )
+        }
+
+        // 台形を親に持つ三角形 (TriTrap) の塗り + 番号/dimHeight/番号位置の配布。trilist 外なので
+        // arrangePointNumbers/setDimPathTextSize が回らない → ここで手配り。番号は三角形→台形→台形子の通し。
+        // z-order を保つため塗りはこの塗りパスで出し、線・寸法は台形の後 (下の描画パス) で重ねる。
+        val trapTriBase = trilist.size() + traps.size
+        for ((j, t) in trapTris.withIndex()) {
+            t.setDimPath(textSize)
+            t.mynumber = trapTriBase + j + 1
+            t.pointnumber = t.pointcenter
+            item(
+                """{"type":"fill","layer":"fill","x1":${t.point[0].x},"y1":${t.point[0].y},"x2":${t.pointAB.x},"y2":${t.pointAB.y},"x3":${t.pointBC.x},"y3":${t.pointBC.y},"color":${t.mycolor},"tri":${t.mynumber}}"""
             )
         }
 
@@ -175,6 +193,30 @@ object WebPrimitiveRenderer {
         // 番号は三角形からの通し: 三角形が N 個なら台形は N+1, N+2... (図形種別を意識しない統合採番)。
         val triCount = trilist.size()
         for ((idx, rect) in traps.withIndex()) renderTrapezoid(rect, triCount + idx + 1, textSize, scale, ::item)
+
+        // 台形を親に持つ三角形の線・寸法・番号 (台形の後に重ねる)。底辺A は台形と共有なので寸法を出さない
+        // (接続済み三角形と同じ — 共有辺の寸法は親側が持つ)。B/C 寸法と番号サークルは通常の三角形と同形。
+        for (t in trapTris) {
+            val pca = t.pointCA
+            val pab = t.pointAB
+            val pbc = t.pointBC
+            item(line(t.point[0], pab, "tri"))
+            item(line(pab, pbc, "tri"))
+            item(line(pbc, t.point[0], "tri"))
+            val sf = t.scaleFactor.toDouble()
+            val dh = t.dimHeight.toDouble()
+            val placeB = DimensionLayout.layout(t.pointBC, t.pointAB, t.dim.vertical.b, t.dim.horizontal.b, sf, dh, 0.0)
+            val placeC = DimensionLayout.layout(t.point[0], t.pointBC, t.dim.vertical.c, t.dim.horizontal.c, sf, dh, 0.0)
+            t.setLengthStr()
+            item(dimText(t.strLengthB, placeB, pbc.calcDimAngle(pab), textSize, t.mynumber, 1, t.dim.horizontal.b, t.dim.vertical.b))
+            item(dimText(t.strLengthC, placeC, pca.calcDimAngle(pbc), textSize, t.mynumber, 2, t.dim.horizontal.c, t.dim.vertical.c))
+            if (t.dim.horizontal.b > 2) item(line(placeB.pointA, placeB.pointB, "dim"))
+            if (t.dim.horizontal.c > 2) item(line(placeC.pointA, placeC.pointB, "dim"))
+            val pn = t.pointnumber
+            val circleR = textSize * 0.85f
+            item("""{"type":"circle","layer":"num","cx":${pn.x},"cy":${pn.y},"r":$circleR,"tri":${t.mynumber}}""")
+            item(text(t.mynumber.toString(), pn, 0.0, textSize, 2, "num", ""","tri":${t.mynumber}"""))
+        }
 
         sb.append(']')
         return sb.toString()
