@@ -2561,7 +2561,14 @@ function distToSegmentPx(px: number, py: number, l: LinePrim): number {
 // index % 3 がそのまま side (0=A, 1=B, 2=C)
 const EDGE_TAP_PX = 14;
 function nearestEdge(px: number, py: number): { tri: number; side: 0 | 1 | 2; d: number } | null {
-  const triLines = lastPrims.filter((p): p is LinePrim => p.type === 'line' && p.layer === 'tri');
+  // 三角形の辺だけを対象にする。台形の辺も同じ layer "tri" で出る (4 本/図形) ので、混ぜると
+  // floor(i/3) の「1 図形 = 3 辺」前提が崩れ、台形の辺をタップすると番号がズレて別の三角形が
+  // 選ばれる (2026-06-13 user 指摘「台形に三角形を接続する動線が壊れてる」の片側)。tri 線は
+  // 「三角形 (3 本ずつ) → 台形 (4 本ずつ)」順に並ぶ (render が三角形を先に出す) ので、先頭の
+  // triCount*3 本が三角形の辺。
+  const triLines = lastPrims
+    .filter((p): p is LinePrim => p.type === 'line' && p.layer === 'tri')
+    .slice(0, triCount() * 3);
   let best: { tri: number; side: 0 | 1 | 2; d: number } | null = null;
   for (let i = 0; i < triLines.length; i++) {
     const d = distToSegmentPx(px, py, triLines[i]);
@@ -2570,6 +2577,54 @@ function nearestEdge(px: number, py: number): { tri: number; side: 0 | 1 | 2; d:
     }
   }
   return best;
+}
+
+// 台形の辺タップ。tri 線の suffix (triCount*3 以降) が台形の 4 辺/図形。
+// 返す tside は renderTrapezoid の描画順 (WebPrimitiveRenderer:201-204):
+//   0 = 底辺(辺A・親の接続辺)  1 = 右脚(辺D)  2 = 上辺(辺C)  3 = 左脚(辺B)。
+// 子の接続辺 (buildTrapezoids の親=台形 side 規約: 1=左脚B / 2=上辺C / 3=右脚D) への写像は
+// trapTsideToParentSide。trap は台形群内の連番 (1 始まり)、global 番号は triCount()+trap。
+function nearestTrapEdge(px: number, py: number): { trap: number; tside: 0 | 1 | 2 | 3; d: number } | null {
+  const trapLines = lastPrims
+    .filter((p): p is LinePrim => p.type === 'line' && p.layer === 'tri')
+    .slice(triCount() * 3);
+  let best: { trap: number; tside: 0 | 1 | 2 | 3; d: number } | null = null;
+  for (let i = 0; i < trapLines.length; i++) {
+    const d = distToSegmentPx(px, py, trapLines[i]);
+    if (d <= EDGE_TAP_PX && (!best || d < best.d)) {
+      best = { trap: Math.floor(i / 4) + 1, tside: (i % 4) as 0 | 1 | 2 | 3, d };
+    }
+  }
+  return best;
+}
+
+// 描画順の辺 index (tside) → getLine の side (0=底辺A / 1=左脚B / 2=上辺C / 3=右脚D)。
+// 台形の寸法テキスト (renderTrapezoid の dimText) は最初から getLine 側の side
+// (0=A底辺 / 1=B左脚 / 2=C上辺) を持つので、辺タップと寸法タップを同じ side 体系で扱える。
+function trapTsideToSide(tside: 0 | 1 | 2 | 3): 0 | 1 | 2 | 3 {
+  return tside === 0 ? 0 : tside === 1 ? 3 : tside === 2 ? 2 : 1;
+}
+
+function trapSideName(side: number): string {
+  return side === 0 ? '底辺' : side === 1 ? '左脚' : side === 2 ? '上辺' : side === 3 ? '右脚' : '辺';
+}
+
+// 台形を図形選択し、どの辺かをフィードバックする (三角形の selectEdge と対をなす)。
+// 三角形を台形へ接続する配線 (CsvCodec.build が台形親を解決する位置順統合ビルド) は別段で、
+// ここでは誤接続を作らず選択と辺名表示までに留める。side: 0=底辺(接続不可) / 1=左脚 / 2=上辺 / 3=右脚。
+function selectTrapezoid(canvas: HTMLCanvasElement, trap: number, side: number): void {
+  const gnum = triCount() + trap; // 台形の global 番号 (rows[] は三角形 prefix + 台形 suffix)
+  selected = gnum;
+  current = gnum;
+  selectedDim = null;
+  edgeSel = null;
+  shadowPrims = null;
+  updateRowHighlight();
+  syncForm();
+  draw(canvas, lastPrims);
+  const name = trapSideName(side);
+  if (side <= 0) setStatus(`台形 ${trap} の ${name} (親の接続辺なので追加先には使えない)`);
+  else setStatus(`台形 ${trap} の ${name}辺 (接続 side ${side}) を選択`);
 }
 
 // シャドー三角形を組む: 仮の行 (a=親辺長, b=c=親辺長*0.75 — MyView.drawShadowTriangle:683 と
@@ -2900,11 +2955,39 @@ function handleTap(canvas: HTMLCanvasElement, px: number, py: number): void {
   // 寸法テキストと辺は近接して並ぶ (寸法は辺から dimHeight 分オフセット) ので
   // 固定優先でなく「実際に近い方」を選ぶ。線の上 = 辺タップ、文字の上 = 寸法選択
   const dim = nearestDimText(px, py);
-  const edge = nearestEdge(px, py);
+  const edge = nearestEdge(px, py);          // 三角形の辺のみ (台形の辺は混ざらない)
+  const trapEdge = nearestTrapEdge(px, py);  // 台形の辺のみ
+  const tc = triCount();
 
-  // 寸法値タップは「その辺をタップした」のと同じ扱いに統一 (段階2e の独自発明だった
+  // 辺と寸法の両方を、属する図形の種別 (三角形 / 台形) で振り分けて最近接を比べる。
+  // 寸法テキストは tri 番号を持つ (renderTrapezoid は台形の num = triCount+idx+1 を入れる) ので、
+  // dim.prim.tri > triCount() なら台形の寸法。これをしないと、辺より寸法に近い位置を台形辺の
+  // つもりでタップしたとき dim 経路が「三角形」として selectEdge に流す (2026-06-13 user 指摘の
+  // 「台形に三角形を接続する動線が壊れてる」の主因。nearestEdge の図形跨ぎだけでは塞げなかった)。
+  const dimTrap = !!dim && dim.prim.tri !== undefined && dim.prim.tri > tc;
+  const trapDimD = dimTrap ? dim!.d : Infinity;
+  const triDimD = dim && !dimTrap ? dim.d : Infinity;
+  const trapBest = Math.min(trapEdge ? trapEdge.d : Infinity, trapDimD);
+  const triBest = Math.min(edge ? edge.d : Infinity, triDimD);
+
+  // 台形が最近接のとき。図形選択 + 辺名フィードバックまでを確定で出す (接続配線は別段)。
+  if (trapBest !== Infinity && trapBest <= triBest) {
+    let trap: number;
+    let side: number;
+    if (trapEdge && trapEdge.d <= trapDimD) {
+      trap = trapEdge.trap;
+      side = trapTsideToSide(trapEdge.tside);
+    } else {
+      trap = (dim!.prim.tri as number) - tc;  // 台形群内の連番 (1 始まり)
+      side = dim!.prim.side as number;          // 0=A底辺 / 1=B左脚 / 2=C上辺 (getLine 側)
+    }
+    selectTrapezoid(canvas, trap, side);
+    return;
+  }
+
+  // 寸法値タップ (三角形) は「その辺をタップした」のと同じ扱いに統一 (段階2e の独自発明だった
   // 寸法単独選択は廃止 — アプリは lastTapSide 一本で接続プリセットと W/H 対象を兼ねる)
-  if (dim && (!edge || dim.d <= edge.d)) {
+  if (dim && !dimTrap && (!edge || dim.d <= edge.d)) {
     const p = dim.prim;
     if (p.tri !== undefined && p.side !== undefined) {
       if (p.side === 1 || p.side === 2) {
