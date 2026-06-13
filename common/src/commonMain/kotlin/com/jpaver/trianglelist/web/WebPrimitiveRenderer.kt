@@ -208,15 +208,27 @@ object WebPrimitiveRenderer {
         // 三角形の dimText 呼びと同形: layout(end, start, v, h, scale, height) → dimText。
         val ds = rect.dimScale.toDouble()
         val dh = rect.dimHeight.toDouble()
-        fun emitDim(start: PointXY, end: PointXY, v: Int, h: Int, sideIdx: Int) {
+        // A底辺・C上辺は辺そのものの実長 (/scale)。接続台形では底辺=親辺長になる。
+        fun emitMeasured(start: PointXY, end: PointXY, v: Int, h: Int, sideIdx: Int) {
             val place = DimensionLayout.layout(end, start, v, h, ds, dh, 0.0)
             val len = (start.lengthTo(end) / scale).toFloat()
             item(dimText(len.formattedString(2), place, start.calcDimAngle(end), textSize, num, sideIdx, h, v))
             if (h > 2) item(line(place.pointA, place.pointB, "dim"))
         }
-        emitDim(bl, br, rect.dimVertical.a, rect.dimHorizontal.a, 0)   // A 底辺
-        emitDim(tr, tl, rect.dimVertical.c, rect.dimHorizontal.c, 2)   // C 上辺
-        emitDim(tl, bl, rect.dimVertical.b, rect.dimHorizontal.b, 1)   // B 延長/左脚
+        emitMeasured(bl, br, rect.dimVertical.a, rect.dimHorizontal.a, 0)   // A 底辺
+        emitMeasured(tr, tl, rect.dimVertical.c, rect.dimHorizontal.c, 2)   // C 上辺
+
+        // B 延長 = 底辺からの「垂線」の長さ (rect.length)。左脚 (bl→tl) の斜辺長ではない。
+        // perpFoot = bl から底辺に直交して length 分の点 (垂線の足 = 上辺の高さ)。
+        // align=0 では左脚=垂線 (tl==perpFoot) なので脚の上にそのまま出す。
+        // align≠0 (中央/右寄せ) では左脚が斜めなので、垂線 bl→perpFoot を点線ガイド (layer "guide")
+        // で別に引き、その上に延長値を出す — 斜辺の長さを延長と誤表示しない (user 指摘 2026-06-13)。
+        val perpFoot = bl.crossOffset(br, rect.length)
+        val placeB = DimensionLayout.layout(perpFoot, bl, rect.dimVertical.b, rect.dimHorizontal.b, ds, dh, 0.0)
+        val extLen = (rect.length / scale).toFloat()
+        item(dimText(extLen.formattedString(2), placeB, bl.calcDimAngle(perpFoot), textSize, num, 1, rect.dimHorizontal.b, rect.dimVertical.b))
+        if (rect.alignment != 0) item(line(bl, perpFoot, "guide"))
+        if (rect.dimHorizontal.b > 2) item(line(placeB.pointA, placeB.pointB, "dim"))
 
         // 番号サークル + 番号 (三角形と同じ r=textSize*0.85、重心に中央寄せ)
         val cx = (bl.x + br.x + tr.x + tl.x) / 4.0
