@@ -80,6 +80,39 @@ class WebTrapezoidTest {
         assertTrue(lp.a.right.nearBy(parent.pointBC, 0.001), "底辺右 ${lp.a.right} != 親pointBC ${parent.pointBC}")
     }
 
+    /**
+     * 台形を親に持つ三角形 (TriTrap 行)。三角形の底辺(A)が台形の指定辺 (上辺C=side2) にぴったり乗る。
+     * かつ TriTrap 行は rows に入らない → build() (golden パイプライン) が一切見ない。
+     * これが「台形に三角形を接続」の本体 (三角形ビルドが台形より先で親を参照できない循環を、
+     * 台形ビルド後の buildTrapParentedTriangles で解く)。
+     */
+    @Test
+    fun triangle_can_be_child_of_trapezoid() {
+        // 独立台形 (延長5/底辺10/上辺7) の上辺C(side2) に三角形(B=4,C=4)を接続
+        val csv = "Trapezoid,1,5,10,7,-1,0\nTriTrap,2,7,4,4,1,2\n"
+        val doc = CsvCodec.parse(csv)
+        assertEquals(1, doc.trapParentedTriRows.size, "TriTrap 行が別バケツに入る")
+        assertEquals(0, doc.rows.size, "TriTrap は普通の三角形行(rows)に入らない → build は見ない (golden)")
+        val trilist = CsvCodec.build(doc)
+        val traps = CsvCodec.buildTrapezoids(doc, trilist, 1f)
+        assertEquals(1, traps.size)
+        val tris = CsvCodec.buildTrapParentedTriangles(doc, traps, 1f)
+        assertEquals(1, tris.size, "台形を親に三角形が1個建つ")
+        val edge = traps[0].getLine(2) // 上辺C
+        val tri = tris[0]
+        assertTrue(tri.point[0].nearBy(edge.left, 0.001), "三角形の底辺始点 ${tri.point[0]} != 台形上辺左 ${edge.left}")
+        assertTrue(tri.pointAB.nearBy(edge.right, 0.001), "三角形の底辺終点 ${tri.pointAB} != 台形上辺右 ${edge.right}")
+    }
+
+    /** TriTrap 行が描画される: 台形(4辺) + 台形子三角形(3辺) = tri 線 7 本、番号サークル 2 (台形 + 子三角形) */
+    @Test
+    fun trap_parented_triangle_renders() {
+        val csv = "Trapezoid,1,5,10,7,-1,0\nTriTrap,2,7,4,4,1,2\n"
+        val json = WebPrimitiveRenderer.renderCsv(csv, 1f)
+        assertEquals(7, count(json, """"layer":"tri""""), "台形4辺 + 台形子三角形3辺 = 7: $json")
+        assertEquals(2, count(json, """"type":"circle""""), "台形の番号 + 台形子三角形の番号 = 2 サークル: $json")
+    }
+
     /** (b) 台形は純粋に末尾追加 — 三角形・控除の prim を一切動かさない (golden 不変の核) */
     @Test
     fun trapezoid_is_purely_additive_to_existing_prims() {
