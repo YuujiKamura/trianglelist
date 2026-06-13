@@ -186,9 +186,9 @@ object WebPrimitiveRenderer {
      *   baseline.left = 底辺左(基点 BL), baseline.right = 底辺右(BR),
      *   leftB = 上辺左(TL, 基点から延長 length の直交先), rightB = 上辺右(TR)。
      * 4 辺は BL→BR(底辺A)→TR(傾斜側)→TL(上辺C)→BL(延長B) で閉じる。
-     * 寸法は実辺長を測って /scale で実寸へ戻して表示 (接続台形は底辺=親辺長になるため、
-     * widthA をそのまま出すより実測の方が正しい)。傾斜側 (BR→TR) は派生辺なので寸法なし。
-     * 旗揚げ・内外フリップは段階外。番号は三角形からの通し (num は呼び出し側で triCount+idx+1)。
+     * 寸法は三角形と同じ共通の式層 (DimensionLayout) に通す — 図形ごとの別経路を作らない (段A)。
+     * 辺ごとの寄せは Rectangle の純データ (dimVertical/dimHorizontal、既定は三角形と同値の外1/中央0)。
+     * 傾斜側 D右脚 (BR→TR) は派生辺なので寸法なし。番号は三角形からの通し (num は triCount+idx+1)。
      */
     private fun renderTrapezoid(rect: Rectangle, num: Int, textSize: Float, scale: Float, item: (String) -> Unit) {
         val lp = rect.calcPoint()
@@ -203,10 +203,20 @@ object WebPrimitiveRenderer {
         item(line(tr, tl, "tri"))
         item(line(tl, bl, "tri"))
 
-        // 寸法 (各辺の中点、実辺長 /scale。底辺A・上辺C・延長B の 3 本)
-        trapDim(bl, br, textSize, scale, item)
-        trapDim(tr, tl, textSize, scale, item)
-        trapDim(tl, bl, textSize, scale, item)
+        // 寸法 — 三角形と同じ共通の式層 (DimensionLayout) に通す。図形ごとの別経路を作らない。
+        // 外周順の辺: bl→br(A底辺) / tr→tl(C上辺) / tl→bl(B延長/左脚) の3本。D右脚(br→tr)は派生辺で寸法なし。
+        // 三角形の dimText 呼びと同形: layout(end, start, v, h, scale, height) → dimText。
+        val ds = rect.dimScale.toDouble()
+        val dh = rect.dimHeight.toDouble()
+        fun emitDim(start: PointXY, end: PointXY, v: Int, h: Int, sideIdx: Int) {
+            val place = DimensionLayout.layout(end, start, v, h, ds, dh, 0.0)
+            val len = (start.lengthTo(end) / scale).toFloat()
+            item(dimText(len.formattedString(2), place, start.calcDimAngle(end), textSize, num, sideIdx, h, v))
+            if (h > 2) item(line(place.pointA, place.pointB, "dim"))
+        }
+        emitDim(bl, br, rect.dimVertical.a, rect.dimHorizontal.a, 0)   // A 底辺
+        emitDim(tr, tl, rect.dimVertical.c, rect.dimHorizontal.c, 2)   // C 上辺
+        emitDim(tl, bl, rect.dimVertical.b, rect.dimHorizontal.b, 1)   // B 延長/左脚
 
         // 番号サークル + 番号 (三角形と同じ r=textSize*0.85、重心に中央寄せ)
         val cx = (bl.x + br.x + tr.x + tl.x) / 4.0
@@ -217,12 +227,6 @@ object WebPrimitiveRenderer {
         item(text("$num", center, 0.0, textSize, 2, "num"))
     }
 
-    /** 台形の辺 p1→p2 の中点に実辺長 (/scale で実寸) を寸法文字 (layer "dim") で出す */
-    private fun trapDim(p1: PointXY, p2: PointXY, textSize: Float, scale: Float, item: (String) -> Unit) {
-        val mid = p1.calcMidPoint(p2)
-        val len = (p1.lengthTo(p2) / scale).toFloat()
-        item(text(len.formattedString(2), mid, p1.calcDimAngle(p2), textSize, 2, "dim"))
-    }
 
     /**
      * DxfFileWriter.writeDeduction:240-282 の写し (色 = 赤系は layer "ded" として TS 側で塗る):
