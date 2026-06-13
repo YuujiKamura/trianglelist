@@ -309,6 +309,20 @@ class WebTrapezoidTest {
         }
     }
 
+    /**
+     * 出力の穴を塞ぐ: DXF 書き出しに台形が出る。台形を含む CSV の DXF は、三角形のみより LINE
+     * エンティティ (AcDbLine) がちょうど 4 本 (台形の4辺) 増える。DrawPrim 経由 (buildTrapezoidPrims)
+     * なので backend (DxfFileWriter) を触らず出る (ADR 0010)。三角形のみの byte 不変は app の golden test が担保。
+     */
+    @Test
+    fun dxf_export_includes_trapezoid_four_lines() {
+        val triOnly = WebDrawingExport.buildDxfText("1,6.0,5.0,4.0,-1,-1\n", "")
+        val withTrap = WebDrawingExport.buildDxfText("1,6.0,5.0,4.0,-1,-1\nTrapezoid,1,5,4,3,-1,0\n", "")
+        assertTrue(withTrap.length > triOnly.length, "台形ぶん DXF が増える")
+        assertEquals(count(triOnly, "AcDbLine") + 4, count(withTrap, "AcDbLine"),
+            "台形の4辺ぶん LINE エンティティが増える (DXF に台形が出ている)")
+    }
+
     /** 位置順ビルドの土台: parse が図形行を CSV 出現順で保持する (rows/trapRows 分離では失われる行順)。
      *  三角形→台形→三角形 の混在で、figureRows がその順序を保つ (親が子より先に在ることを後で使う)。 */
     @Test

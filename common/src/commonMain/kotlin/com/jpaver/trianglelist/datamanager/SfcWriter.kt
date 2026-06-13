@@ -55,6 +55,9 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, filename: String,
             writeTriangle( trilistNumbered.get(trinumber) )
         }
 
+        // 台形 (混在リスト)。三角形の後に重ねる。番号は三角形からの通し。traps_ 空なら SFC golden 不変
+        for ((i, rect) in traps_.withIndex()) writeTrapezoid(rect, trilistNumbered.size() + i + 1)
+
         // deduction
         for (dednumber in 1 .. dedlist_.size()) {
             writeDeduction( dedlist_.get(dednumber) )

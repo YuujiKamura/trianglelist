@@ -217,6 +217,10 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
             writeDeduction( myDXFDedList.get(number) )
         }
 
+        // 台形 (混在リスト)。三角形・控除の後に重ねる。番号は三角形からの通し (triCount+idx+1)。
+        // traps_ が空 (app 経路・三角形のみ CSV) なら何も出ず DXF golden 不変
+        for ((i, rect) in traps_.withIndex()) writeTrapezoid(rect, myDXFTriList.size() + i + 1)
+
         unitscale_ *= printscale_
         activeLayer = "C-TTL-FRAM"
         dxfEntity.setUnitScale(unitscale_)
