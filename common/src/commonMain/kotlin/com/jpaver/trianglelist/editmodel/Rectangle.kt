@@ -48,4 +48,26 @@ data class Rectangle(
 
         return Line2( baseline, Line(leftB, rightB) )
     }
+
+    /**
+     * side で 4 辺を取り出す (Triangle.getLine(side) と同じ side→Line 契約)。
+     * calcPoint() の頂点 lp.a=底辺(bl→br), lp.b=上辺(tl→tr) を組み替える。
+     * 物理辺マッピング (WebPrimitiveRenderer.kt:184-207 の寸法ラベルが出典、trap-design.md 段4):
+     *   0 = A 底辺   (bl→br = lp.a)            — 親と共有、子には出さない
+     *   1 = B 延長/左脚 (bl→tl)               — レンダラが「延長B」と寸法表示する脚
+     *   2 = C 上辺   (tl→tr = lp.b)
+     *   3 = D 右脚   (br→tr)                  — 現状 4 本目として線だけ引かれる脚
+     * calcPoint() は nodeA があると basepoint/angle を再構築する副作用を持つが、毎回 nodeA から
+     * baseline を作り直すので複数回呼んでも同値 (R2 で確認済)。getLine から呼ぶのは安全。
+     */
+    fun getLine(side: Int): Line {
+        val lp = calcPoint()
+        return when (side) {
+            0 -> Line(lp.a.left,  lp.a.right)   // A 底辺 (bl→br)
+            1 -> Line(lp.a.left,  lp.b.left)    // B 延長/左脚 (bl→tl)
+            2 -> Line(lp.b.left,  lp.b.right)   // C 上辺 (tl→tr)
+            3 -> Line(lp.a.right, lp.b.right)   // D 右脚 (br→tr)
+            else -> Line()
+        }
+    }
 }
