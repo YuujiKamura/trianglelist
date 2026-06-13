@@ -5,6 +5,7 @@ import com.jpaver.trianglelist.editmodel.ConnCode
 import com.jpaver.trianglelist.editmodel.ConnParam
 import com.jpaver.trianglelist.editmodel.Deduction
 import com.jpaver.trianglelist.editmodel.DeductionList
+import com.jpaver.trianglelist.editmodel.Rectangle
 import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
 import com.jpaver.trianglelist.editmodel.setColor
@@ -64,13 +65,23 @@ object CsvCodec {
         val postLines: List<String>,
         val dedRows: List<CsvRow> = emptyList(),
         val textSize: Float? = null,
+        val trapRows: List<CsvRow> = emptyList(),
     )
+
+    /**
+     * 独立台形 (parent=-1) の構築向き (度)。三角形の独立は Triangle(...,180f) で add され
+     * recoverState で angle-180 = -180° 回るので、最終実効向きは「底辺が +x・本体が -y (下垂れ)」。
+     * 台形は trilist 外なので recoverState を受けない。本体を三角形と同じ下向きに揃えるため 180°
+     * (= 底辺 -x・本体 -y) で構築する。段1 の独立向きの SoT。目視で最終確定する値 (B1 検証4)。
+     */
+    const val INDEP_TRAP_ANGLE = 180.0
 
     fun parse(text: String): CsvDoc {
         val preLines = mutableListOf<String>()
         val postLines = mutableListOf<String>()
         val rows = mutableListOf<CsvRow>()
         val dedRows = mutableListOf<CsvRow>()
+        val trapRows = mutableListOf<CsvRow>()
         var listAngle: Float? = null
         var textSize: Float? = null
         for (line in text.lineSequence()) {
@@ -88,6 +99,10 @@ object CsvCodec {
                 dedRows.add(CsvRow(chunks))
                 continue
             }
+            if (chunks.firstOrNull() == "Trapezoid") {
+                trapRows.add(CsvRow(chunks))
+                continue
+            }
             val number = if (chunks.size >= 4) chunks[0].toIntOrNull() else null
             if (number == null || number < 0) {
                 (if (rows.isEmpty()) preLines else postLines).add(line)
@@ -95,7 +110,7 @@ object CsvCodec {
             }
             rows.add(CsvRow(chunks))
         }
-        return CsvDoc(preLines, rows, listAngle, postLines, dedRows, textSize)
+        return CsvDoc(preLines, rows, listAngle, postLines, dedRows, textSize, trapRows)
     }
 
     fun serialize(doc: CsvDoc): String {
@@ -109,6 +124,8 @@ object CsvCodec {
         doc.textSize?.let { sb.append("TextSize, ").append(it).append('\n') }
         // アプリ writeCSV:2789-2797 と同じく末尾 (ListScale/TextSize の後) に書く
         doc.dedRows.forEach { sb.append(it.chunks.joinToString(",")).append('\n') }
+        // 台形行は控除の後に書き戻す (schema evolution の定石、未知列も chunks 生のまま素通し)
+        doc.trapRows.forEach { sb.append(it.chunks.joinToString(",")).append('\n') }
         return sb.toString()
     }
 
@@ -201,6 +218,45 @@ object CsvCodec {
             if (!sa.isNullOrEmpty()) sa.toDoubleOrNull()?.let { dedlist.get(dedlist.size()).shapeAngle = it }
         }
         return dedlist
+    }
+
+    /**
+     * trapRows → Rectangle リスト (混在リスト段1)。buildDeductions と同じ「TriangleList に
+     * 混ぜない独立メソッド」形 — 三角形パイプライン (build/golden) を一切触らないため。
+     *
+     * 列 (trap-design.md contract): `Trapezoid, num, length, widthA, widthB, parent, side`
+     *   length=延長(辺B), widthA=底辺(辺A), widthB=上辺(辺C), parent=接続先三角形番号(-1=独立),
+     *   side=親の接続辺 (1=B,2=C, 独立=0)。
+     *
+     * 独立 (parent<1): basepoint=原点・angle=INDEP_TRAP_ANGLE で構築 (本体を三角形と同じ下向き)。
+     * 接続 (parent>=1): nodeA=親三角形。Rectangle.calcPoint() の initByParent が
+     *   parent.getLine(side) を呼ぶ (EditObject.kt:33)。Triangle.getLine の side 規約
+     *   (TriangleUtilitiesExtensions.kt:145) は 1=B辺・2=C辺 で CSV と同値なので side を直に渡す。
+     *   接続時 baseline は親辺で上書きされ widthA は幾何に効かない (= 底辺は親辺長になる)。
+     *
+     * scale は三角形と同じ実効倍率。trilist が setScale 済なら親辺は scale 済座標で返るので、
+     * 台形の length/widthB も同 scale で構築して座標系を揃える (寸法値は描画側で実辺長/scale で復元)。
+     */
+    fun buildTrapezoids(doc: CsvDoc, trilist: TriangleList, scale: Float = 1f): List<Rectangle> {
+        val result = mutableListOf<Rectangle>()
+        val s = if (scale > 0f) scale.toDouble() else 1.0
+        for (row in doc.trapRows) {
+            val c = row.chunks
+            val length = c.getOrNull(2)?.toFloatOrNull() ?: continue
+            val widthA = c.getOrNull(3)?.toFloatOrNull() ?: continue
+            val widthB = c.getOrNull(4)?.toFloatOrNull() ?: continue
+            val parent = c.getOrNull(5)?.toIntOrNull() ?: -1
+            val side = c.getOrNull(6)?.toIntOrNull() ?: 0
+            val l = length * s
+            val wa = widthA * s
+            val wb = widthB * s
+            if (parent < 1 || parent > trilist.size()) {
+                result.add(Rectangle(l, wa, wb, angle = INDEP_TRAP_ANGLE, basepoint = PointXY(0f, 0f)))
+            } else {
+                result.add(Rectangle(l, wa, wb, nodeA = trilist.getBy(parent), side = side))
+            }
+        }
+        return result
     }
 
     /** MainActivity.typeToInt:924-929 と同写像 */
