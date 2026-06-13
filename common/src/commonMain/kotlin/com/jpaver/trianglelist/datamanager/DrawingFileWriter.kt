@@ -70,37 +70,11 @@ open class DrawingFileWriter {
         return Triple(pca, pab, pbc)
     }
 
-    fun writeTriangleLines(tri: Triangle, color: Int){
-
-        writeLine( tri.point[0], tri.pointAB, color)
-        writeLine( tri.pointAB, tri.pointBC, color)
-        writeLine( tri.pointBC, tri.point[0], color)
-    }
-
     fun writeTextSwitch(str: String, point: com.example.trilib.PointXY, ts:Float, color:Int, align1: Int, align2:Int, angle: Double ){
         //引数の数でテキスト描画関数を変える
         when(align2){
             -1   -> writeTextA9( str, point, color, ts, align1, angle, 1f)
             else -> writeTextHV( str, point, color, ts, align1, align2, angle, 1f)
-        }
-    }
-
-    fun writePointNumber(tri: Triangle, ts:Float, color:Int, align1: Int, align2:Int, circleSize:Float ){
-        val pn = tri.pointnumber
-        val pc = tri.pointcenter
-        // 本体
-        writeCircle(pn, circleSize, color, 1f)
-
-        writeTextSwitch( tri.mynumber.toString(), tri.pointnumber, ts, color, align1, align2, 0.0)
-
-        //引き出し矢印線の描画
-        if( tri.isCollide(tri.pointnumber) == false ){
-            val pcOffsetToN = pc.offset(pn, circleSize.toDouble())
-            val pnOffsetToC = pn.offset(pc, circleSize.toDouble())
-            val arrowTail = pcOffsetToN.offset(pn, pcOffsetToN.lengthTo(pnOffsetToC) * 0.5).rotate(pcOffsetToN, 5.0)
-
-            writeLine(pcOffsetToN, pnOffsetToC, color)
-            writeLine(pcOffsetToN, arrowTail, color)
         }
     }
 
@@ -151,14 +125,25 @@ open class DrawingFileWriter {
      * (SFC の writeTextHV override がテンキー式へ翻訳する)。色は WHITE/BLUE の override 任せ。
      */
     open fun writeTriangle(tri: Triangle){
+        drawScene(buildTrianglePrims(tri))
+    }
+
+    /**
+     * 三角形 1 つを DrawPrim 列に組む (frontend、ADR 0010 段A の三角形版)。
+     * 旧 writeTriangle のインライン描画呼び出しと同じプリミティブを同じ順序で並べるだけなので、
+     * drawScene 経由でも出力はバイト不変 (DXF/SFC golden で担保)。混在リスト化の際は、ここを
+     * 図形種別ごとの buildPrims に分岐させれば backend (各 writer) は触らずに済む。
+     */
+    protected open fun buildTrianglePrims(tri: Triangle): List<DrawPrim> {
         val (pca, pab, pbc) = xyPointXYTriple(tri)
         val (placeA, placeB, placeC) = layoutTriple(tri)
         var (la, lb, lc) = stringTriple(tri)
 
         val textSize: Float = textscale_
+        val prims = ArrayList<DrawPrim>()
 
         // 三角形の 3 辺
-        writeTriangleLines(tri, WHITE)
+        prims += triangleLinePrims(tri, WHITE)
 
         if (isDebug) {
             la += "A${placeA.verticalDxf}"
@@ -168,20 +153,89 @@ open class DrawingFileWriter {
 
         // 寸法値
         if (tri.mynumber == 1 || tri.connectionSide > 2)
-            writeTextDimension(placeA.verticalDxf, la, placeA.dimpoint, pab.calcDimAngle(pca))
-        writeTextDimension(placeB.verticalDxf, lb, placeB.dimpoint, pbc.calcDimAngle(pab))
-        writeTextDimension(placeC.verticalDxf, lc, placeC.dimpoint, pca.calcDimAngle(pbc))
+            prims += dimTextPrim(placeA.verticalDxf, la, placeA.dimpoint, pab.calcDimAngle(pca))
+        prims += dimTextPrim(placeB.verticalDxf, lb, placeB.dimpoint, pbc.calcDimAngle(pab))
+        prims += dimTextPrim(placeC.verticalDxf, lc, placeC.dimpoint, pca.calcDimAngle(pbc))
 
         // 旗揚げ線
-        writeDimFlagsFromLayout(tri, placeA, placeB, placeC, WHITE)
+        prims += dimFlagPrims(tri, placeA, placeB, placeC, WHITE)
 
         // 番号
-        writePointNumber(tri, textSize, BLUE, 1, 2, textSize * 0.85f)
+        prims += pointNumberPrims(tri, textSize, BLUE, 1, 2, textSize * 0.85f)
 
         // 測点
         if (tri.name != "") {
-            writeSokutenFromLayout(tri, trilist_.sokutenListVector, textSize, BLUE, 1, 1)
+            prims += sokutenPrims(tri, trilist_.sokutenListVector, textSize, BLUE, 1, 1)
         }
+        return prims
+    }
+
+    /** 三角形の 3 辺 (旧 writeTriangleLines)。順序 = A辺(point0→AB)・B辺(AB→BC)・C辺(BC→point0) */
+    private fun triangleLinePrims(tri: Triangle, color: Int): List<DrawPrim> = listOf(
+        DrawPrim.Line(tri.point[0], tri.pointAB, color),
+        DrawPrim.Line(tri.pointAB, tri.pointBC, color),
+        DrawPrim.Line(tri.pointBC, tri.point[0], color),
+    )
+
+    /** 寸法値テキスト 1 つ (旧 writeTextDimension)。縦揃え=verticalDxf、横=中央(1)、色=WHITE */
+    private fun dimTextPrim(verticalAlign: Int, len: String, p1: com.example.trilib.PointXY, angle: Double): DrawPrim =
+        DrawPrim.Text(len, p1, WHITE, textscale_, 1, verticalAlign, angle, 1f)
+
+    /** 旗揚げ線 (旧 writeDimFlagsFromLayout)。horizontal>2 の辺だけ線を引く */
+    private fun dimFlagPrims(
+        tri: Triangle,
+        placeA: DimensionPlacement,
+        placeB: DimensionPlacement,
+        placeC: DimensionPlacement,
+        color: Int
+    ): List<DrawPrim> = buildList {
+        if (tri.dim.horizontal.a > 2) add(DrawPrim.Line(placeA.pointA, placeA.pointB, color))
+        if (tri.dim.horizontal.b > 2) add(DrawPrim.Line(placeB.pointA, placeB.pointB, color))
+        if (tri.dim.horizontal.c > 2) add(DrawPrim.Line(placeC.pointA, placeC.pointB, color))
+    }
+
+    /** 番号サークル + 番号 + (重なり時のみ) 引き出し矢印線 (旧 writePointNumber) */
+    private fun pointNumberPrims(
+        tri: Triangle,
+        ts: Float,
+        color: Int,
+        align1: Int,
+        align2: Int,
+        circleSize: Float
+    ): List<DrawPrim> = buildList {
+        val pn = tri.pointnumber
+        val pc = tri.pointcenter
+        add(DrawPrim.Circle(pn, circleSize, color, 1f))
+        add(DrawPrim.Text(tri.mynumber.toString(), tri.pointnumber, color, ts, align1, align2, 0.0, 1f))
+        if (tri.isCollide(tri.pointnumber) == false) {
+            val pcOffsetToN = pc.offset(pn, circleSize.toDouble())
+            val pnOffsetToC = pn.offset(pc, circleSize.toDouble())
+            val arrowTail = pcOffsetToN.offset(pn, pcOffsetToN.lengthTo(pnOffsetToC) * 0.5).rotate(pcOffsetToN, 5.0)
+            add(DrawPrim.Line(pcOffsetToN, pnOffsetToC, color))
+            add(DrawPrim.Line(pcOffsetToN, arrowTail, color))
+        }
+    }
+
+    /** 測点名テキスト + 測点線 (旧 writeSokutenFromLayout)。位置は DimensionLayout(SIDE_SOKUTEN) */
+    private fun sokutenPrims(
+        tri: Triangle,
+        normalizedvector: Int,
+        ts: Float,
+        color: Int,
+        align1: Int,
+        align2: Int
+    ): List<DrawPrim> {
+        val place = DimensionLayout.layout(
+            tri.pointAB, tri.point[0],
+            DimensionLayout.SIDE_SOKUTEN, tri.dim.horizontal.s,
+            tri.scaleFactor.toDouble(), tri.dimHeight.toDouble(), 0.0
+        )
+        val pa = place.pointA
+        val pb = place.pointB
+        return listOf(
+            DrawPrim.Text(tri.name, place.dimpoint, color, ts, align1, align2, pb.calcSokAngle(pa, normalizedvector), 1f),
+            DrawPrim.Line(pa, pb, color),
+        )
     }
 
     /**
@@ -197,44 +251,6 @@ open class DrawingFileWriter {
             DimensionLayout.layout(tri.pointBC, tri.pointAB, tri.dim.vertical.b, tri.dim.horizontal.b, scale, dimheight, 0.0),
             DimensionLayout.layout(tri.point[0], tri.pointBC, tri.dim.vertical.c, tri.dim.horizontal.c, scale, dimheight, 0.0)
         )
-    }
-
-    /** 旗揚げ線の両端を DimensionLayout の計算結果から取る */
-    private fun writeDimFlagsFromLayout(
-        tri: Triangle,
-        placeA: DimensionPlacement,
-        placeB: DimensionPlacement,
-        placeC: DimensionPlacement,
-        color: Int
-    ) {
-        if (tri.dim.horizontal.a > 2) writeLine(placeA.pointA, placeA.pointB, color)
-        if (tri.dim.horizontal.b > 2) writeLine(placeB.pointA, placeB.pointB, color)
-        if (tri.dim.horizontal.c > 2) writeLine(placeC.pointA, placeC.pointB, color)
-    }
-
-    /** 測点名の位置を DimensionLayout (SIDE_SOKUTEN) から取る */
-    private fun writeSokutenFromLayout(
-        tri: Triangle,
-        normalizedvector: Int,
-        ts: Float,
-        color: Int,
-        align1: Int,
-        align2: Int
-    ) {
-        val place = DimensionLayout.layout(
-            tri.pointAB, tri.point[0],
-            DimensionLayout.SIDE_SOKUTEN, tri.dim.horizontal.s,
-            tri.scaleFactor.toDouble(), tri.dimHeight.toDouble(), 0.0
-        )
-        val pa = place.pointA
-        val pb = place.pointB
-        writeTextSwitch(tri.name, place.dimpoint, ts, color, align1, align2, pb.calcSokAngle(pa, normalizedvector))
-        writeLine(pa, pb, color)
-    }
-
-    /** 寸法値テキスト 1 つ。縦揃えは verticalDxf、横は中央 (1) で writeTextHV へ */
-    private fun writeTextDimension(verticalAlign: Int, len: String, p1: com.example.trilib.PointXY, angle: Double){
-        writeTextHV(len, p1, WHITE, textscale_, 1, verticalAlign, angle, 1f)
     }
 
     open fun writeLine(p1: com.example.trilib.PointXY, p2: com.example.trilib.PointXY, color: Int, scale: Float = 1f ){
