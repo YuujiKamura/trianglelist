@@ -75,6 +75,7 @@ const COLORS: Record<string, string> = {
   tri: '#222222',
   dim: '#1a7a1a',
   num: '#1f5fbf',
+  guide: '#9aa0a6', // 補助線 (台形の延長=垂線ガイド等) — 点線で薄いグレー
   ded: '#c0392b', // 控除 = 赤系 (アプリ/DXF の RED 準拠)
   frame: '#8a8a8a', // 図面枠 = 薄グレー (図形より控えめに、DXF では WHITE 相当)
 };
@@ -361,10 +362,13 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
     if (p.type === 'line') {
       ctx.strokeStyle = color;
       ctx.lineWidth = isSelectedDed ? 2 : p.layer === 'tri' ? 1.5 : 1;
+      // 補助線 (guide) は点線。台形の延長=垂線ガイドなど「実辺でない寸法線」を実辺と見分ける
+      if (p.layer === 'guide') ctx.setLineDash([4, 3]);
       ctx.beginPath();
       ctx.moveTo(sx(p.x1), sy(p.y1));
       ctx.lineTo(sx(p.x2), sy(p.y2));
       ctx.stroke();
+      if (p.layer === 'guide') ctx.setLineDash([]);
     } else if (p.type === 'circle') {
       ctx.strokeStyle = color;
       ctx.lineWidth = 1;

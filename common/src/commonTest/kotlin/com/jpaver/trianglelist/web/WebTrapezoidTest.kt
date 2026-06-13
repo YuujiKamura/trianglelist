@@ -266,4 +266,25 @@ class WebTrapezoidTest {
         // "T3" のような接頭辞付きは出ない (誤った別系列採番の残骸チェック)
         assertTrue(!json.contains(""""text":"T"""), "T接頭辞付き番号は出ない: $json")
     }
+
+    // ---- 延長 = 垂線の長さ (斜辺長ではない) + 中央/右寄せの点線ガイド ----
+
+    /** 中央寄せ: 延長は底辺からの垂線の長さ (length=5) を出す。左脚は斜め (≈5.22) だが延長は5。 */
+    @Test
+    fun trapezoid_extension_dim_is_perpendicular_not_slant_leg() {
+        // 底辺10/上辺7/延長5, align=1(中央)。上辺左端 x=(10-7)/2=1.5 → 左脚は斜辺、延長は垂線=5。
+        val json = WebPrimitiveRenderer.renderCsv("Trapezoid,1,5,10,7,-1,0,1\n", 1f)
+        // formattedString(2): .x0 の値は小数1桁+先頭スペース → " 5.0" (底辺" 10.0"/上辺" 7.0"と区別)
+        assertTrue(json.contains(""""text":" 5.0""""), "延長は垂線の長さ 5.0 を出す: $json")
+        // 中央寄せでは左脚が斜辺になるので、垂線の点線ガイド (layer "guide") を別に引く
+        assertEquals(1, count(json, """"layer":"guide""""), "中央寄せで垂線ガイド1本: $json")
+    }
+
+    /** 左寄せ (align=0): 左脚=垂線なのでガイド線は引かない (脚そのものが延長を示す) */
+    @Test
+    fun trapezoid_no_guide_when_left_aligned() {
+        val json = WebPrimitiveRenderer.renderCsv("Trapezoid,1,5,4,3,-1,0,0\n", 1f)
+        assertEquals(0, count(json, """"layer":"guide""""), "左寄せはガイド不要 (左脚=垂線): $json")
+        assertTrue(json.contains(""""text":" 5.0""""), "延長 5.0 は左寄せでも出る: $json")
+    }
 }
