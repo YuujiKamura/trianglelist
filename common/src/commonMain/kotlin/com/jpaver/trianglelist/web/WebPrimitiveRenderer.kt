@@ -4,12 +4,14 @@ import com.example.trilib.PointXY
 import com.jpaver.trianglelist.datamanager.CsvCodec
 import com.jpaver.trianglelist.editmodel.Deduction
 import com.jpaver.trianglelist.editmodel.DeductionList
+import com.jpaver.trianglelist.editmodel.Rectangle
 import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
 import com.jpaver.trianglelist.editmodel.isCollide
 import com.jpaver.trianglelist.label.DimensionLayout
 import com.jpaver.trianglelist.label.DimensionPlacement
 import com.jpaver.trianglelist.setLengthStr
+import com.jpaver.trianglelist.viewmodel.formattedString
 
 /**
  * Web 段階1 (insight #60/#61): TriangleList → 描画プリミティブ JSON。
@@ -66,14 +68,24 @@ object WebPrimitiveRenderer {
         // CSV の TextSize 行 (アプリ texplus/minus FAB ±5f の保存値) を比率で反映。
         // 0 以下は不正値として既定にフォールバック (アプリ adjustTextSize の下限クランプ相当)
         val sizeRatio = (doc.textSize?.takeIf { it > 0f } ?: APP_DEFAULT_TEXT_SIZE) / APP_DEFAULT_TEXT_SIZE
-        val textSize = DEFAULT_TEXT_SIZE * sizeRatio * (if (scale > 0f) scale else 1f)
-        return render(trilist, textSize, CsvCodec.buildDeductions(doc), if (scale > 0f) scale else 1f)
+        val effScale = if (scale > 0f) scale else 1f
+        val textSize = DEFAULT_TEXT_SIZE * sizeRatio * effScale
+        // 混在リスト段1: 台形は三角形パイプラインの外で構築し、render の最後に重ねる
+        // (trapRows が空 = 従来 CSV なら traps も空 → 出力は完全に従来と同一、golden 不変)
+        val traps = CsvCodec.buildTrapezoids(doc, trilist, effScale)
+        return render(trilist, textSize, CsvCodec.buildDeductions(doc), effScale, traps)
     }
 
     fun render(trilist: TriangleList, textSize: Float): String =
         render(trilist, textSize, DeductionList(), 1f)
 
-    fun render(trilist: TriangleList, textSize: Float, dedlist: DeductionList, scale: Float): String {
+    fun render(
+        trilist: TriangleList,
+        textSize: Float,
+        dedlist: DeductionList,
+        scale: Float,
+        traps: List<Rectangle> = emptyList(),
+    ): String {
         // MyView.setAllTextSize → trianglelist.setDimPathTextSize と同じ経路で dimHeight を配る
         trilist.setDimPathTextSize(textSize)
         trilist.arrangePointNumbers()
@@ -158,8 +170,56 @@ object WebPrimitiveRenderer {
             for (n in 1..dedModel.size()) renderDeduction(dedModel.get(n), textSize, scale, ::item)
         }
 
+        // 台形 (混在リスト段1)。三角形・控除を全部描いた後に最後に重ねるだけ。
+        // 既存の三角形描画・控除描画・z-order (塗り→線→文字) は一切触らない。
+        for ((idx, rect) in traps.withIndex()) renderTrapezoid(rect, idx + 1, textSize, scale, ::item)
+
         sb.append(']')
         return sb.toString()
+    }
+
+    /**
+     * 台形 1 個を描く (混在リスト段1)。Rectangle.calcPoint() の頂点で 4 辺 + 各辺の寸法 +
+     * 番号サークルを出す。頂点 (editmodel/Rectangle.kt:22-35、PointXY.crossOffset で実機検証):
+     *   baseline.left = 底辺左(基点 BL), baseline.right = 底辺右(BR),
+     *   leftB = 上辺左(TL, 基点から延長 length の直交先), rightB = 上辺右(TR)。
+     * 4 辺は BL→BR(底辺A)→TR(傾斜側)→TL(上辺C)→BL(延長B) で閉じる。
+     * 寸法は実辺長を測って /scale で実寸へ戻して表示 (接続台形は底辺=親辺長になるため、
+     * widthA をそのまま出すより実測の方が正しい)。傾斜側 (BR→TR) は派生辺なので寸法なし。
+     * 旗揚げ・内外フリップは段階外 (B1 スコープ外)。番号は三角形と別系列 "T{n}"。
+     */
+    private fun renderTrapezoid(rect: Rectangle, num: Int, textSize: Float, scale: Float, item: (String) -> Unit) {
+        val lp = rect.calcPoint()
+        val bl = lp.a.left
+        val br = lp.a.right
+        val tl = lp.b.left
+        val tr = lp.b.right
+
+        // 4 辺 (layer "tri"、三角形の辺と同じレイヤ)
+        item(line(bl, br, "tri"))
+        item(line(br, tr, "tri"))
+        item(line(tr, tl, "tri"))
+        item(line(tl, bl, "tri"))
+
+        // 寸法 (各辺の中点、実辺長 /scale。底辺A・上辺C・延長B の 3 本)
+        trapDim(bl, br, textSize, scale, item)
+        trapDim(tr, tl, textSize, scale, item)
+        trapDim(tl, bl, textSize, scale, item)
+
+        // 番号サークル + 番号 (三角形と同じ r=textSize*0.85、重心に中央寄せ)
+        val cx = (bl.x + br.x + tr.x + tl.x) / 4.0
+        val cy = (bl.y + br.y + tr.y + tl.y) / 4.0
+        val center = PointXY(cx, cy)
+        val circleR = textSize * 0.85f
+        item("""{"type":"circle","layer":"num","cx":${center.x},"cy":${center.y},"r":$circleR}""")
+        item(text("T$num", center, 0.0, textSize, 2, "num"))
+    }
+
+    /** 台形の辺 p1→p2 の中点に実辺長 (/scale で実寸) を寸法文字 (layer "dim") で出す */
+    private fun trapDim(p1: PointXY, p2: PointXY, textSize: Float, scale: Float, item: (String) -> Unit) {
+        val mid = p1.calcMidPoint(p2)
+        val len = (p1.lengthTo(p2) / scale).toFloat()
+        item(text(len.formattedString(2), mid, p1.calcDimAngle(p2), textSize, 2, "dim"))
     }
 
     /**
