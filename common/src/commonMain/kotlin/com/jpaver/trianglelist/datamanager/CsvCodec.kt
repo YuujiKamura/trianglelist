@@ -66,6 +66,10 @@ object CsvCodec {
         val dedRows: List<CsvRow> = emptyList(),
         val textSize: Float? = null,
         val trapRows: List<CsvRow> = emptyList(),
+        // 図形行 (三角形 + 台形) を CSV の出現順そのままで保持する。種別は chunks[0] が
+        // "Trapezoid" か数値かで判る。位置順ビルド (混在接続: 親が先に在れば子が解決できる) の入力。
+        // 既存の rows/trapRows (種別分離) は不変 — 行順は分離で失われるため、ここに別途順序を持つ。
+        val figureRows: List<CsvRow> = emptyList(),
     )
 
     /**
@@ -82,6 +86,7 @@ object CsvCodec {
         val rows = mutableListOf<CsvRow>()
         val dedRows = mutableListOf<CsvRow>()
         val trapRows = mutableListOf<CsvRow>()
+        val figureRows = mutableListOf<CsvRow>()   // 三角形+台形を出現順で保持 (位置順ビルド用)
         var listAngle: Float? = null
         var textSize: Float? = null
         for (line in text.lineSequence()) {
@@ -100,7 +105,9 @@ object CsvCodec {
                 continue
             }
             if (chunks.firstOrNull() == "Trapezoid") {
-                trapRows.add(CsvRow(chunks))
+                val r = CsvRow(chunks)
+                trapRows.add(r)
+                figureRows.add(r)
                 continue
             }
             val number = if (chunks.size >= 4) chunks[0].toIntOrNull() else null
@@ -108,9 +115,11 @@ object CsvCodec {
                 (if (rows.isEmpty()) preLines else postLines).add(line)
                 continue
             }
-            rows.add(CsvRow(chunks))
+            val r = CsvRow(chunks)
+            rows.add(r)
+            figureRows.add(r)
         }
-        return CsvDoc(preLines, rows, listAngle, postLines, dedRows, textSize, trapRows)
+        return CsvDoc(preLines, rows, listAngle, postLines, dedRows, textSize, trapRows, figureRows)
     }
 
     fun serialize(doc: CsvDoc): String {
