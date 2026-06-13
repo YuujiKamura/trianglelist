@@ -159,4 +159,99 @@ class WebTrapezoidTest {
         assertEquals(left.y, leftExplicit0.y, 0.001, "align 列省略は align=0 と同値")
         assertTrue(kotlin.math.abs(left.x - right.x) > 0.1, "align=0 と align=2 で上辺左端 x が変わる: $left vs $right")
     }
+
+    // ---- 段4-2 (R4): 台形を親にする接続 (台形→台形 B/C/D)、9 列目 parentKind ----
+    // trap1 = 独立 (length=5, widthA=10, widthB=4, angle=180)。trap2 が trap1 の辺に底辺を乗せる。
+    // parentKind=1 で parent は台形番号 (構築順 1 始まり)。side 1=B左脚/2=C上辺/3=D右脚 (Rectangle.getLine 規約)。
+
+    /** 台形チェーン B (side=1=B左脚): trap2 の底辺が trap1.getLine(1) の両端に乗る */
+    @Test
+    fun trap_to_trap_chain_on_edge_b() {
+        val csv = "Trapezoid,1,5,10,4,-1,0,0\nTrapezoid,2,3,4,3,1,1,0,1\n"
+        val doc = CsvCodec.parse(csv)
+        val trilist = CsvCodec.build(doc)
+        val traps = CsvCodec.buildTrapezoids(doc, trilist, 1f)
+        assertEquals(2, traps.size, "台形 2 個が構築される")
+        val parentEdge = traps[0].getLine(1)   // trap1 の B 左脚
+        val childBase = traps[1].calcPoint().a   // trap2 の底辺
+        assertTrue(childBase.left.nearBy(parentEdge.left, 0.001), "底辺左 ${childBase.left} != 親B辺左 ${parentEdge.left}")
+        assertTrue(childBase.right.nearBy(parentEdge.right, 0.001), "底辺右 ${childBase.right} != 親B辺右 ${parentEdge.right}")
+    }
+
+    /** 台形チェーン C (side=2=C上辺): trap2 の底辺が trap1.getLine(2) の両端に乗る */
+    @Test
+    fun trap_to_trap_chain_on_edge_c() {
+        val csv = "Trapezoid,1,5,10,4,-1,0,0\nTrapezoid,2,3,4,3,1,2,0,1\n"
+        val doc = CsvCodec.parse(csv)
+        val trilist = CsvCodec.build(doc)
+        val traps = CsvCodec.buildTrapezoids(doc, trilist, 1f)
+        assertEquals(2, traps.size)
+        val parentEdge = traps[0].getLine(2)   // trap1 の C 上辺
+        val childBase = traps[1].calcPoint().a
+        assertTrue(childBase.left.nearBy(parentEdge.left, 0.001), "底辺左 ${childBase.left} != 親C辺左 ${parentEdge.left}")
+        assertTrue(childBase.right.nearBy(parentEdge.right, 0.001), "底辺右 ${childBase.right} != 親C辺右 ${parentEdge.right}")
+    }
+
+    /** 台形チェーン D (side=3=D右脚): trap2 の底辺が trap1.getLine(3) の両端に乗る */
+    @Test
+    fun trap_to_trap_chain_on_edge_d() {
+        val csv = "Trapezoid,1,5,10,4,-1,0,0\nTrapezoid,2,3,4,3,1,3,0,1\n"
+        val doc = CsvCodec.parse(csv)
+        val trilist = CsvCodec.build(doc)
+        val traps = CsvCodec.buildTrapezoids(doc, trilist, 1f)
+        assertEquals(2, traps.size)
+        val parentEdge = traps[0].getLine(3)   // trap1 の D 右脚
+        val childBase = traps[1].calcPoint().a
+        assertTrue(childBase.left.nearBy(parentEdge.left, 0.001), "底辺左 ${childBase.left} != 親D辺左 ${parentEdge.left}")
+        assertTrue(childBase.right.nearBy(parentEdge.right, 0.001), "底辺右 ${childBase.right} != 親D辺右 ${parentEdge.right}")
+    }
+
+    /** parentKind 省略 (8 列) は親=三角形のまま不変: trap の底辺が親三角形の B 辺に乗る (R2 と同挙動) */
+    @Test
+    fun parent_kind_omitted_8col_keeps_triangle_parent() {
+        // 三角形1 + 8 列の台形 (parent=1, side=1, align=1, parentKind 無し)。親は三角形 1 のまま。
+        val csv = "1,6.0,5.0,4.0,-1,-1\nTrapezoid,1,5,4,3,1,1,1\n"
+        val doc = CsvCodec.parse(csv)
+        val trilist = CsvCodec.build(doc)
+        val traps = CsvCodec.buildTrapezoids(doc, trilist, 1f)
+        assertEquals(1, traps.size)
+        val lp = traps[0].calcPoint()
+        val parent = trilist.getBy(1)
+        // side=1 = 親三角形の B 辺 = Line(pointAB, pointBC)
+        assertTrue(lp.a.left.nearBy(parent.pointAB, 0.001), "8列: 底辺左 ${lp.a.left} != 親pointAB ${parent.pointAB}")
+        assertTrue(lp.a.right.nearBy(parent.pointBC, 0.001), "8列: 底辺右 ${lp.a.right} != 親pointBC ${parent.pointBC}")
+    }
+
+    /** parentKind=1 だが親が前方参照/範囲外なら独立 fallback (例外を投げず描ける) */
+    @Test
+    fun parent_kind_trap_out_of_range_falls_back_to_independent() {
+        // trap1 が parentKind=1 で parent=1 を指す = 自分自身/前方参照 (pIdx=0 だが構築中で result 空) → 独立
+        val doc = CsvCodec.parse("Trapezoid,1,5,4,3,1,1,0,1\n")
+        val trilist = CsvCodec.build(doc)
+        val traps = CsvCodec.buildTrapezoids(doc, trilist, 1f)
+        assertEquals(1, traps.size)
+        // 独立構築なら nodeA は null
+        assertEquals(null, traps[0].nodeA, "範囲外の台形親は独立 fallback (nodeA=null)")
+    }
+
+    /** 純三角形 golden 不変: 台形ゼロの三角形 CSV は build/serialize が完全同値 (台形は素通し) */
+    @Test
+    fun pure_triangle_csv_is_unchanged() {
+        val triOnly = "1,6.0,5.0,4.0,-1,-1\n2,5.0,4.0,3.0,1,1\n3,4.0,3.5,3.0,1,2\n"
+        val doc = CsvCodec.parse(triOnly)
+        val traps = CsvCodec.buildTrapezoids(doc, CsvCodec.build(doc), 1f)
+        assertEquals(0, traps.size, "三角形のみなら台形ゼロ")
+        // serialize は三角形行のみで完全同値
+        assertEquals(triOnly, CsvCodec.serialize(doc), "純三角形 CSV は serialize 同値")
+    }
+
+    /** renderCsv で台形チェーン (台形→台形) が 2 個分の tri 線 (4本×2=8本) を出す */
+    @Test
+    fun render_csv_draws_trap_chain_eight_tri_lines() {
+        val chainCsv = "Trapezoid,1,5,10,4,-1,0,0\nTrapezoid,2,3,4,3,1,1,0,1\n"
+        val json = WebPrimitiveRenderer.renderCsv(chainCsv, 1f)
+        assertEquals(8, count(json, """"layer":"tri""""), "台形 2 個で 4本×2=8 本の tri 線: $json")
+        assertEquals(2, count(json, """"type":"circle""""), "番号サークル 2 個")
+        assertTrue(json.contains(""""text":"T2""""), "2 個目の番号 T2 が出る: $json")
+    }
 }

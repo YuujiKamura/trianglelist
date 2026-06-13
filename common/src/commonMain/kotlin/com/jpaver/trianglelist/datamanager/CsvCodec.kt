@@ -224,14 +224,20 @@ object CsvCodec {
      * trapRows → Rectangle リスト (混在リスト段1)。buildDeductions と同じ「TriangleList に
      * 混ぜない独立メソッド」形 — 三角形パイプライン (build/golden) を一切触らないため。
      *
-     * 列 (trap-design.md contract): `Trapezoid, num, length, widthA, widthB, parent, side, align`
-     *   length=延長(辺B), widthA=底辺(辺A), widthB=上辺(辺C), parent=接続先三角形番号(-1=独立),
-     *   side=親の接続辺 (1=B,2=C, 独立=0), align=上辺寄せ (0左/1中/2右, 省略時0で後方互換)。
+     * 列 (trap-design.md contract): `Trapezoid, num, length, widthA, widthB, parent, side, align, parentKind`
+     *   length=延長(辺B), widthA=底辺(辺A), widthB=上辺(辺C), parent=接続先番号(-1=独立),
+     *   side=親の接続辺 (親=三角形:1=B/2=C, 親=台形:1=B左脚/2=C上辺/3=D右脚, 独立=0),
+     *   align=上辺寄せ (0左/1中/2右, 省略時0で後方互換),
+     *   parentKind=親の種別 (0=三角形(既定)/1=台形, 省略時0で後方互換 = R2 の 8 列 CSV は親=三角形のまま不変)。
      *
      * 独立 (parent<1): basepoint=原点・angle=INDEP_TRAP_ANGLE で構築 (本体を三角形と同じ下向き)。
-     * 接続 (parent>=1): nodeA=親三角形。Rectangle.calcPoint() の initByParent が
-     *   parent.getLine(side) を呼ぶ (EditObject.kt:33)。Triangle.getLine の side 規約
+     * 接続・親=三角形 (parentKind=0, parent>=1): nodeA=親三角形。Rectangle.calcPoint() の initByParent が
+     *   parent.getLine(side) を呼ぶ (EditObject.kt:42)。Triangle.getLine の side 規約
      *   (TriangleUtilitiesExtensions.kt:145) は 1=B辺・2=C辺 で CSV と同値なので side を直に渡す。
+     * 接続・親=台形 (parentKind=1): 親は台形番号 (台形群内の構築順 1 始まり)。構築順が「親は子より先」
+     *   不変条件を満たす (親 < 現在の台形番号) ので、親は既に result に在る → result[parent-1] を nodeA に渡す。
+     *   トポロジカルソート不要。initByParent が Rectangle 親で getLine(side) を side 分岐 (R3、EditObject.kt:37-41)。
+     *   チェーン (台形→台形→…) は calcPoint が getLine 経由で再帰的に親を解決するので描画側の変更は不要。
      *   接続時 baseline は親辺で上書きされ widthA は幾何に効かない (= 底辺は親辺長になる)。
      *
      * scale は三角形と同じ実効倍率。trilist が setScale 済なら親辺は scale 済座標で返るので、
@@ -249,13 +255,23 @@ object CsvCodec {
             val side = c.getOrNull(6)?.toIntOrNull() ?: 0
             // 8 列目 align (0左/1中/2右)。省略時 0 で後方互換 (R1 の 7 列 CSV は左寄せのまま)
             val align = c.getOrNull(7)?.toIntOrNull() ?: 0
+            // 9 列目 parentKind (0=三角形 / 1=台形)。省略時 0 で後方互換 (R2 の 8 列 CSV は親=三角形のまま)
+            val parentKind = c.getOrNull(8)?.toIntOrNull() ?: 0
             val l = length * s
             val wa = widthA * s
             val wb = widthB * s
-            if (parent < 1 || parent > trilist.size()) {
-                result.add(Rectangle(l, wa, wb, angle = INDEP_TRAP_ANGLE, basepoint = PointXY(0f, 0f), alignment = align))
-            } else {
-                result.add(Rectangle(l, wa, wb, nodeA = trilist.getBy(parent), side = side, alignment = align))
+            // 独立台形 (basepoint=原点・angle=INDEP_TRAP_ANGLE)。fallback でも使う
+            fun indep() = Rectangle(l, wa, wb, angle = INDEP_TRAP_ANGLE, basepoint = PointXY(0f, 0f), alignment = align)
+            when {
+                parent < 1 -> result.add(indep())
+                parentKind == 1 -> {
+                    // 親は台形 (構築順 1 始まり)。親 < 現在の台形番号なので既に result に在る。
+                    val pIdx = parent - 1
+                    if (pIdx < 0 || pIdx >= result.size) result.add(indep())  // 前方参照/範囲外 → 独立 fallback
+                    else result.add(Rectangle(l, wa, wb, nodeA = result[pIdx], side = side, alignment = align))
+                }
+                parent > trilist.size() -> result.add(indep())  // 三角形親が範囲外 → 独立 fallback (従来挙動)
+                else -> result.add(Rectangle(l, wa, wb, nodeA = trilist.getBy(parent), side = side, alignment = align))
             }
         }
         return result
