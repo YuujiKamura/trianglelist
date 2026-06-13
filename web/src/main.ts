@@ -433,6 +433,42 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
     edgeLabel(scLine, `C ${cv}`.trim());
   }
 
+  // 段5 R6: 台形シャドー (4 辺、グレー塗り + 延長/上辺ラベル)。台形モードで辺タップしたとき
+  // buildShadow が末尾 4 辺を入れる。三角形シャドー (length===3) は上で処理済み・不変。
+  if (shadowPrims && shadowPrims.length === 4) {
+    ctx.fillStyle = 'rgba(128, 128, 128, 0.35)';
+    ctx.beginPath();
+    // 並び: 0=底辺(bl→br) 1=右脚(br→tr) 2=上辺(tr→tl) 3=左脚/延長(tl→bl)。端点を順に結べば台形外形。
+    ctx.moveTo(sx(shadowPrims[0].x1), sy(shadowPrims[0].y1));
+    for (const ln of shadowPrims) ctx.lineTo(sx(ln.x2), sy(ln.y2));
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#e67e22';
+    const dimSize =
+      lastPrims.find((q): q is TextPrim => q.type === 'text' && q.layer === 'dim')?.size ?? 0.25;
+    ctx.font = `${Math.max(dimSize * s, 8)}px sans-serif`;
+    ctx.textAlign = 'center';
+    const bv = input('newB').value;
+    const cv = input('newC').value;
+    const edgeLabel = (line: LinePrim, label: string) => {
+      const x1 = sx(line.x1);
+      const y1 = sy(line.y1);
+      const x2 = sx(line.x2);
+      const y2 = sy(line.y2);
+      let ang = Math.atan2(y2 - y1, x2 - x1);
+      if (ang > Math.PI / 2) ang -= Math.PI;
+      else if (ang < -Math.PI / 2) ang += Math.PI;
+      ctx.save();
+      ctx.translate((x1 + x2) / 2, (y1 + y2) / 2);
+      ctx.rotate(ang);
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(label, 0, -3);
+      ctx.restore();
+    };
+    edgeLabel(shadowPrims[3], `延長 ${bv}`.trim()); // 左脚=延長
+    edgeLabel(shadowPrims[2], `上辺 ${cv}`.trim()); // 上辺
+  }
+
   // 段階2g: 選択表示 (アプリ MyView.drawBlinkLine:794-818 の写し):
   //   1) 選択辺を黄色線で強調 (app: lastTapSide の辺を paintYellow で上書き)
   //   2) 番号サークルに黄色リング (app: pointnumber に paintTexS.textSize*0.8 の stroke circle)
@@ -2627,8 +2663,11 @@ function selectTrapezoid(canvas: HTMLCanvasElement, trap: number, side: number):
   else setStatus(`台形 ${trap} の ${name}辺 (接続 side ${side}) を選択`);
 }
 
-// シャドー三角形を組む: 仮の行 (a=親辺長, b=c=親辺長*0.75 — MyView.drawShadowTriangle:683 と
-// 同じ比率) を足した CSV を common に描かせ、最後の三角形の 3 辺 [A,B,C] を借りる
+// シャドー (接続プレビュー) を組む。figureKind で「次に足す図形」が三角形か台形かを分ける (段5 R6)。
+// 仮の行を足した CSV を common に描かせ、その図形の辺を借りる — TS で幾何を再計算せず、
+// 接続の向き・形が実際の追加結果と必ず一致する。
+//   三角形モード: 仮三角形 (a=親辺長, b=c=親辺長*0.75 — MyView.drawShadowTriangle:683) の 3 辺 [A,B,C]。
+//   台形モード:  仮台形 (延長=newB, 底辺=親辺長, 上辺=newC, 寄せ=newLcr) の 4 辺。
 function buildShadow(): void {
   shadowPrims = null;
   if (!edgeSel) return;
@@ -2637,18 +2676,41 @@ function buildShadow(): void {
   const aStr = edgeVal(p, edgeSel.side === 1 ? 'b' : 'c');
   const L = parseFloat(aStr);
   if (!Number.isFinite(L) || L <= 0) return;
-  const leg = (L * 0.75).toFixed(2);
-  // 仮三角形の番号は次の三角形番号 (triCount+1)。common は三角形を先に、台形を後に描くので、
-  // 仮三角形 (最後の三角形) の tri 線は三角形群の末尾 = triCount*3 番目に来る (台形の tri 線は更に後)
   const tc = triCount();
-  const candidate = serializeState() + `${tc + 1},${aStr},${leg},${leg},${edgeSel.tri},${edgeSel.side}\n`;
+  let candidate: string;
+  let take: 'tri' | 'trap';
+  if (figureKind === 'trapezoid') {
+    // 台形は実値 (延長 newB・上辺 newC) で形が決まるので、空・不正なら影を出さない。
+    const bv = input('newB').value;
+    const cv = input('newC').value;
+    const ext = parseFloat(bv);
+    const top = parseFloat(cv);
+    if (!Number.isFinite(ext) || ext <= 0 || !Number.isFinite(top) || top <= 0) return;
+    const align = intOrNull(select('newLcr').value) ?? 0;
+    // 台形 CSV 9 列: Trapezoid,num,延長,底辺,上辺,parent,side,align,parentKind。底辺=親辺長 (接続時 common が
+    // 親辺で上書き)、parentKind=0 (本段は親=三角形のみ。台形を親にする #2 は selectEdge 側で parentKind を渡す)。
+    const trapNum = rows.length - tc + 1;
+    candidate = serializeState() +
+      `Trapezoid,${trapNum},${bv},${aStr},${cv},${edgeSel.tri},${edgeSel.side},${align},0\n`;
+    take = 'trap';
+  } else {
+    const leg = (L * 0.75).toFixed(2);
+    candidate = serializeState() + `${tc + 1},${aStr},${leg},${leg},${edgeSel.tri},${edgeSel.side}\n`;
+    take = 'tri';
+  }
   try {
     const json = renderCsvToPrimitivesWithOverrides(candidate, 1.0, overridesJson());
     const prims = JSON.parse(json) as Prim[];
     const triLines = prims.filter((q): q is LinePrim => q.type === 'line' && q.layer === 'tri');
-    const base = tc * 3; // 仮三角形 (triCount+1 番) の線は三角形群の最後の 3 本
-    if (base + 2 < triLines.length) {
-      shadowPrims = [triLines[base], triLines[base + 1], triLines[base + 2]];
+    if (take === 'trap') {
+      // 台形は三角形・控除の後に描かれる (WebPrimitiveRenderer) ので、仮台形の 4 辺は tri 線の末尾 4 本。
+      // 並びは renderTrapezoid 順: 0=底辺(bl→br) 1=右脚(br→tr) 2=上辺(tr→tl) 3=左脚/延長(tl→bl)。
+      if (triLines.length >= 4) shadowPrims = triLines.slice(-4);
+    } else {
+      const base = tc * 3; // 仮三角形 (triCount+1 番) の線は三角形群の最後の 3 本
+      if (base + 2 < triLines.length) {
+        shadowPrims = [triLines[base], triLines[base + 1], triLines[base + 2]];
+      }
     }
   } catch {
     shadowPrims = null;
