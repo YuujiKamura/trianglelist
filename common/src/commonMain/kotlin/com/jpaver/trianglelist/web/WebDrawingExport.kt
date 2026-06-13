@@ -141,6 +141,9 @@ object WebDrawingExport {
         writer.titleDed_ = TitleParamStr()
         writer.zumeninfo = defaultZumenInfo()
         writer.setNames(header.koujiname, header.rosenname, header.gyousyaname, header.zumennum)
+        // 台形 (混在リスト) を実寸 (scale=1) で組んで渡す。三角形の後に DXF へ出る。
+        // 三角形のみ CSV なら空 = DXF golden 不変
+        writer.traps_ = CsvCodec.buildTrapezoids(CsvCodec.parse(csv), trilist, 1f)
         val sb = StringBuilder()
         writer.writer = sb
         writer.save()
@@ -181,6 +184,8 @@ object WebDrawingExport {
         writer.setNames(header.koujiname, header.rosenname, header.gyousyaname, header.zumennum)
         writer.setStartNumber(1)
         writer.isReverse_ = numReverse
+        // 台形 (混在リスト) を実寸 (scale=1) で組んで渡す。三角形のみ CSV なら空 = SFC golden 不変
+        writer.traps_ = CsvCodec.buildTrapezoids(CsvCodec.parse(csv), trilist, 1f)
         return writer.buildSfcString()
     }
 }

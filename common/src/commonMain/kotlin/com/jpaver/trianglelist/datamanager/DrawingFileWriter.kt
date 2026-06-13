@@ -5,6 +5,7 @@ import com.jpaver.trianglelist.editmodel.Deduction
 import com.jpaver.trianglelist.editmodel.DeductionList
 import com.jpaver.trianglelist.editmodel.EditList
 import com.jpaver.trianglelist.editmodel.EditObject
+import com.jpaver.trianglelist.editmodel.Rectangle
 import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
 import com.jpaver.trianglelist.editmodel.ZumenInfo
@@ -126,6 +127,53 @@ open class DrawingFileWriter {
      */
     open fun writeTriangle(tri: Triangle){
         drawScene(buildTrianglePrims(tri))
+    }
+
+    // 台形を持つ場合の図形リスト (web 出力経路が CsvCodec.buildTrapezoids で組んで渡す)。
+    // app 経路は三角形のみで既定 empty = DXF/SFC golden 不変。
+    open var traps_: List<Rectangle> = emptyList()
+
+    open fun writeTrapezoid(rect: Rectangle, number: Int) {
+        drawScene(buildTrapezoidPrims(rect, number))
+    }
+
+    /**
+     * 台形 1 つを DrawPrim 列に組む (buildTrianglePrims の台形版、ADR 0010 段A コメントが予定した分岐)。
+     * web の WebPrimitiveRenderer.renderTrapezoid と同じ幾何: 4 辺 + 底辺A/上辺C/延長B の寸法 +
+     * 番号サークル。延長 B は「底辺からの垂線 (rect.length)」で、左脚の斜辺長ではない。中央/右寄せ
+     * (alignment≠0) は左脚が斜辺になるので垂線 bl→perpFoot を補助線で別に引く。
+     * 座標は実寸モデル (DrawPrim の約束) なので寸法は実長そのまま。これで backend (各 writer) を
+     * 触らず台形が DXF/SFC/PDF に出る。
+     */
+    protected open fun buildTrapezoidPrims(rect: Rectangle, number: Int): List<DrawPrim> {
+        val lp = rect.calcPoint()
+        val bl = lp.a.left;  val br = lp.a.right
+        val tl = lp.b.left;  val tr = lp.b.right
+        val ts = textscale_
+        val ds = rect.dimScale.toDouble()
+        val dh = rect.dimHeight.toDouble()
+        val prims = ArrayList<DrawPrim>()
+        // 4 辺 (底辺A bl→br / 右脚D br→tr / 上辺C tr→tl / 左脚B tl→bl)
+        prims += DrawPrim.Line(bl, br, WHITE)
+        prims += DrawPrim.Line(br, tr, WHITE)
+        prims += DrawPrim.Line(tr, tl, WHITE)
+        prims += DrawPrim.Line(tl, bl, WHITE)
+        // 寸法 (DimensionLayout = 三角形と同じ式層)。底辺A・上辺C は実辺長、延長B は垂線 rect.length
+        fun dim(start: com.example.trilib.PointXY, end: com.example.trilib.PointXY, v: Int, h: Int, len: Float) {
+            val place = DimensionLayout.layout(end, start, v, h, ds, dh, 0.0)
+            prims += DrawPrim.Text(len.formattedString(2), place.dimpoint, WHITE, ts, 1, place.verticalDxf, start.calcDimAngle(end), 1f)
+            if (h > 2) prims += DrawPrim.Line(place.pointA, place.pointB, WHITE)
+        }
+        dim(bl, br, rect.dimVertical.a, rect.dimHorizontal.a, bl.lengthTo(br).toFloat())
+        dim(tr, tl, rect.dimVertical.c, rect.dimHorizontal.c, tr.lengthTo(tl).toFloat())
+        val perpFoot = bl.crossOffset(br, rect.length)
+        dim(bl, perpFoot, rect.dimVertical.b, rect.dimHorizontal.b, rect.length.toFloat())
+        if (rect.alignment != 0) prims += DrawPrim.Line(bl, perpFoot, WHITE)
+        // 番号サークル + 番号 (重心に中央寄せ)
+        val center = com.example.trilib.PointXY((bl.x + br.x + tr.x + tl.x) / 4f, (bl.y + br.y + tr.y + tl.y) / 4f)
+        prims += DrawPrim.Circle(center, ts * 0.85f, BLUE, 1f)
+        prims += DrawPrim.Text(number.toString(), center, BLUE, ts, 1, 2, 0.0, 1f)
+        return prims
     }
 
     /**
