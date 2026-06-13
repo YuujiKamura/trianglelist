@@ -67,6 +67,10 @@
       }
       .fabcol button:hover { background: #dce9fb; }
       .fabcol button .sub { display: block; font-size: 8px; line-height: 1; }
+      /* 図形種別トグル: 44px 円にグリフ 1 文字 (△=三角形 / ▱=台形)。語は title と status へ。
+         台形モード中は橙系で点灯させ「今どちらを足すか」を一目で出す */
+      #fabFigureKind { font-size: 24px; line-height: 1; padding: 0; }
+      #fabFigureKind.trapon { background: #ffe2b8; border-color: #d08a2c; box-shadow: 0 0 0 2px #d08a2c; }
       /* アプリ共通アイコン (drawable-nodpi の PNG、sync-icons.mjs がコピー)。
          アイコンが薄黄色なのでアプリ FAB と同じ colorAccent #333333 背景に乗せる */
       .fabcol button.icon { background: #333333; border-color: #222222; }
@@ -126,7 +130,7 @@
           <table class="tri" id="editorForm">
             <thead>
               <tr>
-                <th></th><th>番号</th><th>測点名</th><th>辺A</th><th>辺B</th><th>辺C</th>
+                <th></th><th>番号</th><th>測点名</th><th id="thEdgeA">辺A</th><th id="thEdgeB">辺B</th><th id="thEdgeC">辺C</th>
                 <th>親番号</th><th>接続辺</th><th>形態</th><th>起点</th>
               </tr>
             </thead>
@@ -282,6 +286,8 @@
             <button id="fabFillColor" type="button" title="塗り色 (選択三角形、押すたび循環)"><img src="/icons/fillcolor.png" alt="塗り色" /></button>
             <!-- アプリ fab_deduction 相当: 控除モード切替。ON 中はクリック = 控除カーソル -->
             <button id="fabDeduction" type="button" class="icon" title="控除モード切替 (クリックで位置決め → 控除リストの「追加」)"><img src="/icons/deduction.png" alt="控除" /></button>
+            <!-- 新規図形の種別トグル: 三角形⇄台形。押すと「追加」が作る図形が切り替わる (台形: 辺A=底辺/辺B=延長/辺C=上辺) -->
+            <button id="fabFigureKind" type="button" title="新規図形を 三角形⇄台形 で切替 (現在: 三角形)">△</button>
             <button id="fabMinus" type="button" class="icon" title="削除 (2回タップ)"><img src="/micons/delete.svg" alt="削除" /></button>
           </div>
         </div>

@@ -190,6 +190,15 @@ let deductionMode = false;
 let dedCursor: { x: number; y: number } | null = null;
 let dedSelected = 0; // 選択中の控除番号 (1-based、0 = 非選択)
 
+// ---- 台形 (Trapezoid) 図形 (段1: trap-design.md の CSV contract) ----
+// 控除と同じく SoT は生 CSV 行の配列 ("Trapezoid,num,length,widthA,widthB,parent,side")。
+// 幾何 (描画) は common の WebPrimitiveRenderer (B1) が担う — TS は行の出し入れと CSV 生成だけ。
+// length=延長(辺B), widthA=底辺(辺A), widthB=上辺(辺C), parent=接続先三角形番号(-1=独立),
+// side=接続辺(1=B,2=C, 独立=0)。三角形パイプラインは一切変えない (golden 不変)
+let trapLines: string[] = [];
+// 新規入力で「追加」が作る図形種別。FAB fabFigureKind でトグル、syncForm がラベルを切替える
+let figureKind: 'triangle' | 'trapezoid' = 'triangle';
+
 // Deduction CSV 行の表示用パース (列順は MainActivity.writeCSV:2795)。座標列 8/9 は
 // モデル座標 (y 上向き、保存時に Y 反転済みの値) なのでそのまま hit/マーカーに使える
 type DedView = { num: number; name: string; lenX: string; lenY: string; pn: string; type: string; x: number; y: number; fx: number; fy: number };
@@ -630,6 +639,7 @@ function parseCsvToState(csv: string): void {
   dedLines = [];
   dedSelected = 0;
   dedCursor = null;
+  trapLines = [];
   for (const line of csv.split(/\r?\n/)) {
     if (line.trim() === '') continue;
     const chunks = line.split(',').map((s) => s.trim());
@@ -647,6 +657,11 @@ function parseCsvToState(csv: string): void {
     // 幾何の読みは common (CsvCodec.buildDeductions)、ここは行の保持と一覧表示だけ
     if (chunks[0] === 'Deduction') {
       dedLines.push(line.trim());
+      continue;
+    }
+    // 台形行も控除と同形に生のまま保持 (幾何は common、TS は round-trip と一覧だけ)
+    if (chunks[0] === 'Trapezoid') {
+      trapLines.push(line.trim());
       continue;
     }
     const num = chunks.length >= 4 ? intOrNull(chunks[0]) : null;
@@ -699,6 +714,8 @@ function serializeState(): string {
   lines.push(`ListAngle, ${listAngle}`);
   // 寸法文字サイズ (アプリ writeCSV:2785 と同形)。CsvCodec.parse が textSize に昇格して読む
   lines.push(`TextSize, ${textSizeCsv}`);
+  // 台形行 (段1)。reader は先頭 prefix で分岐するので順不同で安全 (dedLines の前に置く)
+  lines.push(...trapLines);
   // 控除はアプリ保存 (MainActivity.kt:2790-2797) と同じく末尾に書く
   lines.push(...dedLines);
   return lines.join('\n') + '\n';
@@ -730,6 +747,16 @@ function invalidTriangleReason(a: number, b: number, c: number): string | null {
   if (!Number.isFinite(a) || !Number.isFinite(b) || !Number.isFinite(c)) return '辺の値が数値ではありません';
   if (a <= 0 || b <= 0 || c <= 0) return '辺の長さは正の数が必要です';
   if (a + b <= c || b + c <= a || c + a <= b) return '二辺の和が他の一辺以下です (三角形になりません)';
+  return null;
+}
+
+// 台形の妥当性: 延長(辺B)・底辺(辺A)・上辺(辺C) はいずれも正の数 (三角不等式は無い)。
+// 三角形と違い辺長の和の制約は無いので invalidTriangleReason は流用できない (独立の関門)
+function invalidTrapezoidReason(length: number, widthA: number, widthB: number): string | null {
+  if (!Number.isFinite(length) || !Number.isFinite(widthA) || !Number.isFinite(widthB)) {
+    return '辺の値が数値ではありません';
+  }
+  if (length <= 0 || widthA <= 0 || widthB <= 0) return '延長・底辺・上辺はいずれも正の数が必要です';
   return null;
 }
 
@@ -777,6 +804,13 @@ const select = (id: string) => el<HTMLSelectElement>(id);
 // 新規入力行の値はユーザーの書きかけなので触らない — 番号プリセットだけ更新する
 function syncForm(): void {
   input('newNum').value = String(rows.length + 1);
+
+  // 図形種別でフォームの辺ラベルを切替える (台形: 辺A=底辺, 辺B=延長, 辺C=上辺)。
+  // ヘッダは新規/現在の両行で共有 — 段1 では新規入力の語彙として切替える (現在行の台形編集は B3)
+  const isTrap = figureKind === 'trapezoid';
+  el('thEdgeA').textContent = isTrap ? '底辺(A)' : '辺A';
+  el('thEdgeB').textContent = isTrap ? '延長(B)' : '辺B';
+  el('thEdgeC').textContent = isTrap ? '上辺(C)' : '辺C';
 
   const cur = current >= 1 ? rows[current - 1] : null;
   input('curNum').value = cur ? String(current) : '';
@@ -1192,6 +1226,11 @@ function fabReplace(canvas: HTMLCanvasElement): void {
     dedReplace(canvas);
     return;
   }
+  // 台形モード: 「追加」は台形行を生成する (控除モード分岐と同じ構え)
+  if (figureKind === 'trapezoid') {
+    addTrapezoid(canvas);
+    return;
+  }
   const newB = input('newB').value.trim();
   const newC = input('newC').value.trim();
 
@@ -1282,6 +1321,69 @@ function fabReplace(canvas: HTMLCanvasElement): void {
   syncForm();
   redraw(canvas);
   setStatus(`Add Triangle ${rows.length}`);
+}
+
+// 台形の追加 (段1): 新規入力欄を台形語彙で読み、CSV contract の Trapezoid 行を trapLines に積む。
+// 辺A=底辺(widthA), 辺B=延長(length), 辺C=上辺(widthB)。幾何は common (B1) が CSV から再構築する。
+function addTrapezoid(canvas: HTMLCanvasElement): void {
+  // ラベルは台形語彙だが input の id は三角形と共用 (newA/newB/newC)
+  const widthAStr = input('newA').value.trim(); // 底辺
+  const lengthStr = input('newB').value.trim(); // 延長
+  const widthBStr = input('newC').value.trim(); // 上辺
+  // 正の数の関門 (三角不等式は無い、台形専用判定)
+  const bad = invalidTrapezoidReason(parseFloat(lengthStr), parseFloat(widthAStr), parseFloat(widthBStr));
+  if (bad) {
+    setStatus(`⚠ 台形: ${bad} — 追加を中止`);
+    return;
+  }
+  // 親番号 (空 = 独立) と接続辺 (newConn: 1=B, 2=C)。独立なら parent=-1, side=0
+  const parentStr = input('newParent').value.trim();
+  let parent = parentStr === '' ? -1 : (intOrNull(parentStr) ?? -1);
+  let side = intOrNull(select('newConn').value) ?? 0;
+  if (parent >= 1) {
+    // 親の実在関門 (三角形側と同じ — 存在しない親に繋ぐと renderer が行を落とす)
+    if (parent > rows.length) {
+      setStatus(`⚠ 親番号 ${parent} の三角形が存在しません — 追加を中止`);
+      return;
+    }
+    if (side !== 1 && side !== 2) side = 1;
+  } else {
+    parent = -1;
+    side = 0;
+  }
+  takeUndoSnap();
+  const num = trapLines.length + 1;
+  trapLines.push(`Trapezoid, ${num}, ${lengthStr}, ${widthAStr}, ${widthBStr}, ${parent}, ${side}`);
+  // 新規入力行をリセット (三角形追加と同じ後始末)
+  input('newName').value = '';
+  input('newA').value = '';
+  input('newB').value = '';
+  input('newC').value = '';
+  input('newParent').value = '';
+  select('newConn').value = '1';
+  buildTable(canvas);
+  syncForm();
+  redraw(canvas);
+  setStatus(`台形 ${num} を追加 (${parent > 0 ? `三角形 ${parent} の ${side === 1 ? 'B' : 'C'} 辺` : '独立'})`);
+}
+
+// FAB の表示を現在の図形種別に合わせる (押す前から「今どちらを追加するか」が見える)。
+// 44px 円にはグリフ 1 文字だけ (△/▱)。語は title と status に出す。台形モードは橙点灯
+function updateFigureKindFab(): void {
+  const btn = document.getElementById('fabFigureKind');
+  if (!btn) return;
+  const isTrap = figureKind === 'trapezoid';
+  btn.textContent = isTrap ? '▱' : '△';
+  btn.classList.toggle('trapon', isTrap);
+  btn.setAttribute('title', `新規図形を 三角形⇄台形 で切替 (現在: ${isTrap ? '台形' : '三角形'})`);
+}
+
+// 新規図形の種別をトグル (三角形⇄台形)。ラベル・FAB 表示を更新して setStatus
+function toggleFigureKind(): void {
+  figureKind = figureKind === 'triangle' ? 'trapezoid' : 'triangle';
+  updateFigureKindFab();
+  syncForm(); // 辺ラベル (底辺/延長/上辺 ⇄ 辺A/B/C) を切替える
+  setStatus(figureKind === 'trapezoid' ? '新規図形: 台形 (辺A=底辺 / 辺B=延長 / 辺C=上辺)' : '新規図形: 三角形');
 }
 
 // 行削除の共通処理 (行の削除ボタン / fabMinus の両動線)。番号の振り直しに合わせて
@@ -1872,6 +1974,7 @@ function newDrawing(canvas: HTMLCanvasElement): void {
   dedLines = [];
   dedSelected = 0;
   dedCursor = null;
+  trapLines = []; // 新規作成で台形も破棄 (dedLines と同列)
   buildDedTable(canvas);
   clearSelection();
   selected = 1;
@@ -1921,6 +2024,9 @@ function wireFabs(canvas: HTMLCanvasElement): void {
   el<HTMLButtonElement>('fabDown').addEventListener('click', () => moveCurrent(canvas, 1));
   // 控除モード (アプリ fab_deduction → flipDeductionMode 相当)
   el<HTMLButtonElement>('fabDeduction').addEventListener('click', () => toggleDeductionMode(canvas));
+  // 新規図形の種別トグル (三角形⇄台形)。単発クリックなので addEventListener でよい
+  el<HTMLButtonElement>('fabFigureKind').addEventListener('click', () => toggleFigureKind());
+  updateFigureKindFab(); // 初期表示を現在種別 (三角形) に
   el<HTMLButtonElement>('dedAdd').addEventListener('click', () => dedAdd(canvas));
   el<HTMLButtonElement>('dedReplace').addEventListener('click', () => dedReplace(canvas));
   el<HTMLButtonElement>('dedDelete').addEventListener('click', () => dedDelete(canvas));
