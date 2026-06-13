@@ -180,6 +180,10 @@ let lastTapModel: { x: number; y: number } | null = null;
 // (接続の向きが実際の追加結果と必ず一致する)
 let edgeSel: { tri: number; side: 1 | 2 } | null = null;
 let shadowPrims: LinePrim[] | null = null;
+// 台形の辺をタップして「ここに三角形を乗せる」待ち状態 (三角形モード)。edgeSel (三角形親) を汚さず
+// 別に持つ — 追加経路 fabReplace の三角形親ガードを避け、TriTrap 行を直に作る。trap=台形群index(1始まり)、
+// side=getLine 側(1=左脚/2=上辺/3=右脚)。シャドーは三角形を台形辺に乗せた形で出る。
+let pendingTrapParent: { trap: number; side: number } | null = null;
 
 // ---- 控除 (Deduction) 編集 (アプリ deductionMode = flipDeductionMode:980 の web 版) ----
 // SoT は CSV 行そのもの (13 列 "Deduction,..." 文字列の配列)。幾何 (配置・親判定・旗揚げ・
@@ -898,6 +902,7 @@ function invalidTrapezoidReason(length: number, widthA: number, widthB: number):
 function findInvalidRow(rs: Row[]): { reason: string } | null {
   let triN = 0;
   let trapN = 0;
+  let tritrapN = 0;
   for (const r of rs) {
     if (r.kind === 'trapezoid') {
       // 台形は三角不等式が無い (専用関門)。辺B=延長/辺A=底辺/辺C=上辺
@@ -908,6 +913,18 @@ function findInvalidRow(rs: Row[]): { reason: string } | null {
         parseFloat(edgeVal(r, 'c')),
       );
       if (reason) return { reason: `台形 ${trapN}: ${reason}` };
+      continue;
+    }
+    if (r.kind === 'tritrap') {
+      // 台形を親に持つ三角形。底辺A = 親台形辺長 (addTriOnTrap が格納) なので、接続済み
+      // 三角形と同じく (A,B,C) の三角不等式で判定する。triN は通常三角形の連番なので増やさない
+      tritrapN++;
+      const reason = invalidTriangleReason(
+        parseFloat(edgeVal(r, 'a')),
+        parseFloat(edgeVal(r, 'b')),
+        parseFloat(edgeVal(r, 'c')),
+      );
+      if (reason) return { reason: `台形子三角形 ${tritrapN}: ${reason}` };
       continue;
     }
     triN++;
@@ -1019,6 +1036,7 @@ function selectTriangle(canvas: HTMLCanvasElement, n: number): void {
   selected = n;
   selectedDim = null; // 三角形を選び直したら寸法選択は解除
   edgeSel = null;
+  pendingTrapParent = null; // 三角形を選び直したら台形親プリセットは解除
   shadowPrims = null;
   if (n > 0) {
     current = n;
@@ -1034,6 +1052,7 @@ function clearSelection(): void {
   selected = 0;
   selectedDim = null;
   edgeSel = null;
+  pendingTrapParent = null; // 選択解除で台形親プリセットも解除
   shadowPrims = null;
   updateRowHighlight();
 }
@@ -1656,6 +1675,12 @@ function fabReplace(canvas: HTMLCanvasElement): void {
   }
   if (newC === '') return; // アプリと同じ: B だけでは何もしない (strAddLineC.isEmpty -> return)
 
+  // 台形辺タップ済 (三角形を台形に乗せる): 三角形親ガードを通さず TriTrap 行を直に作る
+  if (pendingTrapParent) {
+    addTriOnTrap(canvas, newB, newC);
+    return;
+  }
+
   // Add (アプリ addTriangleBy 相当 — 行を足して CSV 再構築に任せる)。
   // 三角形数 t を基準にする (台形が居ても親番号・採番・挿入位置は三角形 prefix で完結)
   const t = triCount();
@@ -1825,6 +1850,8 @@ function updateFigureKindFab(): void {
 // 新規図形の種別をトグル (三角形⇄台形)。ラベル・FAB 表示を更新して setStatus
 function toggleFigureKind(): void {
   figureKind = figureKind === 'triangle' ? 'trapezoid' : 'triangle';
+  pendingTrapParent = null; // モード切替で台形親プリセットは解除 (三角形モード専用の状態)
+  shadowPrims = null;
   // 形態(CType)列の値は三角形(辺共有/二重断面/フロート)と台形(親種別)で意味が違う。モード切替で
   // 旧モードの値が漏れて誤解釈される (例: 二重断面[1] → 親:台形[1]) のを防ぎ、既定 '0' に戻す
   select('newCType').value = '0';
@@ -2494,6 +2521,10 @@ function wireNewRowEnter(canvas: HTMLCanvasElement): void {
   // 入力のたび再描画してアプリの watched strings と同じライブ追従にする
   for (const id of ['newB', 'newC']) {
     input(id).addEventListener('input', () => {
+      // 台形に乗せる三角形は実 B/C で形が決まる (底辺は台形辺固定) → タイプのたびシャドーを
+      // 作り直してライブ追従させる (粘土をこねる操作感)。三角形辺の仮シャドーは固定形 (0.75 脚)
+      // なので従来どおり再描画のみ — B/C はラベルだけ写す。
+      if (pendingTrapParent) buildShadow();
       if (shadowPrims) draw(canvas, lastPrims);
     });
   }
@@ -2676,6 +2707,18 @@ function trapSideName(side: number): string {
   return side === 0 ? '底辺' : side === 1 ? '左脚' : side === 2 ? '上辺' : side === 3 ? '右脚' : '辺';
 }
 
+// 台形の指定 side の辺長を lastPrims から引く。台形辺は tri レイヤ線で台形ごと描画順 (tside 0..3)
+// に4本並ぶ (nearestTrapEdge と同じ並び)。side→tside は trapTsideToSide の逆写像
+// (side0→0 / side1→3 / side2→2 / side3→1)。接続子三角形の底辺A = この親辺長。
+function trapEdgeLen(trap: number, side: number): number {
+  const trapLines = lastPrims
+    .filter((p): p is LinePrim => p.type === 'line' && p.layer === 'tri')
+    .slice(triCount() * 3);
+  const tside = side === 0 ? 0 : side === 2 ? 2 : side === 3 ? 1 : 3;
+  const L = trapLines[(trap - 1) * 4 + tside];
+  return L ? Math.hypot(L.x2 - L.x1, L.y2 - L.y1) : 0;
+}
+
 // 台形を図形選択し、どの辺かをフィードバックする (三角形の selectEdge と対をなす)。
 // 三角形を台形へ接続する配線 (CsvCodec.build が台形親を解決する位置順統合ビルド) は別段で、
 // ここでは誤接続を作らず選択と辺名表示までに留める。side: 0=底辺(接続不可) / 1=左脚 / 2=上辺 / 3=右脚。
@@ -2694,6 +2737,67 @@ function selectTrapezoid(canvas: HTMLCanvasElement, trap: number, side: number):
   else setStatus(`台形 ${trap} の ${name}辺 (接続 side ${side}) を選択`);
 }
 
+// 台形の自由辺をタップ → そこに三角形を乗せるプリセット + シャドー (三角形モード)。
+// edgeSel (三角形親) は使わず pendingTrapParent に持つ。fabReplace が pendingTrapParent を見て
+// TriTrap 行を作る。底辺(side 0)はここに来ない (handleTap で side>=1 のみ)。
+function presetTriOnTrap(canvas: HTMLCanvasElement, trap: number, side: number): void {
+  const gnum = triCount() + trap; // 親台形の global 番号 (highlight 用)
+  selected = gnum;
+  current = gnum;
+  selectedDim = null;
+  edgeSel = null;
+  pendingTrapParent = { trap, side };
+  input('newParent').value = `T${trap}`; // 表示のみ (fabReplace は pendingTrapParent で早期分岐)
+  buildShadow();
+  updateRowHighlight();
+  syncForm();
+  draw(canvas, lastPrims);
+  setStatus(`台形 ${trap} の ${trapSideName(side)}辺 — B/C を入力して ✎ で三角形を乗せる`);
+  input('newB').focus();
+}
+
+// pendingTrapParent (台形辺タップ済) のとき、新規行の B/C で TriTrap 行を末尾に積む。
+// 追加経路 fabReplace の三角形親ガード (親番号 <= triCount) は台形親に通らないので、ここで直に作る。
+function addTriOnTrap(canvas: HTMLCanvasElement, newB: string, newC: string): void {
+  const pend = pendingTrapParent;
+  if (!pend) return;
+  if (!(parseFloat(newB) > 0) || !(parseFloat(newC) > 0)) {
+    setStatus('⚠ 台形に乗せる三角形は B・C に正の値が必要です — 追加を中止');
+    return;
+  }
+  takeUndoSnap();
+  const name = input('newName').value;
+  // 底辺A = 親台形辺の長さ。接続済み三角形が親辺長を A に持つのと同じ規約 (common が
+  // initByParent で同値に上書きするので描画は不変だが、三角形成立判定 findInvalidRow が
+  // (A,B,C) で効くので 0 ではなく実辺長を入れる — 0 だと「0,B,C は不成立」で redraw が止まる)。
+  const baseLen = trapEdgeLen(pend.trap, pend.side);
+  const newRow: Row = {
+    kind: 'tritrap',
+    ea: newEdge(baseLen > 0 ? baseLen.toFixed(2) : '0'), // 親台形辺長 (取得不能時のみ 0)
+    eb: newEdge(newB),         // B
+    ec: newEdge(newC),         // C
+    parent: String(pend.trap), // 台形群 index (1 始まり)
+    conn: String(pend.side),   // side (1=左脚/2=上辺/3=右脚)
+    extras: name !== '' ? [name] : [],
+  };
+  rows.push(newRow); // 不変条件: 三角形 prefix → 台形 → 台形子三角形 (末尾)
+  pendingTrapParent = null;
+  edgeSel = null;
+  shadowPrims = null;
+  input('newName').value = '';
+  input('newA').value = '';
+  input('newB').value = '';
+  input('newC').value = '';
+  input('newParent').value = '';
+  select('newConn').value = '-1';
+  selected = rows.length;
+  current = rows.length;
+  buildTable(canvas);
+  syncForm();
+  redraw(canvas);
+  setStatus(`台形 ${pend.trap} の ${trapSideName(pend.side)}辺に三角形を追加`);
+}
+
 // シャドー (接続プレビュー) を組む。figureKind で「次に足す図形」が三角形か台形かを分ける (段5 R6)。
 // 仮の行を足した CSV を common に描かせ、その図形の辺を借りる — TS で幾何を再計算せず、
 // 接続の向き・形が実際の追加結果と必ず一致する。
@@ -2701,6 +2805,23 @@ function selectTrapezoid(canvas: HTMLCanvasElement, trap: number, side: number):
 //   台形モード:  仮台形 (延長=newB, 底辺=親辺長, 上辺=newC, 寄せ=newLcr) の 4 辺。
 function buildShadow(): void {
   shadowPrims = null;
+  // 台形辺タップ済 (三角形を台形に乗せる): TriTrap 仮行を足して三角形シャドーを借りる。
+  // tritrap は描画で最後に出る (三角形→台形→台形子) ので、tri 線の末尾 3 本がその三角形。
+  if (pendingTrapParent) {
+    const bv = input('newB').value;
+    const cv = input('newC').value;
+    if (!(parseFloat(bv) > 0) || !(parseFloat(cv) > 0)) return;
+    const candidate = serializeState() +
+      `TriTrap,9,0,${bv},${cv},${pendingTrapParent.trap},${pendingTrapParent.side}\n`;
+    try {
+      const prims = JSON.parse(renderCsvToPrimitivesWithOverrides(candidate, 1.0, overridesJson())) as Prim[];
+      const triLines = prims.filter((q): q is LinePrim => q.type === 'line' && q.layer === 'tri');
+      if (triLines.length >= 3) shadowPrims = triLines.slice(-3);
+    } catch {
+      shadowPrims = null;
+    }
+    return;
+  }
   if (!edgeSel) return;
   const p = rows[edgeSel.tri - 1];
   if (!p) return;
@@ -2794,6 +2915,7 @@ function edgeOccupiedBy(tri: number, side: 1 | 2): number {
 // FAB を押さなくても新規行に接続・親・辺A がプリセットされ、シャドーが出る。
 // ただし既接続辺は追加遷移 (プリセット+シャドー+フォーカス) を起こさず、選択と W/H 対象のみ
 function selectEdge(canvas: HTMLCanvasElement, tri: number, side: 1 | 2): void {
+  pendingTrapParent = null; // 三角形辺を選んだら台形親プリセットは解除
   const child = edgeOccupiedBy(tri, side);
   if (child > 0) {
     selected = tri;
@@ -3073,6 +3195,12 @@ function handleTap(canvas: HTMLCanvasElement, px: number, py: number): void {
     } else {
       trap = (dim!.prim.tri as number) - tc;  // 台形群内の連番 (1 始まり)
       side = dim!.prim.side as number;          // 0=A底辺 / 1=B左脚 / 2=C上辺 (getLine 側)
+    }
+    // 三角形モードで台形の自由辺 (1=左脚/2=上辺/3=右脚) をタップ → そこに三角形を乗せるプリセット+シャドー。
+    // 底辺(0)は親の接続辺なので不可。台形モード/底辺は従来どおり選択+辺名表示。
+    if (figureKind === 'triangle' && side >= 1) {
+      presetTriOnTrap(canvas, trap, side);
+      return;
     }
     selectTrapezoid(canvas, trap, side);
     return;

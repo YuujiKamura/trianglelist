@@ -100,8 +100,21 @@ class WebTrapezoidTest {
         assertEquals(1, tris.size, "台形を親に三角形が1個建つ")
         val edge = traps[0].getLine(2) // 上辺C
         val tri = tris[0]
-        assertTrue(tri.point[0].nearBy(edge.left, 0.001), "三角形の底辺始点 ${tri.point[0]} != 台形上辺左 ${edge.left}")
-        assertTrue(tri.pointAB.nearBy(edge.right, 0.001), "三角形の底辺終点 ${tri.pointAB} != 台形上辺右 ${edge.right}")
+        // 底辺が上辺Cに乗る。向きは問わない (頂点を外へ出すため base を反転する場合があるので、
+        // 始点/終点が辺の両端のどちらに当たってもよい — 本質は「底辺辺が上辺と一致」)。
+        val onEdge = (tri.point[0].nearBy(edge.left, 0.001) && tri.pointAB.nearBy(edge.right, 0.001)) ||
+            (tri.point[0].nearBy(edge.right, 0.001) && tri.pointAB.nearBy(edge.left, 0.001))
+        assertTrue(onEdge, "三角形の底辺が台形上辺に乗らない: p0=${tri.point[0]} pAB=${tri.pointAB} edge=$edge")
+        // 頂点 (pointBC) は親台形の外側に出る (重なり防止が本フィックスの核)。base 線に対して
+        // 頂点と台形重心が反対側 (cross 積が異符号) なら外向き。
+        val lp = traps[0].calcPoint()
+        val cx = (lp.a.left.x + lp.a.right.x + lp.b.left.x + lp.b.right.x) / 4f
+        val cy = (lp.a.left.y + lp.a.right.y + lp.b.left.y + lp.b.right.y) / 4f
+        val dx = edge.right.x - edge.left.x
+        val dy = edge.right.y - edge.left.y
+        val apexSide = dx * (tri.pointBC.y - edge.left.y) - dy * (tri.pointBC.x - edge.left.x)
+        val centSide = dx * (cy - edge.left.y) - dy * (cx - edge.left.x)
+        assertTrue(apexSide * centSide < 0f, "頂点が台形内部を向き重なっている: apexSide=$apexSide centSide=$centSide")
     }
 
     /** TriTrap 行が描画される: 台形(4辺) + 台形子三角形(3辺) = tri 線 7 本、番号サークル 2 (台形 + 子三角形) */
@@ -333,12 +346,22 @@ class WebTrapezoidTest {
     @Test
     fun triangle_can_attach_to_trapezoid_edge() {
         val trap = Rectangle(5.0, 10.0, 7.0)   // 独立台形 (延長5/底辺10/上辺7、angle=0)
+        val lp = trap.calcPoint()
+        val cx = (lp.a.left.x + lp.a.right.x + lp.b.left.x + lp.b.right.x) / 4f
+        val cy = (lp.a.left.y + lp.a.right.y + lp.b.left.y + lp.b.right.y) / 4f
         for (side in 1..3) {
             val edge = trap.getLine(side)
             val tri = Triangle(trap as EditObject, side, 6f, 6f)
-            // 三角形のA辺 = point[0]→pointAB が親台形の getLine(side) の両端に乗る
-            assertTrue(tri.point[0].nearBy(edge.left, 0.001), "side=$side: 三角形A辺左 ${tri.point[0]} != 台形辺左 ${edge.left}")
-            assertTrue(tri.pointAB.nearBy(edge.right, 0.001), "side=$side: 三角形A辺右 ${tri.pointAB} != 台形辺右 ${edge.right}")
+            // A辺 (point[0]→pointAB) が台形辺の両端に乗る。向きは問わない (頂点を外へ出すため反転し得る)。
+            val onEdge = (tri.point[0].nearBy(edge.left, 0.001) && tri.pointAB.nearBy(edge.right, 0.001)) ||
+                (tri.point[0].nearBy(edge.right, 0.001) && tri.pointAB.nearBy(edge.left, 0.001))
+            assertTrue(onEdge, "side=$side: 三角形A辺が台形辺に乗らない p0=${tri.point[0]} pAB=${tri.pointAB} edge=$edge")
+            // 頂点は台形の外側に出る (重なり防止)。base 線に対し頂点と台形重心が反対側 (cross 積が異符号)。
+            val dx = edge.right.x - edge.left.x
+            val dy = edge.right.y - edge.left.y
+            val apexSide = dx * (tri.pointBC.y - edge.left.y) - dy * (tri.pointBC.x - edge.left.x)
+            val centSide = dx * (cy - edge.left.y) - dy * (cx - edge.left.x)
+            assertTrue(apexSide * centSide < 0f, "side=$side: 頂点が台形内部を向き重なる apexSide=$apexSide centSide=$centSide")
         }
     }
 
