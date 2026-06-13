@@ -190,12 +190,17 @@ let deductionMode = false;
 let dedCursor: { x: number; y: number } | null = null;
 let dedSelected = 0; // 選択中の控除番号 (1-based、0 = 非選択)
 
-// ---- 台形 (Trapezoid) 図形 (段1: trap-design.md の CSV contract) ----
-// 控除と同じく SoT は生 CSV 行の配列 ("Trapezoid,num,length,widthA,widthB,parent,side")。
-// 幾何 (描画) は common の WebPrimitiveRenderer (B1) が担う — TS は行の出し入れと CSV 生成だけ。
-// length=延長(辺B), widthA=底辺(辺A), widthB=上辺(辺C), parent=接続先三角形番号(-1=独立),
-// side=接続辺(1=B,2=C, 独立=0)。三角形パイプラインは一切変えない (golden 不変)
-let trapLines: string[] = [];
+// ---- 台形 (Trapezoid) 図形 (混在リスト段1+2: trap-design.md v2 の確定仕様) ----
+// v1 の別state (trapLines) は廃止。台形は三角形と同じ rows[] に kind='trapezoid' で混在する
+// (trap-design.md「混在リストが土台」)。CSV contract は不変: "Trapezoid,num,length,widthA,
+// widthB,parent,side"。length=延長(辺B), widthA=底辺(辺A), widthB=上辺(辺C),
+// parent=接続先三角形番号(-1=独立), side=接続辺(1=B,2=C, 独立=0)。common の buildTrapezoids
+// (CsvCodec.kt:240) はこの行を読んで描く — web は CSV を出すだけ。三角形の出力は1ビット不変。
+//
+// 不変条件: rows[] は「三角形が連続 prefix + 台形が suffix」を常に保つ。これにより
+// 既存コードの rows[n-1]==三角形n という前提 (current/selected/親探索/シャドー) が壊れず、
+// 台形ゼロのリストでは全経路がバイト同一 = golden 不変。add は kind で splice 位置を分け、
+// parse は台形行を三角形の後に積む。
 // 新規入力で「追加」が作る図形種別。FAB fabFigureKind でトグル、syncForm がラベルを切替える
 let figureKind: 'triangle' | 'trapezoid' = 'triangle';
 
@@ -565,6 +570,11 @@ type EdgeKey = 'a' | 'b' | 'c';
 const EKEY: Record<EdgeKey, 'ea' | 'eb' | 'ec'> = { a: 'ea', b: 'eb', c: 'ec' };
 
 type Row = {
+  // kind='triangle': ea/eb/ec=辺A/B/C, conn=接続コード(CSV列5)。
+  // kind='trapezoid': ea=底辺(widthA), eb=延長(length), ec=上辺(widthB),
+  //   parent=接続先三角形番号, conn=接続辺 side('0'独立/'1'=B/'2'=C)。
+  // 辺プールは両者で共用。台形は段1+2では辺共有 (single side) のみ — 形態/起点は段4。
+  kind: 'triangle' | 'trapezoid';
   ea: number; // 辺A の edges index (単純接続では親の eb/ec と同一値)
   eb: number;
   ec: number;
@@ -572,6 +582,17 @@ type Row = {
   conn: string;
   extras: string[]; // 7列目以降 (測点名等) を生のまま保持して round-trip で落とさない
 };
+
+// 三角形の数 (= rows[] 中の三角形 prefix の長さ)。不変条件により台形は必ずこの index 以降。
+// 三角形番号 n (1-based) は rows[n-1] で引ける (golden の前提)。
+function triCount(): number {
+  let n = 0;
+  for (const r of rows) {
+    if (r.kind !== 'triangle') break;
+    n++;
+  }
+  return n;
+}
 
 function edgeVal(r: Row, k: EdgeKey): string {
   return edges[r[EKEY[k]]];
@@ -639,7 +660,10 @@ function parseCsvToState(csv: string): void {
   dedLines = [];
   dedSelected = 0;
   dedCursor = null;
-  trapLines = [];
+  // 台形行は一旦ここに溜め、全三角形を読み終えてから rows 末尾に積む (prefix 不変条件を保つ —
+  // 三角形読み中の rows[pn-1] 親引きが台形に当たらないように、かつ手書き CSV で Trapezoid が
+  // 先頭に来ても prefix が崩れないように)
+  const trapRows: Row[] = [];
   for (const line of csv.split(/\r?\n/)) {
     if (line.trim() === '') continue;
     const chunks = line.split(',').map((s) => s.trim());
@@ -659,9 +683,19 @@ function parseCsvToState(csv: string): void {
       dedLines.push(line.trim());
       continue;
     }
-    // 台形行も控除と同形に生のまま保持 (幾何は common、TS は round-trip と一覧だけ)
+    // 台形行 → 台形 Row。列 (contract): Trapezoid, num, length(延長/辺B), widthA(底辺/辺A),
+    // widthB(上辺/辺C), parent(三角形番号), side(1=B/2=C/0独立)。num は再採番するので捨てる
+    // (common も num は描画に使わず withIndex で振る)。辺は辺A=底辺/辺B=延長/辺C=上辺で持つ。
     if (chunks[0] === 'Trapezoid') {
-      trapLines.push(line.trim());
+      trapRows.push({
+        kind: 'trapezoid',
+        ea: newEdge(chunks[3] ?? ''), // 底辺(widthA)
+        eb: newEdge(chunks[2] ?? ''), // 延長(length)
+        ec: newEdge(chunks[4] ?? ''), // 上辺(widthB)
+        parent: chunks[5] ?? '-1',
+        conn: chunks[6] ?? '0', // side
+        extras: [],
+      });
       continue;
     }
     const num = chunks.length >= 4 ? intOrNull(chunks[0]) : null;
@@ -688,6 +722,7 @@ function parseCsvToState(csv: string): void {
       ea = newEdge(aStr);
     }
     rows.push({
+      kind: 'triangle',
       ea,
       eb: newEdge(chunks[2] ?? ''),
       ec: newEdge(chunks[3] ?? ''),
@@ -696,6 +731,8 @@ function parseCsvToState(csv: string): void {
       extras,
     });
   }
+  // 台形を三角形 prefix の後ろに積む (不変条件: 三角形 prefix + 台形 suffix)
+  rows.push(...trapRows);
 }
 
 function serializeState(): string {
@@ -704,18 +741,32 @@ function serializeState(): string {
   // 5 行目以降の未知行は原文のまま保持 (CsvCodec の schema evolution 定石と同じ)
   const lines = HEADER_LABELS.map((label, i) => `${label},${headerValueAt(i)}`);
   lines.push(...headerLines.slice(4));
-  rows.forEach((r, i) => {
+  // 三角形行のみ。不変条件で三角形は prefix なので index+1 == 三角形番号 = 従来と同一値
+  // (台形ゼロのリストでは出力がバイト同一 — golden 不変)。台形は kind で除外し後で別ループ。
+  let triNum = 0;
+  rows.forEach((r) => {
+    if (r.kind !== 'triangle') return;
+    triNum++;
     // 共有 index は CSV では従来どおり複製値に展開する (app との互換境界)
     lines.push(
-      [String(i + 1), edgeVal(r, 'a'), edgeVal(r, 'b'), edgeVal(r, 'c'), r.parent, r.conn, ...r.extras].join(','),
+      [String(triNum), edgeVal(r, 'a'), edgeVal(r, 'b'), edgeVal(r, 'c'), r.parent, r.conn, ...r.extras].join(','),
     );
   });
   // アプリ保存 (MainActivity.kt:2781) と同じく三角形行の後に ListAngle を書く
   lines.push(`ListAngle, ${listAngle}`);
   // 寸法文字サイズ (アプリ writeCSV:2785 と同形)。CsvCodec.parse が textSize に昇格して読む
   lines.push(`TextSize, ${textSizeCsv}`);
-  // 台形行 (段1)。reader は先頭 prefix で分岐するので順不同で安全 (dedLines の前に置く)
-  lines.push(...trapLines);
+  // 台形行 (混在リスト段1+2)。CSV contract: Trapezoid, num, length, widthA, widthB, parent, side。
+  // num は台形内連番で再採番 (common は num を描画に使わず withIndex で振る)。reader は先頭
+  // prefix で分岐するので順不同で安全 (dedLines の前に置く)
+  let trapNum = 0;
+  rows.forEach((r) => {
+    if (r.kind !== 'trapezoid') return;
+    trapNum++;
+    lines.push(
+      `Trapezoid, ${trapNum}, ${edgeVal(r, 'b')}, ${edgeVal(r, 'a')}, ${edgeVal(r, 'c')}, ${r.parent}, ${r.conn}`,
+    );
+  });
   // 控除はアプリ保存 (MainActivity.kt:2790-2797) と同じく末尾に書く
   lines.push(...dedLines);
   return lines.join('\n') + '\n';
@@ -760,14 +811,29 @@ function invalidTrapezoidReason(length: number, widthA: number, widthB: number):
   return null;
 }
 
-function findInvalidRow(rs: Row[]): { n: number; reason: string } | null {
-  for (let i = 0; i < rs.length; i++) {
+// 不成立の行を探す (混在対応)。reason は subject ("三角形 N" / "台形 N") を含むフル文言。
+function findInvalidRow(rs: Row[]): { reason: string } | null {
+  let triN = 0;
+  let trapN = 0;
+  for (const r of rs) {
+    if (r.kind === 'trapezoid') {
+      // 台形は三角不等式が無い (専用関門)。辺B=延長/辺A=底辺/辺C=上辺
+      trapN++;
+      const reason = invalidTrapezoidReason(
+        parseFloat(edgeVal(r, 'b')),
+        parseFloat(edgeVal(r, 'a')),
+        parseFloat(edgeVal(r, 'c')),
+      );
+      if (reason) return { reason: `台形 ${trapN}: ${reason}` };
+      continue;
+    }
+    triN++;
     const reason = invalidTriangleReason(
-      parseFloat(edgeVal(rs[i], 'a')),
-      parseFloat(edgeVal(rs[i], 'b')),
-      parseFloat(edgeVal(rs[i], 'c')),
+      parseFloat(edgeVal(r, 'a')),
+      parseFloat(edgeVal(r, 'b')),
+      parseFloat(edgeVal(r, 'c')),
     );
-    if (reason) return { n: i + 1, reason };
+    if (reason) return { reason: `三角形 ${triN}: ${reason}` };
   }
   return null;
 }
@@ -777,7 +843,7 @@ function redraw(canvas: HTMLCanvasElement): void {
   if (bad) {
     // キャンバスは直前の正しい状態のまま据え置き、autosave も汚さない。
     // 値を直せば次の入力イベントでそのまま再描画に戻る
-    setStatus(`⚠ 三角形 ${bad.n}: ${bad.reason} — 図は更新しません`);
+    setStatus(`⚠ ${bad.reason} — 図は更新しません`);
     return;
   }
   renderCsv(canvas, serializeState(), `table (${rows.length} rows)`);
@@ -803,23 +869,35 @@ const select = (id: string) => el<HTMLSelectElement>(id);
 // 前行は廃止 (user 2026-06-11: web は全行一覧があるので不要、現行スマホ版も 2 行に簡略化済)。
 // 新規入力行の値はユーザーの書きかけなので触らない — 番号プリセットだけ更新する
 function syncForm(): void {
-  input('newNum').value = String(rows.length + 1);
-
   // 図形種別でフォームの辺ラベルを切替える (台形: 辺A=底辺, 辺B=延長, 辺C=上辺)。
-  // ヘッダは新規/現在の両行で共有 — 段1 では新規入力の語彙として切替える (現在行の台形編集は B3)
+  // ヘッダは FAB モード (figureKind) が「今から足す図形」の語彙を決める。
   const isTrap = figureKind === 'trapezoid';
+  const tc = triCount();
+  // 新規番号は figureKind に追従 (三角形 = 次の三角形番号、台形 = 次の台形連番 T{k})
+  input('newNum').value = isTrap ? `T${rows.length - tc + 1}` : String(tc + 1);
   el('thEdgeA').textContent = isTrap ? '底辺(A)' : '辺A';
   el('thEdgeB').textContent = isTrap ? '延長(B)' : '辺B';
   el('thEdgeC').textContent = isTrap ? '上辺(C)' : '辺C';
 
   const cur = current >= 1 ? rows[current - 1] : null;
-  input('curNum').value = cur ? String(current) : '';
+  // 現在行の番号表示は行自身の種別に従う (三角形 = 番号、台形 = T{k})
+  input('curNum').value = cur ? (cur.kind === 'trapezoid' ? `T${current - tc}` : String(current)) : '';
   input('curName').value = cur ? nameOf(cur) : '';
   input('curA').value = cur ? fmt2(edgeVal(cur, 'a')) : '';
   input('curB').value = cur ? fmt2(edgeVal(cur, 'b')) : '';
   input('curC').value = cur ? fmt2(edgeVal(cur, 'c')) : '';
   input('curParent').value = cur ? cur.parent : '';
-  setConnSelects('cur', cur ? connPartsOf(cur) : null);
+  if (cur && cur.kind === 'trapezoid') {
+    // 台形の接続は side のみ (1=B/2=C)。形態/起点は段4 なので無効化して side だけ表示
+    select('curConn').value = (intOrNull(cur.parent) ?? -1) >= 1 ? (cur.conn === '2' ? '2' : '1') : '-1';
+    select('curCType').value = '0';
+    select('curLcr').value = '2';
+    select('curCType').disabled = true;
+    select('curLcr').disabled = true;
+  } else {
+    select('curCType').disabled = false;
+    setConnSelects('cur', cur ? connPartsOf(cur) : null);
+  }
 }
 
 function updateRowHighlight(): void {
@@ -974,11 +1052,90 @@ function numberInput(value: string, step: string, onInput: (v: string) => void):
   return inp;
 }
 
+// 台形行のセル群 (辺=底辺/延長/上辺、親番号、接続辺 side)。番号・測点名・削除は buildTable 側で共通。
+// 段1+2: 辺共有 (side のみ) まで。形態/起点 (二重断面・アライメント) は段4 なので空セル 2 つ。
+function buildTrapRowCells(tr: HTMLTableRowElement, row: Row, i: number, canvas: HTMLCanvasElement): void {
+  // 辺セル (辺A=底辺/辺B=延長/辺C=上辺)。三角形と同じ辺プール機構 (syncEdgeInputs で他セル追従)
+  for (const key of ['a', 'b', 'c'] as const) {
+    const td = document.createElement('td');
+    const inp = numberInput(fmt2(edgeVal(row, key)), '0.01', (v) => {
+      setEdgeVal(row, key, v);
+      syncEdgeInputs(row[EKEY[key]], inp);
+      redraw(canvas);
+    });
+    inp.dataset.edge = String(row[EKEY[key]]);
+    inp.addEventListener('change', () => {
+      inp.value = fmt2(inp.value);
+      setEdgeVal(row, key, inp.value);
+      syncEdgeInputs(row[EKEY[key]], inp);
+      redraw(canvas);
+    });
+    td.appendChild(inp);
+    tr.appendChild(td);
+  }
+
+  // 親番号 (三角形番号)。台形は辺A 共有の張り直し (relinkEdgeA) が無いので redraw だけ
+  const tdParent = document.createElement('td');
+  const parentInp = numberInput(row.parent, '1', (v) => {
+    row.parent = v;
+    redraw(canvas);
+  });
+  parentInp.addEventListener('change', () => {
+    buildTable(canvas);
+    syncForm();
+    redraw(canvas);
+  });
+  tdParent.appendChild(parentInp);
+  tr.appendChild(tdParent);
+
+  // 接続辺 (side): 独立なら表示のみ、接続済みなら B/C 選択。形態・起点列は段4 なので空
+  const pn = intOrNull(row.parent) ?? -1;
+  if (pn < 1) {
+    const tdInd = document.createElement('td');
+    tdInd.textContent = '独立';
+    tr.appendChild(tdInd);
+    tr.appendChild(document.createElement('td'));
+    tr.appendChild(document.createElement('td'));
+  } else {
+    const sideSel = document.createElement('select');
+    for (const [v, label] of [['1', '親のB辺'], ['2', '親のC辺']] as Array<[string, string]>) {
+      const opt = document.createElement('option');
+      opt.value = v;
+      opt.textContent = label;
+      sideSel.appendChild(opt);
+    }
+    sideSel.value = row.conn === '2' ? '2' : '1';
+    sideSel.addEventListener('change', () => {
+      row.conn = sideSel.value;
+      redraw(canvas);
+    });
+    const tdSide = document.createElement('td');
+    tdSide.appendChild(sideSel);
+    tr.appendChild(tdSide);
+    tr.appendChild(document.createElement('td'));
+    tr.appendChild(document.createElement('td'));
+  }
+
+  // 削除 (三角形と同じ deleteRow)
+  const tdDel = document.createElement('td');
+  const del = document.createElement('button');
+  del.type = 'button';
+  del.className = 'del';
+  del.textContent = '削除';
+  del.addEventListener('click', (e) => {
+    e.stopPropagation();
+    deleteRow(canvas, i + 1);
+  });
+  tdDel.appendChild(del);
+  tr.appendChild(tdDel);
+}
+
 function buildTable(canvas: HTMLCanvasElement): void {
   const tbody = document.getElementById('triRows');
   if (!tbody) return;
   tbody.textContent = '';
 
+  const tc = triCount(); // 台形の連番 (T{k}) 用。混在表は三角形 prefix + 台形 suffix
   rows.forEach((row, i) => {
     const tr = document.createElement('tr');
     if (i + 1 === selected) tr.classList.add('selected');
@@ -988,7 +1145,8 @@ function buildTable(canvas: HTMLCanvasElement): void {
 
     const tdNum = document.createElement('td');
     tdNum.className = 'num';
-    tdNum.textContent = String(i + 1); // 自動採番、read-only
+    // 三角形は三角形番号 (= i+1、prefix なので一致)、台形は台形連番 "T{k}" (canvas 表記と一致)
+    tdNum.textContent = row.kind === 'trapezoid' ? `T${i + 1 - tc}` : String(i + 1);
     tr.appendChild(tdNum);
 
     // 測点名 (CSV 列6 = extras[0])。描画には出ないが round-trip・書き出しで保持する
@@ -1002,6 +1160,13 @@ function buildTable(canvas: HTMLCanvasElement): void {
     });
     tdName.appendChild(nameInp);
     tr.appendChild(tdName);
+
+    // 台形行は専用ブランチで描画 (辺=底辺/延長/上辺、接続辺=side のみ、形態/起点は段4)
+    if (row.kind === 'trapezoid') {
+      buildTrapRowCells(tr, row, i, canvas);
+      tbody.appendChild(tr);
+      return;
+    }
 
     for (const key of ['a', 'b', 'c'] as const) {
       const td = document.createElement('td');
@@ -1121,13 +1286,15 @@ function buildTable(canvas: HTMLCanvasElement): void {
 }
 
 function addRow(canvas: HTMLCanvasElement): void {
-  if (rows.length === 0) {
-    rows.push({ ea: newEdge('3.0'), eb: newEdge('3.0'), ec: newEdge('3.0'), parent: '-1', conn: '-1', extras: [] });
+  // 三角形は prefix 末尾に挿入 (不変条件)。台形が居ても rows[t-1] が最後の三角形
+  const t = triCount();
+  if (t === 0) {
+    rows.splice(0, 0, { kind: 'triangle', ea: newEdge('3.0'), eb: newEdge('3.0'), ec: newEdge('3.0'), parent: '-1', conn: '-1', extras: [] });
   } else {
-    // デフォルトは「直前の行の B 辺に接続」。辺A は親の B 辺と同一の物理辺なので
+    // デフォルトは「直前の三角形の B 辺に接続」。辺A は親の B 辺と同一の物理辺なので
     // 値を写すのではなく同じ辺 index を共有する (辺プール)
-    const parent = rows[rows.length - 1];
-    rows.push({ ea: parent.eb, eb: newEdge('3.0'), ec: newEdge('3.0'), parent: String(rows.length), conn: '1', extras: [] });
+    const parent = rows[t - 1];
+    rows.splice(t, 0, { kind: 'triangle', ea: parent.eb, eb: newEdge('3.0'), ec: newEdge('3.0'), parent: String(t), conn: '1', extras: [] });
   }
   clearSelection(); // 行構成が変わるので選択解除
   buildTable(canvas);
@@ -1183,6 +1350,11 @@ function rewriteCurrent(canvas: HTMLCanvasElement): void {
     setStatus('Cannot edit: カレント行がありません。図か一覧で選択してください');
     return;
   }
+  // 台形カレント行の書換え (段1+2): 辺=底辺/延長/上辺、親+side のみ。relinkEdgeA/cp は無い
+  if (rows[current - 1].kind === 'trapezoid') {
+    rewriteCurrentTrapezoid(canvas);
+    return;
+  }
   // 共通関門: 不成立の値は state を汚す前に却下 (undo スナップも消費しない)
   const editBad = invalidTriangleReason(
     parseFloat(input('curA').value),
@@ -1216,6 +1388,46 @@ function rewriteCurrent(canvas: HTMLCanvasElement): void {
   setStatus(`Rewrite Triangle ${current}`);
 }
 
+// 台形カレント行の書換え (段1+2)。辺A=底辺/辺B=延長/辺C=上辺、親 (三角形番号) と side のみ。
+// 三角形のような辺A 共有 (relinkEdgeA) や cp 列 (writeCpExtras) は段4 なので無い
+function rewriteCurrentTrapezoid(canvas: HTMLCanvasElement): void {
+  const r = rows[current - 1];
+  const editBad = invalidTrapezoidReason(
+    parseFloat(input('curB').value), // 延長
+    parseFloat(input('curA').value), // 底辺
+    parseFloat(input('curC').value), // 上辺
+  );
+  if (editBad) {
+    setStatus(`⚠ 台形: ${editBad} — 書換えを中止`);
+    return;
+  }
+  // 親番号と side。空/-1 は独立。親は三角形番号なので triCount で実在判定
+  const cp = input('curParent').value.trim();
+  const pn = cp === '' ? -1 : (intOrNull(cp) ?? -1);
+  let parent = -1;
+  let side = 0;
+  if (pn >= 1) {
+    if (pn > triCount()) {
+      setStatus(`⚠ 親番号 ${pn} の三角形が存在しません — 書換えを中止`);
+      return;
+    }
+    parent = pn;
+    const s = intOrNull(select('curConn').value) ?? 1;
+    side = s === 2 ? 2 : 1;
+  }
+  takeUndoSnap();
+  setEdgeVal(r, 'a', fmt2(input('curA').value));
+  setEdgeVal(r, 'b', fmt2(input('curB').value));
+  setEdgeVal(r, 'c', fmt2(input('curC').value));
+  r.parent = String(parent);
+  r.conn = String(side);
+  setName(r, input('curName').value);
+  buildTable(canvas);
+  syncForm();
+  redraw(canvas);
+  setStatus(`Rewrite 台形 ${current - triCount()}`);
+}
+
 // replace (MainActivity.kt:1614 fabReplace → processTriEditMode:1652):
 // 新規行の B が空 → カレント行の書換え / C だけ空 → 何もしない / 両方あり → 追加。
 // この 3 分岐の判定をそのまま写す (幾何の知識は CSV 再構築側 = common が持つ)
@@ -1241,11 +1453,13 @@ function fabReplace(canvas: HTMLCanvasElement): void {
   }
   if (newC === '') return; // アプリと同じ: B だけでは何もしない (strAddLineC.isEmpty -> return)
 
-  // Add (アプリ addTriangleBy 相当 — 行を足して CSV 再構築に任せる)
+  // Add (アプリ addTriangleBy 相当 — 行を足して CSV 再構築に任せる)。
+  // 三角形数 t を基準にする (台形が居ても親番号・採番・挿入位置は三角形 prefix で完結)
+  const t = triCount();
   let newParts = readConnParts('new');
   let conn = newParts ? String(encodeConn(newParts)) : '-1';
   let parent = input('newParent').value.trim();
-  if (rows.length === 0) {
+  if (t === 0) {
     // 最初の 1 個は必ず独立 (スマホ版同様、図面に 1 リスト)。新規行に独立の選択肢は無く、
     // 空リストへの追加だけが独立になる。残留プリセットによる「存在しない親」も同時に防ぐ
     newParts = null;
@@ -1256,14 +1470,15 @@ function fabReplace(canvas: HTMLCanvasElement): void {
   if (conn === '-1') {
     parent = '-1';
   } else if (parent === '') {
-    parent = String(current > 0 ? current : rows.length);
+    // current が台形を指している場合は最後の三角形 (t) を親にする
+    parent = String(current > 0 && current <= t ? current : t);
   }
   const connCode = intOrNull(conn) ?? -1;
   // 親の実在関門: 三角不等式・占有と同列の追加前チェック。存在しない親への接続行は
   // WebCsvReader が skip するので、リストに居るのに描画されない行が生まれてしまう
   if (connCode >= 1) {
     const pn = parseInt(parent, 10);
-    if (!(pn >= 1 && pn <= rows.length)) {
+    if (!(pn >= 1 && pn <= t)) {
       setStatus(`⚠ 親番号 ${parent} の三角形が存在しません — 追加を中止`);
       return;
     }
@@ -1301,9 +1516,11 @@ function fabReplace(canvas: HTMLCanvasElement): void {
   const pRow = rows[parseInt(parent, 10) - 1];
   const ea =
     pRow && (conn === '1' || conn === '2') ? (conn === '1' ? pRow.eb : pRow.ec) : newEdge(a);
-  const newRow: Row = { ea, eb: newEdge(newB), ec: newEdge(newC), parent, conn, extras: name !== '' ? [name] : [] };
+  const newRow: Row = { kind: 'triangle', ea, eb: newEdge(newB), ec: newEdge(newC), parent, conn, extras: name !== '' ? [name] : [] };
   writeCpExtras(newRow, newParts); // 二重断面/フロートは列 17-19 にも cp を書く (lcr の SoT)
-  rows.push(newRow);
+  // 三角形 prefix の末尾に挿入 (台形 suffix の前)。新しい三角形番号は t+1
+  rows.splice(t, 0, newRow);
+  const newNum = t + 1;
 
   // 新規入力行をリセットして次の入力へ (アプリ finalizeReplace + editorResetBy 相当)
   input('newName').value = '';
@@ -1313,18 +1530,18 @@ function fabReplace(canvas: HTMLCanvasElement): void {
   input('newParent').value = '';
   select('newConn').value = '-1';
 
-  selected = rows.length;
-  current = rows.length;
+  selected = newNum;
+  current = newNum;
   edgeSel = null; // 追加が確定したのでシャドーは消す
   shadowPrims = null;
   buildTable(canvas);
   syncForm();
   redraw(canvas);
-  setStatus(`Add Triangle ${rows.length}`);
+  setStatus(`Add Triangle ${newNum}`);
 }
 
-// 台形の追加 (段1): 新規入力欄を台形語彙で読み、CSV contract の Trapezoid 行を trapLines に積む。
-// 辺A=底辺(widthA), 辺B=延長(length), 辺C=上辺(widthB)。幾何は common (B1) が CSV から再構築する。
+// 台形の追加 (混在リスト段1+2): 新規入力欄を台形語彙で読み、台形 Row を rows[] 末尾 (台形 suffix)
+// に積む。辺A=底辺(widthA), 辺B=延長(length), 辺C=上辺(widthB)。幾何は common が CSV から再構築。
 function addTrapezoid(canvas: HTMLCanvasElement): void {
   // ラベルは台形語彙だが input の id は三角形と共用 (newA/newB/newC)
   const widthAStr = input('newA').value.trim(); // 底辺
@@ -1336,13 +1553,15 @@ function addTrapezoid(canvas: HTMLCanvasElement): void {
     setStatus(`⚠ 台形: ${bad} — 追加を中止`);
     return;
   }
-  // 親番号 (空 = 独立) と接続辺 (newConn: 1=B, 2=C)。独立なら parent=-1, side=0
+  // 親番号 (空 = 独立) と接続辺 (newConn: 1=B, 2=C)。独立なら parent=-1, side=0。
+  // 親は三角形番号なので t=triCount() で実在判定する
+  const t = triCount();
   const parentStr = input('newParent').value.trim();
   let parent = parentStr === '' ? -1 : (intOrNull(parentStr) ?? -1);
   let side = intOrNull(select('newConn').value) ?? 0;
   if (parent >= 1) {
     // 親の実在関門 (三角形側と同じ — 存在しない親に繋ぐと renderer が行を落とす)
-    if (parent > rows.length) {
+    if (parent > t) {
       setStatus(`⚠ 親番号 ${parent} の三角形が存在しません — 追加を中止`);
       return;
     }
@@ -1352,8 +1571,17 @@ function addTrapezoid(canvas: HTMLCanvasElement): void {
     side = 0;
   }
   takeUndoSnap();
-  const num = trapLines.length + 1;
-  trapLines.push(`Trapezoid, ${num}, ${lengthStr}, ${widthAStr}, ${widthBStr}, ${parent}, ${side}`);
+  // 台形 Row を suffix 末尾へ (辺A=底辺/辺B=延長/辺C=上辺、conn=side)
+  rows.push({
+    kind: 'trapezoid',
+    ea: newEdge(widthAStr),
+    eb: newEdge(lengthStr),
+    ec: newEdge(widthBStr),
+    parent: String(parent),
+    conn: String(side),
+    extras: [],
+  });
+  const num = rows.length - t; // 台形内連番 (suffix での位置)
   // 新規入力行をリセット (三角形追加と同じ後始末)
   input('newName').value = '';
   input('newA').value = '';
@@ -1361,6 +1589,8 @@ function addTrapezoid(canvas: HTMLCanvasElement): void {
   input('newC').value = '';
   input('newParent').value = '';
   select('newConn').value = '1';
+  selected = rows.length;
+  current = rows.length;
   buildTable(canvas);
   syncForm();
   redraw(canvas);
@@ -1393,25 +1623,31 @@ function toggleFigureKind(): void {
 function deleteRow(canvas: HTMLCanvasElement, n: number): void {
   if (n < 1 || n > rows.length) return;
   takeUndoSnap();
+  // 三角形を消すか台形を消すか。三角形 (n<=triCount) を消した時だけ親番号の振り直しが要る。
+  // 台形を消す場合 n は台形の rows-index+1 (>triCount) なので三角形番号に当たらず無改変になる
+  const deletingTriangle = rows[n - 1].kind === 'triangle';
   rows.splice(n - 1, 1);
-  for (const r of rows) {
-    const pn = intOrNull(r.parent);
-    if (pn === null) continue;
-    if (pn === n) {
-      // 親を失った子は独立に落とす (現値を保ったまま辺A を自分の辺に切り出す)
-      r.parent = '-1';
-      r.conn = '-1';
-      relinkEdgeA(r);
-    } else if (pn > n) {
-      r.parent = String(pn - 1); // 後続番号が 1 ずれるので追従
+  if (deletingTriangle) {
+    for (const r of rows) {
+      const pn = intOrNull(r.parent);
+      if (pn === null) continue;
+      if (pn === n) {
+        // 親を失った子は独立に落とす (現値を保ったまま辺A を自分の辺に切り出す)。
+        // 台形の独立は side='0'、三角形は接続コード '-1'
+        r.parent = '-1';
+        r.conn = r.kind === 'trapezoid' ? '0' : '-1';
+        relinkEdgeA(r); // 台形は no-op
+      } else if (pn > n) {
+        r.parent = String(pn - 1); // 後続三角形番号が 1 ずれるので追従
+      }
     }
   }
   shiftOverridesAfterDelete(n); // 番号が振り直されるので override も追従
   clearSelection(); // 番号が振り直されるので選択解除
   current = Math.min(n, rows.length); // 消した位置の次 (なければ末尾) をカレントに
-  // 新規行フォームの残留プリセット (消えた三角形への親番号/接続) を掃除する
+  // 新規行フォームの残留プリセット (消えた三角形への親番号/接続) を掃除する。親は三角形番号
   const np = intOrNull(input('newParent').value.trim());
-  if (np !== null && (np < 1 || np > rows.length)) {
+  if (np !== null && (np < 1 || np > triCount())) {
     input('newParent').value = '';
     select('newConn').value = '-1';
     input('newA').value = '';
@@ -1419,7 +1655,7 @@ function deleteRow(canvas: HTMLCanvasElement, n: number): void {
   buildTable(canvas); // 番号が振り直されるので組み直し
   syncForm();
   redraw(canvas);
-  setStatus(`Delete Triangle ${n}`);
+  setStatus(deletingTriangle ? `Delete Triangle ${n}` : '台形を削除');
 }
 
 // 削除 FAB (MainActivity.kt:1331-1350): 2 タップ確認式。1 回目で赤点灯 + 3 秒タイマー、
@@ -1967,14 +2203,14 @@ function newDrawing(canvas: HTMLCanvasElement): void {
   // (「無題工事とか書くより空白にしておいた方が良い」2026-06-12 user 指示)
   headerLines = ['koujiname,', 'rosenname,', 'gyousyaname,', 'zumennum,'];
   edges = [];
-  rows = [{ ea: newEdge('3.00'), eb: newEdge('3.00'), ec: newEdge('3.00'), parent: '-1', conn: '-1', extras: [] }];
+  rows = [{ kind: 'triangle', ea: newEdge('3.00'), eb: newEdge('3.00'), ec: newEdge('3.00'), parent: '-1', conn: '-1', extras: [] }];
   listAngle = 0; // アプリ createNew は TriangleList を作り直す = angle 0 (回転 FAB の残留を消す)
   overrides = { dims: [], numbers: [] };
   lastTapModel = null;
   dedLines = [];
   dedSelected = 0;
   dedCursor = null;
-  trapLines = []; // 新規作成で台形も破棄 (dedLines と同列)
+  // 台形は rows に統合済 — rows の作り直しで台形も破棄される (別 state は無い)
   buildDedTable(canvas);
   clearSelection();
   selected = 1;
@@ -2197,12 +2433,15 @@ function buildShadow(): void {
   const L = parseFloat(aStr);
   if (!Number.isFinite(L) || L <= 0) return;
   const leg = (L * 0.75).toFixed(2);
-  const candidate = serializeState() + `${rows.length + 1},${aStr},${leg},${leg},${edgeSel.tri},${edgeSel.side}\n`;
+  // 仮三角形の番号は次の三角形番号 (triCount+1)。common は三角形を先に、台形を後に描くので、
+  // 仮三角形 (最後の三角形) の tri 線は三角形群の末尾 = triCount*3 番目に来る (台形の tri 線は更に後)
+  const tc = triCount();
+  const candidate = serializeState() + `${tc + 1},${aStr},${leg},${leg},${edgeSel.tri},${edgeSel.side}\n`;
   try {
     const json = renderCsvToPrimitivesWithOverrides(candidate, 1.0, overridesJson());
     const prims = JSON.parse(json) as Prim[];
     const triLines = prims.filter((q): q is LinePrim => q.type === 'line' && q.layer === 'tri');
-    const base = rows.length * 3; // 仮三角形 (rows.length+1 番) の線は最後の 3 本
+    const base = tc * 3; // 仮三角形 (triCount+1 番) の線は三角形群の最後の 3 本
     if (base + 2 < triLines.length) {
       shadowPrims = [triLines[base], triLines[base + 1], triLines[base + 2]];
     }
@@ -2224,6 +2463,7 @@ function isSimpleConnection(r: { extras: string[] }): boolean {
 // 接続 (parent/conn) が編集で変わった時に辺A の共有先を張り直す。
 // 単純接続 → 親の B/C と同じ辺を共有、独立/二重断面 → 現値を複製して自分の辺に切り出す
 function relinkEdgeA(r: Row): void {
+  if (r.kind !== 'triangle') return; // 台形は辺A共有を持たない (段4)
   const pn = intOrNull(r.parent) ?? -1;
   const conn = intOrNull(r.conn);
   const p = rows[pn - 1];
@@ -2247,7 +2487,9 @@ function syncEdgeInputs(ei: number, except?: HTMLInputElement): void {
 // 0 = 未接続、>0 = 接続中の子三角形の番号。タップ選択・B/C FAB・追加実行の
 // 3 動線が共通で使う (アプリは占有判定を持たない — web 版の改善, 2026-06-11 user 指示)
 function edgeOccupiedBy(tri: number, side: 1 | 2): number {
-  return rows.findIndex((r) => intOrNull(r.parent) === tri && intOrNull(r.conn) === side) + 1;
+  // 三角形の子だけを占有とみなす (台形と三角形の辺共有は段4)。prefix 不変条件で
+  // 三角形 index+1 == 三角形番号なので返り値は三角形番号として正しい
+  return rows.findIndex((r) => r.kind === 'triangle' && intOrNull(r.parent) === tri && intOrNull(r.conn) === side) + 1;
 }
 
 // 辺タップ (アプリ targetInTriMode → autoConnection(lastTapSide) 相当):
@@ -2726,7 +2968,7 @@ function loadCsv(canvas: HTMLCanvasElement, csv: string, label: string): void {
   // 読込動線も共通関門に通す: 読込自体は止めない (既存ファイルは開けるべき) が、
   // 不成立行があれば編集前に気づけるよう警告だけ重ねる
   const bad = findInvalidRow(rows);
-  if (bad) setStatus(`⚠ 読込: 三角形 ${bad.n} は ${bad.reason}`);
+  if (bad) setStatus(`⚠ 読込: ${bad.reason}`);
 }
 
 function main(): void {
@@ -2842,6 +3084,7 @@ if (import.meta.hot) {
     });
     // rows は CP 消費側の互換のため a/b/c 展開形で出す (内部は辺 index)。edges も生で添える
     const rowsExpanded = rows.map((r) => ({
+      kind: r.kind, // 混在リスト: triangle / trapezoid (CP 消費側が種別で出し分けられるように)
       a: edgeVal(r, 'a'),
       b: edgeVal(r, 'b'),
       c: edgeVal(r, 'c'),
