@@ -1,6 +1,7 @@
 package com.jpaver.trianglelist.web
 
 import com.jpaver.trianglelist.datamanager.CsvCodec
+import com.jpaver.trianglelist.editmodel.Rectangle
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -94,5 +95,68 @@ class WebTrapezoidTest {
         val csv = "1,6.0,5.0,4.0,-1,-1\nTrapezoid,1,5,4,3,1,1\n"
         val out = CsvCodec.serialize(CsvCodec.parse(csv))
         assertTrue(out.contains("Trapezoid,1,5,4,3,1,1"), "serialize 出力に台形行: $out")
+    }
+
+    // ---- 段3: 上辺アライメント (左/中/右) ----
+    // 底辺=10, 上辺=4, 延長=3, angle=0 (水平底辺 (0,0)→(10,0))。上辺は y=3 (延長ぶん上)。
+    // 左寄せ=上辺左端が底辺左端(x=0)の真上、右寄せ=上辺右端が底辺右端(x=10)の真上、中央=左右対称。
+
+    /** align=0 (左寄せ、従来) : 上辺左端が底辺左端の真上、上辺右端は widthB ぶん右 */
+    @Test
+    fun alignment_left_keeps_top_left_above_base_left() {
+        val lp = Rectangle(3.0, 10.0, 4.0, alignment = 0).calcPoint()
+        assertEquals(0.0, lp.b.left.x, 0.001, "左寄せ: 上辺左端 x=底辺左端 x=0")
+        assertEquals(3.0, lp.b.left.y, 0.001, "上辺の高さ = 延長 3")
+        assertEquals(4.0, lp.b.right.x, 0.001, "上辺右端 = 左端 + widthB(4)")
+    }
+
+    /** align=0 は alignment 引数を省いた従来構築とビット同値 (golden / 後方互換の核) */
+    @Test
+    fun alignment_zero_is_identical_to_legacy_default() {
+        val legacy = Rectangle(3.0, 10.0, 4.0).calcPoint()
+        val explicit = Rectangle(3.0, 10.0, 4.0, alignment = 0).calcPoint()
+        assertEquals(legacy.b.left.x, explicit.b.left.x, 0.0, "leftB.x が従来と完全一致")
+        assertEquals(legacy.b.left.y, explicit.b.left.y, 0.0, "leftB.y が従来と完全一致")
+        assertEquals(legacy.b.right.x, explicit.b.right.x, 0.0, "rightB.x が従来と完全一致")
+        assertEquals(legacy.b.right.y, explicit.b.right.y, 0.0, "rightB.y が従来と完全一致")
+    }
+
+    /** align=1 (中央) : 上辺の中点 x が底辺の中点 x (=5) に一致 (左右対称) */
+    @Test
+    fun alignment_center_is_symmetric() {
+        val lp = Rectangle(3.0, 10.0, 4.0, alignment = 1).calcPoint()
+        assertEquals(3.0, lp.b.left.x, 0.001, "中央: 上辺左端 x = (10-4)/2 = 3")
+        assertEquals(7.0, lp.b.right.x, 0.001, "中央: 上辺右端 x = 3+4 = 7")
+        val topMid = (lp.b.left.x + lp.b.right.x) / 2.0
+        val baseMid = (lp.a.left.x + lp.a.right.x) / 2.0
+        assertEquals(baseMid, topMid, 0.001, "上辺中点 x = 底辺中点 x")
+    }
+
+    /** align=2 (右寄せ) : 上辺右端が底辺右端(x=10)の真上 */
+    @Test
+    fun alignment_right_keeps_top_right_above_base_right() {
+        val lp = Rectangle(3.0, 10.0, 4.0, alignment = 2).calcPoint()
+        assertEquals(10.0, lp.b.right.x, 0.001, "右寄せ: 上辺右端 x=底辺右端 x=10")
+        assertEquals(6.0, lp.b.left.x, 0.001, "右寄せ: 上辺左端 x = 10-4 = 6")
+        assertEquals(3.0, lp.b.left.y, 0.001, "上辺の高さ = 延長 3")
+    }
+
+    /** CSV 8列目 align を buildTrapezoids が読む。省略時0、左右で上辺左端が変わる */
+    @Test
+    fun csv_align_column_is_read_by_build_trapezoids() {
+        // angle=180 (INDEP_TRAP_ANGLE) の独立台形。align で leftB→baseline.left の延長辺長は不変(=length)
+        // だが leftB の位置が変わるので、align=0 と align=2 で上辺左端座標が一致しないことを確認。
+        fun topLeft(alignCol: String) =
+            CsvCodec.buildTrapezoids(
+                CsvCodec.parse("Trapezoid,1,5,4,3,-1,0$alignCol\n"),
+                CsvCodec.build(CsvCodec.parse("Trapezoid,1,5,4,3,-1,0\n")),
+                1f,
+            )[0].calcPoint().b.left
+        val left = topLeft("")          // 列省略 → align=0 (後方互換)
+        val leftExplicit0 = topLeft(",0")
+        val right = topLeft(",2")
+        assertEquals(left.x, leftExplicit0.x, 0.001, "align 列省略は align=0 と同値")
+        assertEquals(left.y, leftExplicit0.y, 0.001, "align 列省略は align=0 と同値")
+        assertTrue(kotlin.math.abs(left.x - right.x) > 0.1, "align=0 と align=2 で上辺左端 x が変わる: $left vs $right")
     }
 }

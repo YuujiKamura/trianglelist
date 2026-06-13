@@ -224,9 +224,9 @@ object CsvCodec {
      * trapRows → Rectangle リスト (混在リスト段1)。buildDeductions と同じ「TriangleList に
      * 混ぜない独立メソッド」形 — 三角形パイプライン (build/golden) を一切触らないため。
      *
-     * 列 (trap-design.md contract): `Trapezoid, num, length, widthA, widthB, parent, side`
+     * 列 (trap-design.md contract): `Trapezoid, num, length, widthA, widthB, parent, side, align`
      *   length=延長(辺B), widthA=底辺(辺A), widthB=上辺(辺C), parent=接続先三角形番号(-1=独立),
-     *   side=親の接続辺 (1=B,2=C, 独立=0)。
+     *   side=親の接続辺 (1=B,2=C, 独立=0), align=上辺寄せ (0左/1中/2右, 省略時0で後方互換)。
      *
      * 独立 (parent<1): basepoint=原点・angle=INDEP_TRAP_ANGLE で構築 (本体を三角形と同じ下向き)。
      * 接続 (parent>=1): nodeA=親三角形。Rectangle.calcPoint() の initByParent が
@@ -247,13 +247,15 @@ object CsvCodec {
             val widthB = c.getOrNull(4)?.toFloatOrNull() ?: continue
             val parent = c.getOrNull(5)?.toIntOrNull() ?: -1
             val side = c.getOrNull(6)?.toIntOrNull() ?: 0
+            // 8 列目 align (0左/1中/2右)。省略時 0 で後方互換 (R1 の 7 列 CSV は左寄せのまま)
+            val align = c.getOrNull(7)?.toIntOrNull() ?: 0
             val l = length * s
             val wa = widthA * s
             val wb = widthB * s
             if (parent < 1 || parent > trilist.size()) {
-                result.add(Rectangle(l, wa, wb, angle = INDEP_TRAP_ANGLE, basepoint = PointXY(0f, 0f)))
+                result.add(Rectangle(l, wa, wb, angle = INDEP_TRAP_ANGLE, basepoint = PointXY(0f, 0f), alignment = align))
             } else {
-                result.add(Rectangle(l, wa, wb, nodeA = trilist.getBy(parent), side = side))
+                result.add(Rectangle(l, wa, wb, nodeA = trilist.getBy(parent), side = side, alignment = align))
             }
         }
         return result
