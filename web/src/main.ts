@@ -486,12 +486,11 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
     const { tri, side } = selectedDim;
     ctx.strokeStyle = SELECT_YELLOW;
 
-    // 1) 選択辺の黄色線。tri 線群の並びは [A,B,C] (nearestEdge と同じ index 規約)。
-    // 黄色 (#e6b800) はシャドーのグレー (rgba 128/0.35 ≈ 白地で明度ほぼ同等) と溶けるので、
-    // 暗い縁取りを下に敷いて背景によらず局所コントラストを作る (2026-06-12 user 指摘。
-    // 代替案 = 選択色のアンバー化はシャドーの B/C ラベル #e67e22 と同系色化、シャドー薄化は
-    // 「次の三角形がどこに付くか」の存在感を失う — 3 案スクショ比較で縁取りを採用)
-    const li = (tri - 1) * 3 + side;
+    // 1) 選択辺の黄色線。rows.kind ごとに辺数が違う (三角形=3, 台形=4) ので cumulative offset で
+    // 線群の位置を取る (塗りつぶしと同じ仕方、user 指針「場合分けを基底に吸収」)。
+    let off = 0;
+    for (let i = 0; i < tri - 1 && i < rows.length; i++) off += rows[i].kind === 'trapezoid' ? 4 : 3;
+    const li = off + side;
     if (li < triLines.length) {
       const l = triLines[li];
       ctx.strokeStyle = '#5c4a00';
@@ -2750,7 +2749,9 @@ function selectTrapezoid(canvas: HTMLCanvasElement, trap: number, side: number):
   const gnum = triCount() + trap; // 台形の global 番号 (rows[] は三角形 prefix + 台形 suffix)
   selected = gnum;
   current = gnum;
-  selectedDim = null;
+  // 黄色ハイライト (selectedDim) は三角形辺タップと共通動線。底辺 (接続不可) も視覚的に
+  // どこを触ったか分かるよう立てる (user 指摘 2026-06-14「辺選択ガイドが出てない」)。
+  selectedDim = { tri: gnum, side };
   edgeSel = null;
   shadowPrims = null;
   updateRowHighlight();
@@ -2769,16 +2770,20 @@ function presetTriOnTrap(canvas: HTMLCanvasElement, trap: number, side: number):
   const gnum = triCount() + trap; // 親台形の global 番号 (highlight 用)
   selected = gnum;
   current = gnum;
-  selectedDim = null;
+  // 三角形辺タップ (selectEdge) と同じプリセット動線:
+  //   - selectedDim で黄色ハイライト (子の種別問わず立てる)
+  //   - newA に親辺長 (台形親なら trapEdgeLen)
+  //   - newConn / newCType を接続情報に反映 (子問わず、台形親 = newCType '1')
+  // (user 指摘 2026-06-14「親の選択辺長が新規 A に入ってない/接続辺情報も切り替わらない」)
+  selectedDim = { tri: gnum, side };
   edgeSel = null;
   pendingTrapParent = { trap, side };
-  input('newParent').value = String(triCount() + trap); // 表示のみ (addX は pendingTrapParent から直接読む)
-  if (figureKind === 'trapezoid') {
-    // 子=台形のときは親種別=台形(1) と接続 side を新規行にも残す (フォーム再描画用)
-    select('newConn').value = String(side);
-    select('newCType').value = '1';
-    syncLcrDisabled('new');
-  }
+  input('newParent').value = String(gnum);
+  const baseLen = trapEdgeLen(trap, side);
+  if (baseLen > 0) input('newA').value = fmt2(baseLen.toFixed(2));
+  select('newConn').value = String(side);
+  select('newCType').value = '1'; // 台形親
+  syncLcrDisabled('new');
   buildShadow();
   updateRowHighlight();
   syncForm();
@@ -3621,6 +3626,13 @@ if (import.meta.hot) {
         figureKind,
         edgeSel,
         pendingTrapParent,
+        selectedDim,
+        // 辺タップ動線の検証口 (新規行プリセット): 親辺長 A / 接続 / 形態 / 起点
+        newRow: {
+          a: input('newA').value, b: input('newB').value, c: input('newC').value,
+          parent: input('newParent').value,
+          conn: select('newConn').value, ctype: select('newCType').value, lcr: select('newLcr').value,
+        },
         shadowLen: shadowPrims ? shadowPrims.length : 0,
       },
     });
