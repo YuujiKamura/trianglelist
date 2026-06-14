@@ -1,14 +1,29 @@
 package com.jpaver.trianglelist.editmodel
 
-import com.jpaver.trianglelist.getLine
+import com.example.trilib.PointXY
 import com.jpaver.trianglelist.viewmodel.InputParameter
 
 // 接続スロット。a=A辺(親と共有), b=B辺, c=C辺, d=D辺(台形=Rectangle の右脚 side=3 用)。
 // d は既定 null で追加 — 三角形(3辺)は b/c までしか使わず、台形(4辺)のみ d を使う (trap-design.md 段4)。
 data class Node(var a: EditObject?=null, var b: EditObject?=null, var c: EditObject?=null, var d: EditObject?=null )
 
+/**
+ * 全図形の基底 (user 方針 2026-06-14「あらゆる限定操作を基底クラスに寄せろ」「台形だから・三角形
+ * だからっていう場合分けを吸収しろ」)。形状ごとの差は sideCount / vertices / getLine の多態だけに
+ * 集約し、上位 (混在リストの bbox 計算、辺タップ動線、寸法レイアウト等) は kind 分岐なしで動く。
+ */
 open class EditObject() {
     var node = Node()
+
+    /** 辺数 (三角形=3, 台形=4)。上位コードはこの値で配列 stride を決め、kind 分岐を消す。 */
+    open val sideCount: Int = 0
+
+    /** 図形の頂点列 (側面の順、bbox / fit / 重心算出の共通入口)。形状依存の場合分けは下位で完結。 */
+    open fun vertices(): List<PointXY> = emptyList()
+
+    /** side で辺を 1 本取り出す共通契約 (三角形=0:A,1:B,2:C / 台形=0:A,1:B,2:C,3:D)。 */
+    open fun getLine(side: Int): Line = Line()
+
     open fun setNode2(target: EditObject, side:Int=0, side2:Int=1 ){
         when(side){
             0 -> {
@@ -32,17 +47,8 @@ open class EditObject() {
     }
 
     fun initByParent(parent: EditObject, side: Int): Line {
-        var baseline = Line()
-        when{
-            ( parent is Rectangle) -> {
-                // side で B(1)/C(2)/D(3) を出し分ける (旧: 上辺C 固定で side 無視)。
-                // getLine の side→辺契約は Triangle.getLine と同じ (trap-design.md 段4 / 確定 B/C/D マッピング)。
-                baseline = parent.getLine(side)
-            }
-            ( parent is Triangle) -> {
-                baseline = parent.getLine(side)
-            }
-        }
+        // 親の形状で場合分けせず、共通契約 (getLine) で 1 本に統一 (user 指針: 場合分けを基底へ吸収)
+        val baseline = parent.getLine(side)
         parent.setNode2(this,side)
         return baseline
     }

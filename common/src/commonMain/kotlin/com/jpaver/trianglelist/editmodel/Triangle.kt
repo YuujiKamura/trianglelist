@@ -178,6 +178,17 @@ class Triangle : EditObject, Cloneable<Triangle> {
     val pointCA: com.example.trilib.PointXY
         get() = point[0].clone()
 
+    // EditObject の多態 (user 指針 2026-06-14「あらゆる限定操作を基底クラスに寄せろ」)。
+    // 上位の混在リストは sideCount / vertices / getLine の共通契約だけで動き、kind 分岐を消す。
+    override val sideCount: Int = 3
+    override fun vertices(): List<com.example.trilib.PointXY> = listOf(point[0], pointAB, pointBC)
+    override fun getLine(side: Int): Line = when (side) {
+        0 -> Line(point[0], pointAB)
+        1 -> Line(pointAB, pointBC)
+        2 -> Line(pointBC, point[0])
+        else -> Line()
+    }
+
     fun pointAB_(): com.example.trilib.PointXY = com.example.trilib.PointXY(pointAB)
     fun pointBC_(): com.example.trilib.PointXY = com.example.trilib.PointXY(pointBC)
 

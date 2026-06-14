@@ -69,7 +69,7 @@ data class Rectangle(
      * calcPoint() は nodeA があると basepoint/angle を再構築する副作用を持つが、毎回 nodeA から
      * baseline を作り直すので複数回呼んでも同値 (R2 で確認済)。getLine から呼ぶのは安全。
      */
-    fun getLine(side: Int): Line {
+    override fun getLine(side: Int): Line {
         val lp = calcPoint()
         return when (side) {
             0 -> Line(lp.a.left,  lp.a.right)   // A 底辺 (bl→br)
@@ -78,5 +78,12 @@ data class Rectangle(
             3 -> Line(lp.a.right, lp.b.right)   // D 右脚 (br→tr)
             else -> Line()
         }
+    }
+
+    // EditObject の多態 (user 指針 2026-06-14)。混在リストは sideCount / vertices で kind 分岐なしに走る。
+    override val sideCount: Int = 4
+    override fun vertices(): List<com.example.trilib.PointXY> {
+        val lp = calcPoint()
+        return listOf(lp.a.left, lp.a.right, lp.b.right, lp.b.left)
     }
 }
