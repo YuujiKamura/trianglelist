@@ -284,6 +284,8 @@ object WebPrimitiveRenderer {
         val placeB = DimensionLayout.layout(perpFoot, baseStart, rect.dimVertical.b, rect.dimHorizontal.b, ds, dh, 0.0)
         val extLen = (rect.length / scale).toFloat()
         item(dimText(extLen.formattedString(2), placeB, baseStart.calcDimAngle(perpFoot), textSize, num, 1, rect.dimHorizontal.b, rect.dimVertical.b))
+        // 垂線起点の verify 用 meta (距離 tie で誤判定しないよう、実装の判定をそのまま prim に乗せる)
+        item("""{"type":"meta","kind":"perp","tri":$num,"perpFrom":"${if (bottomShorter) "bl" else "tl"}"}""")
         if (rect.alignment != 0) item(line(baseStart, perpFoot, "guide"))
         if (rect.dimHorizontal.b > 2) item(line(placeB.pointA, placeB.pointB, "dim"))
 
