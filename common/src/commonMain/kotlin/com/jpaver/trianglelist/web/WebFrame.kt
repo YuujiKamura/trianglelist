@@ -4,6 +4,8 @@ import com.example.trilib.PointXY
 import com.jpaver.trianglelist.datamanager.CsvCodec
 import com.jpaver.trianglelist.datamanager.DrawingFileWriter
 import com.jpaver.trianglelist.editmodel.Rectangle
+import com.jpaver.trianglelist.editmodel.Triangle
+import com.jpaver.trianglelist.editmodel.TriangleList
 import com.jpaver.trianglelist.viewmodel.TitleParamStr
 
 /**
@@ -21,9 +23,10 @@ import com.jpaver.trianglelist.viewmodel.TitleParamStr
  */
 object WebFrame {
 
-    /** CSV → 図面枠 prim JSON 配列 (layer "frame")。図形 (三角形 or 台形) が無ければ空配列。
-     *  台形のみのリストでも枠を出す (user 指摘 2026-06-14「図面枠内のセンタリングが出来てない」── 三角形 0
-     *  だと return で枠が消え、台形だけの絵は枠なし fit になる)。center も台形のみのときは台形群の bbox 中心。 */
+    /** CSV → 図面枠 prim JSON 配列 (layer "frame")。図形 (三角形 / 台形 / 台形子三角形) が一つも無ければ空配列。
+     *  user 指摘 2026-06-14「混在リスト全体の境界計算してセンタリングするのが出来てない」── trilist.center
+     *  だけでは台形 / 台形子三角形が含まれず、枠中心と figure 全体中心がずれる。混在リスト全体 (trilist + traps
+     *  + trapTris) の頂点 bbox 中心を center にする。paper 幾何中心は (20, 13.5)。 */
     fun renderFrame(csv: String): String {
         val doc = CsvCodec.parse(csv)
         val trilist = CsvCodec.build(doc)
@@ -31,9 +34,12 @@ object WebFrame {
         // 描画 scale は 1f (WebPrimitiveRenderer.renderCsv の effScale と同値、印刷 ps と別軸)。
         // ここで ps を渡すと台形の幾何が壊れて build が空になる (frame: null が消えない原因)。
         val traps = CsvCodec.buildTrapezoids(doc, trilist, 1f)
-        if (trilist.size() < 1 && traps.isEmpty()) return "[]"
+        val trapTris = CsvCodec.buildTrapParentedTriangles(doc, traps, 1f)
+        if (trilist.size() < 1 && traps.isEmpty() && trapTris.isEmpty()) return "[]"
         val header = WebDrawingExport.parseHeader(csv)
-        val center = if (trilist.size() >= 1) trilist.center else trapezoidsCenter(traps)
+        val center = mixedFigureCenter(trilist, traps, trapTris)
+        // paper-cm 系での paper 全体中心は (21, 14.85) (A3 42x29.7cm の中心、writeOuterFrame:432 と同値)。
+        // 外枠 (40x27cm) も同じ中心に置かれる。ここを figure 全体中心に合わせる = 枠内センタリング。
         val writer = FramePrimWriter(ps, center.x - 21f * ps, center.y - 14.85f * ps)
         writer.zumeninfo = WebDrawingExport.defaultZumenInfo()
         writer.titleTri_ = TitleParamStr()
@@ -46,17 +52,30 @@ object WebFrame {
         return "[" + writer.out.joinToString(",") + "]"
     }
 
-    /** 台形群の頂点 bbox 中心 (台形のみのとき枠の origin に使う、三角形の trilist.center と対) */
-    private fun trapezoidsCenter(traps: List<Rectangle>): PointXY {
+    /** 混在リスト全体 (三角形 + 台形 + 台形子三角形) の頂点 bbox 中心。trilist.center は三角形の
+     *  bbox 中心しか見ないので、台形だけ・台形子三角形だけが図面端に乗ると枠中心とズレる。 */
+    private fun mixedFigureCenter(
+        trilist: TriangleList,
+        traps: List<Rectangle>,
+        trapTris: List<Triangle>,
+    ): PointXY {
         var minX = Double.POSITIVE_INFINITY; var minY = Double.POSITIVE_INFINITY
         var maxX = Double.NEGATIVE_INFINITY; var maxY = Double.NEGATIVE_INFINITY
+        fun add(p: PointXY) {
+            val x = p.x.toDouble(); val y = p.y.toDouble()
+            if (x < minX) minX = x; if (x > maxX) maxX = x
+            if (y < minY) minY = y; if (y > maxY) maxY = y
+        }
+        for (i in 1..trilist.size()) {
+            val t = trilist[i]
+            add(t.point[0]); add(t.pointAB); add(t.pointBC)
+        }
         for (r in traps) {
             val lp = r.calcPoint()
-            for (p in listOf(lp.a.left, lp.a.right, lp.b.left, lp.b.right)) {
-                val px = p.x.toDouble(); val py = p.y.toDouble()
-                if (px < minX) minX = px; if (px > maxX) maxX = px
-                if (py < minY) minY = py; if (py > maxY) maxY = py
-            }
+            add(lp.a.left); add(lp.a.right); add(lp.b.left); add(lp.b.right)
+        }
+        for (t in trapTris) {
+            add(t.point[0]); add(t.pointAB); add(t.pointBC)
         }
         return PointXY(((minX + maxX) / 2.0).toFloat(), ((minY + maxY) / 2.0).toFloat())
     }
