@@ -273,16 +273,18 @@ object WebPrimitiveRenderer {
         // D に紐づく規約が無いので、Rectangle データから引かずに既定値で出す
         emitMeasured(br, tr, 1, 0, 3)   // D 右脚
 
-        // B 延長 = 底辺からの「垂線」の長さ (rect.length)。左脚 (bl→tl) の斜辺長ではない。
-        // perpFoot = bl から底辺に直交して length 分の点 (垂線の足 = 上辺の高さ)。
-        // align=0 では左脚=垂線 (tl==perpFoot) なので脚の上にそのまま出す。
-        // align≠0 (中央/右寄せ) では左脚が斜めなので、垂線 bl→perpFoot を点線ガイド (layer "guide")
-        // で別に引き、その上に延長値を出す — 斜辺の長さを延長と誤表示しない (user 指摘 2026-06-13)。
-        val perpFoot = bl.crossOffset(br, rect.length)
-        val placeB = DimensionLayout.layout(perpFoot, bl, rect.dimVertical.b, rect.dimHorizontal.b, ds, dh, 0.0)
+        // B 延長 = 底辺/上辺間の「垂線」の長さ (rect.length)。左脚 (bl→tl) の斜辺長ではない。
+        // 垂線の描画起点は「底辺と上辺の短い方」を選ぶ (user 指摘 2026-06-14「底辺に固定してるのも
+        // 間違い。上辺と底辺の短い方を起点にすべき」)。短辺側に垂線根を置く方が視認的にずれが小さく
+        // 寸法線がはみ出しにくい。
+        val bottomShorter = rect.widthA <= rect.widthB
+        val baseStart = if (bottomShorter) bl else tl
+        val baseEnd = if (bottomShorter) br else tr
+        val perpFoot = baseStart.crossOffset(baseEnd, rect.length)
+        val placeB = DimensionLayout.layout(perpFoot, baseStart, rect.dimVertical.b, rect.dimHorizontal.b, ds, dh, 0.0)
         val extLen = (rect.length / scale).toFloat()
-        item(dimText(extLen.formattedString(2), placeB, bl.calcDimAngle(perpFoot), textSize, num, 1, rect.dimHorizontal.b, rect.dimVertical.b))
-        if (rect.alignment != 0) item(line(bl, perpFoot, "guide"))
+        item(dimText(extLen.formattedString(2), placeB, baseStart.calcDimAngle(perpFoot), textSize, num, 1, rect.dimHorizontal.b, rect.dimVertical.b))
+        if (rect.alignment != 0) item(line(baseStart, perpFoot, "guide"))
         if (rect.dimHorizontal.b > 2) item(line(placeB.pointA, placeB.pointB, "dim"))
 
         // 番号サークル + 番号 (三角形と同じ r=textSize*0.85、重心に中央寄せ)

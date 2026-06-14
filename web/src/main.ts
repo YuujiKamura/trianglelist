@@ -1000,28 +1000,19 @@ function syncForm(): void {
     setSelectOptions(select('curConn'), connOptionsFor('cur', 0));
     setConnSelects('cur', cur ? connPartsOf(cur) : null);
   }
-  // 新規入力行: 親が台形 (図形種別=台形 or 親スロット=台形) のとき形態列=親種別・接続辺=B/C/D。
-  // figureKind だけ見ていると、子三角形を台形に乗せる動線 (pendingTrapParent が立つ、
-  // figureKind='triangle') で newConn options が B/C に戻され、D辺タップで設定した '3' が捨てられる
-  // (user 指摘 2026-06-14「新規の接続辺情報も切り替わらない」の真因)。pendingTrapParent も判定に入れる。
-  const trapParentCtx = isTrap || pendingTrapParent != null;
-  if (trapParentCtx) {
-    // 親種別は newCType select 自身が状態を保持 (新規行に Row 実体が無いため)。三角形→台形 切替直後は
-    // 形態値(0/1/2)が残るので parentKind に無い値は 0 (親:三角形) に落とす。pendingTrapParent が立ってる
-    // 時は親種別 = 1 (台形) に固定 (presetTriOnTrap が既に '1' を入れているので連続)
-    const newPk = pendingTrapParent != null
-      ? '1'
-      : ((intOrNull(select('newCType').value) ?? 0) === 1 ? '1' : '0');
-    setSelectOptions(select('newCType'), PARENTKIND_OPTIONS, newPk);
-    select('newCType').disabled = false;
-    setSelectOptions(select('newConn'), connOptionsFor('new', intOrNull(select('newCType').value) ?? 0));
-    if (isTrap) select('newLcr').disabled = false; else syncLcrDisabled('new');
-  } else {
-    setSelectOptions(select('newCType'), CTYPE_OPTIONS);
-    select('newCType').disabled = false;
-    setSelectOptions(select('newConn'), connOptionsFor('new', 0));
-    syncLcrDisabled('new');
-  }
+  // 新規入力行: 親種別 (三角形親/台形親) は親番号から自動推論 (user 指摘 2026-06-14「台形の形態の
+  // ところに親の種類を書いてること自体が間違い」)。形態列 (newCType) は本来の意味 (辺共有/二重断面/
+  // フロート) を保ち、台形 mode では形態に意味が無いので disable する。
+  const newParentN = intOrNull(input('newParent').value.trim());
+  const parentIsTrap = newParentN !== null && newParentN >= 1 && newParentN <= rows.length
+    && rows[newParentN - 1]?.kind === 'trapezoid';
+  // 接続辺 options: 親が台形なら D を含めて B/C/D、それ以外 B/C
+  // 形態列 (newCType) は三角形・台形共通の axis (user 方針 2026-06-14「三角形と同じように
+  // 二重断面やフロートを同一にサポートする」)。disable しない。
+  setSelectOptions(select('newCType'), CTYPE_OPTIONS);
+  select('newCType').disabled = false;
+  setSelectOptions(select('newConn'), connOptionsFor('new', parentIsTrap ? 1 : 0));
+  if (isTrap) select('newLcr').disabled = false; else syncLcrDisabled('new');
 }
 
 function updateRowHighlight(): void {
@@ -1793,25 +1784,25 @@ function addTrapezoid(canvas: HTMLCanvasElement): void {
     const baseLen = trapEdgeLen(pend.trap, pend.side);
     if (baseLen > 0) widthAStr = baseLen.toFixed(2);
   } else {
-    // 親種別 = 形態(CType)列を流用 (0三角形/1台形、R5)。親番号の解釈と side の D 有無が変わる
-    parentKind = (intOrNull(select('newCType').value) ?? 0) === 1 ? 1 : 0;
-    // 親番号 (空 = 独立) と接続辺 (newConn: 1=B, 2=C, 3=D[台形親のみ])。独立なら parent=-1, side=0。
+    // 親種別は「親番号 → rows[parent-1].kind」で自動推論する (user 指摘 2026-06-14「台形の形態の
+    // ところに親の種類を書いてること自体が間違い」)。形態列 (newCType) は形態専用、親種別は
+    // 親番号から逆引きで決まるので UI 列を消費しない。
     const parentStr = input('newParent').value.trim();
     parent = parentStr === '' ? -1 : (intOrNull(parentStr) ?? -1);
     side = intOrNull(select('newConn').value) ?? 0;
-    if (parent >= 1) {
-      // 親の実在関門 (存在しない親に繋ぐと renderer が行を落とす)
-      const maxParent = parentKind === 1 ? rows.length - t : t;
-      if (maxParent < 1 || parent > maxParent) {
-        setStatus(`⚠ 親番号 ${parent} の${parentKind === 1 ? '台形' : '三角形'}が存在しません — 追加を中止`);
-        return;
-      }
+    if (parent >= 1 && parent <= rows.length) {
+      parentKind = rows[parent - 1].kind === 'trapezoid' ? 1 : 0;
       if (parentKind === 1) {
         if (side !== 1 && side !== 2 && side !== 3) side = 1;
       } else if (side !== 1 && side !== 2) side = 1;
+    } else if (parent >= 1) {
+      // 親番号が範囲外 (= 存在しない親) — renderer が行を落とす前に止める
+      setStatus(`⚠ 親番号 ${parent} の図形が存在しません — 追加を中止`);
+      return;
     } else {
       parent = -1;
       side = 0;
+      parentKind = 0;
     }
   }
 
@@ -1872,13 +1863,15 @@ function updateFigureKindFab(): void {
 // 新規図形の種別をトグル (三角形⇄台形)。ラベル・FAB 表示を更新して setStatus
 function toggleFigureKind(): void {
   figureKind = figureKind === 'triangle' ? 'trapezoid' : 'triangle';
-  pendingTrapParent = null; // モード切替で台形親プリセットは解除 (三角形モード専用の状態)
+  // pendingTrapParent / edgeSel は維持 (タップ済の親スロットは残してシャドーだけ新しい図形種別で
+  // 組み直す)。形態列 (newCType) は意味が三角形/台形共通になったのでリセットしない
+  // (user 方針 2026-06-14「親種別を形態列に書かない / 二重断面・フロートを台形でも共通サポート」)。
   shadowPrims = null;
-  // 形態(CType)列の値は三角形(辺共有/二重断面/フロート)と台形(親種別)で意味が違う。モード切替で
-  // 旧モードの値が漏れて誤解釈される (例: 二重断面[1] → 親:台形[1]) のを防ぎ、既定 '0' に戻す
-  select('newCType').value = '0';
   updateFigureKindFab();
-  syncForm(); // 辺ラベル (底辺/延長/上辺 ⇄ 辺A/B/C) を切替える
+  buildShadow(); // モード切替で「次に足す図形」が変わるのでシャドーを組み直す
+  syncForm();   // 辺ラベル (底辺/延長/上辺 ⇄ 辺A/B/C) を切替える
+  const canvas = document.getElementById('cv') as HTMLCanvasElement | null;
+  if (canvas) draw(canvas, lastPrims); // シャドー切替を即描画反映
   setStatus(figureKind === 'trapezoid' ? '新規図形: 台形 (辺A=底辺 / 辺B=延長 / 辺C=上辺)' : '新規図形: 三角形');
 }
 
@@ -2781,11 +2774,9 @@ function presetTriOnTrap(canvas: HTMLCanvasElement, trap: number, side: number):
   input('newParent').value = String(gnum);
   const baseLen = trapEdgeLen(trap, side);
   if (baseLen > 0) input('newA').value = fmt2(baseLen.toFixed(2));
-  // 親種別を先に '1' (台形親) に切り替え、newConn の options を connOptionsFor で再生成して
-  // B/C/D を含めてから value を assign する。順序を逆にすると options に '3' (D) が無い状態で
-  // value='3' を代入することになり、select element が無効値を捨てて空に戻る
-  // (user 指摘 2026-06-14 「D 辺タップで newConn=3 にならない」の根因)。
-  select('newCType').value = '1';
+  // 接続辺 options を再生成して B/C/D を含めてから value を assign する。親種別 (=台形)は
+  // pendingTrapParent != null から自動推論されるので、形態列 (newCType) を「親種別」に流用しない
+  // (user 指摘 2026-06-14「台形の形態のところに親の種類を書いてること自体が間違い」)。
   setSelectOptions(select('newConn'), connOptionsFor('new', 1));
   select('newConn').value = String(side);
   syncLcrDisabled('new');
@@ -2855,17 +2846,24 @@ function buildShadow(): void {
   //   trapezoid: parentKind=1 の仮 Trapezoid 行を足して台形シャドー (tri 線末尾 4 本)。
   //              底辺=親台形辺長で固定 (共有辺、CsvCodec.buildTrapezoids が initByParent で同値上書き)
   if (pendingTrapParent) {
+    // 親辺長を基準にデフォルトを組む。これにより「台形辺タップした瞬間にシャドーが出る」UX を
+    // 三角形辺タップ (edgeSel 経路) と揃える (user 指摘 2026-06-14「台形のシャドー描画は何時に
+    // なったら / 台形辺上に三角形を追加したいときの三角形シャドーも出来てない」)。
+    const baseLen = trapEdgeLen(pendingTrapParent.trap, pendingTrapParent.side);
+    if (!(baseLen > 0)) return;
     const bv = input('newB').value;
     const cv = input('newC').value;
-    if (!(parseFloat(bv) > 0) || !(parseFloat(cv) > 0)) return;
+    const triLeg = (baseLen * 0.75).toFixed(2);   // 三角形シャドー脚 (= 三角形辺タップ path と同係数)
+    const trapExt = (baseLen * 0.5).toFixed(2);   // 台形延長 (高さ) 既定
+    const trapTop = (baseLen * 0.8).toFixed(2);   // 台形上辺 既定
     if (figureKind === 'trapezoid') {
-      const baseLen = trapEdgeLen(pendingTrapParent.trap, pendingTrapParent.side);
-      if (!(baseLen > 0)) return;
+      const bvE = parseFloat(bv) > 0 ? bv : trapExt;
+      const cvE = parseFloat(cv) > 0 ? cv : trapTop;
       const align = intOrNull(select('newLcr').value) ?? 0;
       const tc = triCount();
       const trapNum = rows.length - tc + 1;
       const candidate = serializeState() +
-        `Trapezoid,${trapNum},${bv},${baseLen.toFixed(2)},${cv},${pendingTrapParent.trap},${pendingTrapParent.side},${align},1\n`;
+        `Trapezoid,${trapNum},${bvE},${baseLen.toFixed(2)},${cvE},${pendingTrapParent.trap},${pendingTrapParent.side},${align},1\n`;
       try {
         const prims = JSON.parse(renderCsvToPrimitivesWithOverrides(candidate, 1.0, overridesJson())) as Prim[];
         const triLines = prims.filter((q): q is LinePrim => q.type === 'line' && q.layer === 'tri');
@@ -2875,8 +2873,11 @@ function buildShadow(): void {
       }
       return;
     }
+    // 子三角形を台形に乗せる: TriTrap 仮行で B/C 未入力なら親辺長 * 0.75 をデフォ
+    const bvE = parseFloat(bv) > 0 ? bv : triLeg;
+    const cvE = parseFloat(cv) > 0 ? cv : triLeg;
     const candidate = serializeState() +
-      `TriTrap,9,0,${bv},${cv},${pendingTrapParent.trap},${pendingTrapParent.side}\n`;
+      `TriTrap,9,0,${bvE},${cvE},${pendingTrapParent.trap},${pendingTrapParent.side}\n`;
     try {
       const prims = JSON.parse(renderCsvToPrimitivesWithOverrides(candidate, 1.0, overridesJson())) as Prim[];
       const triLines = prims.filter((q): q is LinePrim => q.type === 'line' && q.layer === 'tri');
@@ -2896,18 +2897,20 @@ function buildShadow(): void {
   let candidate: string;
   let take: 'tri' | 'trap';
   if (figureKind === 'trapezoid') {
-    // 台形は実値 (延長 newB・上辺 newC) で形が決まるので、空・不正なら影を出さない。
+    // 親辺長 L からデフォを組む (三角形辺タップ + 台形 mode の即時シャドー)。pendingTrapParent 経路と
+    // 同じ思想 — モード切替で即座に新図形種別のシャドーが出るよう、値未入力でも親辺長基準で埋める。
     const bv = input('newB').value;
     const cv = input('newC').value;
-    const ext = parseFloat(bv);
-    const top = parseFloat(cv);
-    if (!Number.isFinite(ext) || ext <= 0 || !Number.isFinite(top) || top <= 0) return;
+    const trapExt = (L * 0.5).toFixed(2);
+    const trapTop = (L * 0.8).toFixed(2);
+    const bvE = parseFloat(bv) > 0 ? bv : trapExt;
+    const cvE = parseFloat(cv) > 0 ? cv : trapTop;
     const align = intOrNull(select('newLcr').value) ?? 0;
     // 台形 CSV 9 列: Trapezoid,num,延長,底辺,上辺,parent,side,align,parentKind。底辺=親辺長 (接続時 common が
     // 親辺で上書き)、parentKind=0 (本段は親=三角形のみ。台形を親にする #2 は selectEdge 側で parentKind を渡す)。
     const trapNum = rows.length - tc + 1;
     candidate = serializeState() +
-      `Trapezoid,${trapNum},${bv},${aStr},${cv},${edgeSel.tri},${edgeSel.side},${align},0\n`;
+      `Trapezoid,${trapNum},${bvE},${aStr},${cvE},${edgeSel.tri},${edgeSel.side},${align},0\n`;
     take = 'trap';
   } else {
     const leg = (L * 0.75).toFixed(2);
