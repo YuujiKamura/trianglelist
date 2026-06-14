@@ -3,6 +3,7 @@ package com.jpaver.trianglelist.web
 import com.jpaver.trianglelist.datamanager.CsvCodec
 import com.jpaver.trianglelist.datamanager.DxfFileWriter
 import com.jpaver.trianglelist.datamanager.SfcWriter
+import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.ZumenInfo
 import com.jpaver.trianglelist.viewmodel.TitleParamStr
 
@@ -143,11 +144,26 @@ object WebDrawingExport {
         writer.setNames(header.koujiname, header.rosenname, header.gyousyaname, header.zumennum)
         // 台形 (混在リスト) を実寸 (scale=1) で組んで渡す。三角形の後に DXF へ出る。
         // 三角形のみ CSV なら空 = DXF golden 不変
-        writer.traps_ = CsvCodec.buildTrapezoids(CsvCodec.parse(csv), trilist, 1f)
+        val doc = CsvCodec.parse(csv)
+        writer.traps_ = CsvCodec.buildTrapezoids(doc, trilist, 1f)
+        writer.trapTris_ = numberTrapTris(CsvCodec.buildTrapParentedTriangles(doc, writer.traps_, 1f), trilist.size(), writer.traps_.size)
         val sb = StringBuilder()
         writer.writer = sb
         writer.save()
         return sb.toString()
+    }
+
+    /** 台形を親に持つ三角形に mynumber / pointnumber を WebPrimitiveRenderer と同じ仕様で振る。
+     *  mynumber = 三角形数 + 台形数 + (1-based 連番)、pointnumber は重心 (= pointcenter)。
+     *  writer は writeTriangle 経由で mynumber を採番済み前提で扱う (TriangleList の中ではないため
+     *  arrangePointNumbers が回らない、ここで明示的にセット)。 */
+    private fun numberTrapTris(tris: List<Triangle>, triCount: Int, trapCount: Int): List<Triangle> {
+        val base = triCount + trapCount
+        for ((j, t) in tris.withIndex()) {
+            t.mynumber = base + j + 1
+            t.pointnumber = t.pointcenter
+        }
+        return tris
     }
 
     /**
@@ -185,7 +201,9 @@ object WebDrawingExport {
         writer.setStartNumber(1)
         writer.isReverse_ = numReverse
         // 台形 (混在リスト) を実寸 (scale=1) で組んで渡す。三角形のみ CSV なら空 = SFC golden 不変
-        writer.traps_ = CsvCodec.buildTrapezoids(CsvCodec.parse(csv), trilist, 1f)
+        val doc = CsvCodec.parse(csv)
+        writer.traps_ = CsvCodec.buildTrapezoids(doc, trilist, 1f)
+        writer.trapTris_ = numberTrapTris(CsvCodec.buildTrapParentedTriangles(doc, writer.traps_, 1f), trilist.size(), writer.traps_.size)
         return writer.buildSfcString()
     }
 }

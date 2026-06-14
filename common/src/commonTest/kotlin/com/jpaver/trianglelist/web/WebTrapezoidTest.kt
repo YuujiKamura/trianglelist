@@ -379,6 +379,25 @@ class WebTrapezoidTest {
             "台形の4辺ぶん LINE エンティティが増える (DXF に台形が出ている)")
     }
 
+    /** TriTrap (台形を親に持つ三角形) も DXF に出る。user 2026-06-14「複合図形でも図面形式へのセーブと
+     *  ロードが出来ること」── これまでは DXF writer の trapTris_ ループが無く、TriTrap 行が無視されていた。 */
+    @Test
+    fun dxf_export_includes_trap_parented_triangle_lines() {
+        val trapOnly = WebDrawingExport.buildDxfText("Trapezoid,1,5,10,7,-1,0\n", "")
+        val withChild = WebDrawingExport.buildDxfText("Trapezoid,1,5,10,7,-1,0\nTriTrap,2,7,4,4,1,2\n", "")
+        assertTrue(withChild.length > trapOnly.length, "TriTrap ぶん DXF が増える")
+        assertEquals(count(trapOnly, "AcDbLine") + 3, count(withChild, "AcDbLine"),
+            "台形子三角形の 3 辺ぶん LINE エンティティが増える (DXF に TriTrap が出ている): $withChild")
+    }
+
+    /** SFC でも TriTrap が出る (DXF と同じ思想)。SfcWriter の trapTris_ ループ確認。 */
+    @Test
+    fun sfc_export_includes_trap_parented_triangle_lines() {
+        val trapOnly = WebDrawingExport.buildSfcText("Trapezoid,1,5,10,7,-1,0\n", "t.sfc")
+        val withChild = WebDrawingExport.buildSfcText("Trapezoid,1,5,10,7,-1,0\nTriTrap,2,7,4,4,1,2\n", "t.sfc")
+        assertTrue(withChild.length > trapOnly.length, "TriTrap ぶん SFC が増える")
+    }
+
     /** 位置順ビルドの土台: parse が図形行を CSV 出現順で保持する (rows/trapRows 分離では失われる行順)。
      *  三角形→台形→三角形 の混在で、figureRows がその順序を保つ (親が子より先に在ることを後で使う)。 */
     @Test
