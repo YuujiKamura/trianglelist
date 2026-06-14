@@ -5,6 +5,7 @@ import com.jpaver.trianglelist.editmodel.ConnCode
 import com.jpaver.trianglelist.editmodel.ConnParam
 import com.jpaver.trianglelist.editmodel.Deduction
 import com.jpaver.trianglelist.editmodel.DeductionList
+import com.jpaver.trianglelist.editmodel.EditObject
 import com.jpaver.trianglelist.editmodel.Rectangle
 import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
@@ -129,20 +130,25 @@ object CsvCodec {
                 (if (rows.isEmpty()) preLines else postLines).add(line)
                 continue
             }
-            // 普通三角形行で parent が「現在までの三角形数」を超えていれば、台形を指す混在通し番号と
-            // 解釈する (= 親が台形)。trapIdx = parent - rows.size。内部表現は旧 TriTrap タグの chunks
-            // 構造 ("TriTrap", num, ea, B, C, trapIdx, side) に揃え、build は完全に同じパスを通る。
-            // user 2026-06-14「TriTrap みたいな妙なデータ型は廃止しろ」── CSV schema からタグを消す。
+            // 普通三角形行で parent が「現在までの三角形数」を超えていれば、混在通し番号で
+            // 台形または台形子三角形 (TriTrap chain) を指していると解釈する。
+            //   excess = parent - rows.size
+            //   1 <= excess <= 台形数            → 台形親 (trapIdx = excess)
+            //   excess > 台形数                  → TriTrap 親 (ttIdx = excess - 台形数、tritrap chain)
+            // 内部表現は旧 TriTrap タグの chunks 構造 ("TriTrap", num, ea, B, C, target_idx, side) に
+            // 揃え、target_idx は 「1..台形数 = 台形群 idx、台形数+1..= tritrap 通し idx」の連続番号。
+            // build 側 (buildTrapParentedTriangles) が範囲判定で親 (Rectangle / Triangle) を取り分ける。
+            // user 2026-06-15「台形にくっついてる三角形からも派生したい」── tritrap chain を model 直結。
             val parentIdx = chunks.getOrNull(4)?.toIntOrNull() ?: -1
             if (parentIdx > rows.size) {
-                val trapIdx = parentIdx - rows.size
+                val targetIdx = parentIdx - rows.size
                 val converted = listOf(
                     "TriTrap",
                     chunks[0],
                     chunks.getOrNull(1) ?: "",
                     chunks.getOrNull(2) ?: "",
                     chunks.getOrNull(3) ?: "",
-                    trapIdx.toString(),
+                    targetIdx.toString(),
                     chunks.getOrNull(5) ?: "0",
                 )
                 val r = CsvRow(converted)
@@ -350,15 +356,25 @@ object CsvCodec {
     fun buildTrapParentedTriangles(doc: CsvDoc, traps: List<Rectangle>, scale: Float = 1f): List<Triangle> {
         val result = mutableListOf<Triangle>()
         val s = if (scale > 0f) scale else 1f
+        val ntrap = traps.size
         for (row in doc.trapParentedTriRows) {
             val c = row.chunks
             val b = c.getOrNull(3)?.toFloatOrNull() ?: continue
             val cc = c.getOrNull(4)?.toFloatOrNull() ?: continue
-            val parent = c.getOrNull(5)?.toIntOrNull() ?: continue
+            val target = c.getOrNull(5)?.toIntOrNull() ?: continue
             val side = c.getOrNull(6)?.toIntOrNull() ?: continue
-            val pIdx = parent - 1
-            if (pIdx < 0 || pIdx >= traps.size) continue // 親台形が無ければ無視 (前方参照/範囲外)
-            result.add(Triangle(traps[pIdx], side, b * s, cc * s))
+            // target_idx 解釈:
+            //   1..ntrap          → 台形親 (Rectangle)
+            //   ntrap+1.. (chain) → TriTrap 親 (= 既に build 済の result[ttIdx])
+            // tritrap chain は親が先に在る不変条件 (CSV 出現順 = bake 順) なので、
+            // result 末尾までで解決可。前方参照は無視 (continue)。
+            val parent: EditObject? = when {
+                target in 1..ntrap -> traps[target - 1]
+                target > ntrap && (target - ntrap - 1) in result.indices -> result[target - ntrap - 1]
+                else -> null
+            }
+            if (parent == null) continue
+            result.add(Triangle(parent, side, b * s, cc * s))
         }
         return result
     }

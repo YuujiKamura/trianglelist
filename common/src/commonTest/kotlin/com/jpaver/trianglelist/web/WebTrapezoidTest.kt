@@ -420,6 +420,31 @@ class WebTrapezoidTest {
         assertEquals(1, modernMixed.trapTris.size, "新形式でも台形子三角形が 1 個建つ")
     }
 
+    /** TriTrap chain: 台形 → 台形子三角形 → 更にその子三角形 が新 schema で建つ。
+     *  parent 混在通し番号で「parent > 三角形数 + 台形数」なら親が TriTrap (chain) と解釈。
+     *  user 2026-06-15「台形にくっついてる三角形からも派生したい」── tritrap → tritrap の chain。 */
+    @Test
+    fun tritrap_chain_can_be_built_from_tritrap_parent() {
+        // 台形1 (混在通し 1) → 子三角形 (混在通し 2、parent=1=台形) → 更に孫三角形 (混在通し 3、parent=2=子三角形)
+        val csv = "Trapezoid,1,5,10,7,-1,0\n" +
+            "2,7,4,4,1,2\n" +     // 台形 #1 の C 辺 (side=2) に乗る子三角形 (= TriTrap #1)
+            "3,4,3,3,2,1\n"       // TriTrap #1 を親に新しい子三角形 (= TriTrap #2 chain)、parent=2 (混在通し)
+        val doc = CsvCodec.parse(csv)
+        assertEquals(0, doc.rows.size, "普通三角形行は無し (全て台形子) ")
+        assertEquals(1, doc.trapRows.size, "台形 1")
+        assertEquals(2, doc.trapParentedTriRows.size, "tritrap chain で 2 行とも台形子バケツへ振り分け")
+        val mixed = CsvCodec.buildMixed(doc, 1f)
+        assertEquals(1, mixed.traps.size, "台形 1")
+        assertEquals(2, mixed.trapTris.size, "tritrap chain 2 個建つ (1 番目=台形親、2 番目=tritrap親)")
+        // 2 番目の三角形の底辺が 1 番目 (= TriTrap #1) の B 辺 (side=1) に乗る
+        val tt1 = mixed.trapTris[0]
+        val tt2 = mixed.trapTris[1]
+        val edge = tt1.getLine(1) // 1 番目 tritrap の B 辺
+        val onEdge = (tt2.point[0].nearBy(edge.left, 0.001) && tt2.pointAB.nearBy(edge.right, 0.001)) ||
+            (tt2.point[0].nearBy(edge.right, 0.001) && tt2.pointAB.nearBy(edge.left, 0.001))
+        assertTrue(onEdge, "2 番目の底辺が 1 番目 TriTrap の B 辺に乗らない: tt2.p0=${tt2.point[0]} tt2.pAB=${tt2.pointAB} edge=$edge")
+    }
+
     /** TriTrap タグの round-trip: 旧形式を読み、書き戻すと TriTrap タグが消えて普通三角形行になる。
      *  再度 parse すると内部表現が同じに戻る。これで「古い CSV を読んで新しい CSV を書く」マイグレーションが成立。 */
     @Test
