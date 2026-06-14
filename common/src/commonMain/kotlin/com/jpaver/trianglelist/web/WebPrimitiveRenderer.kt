@@ -267,6 +267,11 @@ object WebPrimitiveRenderer {
         // (接続済み三角形が辺A寸法を親に任せるのと同じ思想、user 指摘 2026-06-14 「7.0 が二重表示」)
         if (rect.nodeA == null) emitMeasured(bl, br, rect.dimVertical.a, rect.dimHorizontal.a, 0)   // A 底辺
         emitMeasured(tr, tl, rect.dimVertical.c, rect.dimHorizontal.c, 2)   // C 上辺
+        // D 右脚 — 派生辺 (底辺+上辺+延長から幾何で決まる) だが、辺長は観察可能 (= 接続子三角形の
+        // 親辺長の SoT)。寸法を出さないと「D辺タップで表記が無い」(user 指摘 2026-06-14)。
+        // align は固定値 (v=1 外向き / h=0 中央) — DimAligns は (a, b, c, s) 4 値だが s は予備で
+        // D に紐づく規約が無いので、Rectangle データから引かずに既定値で出す
+        emitMeasured(br, tr, 1, 0, 3)   // D 右脚
 
         // B 延長 = 底辺からの「垂線」の長さ (rect.length)。左脚 (bl→tl) の斜辺長ではない。
         // perpFoot = bl から底辺に直交して length 分の点 (垂線の足 = 上辺の高さ)。

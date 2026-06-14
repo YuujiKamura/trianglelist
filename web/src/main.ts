@@ -1000,15 +1000,22 @@ function syncForm(): void {
     setSelectOptions(select('curConn'), connOptionsFor('cur', 0));
     setConnSelects('cur', cur ? connPartsOf(cur) : null);
   }
-  // 新規入力行: 台形モードでは形態列=親種別・接続辺=B/C/D・起点=上辺寄せ(常時有効)、三角形では従来どおり
-  if (isTrap) {
+  // 新規入力行: 親が台形 (図形種別=台形 or 親スロット=台形) のとき形態列=親種別・接続辺=B/C/D。
+  // figureKind だけ見ていると、子三角形を台形に乗せる動線 (pendingTrapParent が立つ、
+  // figureKind='triangle') で newConn options が B/C に戻され、D辺タップで設定した '3' が捨てられる
+  // (user 指摘 2026-06-14「新規の接続辺情報も切り替わらない」の真因)。pendingTrapParent も判定に入れる。
+  const trapParentCtx = isTrap || pendingTrapParent != null;
+  if (trapParentCtx) {
     // 親種別は newCType select 自身が状態を保持 (新規行に Row 実体が無いため)。三角形→台形 切替直後は
-    // 形態値(0/1/2)が残るので parentKind に無い値は 0 (親:三角形) に落とす
-    const newPk = (intOrNull(select('newCType').value) ?? 0) === 1 ? '1' : '0';
+    // 形態値(0/1/2)が残るので parentKind に無い値は 0 (親:三角形) に落とす。pendingTrapParent が立ってる
+    // 時は親種別 = 1 (台形) に固定 (presetTriOnTrap が既に '1' を入れているので連続)
+    const newPk = pendingTrapParent != null
+      ? '1'
+      : ((intOrNull(select('newCType').value) ?? 0) === 1 ? '1' : '0');
     setSelectOptions(select('newCType'), PARENTKIND_OPTIONS, newPk);
     select('newCType').disabled = false;
     setSelectOptions(select('newConn'), connOptionsFor('new', intOrNull(select('newCType').value) ?? 0));
-    select('newLcr').disabled = false;
+    if (isTrap) select('newLcr').disabled = false; else syncLcrDisabled('new');
   } else {
     setSelectOptions(select('newCType'), CTYPE_OPTIONS);
     select('newCType').disabled = false;
@@ -2674,64 +2681,65 @@ function distToSegmentPx(px: number, py: number, l: LinePrim): number {
 // index % 3 がそのまま side (0=A, 1=B, 2=C)
 const EDGE_TAP_PX = 14;
 function nearestEdge(px: number, py: number): { tri: number; side: 0 | 1 | 2; d: number } | null {
-  // 三角形の辺だけを対象にする。台形の辺も同じ layer "tri" で出る (4 本/図形) ので、混ぜると
-  // floor(i/3) の「1 図形 = 3 辺」前提が崩れ、台形の辺をタップすると番号がズレて別の三角形が
-  // 選ばれる (2026-06-13 user 指摘「台形に三角形を接続する動線が壊れてる」の片側)。tri 線は
-  // 「三角形 (3 本ずつ) → 台形 (4 本ずつ)」順に並ぶ (render が三角形を先に出す) ので、先頭の
-  // triCount*3 本が三角形の辺。
-  const triLines = lastPrims
-    .filter((p): p is LinePrim => p.type === 'line' && p.layer === 'tri')
-    .slice(0, triCount() * 3);
+  // 三角形相当 (メイン三角形 ∪ TriTrap = 台形子三角形) の辺。位置 index 計算は廃止し
+  // tri/side identifier で直接 lookup する (台形が混ざっても番号がズレない、user 指摘 2026-06-14)。
+  // tri 番号レンジ: メイン三角形 ∈ [1, triCount()]、台形 ∈ (tc, tc+trapCount]、TriTrap ∈ (tc+trapCount, ..]。
+  // 三角形相当 = メイン三角形 + TriTrap (中間の台形 range を除外)。
+  const tc = triCount();
+  const trapMax = tc + rows.filter((r) => r.kind === 'trapezoid').length;
   let best: { tri: number; side: 0 | 1 | 2; d: number } | null = null;
-  for (let i = 0; i < triLines.length; i++) {
-    const d = distToSegmentPx(px, py, triLines[i]);
+  for (const p of lastPrims) {
+    if (p.type !== 'line' || p.layer !== 'tri') continue;
+    const l = p as LinePrim;
+    if (l.tri === undefined || l.side === undefined) continue;
+    const isMainTri = l.tri >= 1 && l.tri <= tc;
+    const isTriTrap = l.tri > trapMax;
+    if (!isMainTri && !isTriTrap) continue; // 台形 range は対象外
+    const d = distToSegmentPx(px, py, l);
     if (d <= EDGE_TAP_PX && (!best || d < best.d)) {
-      best = { tri: Math.floor(i / 3) + 1, side: (i % 3) as 0 | 1 | 2, d };
+      best = { tri: l.tri, side: l.side as 0 | 1 | 2, d };
     }
   }
   return best;
 }
 
-// 台形の辺タップ。tri 線の suffix (triCount*3 以降) が台形の 4 辺/図形。
-// 返す tside は renderTrapezoid の描画順 (WebPrimitiveRenderer:201-204):
-//   0 = 底辺(辺A・親の接続辺)  1 = 右脚(辺D)  2 = 上辺(辺C)  3 = 左脚(辺B)。
-// 子の接続辺 (buildTrapezoids の親=台形 side 規約: 1=左脚B / 2=上辺C / 3=右脚D) への写像は
-// trapTsideToParentSide。trap は台形群内の連番 (1 始まり)、global 番号は triCount()+trap。
-function nearestTrapEdge(px: number, py: number): { trap: number; tside: 0 | 1 | 2 | 3; d: number } | null {
-  const trapLines = lastPrims
-    .filter((p): p is LinePrim => p.type === 'line' && p.layer === 'tri')
-    .slice(triCount() * 3);
-  let best: { trap: number; tside: 0 | 1 | 2 | 3; d: number } | null = null;
-  for (let i = 0; i < trapLines.length; i++) {
-    const d = distToSegmentPx(px, py, trapLines[i]);
+// 台形の辺タップ。identifier base 化に伴い tside (= 描画順 index) は廃止し、最初から物理 side を
+// 返す (handleTap 側の trapTsideToSide 経由を廃止、render 順と物理 side の写像が一箇所から消える)。
+// trap = 台形群内の連番 (1 始まり)、global 番号 = triCount()+trap。
+function nearestTrapEdge(px: number, py: number): { trap: number; side: 0 | 1 | 2 | 3; d: number } | null {
+  const tc = triCount();
+  const trapCount = rows.filter((r) => r.kind === 'trapezoid').length;
+  const gMax = tc + trapCount;
+  let best: { trap: number; side: 0 | 1 | 2 | 3; d: number } | null = null;
+  for (const p of lastPrims) {
+    if (p.type !== 'line' || p.layer !== 'tri') continue;
+    const l = p as LinePrim;
+    if (l.tri === undefined || l.side === undefined) continue;
+    if (l.tri <= tc || l.tri > gMax) continue; // 台形のみ (TriTrap は除外)
+    const d = distToSegmentPx(px, py, l);
     if (d <= EDGE_TAP_PX && (!best || d < best.d)) {
-      best = { trap: Math.floor(i / 4) + 1, tside: (i % 4) as 0 | 1 | 2 | 3, d };
+      best = { trap: l.tri - tc, side: l.side as 0 | 1 | 2 | 3, d };
     }
   }
   return best;
-}
-
-// 描画順の辺 index (tside) → getLine の side (0=底辺A / 1=左脚B / 2=上辺C / 3=右脚D)。
-// 台形の寸法テキスト (renderTrapezoid の dimText) は最初から getLine 側の side
-// (0=A底辺 / 1=B左脚 / 2=C上辺) を持つので、辺タップと寸法タップを同じ side 体系で扱える。
-function trapTsideToSide(tside: 0 | 1 | 2 | 3): 0 | 1 | 2 | 3 {
-  return tside === 0 ? 0 : tside === 1 ? 3 : tside === 2 ? 2 : 1;
 }
 
 function trapSideName(side: number): string {
   return side === 0 ? '底辺' : side === 1 ? '左脚' : side === 2 ? '上辺' : side === 3 ? '右脚' : '辺';
 }
 
-// 台形の指定 side の辺長を lastPrims から引く。台形辺は tri レイヤ線で台形ごと描画順 (tside 0..3)
-// に4本並ぶ (nearestTrapEdge と同じ並び)。side→tside は trapTsideToSide の逆写像
-// (side0→0 / side1→3 / side2→2 / side3→1)。接続子三角形の底辺A = この親辺長。
+// 台形の指定 side の辺長を lastPrims から引く。identifier 直引き (tri=台形 global 番号、side=物理 side)。
+// 接続子三角形の底辺A = この親辺長。
 function trapEdgeLen(trap: number, side: number): number {
-  const trapLines = lastPrims
-    .filter((p): p is LinePrim => p.type === 'line' && p.layer === 'tri')
-    .slice(triCount() * 3);
-  const tside = side === 0 ? 0 : side === 2 ? 2 : side === 3 ? 1 : 3;
-  const L = trapLines[(trap - 1) * 4 + tside];
-  return L ? Math.hypot(L.x2 - L.x1, L.y2 - L.y1) : 0;
+  const gnum = triCount() + trap;
+  for (const p of lastPrims) {
+    if (p.type !== 'line' || p.layer !== 'tri') continue;
+    const l = p as LinePrim;
+    if (l.tri === gnum && l.side === side) {
+      return Math.hypot(l.x2 - l.x1, l.y2 - l.y1);
+    }
+  }
+  return 0;
 }
 
 // 台形を図形選択し、どの辺かをフィードバックする (三角形の selectEdge と対をなす)。
@@ -2773,8 +2781,13 @@ function presetTriOnTrap(canvas: HTMLCanvasElement, trap: number, side: number):
   input('newParent').value = String(gnum);
   const baseLen = trapEdgeLen(trap, side);
   if (baseLen > 0) input('newA').value = fmt2(baseLen.toFixed(2));
+  // 親種別を先に '1' (台形親) に切り替え、newConn の options を connOptionsFor で再生成して
+  // B/C/D を含めてから value を assign する。順序を逆にすると options に '3' (D) が無い状態で
+  // value='3' を代入することになり、select element が無効値を捨てて空に戻る
+  // (user 指摘 2026-06-14 「D 辺タップで newConn=3 にならない」の根因)。
+  select('newCType').value = '1';
+  setSelectOptions(select('newConn'), connOptionsFor('new', 1));
   select('newConn').value = String(side);
-  select('newCType').value = '1'; // 台形親
   syncLcrDisabled('new');
   buildShadow();
   updateRowHighlight();
@@ -3227,10 +3240,12 @@ function handleTap(canvas: HTMLCanvasElement, px: number, py: number): void {
 
   // 辺と寸法の両方を、属する図形の種別 (三角形 / 台形) で振り分けて最近接を比べる。
   // 寸法テキストは tri 番号を持つ (renderTrapezoid は台形の num = triCount+idx+1 を入れる) ので、
-  // dim.prim.tri > triCount() なら台形の寸法。これをしないと、辺より寸法に近い位置を台形辺の
-  // つもりでタップしたとき dim 経路が「三角形」として selectEdge に流す (2026-06-13 user 指摘の
-  // 「台形に三角形を接続する動線が壊れてる」の主因。nearestEdge の図形跨ぎだけでは塞げなかった)。
-  const dimTrap = !!dim && dim.prim.tri !== undefined && dim.prim.tri > tc;
+  // dim.prim.tri が「台形範囲」に入るかで分ける。dim.prim.tri > triCount() だけだと TriTrap
+  // (台形子三角形、tri = triCount+trapCount+1..) も台形扱いされてしまい、TriTrap の B/C 辺タップで
+  // presetTriOnTrap 経路に流れて newCType='1' に固定される (user 指摘 2026-06-14「TriTrap の辺
+  // タップが newCType=1 のままになる」)。trapCount を加味して厳密に絞る。
+  const trapCount = rows.filter((r) => r.kind === 'trapezoid').length;
+  const dimTrap = !!dim && dim.prim.tri !== undefined && dim.prim.tri > tc && dim.prim.tri <= tc + trapCount;
   const trapDimD = dimTrap ? dim!.d : Infinity;
   const triDimD = dim && !dimTrap ? dim.d : Infinity;
   const trapBest = Math.min(trapEdge ? trapEdge.d : Infinity, trapDimD);
@@ -3242,7 +3257,7 @@ function handleTap(canvas: HTMLCanvasElement, px: number, py: number): void {
     let side: number;
     if (trapEdge && trapEdge.d <= trapDimD) {
       trap = trapEdge.trap;
-      side = trapTsideToSide(trapEdge.tside);
+      side = trapEdge.side; // nearestTrapEdge は識別子直引き = 物理 side をそのまま返す
     } else {
       trap = (dim!.prim.tri as number) - tc;  // 台形群内の連番 (1 始まり)
       side = dim!.prim.side as number;          // 0=A底辺 / 1=B左脚 / 2=C上辺 (getLine 側)
@@ -3288,6 +3303,10 @@ function handleTap(canvas: HTMLCanvasElement, px: number, py: number): void {
   }
   if (edge && edge.side === 0) {
     selectTriangle(canvas, edge.tri);
+    // A 辺タップでも黄色ハイライトを立てる (どこを触ったか視覚的に分かるよう、辺種別問わず統一)。
+    // selectTriangle が selectedDim=null にした後で上書きする必要あり (user 指摘 2026-06-14「全経路選択」網羅)。
+    selectedDim = { tri: edge.tri, side: 0 };
+    draw(canvas, lastPrims);
     setStatus(`三角形 ${edge.tri} の A 辺 (接続辺なので追加先には使えない)`);
     return;
   }

@@ -53,8 +53,10 @@ class EditObjectPolymorphismTest {
         nearF(10.0, r.getLine(0).left.lengthTo(r.getLine(0).right), msg = "A底辺 (side=0)")
         nearF(3.0, r.getLine(1).left.lengthTo(r.getLine(1).right), msg = "B左脚=延長 (side=1, align=0)")
         nearF(7.0, r.getLine(2).left.lengthTo(r.getLine(2).right), msg = "C上辺 (side=2)")
-        // side=3 は D 右脚 (派生)、線が引かれること自体を確認
-        assertTrue(r.getLine(3).left.lengthTo(r.getLine(3).right) > 0.0, "D右脚 (side=3) は派生辺で長さ > 0")
+        // D 右脚 (派生): align=0 で bl=(0,0), br=(10,0), tl=(0,3), tr=(7,3) → 右脚 (10,0)→(7,3) = √(9+9) = √18 ≈ 4.243。
+        // 値を pin することで、user 指摘 2026-06-14「D辺タップの表記が出ない」のリグレッションを防ぐ
+        // (WebPrimitiveRenderer の D 辺 dimText 出力がこの長さに依存)。
+        nearF(4.2426, r.getLine(3).left.lengthTo(r.getLine(3).right), tolerance = 0.001, msg = "D右脚 (side=3) 派生長 ≈ √18")
         // 範囲外は空 Line
         nearF(0.0, r.getLine(4).left.lengthTo(r.getLine(4).right), msg = "範囲外 side")
     }
