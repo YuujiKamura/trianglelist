@@ -390,7 +390,12 @@ object CsvCodec {
             )
         }
         // dedRows は素通し (控除は TriangleList の外。web の編集は行の置換/追加で dedRows 自体を更新する)。
-        // textSize も素通し (model は持たない値、文書レベルで保持)
-        return CsvDoc(original.preLines, rows, trilist.angle, original.postLines, original.dedRows, original.textSize)
+        // textSize / trapRows / figureRows / trapParentedTriRows も素通し — 台形 (混在リスト) は
+        // TriangleList の外側 (CsvDoc.trapRows / trapParentedTriRows) で持つので、bake が三角形のみ
+        // 再構築して台形を捨てると保存 CSV から台形が消える (user 報告 2026-06-14「混在で保存→台形消失」)。
+        return CsvDoc(
+            original.preLines, rows, trilist.angle, original.postLines, original.dedRows, original.textSize,
+            original.trapRows, original.figureRows, original.trapParentedTriRows,
+        )
     }
 }

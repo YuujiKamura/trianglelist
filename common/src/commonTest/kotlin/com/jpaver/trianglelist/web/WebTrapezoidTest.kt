@@ -46,7 +46,7 @@ class WebTrapezoidTest {
         // 番号サークル 1 + 番号 "1" (三角形0個 → 通し番号の先頭) + 3 寸法
         assertEquals(1, count(json, """"type":"circle""""))
         assertTrue(json.contains(""""text":"1""""), "番号 1 が出る (T接頭辞なし・三角形からの通し): $json")
-        assertEquals(3, count(json, """"layer":"dim""""), "底辺A・上辺C・延長B の 3 寸法: $json")
+        assertEquals(4, count(json, """"layer":"dim""""), "底辺A・上辺C・延長B + D右脚 の 4 寸法 (D右脚は派生辺だが接続子の親辺長 SoT、commit 6495541): $json")
     }
 
     /** (a)-2 独立台形の頂点が右台形 (底辺=widthA, 上辺=widthB, 延長=length 直交) になる */
