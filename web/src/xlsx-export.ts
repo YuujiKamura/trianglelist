@@ -24,6 +24,13 @@ interface TriRow {
   c: number;
 }
 
+interface TrapRow {
+  num: number; // 混在通し番号 (三角形+台形の通し)
+  widthA: number; // 底辺
+  length: number; // 延長 (高さ)
+  widthB: number; // 上辺
+}
+
 interface DedRow {
   num: number;
   name: string;
@@ -37,14 +44,22 @@ interface DedRow {
 export interface ParsedCsvForXlsx {
   rosenname: string;
   triangles: TriRow[];
+  trapezoids: TrapRow[];
+  /** 台形を親に持つ三角形 (TriTrap)。Heron 数式で書く点は triangles と同じだが、
+   *  DXF/SFC writer (SfcWriter:62 / DxfFileWriter) は 三角形→台形→TriTrap の順で
+   *  並べるので、XLSX もそれに揃える (帳票の番号順 = 描画の番号順) */
+  triTraps: TriRow[];
   deductions: DedRow[];
 }
 
 /** app CsvLoader 完全形式のヘッダラベル (WebDrawingExport.kt:33 と同一・同順) */
 const HEADER_LABELS = ['koujiname', 'rosenname', 'gyousyaname', 'zumennum'];
 
-/** 三角形行でもヘッダでもない app 由来のマーカー行 (MainActivity.kt:2781-2796 が書く) */
-const MARKER_TOKENS = ['Deduction', 'ListAngle', 'ListScale', 'TextSize'];
+/** 三角形行でもヘッダでもない app 由来のマーカー行 (MainActivity.kt:2781-2796 が書く)。
+ *  Trapezoid / TriTrap は混在リスト (web) で serializeState が書く図形行マーカー。
+ *  ここに入れておかないと「ヘッダ収集ループ」 (4 個に達するまで line.trim を拾う) に
+ *  Trapezoid / TriTrap 行が混ざって路線名等が化ける */
+const MARKER_TOKENS = ['Deduction', 'ListAngle', 'ListScale', 'TextSize', 'Trapezoid', 'TriTrap'];
 
 // Kotlin の toIntOrNull と同じ判定 (main.ts:417 と同じ regex)
 function intOrNull(s: string): number | null {
@@ -53,12 +68,38 @@ function intOrNull(s: string): number | null {
 
 export function parseCsvForXlsx(csvText: string): ParsedCsvForXlsx {
   const triangles: TriRow[] = [];
+  const trapezoids: TrapRow[] = [];
+  const triTraps: TriRow[] = [];
   const deductions: DedRow[] = [];
   const headerValues: string[] = [];
 
   for (const line of csvText.split(/\r?\n/)) {
     if (line.trim() === '') continue;
     const chunks = line.split(',').map((s) => s.trim());
+
+    // 台形行: Trapezoid, num, length, widthA, widthB, parent, side, align, parentKind
+    // (CsvCodec.serialize / main.ts serializeState と同じ列順)
+    if (chunks[0] === 'Trapezoid') {
+      trapezoids.push({
+        num: triangles.length + trapezoids.length + 1, // 三角形+台形の通し
+        widthA: parseFloat(chunks[3] ?? ''),
+        length: parseFloat(chunks[2] ?? ''),
+        widthB: parseFloat(chunks[4] ?? ''),
+      });
+      continue;
+    }
+
+    // 台形を親に持つ三角形 (TriTrap, num, a, b, c, parent, side) は Heron 面積 (三角形と同形)
+    // 通し番号は 三角形+台形+TriTrap の合算 (WebDrawingExport.numberTrapTris と同形)
+    if (chunks[0] === 'TriTrap') {
+      triTraps.push({
+        num: triangles.length + trapezoids.length + triTraps.length + 1,
+        a: parseFloat(chunks[2] ?? ''),
+        b: parseFloat(chunks[3] ?? ''),
+        c: parseFloat(chunks[4] ?? ''),
+      });
+      continue;
+    }
 
     // 控除行: Deduction,num,name,lenX,lenY,parent,type,angle,px,py,fx,fy,shapeAngle (MainActivity.kt:2795)
     if (chunks[0] === 'Deduction') {
@@ -88,7 +129,7 @@ export function parseCsvForXlsx(csvText: string): ParsedCsvForXlsx {
     const num = chunks.length >= 4 ? intOrNull(chunks[0] ?? '') : null;
     if (num !== null && num >= 0) {
       triangles.push({
-        num: triangles.length + 1,
+        num: triangles.length + trapezoids.length + 1, // 混在通し (台形が先に在っても番号がずれない)
         a: parseFloat(chunks[1] ?? ''),
         b: parseFloat(chunks[2] ?? ''),
         c: parseFloat(chunks[3] ?? ''),
@@ -107,7 +148,7 @@ export function parseCsvForXlsx(csvText: string): ParsedCsvForXlsx {
     }
   }
 
-  return { rosenname: headerValues[1] ?? '', triangles, deductions };
+  return { rosenname: headerValues[1] ?? '', triangles, trapezoids, triTraps, deductions };
 }
 
 // ---- ワークブック組み立て (XlsxWriter.kt の鏡写し) ----
@@ -207,7 +248,7 @@ function writeGoukei(
 
 /** CSV → ExcelJS Workbook。レイアウトは XlsxWriter.write (XlsxWriter.kt:207-239) を鏡写し */
 export function buildXlsxWorkbook(csvText: string): ExcelJSImport.Workbook {
-  const { rosenname, triangles, deductions } = parseCsvForXlsx(csvText);
+  const { rosenname, triangles, trapezoids, triTraps, deductions } = parseCsvForXlsx(csvText);
   const wb = new ExcelJS.Workbook();
   const sheet = wb.addWorksheet('Sheet0'); // POI createSheet() の既定名
 
@@ -216,7 +257,11 @@ export function buildXlsxWorkbook(csvText: string): ExcelJSImport.Workbook {
   });
 
   const n = triangles.length;
+  const k = trapezoids.length;
+  const t = triTraps.length;
   const m = deductions.length;
+  // 図形合計 (三角形+台形+TriTrap)。小計(1)・控除セクションの開始位置・末尾クレジット行はここを基準
+  const figCount = n + k + t;
 
   // タイトル・路線名・ヘッダ (XlsxWriter.kt:209-211 — POI row 1,2,3 → Excel row 2,3,4)
   writeSingle(sheet, 2, '面 積 計 算 書', 'Title');
@@ -243,12 +288,53 @@ export function buildXlsxWorkbook(csvText: string): ExcelJSImport.Workbook {
     applyStyle(cells[4], 'Digit');
   });
 
-  // 小計(1) (XlsxWriter.kt:214 writeGoukei(4, trilist, ...): POI rownum 4 → Excel base 5)
-  writeGoukei(sheet, 5, n, '小計(1)', 0, 'C');
+  // 台形 (混在リスト)。三角形の後に続けて出す。面積 = (底辺+上辺)*高さ/2 (台形面積公式)。
+  // C 列 = widthA(底辺), D 列 = length(延長/高さ), E 列 = widthB(上辺) — 三角形と同じ列順を流用
+  // (帳票で「辺長A/B/C」ラベルのまま値を入れる。台形のラベル列は別途要望が来たら独立化)
+  trapezoids.forEach((trap, i) => {
+    const r = 5 + n + i;
+    setRowHeight(sheet, r);
+    const cells = [2, 3, 4, 5, 6].map((c) => sheet.getCell(r, c));
+    cells[0].value = trap.num;
+    cells[1].value = round2(trap.widthA);
+    cells[2].value = round2(trap.length);
+    cells[3].value = round2(trap.widthB);
+    cells[4].value = { formula: `ROUND((C${r}+E${r})*D${r}/2,2)` };
+    applyStyle(cells[0], 'C');
+    applyStyle(cells[1], 'Digit');
+    applyStyle(cells[2], 'Digit');
+    applyStyle(cells[3], 'Digit');
+    applyStyle(cells[4], 'Digit');
+  });
 
-  // 控除セクション (XlsxWriter.kt:216 — dedlist がある時だけ。開始 POI 行 = 4 + n + 1)
+  // 台形を親に持つ三角形 (TriTrap)。台形の後に Heron 数式で出す。
+  // DXF/SFC writer (SfcWriter:62 等) と同順 — 帳票の番号順 = 描画の番号順を保つ
+  triTraps.forEach((tt, i) => {
+    const r = 5 + n + k + i;
+    setRowHeight(sheet, r);
+    const lsum = `(0.5*(C${r}+D${r}+E${r}))`;
+    const cells = [2, 3, 4, 5, 6].map((c) => sheet.getCell(r, c));
+    cells[0].value = tt.num;
+    cells[1].value = round2(tt.a);
+    cells[2].value = round2(tt.b);
+    cells[3].value = round2(tt.c);
+    cells[4].value = {
+      formula: `ROUND(((${lsum}*(${lsum}-C${r})*(${lsum}-D${r})*(${lsum}-E${r}))^0.5),2)`,
+    };
+    applyStyle(cells[0], 'C');
+    applyStyle(cells[1], 'Digit');
+    applyStyle(cells[2], 'Digit');
+    applyStyle(cells[3], 'Digit');
+    applyStyle(cells[4], 'Digit');
+  });
+
+  // 小計(1) (XlsxWriter.kt:214 writeGoukei(4, trilist, ...): POI rownum 4 → Excel base 5)
+  // 図形合計ぶんを集計 (三角形 n + 台形 k + TriTrap t)
+  writeGoukei(sheet, 5, figCount, '小計(1)', 0, 'C');
+
+  // 控除セクション (XlsxWriter.kt:216 — dedlist がある時だけ。開始 POI 行 = 4 + figCount + 1)
   if (m > 0) {
-    const rowStartD = 4 + n + 1 + 1; // Excel 行 (POI + 1) = 6 + n
+    const rowStartD = 4 + figCount + 1 + 1; // Excel 行 (POI + 1) = 6 + figCount
     writeSingle(sheet, rowStartD, '面積控除', 'CRed');
     writeStrings(sheet, rowStartD + 1, 'CRed', '名称', '寸法１', '寸法２', '形状', '面積');
 
@@ -277,9 +363,9 @@ export function buildXlsxWorkbook(csvText: string): ExcelJSImport.Workbook {
     writeGoukei(sheet, rowStartD + 3, m, '合計(1)+(2)', 1, 'C');
   }
 
-  // 末尾クレジット (XlsxWriter.kt:219-224 — POI endrow = 4+n+1+m+4、m=0 でも同式)。
+  // 末尾クレジット (XlsxWriter.kt:219-224 — POI endrow = 4+figCount+1+m+4、m=0 でも同式)。
   // アプリは Apache POI への謝辞を書く。web は使用ライブラリ ExcelJS に合わせる (出典明記は敬意)
-  const creditRow = 4 + n + 1 + m + 4 + 1 + 1; // POI endrow+1 → Excel
+  const creditRow = 4 + figCount + 1 + m + 4 + 1 + 1; // POI endrow+1 → Excel
   writeSingle(sheet, creditRow, '( This .xlsx file was exported by ExcelJS )', 'Title');
   writeSingle(
     sheet,
