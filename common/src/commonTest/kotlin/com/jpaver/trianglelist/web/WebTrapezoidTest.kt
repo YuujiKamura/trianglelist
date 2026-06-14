@@ -398,6 +398,41 @@ class WebTrapezoidTest {
         assertTrue(withChild.length > trapOnly.length, "TriTrap ぶん SFC が増える")
     }
 
+    /** 混在通し番号の安全網: 三角形2 + 台形1 + TriTrap1 を CSV 順で書くと、描画上の番号は
+     *  1,2,3,4 が連続して出る (三角形→台形→TriTrap の規約)。これを破ると DXF / SFC / XLSX
+     *  の番号付けが食い違うので、build 統合作業の前にここで pin しておく。 */
+    @Test
+    fun mixed_drawing_numbers_are_continuous_across_kinds() {
+        val csv = "1,6.0,5.0,4.0,-1,-1\n2,5.0,4.0,3.0,1,1\n" +
+            "Trapezoid,1,5,4,3,1,1\nTriTrap,2,3,3,3,1,2\n"
+        val json = WebPrimitiveRenderer.renderCsv(csv, 1f)
+        assertTrue(json.contains(""""text":"1""""), "三角形1 → 番号 1: $json")
+        assertTrue(json.contains(""""text":"2""""), "三角形2 → 番号 2: $json")
+        assertTrue(json.contains(""""text":"3""""), "台形 → 番号 3 (三角形 2 個の後): $json")
+        assertTrue(json.contains(""""text":"4""""), "TriTrap → 番号 4 (三角形+台形の後): $json")
+        assertEquals(4, count(json, """"type":"circle""""), "番号サークル 4 個 (三角形2+台形1+TriTrap1): $json")
+    }
+
+    /** 混在順 build の安全網: 三角形→台形→TriTrap→三角形 のように CSV 出現順がバラついても、
+     *  既存 build パイプライン (rows / trapRows / trapParentedTriRows の 3 分離) で全部建つ。
+     *  build を figureRows 1 パス依存解決に書き換える時、このテストが green であり続けることが
+     *  「順不同 build に統合しても結果が同じ」の証拠になる。 */
+    @Test
+    fun mixed_order_csv_builds_all_figures() {
+        val csv = "1,6.0,5.0,4.0,-1,-1\n" +
+            "Trapezoid,1,5,4,3,1,1\n" +
+            "TriTrap,2,3,3,3,1,2\n" +
+            "2,5.0,4.0,3.0,1,1\n"
+        val doc = CsvCodec.parse(csv)
+        assertEquals(4, doc.figureRows.size, "figureRows に 4 行が CSV 出現順で揃う")
+        val trilist = CsvCodec.build(doc)
+        val traps = CsvCodec.buildTrapezoids(doc, trilist, 1f)
+        val trapTris = CsvCodec.buildTrapParentedTriangles(doc, traps, 1f)
+        assertEquals(2, trilist.size(), "三角形 2 個 (CSV 順がバラついても両方建つ)")
+        assertEquals(1, traps.size, "台形 1 個")
+        assertEquals(1, trapTris.size, "台形子三角形 1 個")
+    }
+
     /** 位置順ビルドの土台: parse が図形行を CSV 出現順で保持する (rows/trapRows 分離では失われる行順)。
      *  三角形→台形→三角形 の混在で、figureRows がその順序を保つ (親が子より先に在ることを後で使う)。 */
     @Test
