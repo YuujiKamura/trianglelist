@@ -974,14 +974,14 @@ function syncForm(): void {
   const isTrap = figureKind === 'trapezoid';
   const tc = triCount();
   // 新規番号は figureKind に追従 (三角形 = 次の三角形番号、台形 = 次の台形連番 T{k})
-  input('newNum').value = isTrap ? `T${rows.length - tc + 1}` : String(tc + 1);
+  input('newNum').value = String(rows.length + 1);
   el('thEdgeA').textContent = isTrap ? '底辺(A)' : '辺A';
   el('thEdgeB').textContent = isTrap ? '延長(B)' : '辺B';
   el('thEdgeC').textContent = isTrap ? '上辺(C)' : '辺C';
 
   const cur = current >= 1 ? rows[current - 1] : null;
   // 現在行の番号表示は行自身の種別に従う (三角形 = 番号、台形 = T{k})
-  input('curNum').value = cur ? (cur.kind === 'trapezoid' ? `T${current - tc}` : String(current)) : '';
+  input('curNum').value = cur ? String(current) : '';
   input('curName').value = cur ? nameOf(cur) : '';
   input('curA').value = cur ? fmt2(edgeVal(cur, 'a')) : '';
   input('curB').value = cur ? fmt2(edgeVal(cur, 'b')) : '';
@@ -1360,7 +1360,7 @@ function buildTable(canvas: HTMLCanvasElement): void {
     const tdNum = document.createElement('td');
     tdNum.className = 'num';
     // 三角形は三角形番号 (= i+1、prefix なので一致)、台形は台形連番 "T{k}" (canvas 表記と一致)
-    tdNum.textContent = row.kind === 'trapezoid' ? `T${i + 1 - tc}` : String(i + 1);
+    tdNum.textContent = String(i + 1);
     tr.appendChild(tdNum);
 
     // 測点名 (CSV 列6 = extras[0])。描画には出ないが round-trip・書き出しで保持する
@@ -2766,7 +2766,7 @@ function presetTriOnTrap(canvas: HTMLCanvasElement, trap: number, side: number):
   selectedDim = null;
   edgeSel = null;
   pendingTrapParent = { trap, side };
-  input('newParent').value = `T${trap}`; // 表示のみ (addX は pendingTrapParent から直接読む)
+  input('newParent').value = String(triCount() + trap); // 表示のみ (addX は pendingTrapParent から直接読む)
   if (figureKind === 'trapezoid') {
     // 子=台形のときは親種別=台形(1) と接続 side を新規行にも残す (フォーム再描画用)
     select('newConn').value = String(side);
