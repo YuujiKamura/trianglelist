@@ -1591,19 +1591,19 @@ function addRow(canvas: HTMLCanvasElement): void {
   const parentRow = rows[parentIdx - 1];
   if (parentRow && (parentRow.kind === 'trapezoid' || parentRow.kind === 'tritrap')) {
     // 台形 / 台形子三角形 を親に → 新行は tritrap (台形末尾の更に後ろに push、不変条件維持)。
-    // 内部 chunks の target_idx = 台形数 + tritrap chain idx = parentIdx - 三角形数 (= 混在通しから三角形数を引いた値)。
-    // user 2026-06-15「台形にくっついてる三角形からも派生したい」── tritrap chain を UI から建てる。
+    // 内部 chunks の target_idx = 台形数 + tritrap chain idx = parentIdx - 三角形数。
+    // 底辺A は親の対応辺と同じ辺プール index を共有 (台形 widthB 編集が自動伝播)。
+    // user 2026-06-15「台形にくっついてる三角形からも派生したい」+「上辺変えても電波してねー」。
     const targetIdx = parentIdx - t;
-    const eaSrc = parentRow.kind === 'trapezoid'
-      ? (parentRow.eb /* 台形は B=延長を仮 ea として渡す (実 build で親辺長に上書き) */)
-      : parentRow.eb;
+    // デフォ side=1 (台形=左脚B/延長、tritrap=B 辺)。台形 widthB 編集が自動伝播するよう
+    // 親の対応辺と同じプール index を共有 (parentRow.eb = 台形なら延長、tritrap なら B 辺)
     rows.push({
       kind: 'tritrap',
-      ea: eaSrc,
+      ea: parentRow.eb,
       eb: newEdge('3.0'),
       ec: newEdge('3.0'),
       parent: String(targetIdx),
-      conn: '1', // デフォ B 辺 (台形は左脚、tritrap も B 辺)
+      conn: '1',
       extras: [],
     });
   } else {
@@ -2975,13 +2975,18 @@ function addTriOnTrap(canvas: HTMLCanvasElement, newB: string, newC: string): vo
   }
   takeUndoSnap();
   const name = input('newName').value;
-  // 底辺A = 親台形辺の長さ。接続済み三角形が親辺長を A に持つのと同じ規約 (common が
-  // initByParent で同値に上書きするので描画は不変だが、三角形成立判定 findInvalidRow が
-  // (A,B,C) で効くので 0 ではなく実辺長を入れる — 0 だと「0,B,C は不成立」で redraw が止まる)。
-  const baseLen = trapEdgeLen(pend.trap, pend.side);
+  // 底辺A は親台形の対応辺と **同じ辺プール index** を共有させる (三角形→三角形と同じ規約)。
+  // これで台形の延長(B)/上辺(C) を後でリスト編集しても、tritrap の A 表示が自動追従する。
+  // user 2026-06-15「台形の上辺変えても子の三角形に電波してねー」── 共有プール抜けが根因。
+  // side 規約: 1=B左脚 (=延長)、2=C上辺、3=D右脚 (D は Rectangle 上の延長と同値)。
+  const trapMixedIdx = triCount() + pend.trap;
+  const trapRow = rows[trapMixedIdx - 1];
+  const eaPoolIdx = trapRow && trapRow.kind === 'trapezoid'
+    ? (pend.side === 2 ? trapRow.ec : trapRow.eb)
+    : newEdge(trapEdgeLen(pend.trap, pend.side).toFixed(2));
   const newRow: Row = {
     kind: 'tritrap',
-    ea: newEdge(baseLen > 0 ? baseLen.toFixed(2) : '0'), // 親台形辺長 (取得不能時のみ 0)
+    ea: eaPoolIdx,
     eb: newEdge(newB),         // B
     ec: newEdge(newC),         // C
     parent: String(pend.trap), // 台形群 index (1 始まり)
