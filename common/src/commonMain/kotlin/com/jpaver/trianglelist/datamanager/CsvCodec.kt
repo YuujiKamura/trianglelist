@@ -329,6 +329,36 @@ object CsvCodec {
         return result
     }
 
+    /**
+     * 混在モデル (三角形 + 台形 + 台形子三角形) を 1 つにまとめた build 結果。
+     * 三角形と台形を順不同に持つツリー構造の SoT。書き出し (DXF/SFC/XLSX) は
+     * これを 1 引数で受け取れば 3 リスト同期 (numberTrapTris 等) を呼ばずに済む。
+     */
+    data class MixedBuild(
+        val trilist: TriangleList,
+        val traps: List<Rectangle>,
+        val trapTris: List<Triangle>,
+    )
+
+    /**
+     * build / buildTrapezoids / buildTrapParentedTriangles を 1 呼び出しに統合した混在 build。
+     * 内部実装は既存 3 メソッドへの薄いコーディネータ (= 結果は完全同値)。新規呼び出し元は
+     * これを使うことで、図形種別を意識せず混在モデルを 1 リクエストで取れる。
+     *
+     * trilist は呼び出し側で組んでから渡せる (overrides 適用後 / setChildsToAllParents 後 /
+     * テスト用の作為 trilist 等)。省略時は build(doc) で内部生成。台形は trilist を親に取るので、
+     * 「呼び出し側が手を入れた trilist」を反映させたい場合は必ず明示で渡すこと。
+     *
+     * user 2026-06-14「ツリー構造の中で三角形と台形を順不同に生成できるように基底に寄せたら
+     * 解決できそうなもんだが」── EditObject / Triangle(parent: EditObject) の継ぎ目は既に
+     * あって、各 build パスが種別ごとに分かれているだけ。それを 1 つにまとめる第一歩。
+     */
+    fun buildMixed(doc: CsvDoc, scale: Float = 1f, trilist: TriangleList = build(doc)): MixedBuild {
+        val traps = buildTrapezoids(doc, trilist, scale)
+        val trapTris = buildTrapParentedTriangles(doc, traps, scale)
+        return MixedBuild(trilist, traps, trapTris)
+    }
+
     /** MainActivity.typeToInt:924-929 と同写像 */
     fun typeToInt(type: String): Int = when (type) {
         "Box" -> 1

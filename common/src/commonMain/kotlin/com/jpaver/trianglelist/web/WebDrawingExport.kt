@@ -142,11 +142,12 @@ object WebDrawingExport {
         writer.titleDed_ = TitleParamStr()
         writer.zumeninfo = defaultZumenInfo()
         writer.setNames(header.koujiname, header.rosenname, header.gyousyaname, header.zumennum)
-        // 台形 (混在リスト) を実寸 (scale=1) で組んで渡す。三角形の後に DXF へ出る。
-        // 三角形のみ CSV なら空 = DXF golden 不変
-        val doc = CsvCodec.parse(csv)
-        writer.traps_ = CsvCodec.buildTrapezoids(doc, trilist, 1f)
-        writer.trapTris_ = numberTrapTris(CsvCodec.buildTrapParentedTriangles(doc, writer.traps_, 1f), trilist.size(), writer.traps_.size)
+        // 台形 (混在リスト) を実寸 (scale=1) で組む。三角形 / 台形 / 台形子三角形を
+        // buildMixed で 1 引数取得 (= CsvCodec の SoT)。trilist は overrides 適用済を明示渡し、
+        // 台形の親解決にユーザー手動配置を反映させる。三角形のみ CSV なら traps/trapTris が空。
+        val mixed = CsvCodec.buildMixed(CsvCodec.parse(csv), 1f, trilist)
+        writer.traps_ = mixed.traps
+        writer.trapTris_ = numberTrapTris(mixed.trapTris, trilist.size(), mixed.traps.size)
         val sb = StringBuilder()
         writer.writer = sb
         writer.save()
@@ -200,10 +201,11 @@ object WebDrawingExport {
         writer.setNames(header.koujiname, header.rosenname, header.gyousyaname, header.zumennum)
         writer.setStartNumber(1)
         writer.isReverse_ = numReverse
-        // 台形 (混在リスト) を実寸 (scale=1) で組んで渡す。三角形のみ CSV なら空 = SFC golden 不変
-        val doc = CsvCodec.parse(csv)
-        writer.traps_ = CsvCodec.buildTrapezoids(doc, trilist, 1f)
-        writer.trapTris_ = numberTrapTris(CsvCodec.buildTrapParentedTriangles(doc, writer.traps_, 1f), trilist.size(), writer.traps_.size)
+        // 台形 (混在リスト) を実寸 (scale=1) で組む。DXF 側と同形で buildMixed 経由で 1 引数取得。
+        // trilist は overrides 適用済を明示渡し。三角形のみ CSV なら traps/trapTris が空 = SFC golden 不変。
+        val mixed = CsvCodec.buildMixed(CsvCodec.parse(csv), 1f, trilist)
+        writer.traps_ = mixed.traps
+        writer.trapTris_ = numberTrapTris(mixed.trapTris, trilist.size(), mixed.traps.size)
         return writer.buildSfcString()
     }
 }
