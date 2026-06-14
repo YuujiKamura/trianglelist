@@ -57,6 +57,9 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, filename: String,
 
         // 台形 (混在リスト)。三角形の後に重ねる。番号は三角形からの通し。traps_ 空なら SFC golden 不変
         for ((i, rect) in traps_.withIndex()) writeTrapezoid(rect, trilistNumbered.size() + i + 1)
+        // 台形を親に持つ三角形 (TriTrap)。番号は三角形+台形からの通し (mynumber は WebDrawingExport で
+        // 事前にセット済み)。trapTris_ 空なら SFC golden 不変。user 2026-06-14「複合図形の保存/読込」。
+        for (t in trapTris_) writeTriangle(t)
 
         // deduction
         for (dednumber in 1 .. dedlist_.size()) {
