@@ -1,7 +1,9 @@
 package com.jpaver.trianglelist.web
 
 import com.example.trilib.PointXY
+import com.jpaver.trianglelist.datamanager.CsvCodec
 import com.jpaver.trianglelist.datamanager.DrawingFileWriter
+import com.jpaver.trianglelist.editmodel.Rectangle
 import com.jpaver.trianglelist.viewmodel.TitleParamStr
 
 /**
@@ -19,13 +21,19 @@ import com.jpaver.trianglelist.viewmodel.TitleParamStr
  */
 object WebFrame {
 
-    /** CSV → 図面枠 prim JSON 配列 (layer "frame")。三角形が無ければ空配列 */
+    /** CSV → 図面枠 prim JSON 配列 (layer "frame")。図形 (三角形 or 台形) が無ければ空配列。
+     *  台形のみのリストでも枠を出す (user 指摘 2026-06-14「図面枠内のセンタリングが出来てない」── 三角形 0
+     *  だと return で枠が消え、台形だけの絵は枠なし fit になる)。center も台形のみのときは台形群の bbox 中心。 */
     fun renderFrame(csv: String): String {
-        val trilist = WebCsvReader.read(csv)
-        if (trilist.size() < 1) return "[]"
+        val doc = CsvCodec.parse(csv)
+        val trilist = CsvCodec.build(doc)
         val ps = trilist.getPrintScale(1f)
+        // 描画 scale は 1f (WebPrimitiveRenderer.renderCsv の effScale と同値、印刷 ps と別軸)。
+        // ここで ps を渡すと台形の幾何が壊れて build が空になる (frame: null が消えない原因)。
+        val traps = CsvCodec.buildTrapezoids(doc, trilist, 1f)
+        if (trilist.size() < 1 && traps.isEmpty()) return "[]"
         val header = WebDrawingExport.parseHeader(csv)
-        val center = trilist.center
+        val center = if (trilist.size() >= 1) trilist.center else trapezoidsCenter(traps)
         val writer = FramePrimWriter(ps, center.x - 21f * ps, center.y - 14.85f * ps)
         writer.zumeninfo = WebDrawingExport.defaultZumenInfo()
         writer.titleTri_ = TitleParamStr()
@@ -36,6 +44,21 @@ object WebFrame {
         writer.writeDrawingFrame(1f, textsize)
         writer.writeTopTitle(1f, textsize)
         return "[" + writer.out.joinToString(",") + "]"
+    }
+
+    /** 台形群の頂点 bbox 中心 (台形のみのとき枠の origin に使う、三角形の trilist.center と対) */
+    private fun trapezoidsCenter(traps: List<Rectangle>): PointXY {
+        var minX = Double.POSITIVE_INFINITY; var minY = Double.POSITIVE_INFINITY
+        var maxX = Double.NEGATIVE_INFINITY; var maxY = Double.NEGATIVE_INFINITY
+        for (r in traps) {
+            val lp = r.calcPoint()
+            for (p in listOf(lp.a.left, lp.a.right, lp.b.left, lp.b.right)) {
+                val px = p.x.toDouble(); val py = p.y.toDouble()
+                if (px < minX) minX = px; if (px > maxX) maxX = px
+                if (py < minY) minY = py; if (py > maxY) maxY = py
+            }
+        }
+        return PointXY(((minX + maxX) / 2.0).toFloat(), ((minY + maxY) / 2.0).toFloat())
     }
 
     /** writeLine/writeTextHV を prim JSON に落とす writer。paper cm → モデル座標は ×ps + 平行移動 */

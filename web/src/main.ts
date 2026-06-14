@@ -341,18 +341,22 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
     ctx.fill();
   }
 
-  // 選択三角形の塗り (線より下に敷く)。WebPrimitiveRenderer.render は三角形ごとに
-  // 'tri' layer の line を 3 本連続で出す (WebPrimitiveRenderer.kt:62-65) ので、
-  // 番号 n の頂点は tri 線群の [3(n-1), 3n) から拾える — 表示専用の導出で幾何判定はしない
+  // 選択図形の塗り (線より下に敷く)。WebPrimitiveRenderer.render は図形ごとに 'tri' layer の
+  // line を順に出す: 三角形=3本 (WebPrimitiveRenderer.kt:62-65)、台形=4本 (renderTrapezoid)。
+  // 行ごとの cumulative offset で頂点を拾う — 表示専用の導出で幾何判定はしない
   const triLines = prims.filter((p): p is LinePrim => p.type === 'line' && p.layer === 'tri');
-  if (selected > 0) {
-    const base = (selected - 1) * 3;
-    if (base + 2 < triLines.length) {
+  if (selected > 0 && selected <= rows.length) {
+    let off = 0;
+    for (let i = 0; i < selected - 1; i++) off += rows[i].kind === 'trapezoid' ? 4 : 3;
+    const sides = rows[selected - 1].kind === 'trapezoid' ? 4 : 3;
+    if (off + sides - 1 < triLines.length) {
       ctx.fillStyle = SELECT_FILL;
       ctx.beginPath();
-      ctx.moveTo(sx(triLines[base].x1), sy(triLines[base].y1));
-      ctx.lineTo(sx(triLines[base].x2), sy(triLines[base].y2));
-      ctx.lineTo(sx(triLines[base + 1].x2), sy(triLines[base + 1].y2));
+      ctx.moveTo(sx(triLines[off].x1), sy(triLines[off].y1));
+      // 各辺は前辺の終点と継がる (renderTrapezoid: 底→右脚→上→左脚)。x2 を順に lineTo
+      for (let k = 0; k < sides; k++) {
+        ctx.lineTo(sx(triLines[off + k].x2), sy(triLines[off + k].y2));
+      }
       ctx.closePath();
       ctx.fill();
     }
@@ -1762,6 +1766,7 @@ function fabReplace(canvas: HTMLCanvasElement): void {
   current = newNum;
   edgeSel = null; // 追加が確定したのでシャドーは消す
   shadowPrims = null;
+  view = null; // 行を増やしたので全体 fit に戻す (削除側 main.ts:2484 と対称)
   buildTable(canvas);
   syncForm();
   redraw(canvas);
@@ -1847,6 +1852,7 @@ function addTrapezoid(canvas: HTMLCanvasElement): void {
   shadowPrims = null;
   selected = rows.length;
   current = rows.length;
+  view = null; // 行を増やしたので全体 fit に戻す (削除側 main.ts:2484 と対称)
   buildTable(canvas);
   syncForm();
   redraw(canvas);
@@ -2820,6 +2826,7 @@ function addTriOnTrap(canvas: HTMLCanvasElement, newB: string, newC: string): vo
   select('newConn').value = '-1';
   selected = rows.length;
   current = rows.length;
+  view = null; // 行を増やしたので全体 fit に戻す (削除側 main.ts:2484 と対称)
   buildTable(canvas);
   syncForm();
   redraw(canvas);

@@ -257,7 +257,9 @@ object WebPrimitiveRenderer {
             item(dimText(len.formattedString(2), place, start.calcDimAngle(end), textSize, num, sideIdx, h, v))
             if (h > 2) item(line(place.pointA, place.pointB, "dim"))
         }
-        emitMeasured(bl, br, rect.dimVertical.a, rect.dimHorizontal.a, 0)   // A 底辺
+        // 接続済み (nodeA != null) は底辺=親辺で共有 → 寸法は親側が持つので子は出さない
+        // (接続済み三角形が辺A寸法を親に任せるのと同じ思想、user 指摘 2026-06-14 「7.0 が二重表示」)
+        if (rect.nodeA == null) emitMeasured(bl, br, rect.dimVertical.a, rect.dimHorizontal.a, 0)   // A 底辺
         emitMeasured(tr, tl, rect.dimVertical.c, rect.dimHorizontal.c, 2)   // C 上辺
 
         // B 延長 = 底辺からの「垂線」の長さ (rect.length)。左脚 (bl→tl) の斜辺長ではない。
