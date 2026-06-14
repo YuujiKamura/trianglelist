@@ -184,6 +184,50 @@ describe('生成物の XML レベル検証 (unzip → xl/worksheets/sheet1.xml)'
   });
 });
 
+describe('XLSX read-back (複合図形 / 三角形+台形+TriTrap)', () => {
+  // 三角形 1 + 台形 1 + TriTrap 1 (台形を親に持つ三角形)。番号は混在通し
+  const CSV_MIXED = [
+    'koujiname,工事M',
+    'rosenname,複合路線',
+    'gyousyaname,業者X',
+    'zumennum,Z-M',
+    '1,3.0,4.0,5.0,-1,-1',
+    'Trapezoid,2,3.0,4.0,2.0,1,1,L,Triangle',
+    'TriTrap,3,2.0,2.0,2.0,2,1',
+    'ListAngle, 0',
+    '',
+  ].join('\n');
+
+  it('parseCsvForXlsx: 三角形+台形+TriTrap が混在通し番号で読める', () => {
+    const parsed = parseCsvForXlsx(CSV_MIXED);
+    expect(parsed.triangles).toEqual([{ num: 1, a: 3, b: 4, c: 5 }]);
+    expect(parsed.trapezoids).toEqual([{ num: 2, widthA: 4, length: 3, widthB: 2 }]);
+    expect(parsed.triTraps).toEqual([{ num: 3, a: 2, b: 2, c: 2 }]);
+  });
+
+  it('台形行は (C+E)*D/2 の数式、TriTrap は Heron 数式で出る', async () => {
+    const ws = await readBack(CSV_MIXED);
+    // 行 5 = 三角形 #1 (Heron)
+    expect(ws.getCell('B5').value).toBe(1);
+    expect(ws.getCell('F5').formula).toContain('ROUND(((');
+    // 行 6 = 台形 #2 (台形面積公式)
+    expect(ws.getCell('B6').value).toBe(2);
+    expect(ws.getCell('C6').value).toBe(4); // widthA(底辺)
+    expect(ws.getCell('D6').value).toBe(3); // length(高さ)
+    expect(ws.getCell('E6').value).toBe(2); // widthB(上辺)
+    expect(ws.getCell('F6').formula).toBe('ROUND((C6+E6)*D6/2,2)');
+    // 行 7 = TriTrap #3 (Heron、三角形と同形)
+    expect(ws.getCell('B7').value).toBe(3);
+    const lsum7 = '(0.5*(C7+D7+E7))';
+    expect(ws.getCell('F7').formula).toBe(
+      `ROUND(((${lsum7}*(${lsum7}-C7)*(${lsum7}-D7)*(${lsum7}-E7))^0.5),2)`,
+    );
+    // 小計(1) は図形 3 件ぶん (三角形 2 + 台形 1)
+    expect(ws.getCell('B8').value).toBe('小計(1)');
+    expect(ws.getCell('F8').formula).toBe('sum(F5:F7)');
+  });
+});
+
 describe('XLSX read-back (控除なし / n=2, m=0)', () => {
   const CSV_NO_DED = [
     'koujiname,工事A',
