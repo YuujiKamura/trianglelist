@@ -135,10 +135,13 @@ object WebPrimitiveRenderer {
             val pab = tri.pointAB
             val pbc = tri.pointBC
 
-            // 辺 (DrawingFileWriter.writeTriangleLines と同じ順)
-            item(line(tri.point[0], pab, "tri"))
-            item(line(pab, pbc, "tri"))
-            item(line(pbc, tri.point[0], "tri"))
+            // 辺 (DrawingFileWriter.writeTriangleLines と同じ順)。tri/side 識別子を載せて、
+            // web 側の辺選択ハイライト等が「物理 side で line を直接取れる」ようにする
+            // (描画順 != side 番号の場合分けを上位から消す、user 指針 2026-06-14)。
+            val tn = tri.mynumber
+            item(line(tri.point[0], pab, "tri", ""","tri":$tn,"side":0"""))
+            item(line(pab, pbc, "tri", ""","tri":$tn,"side":1"""))
+            item(line(pbc, tri.point[0], "tri", ""","tri":$tn,"side":2"""))
 
             // 寸法配置 (DxfFileWriter.layoutTriple と同じ引数)
             val scale = tri.scaleFactor.toDouble()
@@ -200,9 +203,10 @@ object WebPrimitiveRenderer {
             val pca = t.pointCA
             val pab = t.pointAB
             val pbc = t.pointBC
-            item(line(t.point[0], pab, "tri"))
-            item(line(pab, pbc, "tri"))
-            item(line(pbc, t.point[0], "tri"))
+            val tn = t.mynumber
+            item(line(t.point[0], pab, "tri", ""","tri":$tn,"side":0"""))
+            item(line(pab, pbc, "tri", ""","tri":$tn,"side":1"""))
+            item(line(pbc, t.point[0], "tri", ""","tri":$tn,"side":2"""))
             val sf = t.scaleFactor.toDouble()
             val dh = t.dimHeight.toDouble()
             val placeB = DimensionLayout.layout(t.pointBC, t.pointAB, t.dim.vertical.b, t.dim.horizontal.b, sf, dh, 0.0)
@@ -239,11 +243,13 @@ object WebPrimitiveRenderer {
         val tl = lp.b.left
         val tr = lp.b.right
 
-        // 4 辺 (layer "tri"、三角形の辺と同じレイヤ)
-        item(line(bl, br, "tri"))
-        item(line(br, tr, "tri"))
-        item(line(tr, tl, "tri"))
-        item(line(tl, bl, "tri"))
+        // 4 辺 (layer "tri"、三角形の辺と同じレイヤ)。物理 side: 0=A底辺, 1=B左脚/延長, 2=C上辺, 3=D右脚
+        // 描画順は外周巡回 (bl→br→tr→tl→bl) で side 順 (0→3→2→1) と一致しないので、
+        // 個々の line に物理 side を載せる (web 側は side 直引きで反対辺ハイライトを防ぐ)。
+        item(line(bl, br, "tri", ""","tri":$num,"side":0"""))   // A 底辺
+        item(line(br, tr, "tri", ""","tri":$num,"side":3"""))   // D 右脚
+        item(line(tr, tl, "tri", ""","tri":$num,"side":2"""))   // C 上辺
+        item(line(tl, bl, "tri", ""","tri":$num,"side":1"""))   // B 左脚/延長
 
         // 寸法 — 三角形と同じ共通の式層 (DimensionLayout) に通す。図形ごとの別経路を作らない。
         // 外周順の辺: bl→br(A底辺) / tr→tl(C上辺) / tl→bl(B延長/左脚) の3本。D右脚(br→tr)は派生辺で寸法なし。
