@@ -834,6 +834,23 @@ function parseCsvToState(csv: string): void {
     const conn = chunks[5] ?? '-1';
     const extras = chunks.slice(6);
     const aStr = chunks[1] ?? '';
+    // 新 schema: parent が「現在までの三角形数」を超えていたら台形親 (= 旧 TriTrap)。
+    // CsvCodec.parse と同じ判定。tritrapRows に振り分けて rows 末尾に積む (順序維持)。
+    // user 2026-06-14「TriTrap みたいな妙なデータ型は廃止しろ」── CSV schema 統合。
+    const pnEarly = intOrNull(parent) ?? -1;
+    if (pnEarly > rows.length) {
+      const trapIdx = pnEarly - rows.length;
+      tritrapRows.push({
+        kind: 'tritrap',
+        ea: newEdge(aStr),
+        eb: newEdge(chunks[2] ?? ''),
+        ec: newEdge(chunks[3] ?? ''),
+        parent: String(trapIdx),
+        conn,
+        extras: [],
+      });
+      continue;
+    }
     // 辺A の共有判定: 単純接続で数値が親辺と一致する時だけ束ねる。
     // 一致しない CSV (手書き・古いデータ) は従来どおり別の値として保持し描画を変えない
     const pn = intOrNull(parent) ?? -1;
@@ -897,15 +914,18 @@ function serializeState(): string {
       `Trapezoid, ${trapNum}, ${edgeVal(r, 'b')}, ${edgeVal(r, 'a')}, ${edgeVal(r, 'c')}, ${r.parent}, ${r.conn}, ${r.align ?? 0}, ${r.parentKind ?? 0}`,
     );
   });
-  // 台形を親に持つ三角形 ("TriTrap" 行)。台形行の後に書く (親=台形が先 = common が解決可)。
-  // 列: TriTrap, num, ea(底辺/情報), eb(=B), ec(=C), parent(台形群index), side。common の
-  // CsvCodec.buildTrapParentedTriangles が col3=B/col4=C/col5=parent/col6=side で読む。
+  // 台形を親に持つ三角形は普通三角形行形式で書く (parent = 三角形数 + 台形群idx = 混在通し番号)。
+  // 旧 TriTrap タグは parser 側で互換読み (CsvCodec.parse / main.ts parseCsvToState 両方)。
+  // user 2026-06-14「TriTrap みたいな妙なデータ型は廃止しろ」── CSV schema からタグを廃止。
   let tritrapNum = 0;
   rows.forEach((r) => {
     if (r.kind !== 'tritrap') return;
     tritrapNum++;
+    const trapIdx = intOrNull(r.parent) ?? 0;
+    const parent = triNum + trapIdx; // 混在通し番号 (三角形数 + 台形 idx)
+    const num = triNum + trapNum + tritrapNum; // 描画番号 (三角形+台形+台形子三角形 の通し)
     lines.push(
-      `TriTrap, ${tritrapNum}, ${edgeVal(r, 'a')}, ${edgeVal(r, 'b')}, ${edgeVal(r, 'c')}, ${r.parent}, ${r.conn}`,
+      `${num}, ${edgeVal(r, 'a')}, ${edgeVal(r, 'b')}, ${edgeVal(r, 'c')}, ${parent}, ${r.conn}`,
     );
   });
   // 控除はアプリ保存 (MainActivity.kt:2790-2797) と同じく末尾に書く
