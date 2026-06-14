@@ -1577,15 +1577,39 @@ function buildTable(canvas: HTMLCanvasElement): void {
 }
 
 function addRow(canvas: HTMLCanvasElement): void {
-  // 三角形は prefix 末尾に挿入 (不変条件)。台形が居ても rows[t-1] が最後の三角形
   const t = triCount();
-  if (t === 0) {
+  if (rows.length === 0) {
     rows.splice(0, 0, { kind: 'triangle', ea: newEdge('3.0'), eb: newEdge('3.0'), ec: newEdge('3.0'), parent: '-1', conn: '-1', extras: [] });
+    clearSelection();
+    buildTable(canvas);
+    syncForm();
+    redraw(canvas);
+    return;
+  }
+  // 親は「current 選択行」(無ければ三角形末尾 = 従来挙動)。current は混在通し番号 = rows index + 1
+  const parentIdx = current > 0 ? current : t;
+  const parentRow = rows[parentIdx - 1];
+  if (parentRow && (parentRow.kind === 'trapezoid' || parentRow.kind === 'tritrap')) {
+    // 台形 / 台形子三角形 を親に → 新行は tritrap (台形末尾の更に後ろに push、不変条件維持)。
+    // 内部 chunks の target_idx = 台形数 + tritrap chain idx = parentIdx - 三角形数 (= 混在通しから三角形数を引いた値)。
+    // user 2026-06-15「台形にくっついてる三角形からも派生したい」── tritrap chain を UI から建てる。
+    const targetIdx = parentIdx - t;
+    const eaSrc = parentRow.kind === 'trapezoid'
+      ? (parentRow.eb /* 台形は B=延長を仮 ea として渡す (実 build で親辺長に上書き) */)
+      : parentRow.eb;
+    rows.push({
+      kind: 'tritrap',
+      ea: eaSrc,
+      eb: newEdge('3.0'),
+      ec: newEdge('3.0'),
+      parent: String(targetIdx),
+      conn: '1', // デフォ B 辺 (台形は左脚、tritrap も B 辺)
+      extras: [],
+    });
   } else {
-    // デフォルトは「直前の三角形の B 辺に接続」。辺A は親の B 辺と同一の物理辺なので
-    // 値を写すのではなく同じ辺 index を共有する (辺プール)
-    const parent = rows[t - 1];
-    rows.splice(t, 0, { kind: 'triangle', ea: parent.eb, eb: newEdge('3.0'), ec: newEdge('3.0'), parent: String(t), conn: '1', extras: [] });
+    // 通常 (三角形親): 三角形 prefix 末尾に挿入。辺A は親の B 辺と同一の物理辺を共有 (辺プール)
+    const p = parentRow ?? rows[t - 1];
+    rows.splice(t, 0, { kind: 'triangle', ea: p.eb, eb: newEdge('3.0'), ec: newEdge('3.0'), parent: String(parentIdx), conn: '1', extras: [] });
   }
   clearSelection(); // 行構成が変わるので選択解除
   buildTable(canvas);
