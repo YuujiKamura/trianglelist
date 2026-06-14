@@ -129,6 +129,27 @@ object CsvCodec {
                 (if (rows.isEmpty()) preLines else postLines).add(line)
                 continue
             }
+            // 普通三角形行で parent が「現在までの三角形数」を超えていれば、台形を指す混在通し番号と
+            // 解釈する (= 親が台形)。trapIdx = parent - rows.size。内部表現は旧 TriTrap タグの chunks
+            // 構造 ("TriTrap", num, ea, B, C, trapIdx, side) に揃え、build は完全に同じパスを通る。
+            // user 2026-06-14「TriTrap みたいな妙なデータ型は廃止しろ」── CSV schema からタグを消す。
+            val parentIdx = chunks.getOrNull(4)?.toIntOrNull() ?: -1
+            if (parentIdx > rows.size) {
+                val trapIdx = parentIdx - rows.size
+                val converted = listOf(
+                    "TriTrap",
+                    chunks[0],
+                    chunks.getOrNull(1) ?: "",
+                    chunks.getOrNull(2) ?: "",
+                    chunks.getOrNull(3) ?: "",
+                    trapIdx.toString(),
+                    chunks.getOrNull(5) ?: "0",
+                )
+                val r = CsvRow(converted)
+                trapParentedTriRows.add(r)
+                figureRows.add(r)
+                continue
+            }
             val r = CsvRow(chunks)
             rows.add(r)
             figureRows.add(r)
@@ -149,8 +170,21 @@ object CsvCodec {
         doc.dedRows.forEach { sb.append(it.chunks.joinToString(",")).append('\n') }
         // 台形行は控除の後に書き戻す (schema evolution の定石、未知列も chunks 生のまま素通し)
         doc.trapRows.forEach { sb.append(it.chunks.joinToString(",")).append('\n') }
-        // 台形を親に持つ三角形 ("TriTrap" 行) は台形行の後に書く (親が先に来る = 読み戻しても解決可)
-        doc.trapParentedTriRows.forEach { sb.append(it.chunks.joinToString(",")).append('\n') }
+        // 台形を親に持つ三角形は普通三角形行形式で書く (parent = 三角形数 + 台形 idx の混在通し番号)。
+        // 旧 TriTrap タグは parse 側で互換読みするが、新規書き出しはタグを使わない。
+        // user 2026-06-14「TriTrap みたいな妙なデータ型は廃止しろ」── CSV schema からタグを廃止。
+        val ntri = doc.rows.size
+        doc.trapParentedTriRows.forEach { r ->
+            val c = r.chunks
+            val num = c.getOrNull(1) ?: ""
+            val ea = c.getOrNull(2) ?: ""
+            val b = c.getOrNull(3) ?: ""
+            val cc = c.getOrNull(4) ?: ""
+            val trapIdx = c.getOrNull(5)?.toIntOrNull() ?: 0
+            val side = c.getOrNull(6) ?: "0"
+            val parent = ntri + trapIdx
+            sb.append("$num,$ea,$b,$cc,$parent,$side").append('\n')
+        }
         return sb.toString()
     }
 

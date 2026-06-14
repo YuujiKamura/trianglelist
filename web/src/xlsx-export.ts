@@ -128,6 +128,18 @@ export function parseCsvForXlsx(csvText: string): ParsedCsvForXlsx {
     // 三角形行: 4 カラム以上 + 先頭が非負整数 (main.ts parseCsvToState と同じ判定)
     const num = chunks.length >= 4 ? intOrNull(chunks[0] ?? '') : null;
     if (num !== null && num >= 0) {
+      // 新 schema: parent が「現在までの三角形数」を超えていたら台形を指す混在通し番号 = 台形子三角形
+      // (CsvCodec.parse と同じ判定。TriTrap タグ廃止後の主経路)
+      const parent = intOrNull(chunks[4] ?? '') ?? -1;
+      if (parent > triangles.length) {
+        triTraps.push({
+          num: triangles.length + trapezoids.length + triTraps.length + 1,
+          a: parseFloat(chunks[1] ?? ''),
+          b: parseFloat(chunks[2] ?? ''),
+          c: parseFloat(chunks[3] ?? ''),
+        });
+        continue;
+      }
       triangles.push({
         num: triangles.length + trapezoids.length + 1, // 混在通し (台形が先に在っても番号がずれない)
         a: parseFloat(chunks[1] ?? ''),

@@ -205,6 +205,25 @@ describe('XLSX read-back (複合図形 / 三角形+台形+TriTrap)', () => {
     expect(parsed.triTraps).toEqual([{ num: 3, a: 2, b: 2, c: 2 }]);
   });
 
+  it('parseCsvForXlsx: 新 schema (TriTrap タグ無し / 普通三角形行 + parent>tri数) も同じ結果', () => {
+    // 旧: TriTrap,3,2,2,2,1,1 と等価。新: 普通三角形行で num=3, A=2, B=2, C=2, parent=2 (= 三角形1+台形idx1)
+    const modern = [
+      'koujiname,工事M',
+      'rosenname,複合路線',
+      'gyousyaname,業者X',
+      'zumennum,Z-M',
+      '1,3.0,4.0,5.0,-1,-1',
+      'Trapezoid,2,3.0,4.0,2.0,1,1,L,Triangle',
+      '3,2.0,2.0,2.0,2,1', // ← TriTrap タグ無し、parent=2 が台形を指す
+      'ListAngle, 0',
+      '',
+    ].join('\n');
+    const parsed = parseCsvForXlsx(modern);
+    expect(parsed.triangles).toEqual([{ num: 1, a: 3, b: 4, c: 5 }]);
+    expect(parsed.trapezoids).toEqual([{ num: 2, widthA: 4, length: 3, widthB: 2 }]);
+    expect(parsed.triTraps).toEqual([{ num: 3, a: 2, b: 2, c: 2 }]);
+  });
+
   it('台形行は (C+E)*D/2 の数式、TriTrap は Heron 数式で出る', async () => {
     const ws = await readBack(CSV_MIXED);
     // 行 5 = 三角形 #1 (Heron)

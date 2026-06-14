@@ -398,6 +398,42 @@ class WebTrapezoidTest {
         assertTrue(withChild.length > trapOnly.length, "TriTrap ぶん SFC が増える")
     }
 
+    /** TriTrap タグ廃止: 普通三角形行で「parent が三角形数を超える」と台形親と解釈される。
+     *  旧 TriTrap 形式と新形式 (普通三角形行) で内部 build 結果が同じであることを pin。
+     *  user 2026-06-14「TriTrap みたいな妙なデータ型は廃止しろ」── CSV schema の cleanup。 */
+    @Test
+    fun new_schema_triangle_row_with_trap_parent_is_equivalent_to_legacy_tritrap() {
+        // 旧形式: TriTrap タグ。trap idx=1, side=2
+        val legacy = "Trapezoid,1,5,10,7,-1,0\nTriTrap,2,7,4,4,1,2\n"
+        // 新形式: 普通三角形行で parent=1 (三角形 0 個 + 台形 idx 1 = 混在通し番号 1)
+        val modern = "Trapezoid,1,5,10,7,-1,0\n2,7,4,4,1,2\n"
+        val legacyDoc = CsvCodec.parse(legacy)
+        val modernDoc = CsvCodec.parse(modern)
+        assertEquals(1, legacyDoc.trapParentedTriRows.size, "旧形式: TriTrap 行が別バケツ")
+        assertEquals(1, modernDoc.trapParentedTriRows.size, "新形式: 普通三角形行 → 内部で同じバケツに振り分け")
+        assertEquals(0, modernDoc.rows.size, "新形式: 台形親の三角形は rows に入らない (golden 不変)")
+        // build 結果も同値
+        val legacyMixed = CsvCodec.buildMixed(legacyDoc, 1f)
+        val modernMixed = CsvCodec.buildMixed(modernDoc, 1f)
+        assertEquals(legacyMixed.traps.size, modernMixed.traps.size)
+        assertEquals(legacyMixed.trapTris.size, modernMixed.trapTris.size)
+        assertEquals(1, modernMixed.trapTris.size, "新形式でも台形子三角形が 1 個建つ")
+    }
+
+    /** TriTrap タグの round-trip: 旧形式を読み、書き戻すと TriTrap タグが消えて普通三角形行になる。
+     *  再度 parse すると内部表現が同じに戻る。これで「古い CSV を読んで新しい CSV を書く」マイグレーションが成立。 */
+    @Test
+    fun tritrap_serialize_writes_modern_triangle_row_and_round_trips() {
+        val legacy = "Trapezoid,1,5,10,7,-1,0\nTriTrap,2,7,4,4,1,2\n"
+        val written = CsvCodec.serialize(CsvCodec.parse(legacy))
+        assertTrue(!written.contains("TriTrap"), "新規書き出しに TriTrap タグは含まない: $written")
+        assertTrue(written.contains("2,7,4,4,1,2"), "普通三角形行形式 (num=2, A=7, B=4, C=4, parent=1, side=2): $written")
+        // 再 parse で同じ内部表現
+        val reparsed = CsvCodec.parse(written)
+        assertEquals(1, reparsed.trapParentedTriRows.size, "再 parse で台形親三角形が同じ場所に振り分けられる")
+        assertEquals(1, reparsed.trapRows.size, "台形は不変")
+    }
+
     /** 混在通し番号の安全網: 三角形2 + 台形1 + TriTrap1 を CSV 順で書くと、描画上の番号は
      *  1,2,3,4 が連続して出る (三角形→台形→TriTrap の規約)。これを破ると DXF / SFC / XLSX
      *  の番号付けが食い違うので、build 統合作業の前にここで pin しておく。 */
