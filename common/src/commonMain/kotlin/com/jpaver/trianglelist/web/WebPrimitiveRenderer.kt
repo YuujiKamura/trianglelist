@@ -280,7 +280,10 @@ object WebPrimitiveRenderer {
         val bottomShorter = rect.widthA <= rect.widthB
         val baseStart = if (bottomShorter) bl else tl
         val baseEnd = if (bottomShorter) br else tr
-        val perpFoot = baseStart.crossOffset(baseEnd, rect.length)
+        // Y 上向きモデル座標で「台形内側」に向けるには、底辺起点は反時計回り (default -90.0)、
+        // 上辺起点は時計回り (+90.0) で perpendicular を取る。上辺起点で default のままだと
+        // perpFoot が台形外側に向く (user 指摘 2026-06-14「垂線を延ばす方向が逆」)。
+        val perpFoot = baseStart.crossOffset(baseEnd, rect.length, if (bottomShorter) -90.0 else 90.0)
         val placeB = DimensionLayout.layout(perpFoot, baseStart, rect.dimVertical.b, rect.dimHorizontal.b, ds, dh, 0.0)
         val extLen = (rect.length / scale).toFloat()
         item(dimText(extLen.formattedString(2), placeB, baseStart.calcDimAngle(perpFoot), textSize, num, 1, rect.dimHorizontal.b, rect.dimVertical.b))

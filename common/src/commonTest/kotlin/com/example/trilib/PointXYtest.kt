@@ -1,9 +1,13 @@
 package com.example.trilib
 
 
-import junit.framework.TestCase.assertEquals
-import org.junit.Assert
-import org.junit.Test
+import kotlin.math.abs
+import kotlin.test.Test
+import kotlin.test.assertEquals as ktAssertEquals
+
+private fun assertClose(expected: Double, actual: Double, delta: Double, msg: String = "") {
+    if (abs(expected - actual) >= delta) throw AssertionError("expected=$expected actual=$actual delta=$delta $msg")
+}
 
 class PointXYtest {
 
@@ -91,8 +95,8 @@ class PointXYtest {
     private fun assertPointXYEquals(expected: PointXY, actual: PointXY) {
         // System.out.printf は JVM 専用のため println に置換 (wasmJs 追加対応、出力同値)
         println("PointXY expected x: ${expected.x}, y: ${expected.y}, actual x: ${actual.x}, y: ${actual.y} ")
-        assertEquals(expected.y.toDouble(), actual.y.toDouble(), 0.001 )
-        assertEquals(expected.x.toDouble(), actual.x.toDouble(), 0.001 )
+        assertClose(expected.y.toDouble(), actual.y.toDouble(), 0.001 )
+        assertClose(expected.x.toDouble(), actual.x.toDouble(), 0.001 )
 
     }
 
@@ -130,7 +134,7 @@ class PointXYtest {
             PointXY(1f, 1.5f)
         )
 
-        Assert.assertEquals( -2.0, vec1[1].minus(vec1[0]).outerProduct( vec2[1].minus(vec2[0]) ), 0.0001 )
+        assertClose( -2.0, vec1[1].minus(vec1[0]).outerProduct( vec2[1].minus(vec2[0]) ), 0.0001 )
 
     }
 /*
@@ -144,7 +148,7 @@ class PointXYtest {
         val tri = com.jpaver.trianglelist.Triangle(5f,5f,5f,
             PointXY(-0.5f, -0.5f), 0f )
 
-        Assert.assertEquals( false, tri.isCollide )
+        assertClose( false, tri.isCollide )
 
     }
 
@@ -154,9 +158,9 @@ class PointXYtest {
         val p2 = PointXY(0f, 0f)
 
         // lengthXY 符号は付かない
-        Assert.assertEquals(5f, p2.vectorTo(p1).lengthXY(), 0.001f)
+        assertClose(5f, p2.vectorTo(p1).lengthXY(), 0.001f)
         val t1 = Triangle(50f, 50f, 50f)
-        Assert.assertEquals(50.0f, t1.pointCA.vectorTo(t1.pointAB).lengthXY(), 0.001f)
+        assertClose(50.0f, t1.pointCA.vectorTo(t1.pointAB).lengthXY(), 0.001f)
     }
 */
     @Test
@@ -170,7 +174,7 @@ class PointXYtest {
             PointXY(0f, 0f),
             1.0,  )
 
-        Assert.assertEquals(1.0, pressedInModel.x, 0.001)
+        assertClose(1.0, pressedInModel.x, 0.001)
 
     }
 
@@ -180,7 +184,7 @@ class PointXYtest {
         val p2 = PointXY(1f, 0f)
         p1.add( p1 ) // add rewrite it
         p1.addminus( p2 ) // add rewrite it
-        Assert.assertEquals(1.0, p1.x, 0.001)
+        assertClose(1.0, p1.x, 0.001)
 
     }
 
@@ -189,7 +193,7 @@ class PointXYtest {
         val p1 = PointXY(0f, 0f)
         p1.add(1.0, 0.0) // add rewrite it
         p1.plus(1.0, 0.0) // plus is NOT rewrite it
-        Assert.assertEquals(1.0, p1.x, 0.001)
+        assertClose(1.0, p1.x, 0.001)
     }
 
     @Test
@@ -197,10 +201,10 @@ class PointXYtest {
         val p1 = PointXY(0f, 0f)
         val p2 = PointXY(0f, 5f)
         val p3 = p1.offset(p2, 10.0)
-        Assert.assertEquals(10.0, p3.y, 0.001 )
+        assertClose(10.0, p3.y, 0.001 )
 
         // マイナス方向に向かってのプラスのムーブメント
-        assertEquals( -10.0, p2.offset(p1, 15.0).y, 0.001 )
+        assertClose( -10.0, p2.offset(p1, 15.0).y, 0.001 )
     }
 
 
@@ -211,36 +215,36 @@ class PointXYtest {
         val p2 = PointXY(-3f, -2f)
         //vector -2, -3
         //if offset -3, expected return -5-(-3)*(-2)=-11, -5-(-3)*(-3)=-14
-        Assert.assertEquals(-7.0, p1.offset(p2, -3.6065).x, 0.001)
-        Assert.assertEquals(-8.0, p1.offset(p2, -3.6065).y, 0.001)
+        assertClose(-7.0, p1.offset(p2, -3.6065).x, 0.001)
+        assertClose(-8.0, p1.offset(p2, -3.6065).y, 0.001)
 
         // 3,4,,?
         val p34 = PointXY(3f, 4f)
-        Assert.assertEquals(5.0, p34.lengthXY(), 0.001)
+        assertClose(5.0, p34.lengthXY(), 0.001)
     }
 
     @Test
     fun testMinMax() {
         val p = PointXY(0f, 0f)
-        Assert.assertEquals(0.0, p.min(
+        assertClose(0.0, p.min(
             PointXY(
                 1f,
                 0f
             )
         ).x, 0.001)
-        Assert.assertEquals(1.0, p.max(
+        assertClose(1.0, p.max(
             PointXY(
                 1f,
                 0f
             )
         ).x, 0.001)
-        Assert.assertEquals(0.0, p.max(
+        assertClose(0.0, p.max(
             PointXY(
                 -1f,
                 0f
             )
         ).x, 0.001)
-        Assert.assertEquals(-1.0, p.min(
+        assertClose(-1.0, p.min(
             PointXY(
                 -1f,
                 0f

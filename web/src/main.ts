@@ -71,16 +71,24 @@ T-001
 7,2.8,2.2,2.5,5,1
 `;
 
+// すべての色定数を 1 箇所に集中させる (user 2026-06-14「別々に色管理するな、統一管理しろ」)。
+// 同じ色を 2 つ以上の名前で持たないこと — 例えば「shadow ラベルのオレンジ」と
+// 「選択中の控除のオレンジ」は同じ #e67e22 なので accentOrange 一本。
 const COLORS: Record<string, string> = {
+  // base レイヤ (prim.layer 名と一致)
   tri: '#222222',
   dim: '#1a7a1a',
   num: '#1f5fbf',
   guide: '#9aa0a6', // 補助線 (台形の延長=垂線ガイド等) — 点線で薄いグレー
   ded: '#c0392b', // 控除 = 赤系 (アプリ/DXF の RED 準拠)
   frame: '#8a8a8a', // 図面枠 = 薄グレー (図形より控えめに、DXF では WHITE 相当)
+  // 選択/オーバーレイ系 (UI 状態を示す)
+  selectFill: 'rgba(31, 95, 191, 0.25)', // 選択三角形の塗り (半透明青)
+  selectYellow: '#e6b800', // 選択辺・番号リング・寸法ボックス (app paintYellow 相当)
+  accentOrange: '#e67e22', // 仮表示 (shadow ラベル / 選択中の控除) — 黄とは別の「注目色」
+  haloDark: '#5c4a00', // halo (暗縁取り) — shadow ラベルと選択辺 ABC 注記の共通輪郭
+  shadowFill: 'rgba(128, 128, 128, 0.35)', // シャドー三角形/台形のグレー塗り
 };
-// 選択中の控除の色 (図形・旗揚げ・テキストごと色替えして他の控除と見分ける)
-const DED_SELECT_COLOR = '#e67e22';
 
 // 三角形の塗りパレット (index = CSV 列 10 = Triangle.mycolor、既定 4)。
 // 色値はアプリの resColors (MainActivity.kt:218-224 → res/values/colors.xml:9-14) と同一 —
@@ -93,9 +101,6 @@ const FILL_PALETTE = [
   '#AAFFAA', // 3 colorLime
   '#88CCFF', // 4 colorSky (既定)
 ];
-
-const SELECT_FILL = 'rgba(31, 95, 191, 0.25)'; // 選択三角形の塗り (半透明青)
-const SELECT_YELLOW = '#e6b800'; // 選択辺・番号リング・寸法ボックス (app paintYellow 相当、白地で読める濃さ)
 
 function setStatus(msg: string): void {
   const el = document.getElementById('status');
@@ -317,6 +322,18 @@ function zoomAt(px: number, py: number, factor: number): void {
   v.offsetY = py - (py - v.offsetY) * f;
 }
 
+// 暗縁取り (halo) + 塗りで「下地がグレー shadow / 既存図面のどんな色」でも文字が浮く描画。
+// 選択辺の A/B/C 注記 (drawSelectedDim) と シャドーの 上辺/延長 ラベル で共通利用 (user 2026-06-14
+// 「ばらけさせるな」)。caller は事前に font / textAlign / textBaseline / translate+rotate を設定する。
+function haloText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, halo: string, fill: string): void {
+  ctx.strokeStyle = halo;
+  ctx.lineWidth = 3;
+  ctx.lineJoin = 'round';
+  ctx.strokeText(text, x, y);
+  ctx.fillStyle = fill;
+  ctx.fillText(text, x, y);
+}
+
 function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
@@ -348,7 +365,7 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
   if (selected > 0) {
     const own = triLines.filter((l) => l.tri === selected);
     if (own.length >= 3) {
-      ctx.fillStyle = SELECT_FILL;
+      ctx.fillStyle = COLORS.selectFill;
       ctx.beginPath();
       ctx.moveTo(sx(own[0].x1), sy(own[0].y1));
       for (const l of own) ctx.lineTo(sx(l.x2), sy(l.y2));
@@ -361,7 +378,7 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
     if (p.type === 'fill') continue; // 塗りは最初のパスで描画済み
     // 選択中の控除はプリミティブごと色替え (user 指定: 明示的に色替えして見分ける)
     const isSelectedDed = p.layer === 'ded' && dedSelected > 0 && p.ded === dedSelected;
-    const color = isSelectedDed ? DED_SELECT_COLOR : (COLORS[p.layer] ?? '#000000');
+    const color = isSelectedDed ? COLORS.accentOrange : (COLORS[p.layer] ?? '#000000');
     if (p.type === 'line') {
       ctx.strokeStyle = color;
       ctx.lineWidth = isSelectedDed ? 2 : p.layer === 'tri' ? 1.5 : 1;
@@ -398,14 +415,14 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
   // ラベルの値は新規入力行の B/C (アプリの watchedB1_/watchedC1_ 相当) を都度読む
   if (shadowPrims && shadowPrims.length === 3) {
     const [sa, sbLine, scLine] = shadowPrims;
-    ctx.fillStyle = 'rgba(128, 128, 128, 0.35)';
+    ctx.fillStyle = COLORS.shadowFill;
     ctx.beginPath();
     ctx.moveTo(sx(sa.x1), sy(sa.y1));
     ctx.lineTo(sx(sa.x2), sy(sa.y2));
     ctx.lineTo(sx(sbLine.x2), sy(sbLine.y2));
     ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = '#e67e22';
+    ctx.fillStyle = COLORS.accentOrange;
     // 寸法テキストと同じスケール感 (モデル単位の文字高さ × ズーム倍率) に合わせる
     const dimSize =
       lastPrims.find((q): q is TextPrim => q.type === 'text' && q.layer === 'dim')?.size ?? 0.25;
@@ -429,7 +446,8 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
       ctx.translate((x1 + x2) / 2, (y1 + y2) / 2);
       ctx.rotate(ang);
       ctx.textBaseline = 'bottom';
-      ctx.fillText(label, 0, -3);
+      // halo (暗縁取り) + 塗り = 共通の haloText (選択辺 ABC 注記と同じ視認パターン、user 2026-06-14)
+      haloText(ctx, label, 0, -3, COLORS.haloDark, COLORS.accentOrange);
       ctx.restore();
     };
     edgeLabel(sbLine, `B ${bv}`.trim());
@@ -439,14 +457,14 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
   // 段5 R6: 台形シャドー (4 辺、グレー塗り + 延長/上辺ラベル)。台形モードで辺タップしたとき
   // buildShadow が末尾 4 辺を入れる。三角形シャドー (length===3) は上で処理済み・不変。
   if (shadowPrims && shadowPrims.length === 4) {
-    ctx.fillStyle = 'rgba(128, 128, 128, 0.35)';
+    ctx.fillStyle = COLORS.shadowFill;
     ctx.beginPath();
     // 並び: 0=底辺(bl→br) 1=右脚(br→tr) 2=上辺(tr→tl) 3=左脚/延長(tl→bl)。端点を順に結べば台形外形。
     ctx.moveTo(sx(shadowPrims[0].x1), sy(shadowPrims[0].y1));
     for (const ln of shadowPrims) ctx.lineTo(sx(ln.x2), sy(ln.y2));
     ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = '#e67e22';
+    ctx.fillStyle = COLORS.accentOrange;
     const dimSize =
       lastPrims.find((q): q is TextPrim => q.type === 'text' && q.layer === 'dim')?.size ?? 0.25;
     ctx.font = `${Math.max(dimSize * s, 8)}px sans-serif`;
@@ -465,11 +483,57 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
       ctx.translate((x1 + x2) / 2, (y1 + y2) / 2);
       ctx.rotate(ang);
       ctx.textBaseline = 'bottom';
-      ctx.fillText(label, 0, -3);
+      // halo (暗縁取り) + 塗り = 共通の haloText (選択辺 ABC 注記と同じ視認パターン、user 2026-06-14)
+      haloText(ctx, label, 0, -3, COLORS.haloDark, COLORS.accentOrange);
       ctx.restore();
     };
-    edgeLabel(shadowPrims[3], `延長 ${bv}`.trim()); // 左脚=延長
     edgeLabel(shadowPrims[2], `上辺 ${cv}`.trim()); // 上辺
+    // 延長 (= 台形高さ rect.length) のラベルは「短辺起点から立てた垂線」上に出す。
+    // shadowPrims[3] (= 左脚 tl→bl) は align ≠ 0 で斜辺になるため、そこに「延長」を貼ると
+    // 「斜辺上に延長ラベル」になる (user 指摘 2026-06-14)。WebPrimitiveRenderer.renderTrapezoid
+    // の crossOffset(... ±90) と同じく、短辺判定 + 反対辺端点の base 直交成分で perp 方向を取る。
+    const bl = { x: shadowPrims[0].x1, y: shadowPrims[0].y1 };
+    const br = { x: shadowPrims[0].x2, y: shadowPrims[0].y2 };
+    const tr = { x: shadowPrims[2].x1, y: shadowPrims[2].y1 };
+    const tl = { x: shadowPrims[2].x2, y: shadowPrims[2].y2 };
+    const wA = Math.hypot(br.x - bl.x, br.y - bl.y);
+    const wB = Math.hypot(tr.x - tl.x, tr.y - tl.y);
+    const bottomShorter = wA <= wB;
+    const baseStart = bottomShorter ? bl : tl;
+    const baseEnd = bottomShorter ? br : tr;
+    const opp = bottomShorter ? tl : bl; // 反対辺の同側端点 (左脚相当)
+    const ex = baseEnd.x - baseStart.x;
+    const ey = baseEnd.y - baseStart.y;
+    const eLen = Math.hypot(ex, ey) || 1;
+    const ux = ex / eLen, uy = ey / eLen;
+    const dx = opp.x - baseStart.x;
+    const dy = opp.y - baseStart.y;
+    const proj = dx * ux + dy * uy;
+    const nxR = dx - proj * ux;
+    const nyR = dy - proj * uy;
+    const perpFoot = { x: baseStart.x + nxR, y: baseStart.y + nyR };
+    // 点線+ラベルとも shadow fill (rgba 128/128/128/0.35) と差がつくようオレンジで描く
+    // (COLOR.guide は #9aa0a6 で fill とほぼ同色になり埋没する)
+    const bvLabel = parseFloat(bv) > 0 ? bv : (Math.hypot(perpFoot.x - baseStart.x, perpFoot.y - baseStart.y)).toFixed(2);
+    ctx.save();
+    ctx.setLineDash([4, 3]);
+    ctx.strokeStyle = COLORS.accentOrange;
+    ctx.beginPath();
+    ctx.moveTo(sx(baseStart.x), sy(baseStart.y));
+    ctx.lineTo(sx(perpFoot.x), sy(perpFoot.y));
+    ctx.stroke();
+    ctx.restore();
+    const lx1 = sx(baseStart.x), ly1 = sy(baseStart.y);
+    const lx2 = sx(perpFoot.x), ly2 = sy(perpFoot.y);
+    let angP = Math.atan2(ly2 - ly1, lx2 - lx1);
+    if (angP > Math.PI / 2) angP -= Math.PI;
+    else if (angP < -Math.PI / 2) angP += Math.PI;
+    ctx.save();
+    ctx.translate((lx1 + lx2) / 2, (ly1 + ly2) / 2);
+    ctx.rotate(angP);
+    ctx.textBaseline = 'bottom';
+    haloText(ctx, `延長 ${bvLabel}`.trim(), 0, -3, COLORS.haloDark, COLORS.accentOrange);
+    ctx.restore();
   }
 
   // 段階2g: 選択表示 (アプリ MyView.drawBlinkLine:794-818 の写し):
@@ -479,19 +543,19 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
   //      (旧オレンジ破線サークルは廃止 — user 指摘 2026-06-11「サークルを描く意味がない」)
   if (selectedDim) {
     const { tri, side } = selectedDim;
-    ctx.strokeStyle = SELECT_YELLOW;
+    ctx.strokeStyle = COLORS.selectYellow;
 
     // 1) 選択辺の黄色線。line は tri/side 識別子付きで出るので物理 side で直接取る。
     // 描画順と side 番号の不一致 (台形は bl→br→tr→tl で side 0→3→2→1) を上位で気にしない。
     const l = triLines.find((q) => q.tri === tri && q.side === side);
     if (l) {
-      ctx.strokeStyle = '#5c4a00';
+      ctx.strokeStyle = COLORS.haloDark;
       ctx.lineWidth = 6;
       ctx.beginPath();
       ctx.moveTo(sx(l.x1), sy(l.y1));
       ctx.lineTo(sx(l.x2), sy(l.y2));
       ctx.stroke();
-      ctx.strokeStyle = SELECT_YELLOW;
+      ctx.strokeStyle = COLORS.selectYellow;
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.moveTo(sx(l.x1), sy(l.y1));
@@ -528,13 +592,8 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
       ctx.font = `bold ${fh}px sans-serif`;
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      // 辺名の文字もシャドーのグレーに溶けるので暗縁取り (選択辺の線と同じ halo)
-      ctx.strokeStyle = '#5c4a00';
-      ctx.lineWidth = 3;
-      ctx.lineJoin = 'round';
-      ctx.strokeText(['A', 'B', 'C'][side] ?? '', w / 2 + pad + 4, top + fh / 2);
-      ctx.fillStyle = SELECT_YELLOW;
-      ctx.fillText(['A', 'B', 'C'][side] ?? '', w / 2 + pad + 4, top + fh / 2);
+      // 辺名の文字もシャドーのグレーに溶けるので暗縁取り (シャドー上辺/延長と共通の haloText)
+      haloText(ctx, ['A', 'B', 'C'][side] ?? '', w / 2 + pad + 4, top + fh / 2, COLORS.haloDark, COLORS.selectYellow);
       ctx.restore();
     }
   }
@@ -559,7 +618,7 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
     ctx.stroke();
   }
 
-  // 選択中の控除はプリミティブごと DED_SELECT_COLOR で色替え済み (上の描画ループ)。
+  // 選択中の控除はプリミティブごと COLORS.accentOrange で色替え済み (上の描画ループ)。
   // 旧黄色リングはそれに置換 (user 指定: 明示的に色替えしてやるとわかりやすい)
 }
 
@@ -983,14 +1042,17 @@ function syncForm(): void {
   input('curC').value = cur ? fmt2(edgeVal(cur, 'c')) : '';
   input('curParent').value = cur ? cur.parent : '';
   if (cur && cur.kind === 'trapezoid') {
-    // 形態(CType)列を「親種別 (0三角形/1台形)」に流用 (R5)。起点(lcr)列は「上辺の寄せ(0左/1中/2右)」
-    // として常時有効化し Row.align を表示・編集する (二重断面の lcr と同じ列・同じ整数値を流用 — 段3)。
+    // 親種別 (pk: 0三角形/1台形) は親番号から自動推論 (user 指摘 2026-06-14「親種別を形態列に書くな」)。
+    // 形態(CType)列は三角形と同じ axis (辺共有/二重断面/フロート) を流用 (台形でも共通サポート方針)。
+    // 起点(lcr)列は上辺寄せ(0左/1中/2右) — 常時有効化し Row.align を表示・編集する (段3)。
     // 接続辺(Conn)は side。親=台形(pk=1)なら D(3) も出す
-    const pk = cur.parentKind ?? 0;
-    setSelectOptions(select('curCType'), PARENTKIND_OPTIONS, String(pk));
+    const pnum = intOrNull(cur.parent) ?? -1;
+    const pk = (pnum >= 1 && pnum <= rows.length && rows[pnum - 1]?.kind === 'trapezoid') ? 1 : 0;
+    cur.parentKind = pk; // CSV 出力の整合 (col 9) を保つ
+    setSelectOptions(select('curCType'), CTYPE_OPTIONS, cur.extras[12] || '0');
     select('curCType').disabled = false;
     setSelectOptions(select('curConn'), connOptionsFor('cur', pk));
-    select('curConn').value = (intOrNull(cur.parent) ?? -1) >= 1 ? trapSideValue(cur.conn, pk) : '-1';
+    select('curConn').value = pnum >= 1 ? trapSideValue(cur.conn, pk) : '-1';
     select('curLcr').value = String(cur.align ?? 0);
     select('curLcr').disabled = false;
   } else {
@@ -1013,6 +1075,7 @@ function syncForm(): void {
   select('newCType').disabled = false;
   setSelectOptions(select('newConn'), connOptionsFor('new', parentIsTrap ? 1 : 0));
   if (isTrap) select('newLcr').disabled = false; else syncLcrDisabled('new');
+  updateReshapeFab(); // current 行に追従して reshape FAB を有効/無効・title 更新
 }
 
 function updateRowHighlight(): void {
@@ -1262,10 +1325,11 @@ function buildTrapRowCells(tr: HTMLTableRowElement, row: Row, i: number, canvas:
   tr.appendChild(tdParent);
 
   // 接続辺 (side): 独立なら表示のみ、接続済みなら選択。親=三角形は B/C、親=台形(parentKind=1)は B/C/D (R5)。
-  // 形態列は「親種別 (親:三角形/親:台形)」に流用 — change で D の有無が変わるので buildTable で組み直す。
-  // 起点列は「上辺の寄せ(0左/1中/2右)」として流用 (trap-design.md 段3) — 独立・接続とも常時有効
+  // 形態列は三角形と同じ CTYPE_OPTIONS (辺共有/二重断面/フロート) を流用 (user 2026-06-14: 親:三角形/親:台形
+  // 表示は撤回、親種別は親番号から自動推論)。起点列は上辺寄せ(0左/1中/2右) — 独立・接続とも常時有効
   const pn = intOrNull(row.parent) ?? -1;
-  const pk = row.parentKind ?? 0;
+  const pk = (pn >= 1 && pn <= rows.length && rows[pn - 1]?.kind === 'trapezoid') ? 1 : 0;
+  row.parentKind = pk; // CSV 出力の整合 (col 9) を保つ
   if (pn < 1) {
     const tdInd = document.createElement('td');
     tdInd.textContent = '独立';
@@ -1287,19 +1351,19 @@ function buildTrapRowCells(tr: HTMLTableRowElement, row: Row, i: number, canvas:
     tdSide.appendChild(sideSel);
     tr.appendChild(tdSide);
   }
-  // 形態列 = 親種別 (0三角形/1台形)。change で row.parentKind を書き、接続辺 select の D 有無が変わるため
-  // buildTable で表全体を組み直す (台形親なら parent は台形番号と解釈される — common が result から解決)
+  // 形態列 = CTYPE (辺共有/二重断面/フロート)。台形でも三角形と同じ axis を持たせる
+  // (user 2026-06-14「親種別は形態列に書くな、親番号から自動推論」)。値は extras[12] (cp.type) に書く
+  // — 三角形と同じ slot を流用、common 側で幾何適用が後段になっても UI 表現は揃える。
   const kindSel = document.createElement('select');
-  for (const [v, label] of PARENTKIND_OPTIONS) {
+  for (const [v, label] of CTYPE_OPTIONS) {
     const opt = document.createElement('option');
     opt.value = v;
     opt.textContent = label;
     kindSel.appendChild(opt);
   }
-  kindSel.value = String(pk);
+  kindSel.value = row.extras[12] || '0';
   kindSel.addEventListener('change', () => {
-    row.parentKind = (intOrNull(kindSel.value) ?? 0) === 1 ? 1 : 0;
-    buildTable(canvas);
+    row.extras[12] = kindSel.value;
     redraw(canvas);
   });
   const tdKind = document.createElement('td');
@@ -1860,6 +1924,28 @@ function updateFigureKindFab(): void {
   btn.setAttribute('title', `新規図形を 三角形⇄台形 で切替 (現在: ${isTrap ? '台形' : '三角形'})`);
 }
 
+// reshape FAB の disable + 動的 title。current が無い or 子参照されてる時は不可。
+// syncForm から毎回呼ぶ (current 変更で必ず通る)。
+function updateReshapeFab(): void {
+  const btn = document.getElementById('fabReshape') as HTMLButtonElement | null;
+  if (!btn) return;
+  const cur = current >= 1 ? rows[current - 1] : null;
+  if (!cur) {
+    btn.disabled = true;
+    btn.setAttribute('title', 'カレント行を選んでから (種別反転 三角形⇄台形)');
+    return;
+  }
+  const referred = rows.findIndex((other, i) => i !== current - 1 && intOrNull(other.parent) === current);
+  if (referred >= 0) {
+    btn.disabled = true;
+    btn.setAttribute('title', `#${current} は #${referred + 1} の親 — 解除してから反転できます`);
+    return;
+  }
+  btn.disabled = false;
+  const target = cur.kind === 'triangle' ? '台形' : '三角形';
+  btn.setAttribute('title', `#${current} を ${target} に変換 (辺長 a/b/c はそのまま流用)`);
+}
+
 // 新規図形の種別をトグル (三角形⇄台形)。ラベル・FAB 表示を更新して setStatus
 function toggleFigureKind(): void {
   figureKind = figureKind === 'triangle' ? 'trapezoid' : 'triangle';
@@ -1873,6 +1959,48 @@ function toggleFigureKind(): void {
   const canvas = document.getElementById('cv') as HTMLCanvasElement | null;
   if (canvas) draw(canvas, lastPrims); // シャドー切替を即描画反映
   setStatus(figureKind === 'trapezoid' ? '新規図形: 台形 (辺A=底辺 / 辺B=延長 / 辺C=上辺)' : '新規図形: 三角形');
+}
+
+// カレント行 (=既存図形) の種別を反転する (三角形⇄台形)。user 2026-06-14:
+// 「既存図形の形状を変化させたい (= 削除+新規作成の代用)」動線。fabFigureKind は
+// 「次に追加する図形」の切替なので意図混同を避けるため別 FAB (fabReshape) で受ける。
+// 辺長 a/b/c はそのまま流用 — triangle a/b/c ↔ trapezoid widthA/length/widthB は edge 配置が一致。
+// 子参照がある (= 他行が親番号として自分を参照) 場合は番号振り直しが要るので簡易版では reject、
+// status で解除を促す (将来: 子の parent も同期して書換える)。
+function reshapeCurrent(canvas: HTMLCanvasElement): void {
+  const idx = current - 1;
+  const r = current >= 1 ? rows[idx] : null;
+  if (!r) {
+    setStatus('カレント行が無いので種別反転できません (行を選択してから)');
+    return;
+  }
+  const myNum = idx + 1; // 混在通し番号 = rows-index + 1
+  const referredBy = rows.findIndex((other, i) => i !== idx && intOrNull(other.parent) === myNum);
+  if (referredBy >= 0) {
+    setStatus(`#${myNum} を親として参照する行 (#${referredBy + 1}) があるので種別反転できません — 先に解除してください`);
+    return;
+  }
+  takeUndoSnap();
+  if (r.kind === 'triangle') {
+    r.kind = 'trapezoid';
+    r.align = 0;
+    r.parentKind = 0;
+    // 台形は rows の末尾群 (prefix=三角形 / suffix=台形 不変条件)。末尾へ移動
+    rows.splice(idx, 1);
+    rows.push(r);
+  } else {
+    r.kind = 'triangle';
+    // 三角形 prefix の末尾 (= 現 triCount 位置) へ insert
+    const tc = rows.filter((x, i) => i !== idx && x.kind === 'triangle').length;
+    rows.splice(idx, 1);
+    rows.splice(tc, 0, r);
+  }
+  current = rows.indexOf(r) + 1;
+  selected = current;
+  buildTable(canvas);
+  syncForm();
+  redraw(canvas);
+  setStatus(`#${current} の種別を ${r.kind === 'triangle' ? '三角形' : '台形'} に切替`);
 }
 
 // 行削除の共通処理 (行の削除ボタン / fabMinus の両動線)。番号の振り直しに合わせて
@@ -2521,6 +2649,7 @@ function wireFabs(canvas: HTMLCanvasElement): void {
   el<HTMLButtonElement>('fabDeduction').addEventListener('click', () => toggleDeductionMode(canvas));
   // 新規図形の種別トグル (三角形⇄台形)。単発クリックなので addEventListener でよい
   el<HTMLButtonElement>('fabFigureKind').addEventListener('click', () => toggleFigureKind());
+  el<HTMLButtonElement>('fabReshape').addEventListener('click', () => reshapeCurrent(canvas));
   updateFigureKindFab(); // 初期表示を現在種別 (三角形) に
   el<HTMLButtonElement>('dedAdd').addEventListener('click', () => dedAdd(canvas));
   el<HTMLButtonElement>('dedReplace').addEventListener('click', () => dedReplace(canvas));
@@ -3172,7 +3301,7 @@ function openTextEditor(canvas: HTMLCanvasElement, target: TextEditTarget): void
   inp.style.width = `${Math.max((box.w + pad * 2) * k, 48) + 24}px`;
   inp.style.font = `${Math.max(box.fh * k, 11)}px sans-serif`;
   inp.style.padding = '2px 4px';
-  inp.style.border = `2px solid ${SELECT_YELLOW}`;
+  inp.style.border = `2px solid ${COLORS.selectYellow}`;
   inp.style.borderRadius = '3px';
   inp.style.background = 'rgba(255, 255, 255, 0.95)';
   inp.style.color = '#222';
@@ -3540,10 +3669,23 @@ function main(): void {
   wireFabs(canvas);
   wireRosenName(canvas);
   wireNewRowEnter(canvas);
-  // 形態 select の変化で追従: 三角形は起点 select の有効/無効、台形は親種別なので接続辺の D 有無 (onCTypeChange)
-  select('newCType').addEventListener('change', () => onCTypeChange('new'));
+  // 形態 select の変化で追従: 三角形は起点 select の有効/無効、台形は親種別なので接続辺の D 有無 (onCTypeChange)。
+  // 加えて、新規行フォームの各値変更を即座にシャドーへ反映 (user 2026-06-14「起点プルダウン選択を
+  // トリガーにキャンバスが書き換わるのが本来の姿」)。buildShadow が newA/newB/newC/newLcr を読むので、
+  // それらの change → buildShadow + draw が「即時反映」の入口になる (curXxx の rewriteCurrent と同思想)。
+  select('newCType').addEventListener('change', () => {
+    onCTypeChange('new');
+    buildShadow();
+    draw(canvas, lastPrims);
+  });
   select('curCType').addEventListener('change', () => onCTypeChange('cur'));
   syncLcrDisabled('new');
+  for (const id of ['newA', 'newB', 'newC', 'newParent', 'newConn', 'newLcr']) {
+    document.getElementById(id)?.addEventListener('change', () => {
+      buildShadow();
+      draw(canvas, lastPrims);
+    });
+  }
   // 「現在」行フォームの編集を即時確定する (user 2026-06-12: 一覧フォームで二重断面や
   // 起点・A 辺を変えてもキャンバスに反映されない)。原因は formCur の接続 select と辺入力に
   // change handler が無く、確定が FAB / 辺C-Enter の 2 動線だけだったこと。一方すぐ下の
