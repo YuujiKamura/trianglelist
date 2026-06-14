@@ -3,7 +3,7 @@
 // ここは JSON プリミティブを素朴に描くだけ。
 // y 軸はモデル座標 (上向き) → 画面座標 (下向き) に反転する (MyView.makePath の -y と同じ向き)。
 
-type LinePrim = { type: 'line'; layer: string; x1: number; y1: number; x2: number; y2: number; ded?: number };
+type LinePrim = { type: 'line'; layer: string; x1: number; y1: number; x2: number; y2: number; ded?: number; tri?: number; side?: number };
 type TextPrim = {
   type: 'text';
   layer: string;
@@ -341,22 +341,17 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
     ctx.fill();
   }
 
-  // 選択図形の塗り (線より下に敷く)。WebPrimitiveRenderer.render は図形ごとに 'tri' layer の
-  // line を順に出す: 三角形=3本 (WebPrimitiveRenderer.kt:62-65)、台形=4本 (renderTrapezoid)。
-  // 行ごとの cumulative offset で頂点を拾う — 表示専用の導出で幾何判定はしない
+  // 選択図形の塗り (線より下に敷く)。各 line は WebPrimitiveRenderer から tri/side 識別子付きで
+  // 出るので、selected 番号で filter して描画順 (外周巡回) どおりに lineTo するだけ。
+  // 三角形・台形の場合分けは line の出方が吸収する (user 指針 2026-06-14)。
   const triLines = prims.filter((p): p is LinePrim => p.type === 'line' && p.layer === 'tri');
-  if (selected > 0 && selected <= rows.length) {
-    let off = 0;
-    for (let i = 0; i < selected - 1; i++) off += rows[i].kind === 'trapezoid' ? 4 : 3;
-    const sides = rows[selected - 1].kind === 'trapezoid' ? 4 : 3;
-    if (off + sides - 1 < triLines.length) {
+  if (selected > 0) {
+    const own = triLines.filter((l) => l.tri === selected);
+    if (own.length >= 3) {
       ctx.fillStyle = SELECT_FILL;
       ctx.beginPath();
-      ctx.moveTo(sx(triLines[off].x1), sy(triLines[off].y1));
-      // 各辺は前辺の終点と継がる (renderTrapezoid: 底→右脚→上→左脚)。x2 を順に lineTo
-      for (let k = 0; k < sides; k++) {
-        ctx.lineTo(sx(triLines[off + k].x2), sy(triLines[off + k].y2));
-      }
+      ctx.moveTo(sx(own[0].x1), sy(own[0].y1));
+      for (const l of own) ctx.lineTo(sx(l.x2), sy(l.y2));
       ctx.closePath();
       ctx.fill();
     }
@@ -486,13 +481,10 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
     const { tri, side } = selectedDim;
     ctx.strokeStyle = SELECT_YELLOW;
 
-    // 1) 選択辺の黄色線。rows.kind ごとに辺数が違う (三角形=3, 台形=4) ので cumulative offset で
-    // 線群の位置を取る (塗りつぶしと同じ仕方、user 指針「場合分けを基底に吸収」)。
-    let off = 0;
-    for (let i = 0; i < tri - 1 && i < rows.length; i++) off += rows[i].kind === 'trapezoid' ? 4 : 3;
-    const li = off + side;
-    if (li < triLines.length) {
-      const l = triLines[li];
+    // 1) 選択辺の黄色線。line は tri/side 識別子付きで出るので物理 side で直接取る。
+    // 描画順と side 番号の不一致 (台形は bl→br→tr→tl で side 0→3→2→1) を上位で気にしない。
+    const l = triLines.find((q) => q.tri === tri && q.side === side);
+    if (l) {
       ctx.strokeStyle = '#5c4a00';
       ctx.lineWidth = 6;
       ctx.beginPath();
