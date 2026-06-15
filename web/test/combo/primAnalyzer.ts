@@ -74,6 +74,37 @@ export function analyzeTri(lines: CpLinePrim[]): PerTri {
   return { triLines: lines, chainClosed: closed, hourglass };
 }
 
+/**
+ * 重なり検出 (user 確定 2026-06-15「重なっててOKなんて条件は基本ない」)。
+ * 全 tri の重心を計算し、 distinct でない (= 同一座標に複数 tri が乗る) ペアを返す。
+ * 重心が同じ ≒ 図形がほぼ完全に重なる ── 道路測量アプリで ありえない描画状態。
+ * eps = 1e-3 (mm 単位の許容)、 chain の累積回転で 1 周して同じ場所に戻る現象を捕捉。
+ */
+export function detectTriOverlaps(byTri: Map<number, CpLinePrim[]>): Array<[number, number]> {
+  const eps = 1e-3;
+  const centroids: Array<{ tri: number; cx: number; cy: number }> = [];
+  for (const [tri, lines] of byTri) {
+    if (lines.length === 0) continue;
+    let sx = 0, sy = 0, n = 0;
+    for (const l of lines) {
+      sx += l.x1 + l.x2;
+      sy += l.y1 + l.y2;
+      n += 2;
+    }
+    centroids.push({ tri, cx: sx / n, cy: sy / n });
+  }
+  const overlaps: Array<[number, number]> = [];
+  for (let i = 0; i < centroids.length; i++) {
+    for (let j = i + 1; j < centroids.length; j++) {
+      const a = centroids[i], b = centroids[j];
+      if (Math.abs(a.cx - b.cx) < eps && Math.abs(a.cy - b.cy) < eps) {
+        overlaps.push([a.tri, b.tri]);
+      }
+    }
+  }
+  return overlaps;
+}
+
 export function dimLabelsByTri(prims: CpPrim[]): Map<number, number> {
   const m = new Map<number, number>();
   for (const p of prims) {

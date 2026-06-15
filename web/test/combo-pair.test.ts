@@ -7,7 +7,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { health, loadCsv, state } from './combo/cpClient.ts';
 import { genTriangleTriangle, genTriangleTrapezoid, genTrapezoidTritrap, type ComboCase } from './combo/gen.ts';
-import { groupByTri, analyzeTri } from './combo/primAnalyzer.ts';
+import { groupByTri, analyzeTri, detectTriOverlaps } from './combo/primAnalyzer.ts';
 
 beforeAll(async () => {
   const ok = await health();
@@ -34,6 +34,12 @@ async function runOne(c: ComboCase): Promise<void> {
     const a = analyzeTri(lines);
     expect(a.hourglass, `tri=${tri} 砂時計検出 ${c.label}\nCSV:\n${c.csv}`).toBe(false);
   }
+  // 重なり検出 (user 確定 2026-06-15「重なっててOKなんて条件は基本ない」)。
+  const overlaps = detectTriOverlaps(byTri);
+  expect(
+    overlaps.length,
+    `重なり検出 ${c.label}: pairs=${JSON.stringify(overlaps)}\nCSV:\n${c.csv}`,
+  ).toBe(0);
 }
 
 describe('combo: triangle + triangle (全軸)', () => {
