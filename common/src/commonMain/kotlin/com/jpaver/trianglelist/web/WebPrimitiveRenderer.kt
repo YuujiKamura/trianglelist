@@ -74,7 +74,9 @@ object WebPrimitiveRenderer {
         val effScale = if (scale > 0f) scale else 1f
         val textSize = DEFAULT_TEXT_SIZE * sizeRatio * effScale
         // 混在リスト: 台形 + 台形子三角形を figureRows から構築し render に渡す。
-        // figureRows に台形/TriTrap 行が無ければ空リスト → 出力は完全に従来と同一 (golden 不変)。
+        // SoT 一本化 段3 スワップ準備 (2026-06-15): composeAll は実装済だが、新 render(list) は
+        // まだ Rectangle の guide 線 (alignment != 0) と meta(perp) 識別子を出さない。
+        // 機能等価が完備するまで旧ルートを維持 (= golden 不変)。
         val (traps, trapTris) = CsvCodec.buildFigures(doc, trilist, effScale)
         return render(trilist, textSize, CsvCodec.buildDeductions(doc), effScale, traps, trapTris)
     }
