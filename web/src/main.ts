@@ -1453,6 +1453,15 @@ function buildTable(canvas: HTMLCanvasElement): void {
     tdNum.textContent = String(i + 1);
     tr.appendChild(tdNum);
 
+    // 種別 (kind 一目視認): 三角=△ / 台形=□ / 子三角=△子。user 2026-06-15「単純にリスト上で
+    // 図形種別を表示」。 dataset.kind は CP / E2E で kind 別件数を数えるためにも使う
+    const tdKind = document.createElement('td');
+    tdKind.className = 'kind';
+    tdKind.dataset.kind = row.kind;
+    tdKind.textContent = row.kind === 'trapezoid' ? '□' : row.kind === 'tritrap' ? '△子' : '△';
+    tdKind.title = row.kind === 'trapezoid' ? '台形' : row.kind === 'tritrap' ? '台形子三角形 (TriTrap)' : '三角形';
+    tr.appendChild(tdKind);
+
     // 測点名 (CSV 列6 = extras[0])。描画には出ないが round-trip・書き出しで保持する
     const tdName = document.createElement('td');
     const nameInp = document.createElement('input');
