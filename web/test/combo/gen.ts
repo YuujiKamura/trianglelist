@@ -49,9 +49,14 @@ export function* genTriangleTriangle(): Generator<ComboCase> {
         if (!isValidTriangle(ca, cb, cc)) continue;
         for (const cType of CONN_TYPES) {
           for (const cLcr of CONN_LCRS) {
-            // 完全形式 CSV (20 列): cParam.type=列18, cParam.lcr=列19。 未指定列は空で埋める
+            // 完全形式 CSV (CsvCodec.kt 列順): 列17=cp.side, 列18=cp.type, 列19=cp.lcr。
+          // CsvCodec.build は 3 つすべて non-null のときだけ完全形式を使い、欠落時は
+          // 列5 の接続コードに fallback する (= type=0 同等)。spec で type/lcr を効かせるには
+          // cp.side を空で済ませず明示する必要がある (gen.ts 列数バグの修正 2026-06-15)
             const parentLine = `1,${fmt(pa)},${fmt(pb)},${fmt(pc)},-1,-1`;
-            const childExtras = `,,,,,,,,,,,${cType},${cLcr}`;
+            // カンマ数: 列5=side(prefix末尾) → 列6..16 が空11個 → 列17=side, 列18=type, 列19=lcr
+            // ので、 prefix の後はカンマ 12 個 + side。 11 では列16=side で 1 列ずれる (2026-06-15 観測バグ)
+            const childExtras = `,,,,,,,,,,,,${side},${cType},${cLcr}`;
             const childLine = `2,${fmt(ca)},${fmt(cb)},${fmt(cc)},1,${side}${childExtras}`;
             const csv = `${parentLine}\n${childLine}\n`;
             yield {
