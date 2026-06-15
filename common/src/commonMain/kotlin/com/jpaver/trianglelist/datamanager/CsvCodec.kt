@@ -5,6 +5,7 @@ import com.jpaver.trianglelist.editmodel.ConnCode
 import com.jpaver.trianglelist.editmodel.ConnParam
 import com.jpaver.trianglelist.editmodel.Deduction
 import com.jpaver.trianglelist.editmodel.DeductionList
+import com.jpaver.trianglelist.editmodel.EditList
 import com.jpaver.trianglelist.editmodel.EditObject
 import com.jpaver.trianglelist.editmodel.Rectangle
 import com.jpaver.trianglelist.editmodel.Triangle
@@ -314,6 +315,36 @@ object CsvCodec {
             }
         }
         return Pair(traps, trapTris)
+    }
+
+    /**
+     * SoT 一本化版 (2026-06-15): figureRows の出現順を pin した混在 EditList を返す。
+     * 既存の build() (三角形のみ) と buildFigures() (台形/TriTrap) を呼んで、結果を
+     * CSV 出現順で 1 本の EditList<EditObject> に積む。並行運用 — 既存 API は据え置き。
+     *
+     * 将来 TriangleList を解体する際の置き換え先候補。今は WebPrimitiveRenderer や DXF
+     * writer の入力として使える「型純粋な混在 SoT」を提供する。
+     */
+    fun buildAll(doc: CsvDoc, scale: Float = 1f, applyRecoverState: Boolean = true): EditList<EditObject> {
+        val trilist = build(doc, applyRecoverState)
+        val (traps, trapTris) = buildFigures(doc, trilist, scale)
+
+        val mixed = EditList<EditObject>()
+        var triIdx = 0     // 1-based、TriangleList.getBy 用
+        var trapIdx = 0    // 0-based、traps[]
+        var trapTriIdx = 0 // 0-based、trapTris[]
+
+        for (row in doc.figureRows) {
+            when (row.chunks.firstOrNull()) {
+                "Trapezoid" -> if (trapIdx < traps.size) mixed.add(traps[trapIdx++])
+                "TriTrap"   -> if (trapTriIdx < trapTris.size) mixed.add(trapTris[trapTriIdx++])
+                else        -> if (triIdx < trilist.size()) {
+                    triIdx += 1
+                    mixed.add(trilist.getBy(triIdx))
+                }
+            }
+        }
+        return mixed
     }
 
     /**
