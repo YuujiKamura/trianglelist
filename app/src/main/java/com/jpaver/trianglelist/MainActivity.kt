@@ -211,6 +211,15 @@ class MainActivity : AppCompatActivity(),
     private var rosenname = ""
     private var gyousyaname = ""
     private var zumennum = "1/1"
+
+    // B07/B09: CsvDoc が唯一のファイル状態 SoT。parseCSV 時に更新、writeCSV 時に bake して更新。
+    private var currentDoc: CsvCodec.CsvDoc = CsvCodec.CsvDoc(
+        preLines = emptyList(),
+        rows = emptyList(),
+        listAngle = 0f,
+        postLines = emptyList(),
+    )
+    private var mixedModel: CsvCodec.MixedBuild? = null
     private var drawingStartNumber = 1
     private var isNumberReverse = false
 
@@ -2746,65 +2755,24 @@ class MainActivity : AppCompatActivity(),
 
     private fun writeCSV(writer: Writer): Boolean {
         return try {
-            // 入力データの取得
             rosenname = findViewById<EditText>(R.id.rosenname).text.toString()
+            setTitles()
 
-            // CSVファイルへのヘッダー情報の書き込み
-            writer.apply {
-                write("koujiname, $koujiname\n")
-                write("rosenname, $rosenname\n")
-                write("gyousyaname, $gyousyaname\n")
-                write("zumennum, $zumennum\n")
-            }
+            val updatedDoc = CsvCodec.bake(
+                trilist = trianglelist,
+                dedlist = myDeductionList,
+                header = HeaderValues(koujiname, rosenname, gyousyaname, zumennum),
+                original = currentDoc,
+                viewscale = viewscale,
+            )
+            this.currentDoc = updatedDoc  // SoT 更新
 
-            // 三角形リストのデータをCSVファイルに書き込み
-            for (index in 1..trianglelist.size()) {
-                val mt: Triangle = trianglelist.getBy(index)
-                val pointnumber: PointXY = mt.pointnumber
-                val cp = parentBCtoCParam(mt.connectionSide, mt.lengthNotSized[0], mt.cParam_)
-
-                writer.write("${mt.mynumber},${mt.lengthA_},${mt.lengthB_},${mt.lengthC_}," +
-                        "${mt.parentnumber},${mt.connectionSide}," +
-                        "${mt.name},${pointnumber.x},${pointnumber.y},${mt.pointNumber.flag.isMovedByUser}," +
-                        "${mt.mycolor}," +
-                        "${mt.dim.horizontal.a},${mt.dim.horizontal.b},${mt.dim.horizontal.c}," +
-                        "${mt.dim.vertical.a},${mt.dim.vertical.b},${mt.dim.vertical.c}," +
-                        "${cp.side},${cp.type},${cp.lcr}," +
-                        "${mt.dim.flag[1].isMovedByUser},${mt.dim.flag[2].isMovedByUser}," +
-                        "${mt.angle},${mt.pointCA.x},${mt.pointCA.y},${mt.angleInLocal_}," +
-                        "${mt.dim.horizontal.s},${mt.dim.flagS.isMovedByUser}"
-                )
-                writer.write("\n")
-            }
-
-            // その他の情報をCSVファイルに書き込み
-            writer.apply {
-                write("ListAngle, ${trianglelist.angle}")
-                writer.write("\n")
-                write("ListScale, ${trianglelist.scale}")
-                writer.write("\n")
-                write("TextSize, ${myview.textSize}")
-                writer.write("\n")
-            }
-
-            // 減算リストのデータをCSVファイルに書き込み
-            for (index in 1..myDeductionList.size()) {
-                val dd: Deduction = myDeductionList.get(index)
-                val pointAtRealscale = dd.point.scale(PointXY(0f, 0f), 1.0 / viewscale, -1.0 / viewscale)
-                val pointFlagAtRealscale = dd.pointFlag.scale(PointXY(0f, 0f), 1.0 / viewscale, -1.0 / viewscale)
-
-                writer.write("Deduction,${dd.num},${dd.name},${dd.lengthX},${dd.lengthY},${dd.overlap_to},${dd.type},${dd.angle},${pointAtRealscale.x},${pointAtRealscale.y},${pointFlagAtRealscale.x},${pointFlagAtRealscale.y},${dd.shapeAngle}")
-                writer.write("\n")
-            }
-
-            // すべての書き込みが成功したらtrueを返す
+            writer.write(CsvCodec.serialize(updatedDoc))
             true
         } catch (e: Exception) {
-            // 例外が発生した場合はエラーをログに記録し、falseを返す
             e.printStackTrace()
             false
         } finally {
-            // BufferedWriterを安全にクローズ
             try {
                 writer.close()
             } catch (e: IOException) {
@@ -2874,19 +2842,33 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    private fun parseCSV(reader: BufferedReader):Boolean{
-        // B07 で CsvCodec ベースに本格置換予定。現在は最小 stub (CsvLoader 削除後の繋ぎ)
-        val text = reader.readText()
+    private fun parseCSV(reader: BufferedReader): Boolean {
+        val text = try { reader.readText() } catch (e: Exception) { return false }
+
+        // BOM / 空白を吸収してから先頭チャンクで形式ガード
+        val firstChunk = text.lineSequence().firstOrNull()
+            ?.split(",")?.firstOrNull()?.trim()
+        if (firstChunk != "koujiname") {
+            showToast("It's not supported file.")
+            return false
+        }
+
         val doc = CsvCodec.parse(text)
+        // applyRecoverState=false: setEditLists 内で recoverState を呼ぶため二重にしない
         val trilist = CsvCodec.build(doc, applyRecoverState = false)
+        val mixed = CsvCodec.buildMixed(doc, viewscale, trilist)
         val dedlist = CsvCodec.buildDeductions(doc, viewscale)
-        CsvCodec.applyListParams(doc, trilist) { setAllTextSize(it) }
+
+        this.currentDoc = doc
+        this.mixedModel = mixed
+
         val headerValues = CsvCodec.extractHeader(doc)
+        parseHeaderValues(headerValues)
+        CsvCodec.applyListParams(doc, trilist) { setAllTextSize(it) }
 
         Log.d("CSVParser", "parseCSV: rows=${doc.rows.size}")
 
-        setEditLists( trilist, dedlist )
-        parseHeaderValues( headerValues )
+        setEditLists(trilist, dedlist)
         isCSVsavedToPrivate = false
         saveCSVtoPrivate()
         return true
