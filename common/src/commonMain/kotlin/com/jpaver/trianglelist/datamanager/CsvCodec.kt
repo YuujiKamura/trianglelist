@@ -272,11 +272,24 @@ object CsvCodec {
      * 番号管理 (= CSV parent 参照の混在通し番号 = 三角形数 + 台形 idx) の再設計を伴うため
      * 段階的に進める ── 詳細は memory/feedback-tritrap-data-class-unify.md。
      */
-    fun buildFigures(doc: CsvDoc, trilist: TriangleList, scale: Float = 1f): Pair<List<Rectangle>, List<Triangle>> {
-        val traps = mutableListOf<Rectangle>()
-        val trapTris = mutableListOf<Triangle>()
+    /**
+     * SoT 一本化 段3g (2026-06-15、 user 確定「三角形を台形の子かどうかで data class を分けてるのは
+     * 変な実装、 統一しろ」): figureRows を 1 周走査して mixed EditList<EditObject> を直接構築。
+     * 旧 buildFigures (= Pair<List<Rectangle>, List<Triangle>>) + composeAll (= 3 list を figureRows 順で
+     * 再合成) の 2 step を 1 関数に統合 ── 全 Triangle/Rectangle が同じ list に存在する形に統一。
+     *
+     * 内部の traps / trapTris local accumulator は「TriTrap の target (= 混在通し番号 = 三角形数
+     * + 台形 idx) の親解決」 のためだけに保持、 戻り値からは見えない。 caller が trapTris を別 list で
+     * 欲しい場合は mixed.filterIsInstance<Triangle>().filter { it.node.a is Rectangle } で抽出する
+     * (= Triangle.kt:198 のコメント「Rectangle 親 trapTri は EditObject 基底の node.a に親を保持」 が根拠)。
+     */
+    fun buildMixed(doc: CsvDoc, trilist: TriangleList, scale: Float = 1f): EditList<EditObject> {
+        val mixed = EditList<EditObject>()
         val s = if (scale > 0f) scale.toDouble() else 1.0
         val sf = if (scale > 0f) scale else 1f
+        val traps = mutableListOf<Rectangle>()
+        val trapTris = mutableListOf<Triangle>()
+        var triIdx = 0
 
         for (row in doc.figureRows) {
             val c = row.chunks
@@ -291,16 +304,18 @@ object CsvCodec {
                     val parentKind = c.getOrNull(8)?.toIntOrNull() ?: 0
                     val l = length * s; val wa = widthA * s; val wb = widthB * s
                     fun indep() = Rectangle(l, wa, wb, angle = INDEP_TRAP_ANGLE, basepoint = PointXY(0f, 0f), alignment = align)
-                    when {
-                        parent < 1 -> traps.add(indep())
+                    val rect = when {
+                        parent < 1 -> indep()
                         parentKind == 1 -> {
                             val pIdx = parent - 1
-                            if (pIdx < 0 || pIdx >= traps.size) traps.add(indep())
-                            else traps.add(Rectangle(l, wa, wb, nodeA = traps[pIdx], side = side, alignment = align))
+                            if (pIdx < 0 || pIdx >= traps.size) indep()
+                            else Rectangle(l, wa, wb, nodeA = traps[pIdx], side = side, alignment = align)
                         }
-                        parent > trilist.size() -> traps.add(indep())
-                        else -> traps.add(Rectangle(l, wa, wb, nodeA = trilist.getBy(parent), side = side, alignment = align))
+                        parent > trilist.size() -> indep()
+                        else -> Rectangle(l, wa, wb, nodeA = trilist.getBy(parent), side = side, alignment = align)
                     }
+                    traps.add(rect)
+                    mixed.add(rect)
                 }
                 "TriTrap" -> {
                     val b = c.getOrNull(3)?.toFloatOrNull() ?: continue
@@ -314,57 +329,26 @@ object CsvCodec {
                         else -> null
                     }
                     if (parent == null) continue
-                    trapTris.add(Triangle(parent, side, b * sf, cc * sf))
+                    val tri = Triangle(parent, side, b * sf, cc * sf)
+                    trapTris.add(tri)
+                    mixed.add(tri)
                 }
-                // 三角形行はスキップ (build() が処理済み)
-            }
-        }
-        return Pair(traps, trapTris)
-    }
-
-    /**
-     * SoT 一本化版 (2026-06-15): figureRows の出現順を pin した混在 EditList を返す。
-     * 既存の build() (三角形のみ) と buildFigures() (台形/TriTrap) を呼んで、結果を
-     * CSV 出現順で 1 本の EditList<EditObject> に積む。並行運用 — 既存 API は据え置き。
-     *
-     * 将来 TriangleList を解体する際の置き換え先候補。今は WebPrimitiveRenderer や DXF
-     * writer の入力として使える「型純粋な混在 SoT」を提供する。
-     */
-    fun buildAll(doc: CsvDoc, scale: Float = 1f, applyRecoverState: Boolean = true): EditList<EditObject> {
-        val trilist = build(doc, applyRecoverState)
-        val (traps, trapTris) = buildFigures(doc, trilist, scale)
-        return composeAll(doc, trilist, traps, trapTris)
-    }
-
-    /**
-     * SoT 一本化 段3 最終スワップ (2026-06-15): 既に build → setScale → WebOverrides 等の変形が
-     * 済んだ trilist / traps / trapTris を「figureRows 順」 で 1 本の EditList<EditObject> に詰め直す。
-     * renderCsv は外側で applyJson/setScale を当てた trilist を活かしたまま新 render(list) に流す。
-     * buildAll は内部で build/buildFigures を呼んでこの API に委譲するだけ — composition root だけ
-     * 分離して「外で変形した状態」 を保持できるようにした。
-     */
-    fun composeAll(
-        doc: CsvDoc,
-        trilist: TriangleList,
-        traps: List<Rectangle>,
-        trapTris: List<Triangle>,
-    ): EditList<EditObject> {
-        val mixed = EditList<EditObject>()
-        var triIdx = 0
-        var trapIdx = 0
-        var trapTriIdx = 0
-        for (row in doc.figureRows) {
-            when (row.chunks.firstOrNull()) {
-                "Trapezoid" -> if (trapIdx < traps.size) mixed.add(traps[trapIdx++])
-                "TriTrap"   -> if (trapTriIdx < trapTris.size) mixed.add(trapTris[trapTriIdx++])
-                else        -> if (triIdx < trilist.size()) {
+                else -> {
                     triIdx += 1
-                    mixed.add(trilist.getBy(triIdx))
+                    if (triIdx <= trilist.size()) mixed.add(trilist.getBy(triIdx))
                 }
             }
         }
         return mixed
     }
+
+    /**
+     * SoT 一本化 (2026-06-15): buildMixed の thin wrapper、 build() を呼んで trilist を作ってから委譲。
+     * 既存 caller (= CsvCodecBuildAllTest) は無変更で動く。 外側で setScale / applyJson 等の変形を入れたい
+     * 経路 (= WebPrimitiveRenderer.renderCsv) は build() と buildMixed() を直接呼ぶ。
+     */
+    fun buildAll(doc: CsvDoc, scale: Float = 1f, applyRecoverState: Boolean = true): EditList<EditObject> =
+        buildMixed(doc, build(doc, applyRecoverState), scale)
 
     /**
      * dedRows → DeductionList。アプリの CsvLoader.buildDeductions (CsvLoader.kt:369-392、

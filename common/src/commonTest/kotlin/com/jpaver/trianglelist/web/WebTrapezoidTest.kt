@@ -4,6 +4,7 @@ import com.jpaver.trianglelist.datamanager.CsvCodec
 import com.jpaver.trianglelist.editmodel.EditObject
 import com.jpaver.trianglelist.editmodel.Rectangle
 import com.jpaver.trianglelist.editmodel.Triangle
+import com.jpaver.trianglelist.editmodel.TriangleList
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -12,11 +13,25 @@ import kotlin.test.assertTrue
  * 混在リスト段1 (B1): CSV の Trapezoid 行 → Rectangle 構築 → 台形描画のテスト。
  * contract は trap-design.md (`Trapezoid, num, length, widthA, widthB, parent, side`)。
  *
- * B-FORCE (2026-06-15): buildTrapezoids/buildTrapParentedTriangles/buildMixed/MixedBuild 廃止。
- * 後継は buildFigures(doc, trilist, scale) → Pair<List<Rectangle>, List<Triangle>>。
- * doc.rows/trapRows/trapParentedTriRows → doc.figureRows フィルタリング。
+ * SoT 一本化 段3g (2026-06-15、 user「三角形を台形の子かどうかで data class を分けてるのは変な実装」):
+ * buildFigures (= Pair<List<Rectangle>, List<Triangle>>) は廃止、 後継は buildMixed → 単一 EditList<EditObject>。
+ * 本テストでは旧 interface の test 意図 (= 2 list 分解での assertion) を維持するため test-local helper `figs`
+ * を残す。 内部は buildMixed の filterIsInstance で 2 種抽出 (TriTrap 識別 = Triangle.node.a is Rectangle)。
  */
 class WebTrapezoidTest {
+
+    /** test-local helper: buildMixed の戻り値を旧 buildFigures の (traps, trapTris) Pair 形式で返す。
+     *  trapTris 識別 = trilist に含まれない Triangle (= 台形親 or TriTrap chain 親、 buildMixed 内で
+     *  trilist.getBy(...) 経由でない経路で Triangle を構築している)。 node.a is Rectangle だと TriTrap chain
+     *  の 2 段目以降 (= 親 = Triangle) を拾えない。 */
+    private fun figs(doc: CsvCodec.CsvDoc, trilist: TriangleList, scale: Float = 1f): Pair<List<Rectangle>, List<Triangle>> {
+        val mixed = CsvCodec.buildMixed(doc, trilist, scale)
+        val all = (1..mixed.size()).map { mixed.get(it) }
+        val traps = all.filterIsInstance<Rectangle>()
+        val trilistTris: Set<Triangle> = (1..trilist.size()).map { trilist.getBy(it) }.toSet()
+        val trapTris = all.filterIsInstance<Triangle>().filter { it !in trilistTris }
+        return Pair(traps, trapTris)
+    }
 
     private val sampleCsv = """
         テスト工事
@@ -65,7 +80,7 @@ class WebTrapezoidTest {
     fun independent_trapezoid_geometry_matches_rectangle() {
         val doc = CsvCodec.parse("Trapezoid,1,5,4,3,-1,0\n")
         val trilist = CsvCodec.build(doc)
-        val (traps, _) = CsvCodec.buildFigures(doc, trilist, 1f)
+        val (traps, _) = figs(doc, trilist, 1f)
         assertEquals(1, traps.size)
         val lp = traps[0].calcPoint()
         val baseLen = lp.a.left.lengthTo(lp.a.right)   // 底辺 = widthA = 4
@@ -82,7 +97,7 @@ class WebTrapezoidTest {
         val csv = "1,6.0,5.0,4.0,-1,-1\nTrapezoid,1,5,4,3,1,1\n"
         val doc = CsvCodec.parse(csv)
         val trilist = CsvCodec.build(doc)
-        val (traps, _) = CsvCodec.buildFigures(doc, trilist, 1f)
+        val (traps, _) = figs(doc, trilist, 1f)
         assertEquals(1, traps.size)
         val lp = traps[0].calcPoint()
         // side=1 = 親のB辺 = Line(pointAB, pointBC) (TriangleUtilitiesExtensions.kt:145-147)
@@ -103,7 +118,7 @@ class WebTrapezoidTest {
         assertEquals(1, doc.trapParentedTriRows().size, "TriTrap 行が figureRows に入る")
         assertEquals(0, doc.triRows().size, "TriTrap は普通の三角形行に入らない → build は見ない (golden)")
         val trilist = CsvCodec.build(doc)
-        val (traps, tris) = CsvCodec.buildFigures(doc, trilist, 1f)
+        val (traps, tris) = figs(doc, trilist, 1f)
         assertEquals(1, traps.size)
         assertEquals(1, tris.size, "台形を親に三角形が1個建つ")
         val edge = traps[0].getLine(2) // 上辺C
@@ -197,7 +212,7 @@ class WebTrapezoidTest {
         fun topLeft(alignCol: String): com.example.trilib.PointXY {
             val doc = CsvCodec.parse("Trapezoid,1,5,4,3,-1,0$alignCol\n")
             val trilist = CsvCodec.build(doc)
-            val (traps, _) = CsvCodec.buildFigures(doc, trilist, 1f)
+            val (traps, _) = figs(doc, trilist, 1f)
             return traps[0].calcPoint().b.left
         }
         val left = topLeft("")          // 列省略 → align=0 (後方互換)
@@ -216,7 +231,7 @@ class WebTrapezoidTest {
         val csv = "Trapezoid,1,5,10,4,-1,0,0\nTrapezoid,2,3,4,3,1,1,0,1\n"
         val doc = CsvCodec.parse(csv)
         val trilist = CsvCodec.build(doc)
-        val (traps, _) = CsvCodec.buildFigures(doc, trilist, 1f)
+        val (traps, _) = figs(doc, trilist, 1f)
         assertEquals(2, traps.size, "台形 2 個が構築される")
         val parentEdge = traps[0].getLine(1)
         val childBase = traps[1].calcPoint().a
@@ -230,7 +245,7 @@ class WebTrapezoidTest {
         val csv = "Trapezoid,1,5,10,4,-1,0,0\nTrapezoid,2,3,4,3,1,2,0,1\n"
         val doc = CsvCodec.parse(csv)
         val trilist = CsvCodec.build(doc)
-        val (traps, _) = CsvCodec.buildFigures(doc, trilist, 1f)
+        val (traps, _) = figs(doc, trilist, 1f)
         assertEquals(2, traps.size)
         val parentEdge = traps[0].getLine(2)
         val childBase = traps[1].calcPoint().a
@@ -244,7 +259,7 @@ class WebTrapezoidTest {
         val csv = "Trapezoid,1,5,10,4,-1,0,0\nTrapezoid,2,3,4,3,1,3,0,1\n"
         val doc = CsvCodec.parse(csv)
         val trilist = CsvCodec.build(doc)
-        val (traps, _) = CsvCodec.buildFigures(doc, trilist, 1f)
+        val (traps, _) = figs(doc, trilist, 1f)
         assertEquals(2, traps.size)
         val parentEdge = traps[0].getLine(3)
         val childBase = traps[1].calcPoint().a
@@ -258,7 +273,7 @@ class WebTrapezoidTest {
         val csv = "1,6.0,5.0,4.0,-1,-1\nTrapezoid,1,5,4,3,1,1,1\n"
         val doc = CsvCodec.parse(csv)
         val trilist = CsvCodec.build(doc)
-        val (traps, _) = CsvCodec.buildFigures(doc, trilist, 1f)
+        val (traps, _) = figs(doc, trilist, 1f)
         assertEquals(1, traps.size)
         val lp = traps[0].calcPoint()
         val parent = trilist.getBy(1)
@@ -271,7 +286,7 @@ class WebTrapezoidTest {
     fun parent_kind_trap_out_of_range_falls_back_to_independent() {
         val doc = CsvCodec.parse("Trapezoid,1,5,4,3,1,1,0,1\n")
         val trilist = CsvCodec.build(doc)
-        val (traps, _) = CsvCodec.buildFigures(doc, trilist, 1f)
+        val (traps, _) = figs(doc, trilist, 1f)
         assertEquals(1, traps.size)
         assertEquals(null, traps[0].nodeA, "範囲外の台形親は独立 fallback (nodeA=null)")
     }
@@ -281,7 +296,7 @@ class WebTrapezoidTest {
     fun pure_triangle_csv_is_unchanged() {
         val triOnly = "1,6.0,5.0,4.0,-1,-1\n2,5.0,4.0,3.0,1,1\n3,4.0,3.5,3.0,1,2\n"
         val doc = CsvCodec.parse(triOnly)
-        val (traps, _) = CsvCodec.buildFigures(doc, CsvCodec.build(doc), 1f)
+        val (traps, _) = figs(doc, CsvCodec.build(doc), 1f)
         assertEquals(0, traps.size, "三角形のみなら台形ゼロ")
         assertEquals(triOnly, CsvCodec.serialize(doc), "純三角形 CSV は serialize 同値")
     }
@@ -392,8 +407,8 @@ class WebTrapezoidTest {
         // build 結果も同値
         val legacyTrilist = CsvCodec.build(legacyDoc)
         val modernTrilist = CsvCodec.build(modernDoc)
-        val (legacyTraps, legacyTrapTris) = CsvCodec.buildFigures(legacyDoc, legacyTrilist, 1f)
-        val (modernTraps, modernTrapTris) = CsvCodec.buildFigures(modernDoc, modernTrilist, 1f)
+        val (legacyTraps, legacyTrapTris) = figs(legacyDoc, legacyTrilist, 1f)
+        val (modernTraps, modernTrapTris) = figs(modernDoc, modernTrilist, 1f)
         assertEquals(legacyTraps.size, modernTraps.size)
         assertEquals(legacyTrapTris.size, modernTrapTris.size)
         assertEquals(1, modernTrapTris.size, "新形式でも台形子三角形が 1 個建つ")
@@ -410,7 +425,7 @@ class WebTrapezoidTest {
         assertEquals(1, doc.trapRows().size, "台形 1")
         assertEquals(2, doc.trapParentedTriRows().size, "tritrap chain で 2 行とも台形子バケツへ振り分け")
         val trilist = CsvCodec.build(doc)
-        val (traps, trapTris) = CsvCodec.buildFigures(doc, trilist, 1f)
+        val (traps, trapTris) = figs(doc, trilist, 1f)
         assertEquals(1, traps.size, "台形 1")
         assertEquals(2, trapTris.size, "tritrap chain 2 個建つ (1 番目=台形親、2 番目=tritrap親)")
         // 2 番目の三角形の底辺が 1 番目 (= TriTrap #1) の B 辺 (side=1) に乗る
@@ -458,7 +473,7 @@ class WebTrapezoidTest {
         val doc = CsvCodec.parse(csv)
         assertEquals(4, doc.figureRows.size, "figureRows に 4 行が CSV 出現順で揃う")
         val trilist = CsvCodec.build(doc)
-        val (traps, trapTris) = CsvCodec.buildFigures(doc, trilist, 1f)
+        val (traps, trapTris) = figs(doc, trilist, 1f)
         assertEquals(2, trilist.size(), "三角形 2 個 (CSV 順がバラついても両方建つ)")
         assertEquals(1, traps.size, "台形 1 個")
         assertEquals(1, trapTris.size, "台形子三角形 1 個")

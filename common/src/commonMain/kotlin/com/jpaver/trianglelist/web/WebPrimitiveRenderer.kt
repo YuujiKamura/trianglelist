@@ -64,8 +64,7 @@ object WebPrimitiveRenderer {
         val effScale = if (scale > 0f) scale else 1f
         val textSize = DEFAULT_TEXT_SIZE * sizeRatio * effScale
         trilist.arrangePointNumbers()
-        val (traps, trapTris) = CsvCodec.buildFigures(doc, trilist, effScale)
-        val mixed = CsvCodec.composeAll(doc, trilist, traps, trapTris)
+        val mixed = CsvCodec.buildMixed(doc, trilist, effScale)
         return render(mixed, textSize, CsvCodec.buildDeductions(doc), effScale)
     }
 

@@ -3,6 +3,7 @@ package com.jpaver.trianglelist.web
 import com.jpaver.trianglelist.datamanager.CsvCodec
 import com.jpaver.trianglelist.datamanager.DxfFileWriter
 import com.jpaver.trianglelist.datamanager.SfcWriter
+import com.jpaver.trianglelist.editmodel.Rectangle
 import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.ZumenInfo
 import com.jpaver.trianglelist.viewmodel.TitleParamStr
@@ -144,7 +145,14 @@ object WebDrawingExport {
         writer.setNames(header.koujiname, header.rosenname, header.gyousyaname, header.zumennum)
         // 台形 (混在リスト) を実寸 (scale=1) で組む。trilist は overrides 適用済を明示渡し、
         // 台形の親解決にユーザー手動配置を反映させる。三角形のみ CSV なら traps/trapTris が空。
-        val (traps, trapTris) = CsvCodec.buildFigures(CsvCodec.parse(csv), trilist, 1f)
+        // SoT 一本化 段3g (2026-06-15): buildMixed の戻り値から filterIsInstance で 2 種を抽出。
+        // trapTris 識別 = trilist set に含まれない Triangle (= 台形親 + TriTrap chain 親を含む。
+        // node.a is Rectangle 判定は TriTrap chain の 2 段目以降 (親=Triangle) を取りこぼす)。
+        val mixedDxf = CsvCodec.buildMixed(CsvCodec.parse(csv), trilist, 1f)
+        val mixedDxfAll = (1..mixedDxf.size()).map { mixedDxf.get(it) }
+        val traps = mixedDxfAll.filterIsInstance<Rectangle>()
+        val trilistTrisDxf: Set<Triangle> = (1..trilist.size()).map { trilist.getBy(it) }.toSet()
+        val trapTris = mixedDxfAll.filterIsInstance<Triangle>().filter { it !in trilistTrisDxf }
         writer.traps_ = traps
         writer.trapTris_ = numberTrapTris(trapTris, trilist.size(), traps.size)
         val sb = StringBuilder()
@@ -202,7 +210,12 @@ object WebDrawingExport {
         writer.isReverse_ = numReverse
         // 台形 (混在リスト) を実寸 (scale=1) で組む。DXF 側と同形。
         // trilist は overrides 適用済を明示渡し。三角形のみ CSV なら traps/trapTris が空 = SFC golden 不変。
-        val (traps, trapTris) = CsvCodec.buildFigures(CsvCodec.parse(csv), trilist, 1f)
+        // SoT 一本化 段3g (2026-06-15): buildMixed → trilist set membership で 2 種抽出 (= DXF 側と同型)。
+        val mixedSfc = CsvCodec.buildMixed(CsvCodec.parse(csv), trilist, 1f)
+        val mixedSfcAll = (1..mixedSfc.size()).map { mixedSfc.get(it) }
+        val traps = mixedSfcAll.filterIsInstance<Rectangle>()
+        val trilistTrisSfc: Set<Triangle> = (1..trilist.size()).map { trilist.getBy(it) }.toSet()
+        val trapTris = mixedSfcAll.filterIsInstance<Triangle>().filter { it !in trilistTrisSfc }
         writer.traps_ = traps
         writer.trapTris_ = numberTrapTris(trapTris, trilist.size(), traps.size)
         return writer.buildSfcString()
