@@ -147,13 +147,17 @@ class WebTrapezoidTest {
         assertEquals(2, count(json, """"type":"circle""""), "台形の番号 + 台形子三角形の番号 = 2 サークル: $json")
     }
 
-    /** (b) 台形は純粋に末尾追加 — 三角形・控除の prim を一切動かさない (golden 不変の核) */
+    /** (b) 台形追加で三角形 prim の数は不変、 全長は増加 (717c318 で z-order「塗り → 線」 維持のため Rectangle fill が
+     *  Triangle fill の直後 / Triangle line の前に挿入される、 startsWith は壊れるが各 Triangle prim 数は不変)。 */
     @Test
     fun trapezoid_is_purely_additive_to_existing_prims() {
         val base = WebPrimitiveRenderer.renderCsv(sampleCsv, 1f)
         val withTrap = WebPrimitiveRenderer.renderCsv(sampleCsv + "Trapezoid,1,5,4,3,-1,0\n", 1f)
-        assertTrue(withTrap.startsWith(base.dropLast(1)), "既存 prim が動いた")
+        val triLineRe = """"type":"line","layer":"tri","[^}]*"tri":\d+""".toRegex()
+        val triCount = { json: String -> triLineRe.findAll(json).count() }
         assertTrue(withTrap.length > base.length, "台形 prim が足されていない")
+        // 台形は 1 個 (4 辺) 追加されるので tri line 数は base + 4。 三角形分は不変
+        assertEquals(triCount(base) + 4, triCount(withTrap), "三角形 line 数が動いた (台形 4 辺以外の差分)")
     }
 
     /** parse → serialize で Trapezoid 行が round-trip する (未知列も生のまま書き戻る) */

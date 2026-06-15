@@ -52,7 +52,7 @@ class WebPrimitiveRendererListReceiverTest {
         val triLineCount = """"type":"line","layer":"tri"""".toRegex().findAll(json).count()
         val numCircleCount = """"type":"circle","layer":"num"""".toRegex().findAll(json).count()
         val numTextCount = """"type":"text","layer":"num"""".toRegex().findAll(json).count()
-        assertEquals(0, fillCount, "Rectangle は塗らない (既存 renderTrapezoid と同じ)")
+        assertEquals(2, fillCount, "Rectangle は bl-tr 対角線で 2 三角形に分割塗り (717c318)")
         assertEquals(4, triLineCount, "Rectangle 1個 → tri line 4 (4辺)")
         assertEquals(1, numCircleCount, "Rectangle 1個 → num circle 1")
         assertEquals(1, numTextCount, "Rectangle 1個 → num text 1")
@@ -64,12 +64,12 @@ class WebPrimitiveRendererListReceiverTest {
         list.add(Triangle(6f, 5f, 4f))
         list.add(Rectangle(5.0, 6.0, 4.0))
         val json = WebPrimitiveRenderer.render(list, ts)
-        // 期待: 三角形塗り 1 + (三角形辺3 + 三角形円 + 三角形テキスト) + (台形辺4 + 台形円 + 台形テキスト) = 12
+        // 期待: 三角形塗り 1 + 台形塗り 2 (bl-tr 対角線分割) + (三角形辺3 + 三角形円 + 三角形テキスト) + (台形辺4 + 台形円 + 台形テキスト) = 14
         val fillCount = """"type":"fill"""".toRegex().findAll(json).count()
         val triLineCount = """"type":"line","layer":"tri"""".toRegex().findAll(json).count()
         val numCircleCount = """"type":"circle","layer":"num"""".toRegex().findAll(json).count()
         val numTextCount = """"type":"text","layer":"num"""".toRegex().findAll(json).count()
-        assertEquals(1, fillCount, "三角形塗り 1 (台形は塗らない)")
+        assertEquals(3, fillCount, "三角形塗り 1 + 台形 2 三角形分割塗り (717c318)")
         assertEquals(7, triLineCount, "三角形3辺 + 台形4辺")
         assertEquals(2, numCircleCount, "番号サークル 2 (図形ごと 1)")
         assertEquals(2, numTextCount, "番号テキスト 2 (図形ごと 1)")
