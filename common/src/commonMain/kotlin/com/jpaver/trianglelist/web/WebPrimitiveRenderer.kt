@@ -432,6 +432,26 @@ object WebPrimitiveRenderer {
             val circleR = textSize * 0.85f
             item("""{"type":"circle","layer":"num","cx":${center.x},"cy":${center.y},"r":$circleR,"tri":$num}""")
             item(text(num.toString(), center, 0.0, textSize, 2, "num", ""","tri":$num"""))
+
+            // 引き出し矢印 (Triangle のみ — pointcenter/pointnumber 依存)。
+            // MyView.drawTriNumber:878-900 の鏡写し。サークルが図形外に出てるとき、図形センターから
+            // サークル縁まで線を引き、10° 回転の返し (チェック矢印) を付ける。Rectangle は arrow 概念ナシ。
+            if (obj is Triangle && !obj.isCollide(obj.pointnumber)) {
+                val pc = obj.pointcenter
+                val pn = obj.pointnumber
+                val pnOffsetToC = pn.offset(pc, (circleR * 1.1f).toDouble())
+                val arrowTail = pc.offset(pn, pc.lengthTo(pnOffsetToC) * 0.3).rotate(pc, 10.0)
+                item(line(pc, pnOffsetToC, "num"))
+                item(line(pc, arrowTail, "num"))
+            }
+        }
+
+        // Deduction overlay (既存 render(trilist) と同じロジック — renderDeduction に委譲)。
+        // ded はビュー空間 (y 下向き) で持つので Y 反転でモデル空間に揃える (web は viewscale=1)。
+        if (dedlist.size() > 0) {
+            val dedModel = dedlist.clone()
+            dedModel.scale(PointXY(0f, 0f), effScale, -effScale)
+            for (n in 1..dedModel.size()) renderDeduction(dedModel.get(n), textSize, effScale, ::item)
         }
 
         sb.append(']')
