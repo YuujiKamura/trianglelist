@@ -31,8 +31,7 @@ object WebFrame {
         val ps = trilist.getPrintScale(1f)
         // 描画 scale は 1f (WebPrimitiveRenderer.renderCsv の effScale と同値、印刷 ps と別軸)。
         // ここで ps を渡すと台形の幾何が壊れて build が空になる (frame: null が消えない原因)。
-        val traps = CsvCodec.buildTrapezoids(doc, trilist, 1f)
-        val trapTris = CsvCodec.buildTrapParentedTriangles(doc, traps, 1f)
+        val (traps, trapTris) = CsvCodec.buildFigures(doc, trilist, 1f)
         // 混在 figure を一本の EditObject の list として持つ (kind 分岐をここで吸収)
         val figures: List<EditObject> = buildList {
             for (i in 1..trilist.size()) add(trilist[i])

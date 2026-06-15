@@ -142,12 +142,11 @@ object WebDrawingExport {
         writer.titleDed_ = TitleParamStr()
         writer.zumeninfo = defaultZumenInfo()
         writer.setNames(header.koujiname, header.rosenname, header.gyousyaname, header.zumennum)
-        // 台形 (混在リスト) を実寸 (scale=1) で組む。三角形 / 台形 / 台形子三角形を
-        // buildMixed で 1 引数取得 (= CsvCodec の SoT)。trilist は overrides 適用済を明示渡し、
+        // 台形 (混在リスト) を実寸 (scale=1) で組む。trilist は overrides 適用済を明示渡し、
         // 台形の親解決にユーザー手動配置を反映させる。三角形のみ CSV なら traps/trapTris が空。
-        val mixed = CsvCodec.buildMixed(CsvCodec.parse(csv), 1f, trilist)
-        writer.traps_ = mixed.traps
-        writer.trapTris_ = numberTrapTris(mixed.trapTris, trilist.size(), mixed.traps.size)
+        val (traps, trapTris) = CsvCodec.buildFigures(CsvCodec.parse(csv), trilist, 1f)
+        writer.traps_ = traps
+        writer.trapTris_ = numberTrapTris(trapTris, trilist.size(), traps.size)
         val sb = StringBuilder()
         writer.writer = sb
         writer.save()
@@ -201,11 +200,11 @@ object WebDrawingExport {
         writer.setNames(header.koujiname, header.rosenname, header.gyousyaname, header.zumennum)
         writer.setStartNumber(1)
         writer.isReverse_ = numReverse
-        // 台形 (混在リスト) を実寸 (scale=1) で組む。DXF 側と同形で buildMixed 経由で 1 引数取得。
+        // 台形 (混在リスト) を実寸 (scale=1) で組む。DXF 側と同形。
         // trilist は overrides 適用済を明示渡し。三角形のみ CSV なら traps/trapTris が空 = SFC golden 不変。
-        val mixed = CsvCodec.buildMixed(CsvCodec.parse(csv), 1f, trilist)
-        writer.traps_ = mixed.traps
-        writer.trapTris_ = numberTrapTris(mixed.trapTris, trilist.size(), mixed.traps.size)
+        val (traps, trapTris) = CsvCodec.buildFigures(CsvCodec.parse(csv), trilist, 1f)
+        writer.traps_ = traps
+        writer.trapTris_ = numberTrapTris(trapTris, trilist.size(), traps.size)
         return writer.buildSfcString()
     }
 }
