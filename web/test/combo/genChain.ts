@@ -22,20 +22,35 @@ const fmt = (n: number): string => (Number.isInteger(n) ? String(n) : n.toFixed(
 const isValidTriangle = (a: number, b: number, c: number): boolean =>
   a + b > c && b + c > a && c + a > b;
 
-const DEFAULT_SHARED: ConnPattern = { childKind: 'triangle', side: 1, type: 0, lcr: 2, label: 'shared' };
+/** chain 内 default の接続パターン: side を 1/2 交互で出して chain がジグザグに展開する形にする。
+ *  正三角形 (1,1,1) を全段辺共有で繋ぐと 60° ずつ回転して 6 段で 1 周してしまい重なる ── これを
+ *  避けるために 同じ三角形でも side を交互にすることで 重ならず深い chain を維持。 */
+function alternatingDefault(d: number, startSide: 1 | 2 = 1): ConnPattern {
+  const side: 1 | 2 = ((d - 2) % 2 === 0 ? startSide : (startSide === 1 ? 2 : 1));
+  return { childKind: 'triangle', side, type: 0, lcr: 2, label: `alt-s${side}` };
+}
 
-/** 親 = 正三角形 (1, 1, 1) を起点とする chain build。 各段の (a, b, c) を triEdges に追跡。 */
-function buildChainCsv(depth: number, patternAt: (d: number) => ConnPattern): { csv: string; valid: boolean } {
-  const lines: string[] = ['1,1.00,1.00,1.00,-1,-1'];
-  const triEdges: Array<[number, number, number]> = [[1, 1, 1]];
+/** 親 = 直角三角形 (3, 4, 5) を起点とする chain build。 各段の (a, b, c) を triEdges に追跡。
+ *  patternAt(d) が null を返した段は alternatingDefault (side 交互辺共有) を使い、 重ならず
+ *  深く繋がる。 patternAt が ConnPattern を返した段はそれを使う (focus 用)。 */
+function buildChainCsv(
+  depth: number,
+  patternAt: (d: number) => ConnPattern | null,
+  startSide: 1 | 2 = 1,
+): { csv: string; valid: boolean } {
+  const lines: string[] = ['1,3.00,4.00,5.00,-1,-1'];
+  const triEdges: Array<[number, number, number]> = [[3, 4, 5]];
   for (let d = 2; d <= depth; d++) {
-    const p = patternAt(d);
+    const p = patternAt(d) ?? alternatingDefault(d, startSide);
     const parentTri = triEdges[d - 2];
     const parentEdgeLen = p.side === 1 ? parentTri[1] : parentTri[2];
     const aRatio = p.type === 0 ? 1.0 : 0.5;
     const ca = parentEdgeLen * aRatio;
-    const cb = ca; // 正三角形維持 (辺共有 chain で辺長一定)
-    const cc = ca;
+    // 子の b/c は親の b/c を直接継承 (= 辺長保持 chain)。 比率 scaling だと a が指数増加して
+    // 200 段で 1e35 オーダー → 浮動小数 / 描画 canvas が破綻するため。 b/c 直接継承なら 200 段でも
+    // 辺長は (3, 4, 5) 周辺で安定。 valid: parent edge (= 4 or 5) + 4 > 5、 5 + 4 > 4 ── 常に OK。
+    const cb = parentTri[1];
+    const cc = parentTri[2];
     if (!isValidTriangle(ca, cb, cc)) return { csv: '', valid: false };
     triEdges.push([ca, cb, cc]);
     const childExtras = `,,,,,,,,,,,,${p.side},${p.type},${p.lcr}`;
@@ -44,13 +59,12 @@ function buildChainCsv(depth: number, patternAt: (d: number) => ConnPattern): { 
   return { csv: lines.join('\n') + '\n', valid: true };
 }
 
-/** 全段 辺共有 chain。 depth = 10/100/200 で 1 chain ずつ × side 2 種 = 6 chain。
- *  user 「実運用では 100 とか 200 くらい」 を直接 pin する deep chain。 */
+/** 全段 default (side 交互辺共有) chain。 depth = 10/100/200 で 1 chain ずつ × startSide 2 種 = 6 chain。
+ *  user 「実運用では 100 とか 200 くらい」 を直接 pin する deep chain。 重ならずジグザグ展開。 */
 export function* genTriangleChainSharedDeep(): Generator<ChainCase> {
   for (const depth of [10, 100, 200] as const) {
     for (const startSide of [1, 2] as const) {
-      const pat: ConnPattern = { childKind: 'triangle', side: startSide, type: 0, lcr: 2, label: `shared-s${startSide}` };
-      const { csv, valid } = buildChainCsv(depth, () => pat);
+      const { csv, valid } = buildChainCsv(depth, () => null, startSide);
       if (!valid) continue;
       yield {
         label: `chain-shared/s${startSide}_d${depth}`,
@@ -64,12 +78,12 @@ export function* genTriangleChainSharedDeep(): Generator<ChainCase> {
 }
 
 /** 14 種 × 注目位置 の chain。 depth=10 (user 最低 10 個) で 1 段だけ注目 pattern を埋め込み。
- *  14 種 × {pos 2..10} = 126 chain。 残段は辺共有で辺長一定。 */
+ *  14 種 × {pos 2..10} = 126 chain。 残段は side 交互辺共有 で 重ならない。 */
 export function* genTriangleChainFocus10(): Generator<ChainCase> {
   for (let pIdx = 0; pIdx < TRI_CONN_14.length; pIdx++) {
     const focus = TRI_CONN_14[pIdx];
     for (let focusPos = 2; focusPos <= 10; focusPos++) {
-      const { csv, valid } = buildChainCsv(10, (d) => (d === focusPos ? focus : DEFAULT_SHARED));
+      const { csv, valid } = buildChainCsv(10, (d) => (d === focusPos ? focus : null));
       if (!valid) continue;
       yield {
         label: `chain10-focus/${focus.label}_pos${focusPos}`,
@@ -120,7 +134,7 @@ export function* genTriangleChainFocus100(): Generator<ChainCase> {
   for (let pIdx = 0; pIdx < TRI_CONN_14.length; pIdx++) {
     const focus = TRI_CONN_14[pIdx];
     const focusPos = 50;
-    const { csv, valid } = buildChainCsv(100, (d) => (d === focusPos ? focus : DEFAULT_SHARED));
+    const { csv, valid } = buildChainCsv(100, (d) => (d === focusPos ? focus : null));
     if (!valid) continue;
     yield {
       label: `chain100-focus/${focus.label}`,
