@@ -28,7 +28,7 @@ fun print_trilist(tl: TriangleList, callername:String = "undefined caller") {
 class LastTapNumberValidationException(message: String) : Exception(message)
 class EmptyTriListException(message: String) : Exception(message)
 
-open class TriangleList : EditList {
+open class TriangleList : EditList<Triangle> {
 
     fun rotate(
         basepoint: com.example.trilib.PointXY,

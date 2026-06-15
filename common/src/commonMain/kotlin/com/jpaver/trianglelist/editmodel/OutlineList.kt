@@ -34,9 +34,9 @@ class OutlineList(var trianglelist: TriangleList) {
 
         // リストの各要素をループして内容を表示
         pointlist.forEachIndexed() { i, point ->
-            val b = trilist[outlineIndex[i]-1].nodeB
+            val b = (trilist[outlineIndex[i]-1]).nodeB
             val bnumber = b?.mynumber ?: 0
-            val c = trilist[outlineIndex[i]-1].nodeC
+            val c = (trilist[outlineIndex[i]-1]).nodeC
             val cnumber = c?.mynumber ?: 0
             println("Point $i: ${outlineStr_[i]} x = ${point.x}, y = ${point.y} NodeB:${bnumber}:${b.hashCode()} NodeC:${cnumber}:${c.hashCode()}")
         }
