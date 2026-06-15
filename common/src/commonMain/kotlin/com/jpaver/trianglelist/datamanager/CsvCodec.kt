@@ -328,12 +328,26 @@ object CsvCodec {
     fun buildAll(doc: CsvDoc, scale: Float = 1f, applyRecoverState: Boolean = true): EditList<EditObject> {
         val trilist = build(doc, applyRecoverState)
         val (traps, trapTris) = buildFigures(doc, trilist, scale)
+        return composeAll(doc, trilist, traps, trapTris)
+    }
 
+    /**
+     * SoT 一本化 段3 最終スワップ (2026-06-15): 既に build → setScale → WebOverrides 等の変形が
+     * 済んだ trilist / traps / trapTris を「figureRows 順」 で 1 本の EditList<EditObject> に詰め直す。
+     * renderCsv は外側で applyJson/setScale を当てた trilist を活かしたまま新 render(list) に流す。
+     * buildAll は内部で build/buildFigures を呼んでこの API に委譲するだけ — composition root だけ
+     * 分離して「外で変形した状態」 を保持できるようにした。
+     */
+    fun composeAll(
+        doc: CsvDoc,
+        trilist: TriangleList,
+        traps: List<Rectangle>,
+        trapTris: List<Triangle>,
+    ): EditList<EditObject> {
         val mixed = EditList<EditObject>()
-        var triIdx = 0     // 1-based、TriangleList.getBy 用
-        var trapIdx = 0    // 0-based、traps[]
-        var trapTriIdx = 0 // 0-based、trapTris[]
-
+        var triIdx = 0
+        var trapIdx = 0
+        var trapTriIdx = 0
         for (row in doc.figureRows) {
             when (row.chunks.firstOrNull()) {
                 "Trapezoid" -> if (trapIdx < traps.size) mixed.add(traps[trapIdx++])
