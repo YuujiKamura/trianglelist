@@ -66,6 +66,11 @@ object CsvCodec {
         val postLines: List<String>,
         val dedRows: List<CsvRow> = emptyList(),
         val textSize: Float? = null,
+        // B04a: ListScale を named field に昇格 (旧: postLines に生文字列として残存)。
+        // parse 時に ListScale 行を postLines から抜いてここに格納し、serialize で書き戻す。
+        // null = CSV に ListScale 行なし (新規作成 or 旧 CSV)。後方互換: postLines 側に残った
+        // ListScale 行は applyListParams の fallback パスで読む。
+        val listScale: Float? = null,
         val trapRows: List<CsvRow> = emptyList(),
         // 図形行 (三角形 + 台形) を CSV の出現順そのままで保持する。種別は chunks[0] が
         // "Trapezoid" か数値かで判る。位置順ビルド (混在接続: 親が先に在れば子が解決できる) の入力。
@@ -97,6 +102,7 @@ object CsvCodec {
         val figureRows = mutableListOf<CsvRow>()   // 三角形+台形を出現順で保持 (位置順ビルド用)
         var listAngle: Float? = null
         var textSize: Float? = null
+        var listScale: Float? = null  // B04a: named field に昇格
         for (line in text.lineSequence()) {
             if (line.isBlank()) continue
             val chunks = line.split(",").map { it.trim() }
@@ -106,6 +112,11 @@ object CsvCodec {
             }
             if (chunks.firstOrNull() == "TextSize") {
                 textSize = chunks.getOrNull(1)?.toFloatOrNull() ?: textSize
+                continue
+            }
+            // B04a: ListScale を named field に昇格 (postLines に落とさない)
+            if (chunks.firstOrNull() == "ListScale") {
+                listScale = chunks.getOrNull(1)?.toFloatOrNull() ?: listScale
                 continue
             }
             if (chunks.firstOrNull() == "Deduction") {
@@ -160,7 +171,7 @@ object CsvCodec {
             rows.add(r)
             figureRows.add(r)
         }
-        return CsvDoc(preLines, rows, listAngle, postLines, dedRows, textSize, trapRows, figureRows, trapParentedTriRows)
+        return CsvDoc(preLines, rows, listAngle, postLines, dedRows, textSize, listScale, trapRows, figureRows, trapParentedTriRows)
     }
 
     fun serialize(doc: CsvDoc): String {
@@ -169,6 +180,8 @@ object CsvCodec {
         doc.rows.forEach { sb.append(it.chunks.joinToString(",")).append('\n') }
         // アプリ writeCSV と同じく三角形行の後に書く。値の書式 ("ListAngle, x") も同一
         doc.listAngle?.let { sb.append("ListAngle, ").append(it).append('\n') }
+        // B04a: ListScale を named field から書き出す (postLines には残らない)
+        doc.listScale?.let { sb.append("ListScale, ").append(it).append('\n') }
         doc.postLines.forEach { sb.append(it).append('\n') }
         // アプリ writeCSV:2785 と同じ書式・同じ位置 (ListScale 等 postLines の後)
         doc.textSize?.let { sb.append("TextSize, ").append(it).append('\n') }
@@ -201,7 +214,8 @@ object CsvCodec {
      *      後続の子の add が先行行の保存値を潰せない)
      *   3. リスト回転 — recoverState で絶対角度へ (アプリ load 経路と同一、ADR 0007)
      */
-    fun build(doc: CsvDoc): TriangleList {
+    // B05: applyRecoverState default=true で後方互換。Android は false で呼び二重回転を回避。
+    fun build(doc: CsvDoc, applyRecoverState: Boolean = true): TriangleList {
         val trilist = TriangleList()
         val built = mutableListOf<Pair<CsvRow, Triangle>>()
 
@@ -240,7 +254,8 @@ object CsvCodec {
 
         // phase 3: リスト回転。行が無い CSV も angle=0 → -180° でアプリと同じ向き
         trilist.angle = doc.listAngle ?: 0f
-        trilist.recoverState(PointXY(0f, 0f))
+        // B05: Android は setEditLists 内で recoverState を呼ぶため false で渡して二重回転を回避
+        if (applyRecoverState) trilist.recoverState(PointXY(0f, 0f))
         return trilist
     }
 
@@ -255,35 +270,8 @@ object CsvCodec {
      * 対話回転 (fabRotate:1584-1591) は別経路で、web では行の座標書き換え
      * (WebDeduction.rotateDeductionLine) が担う
      */
-    fun buildDeductions(doc: CsvDoc): DeductionList {
-        val dedlist = DeductionList()
-        for (row in doc.dedRows) {
-            val c = row.chunks
-            val num = c.getOrNull(1)?.toIntOrNull() ?: continue
-            val lengthX = c.getOrNull(3)?.toFloatOrNull() ?: continue
-            val lengthY = c.getOrNull(4)?.toFloatOrNull() ?: continue
-            val pn = c.getOrNull(5)?.toIntOrNull() ?: 0
-            val type = c.getOrNull(6) ?: ""
-            val px = c.getOrNull(8)?.toFloatOrNull() ?: continue
-            val py = c.getOrNull(9)?.toFloatOrNull() ?: continue
-            val fx = c.getOrNull(10)?.toFloatOrNull() ?: continue
-            val fy = c.getOrNull(11)?.toFloatOrNull() ?: continue
-            dedlist.add(
-                Deduction(
-                    InputParameter(
-                        c.getOrNull(2) ?: "", type, num,
-                        lengthX, lengthY, 0f,
-                        pn, typeToInt(type),
-                        PointXY(px, -py),
-                        PointXY(fx, -fy),
-                    )
-                )
-            )
-            val sa = c.getOrNull(12)
-            if (!sa.isNullOrEmpty()) sa.toDoubleOrNull()?.let { dedlist.get(dedlist.size()).shapeAngle = it }
-        }
-        return dedlist
-    }
+    // B02: 既存 1 引数版は 2 引数版 (viewscale=1f) へのラッパー。後方互換維持。
+    fun buildDeductions(doc: CsvDoc): DeductionList = buildDeductions(doc, viewscale = 1f)
 
     /**
      * trapRows → Rectangle リスト (混在リスト段1)。buildDeductions と同じ「TriangleList に
@@ -403,10 +391,140 @@ object CsvCodec {
      * 解決できそうなもんだが」── EditObject / Triangle(parent: EditObject) の継ぎ目は既に
      * あって、各 build パスが種別ごとに分かれているだけ。それを 1 つにまとめる第一歩。
      */
-    fun buildMixed(doc: CsvDoc, scale: Float = 1f, trilist: TriangleList = build(doc)): MixedBuild {
+    // B05: trilist デフォルトは applyRecoverState=true を維持 (Web 側と既存呼び出し元に影響なし)
+    fun buildMixed(doc: CsvDoc, scale: Float = 1f, trilist: TriangleList = build(doc, applyRecoverState = true)): MixedBuild {
         val traps = buildTrapezoids(doc, trilist, scale)
         val trapTris = buildTrapParentedTriangles(doc, traps, scale)
         return MixedBuild(trilist, traps, trapTris)
+    }
+
+    // -------------------------------------------------------------------------
+    // B01: extractHeader / bakeHeader
+    // -------------------------------------------------------------------------
+
+    /**
+     * CsvDoc.preLines から koujiname/rosenname/gyousyaname/zumennum を構造化して返す。
+     * 旧 CsvLoader.readCsvHeaderLines:347-358 相当。後勝ち (同名行が複数あれば最後を使う)。
+     */
+    fun extractHeader(doc: CsvDoc): HeaderValues {
+        val h = HeaderValues()
+        for (line in doc.preLines) {
+            val chunks = line.split(",").map { it.trim() }
+            if (chunks.size < 2) continue
+            when (chunks[0]) {
+                "koujiname"   -> h.koujiname   = chunks[1]
+                "rosenname"   -> h.rosenname   = chunks[1]
+                "gyousyaname" -> h.gyousyaname = chunks[1]
+                "zumennum"    -> h.zumennum    = chunks[1]
+            }
+        }
+        return h
+    }
+
+    /**
+     * HeaderValues を CsvDoc.preLines の先頭 4 行として書き込む。
+     * 既存の同名行は filter で除去してから先頭に挿入するので重複しない。
+     * BOM 付きコメント等の非ヘッダ行は末尾に残る。
+     */
+    fun bakeHeader(values: HeaderValues, doc: CsvDoc): CsvDoc {
+        val headerKeys = setOf("koujiname", "rosenname", "gyousyaname", "zumennum")
+        val cleaned = doc.preLines.filter { line ->
+            line.split(",").firstOrNull()?.trim() !in headerKeys
+        }
+        val newPre = listOf(
+            "koujiname, ${values.koujiname}",
+            "rosenname, ${values.rosenname}",
+            "gyousyaname, ${values.gyousyaname}",
+            "zumennum, ${values.zumennum}",
+        ) + cleaned
+        return doc.copy(preLines = newPre)
+    }
+
+    // -------------------------------------------------------------------------
+    // B02: buildDeductions(doc, viewscale) overload
+    // -------------------------------------------------------------------------
+
+    /**
+     * viewscale 引数付き overload。旧 CsvLoader.buildDeductions:369-392 相当。
+     * Android は viewscale != 1 で動くため、point/pointFlag を viewscale 倍して
+     * ビュー空間に合わせる。viewscale=1f (デフォルト) は既存 1 引数版と完全等価。
+     */
+    fun buildDeductions(doc: CsvDoc, viewscale: Float): DeductionList {
+        val dedlist = DeductionList()
+        val s = if (viewscale > 0f) viewscale.toDouble() else 1.0
+        for (row in doc.dedRows) {
+            val c = row.chunks
+            val num = c.getOrNull(1)?.toIntOrNull() ?: continue
+            val lengthX = c.getOrNull(3)?.toFloatOrNull() ?: continue
+            val lengthY = c.getOrNull(4)?.toFloatOrNull() ?: continue
+            val pn = c.getOrNull(5)?.toIntOrNull() ?: 0
+            val type = c.getOrNull(6) ?: ""
+            val px = c.getOrNull(8)?.toFloatOrNull() ?: continue
+            val py = c.getOrNull(9)?.toFloatOrNull() ?: continue
+            val fx = c.getOrNull(10)?.toFloatOrNull() ?: continue
+            val fy = c.getOrNull(11)?.toFloatOrNull() ?: continue
+            dedlist.add(
+                Deduction(
+                    InputParameter(
+                        c.getOrNull(2) ?: "", type, num,
+                        lengthX, lengthY, 0f,
+                        pn, typeToInt(type),
+                        PointXY(px, -py).scale(s),
+                        PointXY(fx, -fy).scale(s),
+                    )
+                )
+            )
+            val sa = c.getOrNull(12)
+            if (!sa.isNullOrEmpty()) sa.toDoubleOrNull()?.let { dedlist.get(dedlist.size()).shapeAngle = it }
+        }
+        return dedlist
+    }
+
+    // -------------------------------------------------------------------------
+    // B03: bakeDeductions(dedlist, doc, viewscale)
+    // -------------------------------------------------------------------------
+
+    /**
+     * 編集後の DeductionList を CsvDoc.dedRows に焼き直す。
+     * 旧 MainActivity.writeCSV:2790-2798 相当。viewscale の逆数で実寸・y 反転して書く。
+     * viewscale=1f のとき既存 dedRows と同値になる (round-trip 等価)。
+     */
+    fun bakeDeductions(dedlist: DeductionList, doc: CsvDoc, viewscale: Float): CsvDoc {
+        val s = if (viewscale > 0f) viewscale.toDouble() else 1.0
+        val newDedRows = (1..dedlist.size()).map { i ->
+            val dd = dedlist.get(i)
+            val pAt = dd.point.scale(PointXY(0f, 0f), 1.0 / s, -1.0 / s)
+            val fAt = dd.pointFlag.scale(PointXY(0f, 0f), 1.0 / s, -1.0 / s)
+            CsvRow(listOf(
+                "Deduction", "${dd.num}", dd.name, "${dd.lengthX}", "${dd.lengthY}",
+                "${dd.overlap_to}", dd.type, "${dd.angle}",
+                "${pAt.x}", "${pAt.y}", "${fAt.x}", "${fAt.y}", "${dd.shapeAngle}",
+            ))
+        }
+        return doc.copy(dedRows = newDedRows)
+    }
+
+    // -------------------------------------------------------------------------
+    // B04: applyListParams(doc, trilist, setTextSize)
+    // -------------------------------------------------------------------------
+
+    /**
+     * CsvDoc 内の TextSize / ListScale をアプリ状態に適用する。
+     * 旧 CsvLoader.readListParameter:394-409 相当。listAngle は build() 内適用済みなので触らない。
+     * setTextSize は MyView の textSize setter を渡す (Android 専用経路; Web は別途扱う)。
+     * ListScale: doc.listScale (named field) を優先し、fallback で postLines から探す (後方互換)。
+     */
+    fun applyListParams(
+        doc: CsvDoc,
+        trilist: TriangleList,
+        setTextSize: (Float) -> Unit,
+    ) {
+        doc.textSize?.let { setTextSize(it) }
+        val scale = doc.listScale ?: doc.postLines.firstNotNullOfOrNull { line ->
+            val chunks = line.split(",").map { it.trim() }
+            if (chunks.getOrNull(0) == "ListScale") chunks.getOrNull(1)?.toFloatOrNull() else null
+        }
+        scale?.let { trilist.setScale(PointXY(0f, 0f), it) }
     }
 
     /** MainActivity.typeToInt:924-929 と同写像 */
@@ -473,8 +591,10 @@ object CsvCodec {
         // textSize / trapRows / figureRows / trapParentedTriRows も素通し — 台形 (混在リスト) は
         // TriangleList の外側 (CsvDoc.trapRows / trapParentedTriRows) で持つので、bake が三角形のみ
         // 再構築して台形を捨てると保存 CSV から台形が消える (user 報告 2026-06-14「混在で保存→台形消失」)。
+        // B04a: listScale を trilist.scale から取得して named field に書き込む
         return CsvDoc(
             original.preLines, rows, trilist.angle, original.postLines, original.dedRows, original.textSize,
+            trilist.scale,  // listScale
             original.trapRows, original.figureRows, original.trapParentedTriRows,
         )
     }
