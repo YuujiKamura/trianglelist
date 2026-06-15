@@ -34,7 +34,8 @@ class CsvCodecTest {
         assertEquals(2, doc.rows.size)
         assertEquals(15.0f, doc.listAngle!!, 0.001f)
         assertEquals(5.0f, doc.textSize!!, 0.001f) // TextSize は数値として昇格 (ListAngle と同格)
-        assertEquals(1, doc.postLines.size) // ListScale のみ (TextSize は textSize、Deduction は dedRows へ昇格)
+        assertEquals(1.0f, doc.listScale!!, 0.001f) // B04a: ListScale も named field に昇格
+        assertEquals(0, doc.postLines.size) // ListScale は postLines から昇格済み、TextSize/Deduction も別フィールド
         assertEquals(1, doc.dedRows.size)
         assertEquals(13, doc.dedRows[0].chunks.size)
         assertEquals(28, doc.rows[0].chunks.size)

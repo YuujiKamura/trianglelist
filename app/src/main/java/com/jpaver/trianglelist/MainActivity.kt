@@ -56,7 +56,7 @@ import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.jpaver.trianglelist.databinding.ActivityMainBinding
-import com.jpaver.trianglelist.datamanager.CsvLoader
+import com.jpaver.trianglelist.datamanager.CsvCodec
 import com.jpaver.trianglelist.datamanager.DxfFileWriter
 import com.jpaver.trianglelist.datamanager.HeaderValues
 import com.jpaver.trianglelist.datamanager.PdfWriter
@@ -2875,20 +2875,18 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun parseCSV(reader: BufferedReader):Boolean{
-        val csvloader = CsvLoader()
-        val returnValues = csvloader.parseCSV(
-            reader,
-            this::showToast,
-            this::setAllTextSize,
-            this::typeToInt,
-            viewscale
-        )
+        // B07 で CsvCodec ベースに本格置換予定。現在は最小 stub (CsvLoader 削除後の繋ぎ)
+        val text = reader.readText()
+        val doc = CsvCodec.parse(text)
+        val trilist = CsvCodec.build(doc, applyRecoverState = false)
+        val dedlist = CsvCodec.buildDeductions(doc, viewscale)
+        CsvCodec.applyListParams(doc, trilist) { setAllTextSize(it) }
+        val headerValues = CsvCodec.extractHeader(doc)
 
-        Log.d("CSVParser", "parseCSV: filename=$returnValues")
-        if(returnValues == null ) return false
+        Log.d("CSVParser", "parseCSV: rows=${doc.rows.size}")
 
-        setEditLists( returnValues.trilist, returnValues.dedlist )
-        parseHeaderValues( returnValues.headerValues )
+        setEditLists( trilist, dedlist )
+        parseHeaderValues( headerValues )
         isCSVsavedToPrivate = false
         saveCSVtoPrivate()
         return true
