@@ -380,6 +380,15 @@ object WebPrimitiveRenderer {
             first = false
         }
 
+        // 段階0: textSize 配布 (既存 render(trilist) の setDimPathTextSize と同等の準備)。
+        // dimHeight は DimensionLayout.layout の dimheight 引数で寸法線位置を決める。
+        list.forEachItem { obj ->
+            when (obj) {
+                is Triangle -> obj.setDimPath(textSize)
+                is Rectangle -> obj.dimHeight = textSize
+            }
+        }
+
         // 段階1a: 塗り (z-order「塗り全部→線・文字」確保のため先に全部出す)
         list.forEachItemIndexed { num, obj ->
             when (obj) {
@@ -395,11 +404,17 @@ object WebPrimitiveRenderer {
             }
         }
 
-        // 段階1b: 辺 (多態 getLine) + 番号サークル + 番号テキスト
+        // 段階1b: 辺 (多態 getLine) + 寸法 (多態 emitDimensionSpecs) + 番号サークル + 番号テキスト
+        val effScale = if (scale > 0f) scale else 1f
         list.forEachItemIndexed { num, obj ->
             for (side in 0 until obj.sideCount) {
                 val ln = obj.getLine(side)
                 item(line(ln.left, ln.right, "tri", ""","tri":$num,"side":$side"""))
+            }
+            // 寸法 (図形種別を問わず多態的に emit)。spec は kind 分岐ナシで JSON 化される。
+            for (spec in obj.emitDimensionSpecs(effScale)) {
+                item(dimText(spec.text, spec.place, spec.angle, textSize, num, spec.side, spec.h, spec.v))
+                if (spec.emitFlag) item(line(spec.place.pointA, spec.place.pointB, "dim"))
             }
             // 番号位置: Triangle は事前計算済 pointnumber、Rectangle は重心 (vertices 平均)
             val center = when (obj) {
