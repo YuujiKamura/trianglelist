@@ -8,17 +8,30 @@ import kotlin.test.assertTrue
  * CsvCodec の台形/TriTrap round-trip pin (B10)。
  * CsvCodecTest.kt (既存) は controls/deduction のみ。
  * ここでは台形混在 CSV の全フィールド保持を検証する。
+ *
+ * B-FORCE (2026-06-15): rows/trapRows/trapParentedTriRows バケツ廃止。
+ * figureRows フィルタリングで種別カウントを行う。
+ *   - 三角形行: chunks[0].toIntOrNull() != null かつ "Trapezoid"/"TriTrap" 以外
+ *   - 台形行:   chunks[0] == "Trapezoid"
+ *   - TriTrap行: chunks[0] == "TriTrap"
  */
 class CsvCodecTrapRoundTripTest {
 
-    /** fixture の parse で CsvDoc の各バケツに正しく振り分けられる */
+    private fun CsvCodec.CsvDoc.triRows() = figureRows.filter {
+        val t = it.chunks.firstOrNull()
+        t != "Trapezoid" && t != "TriTrap"
+    }
+    private fun CsvCodec.CsvDoc.trapRows() = figureRows.filter { it.chunks.firstOrNull() == "Trapezoid" }
+    private fun CsvCodec.CsvDoc.trapParentedTriRows() = figureRows.filter { it.chunks.firstOrNull() == "TriTrap" }
+
+    /** fixture の parse で figureRows に正しく振り分けられる */
     @Test
     fun fixture_parse_distributes_trapRows_and_trapParentedTriRows() {
         val doc = CsvCodec.parse(TRAP_MIXED_CSV)
         assertEquals(4, doc.preLines.size, "preLines 4 行")
-        assertEquals(3, doc.rows.size, "普通三角形 3 行")
-        assertEquals(2, doc.trapRows.size, "台形 2 行")
-        assertEquals(1, doc.trapParentedTriRows.size, "TriTrap 1 行")
+        assertEquals(3, doc.triRows().size, "普通三角形 3 行")
+        assertEquals(2, doc.trapRows().size, "台形 2 行")
+        assertEquals(1, doc.trapParentedTriRows().size, "TriTrap 1 行")
         assertEquals(1, doc.dedRows.size, "控除 1 行")
         assertEquals(15.0f, doc.listAngle!!, 0.001f)
         assertEquals(5.0f, doc.textSize!!, 0.001f)
@@ -45,8 +58,8 @@ class CsvCodecTrapRoundTripTest {
         val serialized = CsvCodec.serialize(baked)
         val doc2 = CsvCodec.parse(serialized)
 
-        assertEquals(doc1.trapRows.size, doc2.trapRows.size, "trapRows 行数")
-        assertEquals(doc1.trapParentedTriRows.size, doc2.trapParentedTriRows.size, "trapParentedTriRows 行数")
+        assertEquals(doc1.trapRows().size, doc2.trapRows().size, "台形行数")
+        assertEquals(doc1.trapParentedTriRows().size, doc2.trapParentedTriRows().size, "TriTrap 行数")
         assertEquals(doc1.preLines, doc2.preLines, "preLines 保持")
         assertEquals(doc1.dedRows.size, doc2.dedRows.size, "dedRows 行数")
         assertEquals(doc1.textSize, doc2.textSize, "textSize 保持")
@@ -62,10 +75,12 @@ class CsvCodecTrapRoundTripTest {
         val serialized = CsvCodec.serialize(baked)
         val doc2 = CsvCodec.parse(serialized)
 
-        assertEquals(doc1.trapParentedTriRows.size, doc2.trapParentedTriRows.size)
-        for (i in doc1.trapParentedTriRows.indices) {
-            val r1 = doc1.trapParentedTriRows[i]
-            val r2 = doc2.trapParentedTriRows[i]
+        val tt1 = doc1.trapParentedTriRows()
+        val tt2 = doc2.trapParentedTriRows()
+        assertEquals(tt1.size, tt2.size)
+        for (i in tt1.indices) {
+            val r1 = tt1[i]
+            val r2 = tt2[i]
             // chunks: [TriTrap, num, ea, B, C, targetIdx, side]
             assertEquals(r1.chunks.getOrNull(1), r2.chunks.getOrNull(1), "TriTrap[$i] num")
             assertEquals(r1.chunks.getOrNull(3), r2.chunks.getOrNull(3), "TriTrap[$i] B")
@@ -79,15 +94,15 @@ class CsvCodecTrapRoundTripTest {
     @Test
     fun legacy_csv_roundtrip_no_regression() {
         val doc1 = CsvCodec.parse(LEGACY_CSV)
-        assertTrue(doc1.trapRows.isEmpty(), "旧 CSV に台形行はない")
-        assertTrue(doc1.trapParentedTriRows.isEmpty(), "旧 CSV に TriTrap はない")
+        assertTrue(doc1.trapRows().isEmpty(), "旧 CSV に台形行はない")
+        assertTrue(doc1.trapParentedTriRows().isEmpty(), "旧 CSV に TriTrap はない")
 
         val trilist = CsvCodec.build(doc1)
         val baked = CsvCodec.bake(trilist, doc1)
         val serialized = CsvCodec.serialize(baked)
         val doc2 = CsvCodec.parse(serialized)
 
-        assertEquals(doc1.rows.size, doc2.rows.size, "旧 CSV 三角形行数保持")
+        assertEquals(doc1.triRows().size, doc2.triRows().size, "旧 CSV 三角形行数保持")
         assertEquals(doc1.preLines, doc2.preLines, "旧 CSV preLines 保持")
         assertEquals(doc1.dedRows.size, doc2.dedRows.size, "旧 CSV dedRows 保持")
         assertEquals(doc1.textSize, doc2.textSize, "旧 CSV textSize 保持")
@@ -127,7 +142,7 @@ class CsvCodecTrapRoundTripTest {
             "Deduction,1,水路,0.5,4.0,1,1,0.0,1.0,2.0,1.5,2.5,0.0\n" +
             "Trapezoid, 3.0, 2.0, 4.0, -1, 0.0, 0.0, 0.0, true, 4\n" +
             "Trapezoid, 2.5, 1.5, 3.5, 1, 0.0, 0.0, 0.0, false, 4\n" +
-            "4, 3.0, 2.5, 2.0, 4, 1\n"  // parent=4 > rows.size=3 -> trapParentedTriRows
+            "4, 3.0, 2.5, 2.0, 4, 1\n"  // parent=4 > triRows.size=3 -> trapParentedTriRows
 
         /** 旧 app 由来 CSV (台形なし、28 列形式) -- 回帰防止用 */
         val LEGACY_CSV =

@@ -71,12 +71,9 @@ object WebPrimitiveRenderer {
         val sizeRatio = (doc.textSize?.takeIf { it > 0f } ?: APP_DEFAULT_TEXT_SIZE) / APP_DEFAULT_TEXT_SIZE
         val effScale = if (scale > 0f) scale else 1f
         val textSize = DEFAULT_TEXT_SIZE * sizeRatio * effScale
-        // 混在リスト段1: 台形は三角形パイプラインの外で構築し、render の最後に重ねる
-        // (trapRows が空 = 従来 CSV なら traps も空 → 出力は完全に従来と同一、golden 不変)
-        val traps = CsvCodec.buildTrapezoids(doc, trilist, effScale)
-        // 台形を親に持つ三角形 (TriTrap 行)。台形ビルド後に構築 (親=台形が先に在る)。trapParentedTriRows
-        // が空 (= 三角形のみ / 既存混在 CSV) なら空リスト → 出力は従来どおり (golden 不変)。
-        val trapTris = CsvCodec.buildTrapParentedTriangles(doc, traps, effScale)
+        // 混在リスト: 台形 + 台形子三角形を figureRows から構築し render に渡す。
+        // figureRows に台形/TriTrap 行が無ければ空リスト → 出力は完全に従来と同一 (golden 不変)。
+        val (traps, trapTris) = CsvCodec.buildFigures(doc, trilist, effScale)
         return render(trilist, textSize, CsvCodec.buildDeductions(doc), effScale, traps, trapTris)
     }
 

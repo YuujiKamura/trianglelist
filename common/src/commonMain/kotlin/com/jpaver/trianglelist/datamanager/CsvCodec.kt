@@ -51,37 +51,28 @@ object CsvCodec {
     }
 
     /**
-     * CSV 文書。preLines = 最初の三角形行より前の行 (ヘッダ等)、postLines = それ以降の
-     * 非三角形行 (ListScale 等)。どちらも原文のまま保持して書き戻す。
+     * CSV 文書。preLines = 最初の図形行より前の行 (ヘッダ等)、postLines = それ以降の
+     * 非図形行 (ListScale 等)。どちらも原文のまま保持して書き戻す。
      * ListAngle 行だけは数値として取り出す (リスト回転の SoT、ADR 0007)。
-     * TextSize 行も同様に昇格 (寸法文字サイズの SoT。アプリ writeCSV:2785 が書き
-     * CsvLoader.readListParameter:404-407 が読む行。単位はアプリの view px、初期値 30)。
-     * dedRows = "Deduction" 先頭の控除行 (ADR 0008 の残課題の昇格)。chunks は列0 =
-     * "Deduction" を含む生の列で、未知の追加列 (14 列目以降) も保持して書き戻す
+     * TextSize 行も同様に昇格 (寸法文字サイズの SoT)。
+     * dedRows = "Deduction" 先頭の控除行。chunks は列0 = "Deduction" を含む生の列。
+     *
+     * figureRows = 三角形 + 台形 + 台形子三角形 (TriTrap) を CSV 出現順で保持する SoT。
+     *   chunks[0] == "Trapezoid" → 台形行
+     *   chunks[0] == "TriTrap"   → 台形子三角形行 (旧タグ形式、parse で内部変換済み)
+     *   chunks[0].toIntOrNull() != null → 三角形行 (または混在通し番号の台形子三角形行)
+     * B-FORCE: rows/trapRows/trapParentedTriRows バケツ廃止 (2026-06-15)。figureRows が唯一の SoT。
      */
     data class CsvDoc(
         val preLines: List<String>,
-        val rows: List<CsvRow>,
         val listAngle: Float?,
         val postLines: List<String>,
         val dedRows: List<CsvRow> = emptyList(),
         val textSize: Float? = null,
         // B04a: ListScale を named field に昇格 (旧: postLines に生文字列として残存)。
-        // parse 時に ListScale 行を postLines から抜いてここに格納し、serialize で書き戻す。
-        // null = CSV に ListScale 行なし (新規作成 or 旧 CSV)。後方互換: postLines 側に残った
-        // ListScale 行は applyListParams の fallback パスで読む。
         val listScale: Float? = null,
-        val trapRows: List<CsvRow> = emptyList(),
-        // 図形行 (三角形 + 台形) を CSV の出現順そのままで保持する。種別は chunks[0] が
-        // "Trapezoid" か数値かで判る。位置順ビルド (混在接続: 親が先に在れば子が解決できる) の入力。
-        // 既存の rows/trapRows (種別分離) は不変 — 行順は分離で失われるため、ここに別途順序を持つ。
+        // 全図形行 (三角形 + 台形 + 台形子三角形) を CSV 出現順で保持する。種別は chunks[0] で判断。
         val figureRows: List<CsvRow> = emptyList(),
-        // 台形を親に持つ三角形の行 ("TriTrap" タグ)。普通の三角形行 (rows) とは別バケツにすることで
-        // build() (= rows を使う golden パイプライン) はこれを一切見ない → golden 自明に不変。
-        // 列: TriTrap, num, ea(情報・台形辺長で上書き), eb(=B), ec(=C), parent(台形群index 1始まり), side(1=左脚/2=上辺/3=右脚)。
-        // 台形がビルド済みになってから buildTrapParentedTriangles で Triangle(台形, side, B, C) として構築する
-        // (三角形ビルドが台形より先で親を参照できない「ビルド順の循環」を、別パスに後回しして解く)。
-        val trapParentedTriRows: List<CsvRow> = emptyList(),
     )
 
     /**
@@ -95,14 +86,15 @@ object CsvCodec {
     fun parse(text: String): CsvDoc {
         val preLines = mutableListOf<String>()
         val postLines = mutableListOf<String>()
-        val rows = mutableListOf<CsvRow>()
         val dedRows = mutableListOf<CsvRow>()
-        val trapRows = mutableListOf<CsvRow>()
-        val trapParentedTriRows = mutableListOf<CsvRow>()  // "TriTrap" 行 (台形を親に持つ三角形)
-        val figureRows = mutableListOf<CsvRow>()   // 三角形+台形を出現順で保持 (位置順ビルド用)
+        val figureRows = mutableListOf<CsvRow>()
         var listAngle: Float? = null
         var textSize: Float? = null
         var listScale: Float? = null  // B04a: named field に昇格
+        // B-FORCE: 三角形カウントは「普通三角形行」を追跡するためだけに使う
+        // (parent が三角形数を超えていれば台形/TriTrap 親の混在通し番号と解釈するため)
+        var triCount = 0
+        var hasFigure = false  // 最初の図形行より前を preLines、以降の非図形行を postLines に振る
         for (line in text.lineSequence()) {
             if (line.isBlank()) continue
             val chunks = line.split(",").map { it.trim() }
@@ -124,35 +116,29 @@ object CsvCodec {
                 continue
             }
             if (chunks.firstOrNull() == "Trapezoid") {
-                val r = CsvRow(chunks)
-                trapRows.add(r)
-                figureRows.add(r)
+                hasFigure = true
+                figureRows.add(CsvRow(chunks))
                 continue
             }
             if (chunks.firstOrNull() == "TriTrap") {
-                // 台形を親に持つ三角形。build() (rows) には入れない → golden 不変。順序保持のため figureRows には入れる
-                val r = CsvRow(chunks)
-                trapParentedTriRows.add(r)
-                figureRows.add(r)
+                // 旧 TriTrap タグ形式: 内部で "TriTrap" chunks のまま figureRows に入れる。
+                // serialize 時に普通三角形行形式 (混在通し番号) に変換して書き出す。
+                hasFigure = true
+                figureRows.add(CsvRow(chunks))
                 continue
             }
             val number = if (chunks.size >= 4) chunks[0].toIntOrNull() else null
             if (number == null || number < 0) {
-                (if (rows.isEmpty()) preLines else postLines).add(line)
+                (if (!hasFigure) preLines else postLines).add(line)
                 continue
             }
+            hasFigure = true
             // 普通三角形行で parent が「現在までの三角形数」を超えていれば、混在通し番号で
             // 台形または台形子三角形 (TriTrap chain) を指していると解釈する。
-            //   excess = parent - rows.size
-            //   1 <= excess <= 台形数            → 台形親 (trapIdx = excess)
-            //   excess > 台形数                  → TriTrap 親 (ttIdx = excess - 台形数、tritrap chain)
-            // 内部表現は旧 TriTrap タグの chunks 構造 ("TriTrap", num, ea, B, C, target_idx, side) に
-            // 揃え、target_idx は 「1..台形数 = 台形群 idx、台形数+1..= tritrap 通し idx」の連続番号。
-            // build 側 (buildTrapParentedTriangles) が範囲判定で親 (Rectangle / Triangle) を取り分ける。
-            // user 2026-06-15「台形にくっついてる三角形からも派生したい」── tritrap chain を model 直結。
+            // 内部表現は旧 TriTrap タグの chunks 構造 ("TriTrap", num, ea, B, C, target_idx, side) に変換。
             val parentIdx = chunks.getOrNull(4)?.toIntOrNull() ?: -1
-            if (parentIdx > rows.size) {
-                val targetIdx = parentIdx - rows.size
+            if (parentIdx > triCount) {
+                val targetIdx = parentIdx - triCount
                 val converted = listOf(
                     "TriTrap",
                     chunks[0],
@@ -162,23 +148,44 @@ object CsvCodec {
                     targetIdx.toString(),
                     chunks.getOrNull(5) ?: "0",
                 )
-                val r = CsvRow(converted)
-                trapParentedTriRows.add(r)
-                figureRows.add(r)
+                figureRows.add(CsvRow(converted))
                 continue
             }
-            val r = CsvRow(chunks)
-            rows.add(r)
-            figureRows.add(r)
+            figureRows.add(CsvRow(chunks))
+            triCount++
         }
-        return CsvDoc(preLines, rows, listAngle, postLines, dedRows, textSize, listScale, trapRows, figureRows, trapParentedTriRows)
+        return CsvDoc(preLines, listAngle, postLines, dedRows, textSize, listScale, figureRows)
     }
 
     fun serialize(doc: CsvDoc): String {
         val sb = StringBuilder()
         doc.preLines.forEach { sb.append(it).append('\n') }
-        doc.rows.forEach { sb.append(it.chunks.joinToString(",")).append('\n') }
-        // アプリ writeCSV と同じく三角形行の後に書く。値の書式 ("ListAngle, x") も同一
+        // figureRows を CSV 出現順に書く。
+        // TriTrap 行は普通三角形行形式 (parent = 三角形数 + target_idx の混在通し番号) で書く。
+        // user 2026-06-14「TriTrap みたいな妙なデータ型は廃止しろ」── 旧タグは parse 互換読みのみ、書き出しはタグなし。
+        var ntri = 0
+        for (row in doc.figureRows) {
+            val c = row.chunks
+            when {
+                c.firstOrNull() == "Trapezoid" -> sb.append(c.joinToString(",")).append('\n')
+                c.firstOrNull() == "TriTrap" -> {
+                    // TriTrap タグを普通三角形行形式に変換して書く
+                    val num = c.getOrNull(1) ?: ""
+                    val ea = c.getOrNull(2) ?: ""
+                    val b = c.getOrNull(3) ?: ""
+                    val cc = c.getOrNull(4) ?: ""
+                    val targetIdx = c.getOrNull(5)?.toIntOrNull() ?: 0
+                    val side = c.getOrNull(6) ?: "0"
+                    val parent = ntri + targetIdx
+                    sb.append("$num,$ea,$b,$cc,$parent,$side").append('\n')
+                }
+                else -> {
+                    sb.append(c.joinToString(",")).append('\n')
+                    ntri++
+                }
+            }
+        }
+        // アプリ writeCSV と同じく図形行の後に書く。値の書式 ("ListAngle, x") も同一
         doc.listAngle?.let { sb.append("ListAngle, ").append(it).append('\n') }
         // B04a: ListScale を named field から書き出す (postLines には残らない)
         doc.listScale?.let { sb.append("ListScale, ").append(it).append('\n') }
@@ -187,32 +194,18 @@ object CsvCodec {
         doc.textSize?.let { sb.append("TextSize, ").append(it).append('\n') }
         // アプリ writeCSV:2789-2797 と同じく末尾 (ListScale/TextSize の後) に書く
         doc.dedRows.forEach { sb.append(it.chunks.joinToString(",")).append('\n') }
-        // 台形行は控除の後に書き戻す (schema evolution の定石、未知列も chunks 生のまま素通し)
-        doc.trapRows.forEach { sb.append(it.chunks.joinToString(",")).append('\n') }
-        // 台形を親に持つ三角形は普通三角形行形式で書く (parent = 三角形数 + 台形 idx の混在通し番号)。
-        // 旧 TriTrap タグは parse 側で互換読みするが、新規書き出しはタグを使わない。
-        // user 2026-06-14「TriTrap みたいな妙なデータ型は廃止しろ」── CSV schema からタグを廃止。
-        val ntri = doc.rows.size
-        doc.trapParentedTriRows.forEach { r ->
-            val c = r.chunks
-            val num = c.getOrNull(1) ?: ""
-            val ea = c.getOrNull(2) ?: ""
-            val b = c.getOrNull(3) ?: ""
-            val cc = c.getOrNull(4) ?: ""
-            val trapIdx = c.getOrNull(5)?.toIntOrNull() ?: 0
-            val side = c.getOrNull(6) ?: "0"
-            val parent = ntri + trapIdx
-            sb.append("$num,$ea,$b,$cc,$parent,$side").append('\n')
-        }
         return sb.toString()
     }
 
     /**
-     * CsvDoc → TriangleList。3 phases:
+     * CsvDoc → TriangleList。figureRows を走査して三角形のみを構築する。
+     * 台形 (Trapezoid) と台形子三角形 (TriTrap) は figureRows に保持されているが、
+     * build() は三角形パイプラインに集中し、台形/TriTrap は buildFigures() が扱う。
+     *
+     * 3 phases:
      *   1. 幾何構築 — 180° 基底で add (自動配置 setDimsUnconnectedSideToOuter を含む)
-     *   2. 手動配置・メタの復元 — 全行 add の後に当てる (CsvLoader の行ごと finalize と違い、
-     *      後続の子の add が先行行の保存値を潰せない)
-     *   3. リスト回転 — recoverState で絶対角度へ (アプリ load 経路と同一、ADR 0007)
+     *   2. 手動配置・メタの復元 — 全行 add の後に当てる
+     *   3. リスト回転 — recoverState で絶対角度へ (ADR 0007)
      */
     // B05: applyRecoverState default=true で後方互換。Android は false で呼び二重回転を回避。
     fun build(doc: CsvDoc, applyRecoverState: Boolean = true): TriangleList {
@@ -220,8 +213,12 @@ object CsvCodec {
         val built = mutableListOf<Pair<CsvRow, Triangle>>()
 
         // phase 1: 幾何構築 (CsvLoader.buildTriangle と同じ分岐)
-        for (row in doc.rows) {
+        // figureRows から三角形行 (Trapezoid/TriTrap 以外) のみ処理する
+        for (row in doc.figureRows) {
             val c = row.chunks
+            // 台形行・TriTrap 行はスキップ (buildFigures() が扱う)
+            val tag = c.firstOrNull()
+            if (tag == "Trapezoid" || tag == "TriTrap") continue
             val lengthA = c.getOrNull(1)?.toFloatOrNull() ?: continue
             val lengthB = c.getOrNull(2)?.toFloatOrNull() ?: continue
             val lengthC = c.getOrNull(3)?.toFloatOrNull() ?: continue
@@ -260,6 +257,66 @@ object CsvCodec {
     }
 
     /**
+     * figureRows から台形 (Trapezoid) と台形子三角形 (TriTrap) を構築する。
+     * B-FORCE: buildTrapezoids / buildTrapParentedTriangles / buildMixed を統合した後継。
+     * trilist は build(doc) で構築済みを渡す。台形の親 (三角形) が trilist に在る前提。
+     * scale は三角形と同じ実効倍率。
+     *
+     * 戻り値: Pair<traps, trapTris>
+     *   first  = 台形 (Rectangle) のリスト
+     *   second = 台形子三角形 (Triangle) のリスト
+     */
+    fun buildFigures(doc: CsvDoc, trilist: TriangleList, scale: Float = 1f): Pair<List<Rectangle>, List<Triangle>> {
+        val traps = mutableListOf<Rectangle>()
+        val trapTris = mutableListOf<Triangle>()
+        val s = if (scale > 0f) scale.toDouble() else 1.0
+        val sf = if (scale > 0f) scale else 1f
+
+        for (row in doc.figureRows) {
+            val c = row.chunks
+            when (c.firstOrNull()) {
+                "Trapezoid" -> {
+                    val length = c.getOrNull(2)?.toFloatOrNull() ?: continue
+                    val widthA = c.getOrNull(3)?.toFloatOrNull() ?: continue
+                    val widthB = c.getOrNull(4)?.toFloatOrNull() ?: continue
+                    val parent = c.getOrNull(5)?.toIntOrNull() ?: -1
+                    val side = c.getOrNull(6)?.toIntOrNull() ?: 0
+                    val align = c.getOrNull(7)?.toIntOrNull() ?: 0
+                    val parentKind = c.getOrNull(8)?.toIntOrNull() ?: 0
+                    val l = length * s; val wa = widthA * s; val wb = widthB * s
+                    fun indep() = Rectangle(l, wa, wb, angle = INDEP_TRAP_ANGLE, basepoint = PointXY(0f, 0f), alignment = align)
+                    when {
+                        parent < 1 -> traps.add(indep())
+                        parentKind == 1 -> {
+                            val pIdx = parent - 1
+                            if (pIdx < 0 || pIdx >= traps.size) traps.add(indep())
+                            else traps.add(Rectangle(l, wa, wb, nodeA = traps[pIdx], side = side, alignment = align))
+                        }
+                        parent > trilist.size() -> traps.add(indep())
+                        else -> traps.add(Rectangle(l, wa, wb, nodeA = trilist.getBy(parent), side = side, alignment = align))
+                    }
+                }
+                "TriTrap" -> {
+                    val b = c.getOrNull(3)?.toFloatOrNull() ?: continue
+                    val cc = c.getOrNull(4)?.toFloatOrNull() ?: continue
+                    val target = c.getOrNull(5)?.toIntOrNull() ?: continue
+                    val side = c.getOrNull(6)?.toIntOrNull() ?: continue
+                    val ntrap = traps.size
+                    val parent: EditObject? = when {
+                        target in 1..ntrap -> traps[target - 1]
+                        target > ntrap && (target - ntrap - 1) in trapTris.indices -> trapTris[target - ntrap - 1]
+                        else -> null
+                    }
+                    if (parent == null) continue
+                    trapTris.add(Triangle(parent, side, b * sf, cc * sf))
+                }
+                // 三角形行はスキップ (build() が処理済み)
+            }
+        }
+        return Pair(traps, trapTris)
+    }
+
+    /**
      * dedRows → DeductionList。アプリの CsvLoader.buildDeductions (CsvLoader.kt:369-392、
      * viewscale=1) と同値: 列 8-11 (point/pointFlag) は `PointXY(x, -y)` で Y 反転して
      * ビュー空間 (y 下向き) に戻し、列 12 が空でなければ shapeAngle。type (列 6) は
@@ -273,130 +330,8 @@ object CsvCodec {
     // B02: 既存 1 引数版は 2 引数版 (viewscale=1f) へのラッパー。後方互換維持。
     fun buildDeductions(doc: CsvDoc): DeductionList = buildDeductions(doc, viewscale = 1f)
 
-    /**
-     * trapRows → Rectangle リスト (混在リスト段1)。buildDeductions と同じ「TriangleList に
-     * 混ぜない独立メソッド」形 — 三角形パイプライン (build/golden) を一切触らないため。
-     *
-     * 列 (trap-design.md contract): `Trapezoid, num, length, widthA, widthB, parent, side, align, parentKind`
-     *   length=延長(辺B), widthA=底辺(辺A), widthB=上辺(辺C), parent=接続先番号(-1=独立),
-     *   side=親の接続辺 (親=三角形:1=B/2=C, 親=台形:1=B左脚/2=C上辺/3=D右脚, 独立=0),
-     *   align=上辺寄せ (0左/1中/2右, 省略時0で後方互換),
-     *   parentKind=親の種別 (0=三角形(既定)/1=台形, 省略時0で後方互換 = R2 の 8 列 CSV は親=三角形のまま不変)。
-     *
-     * 独立 (parent<1): basepoint=原点・angle=INDEP_TRAP_ANGLE で構築 (本体を三角形と同じ下向き)。
-     * 接続・親=三角形 (parentKind=0, parent>=1): nodeA=親三角形。Rectangle.calcPoint() の initByParent が
-     *   parent.getLine(side) を呼ぶ (EditObject.kt:42)。Triangle.getLine の side 規約
-     *   (TriangleUtilitiesExtensions.kt:145) は 1=B辺・2=C辺 で CSV と同値なので side を直に渡す。
-     * 接続・親=台形 (parentKind=1): 親は台形番号 (台形群内の構築順 1 始まり)。構築順が「親は子より先」
-     *   不変条件を満たす (親 < 現在の台形番号) ので、親は既に result に在る → result[parent-1] を nodeA に渡す。
-     *   トポロジカルソート不要。initByParent が Rectangle 親で getLine(side) を side 分岐 (R3、EditObject.kt:37-41)。
-     *   チェーン (台形→台形→…) は calcPoint が getLine 経由で再帰的に親を解決するので描画側の変更は不要。
-     *   接続時 baseline は親辺で上書きされ widthA は幾何に効かない (= 底辺は親辺長になる)。
-     *
-     * scale は三角形と同じ実効倍率。trilist が setScale 済なら親辺は scale 済座標で返るので、
-     * 台形の length/widthB も同 scale で構築して座標系を揃える (寸法値は描画側で実辺長/scale で復元)。
-     */
-    fun buildTrapezoids(doc: CsvDoc, trilist: TriangleList, scale: Float = 1f): List<Rectangle> {
-        val result = mutableListOf<Rectangle>()
-        val s = if (scale > 0f) scale.toDouble() else 1.0
-        for (row in doc.trapRows) {
-            val c = row.chunks
-            val length = c.getOrNull(2)?.toFloatOrNull() ?: continue
-            val widthA = c.getOrNull(3)?.toFloatOrNull() ?: continue
-            val widthB = c.getOrNull(4)?.toFloatOrNull() ?: continue
-            val parent = c.getOrNull(5)?.toIntOrNull() ?: -1
-            val side = c.getOrNull(6)?.toIntOrNull() ?: 0
-            // 8 列目 align (0左/1中/2右)。省略時 0 で後方互換 (R1 の 7 列 CSV は左寄せのまま)
-            val align = c.getOrNull(7)?.toIntOrNull() ?: 0
-            // 9 列目 parentKind (0=三角形 / 1=台形)。省略時 0 で後方互換 (R2 の 8 列 CSV は親=三角形のまま)
-            val parentKind = c.getOrNull(8)?.toIntOrNull() ?: 0
-            val l = length * s
-            val wa = widthA * s
-            val wb = widthB * s
-            // 独立台形 (basepoint=原点・angle=INDEP_TRAP_ANGLE)。fallback でも使う
-            fun indep() = Rectangle(l, wa, wb, angle = INDEP_TRAP_ANGLE, basepoint = PointXY(0f, 0f), alignment = align)
-            when {
-                parent < 1 -> result.add(indep())
-                parentKind == 1 -> {
-                    // 親は台形 (構築順 1 始まり)。親 < 現在の台形番号なので既に result に在る。
-                    val pIdx = parent - 1
-                    if (pIdx < 0 || pIdx >= result.size) result.add(indep())  // 前方参照/範囲外 → 独立 fallback
-                    else result.add(Rectangle(l, wa, wb, nodeA = result[pIdx], side = side, alignment = align))
-                }
-                parent > trilist.size() -> result.add(indep())  // 三角形親が範囲外 → 独立 fallback (従来挙動)
-                else -> result.add(Rectangle(l, wa, wb, nodeA = trilist.getBy(parent), side = side, alignment = align))
-            }
-        }
-        return result
-    }
-
-    /**
-     * "TriTrap" 行 → 台形を親に持つ三角形のリスト。buildTrapezoids でビルド済みの traps を親に取り、
-     * Triangle(parent: EditObject, side, B, C) (= initByParent → getLine、Triangle.kt:258) で台形の辺に
-     * 底辺(A)を乗せて構築する。これで「台形に三角形を接続」が成立する。三角形ビルド (build) が台形より
-     * 先に走り親を参照できない循環を、台形ビルド後のこのパスに後回しして解く。
-     * 三角形のみ / 既存混在 CSV は trapParentedTriRows が空 = 何も足さない (golden 不変)。
-     *
-     * 列: TriTrap, num, ea(情報・台形辺長で上書き), eb(=B), ec(=C), parent(台形群 index 1始まり),
-     *     side(1=左脚B / 2=上辺C / 3=右脚D)。num は描画側で trilist 末尾に通し番号を振るので情報のみ。
-     * scale は buildTrapezoids と同じ実効倍率 (台形が scale 済座標なので B/C も同 scale に揃える)。
-     */
-    fun buildTrapParentedTriangles(doc: CsvDoc, traps: List<Rectangle>, scale: Float = 1f): List<Triangle> {
-        val result = mutableListOf<Triangle>()
-        val s = if (scale > 0f) scale else 1f
-        val ntrap = traps.size
-        for (row in doc.trapParentedTriRows) {
-            val c = row.chunks
-            val b = c.getOrNull(3)?.toFloatOrNull() ?: continue
-            val cc = c.getOrNull(4)?.toFloatOrNull() ?: continue
-            val target = c.getOrNull(5)?.toIntOrNull() ?: continue
-            val side = c.getOrNull(6)?.toIntOrNull() ?: continue
-            // target_idx 解釈:
-            //   1..ntrap          → 台形親 (Rectangle)
-            //   ntrap+1.. (chain) → TriTrap 親 (= 既に build 済の result[ttIdx])
-            // tritrap chain は親が先に在る不変条件 (CSV 出現順 = bake 順) なので、
-            // result 末尾までで解決可。前方参照は無視 (continue)。
-            val parent: EditObject? = when {
-                target in 1..ntrap -> traps[target - 1]
-                target > ntrap && (target - ntrap - 1) in result.indices -> result[target - ntrap - 1]
-                else -> null
-            }
-            if (parent == null) continue
-            result.add(Triangle(parent, side, b * s, cc * s))
-        }
-        return result
-    }
-
-    /**
-     * 混在モデル (三角形 + 台形 + 台形子三角形) を 1 つにまとめた build 結果。
-     * 三角形と台形を順不同に持つツリー構造の SoT。書き出し (DXF/SFC/XLSX) は
-     * これを 1 引数で受け取れば 3 リスト同期 (numberTrapTris 等) を呼ばずに済む。
-     */
-    data class MixedBuild(
-        val trilist: TriangleList,
-        val traps: List<Rectangle>,
-        val trapTris: List<Triangle>,
-    )
-
-    /**
-     * build / buildTrapezoids / buildTrapParentedTriangles を 1 呼び出しに統合した混在 build。
-     * 内部実装は既存 3 メソッドへの薄いコーディネータ (= 結果は完全同値)。新規呼び出し元は
-     * これを使うことで、図形種別を意識せず混在モデルを 1 リクエストで取れる。
-     *
-     * trilist は呼び出し側で組んでから渡せる (overrides 適用後 / setChildsToAllParents 後 /
-     * テスト用の作為 trilist 等)。省略時は build(doc) で内部生成。台形は trilist を親に取るので、
-     * 「呼び出し側が手を入れた trilist」を反映させたい場合は必ず明示で渡すこと。
-     *
-     * user 2026-06-14「ツリー構造の中で三角形と台形を順不同に生成できるように基底に寄せたら
-     * 解決できそうなもんだが」── EditObject / Triangle(parent: EditObject) の継ぎ目は既に
-     * あって、各 build パスが種別ごとに分かれているだけ。それを 1 つにまとめる第一歩。
-     */
-    // B05: trilist デフォルトは applyRecoverState=true を維持 (Web 側と既存呼び出し元に影響なし)
-    fun buildMixed(doc: CsvDoc, scale: Float = 1f, trilist: TriangleList = build(doc, applyRecoverState = true)): MixedBuild {
-        val traps = buildTrapezoids(doc, trilist, scale)
-        val trapTris = buildTrapParentedTriangles(doc, traps, scale)
-        return MixedBuild(trilist, traps, trapTris)
-    }
+    // B-FORCE (2026-06-15): buildTrapezoids / buildTrapParentedTriangles / buildMixed / MixedBuild を廃止。
+    // 後継は buildFigures(doc, trilist, scale) — figureRows を 1 ループで全図形種別を処理する。
 
     // -------------------------------------------------------------------------
     // B01: extractHeader / bakeHeader
@@ -567,7 +502,8 @@ object CsvCodec {
      * preLines/postLines は元文書から引き継ぐ (ヘッダ・Deduction 等の素通し)
      */
     fun bake(trilist: TriangleList, original: CsvDoc): CsvDoc {
-        val rows = (1..trilist.size()).map { i ->
+        // 三角形行を完全形式 28 列で再構築する。
+        val triRows = (1..trilist.size()).map { i ->
             val mt = trilist.getBy(i)
             val pn = mt.pointnumber
             val cp = ConnCode.toConnParam(mt.connectionSide, mt.lengthNotSized[0], mt.cParam_.lcr)
@@ -587,22 +523,29 @@ object CsvCodec {
                 )
             )
         }
-        // dedRows は素通し (控除は TriangleList の外。web の編集は行の置換/追加で dedRows 自体を更新する)。
-        // textSize / trapRows / figureRows / trapParentedTriRows も素通し — 台形 (混在リスト) は
-        // TriangleList の外側 (CsvDoc.trapRows / trapParentedTriRows) で持つので、bake が三角形のみ
-        // 再構築して台形を捨てると保存 CSV から台形が消える (user 報告 2026-06-14「混在で保存→台形消失」)。
-        // B04a: listScale を trilist.scale から取得して named field に書き込む
+        // figureRows を再構築: 三角形行は triRows で置き換え、台形/TriTrap 行は素通し。
+        // これで「bake が三角形のみ再構築して台形を捨てる」問題 (user 報告 2026-06-14) を解消。
+        var triIdx = 0
+        val newFigureRows = original.figureRows.map { row ->
+            val tag = row.chunks.firstOrNull()
+            if (tag == "Trapezoid" || tag == "TriTrap") {
+                row  // 台形/TriTrap は元の行をそのまま保持
+            } else {
+                triRows.getOrElse(triIdx) { row }.also { triIdx++ }
+            }
+        }
+        // dedRows は素通し。B04a: listScale を trilist.scale から取得して named field に書き込む。
         return CsvDoc(
-            original.preLines, rows, trilist.angle, original.postLines, original.dedRows, original.textSize,
+            original.preLines, trilist.angle, original.postLines, original.dedRows, original.textSize,
             trilist.scale,  // listScale
-            original.trapRows, original.figureRows, original.trapParentedTriRows,
+            newFigureRows,
         )
     }
 
     /**
      * Android 用 combined bake (B08): trilist + dedlist + header + original を
-     * 1 呼び出しで CsvDoc に焼き直す。未知行 (trapRows / trapParentedTriRows /
-     * preLines の補助行 / postLines / figureRows / textSize) は original から素通し。
+     * 1 呼び出しで CsvDoc に焼き直す。未知行 (figureRows の台形/TriTrap 部分 /
+     * preLines の補助行 / postLines / textSize) は original から素通し。
      *
      * 内部は bakeHeader → bakeDeductions → bake(trilist, doc) の順で呼ぶ。
      * 順序固定でアトミック、呼び出し側 (MainActivity) は中間 doc を意識しない。

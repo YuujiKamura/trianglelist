@@ -215,11 +215,9 @@ class MainActivity : AppCompatActivity(),
     // B07/B09: CsvDoc が唯一のファイル状態 SoT。parseCSV 時に更新、writeCSV 時に bake して更新。
     private var currentDoc: CsvCodec.CsvDoc = CsvCodec.CsvDoc(
         preLines = emptyList(),
-        rows = emptyList(),
         listAngle = 0f,
         postLines = emptyList(),
     )
-    private var mixedModel: CsvCodec.MixedBuild? = null
     private var drawingStartNumber = 1
     private var isNumberReverse = false
 
@@ -1095,7 +1093,7 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    private fun editorResetBy(elist: EditList){
+    private fun editorResetBy(elist: EditList<*>){
         val currentNum = elist.retrieveCurrent()
         val eo = elist.get(currentNum)
         val eob = elist.get(currentNum - 1)
@@ -1167,7 +1165,7 @@ class MainActivity : AppCompatActivity(),
         Log.d("EditorTable", "Load Success.")
     }
 
-    private fun getList(dMode: Boolean) : EditList {
+    private fun getList(dMode: Boolean) : EditList<*> {
         return if(dMode) myDeductionList
         else trianglelist
     }
@@ -2856,17 +2854,15 @@ class MainActivity : AppCompatActivity(),
         val doc = CsvCodec.parse(text)
         // applyRecoverState=false: setEditLists 内で recoverState を呼ぶため二重にしない
         val trilist = CsvCodec.build(doc, applyRecoverState = false)
-        val mixed = CsvCodec.buildMixed(doc, viewscale, trilist)
         val dedlist = CsvCodec.buildDeductions(doc, viewscale)
 
         this.currentDoc = doc
-        this.mixedModel = mixed
 
         val headerValues = CsvCodec.extractHeader(doc)
         parseHeaderValues(headerValues)
         CsvCodec.applyListParams(doc, trilist) { setAllTextSize(it) }
 
-        Log.d("CSVParser", "parseCSV: rows=${doc.rows.size}")
+        Log.d("CSVParser", "parseCSV: figureRows=${doc.figureRows.size}")
 
         setEditLists(trilist, dedlist)
         isCSVsavedToPrivate = false

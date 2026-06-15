@@ -129,13 +129,12 @@ open class DrawingFileWriter {
         drawScene(buildTrianglePrims(tri))
     }
 
-    // 台形を持つ場合の図形リスト (web 出力経路が CsvCodec.buildTrapezoids で組んで渡す)。
+    // 台形を持つ場合の図形リスト (web 出力経路が CsvCodec.buildFigures で組んで渡す)。
     // app 経路は三角形のみで既定 empty = DXF/SFC golden 不変。
     open var traps_: List<Rectangle> = emptyList()
 
-    // 台形を親に持つ三角形のリスト (TriTrap 行、web 出力経路が CsvCodec.buildTrapParentedTriangles
-    // で組んで渡す)。空なら DXF/SFC golden 不変。user 指示 2026-06-14「複合図形でも csv や図面形式の
-    // セーブとロードが出来ること」で writer 側にも引き渡す経路を入れる。
+    // 台形を親に持つ三角形のリスト (TriTrap 行、web 出力経路が CsvCodec.buildFigures で組んで渡す)。
+    // 空なら DXF/SFC golden 不変。
     open var trapTris_: List<Triangle> = emptyList()
 
     open fun writeTrapezoid(rect: Rectangle, number: Int) {
@@ -661,7 +660,7 @@ open class DrawingFileWriter {
     }
 
     fun writeCalcSheetEditList(
-        editList: EditList,
+        editList: EditList<*>,
         titleParamStr: TitleParamStr,
         baseX: Float,
         baseY: Float,
