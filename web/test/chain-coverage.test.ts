@@ -15,6 +15,7 @@ import {
   genTriangleChainSharedDeep,
   genTriangleChainFocus10,
   genTriangleChainFocus100,
+  genTrapezoidTritrapChain,
   type ChainCase,
 } from './combo/genChain.ts';
 import { groupByTri, analyzeTri } from './combo/primAnalyzer.ts';
@@ -28,12 +29,31 @@ beforeAll(async () => {
   }
 }, 10_000);
 
+/** depth に応じた load+state 総時間の上限。 user 確定 2026-06-15「重いようであれば実用に耐えない」
+ *  実測 (Windows + dev サーバ + headless chromium 経由): 10 段 ~30ms, 100 段 ~100ms, 200 段 ~150ms。
+ *  warmup 初回が 218ms ありうるので safety margin 倍率を取って閾値化。 これを超えたら描画処理が
+ *  最適化されていないか recover state / SoT が深さに対して非線形に重い疑い。 */
+function maxLatencyMs(depth: number): number {
+  if (depth <= 15) return 500;       // 10 段 chain は 500ms 余裕 (warmup / GC スパイク許容)
+  if (depth <= 110) return 1500;     // 100 段 chain は 1.5s
+  return 3000;                       // 200 段 chain は 3s (実測の 10-20 倍 margin)
+}
+
 async function runChain(c: ChainCase): Promise<void> {
+  const t0 = performance.now();
   const loaded = await loadCsv(c.csv);
   expect(loaded.ok, `load ${c.label}`).toBe(true);
   expect(loaded.rows, `rows count ${c.label}`).toBe(c.expectedRows);
 
   const s = await state();
+  const t1 = performance.now();
+  const elapsed = t1 - t0;
+  const cap = maxLatencyMs(c.expectedRows);
+  expect(
+    elapsed,
+    `負荷 ${c.label} depth=${c.expectedRows} elapsed=${elapsed.toFixed(0)}ms cap=${cap}ms (実用閾値超過なら描画処理の最適化が崩れた疑い)`,
+  ).toBeLessThan(cap);
+
   expect(s.rows.length, `state rows ${c.label}`).toBe(c.expectedRows);
 
   const byTri = groupByTri(s.prims ?? []);
@@ -78,5 +98,17 @@ describe('chain100-focus: 実運用 100 段 × 14 種', () => {
     it(c.label, async () => {
       await runChain(c);
     }, 30_000);
+  }
+});
+
+describe('chain-tritrap: 親台形 BCD × 子三角形 (TriTrap) chain', () => {
+  const cases = [...genTrapezoidTritrapChain()];
+  it('chain 数 = 3 (side B/C/D)', () => {
+    expect(cases.length).toBe(3);
+  });
+  for (const c of cases) {
+    it(c.label, async () => {
+      await runChain(c);
+    });
   }
 });
