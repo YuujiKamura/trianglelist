@@ -598,4 +598,26 @@ object CsvCodec {
             original.trapRows, original.figureRows, original.trapParentedTriRows,
         )
     }
+
+    /**
+     * Android 用 combined bake (B08): trilist + dedlist + header + original を
+     * 1 呼び出しで CsvDoc に焼き直す。未知行 (trapRows / trapParentedTriRows /
+     * preLines の補助行 / postLines / figureRows / textSize) は original から素通し。
+     *
+     * 内部は bakeHeader → bakeDeductions → bake(trilist, doc) の順で呼ぶ。
+     * 順序固定でアトミック、呼び出し側 (MainActivity) は中間 doc を意識しない。
+     *
+     * Web 側は 1 段ずつ bake する経路を維持するため、既存の個別 fun は変更しない。
+     */
+    fun bake(
+        trilist: TriangleList,
+        dedlist: DeductionList,
+        header: HeaderValues,
+        original: CsvDoc,
+        viewscale: Float,
+    ): CsvDoc {
+        val withHeader = bakeHeader(header, original)
+        val withDed = bakeDeductions(dedlist, withHeader, viewscale)
+        return bake(trilist, withDed)
+    }
 }
