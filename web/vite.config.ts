@@ -42,9 +42,32 @@ function tlcpPlugin(): Plugin {
       server.ws.send(`tlcp:${channel}-req`, { id, ...payload });
     });
 
+  // dev 起動時に裏で headless chromium を常駐させて localhost を開かせる。
+  // これで「ユーザーが chrome を前に出していなくても」 CP 越しに /__tlcp/page も capture も
+  // バッファを取れる ── ws の応答役は人間が開く chrome ではなく裏の headless chromium。
+  let bgClose: (() => Promise<void>) | null = null;
+
   return {
     name: 'tlcp',
+    async closeBundle() {
+      if (bgClose) { await bgClose(); bgClose = null; }
+    },
     configureServer(server) {
+      server.httpServer?.once('listening', async () => {
+        try {
+          const addr = server.httpServer?.address();
+          const port = typeof addr === 'object' && addr ? addr.port : 5173;
+          const { chromium } = await import('playwright');
+          const browser = await chromium.launch({ headless: true });
+          const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+          const page = await context.newPage();
+          await page.goto(`http://localhost:${port}/`);
+          bgClose = async () => { await browser.close(); };
+          console.log('[tlcp] headless chromium attached');
+        } catch (e) {
+          console.warn('[tlcp] headless chromium not available:', (e as Error).message);
+        }
+      });
       for (const channel of ['capture', 'state', 'tap', 'edit', 'key', 'click', 'load', 'page'] as const) {
         server.ws.on(`tlcp:${channel}-res`, (data: { id: string }) => {
           const p = pending.get(data.id);
