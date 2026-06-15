@@ -459,9 +459,18 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
   if (shadowPrims && shadowPrims.length === 4) {
     ctx.fillStyle = COLORS.shadowFill;
     ctx.beginPath();
-    // 並び: 0=底辺(bl→br) 1=右脚(br→tr) 2=上辺(tr→tl) 3=左脚/延長(tl→bl)。端点を順に結べば台形外形。
-    ctx.moveTo(sx(shadowPrims[0].x1), sy(shadowPrims[0].y1));
-    for (const ln of shadowPrims) ctx.lineTo(sx(ln.x2), sy(ln.y2));
+    // 段3 swap (commit 659b509) 以降、 4 辺 line の出力順は「side 0=底/1=右脚/2=上/3=左脚」の
+    // 並列で出るため「前の終点 = 次の始点」 が成立しない (旧 renderTrapezoid は連続 chain で出して
+    // いた)。 そのまま順に lineTo すると A→B→C→D の対角線が走り砂時計 X クロスに見えるため、
+    // 端点グラフで chain 連結して外形パスを作り直す。
+    const path = chainPath(shadowPrims);
+    if (path.length >= 4) {
+      ctx.moveTo(sx(path[0].x), sy(path[0].y));
+      for (let i = 1; i < path.length; i++) ctx.lineTo(sx(path[i].x), sy(path[i].y));
+    } else {
+      ctx.moveTo(sx(shadowPrims[0].x1), sy(shadowPrims[0].y1));
+      for (const ln of shadowPrims) ctx.lineTo(sx(ln.x2), sy(ln.y2));
+    }
     ctx.closePath();
     ctx.fill();
     ctx.fillStyle = COLORS.accentOrange;
@@ -3012,6 +3021,60 @@ function addTriOnTrap(canvas: HTMLCanvasElement, newB: string, newC: string): vo
   setStatus(`台形 ${pend.trap} の ${trapSideName(pend.side)}辺に三角形を追加`);
 }
 
+// 仮挿入した行の line prim を「prim 並び順」 ではなく **tri 番号** で同定する。
+// 段3 swap (commit 659b509、 WebPrimitiveRenderer.kt:92 新 render(list)) で混在 EditList を
+// 1 ループで吐くようになり、 trilist→traps→trapTris の 3 群分離は消えた。
+// 仮挿入は CSV 末尾 → composeAll が forEachItemIndexed (:131) で振る tri 番号は最大値。
+// 段3 前の slice(-4) / [tc*3 + offset] は壊れたので、 これに置換する。
+function pickShadowLines(lines: LinePrim[]): LinePrim[] {
+  let maxTri = 0;
+  for (const l of lines) if ((l.tri ?? 0) > maxTri) maxTri = l.tri ?? 0;
+  return maxTri > 0 ? lines.filter((l) => l.tri === maxTri) : [];
+}
+
+// line 集合を端点グラフから 1 本の閉路パスに連結する。 段3 swap で台形 4 辺の出力順が
+// 「side 0=底/1=右脚/2=上/3=左脚」 の並列 (前の終点 = 次の始点 にならない) になったため、
+// 順次 lineTo で外形を描くと対角線が走って砂時計 X クロスになるのを防ぐ。
+function chainPath(lines: LinePrim[]): { x: number; y: number }[] {
+  if (lines.length === 0) return [];
+  const EPS = 1e-3;
+  const eq = (a: number, b: number) => Math.abs(a - b) < EPS;
+  const used = new Array(lines.length).fill(false);
+  used[0] = true;
+  const path: { x: number; y: number }[] = [
+    { x: lines[0].x1, y: lines[0].y1 },
+    { x: lines[0].x2, y: lines[0].y2 },
+  ];
+  while (path.length <= lines.length) {
+    const last = path[path.length - 1];
+    let advanced = false;
+    for (let i = 0; i < lines.length; i++) {
+      if (used[i]) continue;
+      const ln = lines[i];
+      if (eq(ln.x1, last.x) && eq(ln.y1, last.y)) {
+        used[i] = true;
+        path.push({ x: ln.x2, y: ln.y2 });
+        advanced = true;
+        break;
+      }
+      if (eq(ln.x2, last.x) && eq(ln.y2, last.y)) {
+        used[i] = true;
+        path.push({ x: ln.x1, y: ln.y1 });
+        advanced = true;
+        break;
+      }
+    }
+    if (!advanced) break;
+  }
+  // 閉路: 末尾が始点と一致したら末尾点を除いて純粋な頂点列にする
+  if (path.length > 1) {
+    const head = path[0];
+    const tail = path[path.length - 1];
+    if (eq(head.x, tail.x) && eq(head.y, tail.y)) path.pop();
+  }
+  return path;
+}
+
 // シャドー (接続プレビュー) を組む。figureKind で「次に足す図形」が三角形か台形かを分ける (段5 R6)。
 // 仮の行を足した CSV を common に描かせ、その図形の辺を借りる — TS で幾何を再計算せず、
 // 接続の向き・形が実際の追加結果と必ず一致する。
@@ -3045,7 +3108,8 @@ function buildShadow(): void {
       try {
         const prims = JSON.parse(renderCsvToPrimitivesWithOverrides(candidate, 1.0, overridesJson())) as Prim[];
         const triLines = prims.filter((q): q is LinePrim => q.type === 'line' && q.layer === 'tri');
-        if (triLines.length >= 4) shadowPrims = triLines.slice(-4);
+        const own = pickShadowLines(triLines);
+        if (own.length === 4) shadowPrims = own;
       } catch {
         shadowPrims = null;
       }
@@ -3059,7 +3123,8 @@ function buildShadow(): void {
     try {
       const prims = JSON.parse(renderCsvToPrimitivesWithOverrides(candidate, 1.0, overridesJson())) as Prim[];
       const triLines = prims.filter((q): q is LinePrim => q.type === 'line' && q.layer === 'tri');
-      if (triLines.length >= 3) shadowPrims = triLines.slice(-3);
+      const own = pickShadowLines(triLines);
+      if (own.length === 3) shadowPrims = own;
     } catch {
       shadowPrims = null;
     }
@@ -3099,15 +3164,12 @@ function buildShadow(): void {
     const json = renderCsvToPrimitivesWithOverrides(candidate, 1.0, overridesJson());
     const prims = JSON.parse(json) as Prim[];
     const triLines = prims.filter((q): q is LinePrim => q.type === 'line' && q.layer === 'tri');
+    const own = pickShadowLines(triLines);
+    // 並び (台形): renderTrapezoid 順 0=底辺(bl→br) 1=右脚(br→tr) 2=上辺(tr→tl) 3=左脚/延長(tl→bl)。
     if (take === 'trap') {
-      // 台形は三角形・控除の後に描かれる (WebPrimitiveRenderer) ので、仮台形の 4 辺は tri 線の末尾 4 本。
-      // 並びは renderTrapezoid 順: 0=底辺(bl→br) 1=右脚(br→tr) 2=上辺(tr→tl) 3=左脚/延長(tl→bl)。
-      if (triLines.length >= 4) shadowPrims = triLines.slice(-4);
+      if (own.length === 4) shadowPrims = own;
     } else {
-      const base = tc * 3; // 仮三角形 (triCount+1 番) の線は三角形群の最後の 3 本
-      if (base + 2 < triLines.length) {
-        shadowPrims = [triLines[base], triLines[base + 1], triLines[base + 2]];
-      }
+      if (own.length === 3) shadowPrims = own;
     }
   } catch {
     shadowPrims = null;
