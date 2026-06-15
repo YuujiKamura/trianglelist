@@ -2965,6 +2965,16 @@ function selectTrapezoid(canvas: HTMLCanvasElement, trap: number, side: number):
 // edgeSel (三角形親) は使わない。底辺(side 0)はここに来ない (handleTap で side>=1 のみ)。
 function presetTriOnTrap(canvas: HTMLCanvasElement, trap: number, side: number): void {
   const gnum = triCount() + trap; // 親台形の global 番号 (highlight 用)
+  // 既接続ガード (三角形版 selectEdge:3250-3262 と対称、brief: b-edge-tap-ux-symmetry)。
+  // 既に子が乗っている辺は追加遷移を起こさず選択のみ ── pendingTrapParent / shadow を立てると
+  // ユーザーが「追加可能」と誤解する。
+  const child = edgeOccupiedTrap(trap, side);
+  if (child > 0) {
+    selectTrapezoid(canvas, trap, side);
+    const childKind = rows[child - 1]?.kind === 'trapezoid' ? '台形' : '三角形';
+    setStatus(`台形 ${trap} の ${trapSideName(side)}辺 — ${childKind} ${child} が接続済み (追加不可、選択のみ)`);
+    return;
+  }
   selected = gnum;
   current = gnum;
   // 三角形辺タップ (selectEdge) と同じプリセット動線:
@@ -3240,6 +3250,18 @@ function edgeOccupiedBy(tri: number, side: 1 | 2): number {
   // 三角形の子だけを占有とみなす (台形と三角形の辺共有は段4)。prefix 不変条件で
   // 三角形 index+1 == 三角形番号なので返り値は三角形番号として正しい
   return rows.findIndex((r) => r.kind === 'triangle' && intOrNull(r.parent) === tri && intOrNull(r.conn) === side) + 1;
+}
+
+// 台形版の占有判定 (parent=trap, conn=side の trapezoid 子 or tritrap 子があるか)。
+// edgeOccupiedBy (三角形版、:3239) の対称化 — presetTriOnTrap で「既接続辺は追加遷移を起こさず
+// 選択のみ」 を三角形と同じ UX で出すために必要 (brief: b-edge-tap-ux-symmetry)。
+// 返り値は rows index+1 (= 1 始まりの行番号)、 0 なら未接続。
+function edgeOccupiedTrap(trap: number, side: number): number {
+  return rows.findIndex((r) =>
+    (r.kind === 'trapezoid' || r.kind === 'tritrap')
+    && intOrNull(r.parent) === trap
+    && intOrNull(r.conn) === side
+  ) + 1;
 }
 
 // 辺タップ (アプリ targetInTriMode → autoConnection(lastTapSide) 相当):
