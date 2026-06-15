@@ -86,4 +86,47 @@ data class Rectangle(
         val lp = calcPoint()
         return listOf(lp.a.left, lp.a.right, lp.b.right, lp.b.left)
     }
+
+    /**
+     * 自身の 4 頂点で bounds を拡張 (union) して返す。
+     * Triangle.expandBoundaries (TriangleExtensions.kt:152-160) と同じ Y 規約:
+     *   left=minX, right=maxX, top=maxY, bottom=minY
+     * union: left=min, top=max, right=max, bottom=min
+     */
+    fun expandBoundaries(listBound: com.jpaver.trianglelist.Bounds): com.jpaver.trianglelist.Bounds {
+        val verts = vertices()
+        if (verts.isEmpty()) return listBound
+
+        var myLeft   = verts[0].x.toDouble()
+        var myTop    = verts[0].y.toDouble()
+        var myRight  = verts[0].x.toDouble()
+        var myBottom = verts[0].y.toDouble()
+        for (v in verts) {
+            val vx = v.x.toDouble()
+            val vy = v.y.toDouble()
+            if (vx < myLeft)   myLeft   = vx
+            if (vx > myRight)  myRight  = vx
+            if (vy < myBottom) myBottom = vy
+            if (vy > myTop)    myTop    = vy
+        }
+
+        return com.jpaver.trianglelist.Bounds(
+            left   = minOf(myLeft,   listBound.left),
+            top    = maxOf(myTop,    listBound.top),
+            right  = maxOf(myRight,  listBound.right),
+            bottom = minOf(myBottom, listBound.bottom),
+        )
+    }
+
+    /**
+     * center 周りに degrees 回転する (独立台形用)。
+     * nodeA != null (親接続あり) の場合は no-op。
+     * 親接続ありの Rectangle は calcPoint() 内の initByParent が basepoint/angle を
+     * 親から再構築するため、ここで書き換えても次の calcPoint() で上書きされる。
+     */
+    fun rotateBy(center: com.example.trilib.PointXY, degrees: Float) {
+        if (nodeA != null) return
+        basepoint = basepoint.rotate(center, degrees.toDouble())
+        angle += degrees
+    }
 }
