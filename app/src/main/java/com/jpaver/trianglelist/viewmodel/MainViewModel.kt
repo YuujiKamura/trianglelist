@@ -33,7 +33,7 @@ class MainViewModel : ViewModel() {
         _myDeductionList.value = dedList
     }
 
-    private fun getList(dMode: Boolean): EditList? {
+    private fun getList(dMode: Boolean): EditList<*>? {
         return if (dMode) _myDeductionList.value else _myTriangleList.value
     }
 
@@ -68,7 +68,7 @@ class MainViewModel : ViewModel() {
         return Pair(tri, dimside)
     }
 
-    fun fabReverse(): EditList? {
+    fun fabReverse(): EditList<*>? {
         _deductionMode.value?.let { dMode ->
             if (!dMode) {
                 _myTriangleList.value = _myTriangleList.value?.reverse()
