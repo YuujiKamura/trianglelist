@@ -7,6 +7,7 @@ import {
   TRI_CONN_SIDES,
   CONN_TYPES,
   CONN_LCRS,
+  CHILD_A_RATIOS,
   TRAP_SAMPLES,
   TRAP_ALIGNS,
   TRAP_CONN_SIDES,
@@ -42,33 +43,35 @@ export function* genTriangleTriangle(): Generator<ComboCase> {
       const [pa, pb, pc] = TRIANGLE_SIDE_SAMPLES[pi];
       const [, cb, cc] = TRIANGLE_SIDE_SAMPLES[ci];
       for (const side of TRI_CONN_SIDES) {
-        // 接続辺 (side=1=B / side=2=C) に応じて子の A 辺長を親辺長に揃える (CSV の慣行)
-        const ca = side === 1 ? pb : pc;
-        // 退化三角形 (a+b<=c の等号成立を含む) は実装側の isValidLengthes で
-        // 描画されないので fixture から除外する (user 確定 2026-06-15)
-        if (!isValidTriangle(ca, cb, cc)) continue;
+        const parentEdgeLen = side === 1 ? pb : pc;
         for (const cType of CONN_TYPES) {
           for (const cLcr of CONN_LCRS) {
-            // 完全形式 CSV (CsvCodec.kt 列順): 列17=cp.side, 列18=cp.type, 列19=cp.lcr。
-          // CsvCodec.build は 3 つすべて non-null のときだけ完全形式を使い、欠落時は
-          // 列5 の接続コードに fallback する (= type=0 同等)。spec で type/lcr を効かせるには
-          // cp.side を空で済ませず明示する必要がある (gen.ts 列数バグの修正 2026-06-15)
-            const parentLine = `1,${fmt(pa)},${fmt(pb)},${fmt(pc)},-1,-1`;
-            // カンマ数: 列5=side(prefix末尾) → 列6..16 が空11個 → 列17=side, 列18=type, 列19=lcr
-            // ので、 prefix の後はカンマ 12 個 + side。 11 では列16=side で 1 列ずれる (2026-06-15 観測バグ)
-            const childExtras = `,,,,,,,,,,,,${side},${cType},${cLcr}`;
-            const childLine = `2,${fmt(ca)},${fmt(cb)},${fmt(cc)},1,${side}${childExtras}`;
-            const csv = `${parentLine}\n${childLine}\n`;
-            yield {
-              label: `tri-tri/p${pi}c${ci}_s${side}_t${cType}_l${cLcr}`,
-              csv,
-              expectedRows: 2,
-              expectedSideCounts: [
-                { tri: 1, sides: 3 },
-                { tri: 2, sides: 3 },
-              ],
-              axes: { parent: `${pa}-${pb}-${pc}`, child: `${ca}-${cb}-${cc}`, side, type: cType, lcr: cLcr },
-            };
+            for (const cAratio of CHILD_A_RATIOS) {
+              // type=0 (辺共有) は子A=親辺長 強制 (= ratio 1.0)。 0.5 と組み合わせると
+              // 「辺共有なのに子Aが短い」 矛盾 fixture になるので skip。
+              if (cType === 0 && cAratio !== 1.0) continue;
+              const ca = parentEdgeLen * cAratio;
+              // 退化三角形 (a+b<=c の等号成立を含む) は実装側の isValidLengthes で
+              // 描画されないので fixture から除外する (user 確定 2026-06-15)
+              if (!isValidTriangle(ca, cb, cc)) continue;
+              // 完全形式 CSV (CsvCodec.kt 列順): 列17=cp.side, 列18=cp.type, 列19=cp.lcr。
+              // カンマ数: 列5=side(prefix末尾) → 列6..16 が空11個 → 列17=side, 列18=type, 列19=lcr
+              const parentLine = `1,${fmt(pa)},${fmt(pb)},${fmt(pc)},-1,-1`;
+              const childExtras = `,,,,,,,,,,,,${side},${cType},${cLcr}`;
+              const childLine = `2,${fmt(ca)},${fmt(cb)},${fmt(cc)},1,${side}${childExtras}`;
+              const csv = `${parentLine}\n${childLine}\n`;
+              const ratioTag = cAratio === 1.0 ? 'full' : 'half';
+              yield {
+                label: `tri-tri/p${pi}c${ci}_s${side}_t${cType}_l${cLcr}_a${ratioTag}`,
+                csv,
+                expectedRows: 2,
+                expectedSideCounts: [
+                  { tri: 1, sides: 3 },
+                  { tri: 2, sides: 3 },
+                ],
+                axes: { parent: `${pa}-${pb}-${pc}`, child: `${ca}-${cb}-${cc}`, side, type: cType, lcr: cLcr, ratio: cAratio },
+              };
+            }
           }
         }
       }
