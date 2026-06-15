@@ -1,5 +1,6 @@
 package com.jpaver.trianglelist
 
+import com.jpaver.trianglelist.datamanager.CsvCodec
 import com.jpaver.trianglelist.datamanager.SfcWriter
 import com.jpaver.trianglelist.datamanager.saveTo
 import com.jpaver.trianglelist.editmodel.ZumenInfo
@@ -17,17 +18,18 @@ class SfcWriterTest {
         val outDir = File(projectDir, "build/test-output").apply { mkdirs() }
         val fileName = "test.sfc"
         val outputFile = File(outDir, fileName)
-        
+
         // CI環境ではこのテストをスキップ
         if (System.getenv("CI") != null) return
-        
+
         val outputStream = outputFile.outputStream().buffered()
 
-        // 以下、既存の処理を続ける
-        val csvloadresult = CsvloaderTest().loadTriangleList()
-        if(csvloadresult == null ) return
-        val trianglelist = csvloadresult.trilist
-        val deductionlist = csvloadresult.dedlist
+        // B06: CsvloaderTest 削除に伴い CsvCodec で直接ロード (B07 で本格対応)
+        val csvFile = File(projectDir, "src/test/resources/test.csv")
+        if (!csvFile.exists()) return
+        val doc = CsvCodec.parse(csvFile.readText())
+        val trianglelist = CsvCodec.build(doc)
+        val deductionlist = CsvCodec.buildDeductions(doc)
         val drawingStartNumber = 1
 
         val writer = SfcWriter(trianglelist, deductionlist, fileName, drawingStartNumber, 1f)
