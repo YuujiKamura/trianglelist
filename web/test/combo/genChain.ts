@@ -59,21 +59,21 @@ function buildChainCsv(
   return { csv: lines.join('\n') + '\n', valid: true };
 }
 
-/** 全段 default (side 交互辺共有) chain。 depth = 10/100/200 で 1 chain ずつ × startSide 2 種 = 6 chain。
- *  user 「実運用では 100 とか 200 くらい」 を直接 pin する deep chain。 重ならずジグザグ展開。 */
+/** 全段 default (side 交互辺共有) chain。 depth=10 で 1 chain × startSide 2 種 = 2 chain。
+ *  user 確定 2026-06-15「重なっててOKなんて条件は基本ない」── 道路測量アプリで重なる図形は
+ *  ありえない。 旧版で depth=100 だと円環状に 1 周、 depth=200 だと 2 周して重なるため
+ *  廃止。 chain pattern を累積回転 0 にする linear 設計は次 iteration の課題。 */
 export function* genTriangleChainSharedDeep(): Generator<ChainCase> {
-  for (const depth of [10, 100, 200] as const) {
-    for (const startSide of [1, 2] as const) {
-      const { csv, valid } = buildChainCsv(depth, () => null, startSide);
-      if (!valid) continue;
-      yield {
-        label: `chain-shared/s${startSide}_d${depth}`,
-        csv,
-        expectedRows: depth,
-        expectedSideCounts: Array.from({ length: depth }, (_, i) => ({ tri: i + 1, sides: 3 })),
-        axes: { startSide, depth },
-      };
-    }
+  for (const startSide of [1, 2] as const) {
+    const { csv, valid } = buildChainCsv(10, () => null, startSide);
+    if (!valid) continue;
+    yield {
+      label: `chain-shared/s${startSide}_d10`,
+      csv,
+      expectedRows: 10,
+      expectedSideCounts: Array.from({ length: 10 }, (_, i) => ({ tri: i + 1, sides: 3 })),
+      axes: { startSide, depth: 10 },
+    };
   }
 }
 
@@ -96,52 +96,29 @@ export function* genTriangleChainFocus10(): Generator<ChainCase> {
   }
 }
 
-/** 親=台形 + 子=三角形 (TriTrap) chain。 台形親の 接続辺 B/C/D = side {1, 2, 3} で各 chain。
- *  TriTrap は実装上 type/lcr が無く 辺共有のみ。 各段同 side で繋ぐ ── 「台形 BCD 3 種網羅」。
- *  depth 10 で user 「最低 10 個」 を満たし、 親台形 1 個 + 子三角 (= TriTrap) 9 個。
+/** 親=台形 + 子=三角形 (TriTrap) ペア。 user 確定 2026-06-15「重なっててOKなんて条件は基本ない」
+ *  ── 旧版で 9 段 chain にしたら全 TriTrap が同位置に積み重なる (= 辺共有 chain で scaling なし)。
+ *  道路測量アプリ仕様に合わないため pair 1 つに絞る。 台形 BCD = side {1, 2, 3} で 3 ケース。
  *
- *  CSV schema: 親 = Trapezoid 行 (Trapezoid,num,length,widthA,widthB,parent,side,align,parentKind)、
- *  子 = 通常三角形行で parent=三角形数 + 台形 idx の混在通し番号 (旧 TriTrap タグは内部で同等)。
+ *  CSV schema: 親 = Trapezoid 行、 子 = 通常三角形行で parent=混在通し番号 (= 三角形数 + 台形 idx)。
  */
 export function* genTrapezoidTritrapChain(): Generator<ChainCase> {
   for (const side of [1, 2, 3] as const) {
-    // 親台形 = 正方形相当 (length=1, widthA=1, widthB=1)
-    const lines: string[] = ['Trapezoid,1,1.00,1.00,1.00,-1,0,0,0'];
-    // 各 TriTrap の (b, c) = (1, 1) で 親辺長 1 と一致 (辺共有 chain で長さ保持)
-    let parentMixedNum = 1; // 親台形は 混在通し番号 1
-    for (let d = 2; d <= 10; d++) {
-      // 子三角行: n,a,b,c,parent_mixed,side。 type/lcr は TriTrap で無効 (空に明示しない)
-      lines.push(`${d},1.00,1.00,1.00,${parentMixedNum},${side}`);
-      parentMixedNum = d; // 次の親は 1 つ前の TriTrap (= 自身 = d)
-    }
+    // 親台形 = 正方形 (length=widthA=widthB=1)、 子三角 1 つだけ親の指定辺に乗せる
+    const csv = `Trapezoid,1,1.00,1.00,1.00,-1,0,0,0\n2,1.00,1.00,1.00,1,${side}\n`;
     yield {
-      label: `chain-tritrap/s${side}_d10`,
-      csv: lines.join('\n') + '\n',
-      expectedRows: 10,
-      // tri=1 は台形 (sideCount=4)、 tri=2..10 は TriTrap (= 三角形 sideCount=3)
+      label: `trap-tritrap-pair/s${side}`,
+      csv,
+      expectedRows: 2,
       expectedSideCounts: [
-        { tri: 1, sides: 4 },
-        ...Array.from({ length: 9 }, (_, i) => ({ tri: i + 2, sides: 3 })),
+        { tri: 1, sides: 4 }, // 台形
+        { tri: 2, sides: 3 }, // 子三角形 (TriTrap)
       ],
-      axes: { kind: 'trap-tritrap', side, depth: 10 },
+      axes: { kind: 'trap-tritrap-pair', side },
     };
   }
 }
 
-/** depth=100 で各 14 種を 1 度ずつ注目位置に置く chain (位置は 50 = 中央付近に固定)。
- *  実運用 100 段相当で全 14 種が破綻しないことを保証する。 */
-export function* genTriangleChainFocus100(): Generator<ChainCase> {
-  for (let pIdx = 0; pIdx < TRI_CONN_14.length; pIdx++) {
-    const focus = TRI_CONN_14[pIdx];
-    const focusPos = 50;
-    const { csv, valid } = buildChainCsv(100, (d) => (d === focusPos ? focus : null));
-    if (!valid) continue;
-    yield {
-      label: `chain100-focus/${focus.label}`,
-      csv,
-      expectedRows: 100,
-      expectedSideCounts: Array.from({ length: 100 }, (_, i) => ({ tri: i + 1, sides: 3 })),
-      axes: { pattern: focus.label, pIdx, focusPos, depth: 100 },
-    };
-  }
-}
+// 旧 genTriangleChainFocus100 (depth=100 で 14 種を中央位置に置く) は廃止 (user 2026-06-15
+// 「重なっててOKなんて条件は基本ない」)。 depth=100 chain は累積回転で円環化し、 道路測量
+// アプリで ありえない描画になる。 累積回転 0 の linear pattern を再設計するまで停止。
