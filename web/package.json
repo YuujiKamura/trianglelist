@@ -8,7 +8,9 @@
     "sync-icons": "node scripts/sync-icons.mjs",
     "dev": "npm run sync-wasm && npm run sync-icons && vite",
     "build": "npm run sync-wasm && npm run sync-icons && tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:combo": "vitest run test/combo-pair.test.ts"
   },
   "devDependencies": {
     "@types/encoding-japanese": "^2.2.1",
