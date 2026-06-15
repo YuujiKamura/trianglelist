@@ -1,5 +1,7 @@
 package com.jpaver.trianglelist.editmodel
 
+import com.jpaver.trianglelist.viewmodel.formattedString
+
 data class Line(val left: com.example.trilib.PointXY = com.example.trilib.PointXY(0f, 0f), val right: com.example.trilib.PointXY = com.example.trilib.PointXY(
     0f,
     0f
@@ -85,6 +87,42 @@ data class Rectangle(
     override fun vertices(): List<com.example.trilib.PointXY> {
         val lp = calcPoint()
         return listOf(lp.a.left, lp.a.right, lp.b.right, lp.b.left)
+    }
+
+    /**
+     * SoT 一本化 段3 寸法多態 (2026-06-15): 既存 WebPrimitiveRenderer.renderTrapezoid の寸法生成
+     * (A底辺 / C上辺 / D右脚 / B垂線延長) を移植したもの。renderer 側の kind 分岐を消す。
+     * 接続済み (nodeA != null) は A 底辺寸法を出さない (= 親辺と共有、親側が寸法を持つ思想)。
+     * B 延長は底辺/上辺の短い方を起点に取り、台形内側に向けた垂線長 (rect.length)。
+     * 注: meta(perp 起点) と guide(alignment != 0 のときの垂線描画) は renderer 側に残し、
+     *     ここでは寸法 spec (text + place + 旗揚げ判定) のみ返す。
+     */
+    override fun emitDimensionSpecs(scale: Float): List<DimensionSpec> {
+        val lp = calcPoint()
+        val bl = lp.a.left; val br = lp.a.right; val tl = lp.b.left; val tr = lp.b.right
+        val ds = dimScale.toDouble()
+        val dh = dimHeight.toDouble()
+        val specs = mutableListOf<DimensionSpec>()
+
+        fun spec(side: Int, start: com.example.trilib.PointXY, end: com.example.trilib.PointXY, v: Int, h: Int): DimensionSpec {
+            val place = com.jpaver.trianglelist.label.DimensionLayout.layout(end, start, v, h, ds, dh, 0.0)
+            val len = (start.lengthTo(end) / scale).toFloat()
+            return DimensionSpec(side, len.formattedString(2), place, start.calcDimAngle(end), h, v, h > 2)
+        }
+
+        if (nodeA == null) specs.add(spec(0, bl, br, dimVertical.a, dimHorizontal.a))
+        specs.add(spec(2, tr, tl, dimVertical.c, dimHorizontal.c))
+        specs.add(spec(3, br, tr, 1, 0))
+
+        // B 延長 — 底辺/上辺の短い方を起点に、台形内側へ向く垂線
+        val bottomShorter = widthA <= widthB
+        val baseStart = if (bottomShorter) bl else tl
+        val baseEnd = if (bottomShorter) br else tr
+        val perpFoot = baseStart.crossOffset(baseEnd, length, if (bottomShorter) -90.0 else 90.0)
+        val placeB = com.jpaver.trianglelist.label.DimensionLayout.layout(perpFoot, baseStart, dimVertical.b, dimHorizontal.b, ds, dh, 0.0)
+        val extLen = (length / scale).toFloat()
+        specs.add(DimensionSpec(1, extLen.formattedString(2), placeB, baseStart.calcDimAngle(perpFoot), dimHorizontal.b, dimVertical.b, dimHorizontal.b > 2))
+        return specs
     }
 
     /**

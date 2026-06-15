@@ -95,6 +95,26 @@ class WebPrimitiveRendererListReceiverTest {
     }
 
     @Test
+    fun triangle_emits_three_dim_specs() {
+        val list = EditList<EditObject>()
+        list.add(Triangle(6f, 5f, 4f))
+        val json = WebPrimitiveRenderer.render(list, ts)
+        // Triangle (独立、connectionSide=-1) → A/B/C 3 辺の寸法が出る
+        val dimTextCount = """"type":"text","layer":"dim"""".toRegex().findAll(json).count()
+        assertEquals(3, dimTextCount, "独立 Triangle → 寸法 3 (A/B/C)")
+    }
+
+    @Test
+    fun rectangle_emits_four_dim_specs_when_independent() {
+        val list = EditList<EditObject>()
+        list.add(Rectangle(5.0, 6.0, 4.0))
+        val json = WebPrimitiveRenderer.render(list, ts)
+        // 独立 Rectangle (nodeA=null) → A底辺 / B垂線延長 / C上辺 / D右脚 の 4 寸法
+        val dimTextCount = """"type":"text","layer":"dim"""".toRegex().findAll(json).count()
+        assertEquals(4, dimTextCount, "独立 Rectangle → 寸法 4 (A/B/C/D)")
+    }
+
+    @Test
     fun number_text_uses_1based_index_from_forEachItemIndexed() {
         val list = EditList<EditObject>()
         list.add(Triangle(6f, 5f, 4f))

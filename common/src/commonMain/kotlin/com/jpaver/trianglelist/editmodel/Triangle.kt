@@ -4,6 +4,7 @@ import com.jpaver.trianglelist.Bounds
 import com.jpaver.trianglelist.getAngleBySide
 import com.jpaver.trianglelist.getLengthByIndex
 import com.jpaver.trianglelist.getPointBySide
+import com.jpaver.trianglelist.setLengthStr
 import com.jpaver.trianglelist.viewmodel.Cloneable
 import com.jpaver.trianglelist.viewmodel.InputParameter
 import kotlin.math.roundToInt
@@ -187,6 +188,29 @@ class Triangle : EditObject, Cloneable<Triangle> {
         1 -> Line(pointAB, pointBC)
         2 -> Line(pointBC, point[0])
         else -> Line()
+    }
+
+    /**
+     * SoT 一本化 段3 寸法多態 (2026-06-15): 既存 WebPrimitiveRenderer.render(trilist) の三角形
+     * 寸法ループを移植したもの。図形種別に依らない単一 emit ループを上位 (renderer) に許す。
+     * A 辺は親と共有していない時 (node.a == null) または再接続 (connectionSide > 2) のとき出す
+     * — 一般化により trapTri (node.a = Rectangle) も「親と共有 → A 辺寸法を抑制」が自然に成立。
+     */
+    override fun emitDimensionSpecs(scale: Float): List<DimensionSpec> {
+        val s = scaleFactor.toDouble()
+        val dh = dimHeight.toDouble()
+        val placeA = com.jpaver.trianglelist.label.DimensionLayout.layout(pointAB, point[0], dim.vertical.a, dim.horizontal.a, s, dh, 0.0)
+        val placeB = com.jpaver.trianglelist.label.DimensionLayout.layout(pointBC, pointAB, dim.vertical.b, dim.horizontal.b, s, dh, 0.0)
+        val placeC = com.jpaver.trianglelist.label.DimensionLayout.layout(point[0], pointBC, dim.vertical.c, dim.horizontal.c, s, dh, 0.0)
+        this.setLengthStr()
+        val specs = mutableListOf<DimensionSpec>()
+        val emitA = node.a == null || connectionSide > 2
+        if (emitA) {
+            specs.add(DimensionSpec(0, strLengthA, placeA, pointAB.calcDimAngle(pointCA), dim.horizontal.a, dim.vertical.a, dim.horizontal.a > 2))
+        }
+        specs.add(DimensionSpec(1, strLengthB, placeB, pointBC.calcDimAngle(pointAB), dim.horizontal.b, dim.vertical.b, dim.horizontal.b > 2))
+        specs.add(DimensionSpec(2, strLengthC, placeC, pointCA.calcDimAngle(pointBC), dim.horizontal.c, dim.vertical.c, dim.horizontal.c > 2))
+        return specs
     }
 
     fun pointAB_(): com.example.trilib.PointXY = com.example.trilib.PointXY(pointAB)

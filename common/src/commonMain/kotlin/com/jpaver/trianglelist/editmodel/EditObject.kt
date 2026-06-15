@@ -24,6 +24,14 @@ open class EditObject() {
     /** side で辺を 1 本取り出す共通契約 (三角形=0:A,1:B,2:C / 台形=0:A,1:B,2:C,3:D)。 */
     open fun getLine(side: Int): Line = Line()
 
+    /**
+     * 寸法 spec を多態的に返す (SoT 一本化 段3、2026-06-15)。
+     * 図形種別に依らず描画側が単一ループで寸法を emit できるよう、各図形が自分用の
+     * DimensionSpec リストを返す責務を持つ。空 (= 寸法概念がない図形) は default の emptyList。
+     * scale は CSV のビュー scale (renderCsv の effScale と同値)、辺長 / scale で実寸を出す系で使う。
+     */
+    open fun emitDimensionSpecs(scale: Float): List<DimensionSpec> = emptyList()
+
     open fun setNode2(target: EditObject, side:Int=0, side2:Int=1 ){
         when(side){
             0 -> {
