@@ -265,7 +265,12 @@ object CsvCodec {
      *
      * 戻り値: Pair<traps, trapTris>
      *   first  = 台形 (Rectangle) のリスト
-     *   second = 台形子三角形 (Triangle) のリスト
+     *   second = 台形子三角形 (Triangle) のリスト ── class は普通三角形と同一 Triangle、 list 分離のみ
+     *
+     * TODO (user 指示 2026-06-15「三角形を台形の子かどうかでデータクラスを分けてるのは変な実装」):
+     * trapTris を別 list にする構造を解消し、 全 Triangle を trilist に統合する refactor が要る。
+     * 番号管理 (= CSV parent 参照の混在通し番号 = 三角形数 + 台形 idx) の再設計を伴うため
+     * 段階的に進める ── 詳細は memory/feedback-tritrap-data-class-unify.md。
      */
     fun buildFigures(doc: CsvDoc, trilist: TriangleList, scale: Float = 1f): Pair<List<Rectangle>, List<Triangle>> {
         val traps = mutableListOf<Rectangle>()
