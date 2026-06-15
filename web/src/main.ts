@@ -1908,7 +1908,12 @@ function addTrapezoid(canvas: HTMLCanvasElement): void {
   let side: number;
   let parentKind: 0 | 1;
   if (pend) {
-    parent = pend.trap;
+    // pend.trap は台形群内連番 (1 始まり)。 rows[] は三角形 prefix + 台形 suffix の混在で、
+    // CSV/parent 列の規約は **混在通し番号** (triCount + 台形群index)。 buildTrapRowCells (1364) も
+    // rows[parent-1].kind で親種別を引き直すため per-group のままだと triangle 範囲を指して
+    // parentKind が 0 に戻る → common も親=三角形と解釈して trap-on-trap が崩れる
+    // (user 報告 2026-06-16「FAB の形状変更でセンタリングが外れる」 と並ぶ FAB 動線の歪み)。
+    parent = triCount() + pend.trap;
     side = pend.side;
     parentKind = 1;
     const baseLen = trapEdgeLen(pend.trap, pend.side);
@@ -2063,6 +2068,10 @@ function reshapeCurrent(canvas: HTMLCanvasElement): void {
   }
   current = rows.indexOf(r) + 1;
   selected = current;
+  // 種別反転で図形の bounds が変わる (三角形⇄台形は辺数も形状も違う)。 既存 view (反転前の fit)
+  // のままだと描画位置がズレ「センタリングが外れる」(user 報告 2026-06-16)。 loadCsv/addTrapezoid/
+  // addTriOnTrap と同じく view=null で次の draw に全体 fit を任せる。
+  view = null;
   buildTable(canvas);
   syncForm();
   redraw(canvas);
