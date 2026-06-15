@@ -73,10 +73,10 @@ object WebPrimitiveRenderer {
         val sizeRatio = (doc.textSize?.takeIf { it > 0f } ?: APP_DEFAULT_TEXT_SIZE) / APP_DEFAULT_TEXT_SIZE
         val effScale = if (scale > 0f) scale else 1f
         val textSize = DEFAULT_TEXT_SIZE * sizeRatio * effScale
-        // 混在リスト: 台形 + 台形子三角形を figureRows から構築し render に渡す。
-        // SoT 一本化 段3 スワップ準備 (2026-06-15): composeAll は実装済だが、新 render(list) は
-        // まだ Rectangle の guide 線 (alignment != 0) と meta(perp) 識別子を出さない。
-        // 機能等価が完備するまで旧ルートを維持 (= golden 不変)。
+        // SoT 一本化 段3d 保留 (2026-06-15): guide/meta 移植済だが、新 render(list) は figureRows 順
+        // (ID 一本化) で既存 render(trilist) の「三角形→Deduction→Rectangle→trapTri」順 z-order と
+        // 不一致。golden test 4 件 fail。golden 更新 (z-order 変化を pin し直す) + count test 改訂が
+        // セットになるので、それは段3e でまとめてやる。当面は旧ルート維持で golden 不変。
         val (traps, trapTris) = CsvCodec.buildFigures(doc, trilist, effScale)
         return render(trilist, textSize, CsvCodec.buildDeductions(doc), effScale, traps, trapTris)
     }
@@ -417,6 +417,19 @@ object WebPrimitiveRenderer {
             for (spec in obj.emitDimensionSpecs(effScale)) {
                 item(dimText(spec.text, spec.place, spec.angle, textSize, num, spec.side, spec.h, spec.v))
                 if (spec.emitFlag) item(line(spec.place.pointA, spec.place.pointB, "dim"))
+            }
+            // Rectangle 専用: meta perp 識別子 (verify テスト用) + guide 線 (alignment != 0 のとき
+            // 垂線起点から perpFoot まで)。既存 renderTrapezoid との完全等価のため kind 分岐を当面残す
+            // — 将来 EditObject に open fun emitGuideLines() / emitMetaPrims() を昇格させて吸収する。
+            if (obj is Rectangle) {
+                val lp = obj.calcPoint()
+                val bl = lp.a.left; val br = lp.a.right; val tl = lp.b.left; val tr = lp.b.right
+                val bottomShorter = obj.widthA <= obj.widthB
+                val baseStart = if (bottomShorter) bl else tl
+                val baseEnd = if (bottomShorter) br else tr
+                val perpFoot = baseStart.crossOffset(baseEnd, obj.length, if (bottomShorter) -90.0 else 90.0)
+                item("""{"type":"meta","kind":"perp","tri":$num,"perpFrom":"${if (bottomShorter) "bl" else "tl"}"}""")
+                if (obj.alignment != 0) item(line(baseStart, perpFoot, "guide"))
             }
             // 番号位置: Triangle は事前計算済 pointnumber、Rectangle は重心 (vertices 平均)
             val center = when (obj) {
