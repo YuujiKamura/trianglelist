@@ -4,6 +4,8 @@ import com.example.trilib.PointXY
 import com.jpaver.trianglelist.datamanager.CsvCodec
 import com.jpaver.trianglelist.editmodel.Deduction
 import com.jpaver.trianglelist.editmodel.DeductionList
+import com.jpaver.trianglelist.editmodel.EditList
+import com.jpaver.trianglelist.editmodel.EditObject
 import com.jpaver.trianglelist.editmodel.Rectangle
 import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
@@ -346,6 +348,80 @@ object WebPrimitiveRenderer {
 
     private fun line(p1: PointXY, p2: PointXY, layer: String, extra: String): String =
         """{"type":"line","layer":"$layer","x1":${p1.x},"y1":${p1.y},"x2":${p2.x},"y2":${p2.y}$extra}"""
+
+    /**
+     * SoT 一本化 段2 受け口 (2026-06-15): 混在 EditList<EditObject> を直接受けて prim を出す
+     * 新ルート。Strangler Fig — 既存 render(trilist, ...) は一切いじらず、新口で機能を段階的に
+     * 完備して揃ったら renderCsv をこちらに切り替える。
+     *
+     * 段階1 (現): 塗り + 辺 + 番号サークル + 番号テキストの最小スケルトン (golden 完全等価ではない)。
+     * 段階2 (予定): 寸法レイアウト (DimensionLayout) を多態で配布、Deduction overlay、引き出し矢印。
+     * 段階3 (予定): renderCsv 内で build/buildFigures → buildAll に切替、既存 render(trilist) を撤去。
+     *
+     * EditObject の多態 (sideCount / vertices / getLine) を使って形状ごとの kind 分岐を消す方針:
+     *   - Triangle.sideCount=3, Rectangle.sideCount=4 で stride を決定
+     *   - vertices() で塗り/番号サークル中心を一律算出
+     *   - getLine(side) で辺を取り出し layer="tri" の line prim 化
+     *
+     * 注: Triangle.pointAB/pointBC/pointCA と vertices() の順序整合は実機検証済 (TriangleTest)。
+     */
+    fun render(
+        list: EditList<EditObject>,
+        textSize: Float,
+        dedlist: DeductionList = DeductionList(),
+        scale: Float = 1f,
+    ): String {
+        val sb = StringBuilder()
+        sb.append('[')
+        var first = true
+        fun item(json: String) {
+            if (!first) sb.append(',')
+            sb.append(json)
+            first = false
+        }
+
+        // 段階1a: 塗り (z-order「塗り全部→線・文字」確保のため先に全部出す)
+        list.forEachItemIndexed { num, obj ->
+            when (obj) {
+                is Triangle -> {
+                    val verts = obj.vertices()
+                    if (verts.size >= 3) {
+                        item(
+                            """{"type":"fill","layer":"fill","x1":${verts[0].x},"y1":${verts[0].y},"x2":${verts[1].x},"y2":${verts[1].y},"x3":${verts[2].x},"y3":${verts[2].y},"color":${obj.mycolor},"tri":$num}"""
+                        )
+                    }
+                }
+                // Rectangle は塗らない (既存 renderTrapezoid も塗りなし)
+            }
+        }
+
+        // 段階1b: 辺 (多態 getLine) + 番号サークル + 番号テキスト
+        list.forEachItemIndexed { num, obj ->
+            for (side in 0 until obj.sideCount) {
+                val ln = obj.getLine(side)
+                item(line(ln.left, ln.right, "tri", ""","tri":$num,"side":$side"""))
+            }
+            // 番号位置: Triangle は事前計算済 pointnumber、Rectangle は重心 (vertices 平均)
+            val center = when (obj) {
+                is Triangle -> obj.pointnumber
+                else -> {
+                    val v = obj.vertices()
+                    if (v.isEmpty()) PointXY(0f, 0f)
+                    else {
+                        var sx = 0f; var sy = 0f
+                        for (p in v) { sx += p.x.toFloat(); sy += p.y.toFloat() }
+                        PointXY(sx / v.size, sy / v.size)
+                    }
+                }
+            }
+            val circleR = textSize * 0.85f
+            item("""{"type":"circle","layer":"num","cx":${center.x},"cy":${center.y},"r":$circleR,"tri":$num}""")
+            item(text(num.toString(), center, 0.0, textSize, 2, "num", ""","tri":$num"""))
+        }
+
+        sb.append(']')
+        return sb.toString()
+    }
 
     private fun dimText(str: String, place: DimensionPlacement, angle: Double, textSize: Float, tri: Int, side: Int, h: Int, v: Int): String =
         text(str, place.dimpoint, angle, textSize, place.verticalDxf, "dim", ""","tri":$tri,"side":$side,"h":$h,"v":$v""")
