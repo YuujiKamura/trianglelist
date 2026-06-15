@@ -113,13 +113,29 @@ object WebPrimitiveRenderer {
         }
 
         // 段階1a: 塗り (z-order「塗り全部→線・文字」確保のため先に全部出す)。
-        // Rectangle は塗らない (元 renderTrapezoid も塗りなし)。
+        // Triangle = fill prim 1 個、Rectangle = 対角線 bl→tr で 2 三角形に分割して fill prim 2 個。
+        // main.ts の FillPrim は 3 頂点固定なので polygon 型を増やさず Triangle と同形式で揃える。
+        // Rectangle に color フィールドは無いため既定 4 (FILL_PALETTE の sky) で固定。
         list.forEachItemIndexed { num, obj ->
             if (obj is Triangle) {
                 val verts = obj.vertices()
                 if (verts.size >= 3) {
                     item(
                         """{"type":"fill","layer":"fill","x1":${verts[0].x},"y1":${verts[0].y},"x2":${verts[1].x},"y2":${verts[1].y},"x3":${verts[2].x},"y3":${verts[2].y},"color":${obj.mycolor},"tri":$num}"""
+                    )
+                }
+            } else if (obj is Rectangle) {
+                // vertices() = [bl, br, tr, tl] (Rectangle.kt:87-90)。凸四角形を bl-tr 対角線で
+                // 2 三角形に分割: (bl,br,tr) + (bl,tr,tl)。overlap / 隙間なし。
+                val verts = obj.vertices()
+                if (verts.size >= 4) {
+                    val bl = verts[0]; val br = verts[1]; val tr = verts[2]; val tl = verts[3]
+                    val color = 4
+                    item(
+                        """{"type":"fill","layer":"fill","x1":${bl.x},"y1":${bl.y},"x2":${br.x},"y2":${br.y},"x3":${tr.x},"y3":${tr.y},"color":$color,"tri":$num}"""
+                    )
+                    item(
+                        """{"type":"fill","layer":"fill","x1":${bl.x},"y1":${bl.y},"x2":${tr.x},"y2":${tr.y},"x3":${tl.x},"y3":${tl.y},"color":$color,"tri":$num}"""
                     )
                 }
             }
