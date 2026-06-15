@@ -23,6 +23,11 @@ export const CONN_TYPES = [0, 1, 2] as const;
 // 起点 (cParam.lcr、 完全形式 CSV 列19): 0=左 / 1=中央 / 2=右
 export const CONN_LCRS = [0, 1, 2] as const;
 
+// 子A辺長と親辺長の比。 type=0 (辺共有) は強制で 1.0 のみ意味があるが、
+// type=1 (二重断面) と type=2 (フロート) では 1.0 (= 親辺全体) と 0.5 (= 親辺の一部) で
+// 描画が異なる ── 1.0 のみだと lcr の効果が見えず spec が tautological になる (2026-06-15)
+export const CHILD_A_RATIOS = [1.0, 0.5] as const;
+
 // 台形の (length, widthA, widthB) サンプル。 width 等差(正方形系) と非等差(平行四辺/直角台) を混ぜる
 export const TRAP_SAMPLES: ReadonlyArray<readonly [number, number, number]> = [
   [3, 3, 3],   // 正方形 (length=widthA=widthB)
