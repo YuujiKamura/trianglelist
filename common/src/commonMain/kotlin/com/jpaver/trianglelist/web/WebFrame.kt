@@ -31,13 +31,11 @@ object WebFrame {
         val ps = trilist.getPrintScale(1f)
         // 描画 scale は 1f (WebPrimitiveRenderer.renderCsv の effScale と同値、印刷 ps と別軸)。
         // ここで ps を渡すと台形の幾何が壊れて build が空になる (frame: null が消えない原因)。
-        val (traps, trapTris) = CsvCodec.buildFigures(doc, trilist, 1f)
-        // 混在 figure を一本の EditObject の list として持つ (kind 分岐をここで吸収)
-        val figures: List<EditObject> = buildList {
-            for (i in 1..trilist.size()) add(trilist[i])
-            addAll(traps)
-            addAll(trapTris)
-        }
+        // SoT 一本化 段3g (2026-06-15): buildMixed が figureRows 順の混在 EditList<EditObject> を 1 本で返す。
+        // 旧版は buildFigures の Pair + 手動 buildList で 3 group を順序問わずに足していたが、 ここの bbox 中心
+        // 計算には figureRows 順かどうかは無関係、 buildMixed の 戻り値をそのまま流せる。
+        val mixedList = CsvCodec.buildMixed(doc, trilist, 1f)
+        val figures: List<EditObject> = (1..mixedList.size()).map { mixedList.get(it) }
         if (figures.isEmpty()) return "[]"
         val header = WebDrawingExport.parseHeader(csv)
         val center = figuresBboxCenter(figures)
