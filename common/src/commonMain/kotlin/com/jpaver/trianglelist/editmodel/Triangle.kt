@@ -193,8 +193,9 @@ class Triangle : EditObject, Cloneable<Triangle> {
     /**
      * SoT 一本化 段3 寸法多態 (2026-06-15): 既存 WebPrimitiveRenderer.render(trilist) の三角形
      * 寸法ループを移植したもの。図形種別に依らない単一 emit ループを上位 (renderer) に許す。
-     * A 辺は親と共有していない時 (node.a == null) または再接続 (connectionSide > 2) のとき出す
-     * — 一般化により trapTri (node.a = Rectangle) も「親と共有 → A 辺寸法を抑制」が自然に成立。
+     * A 辺は親と共有していない時 (nodeA == null && node.a == null) または再接続 (connectionSide > 2)
+     * のとき出す。Triangle 子接続は Triangle 独自フィールド nodeA に親を保持し、Rectangle 親 trapTri は
+     * EditObject 基底の node.a に親を保持する (継ぎ目が違う)。両方 null = 親共有なし → A 辺寸法 emit。
      */
     override fun emitDimensionSpecs(scale: Float): List<DimensionSpec> {
         val s = scaleFactor.toDouble()
@@ -204,7 +205,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
         val placeC = com.jpaver.trianglelist.label.DimensionLayout.layout(point[0], pointBC, dim.vertical.c, dim.horizontal.c, s, dh, 0.0)
         this.setLengthStr()
         val specs = mutableListOf<DimensionSpec>()
-        val emitA = node.a == null || connectionSide > 2
+        val emitA = (nodeA == null && node.a == null) || connectionSide > 2
         if (emitA) {
             specs.add(DimensionSpec(0, strLengthA, placeA, pointAB.calcDimAngle(pointCA), dim.horizontal.a, dim.vertical.a, dim.horizontal.a > 2))
         }
