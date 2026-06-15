@@ -359,18 +359,22 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
   }
 
   // 選択図形の塗り (線より下に敷く)。各 line は WebPrimitiveRenderer から tri/side 識別子付きで
-  // 出るので、selected 番号で filter して描画順 (外周巡回) どおりに lineTo するだけ。
-  // 三角形・台形の場合分けは line の出方が吸収する (user 指針 2026-06-14)。
+  // 出るので、selected 番号で filter して chainPath で外周を chain 連結する。
+  // 三角形 (3 辺、 連続 chain) も台形 (4 辺、 段3 swap 後は side 0/2 並列 + 1/3 脚で非連続) も
+  // chainPath で 1 本のパスに連結すれば「順に lineTo で対角線が走り砂時計 X クロス」を回避できる。
   const triLines = prims.filter((p): p is LinePrim => p.type === 'line' && p.layer === 'tri');
   if (selected > 0) {
     const own = triLines.filter((l) => l.tri === selected);
     if (own.length >= 3) {
-      ctx.fillStyle = COLORS.selectFill;
-      ctx.beginPath();
-      ctx.moveTo(sx(own[0].x1), sy(own[0].y1));
-      for (const l of own) ctx.lineTo(sx(l.x2), sy(l.y2));
-      ctx.closePath();
-      ctx.fill();
+      const path = chainPath(own);
+      if (path.length >= 3) {
+        ctx.fillStyle = COLORS.selectFill;
+        ctx.beginPath();
+        ctx.moveTo(sx(path[0].x), sy(path[0].y));
+        for (let i = 1; i < path.length; i++) ctx.lineTo(sx(path[i].x), sy(path[i].y));
+        ctx.closePath();
+        ctx.fill();
+      }
     }
   }
 
@@ -3999,6 +4003,17 @@ if (import.meta.hot) {
       hot.send('tlcp:tap-res', { id: data.id, state: { ok: true, selected, current, edgeSel } });
     } else {
       hot.send('tlcp:tap-res', { id: data.id, state: { ok: false } });
+    }
+  });
+  // 選択注入: hitTriangle が拾わない図形 (台形等) を直接 selected に。selected 塗りの
+  // 検証 (台形 fill が砂時計にならない等) で必要 ── 一覧表 click と同じ動線 (selectTriangle)
+  hot.on('tlcp:select-req', (data: { id: string; n?: number }) => {
+    const canvas = document.getElementById('cv') as HTMLCanvasElement | null;
+    if (canvas && typeof data.n === 'number' && data.n >= 0 && data.n <= rows.length) {
+      selectTriangle(canvas, data.n);
+      hot.send('tlcp:select-res', { id: data.id, state: { ok: true, selected, current } });
+    } else {
+      hot.send('tlcp:select-res', { id: data.id, state: { ok: false } });
     }
   });
 }
