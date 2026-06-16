@@ -134,26 +134,16 @@ object CsvCodec {
                 continue
             }
             hasFigure = true
-            // 普通三角形行で parent が「現在までの三角形数」を超えていれば、混在通し番号で
-            // 台形または台形子三角形 (TriTrap chain) を指していると解釈する。
-            // 内部表現は旧 TriTrap タグの chunks 構造 ("TriTrap", num, ea, B, C, target_idx, side) に変換。
-            val parentIdx = chunks.getOrNull(4)?.toIntOrNull() ?: -1
-            if (parentIdx > triCount) {
-                val targetIdx = parentIdx - triCount
-                val converted = listOf(
-                    "TriTrap",
-                    chunks[0],
-                    chunks.getOrNull(1) ?: "",
-                    chunks.getOrNull(2) ?: "",
-                    chunks.getOrNull(3) ?: "",
-                    targetIdx.toString(),
-                    chunks.getOrNull(5) ?: "0",
-                )
-                figureRows.add(CsvRow(converted))
-                continue
-            }
+            // user 確定 2026-06-16「トライトラップなんぞという勝手なデータ型を温存するな、
+            //   親がどうとかでデータ型を分けるな」 ── Triangle 行は parent (混在通し番号) で
+            //   親種別を解決する 1 種類のみ。 旧 TriTrap タグ変換ロジック (parent > triCount で
+            //   別タグへ変換) を撤廃。 buildMixed の else 分岐で親解決を一律に行う。
+            // triCount は build() の trilist.size() 上限判定にだけ使う。
             figureRows.add(CsvRow(chunks))
-            triCount++
+            val parentIdx = chunks.getOrNull(4)?.toIntOrNull() ?: -1
+            // 普通三角形 (parent が三角形数以内、 つまり親が Triangle) のときだけ triCount を進める。
+            // parent が三角形数を超える Triangle 行は build() で skip され buildMixed で構築される。
+            if (parentIdx <= triCount) triCount++
         }
         return CsvDoc(preLines, listAngle, postLines, dedRows, textSize, listScale, figureRows)
     }
@@ -289,7 +279,7 @@ object CsvCodec {
         val sf = if (scale > 0f) scale else 1f
         val traps = mutableListOf<Rectangle>()
         val trapTris = mutableListOf<Triangle>()
-        var triIdx = 0
+        var triIdx = 0  // 親が Triangle (parent <= trilist.size()) の Triangle 行の数
 
         for (row in doc.figureRows) {
             val c = row.chunks
@@ -334,8 +324,38 @@ object CsvCodec {
                     mixed.add(tri)
                 }
                 else -> {
-                    triIdx += 1
-                    if (triIdx <= trilist.size()) mixed.add(trilist.getBy(triIdx))
+                    // Triangle 行。 parent (列 4) で親種別を解決:
+                    //   parent <= trilist.size() → 親が Triangle、 trilist から pull (build() で構築済み)
+                    //   parent > trilist.size()  → 親が Rectangle or 既存子 Triangle、 ここで新規構築
+                    // user 確定 2026-06-16「親がどうとかでデータ型を分けるな」 ── 旧 TriTrap タグ分岐
+                    // を統合、 Triangle 1 type のまま全 case を表現する。
+                    val parent = c.getOrNull(4)?.toIntOrNull() ?: -1
+                    if (parent in 1..trilist.size()) {
+                        triIdx += 1
+                        if (triIdx <= trilist.size()) mixed.add(trilist.getBy(triIdx))
+                    } else if (parent > trilist.size()) {
+                        // 混在通し番号 parent から target = parent - trilist.size() を算出。
+                        // target in 1..ntrap → 親 = traps[target-1] (Rectangle 親)
+                        // target > ntrap     → 親 = trapTris[target - ntrap - 1] (既存子 Triangle = chain 2 段目以降)
+                        val b = c.getOrNull(2)?.toFloatOrNull() ?: continue
+                        val cc = c.getOrNull(3)?.toFloatOrNull() ?: continue
+                        val side = c.getOrNull(5)?.toIntOrNull() ?: continue
+                        val target = parent - trilist.size()
+                        val ntrap = traps.size
+                        val pObj: EditObject? = when {
+                            target in 1..ntrap -> traps[target - 1]
+                            target > ntrap && (target - ntrap - 1) in trapTris.indices -> trapTris[target - ntrap - 1]
+                            else -> null
+                        }
+                        if (pObj == null) continue
+                        val tri = Triangle(pObj, side, b * sf, cc * sf)
+                        trapTris.add(tri)
+                        mixed.add(tri)
+                    } else {
+                        // 独立 Triangle (parent < 1): trilist 経由で pull
+                        triIdx += 1
+                        if (triIdx <= trilist.size()) mixed.add(trilist.getBy(triIdx))
+                    }
                 }
             }
         }
