@@ -119,6 +119,37 @@ export function* genTrapezoidTritrapChain(): Generator<ChainCase> {
   }
 }
 
+/** 親=台形 → 子=三角形 (TriTrap 1 段目) → 孫=三角形 (chain 2 段目) の混成 chain。
+ *  user 確定 2026-06-16「台形に接続した三角形に三角形を接続すると図形が壊れる」 が指す動線。
+ *  CSV schema: 全 Triangle 行は parent=混在通し番号 1 種類で表現 (TriTrap タグ廃止後)。
+ *
+ *    混在通し番号:
+ *      1 = 台形 (figure[0])
+ *      2 = 子三角 (figure[1]、 parent=1 で台形を指す)
+ *      3 = 孫三角 (figure[2]、 parent=2 で子三角を指す)
+ */
+export function* genTrapezoidTritrapChain2(): Generator<ChainCase> {
+  for (const side1 of [1, 2, 3] as const) {
+    for (const side2 of [1, 2] as const) {
+      const csv =
+        `Trapezoid,1,1.00,1.00,1.00,-1,0,0,0\n` +
+        `2,1.00,0.80,0.80,1,${side1}\n` +
+        `3,0.80,0.60,0.60,2,${side2}\n`;
+      yield {
+        label: `trap-tritrap-chain2/p1s${side1}-p2s${side2}`,
+        csv,
+        expectedRows: 3,
+        expectedSideCounts: [
+          { tri: 1, sides: 4 }, // 台形
+          { tri: 2, sides: 3 }, // 子三角 (1 段目)
+          { tri: 3, sides: 3 }, // 孫三角 (2 段目)
+        ],
+        axes: { kind: 'trap-tritrap-chain2', side1, side2 },
+      };
+    }
+  }
+}
+
 // 旧 genTriangleChainFocus100 (depth=100 で 14 種を中央位置に置く) は廃止 (user 2026-06-15
 // 「重なっててOKなんて条件は基本ない」)。 depth=100 chain は累積回転で円環化し、 道路測量
 // アプリで ありえない描画になる。 累積回転 0 の linear pattern を再設計するまで停止。
