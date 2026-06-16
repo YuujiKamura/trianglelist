@@ -41,7 +41,7 @@ class WebFrameTest {
         // user 指摘 2026-06-14「混在リスト全体の境界計算してセンタリングするのが出来てない」の pin。
         // 三角形 + 子台形 (混在) のリストで、枠 bbox 中心 = 全 figure (tri layer 線) bbox 中心 を満たす。
         // trilist.center だけでは台形・台形子三角形が無視され、figure の重心と枠中心がずれる。
-        val mixedCsv = "1,6.0,5.0,4.0,-1,-1\nTrapezoid,1,5,10,7,1,1\n"
+        val mixedCsv = "1,6.0,5.0,4.0,-1,-1\nRectangle,1,5,10,7,1,1\n"
 
         // 全 figure (tri layer 線) の bbox 中心 — renderCsv の出力を直接解析
         val figJson = WebPrimitiveRenderer.renderCsv(mixedCsv, 1f)

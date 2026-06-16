@@ -5,33 +5,49 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * CsvCodec の台形/TriTrap round-trip pin (B10)。
+ * CsvCodec の Rectangle (台形) 混在 round-trip pin。
  * CsvCodecTest.kt (既存) は controls/deduction のみ。
- * ここでは台形混在 CSV の全フィールド保持を検証する。
+ * ここでは Rectangle 混在 CSV の全フィールド保持を検証する。
  *
- * B-FORCE (2026-06-15): rows/trapRows/trapParentedTriRows バケツ廃止。
- * figureRows フィルタリングで種別カウントを行う。
- *   - 三角形行: chunks[0].toIntOrNull() != null かつ "Trapezoid"/"TriTrap" 以外
- *   - 台形行:   chunks[0] == "Trapezoid"
- *   - TriTrap行: chunks[0] == "TriTrap"
+ * user 確定 2026-06-16「TriTrap タグ排除」── CSV タグは Rectangle 1 種、 Rectangle 子三角形は
+ * 普通三角形行で parent=混在通し番号 (= 三角形数 + Rectangle idx) で表現する。
+ *
+ * figureRows フィルタリングで種別カウントを行う:
+ *   - Rectangle 行:    chunks[0] == "Rectangle"
+ *   - 普通三角形行:    parent <= 直前までの三角形数 (or parent < 1)
+ *   - Rectangle 子行: parent > 直前までの三角形数 (= 旧 TriTrap 相当)
  */
 class CsvCodecTrapRoundTripTest {
 
-    private fun CsvCodec.CsvDoc.triRows() = figureRows.filter {
-        val t = it.chunks.firstOrNull()
-        t != "Trapezoid" && t != "TriTrap"
+    private fun CsvCodec.CsvDoc.rectRows() = figureRows.filter { it.chunks.firstOrNull() == "Rectangle" }
+
+    private fun CsvCodec.CsvDoc.splitTriRows(): Pair<List<CsvCodec.CsvRow>, List<CsvCodec.CsvRow>> {
+        val triRows = mutableListOf<CsvCodec.CsvRow>()
+        val rectChildRows = mutableListOf<CsvCodec.CsvRow>()
+        var triCount = 0
+        for (row in figureRows) {
+            if (row.chunks.firstOrNull() == "Rectangle") continue
+            val parent = row.chunks.getOrNull(4)?.toIntOrNull() ?: -1
+            if (parent > triCount && parent > 0) {
+                rectChildRows.add(row)
+            } else {
+                triRows.add(row)
+                triCount++
+            }
+        }
+        return triRows to rectChildRows
     }
-    private fun CsvCodec.CsvDoc.trapRows() = figureRows.filter { it.chunks.firstOrNull() == "Trapezoid" }
-    private fun CsvCodec.CsvDoc.trapParentedTriRows() = figureRows.filter { it.chunks.firstOrNull() == "TriTrap" }
+    private fun CsvCodec.CsvDoc.triRows() = splitTriRows().first
+    private fun CsvCodec.CsvDoc.rectChildTriRows() = splitTriRows().second
 
     /** fixture の parse で figureRows に正しく振り分けられる */
     @Test
-    fun fixture_parse_distributes_trapRows_and_trapParentedTriRows() {
-        val doc = CsvCodec.parse(TRAP_MIXED_CSV)
+    fun fixture_parse_distributes_rect_and_rect_child_rows() {
+        val doc = CsvCodec.parse(RECT_MIXED_CSV)
         assertEquals(4, doc.preLines.size, "preLines 4 行")
         assertEquals(3, doc.triRows().size, "普通三角形 3 行")
-        assertEquals(2, doc.trapRows().size, "台形 2 行")
-        assertEquals(1, doc.trapParentedTriRows().size, "TriTrap 1 行")
+        assertEquals(2, doc.rectRows().size, "Rectangle 2 行")
+        assertEquals(1, doc.rectChildTriRows().size, "Rectangle 子三角形 1 行")
         assertEquals(1, doc.dedRows.size, "控除 1 行")
         assertEquals(15.0f, doc.listAngle!!, 0.001f)
         assertEquals(5.0f, doc.textSize!!, 0.001f)
@@ -42,8 +58,8 @@ class CsvCodecTrapRoundTripTest {
 
     /** parse -> serialize -> parse が固定点 (idempotence) */
     @Test
-    fun trap_csv_parse_serialize_idempotence() {
-        val doc1 = CsvCodec.parse(TRAP_MIXED_CSV)
+    fun rect_csv_parse_serialize_idempotence() {
+        val doc1 = CsvCodec.parse(RECT_MIXED_CSV)
         val once = CsvCodec.serialize(doc1)
         val twice = CsvCodec.serialize(CsvCodec.parse(once))
         assertEquals(once, twice, "serialize -> parse -> serialize が固定点")
@@ -51,51 +67,52 @@ class CsvCodecTrapRoundTripTest {
 
     /** parse -> build -> bake -> serialize -> parse で CsvDoc フィールドが等価 */
     @Test
-    fun trap_csv_full_roundtrip_preserves_trapRows() {
-        val doc1 = CsvCodec.parse(TRAP_MIXED_CSV)
+    fun rect_csv_full_roundtrip_preserves_rect_rows() {
+        val doc1 = CsvCodec.parse(RECT_MIXED_CSV)
         val trilist = CsvCodec.build(doc1)
         val baked = CsvCodec.bake(trilist, doc1)
         val serialized = CsvCodec.serialize(baked)
         val doc2 = CsvCodec.parse(serialized)
 
-        assertEquals(doc1.trapRows().size, doc2.trapRows().size, "台形行数")
-        assertEquals(doc1.trapParentedTriRows().size, doc2.trapParentedTriRows().size, "TriTrap 行数")
+        assertEquals(doc1.rectRows().size, doc2.rectRows().size, "Rectangle 行数")
+        assertEquals(doc1.rectChildTriRows().size, doc2.rectChildTriRows().size, "Rectangle 子三角形 行数")
         assertEquals(doc1.preLines, doc2.preLines, "preLines 保持")
         assertEquals(doc1.dedRows.size, doc2.dedRows.size, "dedRows 行数")
         assertEquals(doc1.textSize, doc2.textSize, "textSize 保持")
         assertEquals(doc1.listAngle, doc2.listAngle, "listAngle 保持")
     }
 
-    /** TriTrap chain: 台形子三角形の round-trip で辺長・接続情報が保持される */
+    /** Rectangle 子三角形の round-trip で辺長・接続情報が保持される */
     @Test
-    fun tritrap_chain_roundtrip_preserves_edge_and_connection() {
-        val doc1 = CsvCodec.parse(TRAP_MIXED_CSV)
+    fun rect_child_chain_roundtrip_preserves_edge_and_connection() {
+        val doc1 = CsvCodec.parse(RECT_MIXED_CSV)
         val trilist = CsvCodec.build(doc1)
         val baked = CsvCodec.bake(trilist, doc1)
         val serialized = CsvCodec.serialize(baked)
         val doc2 = CsvCodec.parse(serialized)
 
-        val tt1 = doc1.trapParentedTriRows()
-        val tt2 = doc2.trapParentedTriRows()
+        val tt1 = doc1.rectChildTriRows()
+        val tt2 = doc2.rectChildTriRows()
         assertEquals(tt1.size, tt2.size)
         for (i in tt1.indices) {
             val r1 = tt1[i]
             val r2 = tt2[i]
-            // chunks: [TriTrap, num, ea, B, C, targetIdx, side]
-            assertEquals(r1.chunks.getOrNull(1), r2.chunks.getOrNull(1), "TriTrap[$i] num")
-            assertEquals(r1.chunks.getOrNull(3), r2.chunks.getOrNull(3), "TriTrap[$i] B")
-            assertEquals(r1.chunks.getOrNull(4), r2.chunks.getOrNull(4), "TriTrap[$i] C")
-            assertEquals(r1.chunks.getOrNull(5), r2.chunks.getOrNull(5), "TriTrap[$i] targetIdx")
-            assertEquals(r1.chunks.getOrNull(6), r2.chunks.getOrNull(6), "TriTrap[$i] side")
+            // chunks: [num, a, b, c, parent, side]
+            assertEquals(r1.chunks.getOrNull(0), r2.chunks.getOrNull(0), "rectChild[$i] num")
+            assertEquals(r1.chunks.getOrNull(1), r2.chunks.getOrNull(1), "rectChild[$i] a")
+            assertEquals(r1.chunks.getOrNull(2), r2.chunks.getOrNull(2), "rectChild[$i] b")
+            assertEquals(r1.chunks.getOrNull(3), r2.chunks.getOrNull(3), "rectChild[$i] c")
+            assertEquals(r1.chunks.getOrNull(4), r2.chunks.getOrNull(4), "rectChild[$i] parent")
+            assertEquals(r1.chunks.getOrNull(5), r2.chunks.getOrNull(5), "rectChild[$i] side")
         }
     }
 
-    /** 旧 CSV (台形なし、28 列形式) の round-trip 等価 -- 回帰防止 */
+    /** 旧 CSV (Rectangle なし、28 列形式) の round-trip 等価 -- 回帰防止 */
     @Test
     fun legacy_csv_roundtrip_no_regression() {
         val doc1 = CsvCodec.parse(LEGACY_CSV)
-        assertTrue(doc1.trapRows().isEmpty(), "旧 CSV に台形行はない")
-        assertTrue(doc1.trapParentedTriRows().isEmpty(), "旧 CSV に TriTrap はない")
+        assertTrue(doc1.rectRows().isEmpty(), "旧 CSV に Rectangle 行はない")
+        assertTrue(doc1.rectChildTriRows().isEmpty(), "旧 CSV に Rectangle 子三角形はない")
 
         val trilist = CsvCodec.build(doc1)
         val baked = CsvCodec.bake(trilist, doc1)
@@ -112,7 +129,7 @@ class CsvCodecTrapRoundTripTest {
     /** dedRows の round-trip 等価 (viewscale=1) */
     @Test
     fun dedRows_roundtrip_viewscale1() {
-        val doc1 = CsvCodec.parse(TRAP_MIXED_CSV)
+        val doc1 = CsvCodec.parse(RECT_MIXED_CSV)
         val trilist = CsvCodec.build(doc1)
         val baked = CsvCodec.bake(trilist, doc1)
         val serialized = CsvCodec.serialize(baked)
@@ -127,9 +144,9 @@ class CsvCodecTrapRoundTripTest {
     // -- inline fixtures --
 
     companion object {
-        /** 台形 + TriTrap + 控除 入り CSV (Web bake 相当) */
-        val TRAP_MIXED_CSV =
-            "koujiname, 台形混在テスト\n" +
+        /** Rectangle + Rectangle 子三角形 + 控除 入り CSV (Web bake 相当) */
+        val RECT_MIXED_CSV =
+            "koujiname, Rectangle 混在テスト\n" +
             "rosenname, テスト路線\n" +
             "gyousyaname, テスト業者\n" +
             "zumennum, 1\n" +
@@ -140,11 +157,11 @@ class CsvCodecTrapRoundTripTest {
             "ListScale, 1.0\n" +
             "TextSize, 5.0\n" +
             "Deduction,1,水路,0.5,4.0,1,1,0.0,1.0,2.0,1.5,2.5,0.0\n" +
-            "Trapezoid, 3.0, 2.0, 4.0, -1, 0.0, 0.0, 0.0, true, 4\n" +
-            "Trapezoid, 2.5, 1.5, 3.5, 1, 0.0, 0.0, 0.0, false, 4\n" +
-            "4, 3.0, 2.5, 2.0, 4, 1\n"  // parent=4 > triRows.size=3 -> trapParentedTriRows
+            "Rectangle, 3.0, 2.0, 4.0, -1, 0.0, 0.0, 0.0, true, 4\n" +
+            "Rectangle, 2.5, 1.5, 3.5, 1, 0.0, 0.0, 0.0, false, 4\n" +
+            "4, 3.0, 2.5, 2.0, 4, 1\n"  // parent=4 > triRows.size=3 -> Rectangle 子三角形
 
-        /** 旧 app 由来 CSV (台形なし、28 列形式) -- 回帰防止用 */
+        /** 旧 app 由来 CSV (Rectangle なし、28 列形式) -- 回帰防止用 */
         val LEGACY_CSV =
             "koujiname, 工事A\n" +
             "rosenname, 路線B\n" +

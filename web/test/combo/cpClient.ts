@@ -5,7 +5,7 @@
 const DEFAULT_BASE = process.env.TLCP_BASE ?? 'http://localhost:5173';
 
 export interface CpRow {
-  kind: 'triangle' | 'trapezoid' | 'tritrap';
+  kind: 'triangle' | 'rectangle' | 'recttri';
   a: string;
   b: string;
   c: string;

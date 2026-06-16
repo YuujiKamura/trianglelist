@@ -143,11 +143,11 @@ object WebDrawingExport {
         writer.titleDed_ = TitleParamStr()
         writer.zumeninfo = defaultZumenInfo()
         writer.setNames(header.koujiname, header.rosenname, header.gyousyaname, header.zumennum)
-        // 台形 (混在リスト) を実寸 (scale=1) で組む。trilist は overrides 適用済を明示渡し、
-        // 台形の親解決にユーザー手動配置を反映させる。三角形のみ CSV なら traps/trapTris が空。
-        // SoT 一本化 段3g (2026-06-15): buildMixed の戻り値から filterIsInstance で 2 種を抽出。
-        // trapTris 識別 = trilist set に含まれない Triangle (= 台形親 + TriTrap chain 親を含む。
-        // node.a is Rectangle 判定は TriTrap chain の 2 段目以降 (親=Triangle) を取りこぼす)。
+        // Rectangle (台形) を実寸 (scale=1) で組む。trilist は overrides 適用済を明示渡し、
+        // Rectangle の親解決にユーザー手動配置を反映させる。三角形のみ CSV なら traps/trapTris が空。
+        // buildMixed の戻り値から filterIsInstance で 2 種を抽出。
+        // trapTris 識別 = trilist set に含まれない Triangle (= Rectangle 親 + chain 親を含む。
+        // node.a is Rectangle 判定は chain の 2 段目以降 (親=Triangle) を取りこぼす)。
         val mixedDxf = CsvCodec.buildMixed(CsvCodec.parse(csv), trilist, 1f)
         val mixedDxfAll = (1..mixedDxf.size()).map { mixedDxf.get(it) }
         val traps = mixedDxfAll.filterIsInstance<Rectangle>()
@@ -161,8 +161,8 @@ object WebDrawingExport {
         return sb.toString()
     }
 
-    /** 台形を親に持つ三角形に mynumber / pointnumber を WebPrimitiveRenderer と同じ仕様で振る。
-     *  mynumber = 三角形数 + 台形数 + (1-based 連番)、pointnumber は重心 (= pointcenter)。
+    /** Rectangle を親に持つ Triangle に mynumber / pointnumber を WebPrimitiveRenderer と同じ仕様で振る。
+     *  mynumber = 三角形数 + Rectangle 数 + (1-based 連番)、pointnumber は重心 (= pointcenter)。
      *  writer は writeTriangle 経由で mynumber を採番済み前提で扱う (TriangleList の中ではないため
      *  arrangePointNumbers が回らない、ここで明示的にセット)。 */
     private fun numberTrapTris(tris: List<Triangle>, triCount: Int, trapCount: Int): List<Triangle> {
@@ -208,9 +208,9 @@ object WebDrawingExport {
         writer.setNames(header.koujiname, header.rosenname, header.gyousyaname, header.zumennum)
         writer.setStartNumber(1)
         writer.isReverse_ = numReverse
-        // 台形 (混在リスト) を実寸 (scale=1) で組む。DXF 側と同形。
+        // Rectangle (台形) を実寸 (scale=1) で組む。DXF 側と同形。
         // trilist は overrides 適用済を明示渡し。三角形のみ CSV なら traps/trapTris が空 = SFC golden 不変。
-        // SoT 一本化 段3g (2026-06-15): buildMixed → trilist set membership で 2 種抽出 (= DXF 側と同型)。
+        // buildMixed → trilist set membership で 2 種抽出 (= DXF 側と同型)。
         val mixedSfc = CsvCodec.buildMixed(CsvCodec.parse(csv), trilist, 1f)
         val mixedSfcAll = (1..mixedSfc.size()).map { mixedSfc.get(it) }
         val traps = mixedSfcAll.filterIsInstance<Rectangle>()

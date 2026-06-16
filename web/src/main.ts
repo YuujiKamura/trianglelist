@@ -186,7 +186,7 @@ let lastTapModel: { x: number; y: number } | null = null;
 let edgeSel: { tri: number; side: 1 | 2 } | null = null;
 let shadowPrims: LinePrim[] | null = null;
 // 台形の辺をタップして「ここに三角形を乗せる」待ち状態 (三角形モード)。edgeSel (三角形親) を汚さず
-// 別に持つ — 追加経路 fabReplace の三角形親ガードを避け、TriTrap 行を直に作る。trap=台形群index(1始まり)、
+// 別に持つ — 追加経路 fabReplace の三角形親ガードを避け、RectChild 行を直に作る。trap=台形群index(1始まり)、
 // side=getLine 側(1=左脚/2=上辺/3=右脚)。シャドーは三角形を台形辺に乗せた形で出る。
 let pendingTrapParent: { trap: number; side: number } | null = null;
 
@@ -200,11 +200,11 @@ let deductionMode = false;
 let dedCursor: { x: number; y: number } | null = null;
 let dedSelected = 0; // 選択中の控除番号 (1-based、0 = 非選択)
 
-// ---- 台形 (Trapezoid) 図形 (混在リスト段1+2: trap-design.md v2 の確定仕様) ----
-// v1 の別state (trapLines) は廃止。台形は三角形と同じ rows[] に kind='trapezoid' で混在する
-// (trap-design.md「混在リストが土台」)。CSV contract は不変: "Trapezoid,num,length,widthA,
+// ---- 台形 (Rectangle) 図形 (混在リスト段1+2: trap-design.md v2 の確定仕様) ----
+// v1 の別state (trapLines) は廃止。台形は三角形と同じ rows[] に kind='rectangle' で混在する
+// (trap-design.md「混在リストが土台」)。CSV contract は不変: "Rectangle,num,length,widthA,
 // widthB,parent,side"。length=延長(辺B), widthA=底辺(辺A), widthB=上辺(辺C),
-// parent=接続先三角形番号(-1=独立), side=接続辺(1=B,2=C, 独立=0)。common の buildTrapezoids
+// parent=接続先三角形番号(-1=独立), side=接続辺(1=B,2=C, 独立=0)。common の buildRectangles
 // (CsvCodec.kt:240) はこの行を読んで描く — web は CSV を出すだけ。三角形の出力は1ビット不変。
 //
 // 不変条件: rows[] は「三角形が連続 prefix + 台形が suffix」を常に保つ。これにより
@@ -212,7 +212,7 @@ let dedSelected = 0; // 選択中の控除番号 (1-based、0 = 非選択)
 // 台形ゼロのリストでは全経路がバイト同一 = golden 不変。add は kind で splice 位置を分け、
 // parse は台形行を三角形の後に積む。
 // 新規入力で「追加」が作る図形種別。FAB fabFigureKind でトグル、syncForm がラベルを切替える
-let figureKind: 'triangle' | 'trapezoid' = 'triangle';
+let figureKind: 'triangle' | 'rectangle' = 'triangle';
 
 // Deduction CSV 行の表示用パース (列順は MainActivity.writeCSV:2795)。座標列 8/9 は
 // モデル座標 (y 上向き、保存時に Y 反転済みの値) なのでそのまま hit/マーカーに使える
@@ -464,7 +464,7 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
     ctx.fillStyle = COLORS.shadowFill;
     ctx.beginPath();
     // 段3 swap (commit 659b509) 以降、 4 辺 line の出力順は「side 0=底/1=右脚/2=上/3=左脚」の
-    // 並列で出るため「前の終点 = 次の始点」 が成立しない (旧 renderTrapezoid は連続 chain で出して
+    // 並列で出るため「前の終点 = 次の始点」 が成立しない (旧 renderRectangle は連続 chain で出して
     // いた)。 そのまま順に lineTo すると A→B→C→D の対角線が走り砂時計 X クロスに見えるため、
     // 端点グラフで chain 連結して外形パスを作り直す。
     const path = chainPath(shadowPrims);
@@ -503,7 +503,7 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
     edgeLabel(shadowPrims[2], `上辺 ${cv}`.trim()); // 上辺
     // 延長 (= 台形高さ rect.length) のラベルは「短辺起点から立てた垂線」上に出す。
     // shadowPrims[3] (= 左脚 tl→bl) は align ≠ 0 で斜辺になるため、そこに「延長」を貼ると
-    // 「斜辺上に延長ラベル」になる (user 指摘 2026-06-14)。WebPrimitiveRenderer.renderTrapezoid
+    // 「斜辺上に延長ラベル」になる (user 指摘 2026-06-14)。WebPrimitiveRenderer.renderRectangle
     // の crossOffset(... ±90) と同じく、短辺判定 + 反対辺端点の base 直交成分で perp 方向を取る。
     const bl = { x: shadowPrims[0].x1, y: shadowPrims[0].y1 };
     const br = { x: shadowPrims[0].x2, y: shadowPrims[0].y2 };
@@ -682,13 +682,13 @@ const EKEY: Record<EdgeKey, 'ea' | 'eb' | 'ec'> = { a: 'ea', b: 'eb', c: 'ec' };
 
 type Row = {
   // kind='triangle': ea/eb/ec=辺A/B/C, conn=接続コード(CSV列5)。
-  // kind='trapezoid': ea=底辺(widthA), eb=延長(length), ec=上辺(widthB),
+  // kind='rectangle': ea=底辺(widthA), eb=延長(length), ec=上辺(widthB),
   //   parent=接続先三角形番号, conn=接続辺 side('0'独立/'1'=B/'2'=C)。
   // 辺プールは両者で共用。台形は段1+2では辺共有 (single side) のみ — 形態/起点は段4。
-  // kind='tritrap': 台形を親に持つ三角形 (CSV "TriTrap" 行)。ea=底辺(台形辺で上書き・情報),
+  // kind='recttri': 台形を親に持つ三角形 (CSV "RectChild" 行)。ea=底辺(台形辺で上書き・情報),
   //   eb=B, ec=C, parent=台形群index(1始まり), conn=接続辺 side(1=左脚/2=上辺/3=右脚)。
   //   rows[] では台形 suffix の更に後ろに積む (親=台形が先に在る不変条件)。番号は通しで三角形扱い。
-  kind: 'triangle' | 'trapezoid' | 'tritrap';
+  kind: 'triangle' | 'rectangle' | 'recttri';
   ea: number; // 辺A の edges index (単純接続では親の eb/ec と同一値)
   eb: number;
   ec: number;
@@ -696,11 +696,11 @@ type Row = {
   conn: string;
   extras: string[]; // 7列目以降 (測点名等) を生のまま保持して round-trip で落とさない
   // 台形のみ: 上辺アライメント (0左/1中/2右)。既存の起点(lcr)列を流用 (trap-design.md 段3)。
-  // 三角形では未使用。省略時 0 で後方互換 (R1 の 7 列 Trapezoid CSV は左寄せ)
+  // 三角形では未使用。省略時 0 で後方互換 (R1 の 7 列 Rectangle CSV は左寄せ)
   align?: number;
   // 台形のみ: 親の種別 (0三角形/1台形)。CSV 9 列目 parentKind (R4 で common が getOrNull(8) で読む形)。
   // parentKind=1 のとき parent は台形番号 (台形群内の構築順 1 始まり)、接続辺 side に D(3) が増える。
-  // 三角形では未使用。省略時 0 で後方互換 (R2 の 8 列 Trapezoid CSV は親=三角形のまま不変)
+  // 三角形では未使用。省略時 0 で後方互換 (R2 の 8 列 Rectangle CSV は親=三角形のまま不変)
   parentKind?: number;
 };
 
@@ -782,10 +782,10 @@ function parseCsvToState(csv: string): void {
   dedSelected = 0;
   dedCursor = null;
   // 台形行は一旦ここに溜め、全三角形を読み終えてから rows 末尾に積む (prefix 不変条件を保つ —
-  // 三角形読み中の rows[pn-1] 親引きが台形に当たらないように、かつ手書き CSV で Trapezoid が
+  // 三角形読み中の rows[pn-1] 親引きが台形に当たらないように、かつ手書き CSV で Rectangle が
   // 先頭に来ても prefix が崩れないように)
   const trapRows: Row[] = [];
-  const tritrapRows: Row[] = []; // 台形を親に持つ三角形 ("TriTrap")。台形 suffix の更に後ろに積む
+  const recttriRows: Row[] = []; // 台形を親に持つ三角形 ("RectChild")。台形 suffix の更に後ろに積む
   for (const line of csv.split(/\r?\n/)) {
     if (line.trim() === '') continue;
     const chunks = line.split(',').map((s) => s.trim());
@@ -805,14 +805,14 @@ function parseCsvToState(csv: string): void {
       dedLines.push(line.trim());
       continue;
     }
-    // 台形行 → 台形 Row。列 (contract): Trapezoid, num, length(延長/辺B), widthA(底辺/辺A),
+    // 台形行 → 台形 Row。列 (contract): Rectangle, num, length(延長/辺B), widthA(底辺/辺A),
     // widthB(上辺/辺C), parent(三角形番号), side(1=B/2=C/0独立), align(0左/1中/2右)。num は再採番
     // するので捨てる (common も num は描画に使わず withIndex で振る)。辺は辺A=底辺/辺B=延長/辺C=上辺。
-    if (chunks[0] === 'Trapezoid') {
+    if (chunks[0] === 'Rectangle') {
       const al = intOrNull(chunks[7] ?? '') ?? 0; // 8列目 align、省略時0で後方互換
       const pk = intOrNull(chunks[8] ?? '') ?? 0; // 9列目 parentKind (0三角形/1台形)、省略時0で後方互換
       trapRows.push({
-        kind: 'trapezoid',
+        kind: 'rectangle',
         ea: newEdge(chunks[3] ?? ''), // 底辺(widthA)
         eb: newEdge(chunks[2] ?? ''), // 延長(length)
         ec: newEdge(chunks[4] ?? ''), // 上辺(widthB)
@@ -824,11 +824,11 @@ function parseCsvToState(csv: string): void {
       });
       continue;
     }
-    // 台形を親に持つ三角形。列: TriTrap, num, ea(底辺/情報), eb(=B), ec(=C), parent(台形群index), side。
+    // 台形を親に持つ三角形。列: RectChild, num, ea(底辺/情報), eb(=B), ec(=C), parent(台形群index), side。
     // common (CsvCodec) と同じ綴り。rows[] では台形 suffix の後ろ (親=台形が先) に積む。
-    if (chunks[0] === 'TriTrap') {
-      tritrapRows.push({
-        kind: 'tritrap',
+    if (chunks[0] === 'RectChild') {
+      recttriRows.push({
+        kind: 'recttri',
         ea: newEdge(chunks[2] ?? ''), // 底辺 (台形辺で上書きされる・情報)
         eb: newEdge(chunks[3] ?? ''), // B
         ec: newEdge(chunks[4] ?? ''), // C
@@ -847,14 +847,14 @@ function parseCsvToState(csv: string): void {
     const conn = chunks[5] ?? '-1';
     const extras = chunks.slice(6);
     const aStr = chunks[1] ?? '';
-    // 新 schema: parent が「現在までの三角形数」を超えていたら台形親 (= 旧 TriTrap)。
-    // CsvCodec.parse と同じ判定。tritrapRows に振り分けて rows 末尾に積む (順序維持)。
-    // user 2026-06-14「TriTrap みたいな妙なデータ型は廃止しろ」── CSV schema 統合。
+    // 新 schema: parent が「現在までの三角形数」を超えていたら台形親 (= 旧 RectChild)。
+    // CsvCodec.parse と同じ判定。recttriRows に振り分けて rows 末尾に積む (順序維持)。
+    // user 2026-06-14「RectChild みたいな妙なデータ型は廃止しろ」── CSV schema 統合。
     const pnEarly = intOrNull(parent) ?? -1;
     if (pnEarly > rows.length) {
       const trapIdx = pnEarly - rows.length;
-      tritrapRows.push({
-        kind: 'tritrap',
+      recttriRows.push({
+        kind: 'recttri',
         ea: newEdge(aStr),
         eb: newEdge(chunks[2] ?? ''),
         ec: newEdge(chunks[3] ?? ''),
@@ -891,7 +891,7 @@ function parseCsvToState(csv: string): void {
   // 台形を三角形 prefix の後ろに積む (不変条件: 三角形 prefix + 台形 suffix)
   rows.push(...trapRows);
   // 台形を親に持つ三角形は更にその後ろ (親=台形が先に在る → 読み戻しても解決可)
-  rows.push(...tritrapRows);
+  rows.push(...recttriRows);
 }
 
 function serializeState(): string {
@@ -915,28 +915,28 @@ function serializeState(): string {
   lines.push(`ListAngle, ${listAngle}`);
   // 寸法文字サイズ (アプリ writeCSV:2785 と同形)。CsvCodec.parse が textSize に昇格して読む
   lines.push(`TextSize, ${textSizeCsv}`);
-  // 台形行 (混在リスト段1+2+3+4-3)。CSV contract: Trapezoid, num, length, widthA, widthB, parent, side, align, parentKind。
+  // 台形行 (混在リスト段1+2+3+4-3)。CSV contract: Rectangle, num, length, widthA, widthB, parent, side, align, parentKind。
   // num は台形内連番で再採番 (common は num を描画に使わず withIndex で振る)。reader は先頭
   // prefix で分岐するので順不同で安全 (dedLines の前に置く)。align は上辺寄せ(0左/1中/2右)、
   // parentKind は親種別(0三角形/1台形)で common が getOrNull(8) で読み台形親を result から解決する (R4)
   let trapNum = 0;
   rows.forEach((r) => {
-    if (r.kind !== 'trapezoid') return;
+    if (r.kind !== 'rectangle') return;
     trapNum++;
     lines.push(
-      `Trapezoid, ${trapNum}, ${edgeVal(r, 'b')}, ${edgeVal(r, 'a')}, ${edgeVal(r, 'c')}, ${r.parent}, ${r.conn}, ${r.align ?? 0}, ${r.parentKind ?? 0}`,
+      `Rectangle, ${trapNum}, ${edgeVal(r, 'b')}, ${edgeVal(r, 'a')}, ${edgeVal(r, 'c')}, ${r.parent}, ${r.conn}, ${r.align ?? 0}, ${r.parentKind ?? 0}`,
     );
   });
   // 台形を親に持つ三角形は普通三角形行形式で書く (parent = 三角形数 + 台形群idx = 混在通し番号)。
-  // 旧 TriTrap タグは parser 側で互換読み (CsvCodec.parse / main.ts parseCsvToState 両方)。
-  // user 2026-06-14「TriTrap みたいな妙なデータ型は廃止しろ」── CSV schema からタグを廃止。
-  let tritrapNum = 0;
+  // 旧 RectChild タグは parser 側で互換読み (CsvCodec.parse / main.ts parseCsvToState 両方)。
+  // user 2026-06-14「RectChild みたいな妙なデータ型は廃止しろ」── CSV schema からタグを廃止。
+  let recttriNum = 0;
   rows.forEach((r) => {
-    if (r.kind !== 'tritrap') return;
-    tritrapNum++;
+    if (r.kind !== 'recttri') return;
+    recttriNum++;
     const trapIdx = intOrNull(r.parent) ?? 0;
     const parent = triNum + trapIdx; // 混在通し番号 (三角形数 + 台形 idx)
-    const num = triNum + trapNum + tritrapNum; // 描画番号 (三角形+台形+台形子三角形 の通し)
+    const num = triNum + trapNum + recttriNum; // 描画番号 (三角形+台形+台形子三角形 の通し)
     lines.push(
       `${num}, ${edgeVal(r, 'a')}, ${edgeVal(r, 'b')}, ${edgeVal(r, 'c')}, ${parent}, ${r.conn}`,
     );
@@ -977,7 +977,7 @@ function invalidTriangleReason(a: number, b: number, c: number): string | null {
 
 // 台形の妥当性: 延長(辺B)・底辺(辺A)・上辺(辺C) はいずれも正の数 (三角不等式は無い)。
 // 三角形と違い辺長の和の制約は無いので invalidTriangleReason は流用できない (独立の関門)
-function invalidTrapezoidReason(length: number, widthA: number, widthB: number): string | null {
+function invalidRectangleReason(length: number, widthA: number, widthB: number): string | null {
   if (!Number.isFinite(length) || !Number.isFinite(widthA) || !Number.isFinite(widthB)) {
     return '辺の値が数値ではありません';
   }
@@ -989,12 +989,12 @@ function invalidTrapezoidReason(length: number, widthA: number, widthB: number):
 function findInvalidRow(rs: Row[]): { reason: string } | null {
   let triN = 0;
   let trapN = 0;
-  let tritrapN = 0;
+  let recttriN = 0;
   for (const r of rs) {
-    if (r.kind === 'trapezoid') {
+    if (r.kind === 'rectangle') {
       // 台形は三角不等式が無い (専用関門)。辺B=延長/辺A=底辺/辺C=上辺
       trapN++;
-      const reason = invalidTrapezoidReason(
+      const reason = invalidRectangleReason(
         parseFloat(edgeVal(r, 'b')),
         parseFloat(edgeVal(r, 'a')),
         parseFloat(edgeVal(r, 'c')),
@@ -1002,16 +1002,16 @@ function findInvalidRow(rs: Row[]): { reason: string } | null {
       if (reason) return { reason: `台形 ${trapN}: ${reason}` };
       continue;
     }
-    if (r.kind === 'tritrap') {
+    if (r.kind === 'recttri') {
       // 台形を親に持つ三角形。底辺A = 親台形辺長 (addTriOnTrap が格納) なので、接続済み
       // 三角形と同じく (A,B,C) の三角不等式で判定する。triN は通常三角形の連番なので増やさない
-      tritrapN++;
+      recttriN++;
       const reason = invalidTriangleReason(
         parseFloat(edgeVal(r, 'a')),
         parseFloat(edgeVal(r, 'b')),
         parseFloat(edgeVal(r, 'c')),
       );
-      if (reason) return { reason: `台形子三角形 ${tritrapN}: ${reason}` };
+      if (reason) return { reason: `台形子三角形 ${recttriN}: ${reason}` };
       continue;
     }
     triN++;
@@ -1058,7 +1058,7 @@ const select = (id: string) => el<HTMLSelectElement>(id);
 function syncForm(): void {
   // 図形種別でフォームの辺ラベルを切替える (台形: 辺A=底辺, 辺B=延長, 辺C=上辺)。
   // ヘッダは FAB モード (figureKind) が「今から足す図形」の語彙を決める。
-  const isTrap = figureKind === 'trapezoid';
+  const isTrap = figureKind === 'rectangle';
   const tc = triCount();
   // 新規番号は figureKind に追従 (三角形 = 次の三角形番号、台形 = 次の台形連番 T{k})
   input('newNum').value = String(rows.length + 1);
@@ -1074,13 +1074,13 @@ function syncForm(): void {
   input('curB').value = cur ? fmt2(edgeVal(cur, 'b')) : '';
   input('curC').value = cur ? fmt2(edgeVal(cur, 'c')) : '';
   input('curParent').value = cur ? cur.parent : '';
-  if (cur && cur.kind === 'trapezoid') {
+  if (cur && cur.kind === 'rectangle') {
     // 親種別 (pk: 0三角形/1台形) は親番号から自動推論 (user 指摘 2026-06-14「親種別を形態列に書くな」)。
     // 形態(CType)列は三角形と同じ axis (辺共有/二重断面/フロート) を流用 (台形でも共通サポート方針)。
     // 起点(lcr)列は上辺寄せ(0左/1中/2右) — 常時有効化し Row.align を表示・編集する (段3)。
     // 接続辺(Conn)は side。親=台形(pk=1)なら D(3) も出す
     const pnum = intOrNull(cur.parent) ?? -1;
-    const pk = (pnum >= 1 && pnum <= rows.length && rows[pnum - 1]?.kind === 'trapezoid') ? 1 : 0;
+    const pk = (pnum >= 1 && pnum <= rows.length && rows[pnum - 1]?.kind === 'rectangle') ? 1 : 0;
     cur.parentKind = pk; // CSV 出力の整合 (col 9) を保つ
     setSelectOptions(select('curCType'), CTYPE_OPTIONS, cur.extras[12] || '0');
     select('curCType').disabled = false;
@@ -1100,7 +1100,7 @@ function syncForm(): void {
   // フロート) を保ち、台形 mode では形態に意味が無いので disable する。
   const newParentN = intOrNull(input('newParent').value.trim());
   const parentIsTrap = newParentN !== null && newParentN >= 1 && newParentN <= rows.length
-    && rows[newParentN - 1]?.kind === 'trapezoid';
+    && rows[newParentN - 1]?.kind === 'rectangle';
   // 接続辺 options: 親が台形なら D を含めて B/C/D、それ以外 B/C
   // 形態列 (newCType) は三角形・台形共通の axis (user 方針 2026-06-14「三角形と同じように
   // 二重断面やフロートを同一にサポートする」)。disable しない。
@@ -1256,8 +1256,8 @@ function syncLcrDisabled(prefix: 'new' | 'cur'): void {
 // 'new' の台形文脈は figureKind、'cur' は現在行の kind で判定
 function onCTypeChange(prefix: 'new' | 'cur'): void {
   const isTrapCtx = prefix === 'new'
-    ? figureKind === 'trapezoid'
-    : current >= 1 && rows[current - 1]?.kind === 'trapezoid';
+    ? figureKind === 'rectangle'
+    : current >= 1 && rows[current - 1]?.kind === 'rectangle';
   if (isTrapCtx) {
     const pk = (intOrNull(select(`${prefix}CType`).value) ?? 0) === 1 ? 1 : 0;
     setSelectOptions(select(`${prefix}Conn`), connOptionsFor(prefix, pk));
@@ -1361,7 +1361,7 @@ function buildTrapRowCells(tr: HTMLTableRowElement, row: Row, i: number, canvas:
   // 形態列は三角形と同じ CTYPE_OPTIONS (辺共有/二重断面/フロート) を流用 (user 2026-06-14: 親:三角形/親:台形
   // 表示は撤回、親種別は親番号から自動推論)。起点列は上辺寄せ(0左/1中/2右) — 独立・接続とも常時有効
   const pn = intOrNull(row.parent) ?? -1;
-  const pk = (pn >= 1 && pn <= rows.length && rows[pn - 1]?.kind === 'trapezoid') ? 1 : 0;
+  const pk = (pn >= 1 && pn <= rows.length && rows[pn - 1]?.kind === 'rectangle') ? 1 : 0;
   row.parentKind = pk; // CSV 出力の整合 (col 9) を保つ
   if (pn < 1) {
     const tdInd = document.createElement('td');
@@ -1458,8 +1458,8 @@ function buildTable(canvas: HTMLCanvasElement): void {
     const tdKind = document.createElement('td');
     tdKind.className = 'kind';
     tdKind.dataset.kind = row.kind;
-    tdKind.textContent = row.kind === 'trapezoid' ? '□' : row.kind === 'tritrap' ? '△子' : '△';
-    tdKind.title = row.kind === 'trapezoid' ? '台形' : row.kind === 'tritrap' ? '台形子三角形 (TriTrap)' : '三角形';
+    tdKind.textContent = row.kind === 'rectangle' ? '□' : row.kind === 'recttri' ? '△子' : '△';
+    tdKind.title = row.kind === 'rectangle' ? '台形' : row.kind === 'recttri' ? '台形子三角形 (RectChild)' : '三角形';
     tr.appendChild(tdKind);
 
     // 測点名 (CSV 列6 = extras[0])。描画には出ないが round-trip・書き出しで保持する
@@ -1475,7 +1475,7 @@ function buildTable(canvas: HTMLCanvasElement): void {
     tr.appendChild(tdName);
 
     // 台形行は専用ブランチで描画 (辺=底辺/延長/上辺、接続辺=side のみ、形態/起点は段4)
-    if (row.kind === 'trapezoid') {
+    if (row.kind === 'rectangle') {
       buildTrapRowCells(tr, row, i, canvas);
       tbody.appendChild(tr);
       return;
@@ -1611,16 +1611,16 @@ function addRow(canvas: HTMLCanvasElement): void {
   // 親は「current 選択行」(無ければ三角形末尾 = 従来挙動)。current は混在通し番号 = rows index + 1
   const parentIdx = current > 0 ? current : t;
   const parentRow = rows[parentIdx - 1];
-  if (parentRow && (parentRow.kind === 'trapezoid' || parentRow.kind === 'tritrap')) {
-    // 台形 / 台形子三角形 を親に → 新行は tritrap (台形末尾の更に後ろに push、不変条件維持)。
-    // 内部 chunks の target_idx = 台形数 + tritrap chain idx = parentIdx - 三角形数。
+  if (parentRow && (parentRow.kind === 'rectangle' || parentRow.kind === 'recttri')) {
+    // 台形 / 台形子三角形 を親に → 新行は recttri (台形末尾の更に後ろに push、不変条件維持)。
+    // 内部 chunks の target_idx = 台形数 + recttri chain idx = parentIdx - 三角形数。
     // 底辺A は親の対応辺と同じ辺プール index を共有 (台形 widthB 編集が自動伝播)。
     // user 2026-06-15「台形にくっついてる三角形からも派生したい」+「上辺変えても電波してねー」。
     const targetIdx = parentIdx - t;
-    // デフォ side=1 (台形=左脚B/延長、tritrap=B 辺)。台形 widthB 編集が自動伝播するよう
-    // 親の対応辺と同じプール index を共有 (parentRow.eb = 台形なら延長、tritrap なら B 辺)
+    // デフォ side=1 (台形=左脚B/延長、recttri=B 辺)。台形 widthB 編集が自動伝播するよう
+    // 親の対応辺と同じプール index を共有 (parentRow.eb = 台形なら延長、recttri なら B 辺)
     rows.push({
-      kind: 'tritrap',
+      kind: 'recttri',
       ea: parentRow.eb,
       eb: newEdge('3.0'),
       ec: newEdge('3.0'),
@@ -1688,8 +1688,8 @@ function rewriteCurrent(canvas: HTMLCanvasElement): void {
     return;
   }
   // 台形カレント行の書換え (段1+2): 辺=底辺/延長/上辺、親+side のみ。relinkEdgeA/cp は無い
-  if (rows[current - 1].kind === 'trapezoid') {
-    rewriteCurrentTrapezoid(canvas);
+  if (rows[current - 1].kind === 'rectangle') {
+    rewriteCurrentRectangle(canvas);
     return;
   }
   // 共通関門: 不成立の値は state を汚す前に却下 (undo スナップも消費しない)
@@ -1727,9 +1727,9 @@ function rewriteCurrent(canvas: HTMLCanvasElement): void {
 
 // 台形カレント行の書換え (段1+2)。辺A=底辺/辺B=延長/辺C=上辺、親 (三角形番号) と side のみ。
 // 三角形のような辺A 共有 (relinkEdgeA) や cp 列 (writeCpExtras) は段4 なので無い
-function rewriteCurrentTrapezoid(canvas: HTMLCanvasElement): void {
+function rewriteCurrentRectangle(canvas: HTMLCanvasElement): void {
   const r = rows[current - 1];
-  const editBad = invalidTrapezoidReason(
+  const editBad = invalidRectangleReason(
     parseFloat(input('curB').value), // 延長
     parseFloat(input('curA').value), // 底辺
     parseFloat(input('curC').value), // 上辺
@@ -1784,8 +1784,8 @@ function fabReplace(canvas: HTMLCanvasElement): void {
     return;
   }
   // 台形モード: 「追加」は台形行を生成する (控除モード分岐と同じ構え)
-  if (figureKind === 'trapezoid') {
-    addTrapezoid(canvas);
+  if (figureKind === 'rectangle') {
+    addRectangle(canvas);
     return;
   }
   const newB = input('newB').value.trim();
@@ -1798,7 +1798,7 @@ function fabReplace(canvas: HTMLCanvasElement): void {
   }
   if (newC === '') return; // アプリと同じ: B だけでは何もしない (strAddLineC.isEmpty -> return)
 
-  // 台形辺タップ済 (三角形を台形に乗せる): 三角形親ガードを通さず TriTrap 行を直に作る
+  // 台形辺タップ済 (三角形を台形に乗せる): 三角形親ガードを通さず RectChild 行を直に作る
   if (pendingTrapParent) {
     addTriOnTrap(canvas, newB, newC);
     return;
@@ -1894,7 +1894,7 @@ function fabReplace(canvas: HTMLCanvasElement): void {
 
 // 台形の追加 (混在リスト段1+2): 新規入力欄を台形語彙で読み、台形 Row を rows[] 末尾 (台形 suffix)
 // に積む。辺A=底辺(widthA), 辺B=延長(length), 辺C=上辺(widthB)。幾何は common が CSV から再構築。
-function addTrapezoid(canvas: HTMLCanvasElement): void {
+function addRectangle(canvas: HTMLCanvasElement): void {
   // ラベルは台形語彙だが input の id は三角形と共用 (newA/newB/newC)
   let widthAStr = input('newA').value.trim();   // 底辺 (親=台形なら親辺長で上書き、共有辺)
   const lengthStr = input('newB').value.trim(); // 延長
@@ -1902,7 +1902,7 @@ function addTrapezoid(canvas: HTMLCanvasElement): void {
 
   const t = triCount();
   // 親=台形のスロット (pendingTrapParent) があるなら、parent/side/parentKind はスロットから直に取る。
-  // 底辺は親台形辺長で上書き (TriTrap と同じ思想、共有辺なので 0/未入力でも親辺長で埋める)。
+  // 底辺は親台形辺長で上書き (RectChild と同じ思想、共有辺なので 0/未入力でも親辺長で埋める)。
   const pend = pendingTrapParent;
   let parent: number;
   let side: number;
@@ -1926,7 +1926,7 @@ function addTrapezoid(canvas: HTMLCanvasElement): void {
     parent = parentStr === '' ? -1 : (intOrNull(parentStr) ?? -1);
     side = intOrNull(select('newConn').value) ?? 0;
     if (parent >= 1 && parent <= rows.length) {
-      parentKind = rows[parent - 1].kind === 'trapezoid' ? 1 : 0;
+      parentKind = rows[parent - 1].kind === 'rectangle' ? 1 : 0;
       if (parentKind === 1) {
         if (side !== 1 && side !== 2 && side !== 3) side = 1;
       } else if (side !== 1 && side !== 2) side = 1;
@@ -1942,7 +1942,7 @@ function addTrapezoid(canvas: HTMLCanvasElement): void {
   }
 
   // 正の数の関門 (三角不等式は無い、台形専用判定)。pend の場合 widthA は親辺長で確定済み
-  const bad = invalidTrapezoidReason(parseFloat(lengthStr), parseFloat(widthAStr), parseFloat(widthBStr));
+  const bad = invalidRectangleReason(parseFloat(lengthStr), parseFloat(widthAStr), parseFloat(widthBStr));
   if (bad) {
     setStatus(`⚠ 台形: ${bad} — 追加を中止`);
     return;
@@ -1952,7 +1952,7 @@ function addTrapezoid(canvas: HTMLCanvasElement): void {
   takeUndoSnap();
   // 台形 Row を suffix 末尾へ (辺A=底辺/辺B=延長/辺C=上辺、conn=side、align=上辺寄せ、parentKind=親種別)
   rows.push({
-    kind: 'trapezoid',
+    kind: 'rectangle',
     ea: newEdge(widthAStr),
     eb: newEdge(lengthStr),
     ec: newEdge(widthBStr),
@@ -1989,7 +1989,7 @@ function addTrapezoid(canvas: HTMLCanvasElement): void {
 function updateFigureKindFab(): void {
   const btn = document.getElementById('fabFigureKind');
   if (!btn) return;
-  const isTrap = figureKind === 'trapezoid';
+  const isTrap = figureKind === 'rectangle';
   btn.textContent = isTrap ? '▱' : '△';
   btn.classList.toggle('trapon', isTrap);
   btn.setAttribute('title', `新規図形を 三角形⇄台形 で切替 (現在: ${isTrap ? '台形' : '三角形'})`);
@@ -2019,7 +2019,7 @@ function updateReshapeFab(): void {
 
 // 新規図形の種別をトグル (三角形⇄台形)。ラベル・FAB 表示を更新して setStatus
 function toggleFigureKind(): void {
-  figureKind = figureKind === 'triangle' ? 'trapezoid' : 'triangle';
+  figureKind = figureKind === 'triangle' ? 'rectangle' : 'triangle';
   // pendingTrapParent / edgeSel は維持 (タップ済の親スロットは残してシャドーだけ新しい図形種別で
   // 組み直す)。形態列 (newCType) は意味が三角形/台形共通になったのでリセットしない
   // (user 方針 2026-06-14「親種別を形態列に書かない / 二重断面・フロートを台形でも共通サポート」)。
@@ -2029,13 +2029,13 @@ function toggleFigureKind(): void {
   syncForm();   // 辺ラベル (底辺/延長/上辺 ⇄ 辺A/B/C) を切替える
   const canvas = document.getElementById('cv') as HTMLCanvasElement | null;
   if (canvas) draw(canvas, lastPrims); // シャドー切替を即描画反映
-  setStatus(figureKind === 'trapezoid' ? '新規図形: 台形 (辺A=底辺 / 辺B=延長 / 辺C=上辺)' : '新規図形: 三角形');
+  setStatus(figureKind === 'rectangle' ? '新規図形: 台形 (辺A=底辺 / 辺B=延長 / 辺C=上辺)' : '新規図形: 三角形');
 }
 
 // カレント行 (=既存図形) の種別を反転する (三角形⇄台形)。user 2026-06-14:
 // 「既存図形の形状を変化させたい (= 削除+新規作成の代用)」動線。fabFigureKind は
 // 「次に追加する図形」の切替なので意図混同を避けるため別 FAB (fabReshape) で受ける。
-// 辺長 a/b/c はそのまま流用 — triangle a/b/c ↔ trapezoid widthA/length/widthB は edge 配置が一致。
+// 辺長 a/b/c はそのまま流用 — triangle a/b/c ↔ rectangle widthA/length/widthB は edge 配置が一致。
 // 子参照がある (= 他行が親番号として自分を参照) 場合は番号振り直しが要るので簡易版では reject、
 // status で解除を促す (将来: 子の parent も同期して書換える)。
 function reshapeCurrent(canvas: HTMLCanvasElement): void {
@@ -2053,7 +2053,7 @@ function reshapeCurrent(canvas: HTMLCanvasElement): void {
   }
   takeUndoSnap();
   if (r.kind === 'triangle') {
-    r.kind = 'trapezoid';
+    r.kind = 'rectangle';
     r.align = 0;
     r.parentKind = 0;
     // 台形は rows の末尾群 (prefix=三角形 / suffix=台形 不変条件)。末尾へ移動
@@ -2069,7 +2069,7 @@ function reshapeCurrent(canvas: HTMLCanvasElement): void {
   current = rows.indexOf(r) + 1;
   selected = current;
   // 種別反転で図形の bounds が変わる (三角形⇄台形は辺数も形状も違う)。 既存 view (反転前の fit)
-  // のままだと描画位置がズレ「センタリングが外れる」(user 報告 2026-06-16)。 loadCsv/addTrapezoid/
+  // のままだと描画位置がズレ「センタリングが外れる」(user 報告 2026-06-16)。 loadCsv/addRectangle/
   // addTriOnTrap と同じく view=null で次の draw に全体 fit を任せる。
   view = null;
   buildTable(canvas);
@@ -2097,7 +2097,7 @@ function deleteRow(canvas: HTMLCanvasElement, n: number): void {
         // 親を失った子は独立に落とす (現値を保ったまま辺A を自分の辺に切り出す)。
         // 台形の独立は side='0'、三角形は接続コード '-1'
         r.parent = '-1';
-        r.conn = r.kind === 'trapezoid' ? '0' : '-1';
+        r.conn = r.kind === 'rectangle' ? '0' : '-1';
         relinkEdgeA(r); // 台形は no-op
       } else if (pn > n) {
         r.parent = String(pn - 1); // 後続三角形番号が 1 ずれるので追従
@@ -2878,20 +2878,20 @@ function distToSegmentPx(px: number, py: number, l: LinePrim): number {
 // index % 3 がそのまま side (0=A, 1=B, 2=C)
 const EDGE_TAP_PX = 14;
 function nearestEdge(px: number, py: number): { tri: number; side: 0 | 1 | 2; d: number } | null {
-  // 三角形相当 (メイン三角形 ∪ TriTrap = 台形子三角形) の辺。位置 index 計算は廃止し
+  // 三角形相当 (メイン三角形 ∪ RectChild = 台形子三角形) の辺。位置 index 計算は廃止し
   // tri/side identifier で直接 lookup する (台形が混ざっても番号がズレない、user 指摘 2026-06-14)。
-  // tri 番号レンジ: メイン三角形 ∈ [1, triCount()]、台形 ∈ (tc, tc+trapCount]、TriTrap ∈ (tc+trapCount, ..]。
-  // 三角形相当 = メイン三角形 + TriTrap (中間の台形 range を除外)。
+  // tri 番号レンジ: メイン三角形 ∈ [1, triCount()]、台形 ∈ (tc, tc+trapCount]、RectChild ∈ (tc+trapCount, ..]。
+  // 三角形相当 = メイン三角形 + RectChild (中間の台形 range を除外)。
   const tc = triCount();
-  const trapMax = tc + rows.filter((r) => r.kind === 'trapezoid').length;
+  const trapMax = tc + rows.filter((r) => r.kind === 'rectangle').length;
   let best: { tri: number; side: 0 | 1 | 2; d: number } | null = null;
   for (const p of lastPrims) {
     if (p.type !== 'line' || p.layer !== 'tri') continue;
     const l = p as LinePrim;
     if (l.tri === undefined || l.side === undefined) continue;
     const isMainTri = l.tri >= 1 && l.tri <= tc;
-    const isTriTrap = l.tri > trapMax;
-    if (!isMainTri && !isTriTrap) continue; // 台形 range は対象外
+    const isRectChild = l.tri > trapMax;
+    if (!isMainTri && !isRectChild) continue; // 台形 range は対象外
     const d = distToSegmentPx(px, py, l);
     if (d <= EDGE_TAP_PX && (!best || d < best.d)) {
       best = { tri: l.tri, side: l.side as 0 | 1 | 2, d };
@@ -2905,14 +2905,14 @@ function nearestEdge(px: number, py: number): { tri: number; side: 0 | 1 | 2; d:
 // trap = 台形群内の連番 (1 始まり)、global 番号 = triCount()+trap。
 function nearestTrapEdge(px: number, py: number): { trap: number; side: 0 | 1 | 2 | 3; d: number } | null {
   const tc = triCount();
-  const trapCount = rows.filter((r) => r.kind === 'trapezoid').length;
+  const trapCount = rows.filter((r) => r.kind === 'rectangle').length;
   const gMax = tc + trapCount;
   let best: { trap: number; side: 0 | 1 | 2 | 3; d: number } | null = null;
   for (const p of lastPrims) {
     if (p.type !== 'line' || p.layer !== 'tri') continue;
     const l = p as LinePrim;
     if (l.tri === undefined || l.side === undefined) continue;
-    if (l.tri <= tc || l.tri > gMax) continue; // 台形のみ (TriTrap は除外)
+    if (l.tri <= tc || l.tri > gMax) continue; // 台形のみ (RectChild は除外)
     const d = distToSegmentPx(px, py, l);
     if (d <= EDGE_TAP_PX && (!best || d < best.d)) {
       best = { trap: l.tri - tc, side: l.side as 0 | 1 | 2 | 3, d };
@@ -2942,7 +2942,7 @@ function trapEdgeLen(trap: number, side: number): number {
 // 台形を図形選択し、どの辺かをフィードバックする (三角形の selectEdge と対をなす)。
 // 三角形を台形へ接続する配線 (CsvCodec.build が台形親を解決する位置順統合ビルド) は別段で、
 // ここでは誤接続を作らず選択と辺名表示までに留める。side: 0=底辺(接続不可) / 1=左脚 / 2=上辺 / 3=右脚。
-function selectTrapezoid(canvas: HTMLCanvasElement, trap: number, side: number): void {
+function selectRectangle(canvas: HTMLCanvasElement, trap: number, side: number): void {
   const gnum = triCount() + trap; // 台形の global 番号 (rows[] は三角形 prefix + 台形 suffix)
   selected = gnum;
   current = gnum;
@@ -2960,7 +2960,7 @@ function selectTrapezoid(canvas: HTMLCanvasElement, trap: number, side: number):
 }
 
 // 台形の自由辺をタップ → 親=台形のスロット (pendingTrapParent) を立てる。
-// 子の種別 (三角形/台形) は figureKind で分岐 → buildShadow と addTriangle/addTrapezoid が
+// 子の種別 (三角形/台形) は figureKind で分岐 → buildShadow と addTriangle/addRectangle が
 // 親スロットを読んで子別の挙動に分岐する。命名は歴史的 (TriOnTrap)、現在は子問わずの入口。
 // edgeSel (三角形親) は使わない。底辺(side 0)はここに来ない (handleTap で side>=1 のみ)。
 function presetTriOnTrap(canvas: HTMLCanvasElement, trap: number, side: number): void {
@@ -2970,8 +2970,8 @@ function presetTriOnTrap(canvas: HTMLCanvasElement, trap: number, side: number):
   // ユーザーが「追加可能」と誤解する。
   const child = edgeOccupiedTrap(trap, side);
   if (child > 0) {
-    selectTrapezoid(canvas, trap, side);
-    const childKind = rows[child - 1]?.kind === 'trapezoid' ? '台形' : '三角形';
+    selectRectangle(canvas, trap, side);
+    const childKind = rows[child - 1]?.kind === 'rectangle' ? '台形' : '三角形';
     setStatus(`台形 ${trap} の ${trapSideName(side)}辺 — ${childKind} ${child} が接続済み (追加不可、選択のみ)`);
     return;
   }
@@ -2998,14 +2998,14 @@ function presetTriOnTrap(canvas: HTMLCanvasElement, trap: number, side: number):
   updateRowHighlight();
   syncForm();
   draw(canvas, lastPrims);
-  const childWord = figureKind === 'trapezoid' ? '台形' : '三角形';
-  const inputHint = figureKind === 'trapezoid' ? '延長/上辺' : 'B/C';
+  const childWord = figureKind === 'rectangle' ? '台形' : '三角形';
+  const inputHint = figureKind === 'rectangle' ? '延長/上辺' : 'B/C';
   setStatus(`台形 ${trap} の ${trapSideName(side)}辺 — ${inputHint} を入力して ✎ で${childWord}を乗せる`);
   input('newB').focus();
 }
 
 
-// pendingTrapParent (台形辺タップ済) のとき、新規行の B/C で TriTrap 行を末尾に積む。
+// pendingTrapParent (台形辺タップ済) のとき、新規行の B/C で RectChild 行を末尾に積む。
 // 追加経路 fabReplace の三角形親ガード (親番号 <= triCount) は台形親に通らないので、ここで直に作る。
 function addTriOnTrap(canvas: HTMLCanvasElement, newB: string, newC: string): void {
   const pend = pendingTrapParent;
@@ -3017,16 +3017,16 @@ function addTriOnTrap(canvas: HTMLCanvasElement, newB: string, newC: string): vo
   takeUndoSnap();
   const name = input('newName').value;
   // 底辺A は親台形の対応辺と **同じ辺プール index** を共有させる (三角形→三角形と同じ規約)。
-  // これで台形の延長(B)/上辺(C) を後でリスト編集しても、tritrap の A 表示が自動追従する。
+  // これで台形の延長(B)/上辺(C) を後でリスト編集しても、recttri の A 表示が自動追従する。
   // user 2026-06-15「台形の上辺変えても子の三角形に電波してねー」── 共有プール抜けが根因。
   // side 規約: 1=B左脚 (=延長)、2=C上辺、3=D右脚 (D は Rectangle 上の延長と同値)。
   const trapMixedIdx = triCount() + pend.trap;
   const trapRow = rows[trapMixedIdx - 1];
-  const eaPoolIdx = trapRow && trapRow.kind === 'trapezoid'
+  const eaPoolIdx = trapRow && trapRow.kind === 'rectangle'
     ? (pend.side === 2 ? trapRow.ec : trapRow.eb)
     : newEdge(trapEdgeLen(pend.trap, pend.side).toFixed(2));
   const newRow: Row = {
-    kind: 'tritrap',
+    kind: 'recttri',
     ea: eaPoolIdx,
     eb: newEdge(newB),         // B
     ec: newEdge(newC),         // C
@@ -3117,9 +3117,9 @@ function chainPath(lines: LinePrim[]): { x: number; y: number }[] {
 function buildShadow(): void {
   shadowPrims = null;
   // 台形辺タップ済 (親=台形のスロット)。子の種別は figureKind で分岐:
-  //   triangle: TriTrap 仮行を足して三角形シャドー (tri 線末尾 3 本)
-  //   trapezoid: parentKind=1 の仮 Trapezoid 行を足して台形シャドー (tri 線末尾 4 本)。
-  //              底辺=親台形辺長で固定 (共有辺、CsvCodec.buildTrapezoids が initByParent で同値上書き)
+  //   triangle: RectChild 仮行を足して三角形シャドー (tri 線末尾 3 本)
+  //   rectangle: parentKind=1 の仮 Rectangle 行を足して台形シャドー (tri 線末尾 4 本)。
+  //              底辺=親台形辺長で固定 (共有辺、CsvCodec.buildRectangles が initByParent で同値上書き)
   if (pendingTrapParent) {
     // 親辺長を基準にデフォルトを組む。これにより「台形辺タップした瞬間にシャドーが出る」UX を
     // 三角形辺タップ (edgeSel 経路) と揃える (user 指摘 2026-06-14「台形のシャドー描画は何時に
@@ -3131,14 +3131,14 @@ function buildShadow(): void {
     const triLeg = (baseLen * 0.75).toFixed(2);   // 三角形シャドー脚 (= 三角形辺タップ path と同係数)
     const trapExt = (baseLen * 0.5).toFixed(2);   // 台形延長 (高さ) 既定
     const trapTop = (baseLen * 0.8).toFixed(2);   // 台形上辺 既定
-    if (figureKind === 'trapezoid') {
+    if (figureKind === 'rectangle') {
       const bvE = parseFloat(bv) > 0 ? bv : trapExt;
       const cvE = parseFloat(cv) > 0 ? cv : trapTop;
       const align = intOrNull(select('newLcr').value) ?? 0;
       const tc = triCount();
       const trapNum = rows.length - tc + 1;
       const candidate = serializeState() +
-        `Trapezoid,${trapNum},${bvE},${baseLen.toFixed(2)},${cvE},${pendingTrapParent.trap},${pendingTrapParent.side},${align},1\n`;
+        `Rectangle,${trapNum},${bvE},${baseLen.toFixed(2)},${cvE},${pendingTrapParent.trap},${pendingTrapParent.side},${align},1\n`;
       try {
         const prims = JSON.parse(renderCsvToPrimitivesWithOverrides(candidate, 1.0, overridesJson())) as Prim[];
         const triLines = prims.filter((q): q is LinePrim => q.type === 'line' && q.layer === 'tri');
@@ -3149,8 +3149,8 @@ function buildShadow(): void {
       }
       return;
     }
-    // 子三角形を台形に乗せる。 user 確定 2026-06-16「TriTrap タグ廃止、 Triangle 行 1 種で
-    // 親種別を統合」 ── 旧 `TriTrap,...` 仮行を撤廃、 Triangle 行 (parent=混在通し番号) で書く。
+    // 子三角形を台形に乗せる。 user 確定 2026-06-16「RectChild タグ廃止、 Triangle 行 1 種で
+    // 親種別を統合」 ── 旧 `RectChild,...` 仮行を撤廃、 Triangle 行 (parent=混在通し番号) で書く。
     // 親台形の混在通し番号 = 三角形数 + 台形 idx (= triCount() + pendingTrapParent.trap)。
     const bvE = parseFloat(bv) > 0 ? bv : triLeg;
     const cvE = parseFloat(cv) > 0 ? cv : triLeg;
@@ -3178,7 +3178,7 @@ function buildShadow(): void {
   const tc = triCount();
   let candidate: string;
   let take: 'tri' | 'trap';
-  if (figureKind === 'trapezoid') {
+  if (figureKind === 'rectangle') {
     // 親辺長 L からデフォを組む (三角形辺タップ + 台形 mode の即時シャドー)。pendingTrapParent 経路と
     // 同じ思想 — モード切替で即座に新図形種別のシャドーが出るよう、値未入力でも親辺長基準で埋める。
     const bv = input('newB').value;
@@ -3188,11 +3188,11 @@ function buildShadow(): void {
     const bvE = parseFloat(bv) > 0 ? bv : trapExt;
     const cvE = parseFloat(cv) > 0 ? cv : trapTop;
     const align = intOrNull(select('newLcr').value) ?? 0;
-    // 台形 CSV 9 列: Trapezoid,num,延長,底辺,上辺,parent,side,align,parentKind。底辺=親辺長 (接続時 common が
+    // 台形 CSV 9 列: Rectangle,num,延長,底辺,上辺,parent,side,align,parentKind。底辺=親辺長 (接続時 common が
     // 親辺で上書き)、parentKind=0 (本段は親=三角形のみ。台形を親にする #2 は selectEdge 側で parentKind を渡す)。
     const trapNum = rows.length - tc + 1;
     candidate = serializeState() +
-      `Trapezoid,${trapNum},${bvE},${aStr},${cvE},${edgeSel.tri},${edgeSel.side},${align},0\n`;
+      `Rectangle,${trapNum},${bvE},${aStr},${cvE},${edgeSel.tri},${edgeSel.side},${align},0\n`;
     take = 'trap';
   } else {
     const leg = (L * 0.75).toFixed(2);
@@ -3204,7 +3204,7 @@ function buildShadow(): void {
     const prims = JSON.parse(json) as Prim[];
     const triLines = prims.filter((q): q is LinePrim => q.type === 'line' && q.layer === 'tri');
     const own = pickShadowLines(triLines);
-    // 並び (台形): renderTrapezoid 順 0=底辺(bl→br) 1=右脚(br→tr) 2=上辺(tr→tl) 3=左脚/延長(tl→bl)。
+    // 並び (台形): renderRectangle 順 0=底辺(bl→br) 1=右脚(br→tr) 2=上辺(tr→tl) 3=左脚/延長(tl→bl)。
     if (take === 'trap') {
       if (own.length === 4) shadowPrims = own;
     } else {
@@ -3257,13 +3257,13 @@ function edgeOccupiedBy(tri: number, side: 1 | 2): number {
   return rows.findIndex((r) => r.kind === 'triangle' && intOrNull(r.parent) === tri && intOrNull(r.conn) === side) + 1;
 }
 
-// 台形版の占有判定 (parent=trap, conn=side の trapezoid 子 or tritrap 子があるか)。
+// 台形版の占有判定 (parent=trap, conn=side の rectangle 子 or recttri 子があるか)。
 // edgeOccupiedBy (三角形版、:3239) の対称化 — presetTriOnTrap で「既接続辺は追加遷移を起こさず
 // 選択のみ」 を三角形と同じ UX で出すために必要 (brief: b-edge-tap-ux-symmetry)。
 // 返り値は rows index+1 (= 1 始まりの行番号)、 0 なら未接続。
 function edgeOccupiedTrap(trap: number, side: number): number {
   return rows.findIndex((r) =>
-    (r.kind === 'trapezoid' || r.kind === 'tritrap')
+    (r.kind === 'rectangle' || r.kind === 'recttri')
     && intOrNull(r.parent) === trap
     && intOrNull(r.conn) === side
   ) + 1;
@@ -3533,12 +3533,12 @@ function handleTap(canvas: HTMLCanvasElement, px: number, py: number): void {
   const tc = triCount();
 
   // 辺と寸法の両方を、属する図形の種別 (三角形 / 台形) で振り分けて最近接を比べる。
-  // 寸法テキストは tri 番号を持つ (renderTrapezoid は台形の num = triCount+idx+1 を入れる) ので、
-  // dim.prim.tri が「台形範囲」に入るかで分ける。dim.prim.tri > triCount() だけだと TriTrap
-  // (台形子三角形、tri = triCount+trapCount+1..) も台形扱いされてしまい、TriTrap の B/C 辺タップで
-  // presetTriOnTrap 経路に流れて newCType='1' に固定される (user 指摘 2026-06-14「TriTrap の辺
+  // 寸法テキストは tri 番号を持つ (renderRectangle は台形の num = triCount+idx+1 を入れる) ので、
+  // dim.prim.tri が「台形範囲」に入るかで分ける。dim.prim.tri > triCount() だけだと RectChild
+  // (台形子三角形、tri = triCount+trapCount+1..) も台形扱いされてしまい、RectChild の B/C 辺タップで
+  // presetTriOnTrap 経路に流れて newCType='1' に固定される (user 指摘 2026-06-14「RectChild の辺
   // タップが newCType=1 のままになる」)。trapCount を加味して厳密に絞る。
-  const trapCount = rows.filter((r) => r.kind === 'trapezoid').length;
+  const trapCount = rows.filter((r) => r.kind === 'rectangle').length;
   const dimTrap = !!dim && dim.prim.tri !== undefined && dim.prim.tri > tc && dim.prim.tri <= tc + trapCount;
   const trapDimD = dimTrap ? dim!.d : Infinity;
   const triDimD = dim && !dimTrap ? dim.d : Infinity;
@@ -3563,7 +3563,7 @@ function handleTap(canvas: HTMLCanvasElement, px: number, py: number): void {
       presetTriOnTrap(canvas, trap, side);
       return;
     }
-    selectTrapezoid(canvas, trap, side);
+    selectRectangle(canvas, trap, side);
     return;
   }
 
@@ -3916,7 +3916,7 @@ if (import.meta.hot) {
     });
     // rows は CP 消費側の互換のため a/b/c 展開形で出す (内部は辺 index)。edges も生で添える
     const rowsExpanded = rows.map((r) => ({
-      kind: r.kind, // 混在リスト: triangle / trapezoid (CP 消費側が種別で出し分けられるように)
+      kind: r.kind, // 混在リスト: triangle / rectangle (CP 消費側が種別で出し分けられるように)
       a: edgeVal(r, 'a'),
       b: edgeVal(r, 'b'),
       c: edgeVal(r, 'c'),

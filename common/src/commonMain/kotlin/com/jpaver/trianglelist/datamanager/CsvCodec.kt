@@ -58,10 +58,11 @@ object CsvCodec {
      * TextSize 行も同様に昇格 (寸法文字サイズの SoT)。
      * dedRows = "Deduction" 先頭の控除行。chunks は列0 = "Deduction" を含む生の列。
      *
-     * figureRows = 三角形 + 台形 + 台形子三角形 (TriTrap) を CSV 出現順で保持する SoT。
-     *   chunks[0] == "Trapezoid" → 台形行
-     *   chunks[0] == "TriTrap"   → 台形子三角形行 (旧タグ形式、parse で内部変換済み)
+     * figureRows = 三角形 + 台形 (Rectangle) を CSV 出現順で保持する SoT。
+     *   chunks[0] == "Rectangle" → 台形 (Rectangle) 行
      *   chunks[0].toIntOrNull() != null → 三角形行 (または混在通し番号の台形子三角形行)
+     * user 確定 2026-06-16「まだトレープゾイド言ってんのか、トライトラップとか排除しろと言っただろうに」
+     * ── CSV タグは Rectangle 1 種 (Kotlin class 名と一致)、後方互換も切る。
      * B-FORCE: rows/trapRows/trapParentedTriRows バケツ廃止 (2026-06-15)。figureRows が唯一の SoT。
      */
     data class CsvDoc(
@@ -93,7 +94,7 @@ object CsvCodec {
         var textSize: Float? = null
         var listScale: Float? = null  // B04a: named field に昇格
         // B-FORCE: 三角形カウントは「普通三角形行」を追跡するためだけに使う
-        // (parent が三角形数を超えていれば台形/TriTrap 親の混在通し番号と解釈するため)
+        // (parent が三角形数を超えていれば台形 (Rectangle) 親の混在通し番号と解釈するため)
         var triCount = 0
         var hasFigure = false  // 最初の図形行より前を preLines、以降の非図形行を postLines に振る
         for (line in text.lineSequence()) {
@@ -116,14 +117,7 @@ object CsvCodec {
                 dedRows.add(CsvRow(chunks))
                 continue
             }
-            if (chunks.firstOrNull() == "Trapezoid") {
-                hasFigure = true
-                figureRows.add(CsvRow(chunks))
-                continue
-            }
-            if (chunks.firstOrNull() == "TriTrap") {
-                // 旧 TriTrap タグ形式: 内部で "TriTrap" chunks のまま figureRows に入れる。
-                // serialize 時に普通三角形行形式 (混在通し番号) に変換して書き出す。
+            if (chunks.firstOrNull() == "Rectangle") {
                 hasFigure = true
                 figureRows.add(CsvRow(chunks))
                 continue
@@ -134,10 +128,9 @@ object CsvCodec {
                 continue
             }
             hasFigure = true
-            // user 確定 2026-06-16「トライトラップなんぞという勝手なデータ型を温存するな、
-            //   親がどうとかでデータ型を分けるな」 ── Triangle 行は parent (混在通し番号) で
-            //   親種別を解決する 1 種類のみ。 旧 TriTrap タグ変換ロジック (parent > triCount で
-            //   別タグへ変換) を撤廃。 buildMixed の else 分岐で親解決を一律に行う。
+            // user 確定 2026-06-16「親がどうとかでデータ型を分けるな、 トライトラップとか排除しろ」
+            // ── Triangle 行は parent (混在通し番号) で親種別を解決する 1 種類のみ。
+            // CSV タグは Rectangle のみ、 TriTrap タグは完全廃止 (後方互換も切る)。
             // triCount は build() の trilist.size() 上限判定にだけ使う。
             figureRows.add(CsvRow(chunks))
             val parentIdx = chunks.getOrNull(4)?.toIntOrNull() ?: -1
@@ -151,30 +144,10 @@ object CsvCodec {
     fun serialize(doc: CsvDoc): String {
         val sb = StringBuilder()
         doc.preLines.forEach { sb.append(it).append('\n') }
-        // figureRows を CSV 出現順に書く。
-        // TriTrap 行は普通三角形行形式 (parent = 三角形数 + target_idx の混在通し番号) で書く。
-        // user 2026-06-14「TriTrap みたいな妙なデータ型は廃止しろ」── 旧タグは parse 互換読みのみ、書き出しはタグなし。
-        var ntri = 0
+        // figureRows を CSV 出現順に書く。 user 確定 2026-06-16「TriTrap タグ排除」
+        // ── 台形は Rectangle タグ、 台形子三角形は普通三角形行 (parent = 混在通し番号) で書く。
         for (row in doc.figureRows) {
-            val c = row.chunks
-            when {
-                c.firstOrNull() == "Trapezoid" -> sb.append(c.joinToString(",")).append('\n')
-                c.firstOrNull() == "TriTrap" -> {
-                    // TriTrap タグを普通三角形行形式に変換して書く
-                    val num = c.getOrNull(1) ?: ""
-                    val ea = c.getOrNull(2) ?: ""
-                    val b = c.getOrNull(3) ?: ""
-                    val cc = c.getOrNull(4) ?: ""
-                    val targetIdx = c.getOrNull(5)?.toIntOrNull() ?: 0
-                    val side = c.getOrNull(6) ?: "0"
-                    val parent = ntri + targetIdx
-                    sb.append("$num,$ea,$b,$cc,$parent,$side").append('\n')
-                }
-                else -> {
-                    sb.append(c.joinToString(",")).append('\n')
-                    ntri++
-                }
-            }
+            sb.append(row.chunks.joinToString(",")).append('\n')
         }
         // アプリ writeCSV と同じく図形行の後に書く。値の書式 ("ListAngle, x") も同一
         doc.listAngle?.let { sb.append("ListAngle, ").append(it).append('\n') }
@@ -190,8 +163,8 @@ object CsvCodec {
 
     /**
      * CsvDoc → TriangleList。figureRows を走査して三角形のみを構築する。
-     * 台形 (Trapezoid) と台形子三角形 (TriTrap) は figureRows に保持されているが、
-     * build() は三角形パイプラインに集中し、台形/TriTrap は buildFigures() が扱う。
+     * 台形 (Rectangle) は figureRows に保持されているが、build() は三角形パイプラインに集中し、
+     * Rectangle は buildMixed() が扱う。 user 確定 2026-06-16: CSV タグは Rectangle 1 種 (TriTrap タグ廃止)。
      *
      * 3 phases:
      *   1. 幾何構築 — 180° 基底で add (自動配置 setDimsUnconnectedSideToOuter を含む)
@@ -204,12 +177,12 @@ object CsvCodec {
         val built = mutableListOf<Pair<CsvRow, Triangle>>()
 
         // phase 1: 幾何構築 (CsvLoader.buildTriangle と同じ分岐)
-        // figureRows から三角形行 (Trapezoid/TriTrap 以外) のみ処理する
+        // figureRows から三角形行 (Rectangle 以外) のみ処理する
         for (row in doc.figureRows) {
             val c = row.chunks
-            // 台形行・TriTrap 行はスキップ (buildFigures() が扱う)
+            // Rectangle 行はスキップ (buildMixed() が扱う)
             val tag = c.firstOrNull()
-            if (tag == "Trapezoid" || tag == "TriTrap") continue
+            if (tag == "Rectangle") continue
             val lengthA = c.getOrNull(1)?.toFloatOrNull() ?: continue
             val lengthB = c.getOrNull(2)?.toFloatOrNull() ?: continue
             val lengthC = c.getOrNull(3)?.toFloatOrNull() ?: continue
@@ -248,30 +221,16 @@ object CsvCodec {
     }
 
     /**
-     * figureRows から台形 (Trapezoid) と台形子三角形 (TriTrap) を構築する。
-     * B-FORCE: buildTrapezoids / buildTrapParentedTriangles / buildMixed を統合した後継。
+     * figureRows から Rectangle (台形) と Triangle (台形子三角形を含む) を混在 EditList に構築する。
+     * user 確定 2026-06-16「親がどうとかでデータ型を分けるな、 トライトラップとか排除しろ」 ──
+     * CSV タグは Rectangle 1 種、 台形子三角形は普通 Triangle 行で parent=混在通し番号で表現。
+     *
      * trilist は build(doc) で構築済みを渡す。台形の親 (三角形) が trilist に在る前提。
      * scale は三角形と同じ実効倍率。
      *
-     * 戻り値: Pair<traps, trapTris>
-     *   first  = 台形 (Rectangle) のリスト
-     *   second = 台形子三角形 (Triangle) のリスト ── class は普通三角形と同一 Triangle、 list 分離のみ
-     *
-     * TODO (user 指示 2026-06-15「三角形を台形の子かどうかでデータクラスを分けてるのは変な実装」):
-     * trapTris を別 list にする構造を解消し、 全 Triangle を trilist に統合する refactor が要る。
-     * 番号管理 (= CSV parent 参照の混在通し番号 = 三角形数 + 台形 idx) の再設計を伴うため
-     * 段階的に進める ── 詳細は memory/feedback-tritrap-data-class-unify.md。
-     */
-    /**
-     * SoT 一本化 段3g (2026-06-15、 user 確定「三角形を台形の子かどうかで data class を分けてるのは
-     * 変な実装、 統一しろ」): figureRows を 1 周走査して mixed EditList<EditObject> を直接構築。
-     * 旧 buildFigures (= Pair<List<Rectangle>, List<Triangle>>) + composeAll (= 3 list を figureRows 順で
-     * 再合成) の 2 step を 1 関数に統合 ── 全 Triangle/Rectangle が同じ list に存在する形に統一。
-     *
-     * 内部の traps / trapTris local accumulator は「TriTrap の target (= 混在通し番号 = 三角形数
-     * + 台形 idx) の親解決」 のためだけに保持、 戻り値からは見えない。 caller が trapTris を別 list で
-     * 欲しい場合は mixed.filterIsInstance<Triangle>().filter { it.node.a is Rectangle } で抽出する
-     * (= Triangle.kt:198 のコメント「Rectangle 親 trapTri は EditObject 基底の node.a に親を保持」 が根拠)。
+     * 戻り値: 混在 EditList<EditObject> ── 全 Triangle/Rectangle が同じ list に存在 (figureRows 順)。
+     * 内部 traps / trapTris は 「混在通し番号 = 三角形数 + 台形 idx」 の親解決のため保持、
+     * 戻り値からは見えない。 caller が分離したい場合は filterIsInstance<Rectangle>() / Triangle.
      */
     fun buildMixed(doc: CsvDoc, trilist: TriangleList, scale: Float = 1f): EditList<EditObject> {
         val mixed = EditList<EditObject>()
@@ -284,7 +243,7 @@ object CsvCodec {
         for (row in doc.figureRows) {
             val c = row.chunks
             when (c.firstOrNull()) {
-                "Trapezoid" -> {
+                "Rectangle" -> {
                     val length = c.getOrNull(2)?.toFloatOrNull() ?: continue
                     val widthA = c.getOrNull(3)?.toFloatOrNull() ?: continue
                     val widthB = c.getOrNull(4)?.toFloatOrNull() ?: continue
@@ -307,28 +266,10 @@ object CsvCodec {
                     traps.add(rect)
                     mixed.add(rect)
                 }
-                "TriTrap" -> {
-                    val b = c.getOrNull(3)?.toFloatOrNull() ?: continue
-                    val cc = c.getOrNull(4)?.toFloatOrNull() ?: continue
-                    val target = c.getOrNull(5)?.toIntOrNull() ?: continue
-                    val side = c.getOrNull(6)?.toIntOrNull() ?: continue
-                    val ntrap = traps.size
-                    val parent: EditObject? = when {
-                        target in 1..ntrap -> traps[target - 1]
-                        target > ntrap && (target - ntrap - 1) in trapTris.indices -> trapTris[target - ntrap - 1]
-                        else -> null
-                    }
-                    if (parent == null) continue
-                    val tri = Triangle(parent, side, b * sf, cc * sf)
-                    trapTris.add(tri)
-                    mixed.add(tri)
-                }
                 else -> {
                     // Triangle 行。 parent (列 4) で親種別を解決:
                     //   parent <= trilist.size() → 親が Triangle、 trilist から pull (build() で構築済み)
                     //   parent > trilist.size()  → 親が Rectangle or 既存子 Triangle、 ここで新規構築
-                    // user 確定 2026-06-16「親がどうとかでデータ型を分けるな」 ── 旧 TriTrap タグ分岐
-                    // を統合、 Triangle 1 type のまま全 case を表現する。
                     val parent = c.getOrNull(4)?.toIntOrNull() ?: -1
                     if (parent in 1..trilist.size()) {
                         triIdx += 1
@@ -384,8 +325,8 @@ object CsvCodec {
     // B02: 既存 1 引数版は 2 引数版 (viewscale=1f) へのラッパー。後方互換維持。
     fun buildDeductions(doc: CsvDoc): DeductionList = buildDeductions(doc, viewscale = 1f)
 
-    // B-FORCE (2026-06-15): buildTrapezoids / buildTrapParentedTriangles / buildMixed / MixedBuild を廃止。
-    // 後継は buildFigures(doc, trilist, scale) — figureRows を 1 ループで全図形種別を処理する。
+    // B-FORCE (2026-06-15): Rectangle 系の旧 build 関数群 / buildMixed / MixedBuild を廃止。
+    // 後継は buildMixed(doc, trilist, scale) — figureRows を 1 ループで全図形種別を処理する。
 
     // -------------------------------------------------------------------------
     // B01: extractHeader / bakeHeader
@@ -577,13 +518,13 @@ object CsvCodec {
                 )
             )
         }
-        // figureRows を再構築: 三角形行は triRows で置き換え、台形/TriTrap 行は素通し。
-        // これで「bake が三角形のみ再構築して台形を捨てる」問題 (user 報告 2026-06-14) を解消。
+        // figureRows を再構築: 三角形行は triRows で置き換え、Rectangle 行は素通し。
+        // user 確定 2026-06-16: CSV タグは Rectangle 1 種 (Trapezoid / TriTrap タグ廃止)。
         var triIdx = 0
         val newFigureRows = original.figureRows.map { row ->
             val tag = row.chunks.firstOrNull()
-            if (tag == "Trapezoid" || tag == "TriTrap") {
-                row  // 台形/TriTrap は元の行をそのまま保持
+            if (tag == "Rectangle") {
+                row  // Rectangle は元の行をそのまま保持
             } else {
                 triRows.getOrElse(triIdx) { row }.also { triIdx++ }
             }
@@ -598,7 +539,7 @@ object CsvCodec {
 
     /**
      * Android 用 combined bake (B08): trilist + dedlist + header + original を
-     * 1 呼び出しで CsvDoc に焼き直す。未知行 (figureRows の台形/TriTrap 部分 /
+     * 1 呼び出しで CsvDoc に焼き直す。未知行 (figureRows の Rectangle 部分 /
      * preLines の補助行 / postLines / textSize) は original から素通し。
      *
      * 内部は bakeHeader → bakeDeductions → bake(trilist, doc) の順で呼ぶ。

@@ -6,7 +6,7 @@
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { health, loadCsv, state } from './combo/cpClient.ts';
-import { genTriangleTriangle, genTriangleTrapezoid, genTrapezoidTritrap, type ComboCase } from './combo/gen.ts';
+import { genTriangleTriangle, genTriangleRectangle, genRectangleRecttri, type ComboCase } from './combo/gen.ts';
 import { groupByTri, analyzeTri, detectTriOverlaps } from './combo/primAnalyzer.ts';
 
 beforeAll(async () => {
@@ -54,8 +54,8 @@ describe('combo: triangle + triangle (全軸)', () => {
   }
 });
 
-describe('combo: triangle + trapezoid (子=台形、 全軸)', () => {
-  const cases = [...genTriangleTrapezoid()];
+describe('combo: triangle + rectangle (子=台形、 全軸)', () => {
+  const cases = [...genTriangleRectangle()];
   it(`fixture 数 = 親辺長×台形辺長×conn(2)×align(3)`, () => {
     expect(cases.length).toBeGreaterThan(0);
   });
@@ -66,8 +66,8 @@ describe('combo: triangle + trapezoid (子=台形、 全軸)', () => {
   }
 });
 
-describe('combo: trapezoid + tritrap (親=台形、 全軸)', () => {
-  const cases = [...genTrapezoidTritrap()];
+describe('combo: rectangle + recttri (親=台形、 全軸)', () => {
+  const cases = [...genRectangleRecttri()];
   it(`fixture 数 = 台形辺長×align(3)×台形side(2)`, () => {
     expect(cases.length).toBeGreaterThan(0);
   });

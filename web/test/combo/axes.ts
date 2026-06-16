@@ -40,16 +40,16 @@ export const TRAP_SAMPLES: ReadonlyArray<readonly [number, number, number]> = [
 // 0=中央 1=右寄せ 2=左寄せ 3=台形子の自由配置 (Rectangle 仕様、 main.ts と整合)
 export const TRAP_ALIGNS = [0, 1, 2] as const; // 3 は子配置用なので一旦保留
 
-// 台形の接続辺 (TriTrap / 子 Trapezoid が乗る側): 0=底/1=右脚/2=上/3=左脚
+// 台形の接続辺 (RectChild / 子 Rectangle が乗る側): 0=底/1=右脚/2=上/3=左脚
 // ただし side=0 (底辺) は親と共有済みのため、 子が乗れるのは 1/2/3 (現実は 1/2 が動線)
 export const TRAP_CONN_SIDES = [1, 2] as const;
 
 // 親種別 ── 親が居る場合の親 EditObject 種別
-export type ParentKind = 'none' | 'triangle' | 'trapezoid';
+export type ParentKind = 'none' | 'triangle' | 'rectangle';
 
-export const PARENT_KINDS: ReadonlyArray<ParentKind> = ['none', 'triangle', 'trapezoid'] as const;
+export const PARENT_KINDS: ReadonlyArray<ParentKind> = ['none', 'triangle', 'rectangle'] as const;
 
 // 子種別 ── 親に接続して作る図形種別
-export type ChildKind = 'triangle' | 'trapezoid' | 'tritrap';
+export type ChildKind = 'triangle' | 'rectangle' | 'recttri';
 
-export const CHILD_KINDS: ReadonlyArray<ChildKind> = ['triangle', 'trapezoid', 'tritrap'] as const;
+export const CHILD_KINDS: ReadonlyArray<ChildKind> = ['triangle', 'rectangle', 'recttri'] as const;

@@ -20,7 +20,7 @@ import com.jpaver.trianglelist.setLengthStr
  *
  * SoT 一本化 段3f (2026-06-15): renderCsv は CsvCodec.composeAll を介して混在 EditList<EditObject>
  * を作り、新 render(list) に一本化。旧 6 引数 render(trilist, traps, trapTris) と private
- * renderTrapezoid は撤去された ── レンダラに残るのは多態 1 ループのみ。「Pages 版の ID 手計算
+ * renderRectangle は撤去された ── レンダラに残るのは多態 1 ループのみ。「Pages 版の ID 手計算
  * オフセット破綻」が構造的に不可能になった (= ID は figureRows 出現順 = forEachItemIndexed 1始まり)。
  *
  * 構成は app/datamanager/DxfFileWriter.writeTriangle (ADR 0003 Phase 2a) を踏襲:
