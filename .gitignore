@@ -35,6 +35,9 @@ web/node_modules/
 web/dist/
 web/wasm/
 web/public/*.wasm
+
+# Vite が root で動いたとき (誤起動 / IDE 連動) に出る空 cache
+/node_modules/
 web/public/*.wasm.map
 # sync-icons.mjs がアプリ drawable-nodpi からコピー生成 (SoT はアプリ側)
 web/public/icons/
