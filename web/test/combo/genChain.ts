@@ -96,43 +96,43 @@ export function* genTriangleChainFocus10(): Generator<ChainCase> {
   }
 }
 
-/** 親=台形 + 子=三角形 (TriTrap) ペア。 user 確定 2026-06-15「重なっててOKなんて条件は基本ない」
- *  ── 旧版で 9 段 chain にしたら全 TriTrap が同位置に積み重なる (= 辺共有 chain で scaling なし)。
+/** 親=台形 + 子=三角形 (RectChild) ペア。 user 確定 2026-06-15「重なっててOKなんて条件は基本ない」
+ *  ── 旧版で 9 段 chain にしたら全 RectChild が同位置に積み重なる (= 辺共有 chain で scaling なし)。
  *  道路測量アプリ仕様に合わないため pair 1 つに絞る。 台形 BCD = side {1, 2, 3} で 3 ケース。
  *
- *  CSV schema: 親 = Trapezoid 行、 子 = 通常三角形行で parent=混在通し番号 (= 三角形数 + 台形 idx)。
+ *  CSV schema: 親 = Rectangle 行、 子 = 通常三角形行で parent=混在通し番号 (= 三角形数 + 台形 idx)。
  */
-export function* genTrapezoidTritrapChain(): Generator<ChainCase> {
+export function* genRectangleTritrapChain(): Generator<ChainCase> {
   for (const side of [1, 2, 3] as const) {
     // 親台形 = 正方形 (length=widthA=widthB=1)、 子三角 1 つだけ親の指定辺に乗せる
-    const csv = `Trapezoid,1,1.00,1.00,1.00,-1,0,0,0\n2,1.00,1.00,1.00,1,${side}\n`;
+    const csv = `Rectangle,1,1.00,1.00,1.00,-1,0,0,0\n2,1.00,1.00,1.00,1,${side}\n`;
     yield {
       label: `trap-tritrap-pair/s${side}`,
       csv,
       expectedRows: 2,
       expectedSideCounts: [
         { tri: 1, sides: 4 }, // 台形
-        { tri: 2, sides: 3 }, // 子三角形 (TriTrap)
+        { tri: 2, sides: 3 }, // 子三角形 (RectChild)
       ],
       axes: { kind: 'trap-tritrap-pair', side },
     };
   }
 }
 
-/** 親=台形 → 子=三角形 (TriTrap 1 段目) → 孫=三角形 (chain 2 段目) の混成 chain。
+/** 親=台形 → 子=三角形 (RectChild 1 段目) → 孫=三角形 (chain 2 段目) の混成 chain。
  *  user 確定 2026-06-16「台形に接続した三角形に三角形を接続すると図形が壊れる」 が指す動線。
- *  CSV schema: 全 Triangle 行は parent=混在通し番号 1 種類で表現 (TriTrap タグ廃止後)。
+ *  CSV schema: 全 Triangle 行は parent=混在通し番号 1 種類で表現 (RectChild タグ廃止後)。
  *
  *    混在通し番号:
  *      1 = 台形 (figure[0])
  *      2 = 子三角 (figure[1]、 parent=1 で台形を指す)
  *      3 = 孫三角 (figure[2]、 parent=2 で子三角を指す)
  */
-export function* genTrapezoidTritrapChain2(): Generator<ChainCase> {
+export function* genRectangleTritrapChain2(): Generator<ChainCase> {
   for (const side1 of [1, 2, 3] as const) {
     for (const side2 of [1, 2] as const) {
       const csv =
-        `Trapezoid,1,1.00,1.00,1.00,-1,0,0,0\n` +
+        `Rectangle,1,1.00,1.00,1.00,-1,0,0,0\n` +
         `2,1.00,0.80,0.80,1,${side1}\n` +
         `3,0.80,0.60,0.60,2,${side2}\n`;
       yield {
@@ -155,11 +155,11 @@ export function* genTrapezoidTritrapChain2(): Generator<ChainCase> {
  *  反映状態のテストが必要」 への対応。
  *
  *  軸 (= CLAUDE.md「軸を列挙して generator で生成、 固定数字で書くな」):
- *    A. 段 2〜4 の図形種別: { triangle, trapezoid }^3 = 8 通り
- *    B. 親 side: 親が triangle なら {1, 2} (B/C)、 親が trapezoid なら {1, 2, 3} (B/C/D)
+ *    A. 段 2〜4 の図形種別: { triangle, rectangle }^3 = 8 通り
+ *    B. 親 side: 親が triangle なら {1, 2} (B/C)、 親が rectangle なら {1, 2, 3} (B/C/D)
  *
  *  段 1 は triangle 固定 (root, parent=-1)。 各段は直前段に接続 (= 純粋 chain)。
- *  CSV schema は TriTrap タグ廃止後 (commit 0b8c51e/24cb249) の Triangle 1 種統合 + 通常 Trapezoid 行。
+ *  CSV schema は RectChild タグ廃止後 (commit 0b8c51e/24cb249) の Triangle 1 種統合 + 通常 Rectangle 行。
  *
  *  総数 = Σ (2 × s2 × s3) over kinds ∈ {tri,trap}^3、 ここで si = (2 if kinds[i-1]==='tri' else 3)。
  *  実数 = 2 × ((2×2+2×3+3×2+3×3) × 2) = 2 × 50 = 100 ケース。
@@ -201,11 +201,11 @@ function buildMix4Csv(kinds: [Mix4Kind, Mix4Kind, Mix4Kind], sides: [number, num
       csv += `${triCount},1.00,0.80,0.80,${prevMixedNum},${parentSide}\n`;
     } else {
       trapCount++;
-      // Trapezoid 行: 親が tri なら parent=三角形通し / parentKind=0、
+      // Rectangle 行: 親が tri なら parent=三角形通し / parentKind=0、
       //               親が trap なら parent=trap ローカル通し / parentKind=1
       const parentForTrap = prevKind === 'tri' ? triCount : trapCount - 1;
       const parentKind = prevKind === 'tri' ? 0 : 1;
-      csv += `Trapezoid,${trapCount},1.00,1.00,0.80,${parentForTrap},${parentSide},0,${parentKind}\n`;
+      csv += `Rectangle,${trapCount},1.00,1.00,0.80,${parentForTrap},${parentSide},0,${parentKind}\n`;
     }
     prevMixedNum = step + 2; // 段 step+2 の混在通し (= figureRows 出現順)
     prevKind = kind;

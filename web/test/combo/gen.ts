@@ -83,7 +83,7 @@ export function* genTriangleTriangle(): Generator<ComboCase> {
  * 親=三角形 × 子=台形。 接続辺 (側 B/C) × 台形 3 辺サンプル × align。
  * parentKind=0 (親=三角形)。 台形には「形態」 「起点」 はないので軸数が少ない。
  */
-export function* genTriangleTrapezoid(): Generator<ComboCase> {
+export function* genTriangleRectangle(): Generator<ComboCase> {
   for (let pi = 0; pi < TRIANGLE_SIDE_SAMPLES.length; pi++) {
     const [pa, pb, pc] = TRIANGLE_SIDE_SAMPLES[pi];
     for (let ti = 0; ti < TRAP_SAMPLES.length; ti++) {
@@ -93,7 +93,7 @@ export function* genTriangleTrapezoid(): Generator<ComboCase> {
         const parentEdge = side === 1 ? pb : pc;
         for (const align of TRAP_ALIGNS) {
           const parentLine = `1,${fmt(pa)},${fmt(pb)},${fmt(pc)},-1,-1`;
-          const trapLine = `Trapezoid,1,${fmt(length)},${fmt(parentEdge)},${fmt(widthB)},1,${side},${align},0`;
+          const trapLine = `Rectangle,1,${fmt(length)},${fmt(parentEdge)},${fmt(widthB)},1,${side},${align},0`;
           const csv = `${parentLine}\n${trapLine}\n`;
           yield {
             label: `tri-trap/p${pi}t${ti}_s${side}_a${align}`,
@@ -112,24 +112,24 @@ export function* genTriangleTrapezoid(): Generator<ComboCase> {
 }
 
 /**
- * 独立台形 × 親=台形子三角形 (TriTrap)。 台形辺長 × align × TriTrap 接続辺 (右脚/上辺)。
- * TriTrap 自身の b/c は親辺長の 0.75 倍を採用 (buildShadow と同係数)
+ * 独立台形 × 親=台形子三角形 (RectChild)。 台形辺長 × align × RectChild 接続辺 (右脚/上辺)。
+ * RectChild 自身の b/c は親辺長の 0.75 倍を採用 (buildShadow と同係数)
  */
-export function* genTrapezoidTritrap(): Generator<ComboCase> {
+export function* genRectangleRecttri(): Generator<ComboCase> {
   for (let ti = 0; ti < TRAP_SAMPLES.length; ti++) {
     const [length, widthA, widthB] = TRAP_SAMPLES[ti];
     for (const align of TRAP_ALIGNS) {
       for (const trapSide of TRAP_CONN_SIDES) {
-        // TriTrap の親辺長 = 台形の指定 side 長 (右脚 length = 上辺 widthB)
+        // RectChild の親辺長 = 台形の指定 side 長 (右脚 length = 上辺 widthB)
         const parentLen = trapSide === 1 ? length : widthB;
         const leg = parentLen * 0.75;
         // 退化三角形チェック (leg=0.75*parentLen で常に valid だが保険で揃える)
         if (!isValidTriangle(parentLen, leg, leg)) continue;
-        const trapLine = `Trapezoid,1,${fmt(length)},${fmt(widthA)},${fmt(widthB)},-1,0,${align},0`;
-        const tritrap = `TriTrap,2,0,${fmt(leg)},${fmt(leg)},1,${trapSide}`;
-        const csv = `${trapLine}\n${tritrap}\n`;
+        const trapLine = `Rectangle,1,${fmt(length)},${fmt(widthA)},${fmt(widthB)},-1,0,${align},0`;
+        const recttri = `RectChild,2,0,${fmt(leg)},${fmt(leg)},1,${trapSide}`;
+        const csv = `${trapLine}\n${recttri}\n`;
         yield {
-          label: `trap-tritrap/t${ti}_a${align}_s${trapSide}`,
+          label: `trap-recttri/t${ti}_a${align}_s${trapSide}`,
           csv,
           expectedRows: 2,
           expectedSideCounts: [
@@ -146,6 +146,6 @@ export function* genTrapezoidTritrap(): Generator<ComboCase> {
 /** 全軸を 1 本に束ねた generator。 spec が flatMap で回す用 */
 export function* genAll(): Generator<ComboCase> {
   yield* genTriangleTriangle();
-  yield* genTriangleTrapezoid();
-  yield* genTrapezoidTritrap();
+  yield* genTriangleRectangle();
+  yield* genRectangleRecttri();
 }

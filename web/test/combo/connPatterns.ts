@@ -3,7 +3,7 @@
 // 連続接続テスト (genChain) で 1 段あたりこのリストの 1 要素を当てる ── 14 段以上の chain で
 // 全パターンが少なくとも 1 度出現する rotation で網羅。
 
-export type Kind = 'triangle' | 'trapezoid';
+export type Kind = 'triangle' | 'rectangle';
 export type ConnType = 0 | 1 | 2; // 0=辺共有 / 1=二重断面 / 2=フロート
 export type Lcr = 0 | 1 | 2;       // 0=左起点 / 1=中央 / 2=右起点
 
@@ -38,7 +38,7 @@ export const TRI_CONN_14: ReadonlyArray<ConnPattern> = [...enumeratePatterns('tr
 /** 台形親 → 子: BCD × 7 = 21 種 (user 「台形ならBCDに以下同文で21種」)
  *  注: 現実装の TRAP_CONN_SIDES = [1, 2] で D(=3) は動線上未使用。 spec で D を含めるかは
  *  実装側のサポート確認後に決める ── まず BC のみ (14 種) で動かし、 D 対応は次の iteration */
-export const TRAP_CONN_14: ReadonlyArray<ConnPattern> = [...enumeratePatterns('trapezoid', [1, 2])];
+export const TRAP_CONN_14: ReadonlyArray<ConnPattern> = [...enumeratePatterns('rectangle', [1, 2])];
 
 /** 三↔台 遷移含む全パターン (= 三角形親 14 + 台形親 14、 子の kind は別軸で振る) */
 export const ALL_PARENT_CONN_PATTERNS: ReadonlyArray<ConnPattern> = [

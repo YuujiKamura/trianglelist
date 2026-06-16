@@ -59,7 +59,7 @@ const HEADER_LABELS = ['koujiname', 'rosenname', 'gyousyaname', 'zumennum'];
  *  Trapezoid / TriTrap は混在リスト (web) で serializeState が書く図形行マーカー。
  *  ここに入れておかないと「ヘッダ収集ループ」 (4 個に達するまで line.trim を拾う) に
  *  Trapezoid / TriTrap 行が混ざって路線名等が化ける */
-const MARKER_TOKENS = ['Deduction', 'ListAngle', 'ListScale', 'TextSize', 'Trapezoid', 'TriTrap'];
+const MARKER_TOKENS = ['Deduction', 'ListAngle', 'ListScale', 'TextSize', 'Rectangle', 'RectChild'];
 
 // Kotlin の toIntOrNull と同じ判定 (main.ts:417 と同じ regex)
 function intOrNull(s: string): number | null {
@@ -79,7 +79,7 @@ export function parseCsvForXlsx(csvText: string): ParsedCsvForXlsx {
 
     // 台形行: Trapezoid, num, length, widthA, widthB, parent, side, align, parentKind
     // (CsvCodec.serialize / main.ts serializeState と同じ列順)
-    if (chunks[0] === 'Trapezoid') {
+    if (chunks[0] === 'Rectangle') {
       trapezoids.push({
         num: triangles.length + trapezoids.length + 1, // 三角形+台形の通し
         widthA: parseFloat(chunks[3] ?? ''),
@@ -91,7 +91,7 @@ export function parseCsvForXlsx(csvText: string): ParsedCsvForXlsx {
 
     // 台形を親に持つ三角形 (TriTrap, num, a, b, c, parent, side) は Heron 面積 (三角形と同形)
     // 通し番号は 三角形+台形+TriTrap の合算 (WebDrawingExport.numberTrapTris と同形)
-    if (chunks[0] === 'TriTrap') {
+    if (chunks[0] === 'RectChild') {
       triTraps.push({
         num: triangles.length + trapezoids.length + triTraps.length + 1,
         a: parseFloat(chunks[2] ?? ''),

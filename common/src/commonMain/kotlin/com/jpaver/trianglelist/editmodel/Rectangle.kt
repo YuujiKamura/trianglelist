@@ -90,7 +90,7 @@ data class Rectangle(
     }
 
     /**
-     * SoT 一本化 段3 寸法多態 (2026-06-15): 既存 WebPrimitiveRenderer.renderTrapezoid の寸法生成
+     * SoT 一本化 段3 寸法多態 (2026-06-15): 既存 WebPrimitiveRenderer.renderRectangle の寸法生成
      * (A底辺 / C上辺 / D右脚 / B垂線延長) を移植したもの。renderer 側の kind 分岐を消す。
      * 接続済み (nodeA != null) は A 底辺寸法を出さない (= 親辺と共有、親側が寸法を持つ思想)。
      * B 延長は底辺/上辺の短い方を起点に取り、台形内側に向けた垂線長 (rect.length)。

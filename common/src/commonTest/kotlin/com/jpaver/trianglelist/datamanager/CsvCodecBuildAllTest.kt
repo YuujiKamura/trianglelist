@@ -9,8 +9,9 @@ import kotlin.test.assertTrue
 
 /**
  * SoT 一本化 (2026-06-15): CsvCodec.buildAll が figureRows の出現順を保ったまま
- * 三角形 / 台形 / TriTrap を 1 本の EditList<EditObject> に積むことを pin する。
- * 既存の build() (三角形のみ) + buildFigures() (台形/TriTrap) と独立した「混在後継」。
+ * 三角形 / Rectangle (台形) / Rectangle 子三角形 を 1 本の EditList<EditObject> に積むことを pin する。
+ * user 確定 2026-06-16「TriTrap タグ排除」── CSV タグは Rectangle 1 種、台形子三角形は普通三角形行で
+ * parent=混在通し番号 (= trilist.size() + Rectangle idx) で表現する。
  */
 class CsvCodecBuildAllTest {
 
@@ -34,45 +35,47 @@ class CsvCodecBuildAllTest {
     }
 
     @Test
-    fun trapezoid_only_appears_in_mixed_list() {
-        val doc = parse("Trapezoid,1,5,4,3,-1,0")
+    fun rectangle_only_appears_in_mixed_list() {
+        val doc = parse("Rectangle,1,5,4,3,-1,0")
         val mixed = CsvCodec.buildAll(doc)
-        assertEquals(1, mixed.size(), "台形 1 行 → mixed.size==1")
+        assertEquals(1, mixed.size(), "Rectangle 1 行 → mixed.size==1")
         assertTrue(mixed.get(1) is Rectangle, "1番目は Rectangle")
     }
 
     @Test
-    fun triangle_then_trapezoid_keeps_csv_order() {
-        val doc = parse("1,6.0,5.0,4.0,-1,-1\nTrapezoid,2,5,4,3,1,1")
+    fun triangle_then_rectangle_keeps_csv_order() {
+        val doc = parse("1,6.0,5.0,4.0,-1,-1\nRectangle,2,5,4,3,1,1")
         val mixed = CsvCodec.buildAll(doc)
         assertEquals(2, mixed.size())
         assertTrue(mixed.get(1) is Triangle, "CSV 1 行目 = Triangle")
-        assertTrue(mixed.get(2) is Rectangle, "CSV 2 行目 = Rectangle (台形)")
+        assertTrue(mixed.get(2) is Rectangle, "CSV 2 行目 = Rectangle")
     }
 
     @Test
-    fun trapezoid_then_tritrap_keeps_csv_order() {
-        val doc = parse("Trapezoid,1,5,10,7,-1,0\nTriTrap,2,7,4,4,1,2")
+    fun rectangle_then_child_triangle_keeps_csv_order() {
+        // Rectangle 1 個の後に「parent=1 (= trilist.size()=0 + Rectangle idx 1)」 の Triangle 行
+        val doc = parse("Rectangle,1,5,10,7,-1,0\n2,7,4,4,1,2")
         val mixed = CsvCodec.buildAll(doc)
         assertEquals(2, mixed.size())
-        assertTrue(mixed.get(1) is Rectangle, "CSV 1 行目 = 台形")
-        assertTrue(mixed.get(2) is Triangle, "CSV 2 行目 = TriTrap (Triangle)")
+        assertTrue(mixed.get(1) is Rectangle, "CSV 1 行目 = Rectangle")
+        assertTrue(mixed.get(2) is Triangle, "CSV 2 行目 = Rectangle 子 Triangle")
     }
 
     @Test
-    fun triangle_trapezoid_tritrap_all_mixed_in_order() {
-        // 三角形 → 台形 → 台形子三角形 の出現順を CSV から取り出す
-        val doc = parse("1,6.0,5.0,4.0,-1,-1\nTrapezoid,2,5,10,7,1,1\nTriTrap,3,7,4,4,1,2")
+    fun triangle_rectangle_rect_child_all_mixed_in_order() {
+        // 三角形 → Rectangle → Rectangle 子三角形 の出現順を CSV から取り出す
+        // parent=2 (trilist.size()=1 + Rectangle idx 1 = 混在通し 2)
+        val doc = parse("1,6.0,5.0,4.0,-1,-1\nRectangle,2,5,10,7,1,1\n3,7,4,4,2,2")
         val mixed = CsvCodec.buildAll(doc)
-        assertEquals(3, mixed.size(), "三角 + 台形 + TriTrap = 3")
+        assertEquals(3, mixed.size(), "三角 + Rectangle + Rectangle 子 = 3")
         assertTrue(mixed.get(1) is Triangle,  "1 = Triangle")
         assertTrue(mixed.get(2) is Rectangle, "2 = Rectangle")
-        assertTrue(mixed.get(3) is Triangle,  "3 = TriTrap (Triangle)")
+        assertTrue(mixed.get(3) is Triangle,  "3 = Rectangle 子 Triangle")
     }
 
     @Test
     fun for_each_item_visits_in_one_indexed_order() {
-        val doc = parse("1,6.0,5.0,4.0,-1,-1\nTrapezoid,2,5,4,3,1,1")
+        val doc = parse("1,6.0,5.0,4.0,-1,-1\nRectangle,2,5,4,3,1,1")
         val mixed = CsvCodec.buildAll(doc)
         val kinds = mutableListOf<Pair<Int, String>>()
         mixed.forEachItemIndexed { i, e ->
@@ -83,7 +86,7 @@ class CsvCodecBuildAllTest {
 
     @Test
     fun index_of_finds_one_based_number() {
-        val doc = parse("1,6.0,5.0,4.0,-1,-1\nTrapezoid,2,5,4,3,1,1")
+        val doc = parse("1,6.0,5.0,4.0,-1,-1\nRectangle,2,5,4,3,1,1")
         val mixed = CsvCodec.buildAll(doc)
         val first: EditObject? = mixed.firstItem()
         val last: EditObject? = mixed.lastItem()

@@ -129,27 +129,27 @@ open class DrawingFileWriter {
         drawScene(buildTrianglePrims(tri))
     }
 
-    // 台形を持つ場合の図形リスト (web 出力経路が CsvCodec.buildFigures で組んで渡す)。
+    // Rectangle (台形) のリスト (web 出力経路が CsvCodec.buildMixed で組んで渡す)。
     // app 経路は三角形のみで既定 empty = DXF/SFC golden 不変。
     open var traps_: List<Rectangle> = emptyList()
 
-    // 台形を親に持つ三角形のリスト (TriTrap 行、web 出力経路が CsvCodec.buildFigures で組んで渡す)。
+    // Rectangle を親に持つ Triangle のリスト (web 出力経路が CsvCodec.buildMixed で組んで渡す)。
     // 空なら DXF/SFC golden 不変。
     open var trapTris_: List<Triangle> = emptyList()
 
-    open fun writeTrapezoid(rect: Rectangle, number: Int) {
-        drawScene(buildTrapezoidPrims(rect, number))
+    open fun writeRectangle(rect: Rectangle, number: Int) {
+        drawScene(buildRectanglePrims(rect, number))
     }
 
     /**
      * 台形 1 つを DrawPrim 列に組む (buildTrianglePrims の台形版、ADR 0010 段A コメントが予定した分岐)。
-     * web の WebPrimitiveRenderer.renderTrapezoid と同じ幾何: 4 辺 + 底辺A/上辺C/延長B の寸法 +
+     * web の WebPrimitiveRenderer.renderRectangle と同じ幾何: 4 辺 + 底辺A/上辺C/延長B の寸法 +
      * 番号サークル。延長 B は「底辺からの垂線 (rect.length)」で、左脚の斜辺長ではない。中央/右寄せ
      * (alignment≠0) は左脚が斜辺になるので垂線 bl→perpFoot を補助線で別に引く。
      * 座標は実寸モデル (DrawPrim の約束) なので寸法は実長そのまま。これで backend (各 writer) を
      * 触らず台形が DXF/SFC/PDF に出る。
      */
-    protected open fun buildTrapezoidPrims(rect: Rectangle, number: Int): List<DrawPrim> {
+    protected open fun buildRectanglePrims(rect: Rectangle, number: Int): List<DrawPrim> {
         val lp = rect.calcPoint()
         val bl = lp.a.left;  val br = lp.a.right
         val tl = lp.b.left;  val tr = lp.b.right
