@@ -3,6 +3,7 @@ package com.jpaver.trianglelist.web
 import com.example.trilib.PointXY
 import com.jpaver.trianglelist.editmodel.EditList
 import com.jpaver.trianglelist.editmodel.EditObject
+import com.jpaver.trianglelist.editmodel.Rectangle
 import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
 import com.jpaver.trianglelist.setDimPath
@@ -100,14 +101,20 @@ object WebOverrides {
     }
 
     /**
-     * WebPrimitiveRenderer が UI へ返す tri は mixed EditList の通し番号なので、Rectangle が
-     * 途中に挟まる経路ではこちらを使う。Rectangle 宛ての Triangle 専用 override は黙って skip し、
-     * mixed #2 Rectangle を TriangleList #2 へ誤適用しない。
+     * WebPrimitiveRenderer が UI へ返す tri は mixed EditList の通し番号。 Triangle/Rectangle
+     * の両方に dim override を多態 dispatch する (2026-06-17 Codex 引き継ぎ tier 2):
+     * Rectangle.dimVertical / dimHorizontal は DimAligns(a,b,c,s) で、 Rectangle 文脈では
+     * a=底辺, b=B 延長, c=上辺 を使う (D=side3, 測点=SIDE_SOKUTEN は Rectangle スコープ外で skip)。
+     * number override は現状 Triangle のみ (Rectangle の pointnumber 移動は別 brief、 描画側が
+     * vertices 重心固定 = WebPrimitiveRenderer.kt:167-178)。
      */
     fun apply(list: EditList<EditObject>, overrides: Overrides) {
         for (d in overrides.dims) {
-            val tri = list.getTriangleOrNull(d.tri) ?: continue
-            applyDim(tri, d)
+            if (d.tri < 1 || d.tri > list.size()) continue
+            when (val obj = list.get(d.tri)) {
+                is Triangle -> applyDim(obj, d)
+                is Rectangle -> applyDim(obj, d)
+            }
         }
         for (n in overrides.numbers) {
             val tri = list.getTriangleOrNull(n.tri) ?: continue
@@ -138,6 +145,29 @@ object WebOverrides {
         }
         tri.setDimPath()
         tri.setDimPoint()
+    }
+
+    /**
+     * Rectangle dim override 適用 (Codex tier 2、 2026-06-17)。 Triangle と違って autoAlign /
+     * arrangePointNumbers の上書きパスが無いので isMovedByUser フラグ管理は不要 ── dimVertical /
+     * dimHorizontal の対象軸に値を直接書く。 side 3 (D 辺) は描画側 hardcoded (Rectangle.kt:130
+     * `DimensionSpec(3, ..., 1, 0)`)、 side 4 (測点) は Triangle 専用なので、 両方とも黙って skip。
+     */
+    private fun applyDim(rect: Rectangle, d: DimOverride) {
+        d.h?.takeIf { it in 0..4 }?.let { h ->
+            when (d.side) {
+                SIDE_A -> rect.dimHorizontal.a = h
+                SIDE_B -> rect.dimHorizontal.b = h
+                SIDE_C -> rect.dimHorizontal.c = h
+            }
+        }
+        d.v?.takeIf { it == 1 || it == 3 }?.let { v ->
+            when (d.side) {
+                SIDE_A -> rect.dimVertical.a = v
+                SIDE_B -> rect.dimVertical.b = v
+                SIDE_C -> rect.dimVertical.c = v
+            }
+        }
     }
 
     private fun applyNumber(tri: Triangle, n: NumberOverride) {
