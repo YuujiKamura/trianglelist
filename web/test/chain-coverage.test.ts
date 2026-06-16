@@ -15,6 +15,7 @@ import {
   genTriangleChainSharedDeep,
   genTriangleChainFocus10,
   genTrapezoidTritrapChain,
+  genTrapezoidTritrapChain2,
   type ChainCase,
 } from './combo/genChain.ts';
 import { groupByTri, analyzeTri, detectTriOverlaps } from './combo/primAnalyzer.ts';
@@ -102,6 +103,22 @@ describe('chain-tritrap: 親台形 BCD × 子三角形 (TriTrap) chain', () => {
   const cases = [...genTrapezoidTritrapChain()];
   it('chain 数 = 3 (side B/C/D)', () => {
     expect(cases.length).toBe(3);
+  });
+  for (const c of cases) {
+    it(c.label, async () => {
+      await runChain(c);
+    });
+  }
+});
+
+// user 確定 2026-06-16「台形に接続した三角形に三角形を接続すると図形が壊れる」 ── chain 2 段目を pin。
+// 親=台形 / 子=三角 / 孫=三角 の混成 chain で、 孫の sideCount=3 + 砂時計なし + 親 TriTrap の位置に
+// 重ならないことを assert。 TriTrap タグ廃止後の Triangle 1 種統合 schema が壊れていれば孫が描画されない
+// (= groupByTri に key=3 が無い)、 or 親 TriTrap と同位置に重なって detectTriOverlaps が >0 を返す。
+describe('chain-tritrap-2: 親台形 → 子三角 → 孫三角 (混成 chain 2 段目)', () => {
+  const cases = [...genTrapezoidTritrapChain2()];
+  it('chain 数 = 6 (side1 ∈ {B,C,D} × side2 ∈ {B,C})', () => {
+    expect(cases.length).toBe(6);
   });
   for (const c of cases) {
     it(c.label, async () => {

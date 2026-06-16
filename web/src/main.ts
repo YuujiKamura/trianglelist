@@ -3149,11 +3149,16 @@ function buildShadow(): void {
       }
       return;
     }
-    // 子三角形を台形に乗せる: TriTrap 仮行で B/C 未入力なら親辺長 * 0.75 をデフォ
+    // 子三角形を台形に乗せる。 user 確定 2026-06-16「TriTrap タグ廃止、 Triangle 行 1 種で
+    // 親種別を統合」 ── 旧 `TriTrap,...` 仮行を撤廃、 Triangle 行 (parent=混在通し番号) で書く。
+    // 親台形の混在通し番号 = 三角形数 + 台形 idx (= triCount() + pendingTrapParent.trap)。
     const bvE = parseFloat(bv) > 0 ? bv : triLeg;
     const cvE = parseFloat(cv) > 0 ? cv : triLeg;
+    const tcS = triCount();
+    const mixedParent = tcS + pendingTrapParent.trap;
+    const newNumS = rows.length + 1;
     const candidate = serializeState() +
-      `TriTrap,9,0,${bvE},${cvE},${pendingTrapParent.trap},${pendingTrapParent.side}\n`;
+      `${newNumS},${baseLen.toFixed(2)},${bvE},${cvE},${mixedParent},${pendingTrapParent.side}\n`;
     try {
       const prims = JSON.parse(renderCsvToPrimitivesWithOverrides(candidate, 1.0, overridesJson())) as Prim[];
       const triLines = prims.filter((q): q is LinePrim => q.type === 'line' && q.layer === 'tri');
