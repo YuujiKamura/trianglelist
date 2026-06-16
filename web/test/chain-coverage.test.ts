@@ -16,6 +16,7 @@ import {
   genTriangleChainFocus10,
   genTrapezoidTritrapChain,
   genTrapezoidTritrapChain2,
+  genMixedChain4,
   type ChainCase,
 } from './combo/genChain.ts';
 import { groupByTri, analyzeTri, detectTriOverlaps } from './combo/primAnalyzer.ts';
@@ -122,6 +123,68 @@ describe('chain-tritrap-2: 親台形 → 子三角 → 孫三角 (混成 chain 2
   });
   for (const c of cases) {
     it(c.label, async () => {
+      await runChain(c);
+    });
+  }
+});
+
+// user 確定 2026-06-14「全然足らん。 三、 台、 三、 三とか、 最低 4〜5 個までの各種連結と画面への
+// 反映状態のテストが必要」 への対応。 depth=4 混成 chain の全 100 ケース (kinds × sides cartesian)。
+// 各 case で 各段の sideCount (tri=3 / trap=4) + 砂時計なし + 図形が重ならないことを runChain で assert。
+//
+// 既知 bug 34 件 (2026-06-16 観測、 全件 段 2=trap 系) を it.fails で晒す。 これらは検出された
+// 重なり (図形位置の overlap) を持ち、 道路測量アプリで「ありえない描画」。 user 指示「既存の
+// クソコードが固定化されないように」 → fix 待ちの bug を test で公開、 root cause 修正で it.fails
+// を it に戻す形で progress を pin。 it.fails は「失敗が期待値」 (= 緑) なので CI は通る、 だが
+// 一覧で「34 件未解決」 が見える。
+const EXPECTED_FAIL_MIX4 = new Set<string>([
+  'mix4/tri-trap-trap-trap-s1-1-1',
+  'mix4/tri-trap-trap-trap-s1-1-2',
+  'mix4/tri-trap-trap-trap-s1-1-3',
+  'mix4/tri-trap-trap-trap-s2-2-1',
+  'mix4/tri-trap-trap-trap-s2-2-2',
+  'mix4/tri-trap-trap-trap-s2-2-3',
+  'mix4/tri-trap-trap-trap-s2-3-1',
+  'mix4/tri-trap-trap-trap-s2-3-2',
+  'mix4/tri-trap-trap-trap-s2-3-3',
+  'mix4/tri-trap-trap-tri-s1-1-1',
+  'mix4/tri-trap-trap-tri-s1-1-2',
+  'mix4/tri-trap-trap-tri-s1-1-3',
+  'mix4/tri-trap-trap-tri-s2-2-1',
+  'mix4/tri-trap-trap-tri-s2-2-2',
+  'mix4/tri-trap-trap-tri-s2-2-3',
+  'mix4/tri-trap-trap-tri-s2-3-1',
+  'mix4/tri-trap-trap-tri-s2-3-2',
+  'mix4/tri-trap-trap-tri-s2-3-3',
+  'mix4/tri-trap-tri-trap-s1-1-1',
+  'mix4/tri-trap-tri-trap-s1-1-2',
+  'mix4/tri-trap-tri-trap-s1-2-1',
+  'mix4/tri-trap-tri-trap-s1-2-2',
+  'mix4/tri-trap-tri-trap-s1-3-1',
+  'mix4/tri-trap-tri-trap-s1-3-2',
+  'mix4/tri-trap-tri-trap-s2-1-1',
+  'mix4/tri-trap-tri-trap-s2-1-2',
+  'mix4/tri-trap-tri-trap-s2-2-1',
+  'mix4/tri-trap-tri-trap-s2-2-2',
+  'mix4/tri-trap-tri-trap-s2-3-1',
+  'mix4/tri-trap-tri-trap-s2-3-2',
+  'mix4/tri-trap-tri-tri-s1-2-1',
+  'mix4/tri-trap-tri-tri-s1-2-2',
+  'mix4/tri-trap-tri-tri-s2-2-1',
+  'mix4/tri-trap-tri-tri-s2-2-2',
+]);
+
+describe('chain-mixed-4: 4 段混成 chain (三・台 ∈ 各段 + 親 side 全網羅)', () => {
+  const cases = [...genMixedChain4()];
+  it('chain 数 = 100 (kinds {tri,trap}^3 × 親 side cartesian)', () => {
+    expect(cases.length).toBe(100);
+  });
+  it(`既知 fail = ${EXPECTED_FAIL_MIX4.size} 件 (全件 段 2=trap 系 chain で重なり、 fix 待ち)`, () => {
+    expect(EXPECTED_FAIL_MIX4.size).toBe(34);
+  });
+  for (const c of cases) {
+    const runner = EXPECTED_FAIL_MIX4.has(c.label) ? it.fails : it;
+    runner(c.label, async () => {
       await runChain(c);
     });
   }
