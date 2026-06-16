@@ -14,6 +14,15 @@ data class Node(var a: EditObject?=null, var b: EditObject?=null, var c: EditObj
  */
 open class EditObject() {
     var node = Node()
+    
+    // 共通の階層・表示メタデータ (Triangle / Rectangle 共通)
+    open var mynumber = 1
+    open var parentnumber = -1 // 0:root, -1:independent
+    open var connectionSide = -1 // 0:not use, 1:B, 2:C, 3:D...
+    open var name = ""
+    open var mycolor = 4
+    open var isColored = false
+    open var isFloating = false
 
     /** 辺数 (三角形=3, 台形=4)。上位コードはこの値で配列 stride を決め、kind 分岐を消す。 */
     open val sideCount: Int = 0
@@ -60,6 +69,21 @@ open class EditObject() {
         parent.setNode2(this,side)
         return baseline
     }
+
+    // ---------- 階層走査ユーティリティ ----------
+    fun alreadyHaveChild(side: Int): Boolean {
+        if (side < 1) return false
+        return when (side) {
+            1 -> node.b != null
+            2 -> node.c != null
+            3 -> node.d != null
+            else -> false
+        }
+    }
+
+    fun hasChild(): Boolean = node.b != null || node.c != null || node.d != null
+
+    fun hasConstantParent(): Boolean = (mynumber - parentnumber) <= 1
 
     /**
      * 図形の重心 (幾何中心) を vertices() から算出。

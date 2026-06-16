@@ -35,19 +35,22 @@ data class Rectangle(
 
     fun calcPoint(): Line2 {
         var baseline = Line( basepoint, basepoint.moveX(widthA,angle) )
+        var crossClockwise = -90.0
 
         nodeA?.let {
             var bl = initByParent(it, side)
             // 重なり防止 (Triangle の apexTowardInterior 相当): 
             // Rectangle の crossOffset は常に baseline の「左側」へ伸びる。
             // 親の重心 (centroid) が baseline の「左側」にある場合、親の内部に向かって
-            // 伸びて重なってしまうため、baseline を 180° 反転させて外側へ向ける。
+            // 伸びて重なってしまうため、垂直方向だけを反転して外側へ向ける。
+            // baseline 自体を反転すると「子の底辺 = 親の接続辺」の向き込み契約が壊れ、
+            // D 辺接続で子底辺が親 D 辺に乗らなくなる。
             val cp = it.centroid()
             val dx = bl.right.x - bl.left.x
             val dy = bl.right.y - bl.left.y
             val centSide = dx * (cp.y - bl.left.y) - dy * (cp.x - bl.left.x)
             if (centSide > 0.0) {
-                bl = Line(bl.right, bl.left)
+                crossClockwise = 90.0
             }
             baseline = bl
             basepoint = baseline.left
@@ -66,7 +69,7 @@ data class Rectangle(
         }
         val topBase = basepoint.offset( alignShift, baseAngle )
 
-        val leftB  = topBase.crossOffset( baseline.right, length )
+        val leftB  = topBase.crossOffset( baseline.right, length, crossClockwise )
         val rightB = leftB.crossOffset( topBase, widthB )
 
         return Line2( baseline, Line(leftB, rightB) )

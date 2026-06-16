@@ -131,8 +131,11 @@ object WebDrawingExport {
      */
     fun buildDxfText(csv: String, overridesJson: String, numReverse: Boolean): String {
         val header = parseHeader(csv)
+        val doc = CsvCodec.parse(csv)
         val trilist = readForExport(csv)
-        WebOverrides.applyJson(trilist, overridesJson)
+        val mixedDxf = CsvCodec.buildMixed(doc, trilist, 1f)
+        WebOverrides.applyJson(mixedDxf, overridesJson)
+        trilist.arrangePointNumbers()
         val writer = DxfFileWriter(trilist).apply {
             dedlist_ = dedsForExport(csv)
             viewscale_ = 1f // web の ded はビュー倍率 1 (アプリ既定 47.6 のままだと座標が 1/47.6 に縮む)
@@ -148,7 +151,6 @@ object WebDrawingExport {
         // buildMixed の戻り値から filterIsInstance で 2 種を抽出。
         // trapTris 識別 = trilist set に含まれない Triangle (= Rectangle 親 + chain 親を含む。
         // node.a is Rectangle 判定は chain の 2 段目以降 (親=Triangle) を取りこぼす)。
-        val mixedDxf = CsvCodec.buildMixed(CsvCodec.parse(csv), trilist, 1f)
         val mixedDxfAll = (1..mixedDxf.size()).map { mixedDxf.get(it) }
         val traps = mixedDxfAll.filterIsInstance<Rectangle>()
         val trilistTrisDxf: Set<Triangle> = (1..trilist.size()).map { trilist.getBy(it) }.toSet()
@@ -169,7 +171,7 @@ object WebDrawingExport {
         val base = triCount + trapCount
         for ((j, t) in tris.withIndex()) {
             t.mynumber = base + j + 1
-            t.pointnumber = t.pointcenter
+            if (!t.pointNumber.flag.isMovedByUser) t.pointnumber = t.pointcenter
         }
         return tris
     }
@@ -183,8 +185,9 @@ object WebDrawingExport {
     fun buildCsvText(csv: String, overridesJson: String): String {
         val doc = CsvCodec.parse(csv)
         val trilist = readForExport(csv)
-        WebOverrides.applyJson(trilist, overridesJson)
-        return CsvCodec.serialize(CsvCodec.bake(trilist, doc))
+        val mixed = CsvCodec.buildMixed(doc, trilist, 1f)
+        WebOverrides.applyJson(mixed, overridesJson)
+        return CsvCodec.serialize(CsvCodec.bakeMixed(mixed, doc, trilist.angle, trilist.scale))
     }
 
     /** CSV → SFC 全文 (SJIS エンコード前の String)。初期化列は SfcDimensionLayoutGoldenTest.writeSfcString と同一 */
@@ -197,8 +200,11 @@ object WebDrawingExport {
     /** 番号逆順付き経路 (SfcWriter.kt:49-53 = DXF と同じ resetNumReverse + 控除 reverse) */
     fun buildSfcText(csv: String, filename: String, overridesJson: String, numReverse: Boolean): String {
         val header = parseHeader(csv)
+        val doc = CsvCodec.parse(csv)
         val trilist = readForExport(csv)
-        WebOverrides.applyJson(trilist, overridesJson)
+        val mixedSfc = CsvCodec.buildMixed(doc, trilist, 1f)
+        WebOverrides.applyJson(mixedSfc, overridesJson)
+        trilist.arrangePointNumbers()
         val writer = SfcWriter(trilist, dedsForExport(csv), filename, 1, 1f)
         writer.titleTri_ = TitleParamStr()
         writer.titleDed_ = TitleParamStr()
@@ -211,7 +217,6 @@ object WebDrawingExport {
         // Rectangle (台形) を実寸 (scale=1) で組む。DXF 側と同形。
         // trilist は overrides 適用済を明示渡し。三角形のみ CSV なら traps/trapTris が空 = SFC golden 不変。
         // buildMixed → trilist set membership で 2 種抽出 (= DXF 側と同型)。
-        val mixedSfc = CsvCodec.buildMixed(CsvCodec.parse(csv), trilist, 1f)
         val mixedSfcAll = (1..mixedSfc.size()).map { mixedSfc.get(it) }
         val traps = mixedSfcAll.filterIsInstance<Rectangle>()
         val trilistTrisSfc: Set<Triangle> = (1..trilist.size()).map { trilist.getBy(it) }.toSet()

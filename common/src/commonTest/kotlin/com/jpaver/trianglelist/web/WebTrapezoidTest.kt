@@ -490,4 +490,38 @@ class WebTrapezoidTest {
         assertEquals(2, doc.triRows().size)
         assertEquals(1, doc.rectRows().size)
     }
+
+    @Test
+    fun overrides_use_mixed_numbers_when_rectangle_precedes_triangle() {
+        val csv = "1,6.0,5.0,4.0,-1,-1\n" +
+            "Rectangle,1,5,4,3,1,1\n" +
+            "2,5.0,4.0,3.0,1,1\n"
+        val base = CsvCodec.parse(WebDrawingExport.buildCsvText(csv, "")).figureRows[2].chunks
+
+        val rectTarget = CsvCodec.parse(
+            WebDrawingExport.buildCsvText(csv, """{"dims":[{"tri":2,"side":1,"h":4,"v":3}]}"""),
+        ).figureRows[2].chunks
+        assertEquals(base[12], rectTarget[12], "mixed #2 は Rectangle なので後続 Triangle の B 横配置へ誤適用しない")
+        assertEquals(base[15], rectTarget[15], "mixed #2 は Rectangle なので後続 Triangle の B 縦配置へ誤適用しない")
+        assertEquals(base[20], rectTarget[20], "mixed #2 は Rectangle なので後続 Triangle の手動フラグへ誤適用しない")
+
+        val triTarget = CsvCodec.parse(
+            WebDrawingExport.buildCsvText(csv, """{"dims":[{"tri":3,"side":1,"h":4,"v":3}]}"""),
+        ).figureRows[2].chunks
+        assertEquals("4", triTarget[12], "mixed #3 の後続 Triangle に B 横配置 override が当たる")
+        assertEquals("3", triTarget[15], "mixed #3 の後続 Triangle に B 縦配置 override が当たる")
+        assertEquals("true", triTarget[20], "mixed #3 の後続 Triangle に手動フラグが立つ")
+    }
+
+    @Test
+    fun csv_export_bakes_rect_child_triangle_overrides() {
+        val csv = "Rectangle,1,5,10,7,-1,0\n2,7,4,4,1,2\n"
+        val baked = CsvCodec.parse(
+            WebDrawingExport.buildCsvText(csv, """{"dims":[{"tri":2,"side":1,"h":4,"v":3}]}"""),
+        )
+        val child = baked.figureRows[1].chunks
+        assertEquals("4", child[12], "Rectangle 子 Triangle の B 横配置 override を元の Triangle 行へ焼く")
+        assertEquals("3", child[15], "Rectangle 子 Triangle の B 縦配置 override を元の Triangle 行へ焼く")
+        assertEquals("true", child[20], "Rectangle 子 Triangle の手動フラグを元の Triangle 行へ焼く")
+    }
 }
