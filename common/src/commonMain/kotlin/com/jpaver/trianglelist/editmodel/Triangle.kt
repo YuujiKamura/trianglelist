@@ -133,35 +133,32 @@ class Triangle : EditObject, Cloneable<Triangle> {
     var angleBC = 0f
 
     // --- 接続関連 ---
-    var parentnumber = -1 // 0:root
-    var connectionSide = -1 // 0:not use, 1:B, 2:C...
     var connectionType_ = 0
     var connectionLCR_ = 2
     var cParam_ = ConnParam(0, 0, 2, 0f)
 
     // --- 識別・表示 ---
-    var mynumber = 1
     var dimHorizontalA = 0
     var dimHorizontalB = 0
     var dimHorizontalC = 0
     var lastTapSide_ = -1
-    var mycolor = 4
     var childSide_ = 0
-    var name = ""
 
     // --- バウンディングボックス・寸法 ---
     var myBP_ = Bounds(0.0, 0.0, 0.0, 0.0)
     var pathS = DimOnPath()
     var dimHeight = 0f
 
-    // --- ノード ---
-    var nodeA: Triangle? = null
-    var nodeB: Triangle? = null
-    var nodeC: Triangle? = null
-
-    // --- フラグ ---
-    var isFloating = false
-    var isColored = false
+    // --- ノード (EditObject の統一ツリーへのプロキシ) ---
+    var nodeA: Triangle?
+        get() = node.a as? Triangle
+        set(value) { node.a = value }
+    var nodeB: Triangle?
+        get() = node.b as? Triangle
+        set(value) { node.b = value }
+    var nodeC: Triangle?
+        get() = node.c as? Triangle
+        set(value) { node.c = value }
 
     // --- 派生値 ---
     val lengthA_: Float

@@ -59,12 +59,12 @@ object WebPrimitiveRenderer {
         val doc = CsvCodec.parse(csv)
         val trilist = CsvCodec.build(doc)
         if (scale != 1f && scale > 0f) trilist.setScale(PointXY(0f, 0f), scale)
-        WebOverrides.applyJson(trilist, overridesJson)
         val sizeRatio = (doc.textSize?.takeIf { it > 0f } ?: APP_DEFAULT_TEXT_SIZE) / APP_DEFAULT_TEXT_SIZE
         val effScale = if (scale > 0f) scale else 1f
         val textSize = DEFAULT_TEXT_SIZE * sizeRatio * effScale
-        trilist.arrangePointNumbers()
         val mixed = CsvCodec.buildMixed(doc, trilist, effScale)
+        WebOverrides.applyJson(mixed, overridesJson)
+        trilist.arrangePointNumbers()
         return render(mixed, textSize, CsvCodec.buildDeductions(doc), effScale)
     }
 

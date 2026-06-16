@@ -12,7 +12,6 @@ import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
 import com.jpaver.trianglelist.editmodel.setColor
 import com.jpaver.trianglelist.setDimAligns
-import com.jpaver.trianglelist.setPointNumber
 import com.jpaver.trianglelist.viewmodel.InputParameter
 
 /**
@@ -203,7 +202,7 @@ object CsvCodec {
                 } else {
                     ConnCode.toConnParam(conn, lengthA) ?: continue
                 }
-                trilist.add(Triangle(ptri as EditObject, cp, lengthB, lengthC), true)
+                trilist.add(Triangle(ptri as Triangle?, cp, lengthB, lengthC), true)
             }
             val tri = trilist.getBy(trilist.size())
             tri.connectionSide = conn
@@ -298,43 +297,52 @@ object CsvCodec {
                     append(rect)
                 }
                 else -> {
-                    // Triangle 行。親解決を mixedByNumber に一本化し、Triangle/Rectangle 問わず
-                    // 親として扱える新設コンストラクタ (EditObject 親) を使う (2026-06-16 刷新)。
                     val lengthA = c.getOrNull(1)?.toFloatOrNull() ?: continue
                     val lengthB = c.getOrNull(2)?.toFloatOrNull() ?: continue
                     val lengthC = c.getOrNull(3)?.toFloatOrNull() ?: continue
                     val parent = c.getOrNull(4)?.toIntOrNull() ?: -1
                     val conn = c.getOrNull(5)?.toIntOrNull() ?: -1
 
-                    fun indep() = Triangle(lengthA * sf, lengthB * sf, lengthC * sf, PointXY(0f, 0f), 180f)
-
-                    val tri = if (conn < 1 || parent < 1) {
-                        indep()
+                    // 二重構築の撤廃 (2026-06-16): build(doc) が trilist に積む普通三角形 (独立 or 親が
+                    // 「ここまでに積んだ三角形」) は、recoverState/scale/override/番号まで処理済みの
+                    // インスタンスをそのまま再利用する。build() と同一判定 (parent in 1..triIdx) で同期。
+                    // Rectangle 子三角形 (親が混在通し番号で trilist 外) のみ従来どおり新規構築する。
+                    val isTrilistTri = conn < 1 || parent in 1..triIdx
+                    val reused = if (isTrilistTri) pullTriangle() else null
+                    if (reused != null) {
+                        append(reused)
                     } else {
-                        // 混在通し番号で親を探す
-                        val pObj = mixedByNumber(parent)
-                        if (pObj == null) {
-                            indep() // 親が見つからなければ独立に
+                        fun indep() = Triangle(lengthA * sf, lengthB * sf, lengthC * sf, PointXY(0f, 0f), 180f)
+                        val tri = if (conn < 1 || parent < 1) {
+                            indep()
                         } else {
-                            // 完全形式 (列 17-19 = cp.side/type/lcr) の読み取り
-                            val cpSide = c.getOrNull(17)?.toIntOrNull()
-                            val cpType = c.getOrNull(18)?.toIntOrNull()
-                            val cpLcr = c.getOrNull(19)?.toIntOrNull()
-                            val cp = if (cpSide != null && cpType != null && cpLcr != null) {
-                                ConnParam(cpSide, cpType, cpLcr, lengthA * sf)
+                            // 混在通し番号で親を探す
+                            val pObj = mixedByNumber(parent)
+                            if (pObj == null) {
+                                indep() // 親が見つからなければ独立に
                             } else {
-                                ConnCode.toConnParam(conn, lengthA * sf)
-                            }
-                            if (cp != null) {
-                                Triangle(pObj as EditObject, cp, lengthB * sf, lengthC * sf)
-                            } else {
-                                Triangle(pObj, conn, lengthB * sf, lengthC * sf)
+                                // 完全形式 (列 17-19 = cp.side/type/lcr) の読み取り
+                                val cpSide = c.getOrNull(17)?.toIntOrNull()
+                                val cpType = c.getOrNull(18)?.toIntOrNull()
+                                val cpLcr = c.getOrNull(19)?.toIntOrNull()
+                                val cp = if (cpSide != null && cpType != null && cpLcr != null) {
+                                    ConnParam(cpSide, cpType, cpLcr, lengthA * sf)
+                                } else {
+                                    ConnCode.toConnParam(conn, lengthA * sf)
+                                }
+                                val child = if (cp != null) {
+                                    Triangle(pObj as EditObject, cp, lengthB * sf, lengthC * sf)
+                                } else {
+                                    Triangle(pObj, conn, lengthB * sf, lengthC * sf)
+                                }
+                                child.parentnumber = parent
+                                child
                             }
                         }
+                        tri.connectionSide = conn
+                        applyRowMeta(c, tri)
+                        append(tri)
                     }
-                    tri.connectionSide = conn
-                    applyRowMeta(c, tri)
-                    append(tri)
                 }
             }
         }
@@ -511,7 +519,11 @@ object CsvCodec {
         if (c.getOrNull(9)?.toBoolean() == true) {
             val px = c.getOrNull(7)?.toFloatOrNull()
             val py = c.getOrNull(8)?.toFloatOrNull()
-            if (px != null && py != null) tri.setPointNumber(PointXY(px, py), true)
+            if (px != null && py != null) {
+                tri.pointnumber = PointXY(px, py)
+                tri.pointNumber.flag.isMovedByUser = true
+                tri.pointNumber.flag.isAutoAligned = false
+            }
         }
         // 寸法アライメント (列11-16)
         val aligns = (11..16).map { c.getOrNull(it)?.toIntOrNull() }
@@ -536,26 +548,7 @@ object CsvCodec {
      */
     fun bake(trilist: TriangleList, original: CsvDoc): CsvDoc {
         // 三角形行を完全形式 28 列で再構築する。
-        val triRows = (1..trilist.size()).map { i ->
-            val mt = trilist.getBy(i)
-            val pn = mt.pointnumber
-            val cp = ConnCode.toConnParam(mt.connectionSide, mt.lengthNotSized[0], mt.cParam_.lcr)
-                ?: mt.cParam_
-            CsvRow(
-                listOf(
-                    "${mt.mynumber}", "${mt.lengthA_}", "${mt.lengthB_}", "${mt.lengthC_}",
-                    "${mt.parentnumber}", "${mt.connectionSide}",
-                    mt.name, "${pn.x}", "${pn.y}", "${mt.pointNumber.flag.isMovedByUser}",
-                    "${mt.mycolor}",
-                    "${mt.dim.horizontal.a}", "${mt.dim.horizontal.b}", "${mt.dim.horizontal.c}",
-                    "${mt.dim.vertical.a}", "${mt.dim.vertical.b}", "${mt.dim.vertical.c}",
-                    "${cp.side}", "${cp.type}", "${cp.lcr}",
-                    "${mt.dim.flag[1].isMovedByUser}", "${mt.dim.flag[2].isMovedByUser}",
-                    "${mt.angle}", "${mt.pointCA.x}", "${mt.pointCA.y}", "${mt.angleInLocal_}",
-                    "${mt.dim.horizontal.s}", "${mt.dim.flagS.isMovedByUser}",
-                )
-            )
-        }
+        val triRows = (1..trilist.size()).map { i -> rowForTriangle(trilist.getBy(i)) }
         // figureRows を再構築: 三角形行は triRows で置き換え、Rectangle 行は素通し。
         // user 確定 2026-06-16: CSV タグは Rectangle 1 種 (Trapezoid / TriTrap タグ廃止)。
         var triIdx = 0
@@ -572,6 +565,47 @@ object CsvCodec {
             original.preLines, trilist.angle, original.postLines, original.dedRows, original.textSize,
             trilist.scale,  // listScale
             newFigureRows,
+        )
+    }
+
+    /**
+     * mixed EditList を WebPrimitiveRenderer と同じ図形通し番号で焼く。通常 Triangle は
+     * TriangleList と同じインスタンス、Rectangle 子 Triangle は mixed 側だけに存在するため、
+     * Web UI の override を CSV 行へ戻す経路ではこちらを使う。
+     */
+    fun bakeMixed(list: EditList<EditObject>, original: CsvDoc, listAngle: Float?, listScale: Float?): CsvDoc {
+        val newFigureRows = original.figureRows.mapIndexed { idx, row ->
+            if (row.chunks.firstOrNull() == "Rectangle") {
+                row
+            } else {
+                val obj = if (idx + 1 in 1..list.size()) list.get(idx + 1) else null
+                val number = row.chunks.firstOrNull()?.toIntOrNull()
+                if (obj is Triangle) rowForTriangle(obj, number ?: obj.mynumber) else row
+            }
+        }
+        return CsvDoc(
+            original.preLines, listAngle ?: original.listAngle, original.postLines, original.dedRows,
+            original.textSize, listScale ?: original.listScale, newFigureRows,
+        )
+    }
+
+    private fun rowForTriangle(mt: Triangle, number: Int = mt.mynumber): CsvRow {
+        val pn = mt.pointnumber
+        val cp = ConnCode.toConnParam(mt.connectionSide, mt.lengthNotSized[0], mt.cParam_.lcr)
+            ?: mt.cParam_
+        return CsvRow(
+            listOf(
+                "$number", "${mt.lengthA_}", "${mt.lengthB_}", "${mt.lengthC_}",
+                "${mt.parentnumber}", "${mt.connectionSide}",
+                mt.name, "${pn.x}", "${pn.y}", "${mt.pointNumber.flag.isMovedByUser}",
+                "${mt.mycolor}",
+                "${mt.dim.horizontal.a}", "${mt.dim.horizontal.b}", "${mt.dim.horizontal.c}",
+                "${mt.dim.vertical.a}", "${mt.dim.vertical.b}", "${mt.dim.vertical.c}",
+                "${cp.side}", "${cp.type}", "${cp.lcr}",
+                "${mt.dim.flag[1].isMovedByUser}", "${mt.dim.flag[2].isMovedByUser}",
+                "${mt.angle}", "${mt.pointCA.x}", "${mt.pointCA.y}", "${mt.angleInLocal_}",
+                "${mt.dim.horizontal.s}", "${mt.dim.flagS.isMovedByUser}",
+            )
         )
     }
 
