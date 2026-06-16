@@ -169,68 +169,25 @@ describe('chain-recttri-2: 親台形 → 子三角 → 孫三角 (混成 chain 2
 // 反映状態のテストが必要」 への対応。 depth=4 混成 chain の全 100 ケース (kinds × sides cartesian)。
 // 各 case で 各段の sideCount (tri=3 / trap=4) + 砂時計なし + 図形が重ならないことを runChain で assert。
 //
-// 既知 bug 34 件 (2026-06-16 観測、 全件 段 2=trap 系) を it.fails で晒す。 これらは検出された
-// 重なり (図形位置の overlap) を持ち、 道路測量アプリで「ありえない描画」。 user 指示「既存の
-// クソコードが固定化されないように」 → fix 待ちの bug を test で公開、 root cause 修正で it.fails
-// を it に戻す形で progress を pin。 it.fails は「失敗が期待値」 (= 緑) なので CI は通る、 だが
-// 一覧で「34 件未解決」 が見える。
-const EXPECTED_FAIL_MIX4 = new Set<string>([
-  'mix4/tri-trap-trap-trap-s1-1-1',
-  'mix4/tri-trap-trap-trap-s1-1-2',
-  'mix4/tri-trap-trap-trap-s1-1-3',
-  'mix4/tri-trap-trap-trap-s2-2-1',
-  'mix4/tri-trap-trap-trap-s2-2-2',
-  'mix4/tri-trap-trap-trap-s2-2-3',
-  'mix4/tri-trap-trap-trap-s2-3-1',
-  'mix4/tri-trap-trap-trap-s2-3-2',
-  'mix4/tri-trap-trap-trap-s2-3-3',
-  'mix4/tri-trap-trap-tri-s1-1-1',
-  'mix4/tri-trap-trap-tri-s1-1-2',
-  'mix4/tri-trap-trap-tri-s1-1-3',
-  'mix4/tri-trap-trap-tri-s2-2-1',
-  'mix4/tri-trap-trap-tri-s2-2-2',
-  'mix4/tri-trap-trap-tri-s2-2-3',
-  'mix4/tri-trap-trap-tri-s2-3-1',
-  'mix4/tri-trap-trap-tri-s2-3-2',
-  'mix4/tri-trap-trap-tri-s2-3-3',
-  'mix4/tri-trap-tri-trap-s1-1-1',
-  'mix4/tri-trap-tri-trap-s1-1-2',
-  'mix4/tri-trap-tri-trap-s1-2-1',
-  'mix4/tri-trap-tri-trap-s1-2-2',
-  'mix4/tri-trap-tri-trap-s1-3-1',
-  'mix4/tri-trap-tri-trap-s1-3-2',
-  'mix4/tri-trap-tri-trap-s2-1-1',
-  'mix4/tri-trap-tri-trap-s2-1-2',
-  'mix4/tri-trap-tri-trap-s2-2-1',
-  'mix4/tri-trap-tri-trap-s2-2-2',
-  'mix4/tri-trap-tri-trap-s2-3-1',
-  'mix4/tri-trap-tri-trap-s2-3-2',
-  'mix4/tri-trap-tri-tri-s1-2-1',
-  'mix4/tri-trap-tri-tri-s1-2-2',
-  'mix4/tri-trap-tri-tri-s2-2-1',
-  'mix4/tri-trap-tri-tri-s2-2-2',
-]);
+// 既知 bug 34 件 (2026-06-16 観測、 全件 段 2=trap 系) は、serializeState の出現順保持改修
+// (2026-06-16) と Triangle.kt の重心ベース内向き反転ロジックの共通化により全て解消済み。
+// 全件の sideCount / 砂時計なし / 重なりなし / 連結座標一致 を regular 'it' で assert。
+const EXPECTED_FAIL_MIX4 = new Set<string>();
 
 // user 確定 2026-06-16「重ならなければそれでいいと考えてるのか、 正常に連結座標に図形が
 // 繋がってるか全てのケースの結果バッファを観ろ」 を受けて追加した connection assert
-// (= 親 → 子 で共有頂点 >= 1) で 露呈した 連結 bug。 全件 段 3 / 段 4 が trap で 段 1 から
-// 別位置に飛んでいる ── tri → tri → trap → trap chain の特定 side 組合せで Rectangle の
-// 親頂点解決が段 1 (root tri) を見にいって segment 3 への trap の親 (= 段 2 tri) を見失う
-// 疑い (= RectChild タグ廃止波及 残り)。 fix 待ちの 3 件を可視化、 root fix は別 task。
-const EXPECTED_FAIL_MIX4_CONN = new Set<string>([
-  'mix4/tri-tri-trap-trap-s1-1-2',
-  'mix4/tri-tri-trap-trap-s1-1-3',
-  'mix4/tri-tri-trap-trap-s2-2-1',
-]);
+// (= 親 → 子 で共有頂点 >= 1) の連結崩壊は、 buildMixed の parent 解決を出現順
+// (mixed通し番号) へ寄せたことで解消。
+const EXPECTED_FAIL_MIX4_CONN = new Set<string>();
 
 describe('chain-mixed-4: 4 段混成 chain (三・台 ∈ 各段 + 親 side 全網羅)', () => {
   const cases = [...genMixedChain4()];
   it('chain 数 = 100 (kinds {tri,trap}^3 × 親 side cartesian)', () => {
     expect(cases.length).toBe(100);
   });
-  it(`既知 fail = ${EXPECTED_FAIL_MIX4.size} 件 重なり + ${EXPECTED_FAIL_MIX4_CONN.size} 件 連結崩壊 (全件 trap が絡む特定 side 組合せ、 fix 待ち)`, () => {
-    expect(EXPECTED_FAIL_MIX4.size).toBe(34);
-    expect(EXPECTED_FAIL_MIX4_CONN.size).toBe(3);
+  it('全 100 ケースで重なり・連結崩壊がないこと', () => {
+    expect(EXPECTED_FAIL_MIX4.size).toBe(0);
+    expect(EXPECTED_FAIL_MIX4_CONN.size).toBe(0);
   });
   for (const c of cases) {
     const expected = EXPECTED_FAIL_MIX4.has(c.label) || EXPECTED_FAIL_MIX4_CONN.has(c.label);

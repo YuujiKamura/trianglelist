@@ -201,9 +201,9 @@ function buildMix4Csv(kinds: [Mix4Kind, Mix4Kind, Mix4Kind], sides: [number, num
       csv += `${triCount},1.00,0.80,0.80,${prevMixedNum},${parentSide}\n`;
     } else {
       trapCount++;
-      // Rectangle 行: 親が tri なら parent=三角形通し / parentKind=0、
-      //               親が trap なら parent=trap ローカル通し / parentKind=1
-      const parentForTrap = prevKind === 'tri' ? triCount : trapCount - 1;
+      // Rectangle 行も parent=混在通し番号で統一する。parentKind は表示/旧互換ヒントで、
+      // buildMixed の親解決には使わない。
+      const parentForTrap = prevMixedNum;
       const parentKind = prevKind === 'tri' ? 0 : 1;
       csv += `Rectangle,${trapCount},1.00,1.00,0.80,${parentForTrap},${parentSide},0,${parentKind}\n`;
     }

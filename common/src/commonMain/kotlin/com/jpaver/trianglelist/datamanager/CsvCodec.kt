@@ -203,7 +203,7 @@ object CsvCodec {
                 } else {
                     ConnCode.toConnParam(conn, lengthA) ?: continue
                 }
-                trilist.add(Triangle(ptri, cp, lengthB, lengthC), true)
+                trilist.add(Triangle(ptri as EditObject, cp, lengthB, lengthC), true)
             }
             val tri = trilist.getBy(trilist.size())
             tri.connectionSide = conn
@@ -225,20 +225,46 @@ object CsvCodec {
      * user 確定 2026-06-16「親がどうとかでデータ型を分けるな、 トライトラップとか排除しろ」 ──
      * CSV タグは Rectangle 1 種、 台形子三角形は普通 Triangle 行で parent=混在通し番号で表現。
      *
-     * trilist は build(doc) で構築済みを渡す。台形の親 (三角形) が trilist に在る前提。
+     * trilist は build(doc) で構築済みを渡す。CSV の parent は原則として figureRows の混在通し番号。
+     * buildMixed はその番号から EditObject を引き、接続自体は EditObject.getLine(side) / initByParent に委譲する。
      * scale は三角形と同じ実効倍率。
      *
      * 戻り値: 混在 EditList<EditObject> ── 全 Triangle/Rectangle が同じ list に存在 (figureRows 順)。
-     * 内部 traps / trapTris は 「混在通し番号 = 三角形数 + 台形 idx」 の親解決のため保持、
-     * 戻り値からは見えない。 caller が分離したい場合は filterIsInstance<Rectangle>() / Triangle.
+     * caller が分離したい場合は filterIsInstance<Rectangle>() / Triangle.
      */
     fun buildMixed(doc: CsvDoc, trilist: TriangleList, scale: Float = 1f): EditList<EditObject> {
         val mixed = EditList<EditObject>()
         val s = if (scale > 0f) scale.toDouble() else 1.0
         val sf = if (scale > 0f) scale else 1f
+        val mixedObjects = mutableListOf<EditObject>()
         val traps = mutableListOf<Rectangle>()
         val trapTris = mutableListOf<Triangle>()
-        var triIdx = 0  // 親が Triangle (parent <= trilist.size()) の Triangle 行の数
+        var triIdx = 0  // build(doc) に含まれる通常 Triangle 行の pull 位置
+
+        fun mixedByNumber(number: Int): EditObject? =
+            if (number in 1..mixedObjects.size) mixedObjects[number - 1] else null
+
+        // 旧 CSV 互換: RectChild 廃止移行中の parent = trilist.size() + Rectangle idx 形式。
+        // 新規経路は mixedByNumber(parent) で解決する。
+        fun legacyCompositeParent(number: Int): EditObject? {
+            val target = number - trilist.size()
+            val ntrap = traps.size
+            return when {
+                target in 1..ntrap -> traps[target - 1]
+                target > ntrap && (target - ntrap - 1) in trapTris.indices -> trapTris[target - ntrap - 1]
+                else -> null
+            }
+        }
+
+        fun append(obj: EditObject) {
+            mixed.add(obj)
+            mixedObjects.add(obj)
+        }
+
+        fun pullTriangle(): Triangle? {
+            triIdx += 1
+            return if (triIdx <= trilist.size()) trilist.getBy(triIdx) else null
+        }
 
         for (row in doc.figureRows) {
             val c = row.chunks
@@ -252,51 +278,63 @@ object CsvCodec {
                     val align = c.getOrNull(7)?.toIntOrNull() ?: 0
                     val parentKind = c.getOrNull(8)?.toIntOrNull() ?: 0
                     val l = length * s; val wa = widthA * s; val wb = widthB * s
-                    fun indep() = Rectangle(l, wa, wb, angle = INDEP_TRAP_ANGLE, basepoint = PointXY(0f, 0f), alignment = align)
+                    fun indep() = Rectangle(l, wa, wb, angle = INDEP_TRAP_ANGLE + (doc.listAngle ?: 0f), basepoint = PointXY(0f, 0f), alignment = align)
+                    fun parentObject(): EditObject? {
+                        if (parent < 1) return null
+                        // Primary schema: parent is the mixed figure number, independent of shape kind.
+                        mixedByNumber(parent)?.let { return it }
+                        // Compatibility for older Rectangle-on-Rectangle rows where parentKind=1 used local Rectangle number.
+                        if (parentKind == 1) traps.getOrNull(parent - 1)?.let { return it }
+                        // Compatibility for old triangle-parent rows whose parent number targeted the prebuilt TriangleList.
+                        return if (parent in 1..trilist.size()) trilist.getBy(parent) else null
+                    }
+                    val pObj = parentObject()
                     val rect = when {
                         parent < 1 -> indep()
-                        parentKind == 1 -> {
-                            val pIdx = parent - 1
-                            if (pIdx < 0 || pIdx >= traps.size) indep()
-                            else Rectangle(l, wa, wb, nodeA = traps[pIdx], side = side, alignment = align)
-                        }
-                        parent > trilist.size() -> indep()
-                        else -> Rectangle(l, wa, wb, nodeA = trilist.getBy(parent), side = side, alignment = align)
+                        pObj == null -> indep()
+                        else -> Rectangle(l, wa, wb, nodeA = pObj, side = side, alignment = align)
                     }
                     traps.add(rect)
-                    mixed.add(rect)
+                    append(rect)
                 }
                 else -> {
-                    // Triangle 行。 parent (列 4) で親種別を解決:
-                    //   parent <= trilist.size() → 親が Triangle、 trilist から pull (build() で構築済み)
-                    //   parent > trilist.size()  → 親が Rectangle or 既存子 Triangle、 ここで新規構築
+                    // Triangle 行。親解決を mixedByNumber に一本化し、Triangle/Rectangle 問わず
+                    // 親として扱える新設コンストラクタ (EditObject 親) を使う (2026-06-16 刷新)。
+                    val lengthA = c.getOrNull(1)?.toFloatOrNull() ?: continue
+                    val lengthB = c.getOrNull(2)?.toFloatOrNull() ?: continue
+                    val lengthC = c.getOrNull(3)?.toFloatOrNull() ?: continue
                     val parent = c.getOrNull(4)?.toIntOrNull() ?: -1
-                    if (parent in 1..trilist.size()) {
-                        triIdx += 1
-                        if (triIdx <= trilist.size()) mixed.add(trilist.getBy(triIdx))
-                    } else if (parent > trilist.size()) {
-                        // 混在通し番号 parent から target = parent - trilist.size() を算出。
-                        // target in 1..ntrap → 親 = traps[target-1] (Rectangle 親)
-                        // target > ntrap     → 親 = trapTris[target - ntrap - 1] (既存子 Triangle = chain 2 段目以降)
-                        val b = c.getOrNull(2)?.toFloatOrNull() ?: continue
-                        val cc = c.getOrNull(3)?.toFloatOrNull() ?: continue
-                        val side = c.getOrNull(5)?.toIntOrNull() ?: continue
-                        val target = parent - trilist.size()
-                        val ntrap = traps.size
-                        val pObj: EditObject? = when {
-                            target in 1..ntrap -> traps[target - 1]
-                            target > ntrap && (target - ntrap - 1) in trapTris.indices -> trapTris[target - ntrap - 1]
-                            else -> null
-                        }
-                        if (pObj == null) continue
-                        val tri = Triangle(pObj, side, b * sf, cc * sf)
-                        trapTris.add(tri)
-                        mixed.add(tri)
+                    val conn = c.getOrNull(5)?.toIntOrNull() ?: -1
+
+                    fun indep() = Triangle(lengthA * sf, lengthB * sf, lengthC * sf, PointXY(0f, 0f), 180f)
+
+                    val tri = if (conn < 1 || parent < 1) {
+                        indep()
                     } else {
-                        // 独立 Triangle (parent < 1): trilist 経由で pull
-                        triIdx += 1
-                        if (triIdx <= trilist.size()) mixed.add(trilist.getBy(triIdx))
+                        // 混在通し番号で親を探す
+                        val pObj = mixedByNumber(parent)
+                        if (pObj == null) {
+                            indep() // 親が見つからなければ独立に
+                        } else {
+                            // 完全形式 (列 17-19 = cp.side/type/lcr) の読み取り
+                            val cpSide = c.getOrNull(17)?.toIntOrNull()
+                            val cpType = c.getOrNull(18)?.toIntOrNull()
+                            val cpLcr = c.getOrNull(19)?.toIntOrNull()
+                            val cp = if (cpSide != null && cpType != null && cpLcr != null) {
+                                ConnParam(cpSide, cpType, cpLcr, lengthA * sf)
+                            } else {
+                                ConnCode.toConnParam(conn, lengthA * sf)
+                            }
+                            if (cp != null) {
+                                Triangle(pObj as EditObject, cp, lengthB * sf, lengthC * sf)
+                            } else {
+                                Triangle(pObj, conn, lengthB * sf, lengthC * sf)
+                            }
+                        }
                     }
+                    tri.connectionSide = conn
+                    applyRowMeta(c, tri)
+                    append(tri)
                 }
             }
         }
