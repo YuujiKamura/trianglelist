@@ -284,6 +284,23 @@ class WebTrapezoidTest {
         assertTrue(childBase.right.nearBy(parentEdge.right, 0.001), "底辺右 ${childBase.right} != 親D辺右 ${parentEdge.right}")
     }
 
+    /** Rectangle 親も混在通し番号で解決する: 三角形2個の後の Rectangle #1 は mixed #3 */
+    @Test
+    fun rect_to_rect_after_triangles_uses_mixed_parent_number() {
+        val csv = "1,1.0,1.0,1.0,-1,-1\n" +
+            "2,1.0,0.8,0.8,1,1\n" +
+            "Rectangle,1,1.0,1.0,0.8,2,1,0,0\n" +
+            "Rectangle,2,1.0,1.0,0.8,3,2,0,1\n"
+        val doc = CsvCodec.parse(csv)
+        val trilist = CsvCodec.build(doc)
+        val (rects, _) = figs(doc, trilist, 1f)
+        assertEquals(2, rects.size, "Rectangle 2 個が構築される")
+        val parentEdge = rects[0].getLine(2)
+        val childBase = rects[1].calcPoint().a
+        assertTrue(childBase.left.nearBy(parentEdge.left, 0.001), "底辺左 ${childBase.left} != 親C辺左 ${parentEdge.left}")
+        assertTrue(childBase.right.nearBy(parentEdge.right, 0.001), "底辺右 ${childBase.right} != 親C辺右 ${parentEdge.right}")
+    }
+
     /** parentKind 省略 (8 列) は親=三角形のまま不変: Rectangle の底辺が親三角形の B 辺に乗る */
     @Test
     fun parent_kind_omitted_8col_keeps_triangle_parent() {

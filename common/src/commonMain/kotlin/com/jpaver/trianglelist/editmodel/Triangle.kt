@@ -297,26 +297,94 @@ class Triangle : EditObject, Cloneable<Triangle> {
         val baseAngle = base.getAngle().toFloat()
         initBasicArguments(a, B, C, base.left, baseAngle)
         calcPoints(base.left, baseAngle)
-        // 台形(Rectangle)を親にすると、getLine の辺向き(winding)が辺ごとに揃っていない (B/C/D マッピングは
-        // 寸法ラベル基準で決めたため、calcPoints が頂点を固定側 (+CCW) に置く規約と噛み合わない辺がある)。
-        // そのままだと子三角形の頂点が親台形の内部に潜って図形が重なる。頂点が親重心と base 線の同じ側に
-        // 来る (=内向き) なら base を反転 (始点↔終点・B↔C 入替) して外側へ出す。三角形親は従来どおり (getLine が外向き)。
-        if (parent is Rectangle && apexTowardRectInterior(parent, base)) {
+        // 重なり防止
+        if (apexTowardInterior(parent, base)) {
             initBasicArguments(a, C, B, base.right, baseAngle + 180f)
             calcPoints(base.right, baseAngle + 180f)
         }
     }
 
-    // 子三角形の頂点 (pointBC) が親台形の内部を向いているか。base 線に対し「頂点」と「台形重心」が
+    /**
+     * EditObject (三角形/台形) を親に、ConnParam に従って三角形を構築する (2026-06-16 混成対応)。
+     */
+    constructor(parent: EditObject, cParam: ConnParam, B: Float, C: Float) {
+        val base = initByParent(parent, cParam.side)
+        val baseAngle = base.getAngle().toFloat()
+
+        // ConnParam 考慮の初期化 (Triangle(ptri, cp, ...) と同じロジックを EditObject へ汎用化)
+        initBasicArguments(cParam.lenA, B, C, base.left, baseAngle)
+        cParam_ = cParam.clone()
+        connectionSide = cParam.side
+        connectionType_ = cParam.type
+        connectionLCR_ = cParam.lcr
+
+        // 二重断面 / フロートのオフセット適用
+        // setOn は引数に Triangle? を取る設計だが、EditObject 親の場合は独立したオフセット処理が必要。
+        // 親種別に依存しないよう initByParent が返した base (Line) を基準に LCR / Type を解決する。
+        val l = getBaseOffsetPoint(base, cParam.lenA, cParam.type, cParam.lcr)
+        initBasicArguments(cParam.lenA, B, C, l.left, l.getAngle().toFloat())
+        calcPoints(l.left, l.getAngle().toFloat())
+
+        // 重なり防止
+        if (apexTowardInterior(parent, base)) {
+            // 反転時は重心ベースで逆側へ (A辺は不変、B↔C 入替)
+            val revCp = cParam.clone()
+            // LCR 反転: Left(0) -> Right(2), Right(2) -> Left(0)
+            revCp.lcr = when(cParam.lcr) {
+                0 -> 2
+                2 -> 0
+                else -> 1
+            }
+            initBasicArguments(cParam.lenA, C, B, base.right, baseAngle + 180f)
+            cParam_ = revCp
+
+            // base の向きを反転させた状態でのオフセットを再計算
+            val revBase = Line(base.right, base.left)
+            val lRev = getBaseOffsetPoint(revBase, revCp.lenA, revCp.type, revCp.lcr)
+            initBasicArguments(revCp.lenA, C, B, lRev.left, lRev.getAngle().toFloat())
+            calcPoints(lRev.left, lRev.getAngle().toFloat())
+        }
+    }
+
+    /**
+     * 親の種別に依存せず、親の接続辺 (base) と指定された LCR / Type に基づいて
+     * 実際に接続する「新しい基線 (Line)」を返す。
+     * type=1 (フロート), type=2 (二重断面), lcr=0(左), 1(中), 2(右)
+     */
+    private fun getBaseOffsetPoint(base: Line, lenA: Float, type: Int, lcr: Int): Line {
+        // 通常接続 (type=0) なら親の辺をそのまま使う (スライドしない)
+        if (type == 0) {
+            return Line(base.left.clone(), base.right.clone())
+        }
+        
+        // LCR に応じた基点 (left) のスライド
+        val baseLen = base.left.lengthTo(base.right).toFloat()
+        val pLeft = when (lcr) {
+            0 -> base.left.offset(base.right, lenA.toDouble())
+            1 -> base.left.offset(base.right, (baseLen * 0.5f + lenA * 0.5f).toDouble())
+            2 -> base.right.clone()
+            else -> base.left.clone()
+        }
+        
+        // type=2 (二重断面) なら、左側に 1.0 はみ出す
+        val finalPLeft = if (type == 2) {
+            pLeft.crossOffset(base.right, -1.0)
+        } else {
+            pLeft
+        }
+        
+        // 新しい基線 (角度は base と同じ)
+        return Line(finalPLeft, finalPLeft.offset(lenA.toDouble(), base.getAngle()))
+    }
+
+    // 子三角形の頂点 (pointBC) が親図形の内部を向いているか。base 線に対し「頂点」と「親重心」が
     // 同じ側 (cross 積が同符号) なら内向き。calcPoints 実行後に呼ぶ (pointBC が確定している前提)。
-    private fun apexTowardRectInterior(rect: Rectangle, base: Line): Boolean {
-        val lp = rect.calcPoint()
-        val cx = (lp.a.left.x + lp.a.right.x + lp.b.left.x + lp.b.right.x) / 4f
-        val cy = (lp.a.left.y + lp.a.right.y + lp.b.left.y + lp.b.right.y) / 4f
+    private fun apexTowardInterior(parent: EditObject, base: Line): Boolean {
+        val cp = parent.centroid()
         val dx = base.right.x - base.left.x
         val dy = base.right.y - base.left.y
         val apexSide = dx * (pointBC.y - base.left.y) - dy * (pointBC.x - base.left.x)
-        val centSide = dx * (cy - base.left.y) - dy * (cx - base.left.x)
+        val centSide = dx * (cp.y - base.left.y) - dy * (cp.x - base.left.x)
         return apexSide * centSide > 0f
     }
 

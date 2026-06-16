@@ -37,7 +37,19 @@ data class Rectangle(
         var baseline = Line( basepoint, basepoint.moveX(widthA,angle) )
 
         nodeA?.let {
-            baseline = initByParent(it, side)
+            var bl = initByParent(it, side)
+            // 重なり防止 (Triangle の apexTowardInterior 相当): 
+            // Rectangle の crossOffset は常に baseline の「左側」へ伸びる。
+            // 親の重心 (centroid) が baseline の「左側」にある場合、親の内部に向かって
+            // 伸びて重なってしまうため、baseline を 180° 反転させて外側へ向ける。
+            val cp = it.centroid()
+            val dx = bl.right.x - bl.left.x
+            val dy = bl.right.y - bl.left.y
+            val centSide = dx * (cp.y - bl.left.y) - dy * (cp.x - bl.left.x)
+            if (centSide > 0.0) {
+                bl = Line(bl.right, bl.left)
+            }
+            baseline = bl
             basepoint = baseline.left
             angle = baseline.getAngle()
         }

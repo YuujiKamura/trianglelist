@@ -36,12 +36,11 @@ function* enumeratePatterns(childKind: Kind, sides: ReadonlyArray<1 | 2 | 3>): G
 export const TRI_CONN_14: ReadonlyArray<ConnPattern> = [...enumeratePatterns('triangle', [1, 2])];
 
 /** 台形親 → 子: BCD × 7 = 21 種 (user 「台形ならBCDに以下同文で21種」)
- *  注: 現実装の TRAP_CONN_SIDES = [1, 2] で D(=3) は動線上未使用。 spec で D を含めるかは
- *  実装側のサポート確認後に決める ── まず BC のみ (14 種) で動かし、 D 対応は次の iteration */
-export const TRAP_CONN_14: ReadonlyArray<ConnPattern> = [...enumeratePatterns('rectangle', [1, 2])];
+ *  注: B-FORCE (2026-06-16): D(=3) を含めて完全網羅。 */
+export const TRAP_CONN_21: ReadonlyArray<ConnPattern> = [...enumeratePatterns('rectangle', [1, 2, 3])];
 
-/** 三↔台 遷移含む全パターン (= 三角形親 14 + 台形親 14、 子の kind は別軸で振る) */
+/** 三↔台 遷移含む全パターン (= 三角形親 14 + 台形親 21、 子の kind は別軸で振る) */
 export const ALL_PARENT_CONN_PATTERNS: ReadonlyArray<ConnPattern> = [
   ...TRI_CONN_14,
-  ...TRAP_CONN_14,
+  ...TRAP_CONN_21,
 ];

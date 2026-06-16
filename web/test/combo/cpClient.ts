@@ -106,6 +106,18 @@ export async function click(target: string): Promise<{ ok: boolean; status?: str
   return res.json();
 }
 
+export async function tap(x: number, y: number): Promise<{ ok: boolean }> {
+  const res = await get(`/__tlcp/tap?x=${x}&y=${y}`);
+  return res.json();
+}
+
+export async function key(target: string, value: string, keyName?: string): Promise<{ ok: boolean }> {
+  let url = `/__tlcp/key?target=${encodeURIComponent(target)}&value=${encodeURIComponent(value)}`;
+  if (keyName) url += `&key=${encodeURIComponent(keyName)}`;
+  const res = await get(url);
+  return res.json();
+}
+
 export async function pageBuffer(): Promise<Buffer> {
   const res = await get('/__tlcp/page');
   const arr = await res.arrayBuffer();
