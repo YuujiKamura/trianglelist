@@ -150,6 +150,99 @@ export function* genTrapezoidTritrapChain2(): Generator<ChainCase> {
   }
 }
 
+/** depth=4 混成 chain の cartesian 全網羅。
+ *  user 確定 2026-06-14「全然足らん。 三、 台、 三、 三とか、 最低 4〜5 個までの各種連結と画面への
+ *  反映状態のテストが必要」 への対応。
+ *
+ *  軸 (= CLAUDE.md「軸を列挙して generator で生成、 固定数字で書くな」):
+ *    A. 段 2〜4 の図形種別: { triangle, trapezoid }^3 = 8 通り
+ *    B. 親 side: 親が triangle なら {1, 2} (B/C)、 親が trapezoid なら {1, 2, 3} (B/C/D)
+ *
+ *  段 1 は triangle 固定 (root, parent=-1)。 各段は直前段に接続 (= 純粋 chain)。
+ *  CSV schema は TriTrap タグ廃止後 (commit 0b8c51e/24cb249) の Triangle 1 種統合 + 通常 Trapezoid 行。
+ *
+ *  総数 = Σ (2 × s2 × s3) over kinds ∈ {tri,trap}^3、 ここで si = (2 if kinds[i-1]==='tri' else 3)。
+ *  実数 = 2 × ((2×2+2×3+3×2+3×3) × 2) = 2 × 50 = 100 ケース。
+ */
+type Mix4Kind = 'tri' | 'trap';
+function* mix4Cases(): Generator<{
+  kinds: [Mix4Kind, Mix4Kind, Mix4Kind];
+  sides: [number, number, number];
+}> {
+  const KINDS: Mix4Kind[] = ['tri', 'trap'];
+  for (const k1 of KINDS) for (const k2 of KINDS) for (const k3 of KINDS) {
+    const seq: [Mix4Kind, Mix4Kind, Mix4Kind] = [k1, k2, k3];
+    // 段 1 (root) は tri 固定なので、 段 1 → 段 2 接続は side ∈ {1,2}
+    // 段 i → 段 i+1 接続 (i = 1, 2, 3) の親 side は 親種別で {1,2} or {1,2,3}
+    const sidesFor = (parentKind: Mix4Kind | 'rootTri'): number[] =>
+      parentKind === 'trap' ? [1, 2, 3] : [1, 2];
+    for (const s1 of sidesFor('rootTri'))
+      for (const s2 of sidesFor(seq[0]))
+        for (const s3 of sidesFor(seq[1])) {
+          yield { kinds: seq, sides: [s1, s2, s3] };
+        }
+  }
+}
+
+function buildMix4Csv(kinds: [Mix4Kind, Mix4Kind, Mix4Kind], sides: [number, number, number]): string {
+  // 段 1 = root triangle (通し 1)。
+  let csv = `1,1.00,1.00,1.00,-1,-1\n`;
+  let triCount = 1; // 三角形通し数
+  let trapCount = 0; // 台形通し数
+  // 直前段の (混在通し番号, kind) を保持
+  let prevMixedNum = 1;
+  let prevKind: Mix4Kind = 'tri';
+  for (let step = 0; step < 3; step++) {
+    const kind = kinds[step];
+    const parentSide = sides[step];
+    if (kind === 'tri') {
+      triCount++;
+      // Triangle 行 num はローカル三角形通し番号、 parent は混在通し番号 (commit 0b8c51e 統合)
+      csv += `${triCount},1.00,0.80,0.80,${prevMixedNum},${parentSide}\n`;
+    } else {
+      trapCount++;
+      // Trapezoid 行: 親が tri なら parent=三角形通し / parentKind=0、
+      //               親が trap なら parent=trap ローカル通し / parentKind=1
+      const parentForTrap = prevKind === 'tri' ? triCount : trapCount - 1;
+      const parentKind = prevKind === 'tri' ? 0 : 1;
+      csv += `Trapezoid,${trapCount},1.00,1.00,0.80,${parentForTrap},${parentSide},0,${parentKind}\n`;
+    }
+    prevMixedNum = step + 2; // 段 step+2 の混在通し (= figureRows 出現順)
+    prevKind = kind;
+  }
+  csv += `ListAngle, 0\n`;
+  return csv;
+}
+
+/** 4 段混成 chain (= 段 1 三角 + 段 2-4 が {三角, 台形}^3) の全 100 ケースを生成。
+ *  各 case は state.rows.length = 4、 各 tri の sideCount は kind で決まる:
+ *    tri → 3 辺 (Triangle.sideCount = 3)
+ *    trap → 4 辺 (Rectangle.sideCount = 4)
+ *  ChainCase の tri field は混在通し番号 (= 出現順 = 段番号)。
+ */
+export function* genMixedChain4(): Generator<ChainCase> {
+  for (const c of mix4Cases()) {
+    const csv = buildMix4Csv(c.kinds, c.sides);
+    const sidesFor = (k: 'rootTri' | Mix4Kind): number => k === 'trap' ? 4 : 3;
+    yield {
+      label: `mix4/${['tri', ...c.kinds].join('-')}-s${c.sides.join('-')}`,
+      csv,
+      expectedRows: 4,
+      expectedSideCounts: [
+        { tri: 1, sides: sidesFor('rootTri') }, // 段 1 = tri 固定
+        { tri: 2, sides: sidesFor(c.kinds[0]) },
+        { tri: 3, sides: sidesFor(c.kinds[1]) },
+        { tri: 4, sides: sidesFor(c.kinds[2]) },
+      ],
+      axes: {
+        kind: 'mix4',
+        kinds: c.kinds.join('-'),
+        sides: c.sides.join('-'),
+      },
+    };
+  }
+}
+
 // 旧 genTriangleChainFocus100 (depth=100 で 14 種を中央位置に置く) は廃止 (user 2026-06-15
 // 「重なっててOKなんて条件は基本ない」)。 depth=100 chain は累積回転で円環化し、 道路測量
 // アプリで ありえない描画になる。 累積回転 0 の linear pattern を再設計するまで停止。
