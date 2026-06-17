@@ -1,7 +1,9 @@
 package com.jpaver.trianglelist.web
 
 import com.example.trilib.PointXY
+import com.jpaver.trianglelist.datamanager.CsvCodec
 import com.jpaver.trianglelist.datamanager.DrawingFileWriter
+import com.jpaver.trianglelist.editmodel.EditObject
 import com.jpaver.trianglelist.viewmodel.TitleParamStr
 
 /**
@@ -19,13 +21,26 @@ import com.jpaver.trianglelist.viewmodel.TitleParamStr
  */
 object WebFrame {
 
-    /** CSV → 図面枠 prim JSON 配列 (layer "frame")。三角形が無ければ空配列 */
+    /** CSV → 図面枠 prim JSON 配列 (layer "frame")。図形 (三角形 / 台形 / 台形子三角形) が一つも無ければ空配列。
+     *  user 指摘 2026-06-14「混在リスト全体の境界計算してセンタリングするのが出来てない」── trilist.center
+     *  だけでは台形 / 台形子三角形が含まれず、枠中心と figure 全体中心がずれる。混在リスト全体 (trilist + traps
+     *  + trapTris) の頂点 bbox 中心を center にする。paper 幾何中心は (20, 13.5)。 */
     fun renderFrame(csv: String): String {
-        val trilist = WebCsvReader.read(csv)
-        if (trilist.size() < 1) return "[]"
+        val doc = CsvCodec.parse(csv)
+        val trilist = CsvCodec.build(doc)
         val ps = trilist.getPrintScale(1f)
+        // 描画 scale は 1f (WebPrimitiveRenderer.renderCsv の effScale と同値、印刷 ps と別軸)。
+        // ここで ps を渡すと台形の幾何が壊れて build が空になる (frame: null が消えない原因)。
+        // SoT 一本化 段3g (2026-06-15): buildMixed が figureRows 順の混在 EditList<EditObject> を 1 本で返す。
+        // 旧版は buildFigures の Pair + 手動 buildList で 3 group を順序問わずに足していたが、 ここの bbox 中心
+        // 計算には figureRows 順かどうかは無関係、 buildMixed の 戻り値をそのまま流せる。
+        val mixedList = CsvCodec.buildMixed(doc, trilist, 1f)
+        val figures: List<EditObject> = (1..mixedList.size()).map { mixedList.get(it) }
+        if (figures.isEmpty()) return "[]"
         val header = WebDrawingExport.parseHeader(csv)
-        val center = trilist.center
+        val center = figuresBboxCenter(figures)
+        // paper-cm 系での paper 全体中心は (21, 14.85) (A3 42x29.7cm の中心、writeOuterFrame:432 と同値)。
+        // 外枠 (40x27cm) も同じ中心に置かれる。ここを figure 全体中心に合わせる = 枠内センタリング。
         val writer = FramePrimWriter(ps, center.x - 21f * ps, center.y - 14.85f * ps)
         writer.zumeninfo = WebDrawingExport.defaultZumenInfo()
         writer.titleTri_ = TitleParamStr()
@@ -36,6 +51,20 @@ object WebFrame {
         writer.writeDrawingFrame(1f, textsize)
         writer.writeTopTitle(1f, textsize)
         return "[" + writer.out.joinToString(",") + "]"
+    }
+
+    /** 混在 figure の頂点 bbox 中心。形状ごとの「三角形なら point[0..2]、台形なら 4 頂点」分岐は
+     *  EditObject.vertices() の多態に吸収されているので、ここは EditObject の list を 1 ループ。
+     *  上位の図形種別が増えても (例えば多角形を足しても) この計算は変わらない。 */
+    private fun figuresBboxCenter(figures: List<EditObject>): PointXY {
+        var minX = Double.POSITIVE_INFINITY; var minY = Double.POSITIVE_INFINITY
+        var maxX = Double.NEGATIVE_INFINITY; var maxY = Double.NEGATIVE_INFINITY
+        for (f in figures) for (p in f.vertices()) {
+            val x = p.x.toDouble(); val y = p.y.toDouble()
+            if (x < minX) minX = x; if (x > maxX) maxX = x
+            if (y < minY) minY = y; if (y > maxY) maxY = y
+        }
+        return PointXY(((minX + maxX) / 2.0).toFloat(), ((minY + maxY) / 2.0).toFloat())
     }
 
     /** writeLine/writeTextHV を prim JSON に落とす writer。paper cm → モデル座標は ×ps + 平行移動 */

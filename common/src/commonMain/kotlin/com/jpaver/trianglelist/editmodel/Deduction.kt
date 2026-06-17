@@ -15,7 +15,7 @@ data class ConnParam(var side: Int, var type: Int, var lcr: Int, var lenA: Float
 }
 
 class Deduction(var num: Int = 0,
-                var name: String = "",
+                override var name: String = "",
                 var lengthX: Float = 0f,
                 var lengthY: Float = 0f,
                 var overlap_to: Int = 0,

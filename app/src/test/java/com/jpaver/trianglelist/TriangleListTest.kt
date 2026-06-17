@@ -361,9 +361,9 @@ class TriangleListTest {
         trilist.add(Triangle(5f, 5f, 5f), true)
         trilist.add(Triangle(trilist.trilist[0], 2, 5f, 5f), true)
         trilist.add(Triangle(trilist.trilist[0], 1, 6f, 6f), true)
-        trilist.trilist[0].name = "No.10"
-        trilist.trilist[1].name = "No.6"
-        trilist.trilist[2].name = "No.2"
+        (trilist.trilist[0]).name = "No.10"
+        (trilist.trilist[1]).name = "No.6"
+        (trilist.trilist[2]).name = "No.2"
 
         val numlist = trilist.getSokutenList(2, 4)
 

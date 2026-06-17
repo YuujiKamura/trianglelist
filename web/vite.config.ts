@@ -31,7 +31,7 @@ function tlcpPlugin(): Plugin {
   const pending = new Map<string, Pending>();
   let seq = 0;
 
-  const request = (server: ViteDevServer, channel: 'capture' | 'state' | 'tap' | 'edit' | 'key' | 'click' | 'load' | 'page', payload: Record<string, unknown> = {}, timeoutMs = 3000) =>
+  const request = (server: ViteDevServer, channel: 'capture' | 'state' | 'tap' | 'edit' | 'key' | 'click' | 'load' | 'page' | 'select', payload: Record<string, unknown> = {}, timeoutMs = 3000) =>
     new Promise<Record<string, unknown>>((resolve, reject) => {
       const id = String(++seq);
       const timer = setTimeout(() => {
@@ -42,10 +42,33 @@ function tlcpPlugin(): Plugin {
       server.ws.send(`tlcp:${channel}-req`, { id, ...payload });
     });
 
+  // dev 起動時に裏で headless chromium を常駐させて localhost を開かせる。
+  // これで「ユーザーが chrome を前に出していなくても」 CP 越しに /__tlcp/page も capture も
+  // バッファを取れる ── ws の応答役は人間が開く chrome ではなく裏の headless chromium。
+  let bgClose: (() => Promise<void>) | null = null;
+
   return {
     name: 'tlcp',
+    async closeBundle() {
+      if (bgClose) { await bgClose(); bgClose = null; }
+    },
     configureServer(server) {
-      for (const channel of ['capture', 'state', 'tap', 'edit', 'key', 'click', 'load', 'page'] as const) {
+      server.httpServer?.once('listening', async () => {
+        try {
+          const addr = server.httpServer?.address();
+          const port = typeof addr === 'object' && addr ? addr.port : 5173;
+          const { chromium } = await import('playwright');
+          const browser = await chromium.launch({ headless: true });
+          const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+          const page = await context.newPage();
+          await page.goto(`http://localhost:${port}/`);
+          bgClose = async () => { await browser.close(); };
+          console.log('[tlcp] headless chromium attached');
+        } catch (e) {
+          console.warn('[tlcp] headless chromium not available:', (e as Error).message);
+        }
+      });
+      for (const channel of ['capture', 'state', 'tap', 'edit', 'key', 'click', 'load', 'page', 'select'] as const) {
         server.ws.on(`tlcp:${channel}-res`, (data: { id: string }) => {
           const p = pending.get(data.id);
           if (!p) return; // タブが複数開いていたら最初の応答だけ採用
@@ -150,6 +173,19 @@ function tlcpPlugin(): Plugin {
             for await (const c of req) chunks.push(c as Buffer);
             const csv = Buffer.concat(chunks).toString('utf-8');
             const data = await request(server, 'load', { csv });
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify(data.state));
+          } catch (e) {
+            res.statusCode = 503;
+            res.end(String(e));
+          }
+          return;
+        }
+        // 選択注入: GET /__tlcp/select?n=<番号> — hitTriangle が拾わない図形 (台形等) を直接 selected に
+        if (req.url.startsWith('/__tlcp/select')) {
+          try {
+            const q = new URL(req.url, 'http://localhost').searchParams;
+            const data = await request(server, 'select', { n: Number(q.get('n')) });
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify(data.state));
           } catch (e) {

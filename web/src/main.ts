@@ -3,7 +3,7 @@
 // ここは JSON プリミティブを素朴に描くだけ。
 // y 軸はモデル座標 (上向き) → 画面座標 (下向き) に反転する (MyView.makePath の -y と同じ向き)。
 
-type LinePrim = { type: 'line'; layer: string; x1: number; y1: number; x2: number; y2: number; ded?: number };
+type LinePrim = { type: 'line'; layer: string; x1: number; y1: number; x2: number; y2: number; ded?: number; tri?: number; side?: number };
 type TextPrim = {
   type: 'text';
   layer: string;
@@ -71,15 +71,24 @@ T-001
 7,2.8,2.2,2.5,5,1
 `;
 
+// すべての色定数を 1 箇所に集中させる (user 2026-06-14「別々に色管理するな、統一管理しろ」)。
+// 同じ色を 2 つ以上の名前で持たないこと — 例えば「shadow ラベルのオレンジ」と
+// 「選択中の控除のオレンジ」は同じ #e67e22 なので accentOrange 一本。
 const COLORS: Record<string, string> = {
+  // base レイヤ (prim.layer 名と一致)
   tri: '#222222',
   dim: '#1a7a1a',
   num: '#1f5fbf',
+  guide: '#9aa0a6', // 補助線 (台形の延長=垂線ガイド等) — 点線で薄いグレー
   ded: '#c0392b', // 控除 = 赤系 (アプリ/DXF の RED 準拠)
   frame: '#8a8a8a', // 図面枠 = 薄グレー (図形より控えめに、DXF では WHITE 相当)
+  // 選択/オーバーレイ系 (UI 状態を示す)
+  selectFill: 'rgba(31, 95, 191, 0.25)', // 選択三角形の塗り (半透明青)
+  selectYellow: '#e6b800', // 選択辺・番号リング・寸法ボックス (app paintYellow 相当)
+  accentOrange: '#e67e22', // 仮表示 (shadow ラベル / 選択中の控除) — 黄とは別の「注目色」
+  haloDark: '#5c4a00', // halo (暗縁取り) — shadow ラベルと選択辺 ABC 注記の共通輪郭
+  shadowFill: 'rgba(128, 128, 128, 0.35)', // シャドー三角形/台形のグレー塗り
 };
-// 選択中の控除の色 (図形・旗揚げ・テキストごと色替えして他の控除と見分ける)
-const DED_SELECT_COLOR = '#e67e22';
 
 // 三角形の塗りパレット (index = CSV 列 10 = Triangle.mycolor、既定 4)。
 // 色値はアプリの resColors (MainActivity.kt:218-224 → res/values/colors.xml:9-14) と同一 —
@@ -92,9 +101,6 @@ const FILL_PALETTE = [
   '#AAFFAA', // 3 colorLime
   '#88CCFF', // 4 colorSky (既定)
 ];
-
-const SELECT_FILL = 'rgba(31, 95, 191, 0.25)'; // 選択三角形の塗り (半透明青)
-const SELECT_YELLOW = '#e6b800'; // 選択辺・番号リング・寸法ボックス (app paintYellow 相当、白地で読める濃さ)
 
 function setStatus(msg: string): void {
   const el = document.getElementById('status');
@@ -179,6 +185,10 @@ let lastTapModel: { x: number; y: number } | null = null;
 // (接続の向きが実際の追加結果と必ず一致する)
 let edgeSel: { tri: number; side: 1 | 2 } | null = null;
 let shadowPrims: LinePrim[] | null = null;
+// 台形の辺をタップして「ここに三角形を乗せる」待ち状態 (三角形モード)。edgeSel (三角形親) を汚さず
+// 別に持つ — 追加経路 fabReplace の三角形親ガードを避け、RectChild 行を直に作る。trap=台形群index(1始まり)、
+// side=getLine 側(1=左脚/2=上辺/3=右脚)。シャドーは三角形を台形辺に乗せた形で出る。
+let pendingTrapParent: { parent: number; side: number } | null = null;
 
 // ---- 控除 (Deduction) 編集 (アプリ deductionMode = flipDeductionMode:980 の web 版) ----
 // SoT は CSV 行そのもの (13 列 "Deduction,..." 文字列の配列)。幾何 (配置・親判定・旗揚げ・
@@ -189,6 +199,20 @@ let dedLines: string[] = [];
 let deductionMode = false;
 let dedCursor: { x: number; y: number } | null = null;
 let dedSelected = 0; // 選択中の控除番号 (1-based、0 = 非選択)
+
+// ---- 台形 (Rectangle) 図形 (混在リスト段1+2: trap-design.md v2 の確定仕様) ----
+// v1 の別state (trapLines) は廃止。台形は三角形と同じ rows[] に kind='rectangle' で混在する
+// (trap-design.md「混在リストが土台」)。CSV contract は不変: "Rectangle,num,length,widthA,
+// widthB,parent,side"。length=延長(辺B), widthA=底辺(辺A), widthB=上辺(辺C),
+// parent=接続先三角形番号(-1=独立), side=接続辺(1=B,2=C, 独立=0)。common の buildRectangles
+// (CsvCodec.kt:240) はこの行を読んで描く — web は CSV を出すだけ。三角形の出力は1ビット不変。
+//
+// 不変条件: rows[] は「三角形が連続 prefix + 台形が suffix」を常に保つ。これにより
+// 既存コードの rows[n-1]==三角形n という前提 (current/selected/親探索/シャドー) が壊れず、
+// 台形ゼロのリストでは全経路がバイト同一 = golden 不変。add は kind で splice 位置を分け、
+// parse は台形行を三角形の後に積む。
+// 新規入力で「追加」が作る図形種別。FAB fabFigureKind でトグル、syncForm がラベルを切替える
+let figureKind: 'triangle' | 'rectangle' = 'triangle';
 
 // Deduction CSV 行の表示用パース (列順は MainActivity.writeCSV:2795)。座標列 8/9 は
 // モデル座標 (y 上向き、保存時に Y 反転済みの値) なのでそのまま hit/マーカーに使える
@@ -298,6 +322,18 @@ function zoomAt(px: number, py: number, factor: number): void {
   v.offsetY = py - (py - v.offsetY) * f;
 }
 
+// 暗縁取り (halo) + 塗りで「下地がグレー shadow / 既存図面のどんな色」でも文字が浮く描画。
+// 選択辺の A/B/C 注記 (drawSelectedDim) と シャドーの 上辺/延長 ラベル で共通利用 (user 2026-06-14
+// 「ばらけさせるな」)。caller は事前に font / textAlign / textBaseline / translate+rotate を設定する。
+function haloText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, halo: string, fill: string): void {
+  ctx.strokeStyle = halo;
+  ctx.lineWidth = 3;
+  ctx.lineJoin = 'round';
+  ctx.strokeText(text, x, y);
+  ctx.fillStyle = fill;
+  ctx.fillText(text, x, y);
+}
+
 function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
@@ -322,20 +358,23 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
     ctx.fill();
   }
 
-  // 選択三角形の塗り (線より下に敷く)。WebPrimitiveRenderer.render は三角形ごとに
-  // 'tri' layer の line を 3 本連続で出す (WebPrimitiveRenderer.kt:62-65) ので、
-  // 番号 n の頂点は tri 線群の [3(n-1), 3n) から拾える — 表示専用の導出で幾何判定はしない
+  // 選択図形の塗り (線より下に敷く)。各 line は WebPrimitiveRenderer から tri/side 識別子付きで
+  // 出るので、selected 番号で filter して chainPath で外周を chain 連結する。
+  // 三角形 (3 辺、 連続 chain) も台形 (4 辺、 段3 swap 後は side 0/2 並列 + 1/3 脚で非連続) も
+  // chainPath で 1 本のパスに連結すれば「順に lineTo で対角線が走り砂時計 X クロス」を回避できる。
   const triLines = prims.filter((p): p is LinePrim => p.type === 'line' && p.layer === 'tri');
   if (selected > 0) {
-    const base = (selected - 1) * 3;
-    if (base + 2 < triLines.length) {
-      ctx.fillStyle = SELECT_FILL;
-      ctx.beginPath();
-      ctx.moveTo(sx(triLines[base].x1), sy(triLines[base].y1));
-      ctx.lineTo(sx(triLines[base].x2), sy(triLines[base].y2));
-      ctx.lineTo(sx(triLines[base + 1].x2), sy(triLines[base + 1].y2));
-      ctx.closePath();
-      ctx.fill();
+    const own = triLines.filter((l) => l.tri === selected);
+    if (own.length >= 3) {
+      const path = chainPath(own);
+      if (path.length >= 3) {
+        ctx.fillStyle = COLORS.selectFill;
+        ctx.beginPath();
+        ctx.moveTo(sx(path[0].x), sy(path[0].y));
+        for (let i = 1; i < path.length; i++) ctx.lineTo(sx(path[i].x), sy(path[i].y));
+        ctx.closePath();
+        ctx.fill();
+      }
     }
   }
 
@@ -343,14 +382,17 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
     if (p.type === 'fill') continue; // 塗りは最初のパスで描画済み
     // 選択中の控除はプリミティブごと色替え (user 指定: 明示的に色替えして見分ける)
     const isSelectedDed = p.layer === 'ded' && dedSelected > 0 && p.ded === dedSelected;
-    const color = isSelectedDed ? DED_SELECT_COLOR : (COLORS[p.layer] ?? '#000000');
+    const color = isSelectedDed ? COLORS.accentOrange : (COLORS[p.layer] ?? '#000000');
     if (p.type === 'line') {
       ctx.strokeStyle = color;
       ctx.lineWidth = isSelectedDed ? 2 : p.layer === 'tri' ? 1.5 : 1;
+      // 補助線 (guide) は点線。台形の延長=垂線ガイドなど「実辺でない寸法線」を実辺と見分ける
+      if (p.layer === 'guide') ctx.setLineDash([4, 3]);
       ctx.beginPath();
       ctx.moveTo(sx(p.x1), sy(p.y1));
       ctx.lineTo(sx(p.x2), sy(p.y2));
       ctx.stroke();
+      if (p.layer === 'guide') ctx.setLineDash([]);
     } else if (p.type === 'circle') {
       ctx.strokeStyle = color;
       ctx.lineWidth = 1;
@@ -377,14 +419,14 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
   // ラベルの値は新規入力行の B/C (アプリの watchedB1_/watchedC1_ 相当) を都度読む
   if (shadowPrims && shadowPrims.length === 3) {
     const [sa, sbLine, scLine] = shadowPrims;
-    ctx.fillStyle = 'rgba(128, 128, 128, 0.35)';
+    ctx.fillStyle = COLORS.shadowFill;
     ctx.beginPath();
     ctx.moveTo(sx(sa.x1), sy(sa.y1));
     ctx.lineTo(sx(sa.x2), sy(sa.y2));
     ctx.lineTo(sx(sbLine.x2), sy(sbLine.y2));
     ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = '#e67e22';
+    ctx.fillStyle = COLORS.accentOrange;
     // 寸法テキストと同じスケール感 (モデル単位の文字高さ × ズーム倍率) に合わせる
     const dimSize =
       lastPrims.find((q): q is TextPrim => q.type === 'text' && q.layer === 'dim')?.size ?? 0.25;
@@ -408,11 +450,103 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
       ctx.translate((x1 + x2) / 2, (y1 + y2) / 2);
       ctx.rotate(ang);
       ctx.textBaseline = 'bottom';
-      ctx.fillText(label, 0, -3);
+      // halo (暗縁取り) + 塗り = 共通の haloText (選択辺 ABC 注記と同じ視認パターン、user 2026-06-14)
+      haloText(ctx, label, 0, -3, COLORS.haloDark, COLORS.accentOrange);
       ctx.restore();
     };
     edgeLabel(sbLine, `B ${bv}`.trim());
     edgeLabel(scLine, `C ${cv}`.trim());
+  }
+
+  // 段5 R6: 台形シャドー (4 辺、グレー塗り + 延長/上辺ラベル)。台形モードで辺タップしたとき
+  // buildShadow が末尾 4 辺を入れる。三角形シャドー (length===3) は上で処理済み・不変。
+  if (shadowPrims && shadowPrims.length === 4) {
+    ctx.fillStyle = COLORS.shadowFill;
+    ctx.beginPath();
+    // 段3 swap (commit 659b509) 以降、 4 辺 line の出力順は「side 0=底/1=右脚/2=上/3=左脚」の
+    // 並列で出るため「前の終点 = 次の始点」 が成立しない (旧 renderRectangle は連続 chain で出して
+    // いた)。 そのまま順に lineTo すると A→B→C→D の対角線が走り砂時計 X クロスに見えるため、
+    // 端点グラフで chain 連結して外形パスを作り直す。
+    const path = chainPath(shadowPrims);
+    if (path.length >= 4) {
+      ctx.moveTo(sx(path[0].x), sy(path[0].y));
+      for (let i = 1; i < path.length; i++) ctx.lineTo(sx(path[i].x), sy(path[i].y));
+    } else {
+      ctx.moveTo(sx(shadowPrims[0].x1), sy(shadowPrims[0].y1));
+      for (const ln of shadowPrims) ctx.lineTo(sx(ln.x2), sy(ln.y2));
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = COLORS.accentOrange;
+    const dimSize =
+      lastPrims.find((q): q is TextPrim => q.type === 'text' && q.layer === 'dim')?.size ?? 0.25;
+    ctx.font = `${Math.max(dimSize * s, 8)}px sans-serif`;
+    ctx.textAlign = 'center';
+    const bv = input('newB').value;
+    const cv = input('newC').value;
+    const edgeLabel = (line: LinePrim, label: string) => {
+      const x1 = sx(line.x1);
+      const y1 = sy(line.y1);
+      const x2 = sx(line.x2);
+      const y2 = sy(line.y2);
+      let ang = Math.atan2(y2 - y1, x2 - x1);
+      if (ang > Math.PI / 2) ang -= Math.PI;
+      else if (ang < -Math.PI / 2) ang += Math.PI;
+      ctx.save();
+      ctx.translate((x1 + x2) / 2, (y1 + y2) / 2);
+      ctx.rotate(ang);
+      ctx.textBaseline = 'bottom';
+      // halo (暗縁取り) + 塗り = 共通の haloText (選択辺 ABC 注記と同じ視認パターン、user 2026-06-14)
+      haloText(ctx, label, 0, -3, COLORS.haloDark, COLORS.accentOrange);
+      ctx.restore();
+    };
+    edgeLabel(shadowPrims[2], `上辺 ${cv}`.trim()); // 上辺
+    // 延長 (= 台形高さ rect.length) のラベルは「短辺起点から立てた垂線」上に出す。
+    // shadowPrims[3] (= 左脚 tl→bl) は align ≠ 0 で斜辺になるため、そこに「延長」を貼ると
+    // 「斜辺上に延長ラベル」になる (user 指摘 2026-06-14)。WebPrimitiveRenderer.renderRectangle
+    // の crossOffset(... ±90) と同じく、短辺判定 + 反対辺端点の base 直交成分で perp 方向を取る。
+    const bl = { x: shadowPrims[0].x1, y: shadowPrims[0].y1 };
+    const br = { x: shadowPrims[0].x2, y: shadowPrims[0].y2 };
+    const tr = { x: shadowPrims[2].x1, y: shadowPrims[2].y1 };
+    const tl = { x: shadowPrims[2].x2, y: shadowPrims[2].y2 };
+    const wA = Math.hypot(br.x - bl.x, br.y - bl.y);
+    const wB = Math.hypot(tr.x - tl.x, tr.y - tl.y);
+    const bottomShorter = wA <= wB;
+    const baseStart = bottomShorter ? bl : tl;
+    const baseEnd = bottomShorter ? br : tr;
+    const opp = bottomShorter ? tl : bl; // 反対辺の同側端点 (左脚相当)
+    const ex = baseEnd.x - baseStart.x;
+    const ey = baseEnd.y - baseStart.y;
+    const eLen = Math.hypot(ex, ey) || 1;
+    const ux = ex / eLen, uy = ey / eLen;
+    const dx = opp.x - baseStart.x;
+    const dy = opp.y - baseStart.y;
+    const proj = dx * ux + dy * uy;
+    const nxR = dx - proj * ux;
+    const nyR = dy - proj * uy;
+    const perpFoot = { x: baseStart.x + nxR, y: baseStart.y + nyR };
+    // 点線+ラベルとも shadow fill (rgba 128/128/128/0.35) と差がつくようオレンジで描く
+    // (COLOR.guide は #9aa0a6 で fill とほぼ同色になり埋没する)
+    const bvLabel = parseFloat(bv) > 0 ? bv : (Math.hypot(perpFoot.x - baseStart.x, perpFoot.y - baseStart.y)).toFixed(2);
+    ctx.save();
+    ctx.setLineDash([4, 3]);
+    ctx.strokeStyle = COLORS.accentOrange;
+    ctx.beginPath();
+    ctx.moveTo(sx(baseStart.x), sy(baseStart.y));
+    ctx.lineTo(sx(perpFoot.x), sy(perpFoot.y));
+    ctx.stroke();
+    ctx.restore();
+    const lx1 = sx(baseStart.x), ly1 = sy(baseStart.y);
+    const lx2 = sx(perpFoot.x), ly2 = sy(perpFoot.y);
+    let angP = Math.atan2(ly2 - ly1, lx2 - lx1);
+    if (angP > Math.PI / 2) angP -= Math.PI;
+    else if (angP < -Math.PI / 2) angP += Math.PI;
+    ctx.save();
+    ctx.translate((lx1 + lx2) / 2, (ly1 + ly2) / 2);
+    ctx.rotate(angP);
+    ctx.textBaseline = 'bottom';
+    haloText(ctx, `延長 ${bvLabel}`.trim(), 0, -3, COLORS.haloDark, COLORS.accentOrange);
+    ctx.restore();
   }
 
   // 段階2g: 選択表示 (アプリ MyView.drawBlinkLine:794-818 の写し):
@@ -422,23 +556,19 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
   //      (旧オレンジ破線サークルは廃止 — user 指摘 2026-06-11「サークルを描く意味がない」)
   if (selectedDim) {
     const { tri, side } = selectedDim;
-    ctx.strokeStyle = SELECT_YELLOW;
+    ctx.strokeStyle = COLORS.selectYellow;
 
-    // 1) 選択辺の黄色線。tri 線群の並びは [A,B,C] (nearestEdge と同じ index 規約)。
-    // 黄色 (#e6b800) はシャドーのグレー (rgba 128/0.35 ≈ 白地で明度ほぼ同等) と溶けるので、
-    // 暗い縁取りを下に敷いて背景によらず局所コントラストを作る (2026-06-12 user 指摘。
-    // 代替案 = 選択色のアンバー化はシャドーの B/C ラベル #e67e22 と同系色化、シャドー薄化は
-    // 「次の三角形がどこに付くか」の存在感を失う — 3 案スクショ比較で縁取りを採用)
-    const li = (tri - 1) * 3 + side;
-    if (li < triLines.length) {
-      const l = triLines[li];
-      ctx.strokeStyle = '#5c4a00';
+    // 1) 選択辺の黄色線。line は tri/side 識別子付きで出るので物理 side で直接取る。
+    // 描画順と side 番号の不一致 (台形は bl→br→tr→tl で side 0→3→2→1) を上位で気にしない。
+    const l = triLines.find((q) => q.tri === tri && q.side === side);
+    if (l) {
+      ctx.strokeStyle = COLORS.haloDark;
       ctx.lineWidth = 6;
       ctx.beginPath();
       ctx.moveTo(sx(l.x1), sy(l.y1));
       ctx.lineTo(sx(l.x2), sy(l.y2));
       ctx.stroke();
-      ctx.strokeStyle = SELECT_YELLOW;
+      ctx.strokeStyle = COLORS.selectYellow;
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.moveTo(sx(l.x1), sy(l.y1));
@@ -475,13 +605,8 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
       ctx.font = `bold ${fh}px sans-serif`;
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      // 辺名の文字もシャドーのグレーに溶けるので暗縁取り (選択辺の線と同じ halo)
-      ctx.strokeStyle = '#5c4a00';
-      ctx.lineWidth = 3;
-      ctx.lineJoin = 'round';
-      ctx.strokeText(['A', 'B', 'C'][side] ?? '', w / 2 + pad + 4, top + fh / 2);
-      ctx.fillStyle = SELECT_YELLOW;
-      ctx.fillText(['A', 'B', 'C'][side] ?? '', w / 2 + pad + 4, top + fh / 2);
+      // 辺名の文字もシャドーのグレーに溶けるので暗縁取り (シャドー上辺/延長と共通の haloText)
+      haloText(ctx, ['A', 'B', 'C'][side] ?? '', w / 2 + pad + 4, top + fh / 2, COLORS.haloDark, COLORS.selectYellow);
       ctx.restore();
     }
   }
@@ -506,7 +631,7 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
     ctx.stroke();
   }
 
-  // 選択中の控除はプリミティブごと DED_SELECT_COLOR で色替え済み (上の描画ループ)。
+  // 選択中の控除はプリミティブごと COLORS.accentOrange で色替え済み (上の描画ループ)。
   // 旧黄色リングはそれに置換 (user 指定: 明示的に色替えしてやるとわかりやすい)
 }
 
@@ -556,13 +681,30 @@ type EdgeKey = 'a' | 'b' | 'c';
 const EKEY: Record<EdgeKey, 'ea' | 'eb' | 'ec'> = { a: 'ea', b: 'eb', c: 'ec' };
 
 type Row = {
+  // kind='triangle': ea/eb/ec=辺A/B/C, conn=接続コード(CSV列5)。
+  // kind='rectangle': ea=底辺(widthA), eb=延長(length), ec=上辺(widthB),
+  //   parent=接続先の混在通し番号, conn=接続辺 side('0'独立/'1'=B/'2'=C/'3'=D)。
+  // 辺プールは両者で共用。
+  kind: 'triangle' | 'rectangle';
   ea: number; // 辺A の edges index (単純接続では親の eb/ec と同一値)
   eb: number;
   ec: number;
   parent: string;
   conn: string;
   extras: string[]; // 7列目以降 (測点名等) を生のまま保持して round-trip で落とさない
+  // 台形のみ: 上辺アライメント (0左/1中/2右)。既存の起点(lcr)列を流用 (trap-design.md 段3)。
+  // 三角形では未使用。省略時 0 で後方互換 (R1 の 7 列 Rectangle CSV は左寄せ)
+  align?: number;
+  // 台形のみ: 親の種別ヒント (0三角形/1台形)。CSV 9 列目 parentKind。
+  // parent は常に混在通し番号。parentKind は UI 表示と旧 CSV 互換用で、モデル接続の主キーではない。
+  // 三角形では未使用。省略時 0 で後方互換 (R2 の 8 列 Rectangle CSV は親=三角形のまま不変)
+  parentKind?: number;
 };
+
+// 三角形として描画される行の数。
+function triCount(): number {
+  return rows.filter((r) => r.kind === 'triangle').length;
+}
 
 function edgeVal(r: Row, k: EdgeKey): string {
   return edges[r[EKEY[k]]];
@@ -630,6 +772,9 @@ function parseCsvToState(csv: string): void {
   dedLines = [];
   dedSelected = 0;
   dedCursor = null;
+  // B-FORCE (2026-06-15): trapRows/recttriRows バケツ廃止。
+  // user 確定 2026-06-16「トライトラップとか排除しろ、順序を維持しろ」
+  // ── CSV 出現順に rows[] へ積み、parent (混在通し番号) で解決する
   for (const line of csv.split(/\r?\n/)) {
     if (line.trim() === '') continue;
     const chunks = line.split(',').map((s) => s.trim());
@@ -649,6 +794,42 @@ function parseCsvToState(csv: string): void {
       dedLines.push(line.trim());
       continue;
     }
+    // 台形行 → 台形 Row。列 (contract): Rectangle, num, length(延長/辺B), widthA(底辺/辺A),
+    // widthB(上辺/辺C), parent(三角形番号), side(1=B/2=C/0独立), align(0左/1中/2右)。num は再採番
+    // するので捨てる (common も num は描画に使わず withIndex で振る)。辺は辺A=底辺/辺B=延長/辺C=上辺。
+    if (chunks[0] === 'Rectangle') {
+      const al = intOrNull(chunks[7] ?? '') ?? 0; // 8列目 align、省略時0で後方互換
+      const pk = intOrNull(chunks[8] ?? '') ?? 0; // 9列目 parentKind (0三角形/1台形)、省略時0で後方互換
+      rows.push({
+        kind: 'rectangle',
+        ea: newEdge(chunks[3] ?? ''), // 底辺(widthA)
+        eb: newEdge(chunks[2] ?? ''), // 延長(length)
+        ec: newEdge(chunks[4] ?? ''), // 上辺(widthB)
+        parent: chunks[5] ?? '-1',
+        conn: chunks[6] ?? '0', // side (1=B/2=C/3=D、3 は parentKind=1 の台形親のみ)
+        extras: [],
+        align: al >= 0 && al <= 2 ? al : 0,
+        parentKind: pk >= 0 && pk <= 1 ? pk : 0,
+      });
+      continue;
+    }
+    // 台形を親に持つ三角形。列: RectChild, num, ea(底辺/情報), eb(=B), ec(=C), parent(台形群index), side。
+    // user 確定 2026-06-16「トライトラップとか排除しろ、 Triangle 行で統合しろ」
+    // ── kind='triangle' として読み込み、parent を混在通し番号に変換して rows[] へ。
+    if (chunks[0] === 'RectChild') {
+      const trapIdx = intOrNull(chunks[5] ?? '') ?? 0;
+      const tc = triCount();
+      rows.push({
+        kind: 'triangle',
+        ea: newEdge(chunks[2] ?? ''), // 底辺 (台形辺で上書きされる・情報)
+        eb: newEdge(chunks[3] ?? ''), // B
+        ec: newEdge(chunks[4] ?? ''), // C
+        parent: String(tc + trapIdx), // 混在通し番号に変換
+        conn: chunks[6] ?? '1',       // side (1=左脚/2=上辺/3=右脚)
+        extras: [],
+      });
+      continue;
+    }
     const num = chunks.length >= 4 ? intOrNull(chunks[0]) : null;
     if (num === null || num < 0) {
       headerLines.push(line);
@@ -658,12 +839,12 @@ function parseCsvToState(csv: string): void {
     const conn = chunks[5] ?? '-1';
     const extras = chunks.slice(6);
     const aStr = chunks[1] ?? '';
-    // 辺A の共有判定: 単純接続で数値が親辺と一致する時だけ束ねる。
-    // 一致しない CSV (手書き・古いデータ) は従来どおり別の値として保持し描画を変えない
+    
     const pn = intOrNull(parent) ?? -1;
     const cn = intOrNull(conn);
     const pRow = pn > 0 ? rows[pn - 1] : undefined;
     let ea: number;
+    // 辺A の共有判定 (親種別を問わず B/C 辺と一致すれば index 共有)
     if (
       pRow && (cn === 1 || cn === 2) && isSimpleConnection({ extras }) &&
       parseFloat(aStr) === parseFloat(edges[cn === 1 ? pRow.eb : pRow.ec])
@@ -673,6 +854,7 @@ function parseCsvToState(csv: string): void {
       ea = newEdge(aStr);
     }
     rows.push({
+      kind: 'triangle',
       ea,
       eb: newEdge(chunks[2] ?? ''),
       ec: newEdge(chunks[3] ?? ''),
@@ -689,17 +871,28 @@ function serializeState(): string {
   // 5 行目以降の未知行は原文のまま保持 (CsvCodec の schema evolution 定石と同じ)
   const lines = HEADER_LABELS.map((label, i) => `${label},${headerValueAt(i)}`);
   lines.push(...headerLines.slice(4));
-  rows.forEach((r, i) => {
-    // 共有 index は CSV では従来どおり複製値に展開する (app との互換境界)
-    lines.push(
-      [String(i + 1), edgeVal(r, 'a'), edgeVal(r, 'b'), edgeVal(r, 'c'), r.parent, r.conn, ...r.extras].join(','),
-    );
+  // figureRows は rows[] の出現順そのままで出力する。 parser (parseCsvToState) は
+  // バケツ廃止で順序維持に切り替え済 (B-FORCE 2026-06-15)、 wasm CsvCodec.buildMixed も
+  // 混在通し番号 (= 出現順) で parent を解決する。
+  // num 列は kind ごとのローカル連番、 parent はもとから混在通し番号を入れているのでそのまま。
+  let triNum = 0, trapNum = 0;
+  rows.forEach((r) => {
+    if (r.kind === 'triangle') {
+      triNum++;
+      lines.push(
+        [String(triNum), edgeVal(r, 'a'), edgeVal(r, 'b'), edgeVal(r, 'c'), r.parent, r.conn, ...r.extras].join(','),
+      );
+    } else if (r.kind === 'rectangle') {
+      trapNum++;
+      lines.push(
+        `Rectangle,${trapNum},${edgeVal(r, 'b')},${edgeVal(r, 'a')},${edgeVal(r, 'c')},${r.parent},${r.conn},${r.align ?? 0},${r.parentKind ?? 0}`,
+      );
+    }
   });
-  // アプリ保存 (MainActivity.kt:2781) と同じく三角形行の後に ListAngle を書く
+  // figureRows の後に ListAngle / TextSize / 控除を書く (アプリ保存 MainActivity.kt:2781-2797 と同形)。
+  // 旧版は Triangle 行の直後に挟んでいたが、 順序維持に切り替えたため混在 figureRows の末尾に揃える。
   lines.push(`ListAngle, ${listAngle}`);
-  // 寸法文字サイズ (アプリ writeCSV:2785 と同形)。CsvCodec.parse が textSize に昇格して読む
   lines.push(`TextSize, ${textSizeCsv}`);
-  // 控除はアプリ保存 (MainActivity.kt:2790-2797) と同じく末尾に書く
   lines.push(...dedLines);
   return lines.join('\n') + '\n';
 }
@@ -733,14 +926,38 @@ function invalidTriangleReason(a: number, b: number, c: number): string | null {
   return null;
 }
 
-function findInvalidRow(rs: Row[]): { n: number; reason: string } | null {
-  for (let i = 0; i < rs.length; i++) {
+// 台形の妥当性: 延長(辺B)・底辺(辺A)・上辺(辺C) はいずれも正の数 (三角不等式は無い)。
+// 三角形と違い辺長の和の制約は無いので invalidTriangleReason は流用できない (独立の関門)
+function invalidRectangleReason(length: number, widthA: number, widthB: number): string | null {
+  if (!Number.isFinite(length) || !Number.isFinite(widthA) || !Number.isFinite(widthB)) {
+    return '辺の値が数値ではありません';
+  }
+  if (length <= 0 || widthA <= 0 || widthB <= 0) return '延長・底辺・上辺はいずれも正の数が必要です';
+  return null;
+}
+
+// 不成立の行を探す (混在対応)。reason は subject ("三角形 N" / "台形 N") を含むフル文言。
+function findInvalidRow(rs: Row[]): { reason: string } | null {
+  let triN = 0;
+  let trapN = 0;
+  for (const r of rs) {
+    if (r.kind === 'rectangle') {
+      trapN++;
+      const reason = invalidRectangleReason(
+        parseFloat(edgeVal(r, 'b')),
+        parseFloat(edgeVal(r, 'a')),
+        parseFloat(edgeVal(r, 'c')),
+      );
+      if (reason) return { reason: `台形 ${trapN}: ${reason}` };
+      continue;
+    }
+    triN++;
     const reason = invalidTriangleReason(
-      parseFloat(edgeVal(rs[i], 'a')),
-      parseFloat(edgeVal(rs[i], 'b')),
-      parseFloat(edgeVal(rs[i], 'c')),
+      parseFloat(edgeVal(r, 'a')),
+      parseFloat(edgeVal(r, 'b')),
+      parseFloat(edgeVal(r, 'c')),
     );
-    if (reason) return { n: i + 1, reason };
+    if (reason) return { reason: `三角形 ${triN}: ${reason}` };
   }
   return null;
 }
@@ -750,7 +967,7 @@ function redraw(canvas: HTMLCanvasElement): void {
   if (bad) {
     // キャンバスは直前の正しい状態のまま据え置き、autosave も汚さない。
     // 値を直せば次の入力イベントでそのまま再描画に戻る
-    setStatus(`⚠ 三角形 ${bad.n}: ${bad.reason} — 図は更新しません`);
+    setStatus(`⚠ ${bad.reason} — 図は更新しません`);
     return;
   }
   renderCsv(canvas, serializeState(), `table (${rows.length} rows)`);
@@ -776,16 +993,58 @@ const select = (id: string) => el<HTMLSelectElement>(id);
 // 前行は廃止 (user 2026-06-11: web は全行一覧があるので不要、現行スマホ版も 2 行に簡略化済)。
 // 新規入力行の値はユーザーの書きかけなので触らない — 番号プリセットだけ更新する
 function syncForm(): void {
+  // 図形種別でフォームの辺ラベルを切替える (台形: 辺A=底辺, 辺B=延長, 辺C=上辺)。
+  // ヘッダは FAB モード (figureKind) が「今から足す図形」の語彙を決める。
+  const isTrap = figureKind === 'rectangle';
+  // 新規番号は figureKind に追従 (三角形 = 次の三角形番号、台形 = 次の台形連番 T{k})
   input('newNum').value = String(rows.length + 1);
+  el('thEdgeA').textContent = isTrap ? '底辺(A)' : '辺A';
+  el('thEdgeB').textContent = isTrap ? '延長(B)' : '辺B';
+  el('thEdgeC').textContent = isTrap ? '上辺(C)' : '辺C';
 
   const cur = current >= 1 ? rows[current - 1] : null;
+  // 現在行の番号表示は行自身の種別に従う (三角形 = 番号、台形 = T{k})
   input('curNum').value = cur ? String(current) : '';
   input('curName').value = cur ? nameOf(cur) : '';
   input('curA').value = cur ? fmt2(edgeVal(cur, 'a')) : '';
   input('curB').value = cur ? fmt2(edgeVal(cur, 'b')) : '';
   input('curC').value = cur ? fmt2(edgeVal(cur, 'c')) : '';
   input('curParent').value = cur ? cur.parent : '';
-  setConnSelects('cur', cur ? connPartsOf(cur) : null);
+  if (cur && cur.kind === 'rectangle') {
+    // 親種別 (pk: 0三角形/1台形) は親番号から自動推論 (user 指摘 2026-06-14「親種別を形態列に書くな」)。
+    // 形態(CType)列は三角形と同じ axis (辺共有/二重断面/フロート) を流用 (台形でも共通サポート方針)。
+    // 起点(lcr)列は上辺寄せ(0左/1中/2右) — 常時有効化し Row.align を表示・編集する (段3)。
+    // 接続辺(Conn)は side。親=台形(pk=1)なら D(3) も出す
+    const pnum = intOrNull(cur.parent) ?? -1;
+    const pk = (pnum >= 1 && pnum <= rows.length && rows[pnum - 1]?.kind === 'rectangle') ? 1 : 0;
+    cur.parentKind = pk; // CSV 出力の整合 (col 9) を保つ
+    setSelectOptions(select('curCType'), CTYPE_OPTIONS, cur.extras[12] || '0');
+    select('curCType').disabled = false;
+    setSelectOptions(select('curConn'), connOptionsFor('cur', pk));
+    select('curConn').value = pnum >= 1 ? trapSideValue(cur.conn, pk) : '-1';
+    select('curLcr').value = String(cur.align ?? 0);
+    select('curLcr').disabled = false;
+  } else {
+    // 三角形: 形態(辺共有/二重断面/フロート)・接続辺(独立/B/C) を従来の選択肢に戻す (台形編集後の取り違え防止)
+    setSelectOptions(select('curCType'), CTYPE_OPTIONS);
+    select('curCType').disabled = false;
+    setSelectOptions(select('curConn'), connOptionsFor('cur', 0));
+    setConnSelects('cur', cur ? connPartsOf(cur) : null);
+  }
+  // 新規入力行: 親種別 (三角形親/台形親) は親番号から自動推論 (user 指摘 2026-06-14「台形の形態の
+  // ところに親の種類を書いてること自体が間違い」)。形態列 (newCType) は本来の意味 (辺共有/二重断面/
+  // フロート) を保ち、台形 mode では形態に意味が無いので disable する。
+  const newParentN = intOrNull(input('newParent').value.trim());
+  const parentIsTrap = newParentN !== null && newParentN >= 1 && newParentN <= rows.length
+    && rows[newParentN - 1]?.kind === 'rectangle';
+  // 接続辺 options: 親が台形なら D を含めて B/C/D、それ以外 B/C
+  // 形態列 (newCType) は三角形・台形共通の axis (user 方針 2026-06-14「三角形と同じように
+  // 二重断面やフロートを同一にサポートする」)。disable しない。
+  setSelectOptions(select('newCType'), CTYPE_OPTIONS);
+  select('newCType').disabled = false;
+  setSelectOptions(select('newConn'), connOptionsFor('new', parentIsTrap ? 1 : 0));
+  if (isTrap) select('newLcr').disabled = false; else syncLcrDisabled('new');
+  updateReshapeFab(); // current 行に追従して reshape FAB を有効/無効・title 更新
 }
 
 function updateRowHighlight(): void {
@@ -802,6 +1061,7 @@ function selectTriangle(canvas: HTMLCanvasElement, n: number): void {
   selected = n;
   selectedDim = null; // 三角形を選び直したら寸法選択は解除
   edgeSel = null;
+  pendingTrapParent = null; // 三角形を選び直したら台形親プリセットは解除
   shadowPrims = null;
   if (n > 0) {
     current = n;
@@ -817,6 +1077,7 @@ function clearSelection(): void {
   selected = 0;
   selectedDim = null;
   edgeSel = null;
+  pendingTrapParent = null; // 選択解除で台形親プリセットも解除
   shadowPrims = null;
   updateRowHighlight();
 }
@@ -880,9 +1141,65 @@ const LCR_OPTIONS: Array<[string, string]> = [
   ['0', '左起点'],
 ];
 
+// 台形フォームで「形態(CType)」列を親種別に流用する選択肢 (trap-design.md 段4-3 / R5)。
+// R2 で起点列を align に流用したのと同じ思想 — 新しい UI コントロールを足さず既存3列を使い回す。
+// 三角形では従来の CTYPE_OPTIONS (辺共有/二重断面/フロート) を使う
+const PARENTKIND_OPTIONS: Array<[string, string]> = [
+  ['0', '親:三角形'],
+  ['1', '親:台形'],
+];
+
+// 接続辺(Conn)列の選択肢。親=三角形(parentKind=0)は B/C、親=台形(parentKind=1)は B/C/D (D=右脚 side=3)。
+// 'cur' は独立 option を持つ (現在行は独立に戻せる)、'new' は持たない (新規は空親で独立を表す、従来どおり)
+function connOptionsFor(prefix: 'new' | 'cur', parentKind: number): Array<[string, string]> {
+  const opts: Array<[string, string]> = prefix === 'cur' ? [['-1', '独立']] : [];
+  opts.push(['1', '親のB辺'], ['2', '親のC辺']);
+  if (parentKind === 1) opts.push(['3', '親のD辺']);
+  return opts;
+}
+
+// select の option を動的に入れ替える。index.html の静的 option を main.ts から書き換えるのは、
+// 三角形⇄台形でフォーム列の意味 (形態 ⇄ 親種別、接続辺 B/C ⇄ B/C/D) が変わるため。kind ごとに
+// option 集合を所有して取り違え (台形の親種別値で三角形を編集する等) を防ぐ。value を渡せば
+// その値を選ぶ。新 option 集合に無ければ先頭に落とす (D→B/C 切替で値が消えても破綻しない)
+function setSelectOptions(sel: HTMLSelectElement, opts: Array<[string, string]>, value?: string): void {
+  const want = value ?? sel.value;
+  sel.textContent = '';
+  for (const [v, label] of opts) {
+    const opt = document.createElement('option');
+    opt.value = v;
+    opt.textContent = label;
+    sel.appendChild(opt);
+  }
+  if (opts.some(([v]) => v === want)) sel.value = want;
+  else if (opts.length > 0) sel.value = opts[0][0];
+}
+
+// 台形の接続辺 side 値を option 集合に収める (1=B/2=C、parentKind=1 のときのみ 3=D を許す)
+function trapSideValue(conn: string, parentKind: number): string {
+  const s = intOrNull(conn) ?? 1;
+  if (parentKind === 1 && s === 3) return '3';
+  return s === 2 ? '2' : '1';
+}
+
 // 起点は二重断面/フロートのみ意味を持つ (辺共有は常に全長一致なので無効化)
 function syncLcrDisabled(prefix: 'new' | 'cur'): void {
   select(`${prefix}Lcr`).disabled = select(`${prefix}CType`).value === '0';
+}
+
+// 形態(CType)列の change 時の追従。三角形では起点(lcr)の有効/無効を更新するが、台形では CType は
+// 「親種別」なので、選んだ種別に応じて接続辺(Conn)の D(3) option を出し直す (起点=上辺寄せは据え置き)。
+// 'new' の台形文脈は figureKind、'cur' は現在行の kind で判定
+function onCTypeChange(prefix: 'new' | 'cur'): void {
+  const isTrapCtx = prefix === 'new'
+    ? figureKind === 'rectangle'
+    : current >= 1 && rows[current - 1]?.kind === 'rectangle';
+  if (isTrapCtx) {
+    const pk = (intOrNull(select(`${prefix}CType`).value) ?? 0) === 1 ? 1 : 0;
+    setSelectOptions(select(`${prefix}Conn`), connOptionsFor(prefix, pk));
+  } else {
+    syncLcrDisabled(prefix);
+  }
 }
 
 function setConnSelects(prefix: 'new' | 'cur', p: ConnParts | null): void {
@@ -940,11 +1257,125 @@ function numberInput(value: string, step: string, onInput: (v: string) => void):
   return inp;
 }
 
+// 台形行のセル群 (辺=底辺/延長/上辺、親番号、接続辺 side)。番号・測点名・削除は buildTable 側で共通。
+// 段1+2: 辺共有 (side のみ) まで。形態/起点 (二重断面・アライメント) は段4 なので空セル 2 つ。
+function buildTrapRowCells(tr: HTMLTableRowElement, row: Row, i: number, canvas: HTMLCanvasElement): void {
+  // 辺セル (辺A=底辺/辺B=延長/辺C=上辺)。三角形と同じ辺プール機構 (syncEdgeInputs で他セル追従)
+  for (const key of ['a', 'b', 'c'] as const) {
+    const td = document.createElement('td');
+    const inp = numberInput(fmt2(edgeVal(row, key)), '0.01', (v) => {
+      setEdgeVal(row, key, v);
+      syncEdgeInputs(row[EKEY[key]], inp);
+      redraw(canvas);
+    });
+    inp.dataset.edge = String(row[EKEY[key]]);
+    inp.addEventListener('change', () => {
+      inp.value = fmt2(inp.value);
+      setEdgeVal(row, key, inp.value);
+      syncEdgeInputs(row[EKEY[key]], inp);
+      redraw(canvas);
+    });
+    td.appendChild(inp);
+    tr.appendChild(td);
+  }
+
+  // 親番号 (三角形番号)。台形は辺A 共有の張り直し (relinkEdgeA) が無いので redraw だけ
+  const tdParent = document.createElement('td');
+  const parentInp = numberInput(row.parent, '1', (v) => {
+    row.parent = v;
+    redraw(canvas);
+  });
+  parentInp.addEventListener('change', () => {
+    buildTable(canvas);
+    syncForm();
+    redraw(canvas);
+  });
+  tdParent.appendChild(parentInp);
+  tr.appendChild(tdParent);
+
+  // 接続辺 (side): 独立なら表示のみ、接続済みなら選択。親=三角形は B/C、親=台形(parentKind=1)は B/C/D (R5)。
+  // 形態列は三角形と同じ CTYPE_OPTIONS (辺共有/二重断面/フロート) を流用 (user 2026-06-14: 親:三角形/親:台形
+  // 表示は撤回、親種別は親番号から自動推論)。起点列は上辺寄せ(0左/1中/2右) — 独立・接続とも常時有効
+  const pn = intOrNull(row.parent) ?? -1;
+  const pk = (pn >= 1 && pn <= rows.length && rows[pn - 1]?.kind === 'rectangle') ? 1 : 0;
+  row.parentKind = pk; // CSV 出力の整合 (col 9) を保つ
+  if (pn < 1) {
+    const tdInd = document.createElement('td');
+    tdInd.textContent = '独立';
+    tr.appendChild(tdInd);
+  } else {
+    const sideSel = document.createElement('select');
+    for (const [v, label] of connOptionsFor('new', pk)) {
+      const opt = document.createElement('option');
+      opt.value = v;
+      opt.textContent = label;
+      sideSel.appendChild(opt);
+    }
+    sideSel.value = trapSideValue(row.conn, pk);
+    sideSel.addEventListener('change', () => {
+      row.conn = sideSel.value;
+      redraw(canvas);
+    });
+    const tdSide = document.createElement('td');
+    tdSide.appendChild(sideSel);
+    tr.appendChild(tdSide);
+  }
+  // 形態列 = CTYPE (辺共有/二重断面/フロート)。台形でも三角形と同じ axis を持たせる
+  // (user 2026-06-14「親種別は形態列に書くな、親番号から自動推論」)。値は extras[12] (cp.type) に書く
+  // — 三角形と同じ slot を流用、common 側で幾何適用が後段になっても UI 表現は揃える。
+  const kindSel = document.createElement('select');
+  for (const [v, label] of CTYPE_OPTIONS) {
+    const opt = document.createElement('option');
+    opt.value = v;
+    opt.textContent = label;
+    kindSel.appendChild(opt);
+  }
+  kindSel.value = row.extras[12] || '0';
+  kindSel.addEventListener('change', () => {
+    row.extras[12] = kindSel.value;
+    redraw(canvas);
+  });
+  const tdKind = document.createElement('td');
+  tdKind.appendChild(kindSel);
+  tr.appendChild(tdKind);
+  // 起点列 = 上辺寄せ (LCR_OPTIONS を流用: 値 2右/1中/0左 = align 整数と同値)
+  const alignSel = document.createElement('select');
+  for (const [v, label] of LCR_OPTIONS) {
+    const opt = document.createElement('option');
+    opt.value = v;
+    opt.textContent = label;
+    alignSel.appendChild(opt);
+  }
+  alignSel.value = String(row.align ?? 0);
+  alignSel.addEventListener('change', () => {
+    const a = intOrNull(alignSel.value) ?? 0;
+    row.align = a >= 0 && a <= 2 ? a : 0;
+    redraw(canvas);
+  });
+  const tdAlign = document.createElement('td');
+  tdAlign.appendChild(alignSel);
+  tr.appendChild(tdAlign);
+
+  // 削除 (三角形と同じ deleteRow)
+  const tdDel = document.createElement('td');
+  const del = document.createElement('button');
+  del.type = 'button';
+  del.className = 'del';
+  del.textContent = '削除';
+  del.addEventListener('click', (e) => {
+    e.stopPropagation();
+    deleteRow(canvas, i + 1);
+  });
+  tdDel.appendChild(del);
+  tr.appendChild(tdDel);
+}
+
 function buildTable(canvas: HTMLCanvasElement): void {
   const tbody = document.getElementById('triRows');
   if (!tbody) return;
   tbody.textContent = '';
 
+  const tc = triCount(); // 台形の連番 (T{k}) 用。混在表は三角形 prefix + 台形 suffix
   rows.forEach((row, i) => {
     const tr = document.createElement('tr');
     if (i + 1 === selected) tr.classList.add('selected');
@@ -954,8 +1385,17 @@ function buildTable(canvas: HTMLCanvasElement): void {
 
     const tdNum = document.createElement('td');
     tdNum.className = 'num';
-    tdNum.textContent = String(i + 1); // 自動採番、read-only
+    // 三角形は三角形番号 (= i+1、prefix なので一致)、台形は台形連番 "T{k}" (canvas 表記と一致)
+    tdNum.textContent = String(i + 1);
     tr.appendChild(tdNum);
+
+    // 種別 (kind 一目視認): 三角=△ / 台形=□。 dataset.kind は CP / E2E で kind 別件数を数えるためにも使う
+    const tdKind = document.createElement('td');
+    tdKind.className = 'kind';
+    tdKind.dataset.kind = row.kind;
+    tdKind.textContent = row.kind === 'rectangle' ? '□' : '△';
+    tdKind.title = row.kind === 'rectangle' ? '台形' : '三角形';
+    tr.appendChild(tdKind);
 
     // 測点名 (CSV 列6 = extras[0])。描画には出ないが round-trip・書き出しで保持する
     const tdName = document.createElement('td');
@@ -968,6 +1408,13 @@ function buildTable(canvas: HTMLCanvasElement): void {
     });
     tdName.appendChild(nameInp);
     tr.appendChild(tdName);
+
+    // 台形行は専用ブランチで描画 (辺=底辺/延長/上辺、接続辺=side のみ、形態/起点は段4)
+    if (row.kind === 'rectangle') {
+      buildTrapRowCells(tr, row, i, canvas);
+      tbody.appendChild(tr);
+      return;
+    }
 
     for (const key of ['a', 'b', 'c'] as const) {
       const td = document.createElement('td');
@@ -1088,13 +1535,28 @@ function buildTable(canvas: HTMLCanvasElement): void {
 
 function addRow(canvas: HTMLCanvasElement): void {
   if (rows.length === 0) {
-    rows.push({ ea: newEdge('3.0'), eb: newEdge('3.0'), ec: newEdge('3.0'), parent: '-1', conn: '-1', extras: [] });
-  } else {
-    // デフォルトは「直前の行の B 辺に接続」。辺A は親の B 辺と同一の物理辺なので
-    // 値を写すのではなく同じ辺 index を共有する (辺プール)
-    const parent = rows[rows.length - 1];
-    rows.push({ ea: parent.eb, eb: newEdge('3.0'), ec: newEdge('3.0'), parent: String(rows.length), conn: '1', extras: [] });
+    rows.push({ kind: 'triangle', ea: newEdge('3.0'), eb: newEdge('3.0'), ec: newEdge('3.0'), parent: '-1', conn: '-1', extras: [] });
+    clearSelection();
+    buildTable(canvas);
+    syncForm();
+    redraw(canvas);
+    return;
   }
+  // 親は「current 選択行」(無ければ末尾 = 従来挙動)。current は混在通し番号 = rows index + 1
+  const parentIdx = current > 0 ? current : rows.length;
+  const parentRow = rows[parentIdx - 1];
+  // 通常 (三角形親 or 台形親): 末尾に挿入。辺A は親の B 辺 (台形なら延長) と同一の物理辺を共有 (辺プール)
+  // user 2026-06-15「台形にくっついてる三角形からも派生したい」
+  const ea = parentRow.kind === 'rectangle' ? parentRow.eb : parentRow.eb; // とりあえず B 辺共有
+  rows.push({
+    kind: 'triangle',
+    ea,
+    eb: newEdge('3.0'),
+    ec: newEdge('3.0'),
+    parent: String(parentIdx),
+    conn: '1',
+    extras: []
+  });
   clearSelection(); // 行構成が変わるので選択解除
   buildTable(canvas);
   syncForm();
@@ -1123,7 +1585,7 @@ function autoConnection(side: 1 | 2): void {
     ? (current > 0 ? current : rows.length)
     : parseInt(parentInput.value, 10);
   // 既接続辺には追加遷移を起こさない (selectEdge と同じ共通判定)
-  const child = edgeOccupiedBy(parentN, side);
+  const child = isEdgeOccupied(parentN, side);
   if (child > 0) {
     setStatus(`⚠ 三角形 ${parentN} の ${side === 1 ? 'B' : 'C'} 辺 — 三角形 ${child} が接続済みのため追加できません`);
     return;
@@ -1147,6 +1609,11 @@ function rewriteCurrent(canvas: HTMLCanvasElement): void {
   }
   if (current < 1) {
     setStatus('Cannot edit: カレント行がありません。図か一覧で選択してください');
+    return;
+  }
+  // 台形カレント行の書換え (段1+2): 辺=底辺/延長/上辺、親+side のみ。relinkEdgeA/cp は無い
+  if (rows[current - 1].kind === 'rectangle') {
+    rewriteCurrentRectangle(canvas);
     return;
   }
   // 共通関門: 不成立の値は state を汚す前に却下 (undo スナップも消費しない)
@@ -1182,6 +1649,53 @@ function rewriteCurrent(canvas: HTMLCanvasElement): void {
   setStatus(`Rewrite Triangle ${current}`);
 }
 
+// 台形カレント行の書換え (段1+2)。辺A=底辺/辺B=延長/辺C=上辺、親 (三角形番号) と side のみ。
+// 三角形のような辺A 共有 (relinkEdgeA) や cp 列 (writeCpExtras) は段4 なので無い
+function rewriteCurrentRectangle(canvas: HTMLCanvasElement): void {
+  const r = rows[current - 1];
+  const editBad = invalidRectangleReason(
+    parseFloat(input('curB').value), // 延長
+    parseFloat(input('curA').value), // 底辺
+    parseFloat(input('curC').value), // 上辺
+  );
+  if (editBad) {
+    setStatus(`⚠ 台形: ${editBad} — 書換えを中止`);
+    return;
+  }
+  // 親番号は混在通し番号。親種別は rows[parent-1] から表示・side 制限用にだけ推論する。
+  const cp = input('curParent').value.trim();
+  const pn = cp === '' ? -1 : (intOrNull(cp) ?? -1);
+  let parent = -1;
+  let side = 0;
+  let parentKind: 0 | 1 = 0;
+  if (pn >= 1) {
+    const parentRow = rows[pn - 1];
+    if (!parentRow || pn >= current || pn > rows.length) {
+      setStatus(`⚠ 親番号 ${pn} の図形が存在しません — 書換えを中止`);
+      return;
+    }
+    parentKind = parentRow.kind === 'rectangle' ? 1 : 0;
+    parent = pn;
+    const s = intOrNull(select('curConn').value) ?? 1;
+    side = parentKind === 1 ? (s === 2 ? 2 : s === 3 ? 3 : 1) : (s === 2 ? 2 : 1);
+  }
+  // 上辺の寄せ = 起点(lcr)列を流用 (0左/1中/2右)。台形カレント行では常時有効 (syncForm)
+  const align = intOrNull(select('curLcr').value) ?? 0;
+  takeUndoSnap();
+  setEdgeVal(r, 'a', fmt2(input('curA').value));
+  setEdgeVal(r, 'b', fmt2(input('curB').value));
+  setEdgeVal(r, 'c', fmt2(input('curC').value));
+  r.parent = String(parent);
+  r.conn = String(side);
+  r.align = align >= 0 && align <= 2 ? align : 0;
+  r.parentKind = parent >= 1 ? parentKind : 0;
+  setName(r, input('curName').value);
+  buildTable(canvas);
+  syncForm();
+  redraw(canvas);
+  setStatus(`Rewrite 台形 #${current}`);
+}
+
 // replace (MainActivity.kt:1614 fabReplace → processTriEditMode:1652):
 // 新規行の B が空 → カレント行の書換え / C だけ空 → 何もしない / 両方あり → 追加。
 // この 3 分岐の判定をそのまま写す (幾何の知識は CSV 再構築側 = common が持つ)
@@ -1192,23 +1706,40 @@ function fabReplace(canvas: HTMLCanvasElement): void {
     dedReplace(canvas);
     return;
   }
+  // 台形モード: 「追加」は台形行を生成する (控除モード分岐と同じ構え)
+  if (figureKind === 'rectangle') {
+    addRectangle(canvas);
+    return;
+  }
   const newB = input('newB').value.trim();
   const newC = input('newC').value.trim();
 
   if (newB === '') {
     // Edit attempt (processTriEditMode: strAddLineB.isEmpty)
-    rewriteCurrent(canvas);
+    const r = rows[current - 1];
+    if (r) {
+      if (r.kind === 'rectangle') {
+        rewriteCurrentRectangle(canvas);
+      } else {
+        rewriteCurrent(canvas);
+      }
+    }
     return;
   }
   if (newC === '') return; // アプリと同じ: B だけでは何もしない (strAddLineC.isEmpty -> return)
 
-  // Add (アプリ addTriangleBy 相当 — 行を足して CSV 再構築に任せる)
+  // 台形辺タップ済 (三角形を台形に乗せる)
+  if (pendingTrapParent) {
+    addTriOnTrap(canvas, newB, newC);
+    return;
+  }
+
+  // Add (アプリ addTriangleBy 相当)。
   let newParts = readConnParts('new');
   let conn = newParts ? String(encodeConn(newParts)) : '-1';
   let parent = input('newParent').value.trim();
   if (rows.length === 0) {
-    // 最初の 1 個は必ず独立 (スマホ版同様、図面に 1 リスト)。新規行に独立の選択肢は無く、
-    // 空リストへの追加だけが独立になる。残留プリセットによる「存在しない親」も同時に防ぐ
+    // 最初の 1 個は必ず独立 (スマホ版同様、図面に 1 リスト)
     newParts = null;
     conn = '-1';
     parent = '-1';
@@ -1217,56 +1748,55 @@ function fabReplace(canvas: HTMLCanvasElement): void {
   if (conn === '-1') {
     parent = '-1';
   } else if (parent === '') {
+    // 最後に足した行を親にする (現在の混在リストの末尾)
     parent = String(current > 0 ? current : rows.length);
   }
   const connCode = intOrNull(conn) ?? -1;
-  // 親の実在関門: 三角不等式・占有と同列の追加前チェック。存在しない親への接続行は
-  // WebCsvReader が skip するので、リストに居るのに描画されない行が生まれてしまう
+  // 親の実在関門
   if (connCode >= 1) {
     const pn = parseInt(parent, 10);
     if (!(pn >= 1 && pn <= rows.length)) {
-      setStatus(`⚠ 親番号 ${parent} の三角形が存在しません — 追加を中止`);
+      setStatus(`⚠ 親番号 ${parent} の図形が存在しません — 追加を中止`);
       return;
     }
   }
   let a = input('newA').value.trim();
   if ((conn === '1' || conn === '2') && a === '') {
-    // 辺A 空のまま CSV に流すと WebCsvReader が行ごと skip する — 親の接続先辺長を写す
     const p = rows[parseInt(parent, 10) - 1];
     if (p) a = edgeVal(p, conn === '1' ? 'b' : 'c');
   }
   if (connCode >= 3 && a === '') {
-    // 二重断面/フロートは子 A = 断面幅が独立値 (親辺長と一致しない) なので手入力必須
     setStatus('⚠ 二重断面/フロートは辺A (断面幅) の入力が必要です');
     input('newA').focus();
     return;
   }
-  // 共通関門: 不成立の値は行を足す前に却下 (undo スナップも消費しない)
   const addBad = invalidTriangleReason(parseFloat(a), parseFloat(newB), parseFloat(newC));
   if (addBad) {
     setStatus(`⚠ 新規行: ${addBad} — 追加を中止`);
     return;
   }
-  // 既接続辺への二重接続も行を足す前に却下 (selectEdge / autoConnection と同じ共通判定)
+  // 既接続辺への二重接続も行を足す前に却下
   if (conn === '1' || conn === '2') {
     const pn = parseInt(parent, 10);
-    const child = edgeOccupiedBy(pn, conn === '1' ? 1 : 2);
+    const child = isEdgeOccupied(pn, conn === '1' ? 1 : 2);
     if (child > 0) {
-      setStatus(`⚠ 三角形 ${pn} の ${conn === '1' ? 'B' : 'C'} 辺 — 三角形 ${child} が接続済みのため追加を中止`);
+      setStatus(`⚠ 図形 #${pn} の ${conn === '1' ? 'B' : 'C'} 辺 — 図形 #${child} が接続済みのため追加を中止`);
       return;
     }
   }
   takeUndoSnap();
   const name = input('newName').value;
-  // 単純接続は親の辺 index を共有 (辺A = 親辺は同一の物理辺)、独立は自分の辺を作る
+  // 単純接続は親の辺 index を共有、独立は自分の辺を作る
   const pRow = rows[parseInt(parent, 10) - 1];
   const ea =
     pRow && (conn === '1' || conn === '2') ? (conn === '1' ? pRow.eb : pRow.ec) : newEdge(a);
-  const newRow: Row = { ea, eb: newEdge(newB), ec: newEdge(newC), parent, conn, extras: name !== '' ? [name] : [] };
-  writeCpExtras(newRow, newParts); // 二重断面/フロートは列 17-19 にも cp を書く (lcr の SoT)
+  const newRow: Row = { kind: 'triangle', ea, eb: newEdge(newB), ec: newEdge(newC), parent, conn, extras: name !== '' ? [name] : [] };
+  writeCpExtras(newRow, newParts);
+  // リストの末尾に積む (B-FORCE 2026-06-16: 順序維持一本化)
   rows.push(newRow);
+  const newNum = rows.length;
 
-  // 新規入力行をリセットして次の入力へ (アプリ finalizeReplace + editorResetBy 相当)
+  // 新規入力行をリセットして次の入力へ
   input('newName').value = '';
   input('newA').value = '';
   input('newB').value = '';
@@ -1274,14 +1804,197 @@ function fabReplace(canvas: HTMLCanvasElement): void {
   input('newParent').value = '';
   select('newConn').value = '-1';
 
-  selected = rows.length;
-  current = rows.length;
-  edgeSel = null; // 追加が確定したのでシャドーは消す
+  selected = newNum;
+  current = newNum;
+  edgeSel = null;
   shadowPrims = null;
+  view = null;
   buildTable(canvas);
   syncForm();
   redraw(canvas);
-  setStatus(`Add Triangle ${rows.length}`);
+  setStatus(`Add Triangle #${newNum}`);
+}
+
+// 台形の追加 (混在リスト段1+2): 新規入力欄を台形語彙で読み、台形 Row を rows[] 末尾 (台形 suffix)
+// に積む。辺A=底辺(widthA), 辺B=延長(length), 辺C=上辺(widthB)。幾何は common が CSV から再構築。
+function addRectangle(canvas: HTMLCanvasElement): void {
+  // ラベルは台形語彙だが input の id は三角形と共用 (newA/newB/newC)
+  let widthAStr = input('newA').value.trim();   // 底辺 (親=台形なら親辺長で上書き、共有辺)
+  const lengthStr = input('newB').value.trim(); // 延長
+  const widthBStr = input('newC').value.trim(); // 上辺
+
+  const t = triCount();
+  // 親=台形のスロット (pendingTrapParent) があるなら、parent/side/parentKind はスロットから直に取る。
+  // 底辺は親台形辺長で上書き (RectChild と同じ思想、共有辺なので 0/未入力でも親辺長で埋める)。
+  const pend = pendingTrapParent;
+  let parent: number;
+  let side: number;
+  let parentKind: 0 | 1;
+  if (pend) {
+    // pend.parent はすでに混在通し番号 (1 始まり)。
+    parent = pend.parent;
+    side = pend.side;
+    parentKind = rows[parent - 1]?.kind === 'rectangle' ? 1 : 0;
+    const baseLen = trapEdgeLen(pend.parent, pend.side);
+    if (baseLen > 0) widthAStr = baseLen.toFixed(2);
+  } else {
+    // 親種別は「親番号 → rows[parent-1].kind」で自動推論する (user 指摘 2026-06-14「台形の形態の
+    // ところに親の種類を書いてること自体が間違い」)。形態列 (newCType) は形態専用、親種別は
+    // 親番号から逆引きで決まるので UI 列を消費しない。
+    const parentStr = input('newParent').value.trim();
+    parent = parentStr === '' ? -1 : (intOrNull(parentStr) ?? -1);
+    side = intOrNull(select('newConn').value) ?? 0;
+    if (parent >= 1 && parent <= rows.length) {
+      parentKind = rows[parent - 1].kind === 'rectangle' ? 1 : 0;
+      if (parentKind === 1) {
+        if (side !== 1 && side !== 2 && side !== 3) side = 1;
+      } else if (side !== 1 && side !== 2) side = 1;
+    } else if (parent >= 1) {
+      // 親番号が範囲外 (= 存在しない親) — renderer が行を落とす前に止める
+      setStatus(`⚠ 親番号 ${parent} の図形が存在しません — 追加を中止`);
+      return;
+    } else {
+      parent = -1;
+      side = 0;
+      parentKind = 0;
+    }
+  }
+
+  // 正の数の関門 (三角不等式は無い、台形専用判定)。pend の場合 widthA は親辺長で確定済み
+  const bad = invalidRectangleReason(parseFloat(lengthStr), parseFloat(widthAStr), parseFloat(widthBStr));
+  if (bad) {
+    setStatus(`⚠ 台形: ${bad} — 追加を中止`);
+    return;
+  }
+  // 上辺の寄せ = 起点(lcr)列を流用 (0左/1中/2右)。台形モードで常時有効化済 (syncForm)
+  const align = intOrNull(select('newLcr').value) ?? 0;
+  takeUndoSnap();
+  // 台形 Row を suffix 末尾へ (辺A=底辺/辺B=延長/辺C=上辺、conn=side、align=上辺寄せ、parentKind=親種別)
+  rows.push({
+    kind: 'rectangle',
+    ea: newEdge(widthAStr),
+    eb: newEdge(lengthStr),
+    ec: newEdge(widthBStr),
+    parent: String(parent),
+    conn: String(side),
+    extras: [],
+    align: align >= 0 && align <= 2 ? align : 0,
+    parentKind: parent >= 1 ? parentKind : 0,
+  });
+  const num = rows.length - t; // 台形内連番 (suffix での位置)
+  // 新規入力行をリセット (三角形追加と同じ後始末)
+  input('newName').value = '';
+  input('newA').value = '';
+  input('newB').value = '';
+  input('newC').value = '';
+  input('newParent').value = '';
+  select('newConn').value = '1';
+  // 親=台形のスロットを消費 + シャドー解除 (addTriOnTrap と同じ後始末)
+  pendingTrapParent = null;
+  edgeSel = null;
+  shadowPrims = null;
+  selected = rows.length;
+  current = rows.length;
+  view = null; // 行を増やしたので全体 fit に戻す (削除側 main.ts:2484 と対称)
+  buildTable(canvas);
+  syncForm();
+  redraw(canvas);
+  const sideLabel = side === 3 ? 'D' : side === 2 ? 'C' : 'B';
+  setStatus(`台形 ${num} を追加 (${parent > 0 ? `${parentKind === 1 ? '台形' : '三角形'} ${parent} の ${sideLabel} 辺` : '独立'})`);
+}
+
+// FAB の表示を現在の図形種別に合わせる (押す前から「今どちらを追加するか」が見える)。
+// 44px 円にはグリフ 1 文字だけ (△/▱)。語は title と status に出す。台形モードは橙点灯
+function updateFigureKindFab(): void {
+  const btn = document.getElementById('fabFigureKind');
+  if (!btn) return;
+  const isTrap = figureKind === 'rectangle';
+  btn.textContent = isTrap ? '▱' : '△';
+  btn.classList.toggle('trapon', isTrap);
+  btn.setAttribute('title', `新規図形を 三角形⇄台形 で切替 (現在: ${isTrap ? '台形' : '三角形'})`);
+}
+
+// reshape FAB の disable + 動的 title。current が無い or 子参照されてる時は不可。
+// syncForm から毎回呼ぶ (current 変更で必ず通る)。
+function updateReshapeFab(): void {
+  const btn = document.getElementById('fabReshape') as HTMLButtonElement | null;
+  if (!btn) return;
+  const cur = current >= 1 ? rows[current - 1] : null;
+  if (!cur) {
+    btn.disabled = true;
+    btn.setAttribute('title', 'カレント行を選んでから (種別反転 三角形⇄台形)');
+    return;
+  }
+  const referred = rows.findIndex((other, i) => i !== current - 1 && intOrNull(other.parent) === current);
+  if (referred >= 0) {
+    btn.disabled = true;
+    btn.setAttribute('title', `#${current} は #${referred + 1} の親 — 解除してから反転できます`);
+    return;
+  }
+  btn.disabled = false;
+  const target = cur.kind === 'triangle' ? '台形' : '三角形';
+  btn.setAttribute('title', `#${current} を ${target} に変換 (辺長 a/b/c はそのまま流用)`);
+}
+
+// 新規図形の種別をトグル (三角形⇄台形)。ラベル・FAB 表示を更新して setStatus
+function toggleFigureKind(): void {
+  figureKind = figureKind === 'triangle' ? 'rectangle' : 'triangle';
+  // pendingTrapParent / edgeSel は維持 (タップ済の親スロットは残してシャドーだけ新しい図形種別で
+  // 組み直す)。形態列 (newCType) は意味が三角形/台形共通になったのでリセットしない
+  // (user 方針 2026-06-14「親種別を形態列に書かない / 二重断面・フロートを台形でも共通サポート」)。
+  shadowPrims = null;
+  updateFigureKindFab();
+  buildShadow(); // モード切替で「次に足す図形」が変わるのでシャドーを組み直す
+  syncForm();   // 辺ラベル (底辺/延長/上辺 ⇄ 辺A/B/C) を切替える
+  const canvas = document.getElementById('cv') as HTMLCanvasElement | null;
+  if (canvas) draw(canvas, lastPrims); // シャドー切替を即描画反映
+  setStatus(figureKind === 'rectangle' ? '新規図形: 台形 (辺A=底辺 / 辺B=延長 / 辺C=上辺)' : '新規図形: 三角形');
+}
+
+// カレント行 (=既存図形) の種別を反転する (三角形⇄台形)。user 2026-06-14:
+// 「既存図形の形状を変化させたい (= 削除+新規作成の代用)」動線。fabFigureKind は
+// 「次に追加する図形」の切替なので意図混同を避けるため別 FAB (fabReshape) で受ける。
+// 辺長 a/b/c はそのまま流用 — triangle a/b/c ↔ rectangle widthA/length/widthB は edge 配置が一致。
+// 子参照がある (= 他行が親番号として自分を参照) 場合は番号振り直しが要るので簡易版では reject、
+// status で解除を促す (将来: 子の parent も同期して書換える)。
+function reshapeCurrent(canvas: HTMLCanvasElement): void {
+  const idx = current - 1;
+  const r = current >= 1 ? rows[idx] : null;
+  if (!r) {
+    setStatus('カレント行が無いので種別反転できません (行を選択してから)');
+    return;
+  }
+  const myNum = idx + 1; // 混在通し番号 = rows-index + 1
+  const referredBy = rows.findIndex((other, i) => i !== idx && intOrNull(other.parent) === myNum);
+  if (referredBy >= 0) {
+    setStatus(`#${myNum} を親として参照する行 (#${referredBy + 1}) があるので種別反転できません — 先に解除してください`);
+    return;
+  }
+  takeUndoSnap();
+  if (r.kind === 'triangle') {
+    r.kind = 'rectangle';
+    r.align = 0;
+    r.parentKind = 0;
+    // 台形は rows の末尾群 (prefix=三角形 / suffix=台形 不変条件)。末尾へ移動
+    rows.splice(idx, 1);
+    rows.push(r);
+  } else {
+    r.kind = 'triangle';
+    // 三角形 prefix の末尾 (= 現 triCount 位置) へ insert
+    const tc = rows.filter((x, i) => i !== idx && x.kind === 'triangle').length;
+    rows.splice(idx, 1);
+    rows.splice(tc, 0, r);
+  }
+  current = rows.indexOf(r) + 1;
+  selected = current;
+  // 種別反転で図形の bounds が変わる (三角形⇄台形は辺数も形状も違う)。 既存 view (反転前の fit)
+  // のままだと描画位置がズレ「センタリングが外れる」(user 報告 2026-06-16)。 loadCsv/addRectangle/
+  // addTriOnTrap と同じく view=null で次の draw に全体 fit を任せる。
+  view = null;
+  buildTable(canvas);
+  syncForm();
+  redraw(canvas);
+  setStatus(`#${current} の種別を ${r.kind === 'triangle' ? '三角形' : '台形'} に切替`);
 }
 
 // 行削除の共通処理 (行の削除ボタン / fabMinus の両動線)。番号の振り直しに合わせて
@@ -1292,32 +2005,33 @@ function deleteRow(canvas: HTMLCanvasElement, n: number): void {
   if (n < 1 || n > rows.length) return;
   takeUndoSnap();
   rows.splice(n - 1, 1);
+  // 全ての図形について、削除行より後ろの親参照をずらす
   for (const r of rows) {
     const pn = intOrNull(r.parent);
     if (pn === null) continue;
     if (pn === n) {
       // 親を失った子は独立に落とす (現値を保ったまま辺A を自分の辺に切り出す)
       r.parent = '-1';
-      r.conn = '-1';
+      r.conn = r.kind === 'rectangle' ? '0' : '-1';
       relinkEdgeA(r);
     } else if (pn > n) {
-      r.parent = String(pn - 1); // 後続番号が 1 ずれるので追従
+      r.parent = String(pn - 1);
     }
   }
-  shiftOverridesAfterDelete(n); // 番号が振り直されるので override も追従
-  clearSelection(); // 番号が振り直されるので選択解除
-  current = Math.min(n, rows.length); // 消した位置の次 (なければ末尾) をカレントに
-  // 新規行フォームの残留プリセット (消えた三角形への親番号/接続) を掃除する
+  shiftOverridesAfterDelete(n);
+  clearSelection();
+  current = Math.min(n, rows.length);
+  // 新規行フォームの残留プリセット (消えた図形への親番号/接続) を掃除する
   const np = intOrNull(input('newParent').value.trim());
   if (np !== null && (np < 1 || np > rows.length)) {
     input('newParent').value = '';
     select('newConn').value = '-1';
     input('newA').value = '';
   }
-  buildTable(canvas); // 番号が振り直されるので組み直し
+  buildTable(canvas);
   syncForm();
   redraw(canvas);
-  setStatus(`Delete Triangle ${n}`);
+  setStatus(`Delete Row #${n}`);
 }
 
 // 削除 FAB (MainActivity.kt:1331-1350): 2 タップ確認式。1 回目で赤点灯 + 3 秒タイマー、
@@ -1380,6 +2094,10 @@ function fabRotate(canvas: HTMLCanvasElement, degrees: number): void {
   const v = view;
   const before = v ? figureCenter(lastPrims) : null;
   listAngle += degrees;
+  // シャドー三角形は親辺の現座標を借りて組むので、回転で親辺が動いたら組み直さないと
+  // 旧座標のまま置き去りになる (2026-06-13 user 報告)。serializeState は更新後の listAngle を
+  // 書くので、ここで buildShadow すれば回転後の親辺に乗る。edgeSel が立つ時だけ再構築
+  if (edgeSel) buildShadow();
   // 控除の連動 (MainActivity.kt:1587 myDeductionList.rotate(origin, -degrees) 準拠)。
   // 三角形は listAngle → recoverState が回すが、控除の CSV 座標は絶対値なので
   // 行自体を common (rotateDeductionLine) で回して書き直す
@@ -1861,13 +2579,14 @@ function newDrawing(canvas: HTMLCanvasElement): void {
   // (「無題工事とか書くより空白にしておいた方が良い」2026-06-12 user 指示)
   headerLines = ['koujiname,', 'rosenname,', 'gyousyaname,', 'zumennum,'];
   edges = [];
-  rows = [{ ea: newEdge('3.00'), eb: newEdge('3.00'), ec: newEdge('3.00'), parent: '-1', conn: '-1', extras: [] }];
+  rows = [{ kind: 'triangle', ea: newEdge('3.00'), eb: newEdge('3.00'), ec: newEdge('3.00'), parent: '-1', conn: '-1', extras: [] }];
   listAngle = 0; // アプリ createNew は TriangleList を作り直す = angle 0 (回転 FAB の残留を消す)
   overrides = { dims: [], numbers: [] };
   lastTapModel = null;
   dedLines = [];
   dedSelected = 0;
   dedCursor = null;
+  // 台形は rows に統合済 — rows の作り直しで台形も破棄される (別 state は無い)
   buildDedTable(canvas);
   clearSelection();
   selected = 1;
@@ -1917,6 +2636,10 @@ function wireFabs(canvas: HTMLCanvasElement): void {
   el<HTMLButtonElement>('fabDown').addEventListener('click', () => moveCurrent(canvas, 1));
   // 控除モード (アプリ fab_deduction → flipDeductionMode 相当)
   el<HTMLButtonElement>('fabDeduction').addEventListener('click', () => toggleDeductionMode(canvas));
+  // 新規図形の種別トグル (三角形⇄台形)。単発クリックなので addEventListener でよい
+  el<HTMLButtonElement>('fabFigureKind').addEventListener('click', () => toggleFigureKind());
+  el<HTMLButtonElement>('fabReshape').addEventListener('click', () => reshapeCurrent(canvas));
+  updateFigureKindFab(); // 初期表示を現在種別 (三角形) に
   el<HTMLButtonElement>('dedAdd').addEventListener('click', () => dedAdd(canvas));
   el<HTMLButtonElement>('dedReplace').addEventListener('click', () => dedReplace(canvas));
   el<HTMLButtonElement>('dedDelete').addEventListener('click', () => dedDelete(canvas));
@@ -1931,6 +2654,10 @@ function wireNewRowEnter(canvas: HTMLCanvasElement): void {
   // 入力のたび再描画してアプリの watched strings と同じライブ追従にする
   for (const id of ['newB', 'newC']) {
     input(id).addEventListener('input', () => {
+      // 台形に乗せる三角形は実 B/C で形が決まる (底辺は台形辺固定) → タイプのたびシャドーを
+      // 作り直してライブ追従させる (粘土をこねる操作感)。三角形辺の仮シャドーは固定形 (0.75 脚)
+      // なので従来どおり再描画のみ — B/C はラベルだけ写す。
+      if (pendingTrapParent) buildShadow();
       if (shadowPrims) draw(canvas, lastPrims);
     });
   }
@@ -2065,36 +2792,305 @@ function distToSegmentPx(px: number, py: number, l: LinePrim): number {
 // index % 3 がそのまま side (0=A, 1=B, 2=C)
 const EDGE_TAP_PX = 14;
 function nearestEdge(px: number, py: number): { tri: number; side: 0 | 1 | 2; d: number } | null {
-  const triLines = lastPrims.filter((p): p is LinePrim => p.type === 'line' && p.layer === 'tri');
   let best: { tri: number; side: 0 | 1 | 2; d: number } | null = null;
-  for (let i = 0; i < triLines.length; i++) {
-    const d = distToSegmentPx(px, py, triLines[i]);
+  for (const p of lastPrims) {
+    if (p.type !== 'line' || p.layer !== 'tri') continue;
+    const l = p as LinePrim;
+    if (l.tri === undefined || l.side === undefined) continue;
+    const r = rows[l.tri - 1];
+    if (!r || r.kind !== 'triangle') continue; // 三角形のみ
+    const d = distToSegmentPx(px, py, l);
     if (d <= EDGE_TAP_PX && (!best || d < best.d)) {
-      best = { tri: Math.floor(i / 3) + 1, side: (i % 3) as 0 | 1 | 2, d };
+      best = { tri: l.tri, side: l.side as 0 | 1 | 2, d };
     }
   }
   return best;
 }
 
-// シャドー三角形を組む: 仮の行 (a=親辺長, b=c=親辺長*0.75 — MyView.drawShadowTriangle:683 と
-// 同じ比率) を足した CSV を common に描かせ、最後の三角形の 3 辺 [A,B,C] を借りる
+// 台形の辺タップ。identifier base 化に伴い tside (= 描画順 index) は廃止し、最初から物理 side を
+// 返す (handleTap 側の trapTsideToSide 経由を廃止、render 順と物理 side の写像が一箇所から消える)。
+// trap = 台形群内の連番 (1 始まり)、global 番号 = triCount()+trap。
+function nearestTrapEdge(px: number, py: number): { tri: number; side: 0 | 1 | 2 | 3; d: number } | null {
+  let best: { tri: number; side: 0 | 1 | 2 | 3; d: number } | null = null;
+  for (const p of lastPrims) {
+    if (p.type !== 'line' || p.layer !== 'tri') continue;
+    const l = p as LinePrim;
+    if (l.tri === undefined || l.side === undefined) continue;
+    const r = rows[l.tri - 1];
+    if (!r || r.kind !== 'rectangle') continue; // 台形のみ
+    const d = distToSegmentPx(px, py, l);
+    if (d <= EDGE_TAP_PX && (!best || d < best.d)) {
+      best = { tri: l.tri, side: l.side as 0 | 1 | 2 | 3, d };
+    }
+  }
+  return best;
+}
+
+function trapSideName(side: number): string {
+  return side === 0 ? '底辺' : side === 1 ? '左脚' : side === 2 ? '上辺' : side === 3 ? '右脚' : '辺';
+}
+
+// 台形の指定 side の辺長を lastPrims から引く。tri は混在通し番号 (1 始まり)。
+function trapEdgeLen(tri: number, side: number): number {
+  for (const p of lastPrims) {
+    if (p.type !== 'line' || p.layer !== 'tri') continue;
+    const l = p as LinePrim;
+    if (l.tri === tri && l.side === side) {
+      return Math.hypot(l.x2 - l.x1, l.y2 - l.y1);
+    }
+  }
+  return 0;
+}
+
+// 台形を図形選択し、どの辺かをフィードバックする。tri は混在通し番号 (1 始まり)。
+function selectRectangle(canvas: HTMLCanvasElement, tri: number, side: number): void {
+  selected = tri;
+  current = tri;
+  // 黄色ハイライト (selectedDim) は三角形辺タップと共通動線。底辺 (接続不可) も視覚的に
+  // どこを触ったか分かるよう立てる (user 指摘 2026-06-14「辺選択ガイドが出てない」)。
+  selectedDim = { tri, side };
+  edgeSel = null;
+  shadowPrims = null;
+  updateRowHighlight();
+  syncForm();
+  draw(canvas, lastPrims);
+  const name = trapSideName(side);
+  if (side <= 0) setStatus(`台形 #${tri} の ${name} (親の接続辺なので追加先には使えない)`);
+  else setStatus(`台形 #${tri} の ${name}辺 (接続 side ${side}) を選択`);
+}
+
+// 台形の自由辺をタップ → 親=台形のスロット (pendingTrapParent) を立てる。
+// tri は混在通し番号 (1 始まり)。
+function presetTriOnTrap(canvas: HTMLCanvasElement, tri: number, side: number): void {
+  // 既接続ガード (三角形版 selectEdge と対称)。
+  const child = isEdgeOccupied(tri, side);
+  if (child > 0) {
+    selectRectangle(canvas, tri, side);
+    const childKind = rows[child - 1]?.kind === 'rectangle' ? '台形' : '三角形';
+    setStatus(`台形 #${tri} の ${trapSideName(side)}辺 — ${childKind} #${child} が接続済み (追加不可、選択のみ)`);
+    return;
+  }
+  selected = tri;
+  current = tri;
+  // 三角形辺タップ (selectEdge) と同じプリセット動線:
+  //   - selectedDim で黄色ハイライト (子の種別問わず立てる)
+  //   - newA に親辺長 (台形親なら trapEdgeLen)
+  //   - newConn / newCType を接続情報に反映 (子問わず、台形親 = newCType '1')
+  // (user 指摘 2026-06-14「親の選択辺長が新規 A に入ってない/接続辺情報も切り替わらない」)
+  selectedDim = { tri, side };
+  edgeSel = null;
+  pendingTrapParent = { parent: tri, side };
+  input('newParent').value = String(tri);
+  const baseLen = trapEdgeLen(tri, side);
+  if (baseLen > 0) input('newA').value = fmt2(baseLen.toFixed(2));
+  // 接続辺 options を再生成して B/C/D を含めてから value を assign する。親種別 (=台形)は
+  // pendingTrapParent != null から自動推論されるので、形態列 (newCType) を「親種別」に流用しない
+  // (user 指摘 2026-06-14「台形の形態のところに親の種類を書いてること自体が間違い」)。
+  setSelectOptions(select('newConn'), connOptionsFor('new', 1));
+  select('newConn').value = String(side);
+  syncLcrDisabled('new');
+  buildShadow();
+  updateRowHighlight();
+  syncForm();
+  draw(canvas, lastPrims);
+  const childWord = figureKind === 'rectangle' ? '台形' : '三角形';
+  const inputHint = figureKind === 'rectangle' ? '延長/上辺' : 'B/C';
+  setStatus(`台形 #${tri} の ${trapSideName(side)}辺 — ${inputHint} を入力して ✎ で${childWord}を乗せる`);
+  input('newB').focus();
+}
+
+// pendingTrapParent (台形辺タップ済) のとき、新規行の B/C で三角形を末尾に積む。
+// 追加経路 fabReplace の三角形親ガード (親番号 <= triCount) は台形親に通らないので、ここで直に作る。
+function addTriOnTrap(canvas: HTMLCanvasElement, newB: string, newC: string): void {
+  const pend = pendingTrapParent;
+  if (!pend) return;
+  if (!(parseFloat(newB) > 0) || !(parseFloat(newC) > 0)) {
+    setStatus('⚠ 台形に乗せる三角形は B・C に正の値が必要です — 追加を中止');
+    return;
+  }
+  takeUndoSnap();
+  const name = input('newName').value;
+  // 底辺A は親台形の対応辺と **同じ辺プール index** を共有させる (三角形→三角形と同じ規約)。
+  // side 規約: 1=B左脚 (=延長)、2=C上辺、3=D右脚 (D は Rectangle 上の延長と同値)。
+  const trapRow = rows[pend.parent - 1];
+  const eaPoolIdx = trapRow && trapRow.kind === 'rectangle'
+    ? (pend.side === 2 ? trapRow.ec : trapRow.eb)
+    : newEdge(trapEdgeLen(pend.parent, pend.side).toFixed(2));
+  const newRow: Row = {
+    kind: 'triangle',
+    ea: eaPoolIdx,
+    eb: newEdge(newB),
+    ec: newEdge(newC),
+    parent: String(pend.parent),
+    conn: String(pend.side),
+    extras: name !== '' ? [name] : [],
+  };
+  rows.push(newRow);
+  pendingTrapParent = null;
+  edgeSel = null;
+  shadowPrims = null;
+  input('newName').value = '';
+  input('newA').value = '';
+  input('newB').value = '';
+  input('newC').value = '';
+  input('newParent').value = '';
+  select('newConn').value = '-1';
+  selected = rows.length;
+  current = rows.length;
+  view = null; // 行を増やしたので全体 fit に戻す (削除側 main.ts:2484 と対称)
+  buildTable(canvas);
+  syncForm();
+  redraw(canvas);
+  setStatus(`台形 ${pend.parent} の ${trapSideName(pend.side)}辺に三角形を追加`);
+}
+
+// 仮挿入した行の line prim を「prim 並び順」 ではなく **tri 番号** で同定する。
+// 段3 swap (commit 659b509、 WebPrimitiveRenderer.kt:92 新 render(list)) で混在 EditList を
+// 1 ループで吐くようになり、 trilist→traps→trapTris の 3 群分離は消えた。
+// SoT 一本化 段3g (commit 2b1c4e5): composeAll を廃止し buildMixed が figureRows 順で
+// 混在 EditList<EditObject> を 1 本構築、 render の forEachItemIndexed (:117/130) が
+// 1-based の tri 番号を振る。 仮挿入は CSV 末尾 → tri 番号は最大値。
+// 段3 前の slice(-4) / [tc*3 + offset] は壊れたので、 これに置換する。
+function pickShadowLines(lines: LinePrim[]): LinePrim[] {
+  let maxTri = 0;
+  for (const l of lines) if ((l.tri ?? 0) > maxTri) maxTri = l.tri ?? 0;
+  return maxTri > 0 ? lines.filter((l) => l.tri === maxTri) : [];
+}
+
+// line 集合を端点グラフから 1 本の閉路パスに連結する。 段3 swap で台形 4 辺の出力順が
+// 「side 0=底/1=右脚/2=上/3=左脚」 の並列 (前の終点 = 次の始点 にならない) になったため、
+// 順次 lineTo で外形を描くと対角線が走って砂時計 X クロスになるのを防ぐ。
+function chainPath(lines: LinePrim[]): { x: number; y: number }[] {
+  if (lines.length === 0) return [];
+  const EPS = 1e-3;
+  const eq = (a: number, b: number) => Math.abs(a - b) < EPS;
+  const used = new Array(lines.length).fill(false);
+  used[0] = true;
+  const path: { x: number; y: number }[] = [
+    { x: lines[0].x1, y: lines[0].y1 },
+    { x: lines[0].x2, y: lines[0].y2 },
+  ];
+  while (path.length <= lines.length) {
+    const last = path[path.length - 1];
+    let advanced = false;
+    for (let i = 0; i < lines.length; i++) {
+      if (used[i]) continue;
+      const ln = lines[i];
+      if (eq(ln.x1, last.x) && eq(ln.y1, last.y)) {
+        used[i] = true;
+        path.push({ x: ln.x2, y: ln.y2 });
+        advanced = true;
+        break;
+      }
+      if (eq(ln.x2, last.x) && eq(ln.y2, last.y)) {
+        used[i] = true;
+        path.push({ x: ln.x1, y: ln.y1 });
+        advanced = true;
+        break;
+      }
+    }
+    if (!advanced) break;
+  }
+  // 閉路: 末尾が始点と一致したら末尾点を除いて純粋な頂点列にする
+  if (path.length > 1) {
+    const head = path[0];
+    const tail = path[path.length - 1];
+    if (eq(head.x, tail.x) && eq(head.y, tail.y)) path.pop();
+  }
+  return path;
+}
+
+// シャドー (接続プレビュー) を組む。figureKind で「次に足す図形」が三角形か台形かを分ける (段5 R6)。
+// 仮の行を足した CSV を common に描かせ、その図形の辺を借りる — TS で幾何を再計算せず、
+// 接続の向き・形が実際の追加結果と必ず一致する。
+//   三角形モード: 仮三角形 (a=親辺長, b=c=親辺長*0.75 — MyView.drawShadowTriangle:683) の 3 辺 [A,B,C]。
+//   台形モード:  仮台形 (延長=newB, 底辺=親辺長, 上辺=newC, 寄せ=newLcr) の 4 辺。
 function buildShadow(): void {
   shadowPrims = null;
+  // 台形辺タップ済 (親=台形のスロット)。子の種別は figureKind で分岐:
+  //   triangle: RectChild 仮行を足して三角形シャドー (tri 線末尾 3 本)
+  //   rectangle: parentKind=1 の仮 Rectangle 行を足して台形シャドー (tri 線末尾 4 本)。
+  //              底辺=親台形辺長で固定 (共有辺、CsvCodec.buildRectangles が initByParent で同値上書き)
+  if (pendingTrapParent) {
+    // 親辺長を基準にデフォルトを組む。これにより「台形辺タップした瞬間にシャドーが出る」UX を
+    // 三角形辺タップ (edgeSel 経路) と揃える (user 指摘 2026-06-14「台形のシャドー描画は何時に
+    // なったら / 台形辺上に三角形を追加したいときの三角形シャドーも出来てない」)。
+    const baseLen = trapEdgeLen(pendingTrapParent.parent, pendingTrapParent.side);
+    if (!(baseLen > 0)) return;
+    const bv = input('newB').value;
+    const cv = input('newC').value;
+    const triLeg = (baseLen * 0.75).toFixed(2);   // 三角形シャドー脚 (= 三角形辺タップ path と同係数)
+    const trapExt = (baseLen * 0.5).toFixed(2);   // 台形延長 (高さ) 既定
+    const trapTop = (baseLen * 0.8).toFixed(2);   // 台形上辺 既定
+    if (figureKind === 'rectangle') {
+      const bvE = parseFloat(bv) > 0 ? bv : trapExt;
+      const cvE = parseFloat(cv) > 0 ? cv : trapTop;
+      const align = intOrNull(select('newLcr').value) ?? 0;
+      const trapNum = rows.filter(r => r.kind === 'rectangle').length + 1;
+      const candidate = serializeState() +
+        `Rectangle,${trapNum},${bvE},${baseLen.toFixed(2)},${cvE},${pendingTrapParent.parent},${pendingTrapParent.side},${align},1\n`;
+      try {
+        const prims = JSON.parse(renderCsvToPrimitivesWithOverrides(candidate, 1.0, overridesJson())) as Prim[];
+        const triLines = prims.filter((q): q is LinePrim => q.type === 'line' && q.layer === 'tri');
+        const own = pickShadowLines(triLines);
+        if (own.length === 4) shadowPrims = own;
+      } catch {
+        shadowPrims = null;
+      }
+      return;
+    }
+    // 子三角形を台形に乗せる。
+    const bvE = parseFloat(bv) > 0 ? bv : triLeg;
+    const cvE = parseFloat(cv) > 0 ? cv : triLeg;
+    const mixedParent = pendingTrapParent.parent;
+    const newNumS = rows.length + 1;
+    const candidate = serializeState() +
+      `${newNumS},${baseLen.toFixed(2)},${bvE},${cvE},${mixedParent},${pendingTrapParent.side}\n`;
+    try {
+      const prims = JSON.parse(renderCsvToPrimitivesWithOverrides(candidate, 1.0, overridesJson())) as Prim[];
+      const triLines = prims.filter((q): q is LinePrim => q.type === 'line' && q.layer === 'tri');
+      const own = pickShadowLines(triLines);
+      if (own.length === 3) shadowPrims = own;
+    } catch {
+      shadowPrims = null;
+    }
+    return;
+  }
   if (!edgeSel) return;
   const p = rows[edgeSel.tri - 1];
   if (!p) return;
   const aStr = edgeVal(p, edgeSel.side === 1 ? 'b' : 'c');
   const L = parseFloat(aStr);
   if (!Number.isFinite(L) || L <= 0) return;
-  const leg = (L * 0.75).toFixed(2);
-  const candidate = serializeState() + `${rows.length + 1},${aStr},${leg},${leg},${edgeSel.tri},${edgeSel.side}\n`;
+  let candidate: string;
+  let take: 'tri' | 'trap';
+  if (figureKind === 'rectangle') {
+    const bv = input('newB').value;
+    const cv = input('newC').value;
+    const trapExt = (L * 0.5).toFixed(2);
+    const trapTop = (L * 0.8).toFixed(2);
+    const bvE = parseFloat(bv) > 0 ? bv : trapExt;
+    const cvE = parseFloat(cv) > 0 ? cv : trapTop;
+    const align = intOrNull(select('newLcr').value) ?? 0;
+    const trapNum = rows.filter(r => r.kind === 'rectangle').length + 1;
+    candidate = serializeState() +
+      `Rectangle,${trapNum},${bvE},${aStr},${cvE},${edgeSel.tri},${edgeSel.side},${align},0\n`;
+    take = 'trap';
+  } else {
+    const leg = (L * 0.75).toFixed(2);
+    candidate = serializeState() + `${rows.length + 1},${aStr},${leg},${leg},${edgeSel.tri},${edgeSel.side}\n`;
+    take = 'tri';
+  }
   try {
     const json = renderCsvToPrimitivesWithOverrides(candidate, 1.0, overridesJson());
     const prims = JSON.parse(json) as Prim[];
     const triLines = prims.filter((q): q is LinePrim => q.type === 'line' && q.layer === 'tri');
-    const base = rows.length * 3; // 仮三角形 (rows.length+1 番) の線は最後の 3 本
-    if (base + 2 < triLines.length) {
-      shadowPrims = [triLines[base], triLines[base + 1], triLines[base + 2]];
+    const own = pickShadowLines(triLines);
+    // 並び (台形): renderRectangle 順 0=底辺(bl→br) 1=右脚(br→tr) 2=上辺(tr→tl) 3=左脚/延長(tl→bl)。
+    if (take === 'trap') {
+      if (own.length === 4) shadowPrims = own;
+    } else {
+      if (own.length === 3) shadowPrims = own;
     }
   } catch {
     shadowPrims = null;
@@ -2114,6 +3110,7 @@ function isSimpleConnection(r: { extras: string[] }): boolean {
 // 接続 (parent/conn) が編集で変わった時に辺A の共有先を張り直す。
 // 単純接続 → 親の B/C と同じ辺を共有、独立/二重断面 → 現値を複製して自分の辺に切り出す
 function relinkEdgeA(r: Row): void {
+  if (r.kind !== 'triangle') return; // 台形は辺A共有を持たない (段4)
   const pn = intOrNull(r.parent) ?? -1;
   const conn = intOrNull(r.conn);
   const p = rows[pn - 1];
@@ -2134,9 +3131,9 @@ function syncEdgeInputs(ei: number, except?: HTMLInputElement): void {
 }
 
 // 既に子が接続されている辺か (parent=tri, conn=side の行があるか)。
-// 0 = 未接続、>0 = 接続中の子三角形の番号。タップ選択・B/C FAB・追加実行の
-// 3 動線が共通で使う (アプリは占有判定を持たない — web 版の改善, 2026-06-11 user 指示)
-function edgeOccupiedBy(tri: number, side: 1 | 2): number {
+// 0 = 未接続、>0 = 接続中の子図形の番号 (1 始まり)。タップ選択・B/C FAB・追加実行の
+// 各動線が共通で使う (アプリは占有判定を持たない — web 版の改善, 2026-06-11 user 指示)。
+function isEdgeOccupied(tri: number, side: number): number {
   return rows.findIndex((r) => intOrNull(r.parent) === tri && intOrNull(r.conn) === side) + 1;
 }
 
@@ -2144,7 +3141,8 @@ function edgeOccupiedBy(tri: number, side: 1 | 2): number {
 // FAB を押さなくても新規行に接続・親・辺A がプリセットされ、シャドーが出る。
 // ただし既接続辺は追加遷移 (プリセット+シャドー+フォーカス) を起こさず、選択と W/H 対象のみ
 function selectEdge(canvas: HTMLCanvasElement, tri: number, side: 1 | 2): void {
-  const child = edgeOccupiedBy(tri, side);
+  pendingTrapParent = null; // 三角形辺を選んだら台形親プリセットは解除
+  const child = isEdgeOccupied(tri, side);
   if (child > 0) {
     selected = tri;
     current = tri;
@@ -2154,7 +3152,8 @@ function selectEdge(canvas: HTMLCanvasElement, tri: number, side: 1 | 2): void {
     updateRowHighlight();
     syncForm();
     draw(canvas, lastPrims);
-    setStatus(`三角形 ${tri} の ${side === 1 ? 'B' : 'C'} 辺 — 三角形 ${child} が接続済み (追加不可、W/H・旗は可)`);
+    const childKind = rows[child - 1]?.kind === 'rectangle' ? '台形' : '三角形';
+    setStatus(`三角形 #${tri} の ${side === 1 ? 'B' : 'C'} 辺 — ${childKind} #${child} が接続済み (追加不可、W/H・旗は可)`);
     return;
   }
   selected = tri;
@@ -2333,7 +3332,7 @@ function openTextEditor(canvas: HTMLCanvasElement, target: TextEditTarget): void
   inp.style.width = `${Math.max((box.w + pad * 2) * k, 48) + 24}px`;
   inp.style.font = `${Math.max(box.fh * k, 11)}px sans-serif`;
   inp.style.padding = '2px 4px';
-  inp.style.border = `2px solid ${SELECT_YELLOW}`;
+  inp.style.border = `2px solid ${COLORS.selectYellow}`;
   inp.style.borderRadius = '3px';
   inp.style.background = 'rgba(255, 255, 255, 0.95)';
   inp.style.color = '#222';
@@ -2398,11 +3397,44 @@ function handleTap(canvas: HTMLCanvasElement, px: number, py: number): void {
   // 寸法テキストと辺は近接して並ぶ (寸法は辺から dimHeight 分オフセット) ので
   // 固定優先でなく「実際に近い方」を選ぶ。線の上 = 辺タップ、文字の上 = 寸法選択
   const dim = nearestDimText(px, py);
-  const edge = nearestEdge(px, py);
+  const edge = nearestEdge(px, py);          // 三角形の辺のみ (台形の辺は混ざらない)
+  const trapEdge = nearestTrapEdge(px, py);  // 台形の辺のみ
+  const tc = triCount();
 
-  // 寸法値タップは「その辺をタップした」のと同じ扱いに統一 (段階2e の独自発明だった
+  // 辺と寸法の両方を、属する図形の種別 (三角形 / 台形) で振り分けて最近接を比べる。
+  // 以前の範囲計算 (triCount+idx) は廃止し、行 index から直接種別を引く (B-FORCE 2026-06-16)。
+  const rowOfDim = (dim && dim.prim.tri) ? rows[dim.prim.tri - 1] : null;
+  const dimTrap = rowOfDim?.kind === 'rectangle';
+  const trapDimD = dimTrap ? dim!.d : Infinity;
+  const triDimD = (dim && !dimTrap) ? dim.d : Infinity;
+  const trapBest = Math.min(trapEdge ? trapEdge.d : Infinity, trapDimD);
+  const triBest = Math.min(edge ? edge.d : Infinity, triDimD);
+
+  // 台形が最近接のとき。図形選択 + 辺名フィードバックまでを確定で出す (接続配線は別段)。
+  if (trapBest !== Infinity && trapBest <= triBest) {
+    let parentIdx: number;
+    let side: number;
+    if (trapEdge && trapEdge.d <= trapDimD) {
+      parentIdx = trapEdge.tri;
+      side = trapEdge.side; // nearestTrapEdge は識別子直引き = 物理 side をそのまま返す
+    } else {
+      parentIdx = dim!.prim.tri as number;
+      side = dim!.prim.side as number;          // 0=A底辺 / 1=B左脚 / 2=C上辺 (getLine 側)
+    }
+    // 台形の自由辺 (1=左脚/2=上辺/3=右脚) をタップ → 親スロット (pendingTrapParent) を立てる。
+    // 子の種別 (三角形/台形) は figureKind で分岐 → presetOnTrap が新規行プリセットと
+    // シャドーを figureKind に応じて組む。底辺(0)は親の接続辺なので不可、選択+辺名表示のみ。
+    if (side >= 1) {
+      presetTriOnTrap(canvas, parentIdx, side);
+      return;
+    }
+    selectRectangle(canvas, parentIdx, side);
+    return;
+  }
+
+  // 寸法値タップ (三角形) は「その辺をタップした」のと同じ扱いに統一 (段階2e の独自発明だった
   // 寸法単独選択は廃止 — アプリは lastTapSide 一本で接続プリセットと W/H 対象を兼ねる)
-  if (dim && (!edge || dim.d <= edge.d)) {
+  if (dim && !dimTrap && (!edge || dim.d <= edge.d)) {
     const p = dim.prim;
     if (p.tri !== undefined && p.side !== undefined) {
       if (p.side === 1 || p.side === 2) {
@@ -2430,6 +3462,10 @@ function handleTap(canvas: HTMLCanvasElement, px: number, py: number): void {
   }
   if (edge && edge.side === 0) {
     selectTriangle(canvas, edge.tri);
+    // A 辺タップでも黄色ハイライトを立てる (どこを触ったか視覚的に分かるよう、辺種別問わず統一)。
+    // selectTriangle が selectedDim=null にした後で上書きする必要あり (user 指摘 2026-06-14「全経路選択」網羅)。
+    selectedDim = { tri: edge.tri, side: 0 };
+    draw(canvas, lastPrims);
     setStatus(`三角形 ${edge.tri} の A 辺 (接続辺なので追加先には使えない)`);
     return;
   }
@@ -2616,7 +3652,7 @@ function loadCsv(canvas: HTMLCanvasElement, csv: string, label: string): void {
   // 読込動線も共通関門に通す: 読込自体は止めない (既存ファイルは開けるべき) が、
   // 不成立行があれば編集前に気づけるよう警告だけ重ねる
   const bad = findInvalidRow(rows);
-  if (bad) setStatus(`⚠ 読込: 三角形 ${bad.n} は ${bad.reason}`);
+  if (bad) setStatus(`⚠ 読込: ${bad.reason}`);
 }
 
 function main(): void {
@@ -2660,10 +3696,33 @@ function main(): void {
   wireFabs(canvas);
   wireRosenName(canvas);
   wireNewRowEnter(canvas);
-  // 形態 select の変化で起点 select の有効/無効を追従 (辺共有では起点に意味が無い)
-  select('newCType').addEventListener('change', () => syncLcrDisabled('new'));
-  select('curCType').addEventListener('change', () => syncLcrDisabled('cur'));
+  // 形態 select の変化で追従: 三角形は起点 select の有効/無効、台形は親種別なので接続辺の D 有無 (onCTypeChange)。
+  // 加えて、新規行フォームの各値変更を即座にシャドーへ反映 (user 2026-06-14「起点プルダウン選択を
+  // トリガーにキャンバスが書き換わるのが本来の姿」)。buildShadow が newA/newB/newC/newLcr を読むので、
+  // それらの change → buildShadow + draw が「即時反映」の入口になる (curXxx の rewriteCurrent と同思想)。
+  select('newCType').addEventListener('change', () => {
+    onCTypeChange('new');
+    buildShadow();
+    draw(canvas, lastPrims);
+  });
+  select('curCType').addEventListener('change', () => onCTypeChange('cur'));
   syncLcrDisabled('new');
+  for (const id of ['newA', 'newB', 'newC', 'newParent', 'newConn', 'newLcr']) {
+    document.getElementById(id)?.addEventListener('change', () => {
+      buildShadow();
+      draw(canvas, lastPrims);
+    });
+  }
+  // 「現在」行フォームの編集を即時確定する (user 2026-06-12: 一覧フォームで二重断面や
+  // 起点・A 辺を変えてもキャンバスに反映されない)。原因は formCur の接続 select と辺入力に
+  // change handler が無く、確定が FAB / 辺C-Enter の 2 動線だけだったこと。一方すぐ下の
+  // 一覧表はインライン編集が即時反映 (buildTable の apply / セルの change) なので、同じ表内で
+  // 「現在」行だけ FAB 必須では UX が食い違う。変更の瞬間に rewriteCurrent (= FAB と同じ確定
+  // 経路: 接続の張り直し relinkEdgeA + cp 列 writeCpExtras + 三角不等式関門 + redraw) を走らせて
+  // 一覧表と同じ即時反映に揃える。辺C は Enter 確定 (1976) と二重になるが rewriteCurrent は冪等。
+  for (const id of ['curName', 'curA', 'curB', 'curC', 'curParent', 'curConn', 'curCType', 'curLcr']) {
+    document.getElementById(id)?.addEventListener('change', () => rewriteCurrent(canvas));
+  }
 
   fileInput.addEventListener('change', () => {
     const file = fileInput.files?.[0];
@@ -2722,6 +3781,7 @@ if (import.meta.hot) {
     });
     // rows は CP 消費側の互換のため a/b/c 展開形で出す (内部は辺 index)。edges も生で添える
     const rowsExpanded = rows.map((r) => ({
+      kind: r.kind, // 混在リスト: triangle / rectangle (CP 消費側が種別で出し分けられるように)
       a: edgeVal(r, 'a'),
       b: edgeVal(r, 'b'),
       c: edgeVal(r, 'c'),
@@ -2731,6 +3791,9 @@ if (import.meta.hot) {
       parent: r.parent,
       conn: r.conn,
       extras: r.extras,
+      // 台形のみ: 上辺寄せ(align) と親種別(parentKind)。台形チェーン (parentKind=1) の検証口
+      align: r.align,
+      parentKind: r.parentKind,
     }));
     hot.send('tlcp:state-res', {
       id: data.id,
@@ -2741,6 +3804,19 @@ if (import.meta.hot) {
         // 保存ボタンが書く実物 (overrides 焼き込み済み完全形式)。書き戻しの検証口
         csvBaked: buildCsvTextWithOverrides(serializeState(), overridesJson()),
         view, prims: lastPrims, fabs,
+        // 4方向接続の検証口: 親スロット (edgeSel=三角形親, pendingTrapParent=台形親) と
+        // figureKind (子の種別)、shadowPrims (シャドーの辺数=3=三角形 / 4=台形)
+        figureKind,
+        edgeSel,
+        pendingTrapParent,
+        selectedDim,
+        // 辺タップ動線の検証口 (新規行プリセット): 親辺長 A / 接続 / 形態 / 起点
+        newRow: {
+          a: input('newA').value, b: input('newB').value, c: input('newC').value,
+          parent: input('newParent').value,
+          conn: select('newConn').value, ctype: select('newCType').value, lcr: select('newLcr').value,
+        },
+        shadowLen: shadowPrims ? shadowPrims.length : 0,
       },
     });
   });
@@ -2758,7 +3834,14 @@ if (import.meta.hot) {
       }
     }
     if (t instanceof HTMLInputElement || t instanceof HTMLSelectElement) {
-      if (typeof data.value === 'string') t.value = data.value;
+      if (typeof data.value === 'string') {
+        t.value = data.value;
+        // プログラム的な value 代入は input/change を発火しない。実ブラウザの blur 確定や
+        // select 選択と同じく編集系 change handler (formCur の即時確定等) を検証できるよう
+        // 明示発火する。これがないと「現在」行フォームの change 駆動の確定を CLI から踏めない
+        t.dispatchEvent(new Event('input', { bubbles: true }));
+        t.dispatchEvent(new Event('change', { bubbles: true }));
+      }
       t.focus();
       if (data.key) t.dispatchEvent(new KeyboardEvent('keydown', { key: data.key, bubbles: true, cancelable: true }));
       const a = document.activeElement;
@@ -2781,20 +3864,30 @@ if (import.meta.hot) {
     const t = document.getElementById(String(data.target ?? ''));
     if (t instanceof HTMLElement) {
       t.click();
-      hot.send('tlcp:click-res', {
-        id: data.id,
-        state: { ok: true, rows: rows.length, status: document.getElementById('status')?.textContent ?? '' },
-      });
+      // redraw 等の非同期処理が 1 フレーム程度かかる場合があるため、
+      // 僅かに待ってから最新の状態を返す
+      setTimeout(() => {
+        hot.send('tlcp:click-res', {
+          id: data.id,
+          state: { 
+            ok: true, 
+            rows: rows.length, 
+            status: document.getElementById('status')?.textContent ?? '' 
+          },
+        });
+      }, 50);
     } else {
       hot.send('tlcp:click-res', { id: data.id, state: { ok: false } });
     }
   });
   // CSV 注入: ファイルダイアログを経ずに CSV を開く (loadCsv と同じ動線)。
-  // 完全形式 CSV (手動配置列 7-9/11-16/20-21、golden 比較) の e2e 検証口
   hot.on('tlcp:load-req', (data: { id: string; csv?: string }) => {
     const canvas = document.getElementById('cv') as HTMLCanvasElement | null;
-    if (canvas && typeof data.csv === 'string' && data.csv.trim() !== '') {
-      overrides = { dims: [], numbers: [] }; // ファイル開き (fileInput change) と同じ: 前データの override を持ち越さない
+    if (canvas && typeof data.csv === 'string') {
+      overrides = { dims: [], numbers: [] };
+      clearSelection();
+      pendingTrapParent = null;
+      edgeSel = null;
       loadCsv(canvas, data.csv, 'cp-load');
       hot.send('tlcp:load-res', { id: data.id, state: { ok: true, rows: rows.length, listAngle } });
     } else {
@@ -2832,6 +3925,17 @@ if (import.meta.hot) {
       hot.send('tlcp:tap-res', { id: data.id, state: { ok: true, selected, current, edgeSel } });
     } else {
       hot.send('tlcp:tap-res', { id: data.id, state: { ok: false } });
+    }
+  });
+  // 選択注入: hitTriangle が拾わない図形 (台形等) を直接 selected に。selected 塗りの
+  // 検証 (台形 fill が砂時計にならない等) で必要 ── 一覧表 click と同じ動線 (selectTriangle)
+  hot.on('tlcp:select-req', (data: { id: string; n?: number }) => {
+    const canvas = document.getElementById('cv') as HTMLCanvasElement | null;
+    if (canvas && typeof data.n === 'number' && data.n >= 0 && data.n <= rows.length) {
+      selectTriangle(canvas, data.n);
+      hot.send('tlcp:select-res', { id: data.id, state: { ok: true, selected, current } });
+    } else {
+      hot.send('tlcp:select-res', { id: data.id, state: { ok: false } });
     }
   });
 }

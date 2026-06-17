@@ -55,6 +55,12 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, filename: String,
             writeTriangle( trilistNumbered.get(trinumber) )
         }
 
+        // Rectangle (台形)。三角形の後に重ねる。番号は三角形からの通し。traps_ 空なら SFC golden 不変
+        for ((i, rect) in traps_.withIndex()) writeRectangle(rect, trilistNumbered.size() + i + 1)
+        // Rectangle を親に持つ Triangle。番号は三角形 + Rectangle からの通し (mynumber は WebDrawingExport で
+        // 事前にセット済み)。trapTris_ 空なら SFC golden 不変。user 確定 2026-06-16「TriTrap タグ排除」。
+        for (t in trapTris_) writeTriangle(t)
+
         // deduction
         for (dednumber in 1 .. dedlist_.size()) {
             writeDeduction( dedlist_.get(dednumber) )

@@ -1,6 +1,10 @@
 package com.jpaver.trianglelist.web
 
 import com.example.trilib.PointXY
+import com.jpaver.trianglelist.editmodel.EditList
+import com.jpaver.trianglelist.editmodel.EditObject
+import com.jpaver.trianglelist.editmodel.Rectangle
+import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
 import com.jpaver.trianglelist.setDimPath
 import com.jpaver.trianglelist.setDimPoint
@@ -22,7 +26,8 @@ import com.jpaver.trianglelist.setPointNumber
  * JSON 形式 (TS 側 main.ts の overrides state がそのまま JSON.stringify したもの):
  *   {"dims":   [{"tri":1,"side":0,"h":3,"v":1}, ...],
  *    "numbers": [{"tri":1,"x":1.25,"y":0.8}, ...]}
- * - tri = 1-based 三角形番号、side = 0/1/2 (A/B/C)、4 = 測点 (器のみ、UI は段階外)
+ * - tri = 1-based 図形番号。TriangleList 経路では三角形番号、mixed 経路では
+ *   WebPrimitiveRenderer が emit する混在通し番号。side = 0/1/2 (A/B/C)、4 = 測点 (器のみ、UI は段階外)
  * - h = horizontal 到達値 (0..4、>2 で旗揚げ)、v = vertical 到達値 (1=外/3=内)。
  *   h/v は optional — 触った軸だけ記録すると flag の立ち方が controlDim* と一致する
  * - numbers = pointnumber のモデル座標
@@ -48,6 +53,9 @@ object WebOverrides {
 
     fun applyJson(trilist: TriangleList, overridesJson: String) =
         apply(trilist, parse(overridesJson))
+
+    fun applyJson(list: EditList<EditObject>, overridesJson: String) =
+        apply(list, parse(overridesJson))
 
     fun parse(json: String): Overrides {
         if (json.isBlank()) return Overrides()
@@ -81,31 +89,89 @@ object WebOverrides {
         for (d in overrides.dims) {
             if (d.tri < 1 || d.tri > trilist.size()) continue
             val tri = trilist.getBy(d.tri)
-            d.h?.takeIf { it in 0..4 }?.let { h ->
-                when (d.side) {
-                    SIDE_A -> tri.dim.horizontal.a = h
-                    SIDE_B -> { tri.dim.horizontal.b = h; tri.dim.flag[1].isMovedByUser = true }
-                    SIDE_C -> { tri.dim.horizontal.c = h; tri.dim.flag[2].isMovedByUser = true }
-                    SIDE_SOKUTEN -> { tri.dim.horizontal.s = h; tri.dim.flagS.isMovedByUser = true }
-                }
-            }
-            d.v?.takeIf { it == 1 || it == 3 }?.let { v ->
-                when (d.side) {
-                    SIDE_A -> { tri.dim.vertical.a = v; tri.dim.flag[0].isMovedByUser = true }
-                    SIDE_B -> { tri.dim.vertical.b = v; tri.dim.flag[1].isMovedByUser = true }
-                    SIDE_C -> { tri.dim.vertical.c = v; tri.dim.flag[2].isMovedByUser = true }
-                }
-            }
-            tri.setDimPath()
-            tri.setDimPoint()
+            applyDim(tri, d)
         }
         for (n in overrides.numbers) {
             if (n.tri < 1 || n.tri > trilist.size()) continue
             // setPointByUser (PointNumberManager.kt:18): isMovedByUser が立ち、
             // arrangePointNumbers の autoAlign (同:36 early return) から保護される。
             // pointcenter から遠すぎる点は app と同じ BORDER 判定で無視される
-            trilist.getBy(n.tri).setPointNumber(PointXY(n.x, n.y), true)
+            applyNumber(trilist.getBy(n.tri), n)
         }
+    }
+
+    /**
+     * WebPrimitiveRenderer が UI へ返す tri は mixed EditList の通し番号。 Triangle/Rectangle
+     * の両方に dim override を多態 dispatch する (2026-06-17 Codex 引き継ぎ tier 2):
+     * Rectangle.dimVertical / dimHorizontal は DimAligns(a,b,c,s) で、 Rectangle 文脈では
+     * a=底辺, b=B 延長, c=上辺 を使う (D=side3, 測点=SIDE_SOKUTEN は Rectangle スコープ外で skip)。
+     * number override は現状 Triangle のみ (Rectangle の pointnumber 移動は別 brief、 描画側が
+     * vertices 重心固定 = WebPrimitiveRenderer.kt:167-178)。
+     */
+    fun apply(list: EditList<EditObject>, overrides: Overrides) {
+        for (d in overrides.dims) {
+            if (d.tri < 1 || d.tri > list.size()) continue
+            when (val obj = list.get(d.tri)) {
+                is Triangle -> applyDim(obj, d)
+                is Rectangle -> applyDim(obj, d)
+            }
+        }
+        for (n in overrides.numbers) {
+            val tri = list.getTriangleOrNull(n.tri) ?: continue
+            applyNumber(tri, n)
+        }
+    }
+
+    private fun EditList<EditObject>.getTriangleOrNull(num: Int): Triangle? {
+        if (num < 1 || num > size()) return null
+        return get(num) as? Triangle
+    }
+
+    private fun applyDim(tri: Triangle, d: DimOverride) {
+        d.h?.takeIf { it in 0..4 }?.let { h ->
+            when (d.side) {
+                SIDE_A -> tri.dim.horizontal.a = h
+                SIDE_B -> { tri.dim.horizontal.b = h; tri.dim.flag[1].isMovedByUser = true }
+                SIDE_C -> { tri.dim.horizontal.c = h; tri.dim.flag[2].isMovedByUser = true }
+                SIDE_SOKUTEN -> { tri.dim.horizontal.s = h; tri.dim.flagS.isMovedByUser = true }
+            }
+        }
+        d.v?.takeIf { it == 1 || it == 3 }?.let { v ->
+            when (d.side) {
+                SIDE_A -> { tri.dim.vertical.a = v; tri.dim.flag[0].isMovedByUser = true }
+                SIDE_B -> { tri.dim.vertical.b = v; tri.dim.flag[1].isMovedByUser = true }
+                SIDE_C -> { tri.dim.vertical.c = v; tri.dim.flag[2].isMovedByUser = true }
+            }
+        }
+        tri.setDimPath()
+        tri.setDimPoint()
+    }
+
+    /**
+     * Rectangle dim override 適用 (Codex tier 2、 2026-06-17)。 Triangle と違って autoAlign /
+     * arrangePointNumbers の上書きパスが無いので isMovedByUser フラグ管理は不要 ── dimVertical /
+     * dimHorizontal の対象軸に値を直接書く。 side 3 (D 辺) は描画側 hardcoded (Rectangle.kt:130
+     * `DimensionSpec(3, ..., 1, 0)`)、 side 4 (測点) は Triangle 専用なので、 両方とも黙って skip。
+     */
+    private fun applyDim(rect: Rectangle, d: DimOverride) {
+        d.h?.takeIf { it in 0..4 }?.let { h ->
+            when (d.side) {
+                SIDE_A -> rect.dimHorizontal.a = h
+                SIDE_B -> rect.dimHorizontal.b = h
+                SIDE_C -> rect.dimHorizontal.c = h
+            }
+        }
+        d.v?.takeIf { it == 1 || it == 3 }?.let { v ->
+            when (d.side) {
+                SIDE_A -> rect.dimVertical.a = v
+                SIDE_B -> rect.dimVertical.b = v
+                SIDE_C -> rect.dimVertical.c = v
+            }
+        }
+    }
+
+    private fun applyNumber(tri: Triangle, n: NumberOverride) {
+        tri.setPointNumber(PointXY(n.x, n.y), true)
     }
 
     // ---- mini JSON parser (フラット数値のみの上記形式専用) ----

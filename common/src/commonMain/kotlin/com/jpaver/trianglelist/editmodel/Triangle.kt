@@ -4,6 +4,7 @@ import com.jpaver.trianglelist.Bounds
 import com.jpaver.trianglelist.getAngleBySide
 import com.jpaver.trianglelist.getLengthByIndex
 import com.jpaver.trianglelist.getPointBySide
+import com.jpaver.trianglelist.setLengthStr
 import com.jpaver.trianglelist.viewmodel.Cloneable
 import com.jpaver.trianglelist.viewmodel.InputParameter
 import kotlin.math.roundToInt
@@ -132,35 +133,32 @@ class Triangle : EditObject, Cloneable<Triangle> {
     var angleBC = 0f
 
     // --- 接続関連 ---
-    var parentnumber = -1 // 0:root
-    var connectionSide = -1 // 0:not use, 1:B, 2:C...
     var connectionType_ = 0
     var connectionLCR_ = 2
     var cParam_ = ConnParam(0, 0, 2, 0f)
 
     // --- 識別・表示 ---
-    var mynumber = 1
     var dimHorizontalA = 0
     var dimHorizontalB = 0
     var dimHorizontalC = 0
     var lastTapSide_ = -1
-    var mycolor = 4
     var childSide_ = 0
-    var name = ""
 
     // --- バウンディングボックス・寸法 ---
     var myBP_ = Bounds(0.0, 0.0, 0.0, 0.0)
     var pathS = DimOnPath()
     var dimHeight = 0f
 
-    // --- ノード ---
-    var nodeA: Triangle? = null
-    var nodeB: Triangle? = null
-    var nodeC: Triangle? = null
-
-    // --- フラグ ---
-    var isFloating = false
-    var isColored = false
+    // --- ノード (EditObject の統一ツリーへのプロキシ) ---
+    var nodeA: Triangle?
+        get() = node.a as? Triangle
+        set(value) { node.a = value }
+    var nodeB: Triangle?
+        get() = node.b as? Triangle
+        set(value) { node.b = value }
+    var nodeC: Triangle?
+        get() = node.c as? Triangle
+        set(value) { node.c = value }
 
     // --- 派生値 ---
     val lengthA_: Float
@@ -177,6 +175,41 @@ class Triangle : EditObject, Cloneable<Triangle> {
         get() = lengthNotSized[2]
     val pointCA: com.example.trilib.PointXY
         get() = point[0].clone()
+
+    // EditObject の多態 (user 指針 2026-06-14「あらゆる限定操作を基底クラスに寄せろ」)。
+    // 上位の混在リストは sideCount / vertices / getLine の共通契約だけで動き、kind 分岐を消す。
+    override val sideCount: Int = 3
+    override fun vertices(): List<com.example.trilib.PointXY> = listOf(point[0], pointAB, pointBC)
+    override fun getLine(side: Int): Line = when (side) {
+        0 -> Line(point[0], pointAB)
+        1 -> Line(pointAB, pointBC)
+        2 -> Line(pointBC, point[0])
+        else -> Line()
+    }
+
+    /**
+     * SoT 一本化 段3 寸法多態 (2026-06-15): 既存 WebPrimitiveRenderer.render(trilist) の三角形
+     * 寸法ループを移植したもの。図形種別に依らない単一 emit ループを上位 (renderer) に許す。
+     * A 辺は親と共有していない時 (nodeA == null && node.a == null) または再接続 (connectionSide > 2)
+     * のとき出す。Triangle 子接続は Triangle 独自フィールド nodeA に親を保持し、Rectangle 親 trapTri は
+     * EditObject 基底の node.a に親を保持する (継ぎ目が違う)。両方 null = 親共有なし → A 辺寸法 emit。
+     */
+    override fun emitDimensionSpecs(scale: Float): List<DimensionSpec> {
+        val s = scaleFactor.toDouble()
+        val dh = dimHeight.toDouble()
+        val placeA = com.jpaver.trianglelist.label.DimensionLayout.layout(pointAB, point[0], dim.vertical.a, dim.horizontal.a, s, dh, 0.0)
+        val placeB = com.jpaver.trianglelist.label.DimensionLayout.layout(pointBC, pointAB, dim.vertical.b, dim.horizontal.b, s, dh, 0.0)
+        val placeC = com.jpaver.trianglelist.label.DimensionLayout.layout(point[0], pointBC, dim.vertical.c, dim.horizontal.c, s, dh, 0.0)
+        this.setLengthStr()
+        val specs = mutableListOf<DimensionSpec>()
+        val emitA = (nodeA == null && node.a == null) || connectionSide > 2
+        if (emitA) {
+            specs.add(DimensionSpec(0, strLengthA, placeA, pointAB.calcDimAngle(pointCA), dim.horizontal.a, dim.vertical.a, dim.horizontal.a > 2))
+        }
+        specs.add(DimensionSpec(1, strLengthB, placeB, pointBC.calcDimAngle(pointAB), dim.horizontal.b, dim.vertical.b, dim.horizontal.b > 2))
+        specs.add(DimensionSpec(2, strLengthC, placeC, pointCA.calcDimAngle(pointBC), dim.horizontal.c, dim.vertical.c, dim.horizontal.c > 2))
+        return specs
+    }
 
     fun pointAB_(): com.example.trilib.PointXY = com.example.trilib.PointXY(pointAB)
     fun pointBC_(): com.example.trilib.PointXY = com.example.trilib.PointXY(pointBC)
@@ -249,6 +282,107 @@ class Triangle : EditObject, Cloneable<Triangle> {
             parent.getAngleBySide(pbc)
         )
         setOn(parent, pbc, B, C)
+    }
+
+    // 親 (三角形でも台形でも) の共有辺に底辺(A)を乗せて構築する。混在リストの接続土台:
+    // initByParent (EditObject 共通の継ぎ目) が親種別を問わず getLine(side) で辺を返し node も繋ぐ。
+    // これで「台形に三角形を接続」が三角形側でも成立する (Rectangle は既に同じ継ぎ目を使う)。
+    // side は親の辺番号 (台形 1=B/2=C/3=D、三角形 1=B/2=C)。A長は共有辺の実長になる。
+    constructor(parent: EditObject, side: Int, B: Float, C: Float) {
+        val base = initByParent(parent, side)
+        val a = base.left.lengthTo(base.right).toFloat()
+        val baseAngle = base.getAngle().toFloat()
+        initBasicArguments(a, B, C, base.left, baseAngle)
+        calcPoints(base.left, baseAngle)
+        // 重なり防止
+        if (apexTowardInterior(parent, base)) {
+            initBasicArguments(a, C, B, base.right, baseAngle + 180f)
+            calcPoints(base.right, baseAngle + 180f)
+        }
+    }
+
+    /**
+     * EditObject (三角形/台形) を親に、ConnParam に従って三角形を構築する (2026-06-16 混成対応)。
+     */
+    constructor(parent: EditObject, cParam: ConnParam, B: Float, C: Float) {
+        val base = initByParent(parent, cParam.side)
+        val baseAngle = base.getAngle().toFloat()
+
+        // ConnParam 考慮の初期化 (Triangle(ptri, cp, ...) と同じロジックを EditObject へ汎用化)
+        initBasicArguments(cParam.lenA, B, C, base.left, baseAngle)
+        cParam_ = cParam.clone()
+        connectionSide = cParam.side
+        connectionType_ = cParam.type
+        connectionLCR_ = cParam.lcr
+
+        // 二重断面 / フロートのオフセット適用
+        // setOn は引数に Triangle? を取る設計だが、EditObject 親の場合は独立したオフセット処理が必要。
+        // 親種別に依存しないよう initByParent が返した base (Line) を基準に LCR / Type を解決する。
+        val l = getBaseOffsetPoint(base, cParam.lenA, cParam.type, cParam.lcr)
+        initBasicArguments(cParam.lenA, B, C, l.left, l.getAngle().toFloat())
+        calcPoints(l.left, l.getAngle().toFloat())
+
+        // 重なり防止
+        if (apexTowardInterior(parent, base)) {
+            // 反転時は重心ベースで逆側へ (A辺は不変、B↔C 入替)
+            val revCp = cParam.clone()
+            // LCR 反転: Left(0) -> Right(2), Right(2) -> Left(0)
+            revCp.lcr = when(cParam.lcr) {
+                0 -> 2
+                2 -> 0
+                else -> 1
+            }
+            initBasicArguments(cParam.lenA, C, B, base.right, baseAngle + 180f)
+            cParam_ = revCp
+
+            // base の向きを反転させた状態でのオフセットを再計算
+            val revBase = Line(base.right, base.left)
+            val lRev = getBaseOffsetPoint(revBase, revCp.lenA, revCp.type, revCp.lcr)
+            initBasicArguments(revCp.lenA, C, B, lRev.left, lRev.getAngle().toFloat())
+            calcPoints(lRev.left, lRev.getAngle().toFloat())
+        }
+    }
+
+    /**
+     * 親の種別に依存せず、親の接続辺 (base) と指定された LCR / Type に基づいて
+     * 実際に接続する「新しい基線 (Line)」を返す。
+     * type=1 (フロート), type=2 (二重断面), lcr=0(左), 1(中), 2(右)
+     */
+    private fun getBaseOffsetPoint(base: Line, lenA: Float, type: Int, lcr: Int): Line {
+        // 通常接続 (type=0) なら親の辺をそのまま使う (スライドしない)
+        if (type == 0) {
+            return Line(base.left.clone(), base.right.clone())
+        }
+        
+        // LCR に応じた基点 (left) のスライド
+        val baseLen = base.left.lengthTo(base.right).toFloat()
+        val pLeft = when (lcr) {
+            0 -> base.left.offset(base.right, lenA.toDouble())
+            1 -> base.left.offset(base.right, (baseLen * 0.5f + lenA * 0.5f).toDouble())
+            2 -> base.right.clone()
+            else -> base.left.clone()
+        }
+        
+        // type=2 (二重断面) なら、左側に 1.0 はみ出す
+        val finalPLeft = if (type == 2) {
+            pLeft.crossOffset(base.right, -1.0)
+        } else {
+            pLeft
+        }
+        
+        // 新しい基線 (角度は base と同じ)
+        return Line(finalPLeft, finalPLeft.offset(lenA.toDouble(), base.getAngle()))
+    }
+
+    // 子三角形の頂点 (pointBC) が親図形の内部を向いているか。base 線に対し「頂点」と「親重心」が
+    // 同じ側 (cross 積が同符号) なら内向き。calcPoints 実行後に呼ぶ (pointBC が確定している前提)。
+    private fun apexTowardInterior(parent: EditObject, base: Line): Boolean {
+        val cp = parent.centroid()
+        val dx = base.right.x - base.left.x
+        val dy = base.right.y - base.left.y
+        val apexSide = dx * (pointBC.y - base.left.y) - dy * (pointBC.x - base.left.x)
+        val centSide = dx * (cp.y - base.left.y) - dy * (cp.x - base.left.x)
+        return apexSide * centSide > 0f
     }
 
     constructor(myParent: Triangle?, dP: InputParameter) {

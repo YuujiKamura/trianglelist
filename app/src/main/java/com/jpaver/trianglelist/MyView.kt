@@ -430,7 +430,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
     }
 
     //ボタンが押された時の結果としt呼ばれるほかに、回転操作(fabRotate)でも毎秒以下の間隔で呼ばれる
-    fun setTriangleList(editlist: EditList, setscale: Float, moveCenter: Boolean = true){
+    fun setTriangleList(editlist: EditList<*>, setscale: Float, moveCenter: Boolean = true){
         //if( myTriangleList.size() > 0 ) trilistStored_ = myTriangleList.clone()
         (editlist as TriangleList)
         myScale = setscale    // 描画倍率は外から指定する
