@@ -72,7 +72,7 @@ data class Rectangle(
      *   0 = A 底辺   (bl→br = lp.a)            — 親と共有、子には出さない
      *   1 = B 延長/左脚 (bl→tl)               — レンダラが「延長B」と寸法表示する脚
      *   2 = C 上辺   (tl→tr = lp.b)
-     *   3 = D 右脚   (br→tr)                  — 現状 4 本目として線だけ引かれる脚
+     *   3 = D 右脚   (tr→br)                  — 時計回り展開の原則で tr 起点、initByParent が反転して br 起点になる
      * calcPoint() は nodeA があると basepoint/angle を再構築する副作用を持つが、毎回 nodeA から
      * baseline を作り直すので複数回呼んでも同値 (R2 で確認済)。getLine から呼ぶのは安全。
      */
@@ -82,7 +82,7 @@ data class Rectangle(
             0 -> Line(lp.a.left,  lp.a.right)   // A 底辺 (bl→br)
             1 -> Line(lp.a.left,  lp.b.left)    // B 延長/左脚 (bl→tl)
             2 -> Line(lp.b.left,  lp.b.right)   // C 上辺 (tl→tr)
-            3 -> Line(lp.a.right, lp.b.right)   // D 右脚 (br→tr)
+            3 -> Line(lp.b.right, lp.a.right)   // D 右脚 (tr→br): 時計回り展開の原則 — initByParent が反転し br 起点→外側に展開
             else -> Line()
         }
     }
