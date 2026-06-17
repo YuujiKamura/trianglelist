@@ -49,10 +49,10 @@ class RectangleParentTest {
         assertPoint(tl, c.left, "C.left(tl)")
         assertPoint(tr, c.right, "C.right(tr)")
 
-        // side=3 = D 右脚 (br→tr)
+        // side=3 = D 右脚 (tr→br): 時計回り展開の原則で tr 起点
         val d = r.getLine(3)
-        assertPoint(br, d.left, "D.left(br)")
-        assertPoint(tr, d.right, "D.right(tr)")
+        assertPoint(tr, d.left, "D.left(tr)")
+        assertPoint(br, d.right, "D.right(br)")
     }
 
     /** getLine(2) は旧 initByParent が固定で返していた上辺C (= calcPoint().b) と同一であること (後方互換の核) */
@@ -65,15 +65,22 @@ class RectangleParentTest {
         assertPoint(top.right, c.right, "上辺C.right")
     }
 
+    // initByParent は親辺を必ず逆走する (時計回り展開の原則)。
+    // よって childBase.left == parentEdge.right, childBase.right == parentEdge.left となる。
+    // 「底辺が親辺に乗る」= 両端点が一致 (順序不問) でチェックする。
+    private fun assertEdgeSameEndpoints(childBase: Line, parentEdge: Line, tag: String) {
+        val forward = childBase.left.nearBy(parentEdge.left, 0.001) && childBase.right.nearBy(parentEdge.right, 0.001)
+        val reversed = childBase.left.nearBy(parentEdge.right, 0.001) && childBase.right.nearBy(parentEdge.left, 0.001)
+        assertTrue(forward || reversed,
+            "$tag 底辺 [${childBase.left}..${childBase.right}] が親辺 [${parentEdge.left}..${parentEdge.right}] に乗らない")
+    }
+
     /** 子 Rectangle(nodeA=親, side=1) の底辺が親の B辺にぴったり乗る */
     @Test
     fun child_base_lies_on_parent_B_edge() {
         val parent = base()
         val child = Rectangle(2.0, 3.0, 2.0, nodeA = parent, side = 1)
-        val childBase = child.calcPoint().a
-        val parentEdge = parent.getLine(1)
-        assertTrue(childBase.left.nearBy(parentEdge.left, 0.001), "底辺左 ${childBase.left} != 親B左 ${parentEdge.left}")
-        assertTrue(childBase.right.nearBy(parentEdge.right, 0.001), "底辺右 ${childBase.right} != 親B右 ${parentEdge.right}")
+        assertEdgeSameEndpoints(child.calcPoint().a, parent.getLine(1), "B辺")
     }
 
     /** 子 Rectangle(nodeA=親, side=2) の底辺が親の C辺(上辺)にぴったり乗る */
@@ -81,10 +88,7 @@ class RectangleParentTest {
     fun child_base_lies_on_parent_C_edge() {
         val parent = base()
         val child = Rectangle(2.0, 3.0, 2.0, nodeA = parent, side = 2)
-        val childBase = child.calcPoint().a
-        val parentEdge = parent.getLine(2)
-        assertTrue(childBase.left.nearBy(parentEdge.left, 0.001), "底辺左 ${childBase.left} != 親C左 ${parentEdge.left}")
-        assertTrue(childBase.right.nearBy(parentEdge.right, 0.001), "底辺右 ${childBase.right} != 親C右 ${parentEdge.right}")
+        assertEdgeSameEndpoints(child.calcPoint().a, parent.getLine(2), "C辺")
     }
 
     /** 子 Rectangle(nodeA=親, side=3) の底辺が親の D辺(右脚)にぴったり乗る */
@@ -92,10 +96,7 @@ class RectangleParentTest {
     fun child_base_lies_on_parent_D_edge() {
         val parent = base()
         val child = Rectangle(2.0, 3.0, 2.0, nodeA = parent, side = 3)
-        val childBase = child.calcPoint().a
-        val parentEdge = parent.getLine(3)
-        assertTrue(childBase.left.nearBy(parentEdge.left, 0.001), "底辺左 ${childBase.left} != 親D左 ${parentEdge.left}")
-        assertTrue(childBase.right.nearBy(parentEdge.right, 0.001), "底辺右 ${childBase.right} != 親D右 ${parentEdge.right}")
+        assertEdgeSameEndpoints(child.calcPoint().a, parent.getLine(3), "D辺")
     }
 
     /** setNode2(child, 3) で親の node.d が子を指す (D辺スロットの結線) */

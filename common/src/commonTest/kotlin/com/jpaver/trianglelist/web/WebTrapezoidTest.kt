@@ -112,10 +112,11 @@ class WebTrapezoidTest {
         val (rects, _) = figs(doc, trilist, 1f)
         assertEquals(1, rects.size)
         val lp = rects[0].calcPoint()
-        // side=1 = 親のB辺 = Line(pointAB, pointBC) (TriangleUtilitiesExtensions.kt:145-147)
+        // initByParent は親辺を逆走するため、底辺端点は親辺端点と順序不問で一致する
         val parent = trilist.getBy(1)
-        assertTrue(lp.a.left.nearBy(parent.pointAB, 0.001), "底辺左 ${lp.a.left} != 親pointAB ${parent.pointAB}")
-        assertTrue(lp.a.right.nearBy(parent.pointBC, 0.001), "底辺右 ${lp.a.right} != 親pointBC ${parent.pointBC}")
+        val onEdge = (lp.a.left.nearBy(parent.pointAB, 0.001) && lp.a.right.nearBy(parent.pointBC, 0.001)) ||
+                     (lp.a.left.nearBy(parent.pointBC, 0.001) && lp.a.right.nearBy(parent.pointAB, 0.001))
+        assertTrue(onEdge, "底辺 [${lp.a.left}..${lp.a.right}] が親B辺 [${parent.pointAB}..${parent.pointBC}] に乗らない")
     }
 
     /**
@@ -242,6 +243,13 @@ class WebTrapezoidTest {
 
     // ---- 段4-2 (R4): Rectangle を親にする接続 (Rectangle → Rectangle B/C/D)、9 列目 parentKind ----
 
+    // initByParent は親辺を必ず逆走する。底辺端点は親辺端点と順序不問で一致する。
+    private fun assertChildBaseOnEdge(childBase: com.jpaver.trianglelist.editmodel.Line, parentEdge: com.jpaver.trianglelist.editmodel.Line, tag: String) {
+        val fwd = childBase.left.nearBy(parentEdge.left, 0.001) && childBase.right.nearBy(parentEdge.right, 0.001)
+        val rev = childBase.left.nearBy(parentEdge.right, 0.001) && childBase.right.nearBy(parentEdge.left, 0.001)
+        assertTrue(fwd || rev, "$tag 底辺 [${childBase.left}..${childBase.right}] が親辺 [${parentEdge.left}..${parentEdge.right}] に乗らない")
+    }
+
     /** Rectangle チェーン B (side=1=B左脚): rect2 の底辺が rect1.getLine(1) の両端に乗る */
     @Test
     fun rect_to_rect_chain_on_edge_b() {
@@ -250,10 +258,7 @@ class WebTrapezoidTest {
         val trilist = CsvCodec.build(doc)
         val (rects, _) = figs(doc, trilist, 1f)
         assertEquals(2, rects.size, "Rectangle 2 個が構築される")
-        val parentEdge = rects[0].getLine(1)
-        val childBase = rects[1].calcPoint().a
-        assertTrue(childBase.left.nearBy(parentEdge.left, 0.001), "底辺左 ${childBase.left} != 親B辺左 ${parentEdge.left}")
-        assertTrue(childBase.right.nearBy(parentEdge.right, 0.001), "底辺右 ${childBase.right} != 親B辺右 ${parentEdge.right}")
+        assertChildBaseOnEdge(rects[1].calcPoint().a, rects[0].getLine(1), "B辺チェーン")
     }
 
     /** Rectangle チェーン C (side=2=C上辺): rect2 の底辺が rect1.getLine(2) の両端に乗る */
@@ -264,10 +269,7 @@ class WebTrapezoidTest {
         val trilist = CsvCodec.build(doc)
         val (rects, _) = figs(doc, trilist, 1f)
         assertEquals(2, rects.size)
-        val parentEdge = rects[0].getLine(2)
-        val childBase = rects[1].calcPoint().a
-        assertTrue(childBase.left.nearBy(parentEdge.left, 0.001), "底辺左 ${childBase.left} != 親C辺左 ${parentEdge.left}")
-        assertTrue(childBase.right.nearBy(parentEdge.right, 0.001), "底辺右 ${childBase.right} != 親C辺右 ${parentEdge.right}")
+        assertChildBaseOnEdge(rects[1].calcPoint().a, rects[0].getLine(2), "C辺チェーン")
     }
 
     /** Rectangle チェーン D (side=3=D右脚): rect2 の底辺が rect1.getLine(3) の両端に乗る */
@@ -278,10 +280,7 @@ class WebTrapezoidTest {
         val trilist = CsvCodec.build(doc)
         val (rects, _) = figs(doc, trilist, 1f)
         assertEquals(2, rects.size)
-        val parentEdge = rects[0].getLine(3)
-        val childBase = rects[1].calcPoint().a
-        assertTrue(childBase.left.nearBy(parentEdge.left, 0.001), "底辺左 ${childBase.left} != 親D辺左 ${parentEdge.left}")
-        assertTrue(childBase.right.nearBy(parentEdge.right, 0.001), "底辺右 ${childBase.right} != 親D辺右 ${parentEdge.right}")
+        assertChildBaseOnEdge(rects[1].calcPoint().a, rects[0].getLine(3), "D辺チェーン")
     }
 
     /** Rectangle 親も混在通し番号で解決する: 三角形2個の後の Rectangle #1 は mixed #3 */
@@ -297,8 +296,7 @@ class WebTrapezoidTest {
         assertEquals(2, rects.size, "Rectangle 2 個が構築される")
         val parentEdge = rects[0].getLine(2)
         val childBase = rects[1].calcPoint().a
-        assertTrue(childBase.left.nearBy(parentEdge.left, 0.001), "底辺左 ${childBase.left} != 親C辺左 ${parentEdge.left}")
-        assertTrue(childBase.right.nearBy(parentEdge.right, 0.001), "底辺右 ${childBase.right} != 親C辺右 ${parentEdge.right}")
+        assertChildBaseOnEdge(childBase, parentEdge, "混在通し番号C辺")
     }
 
     /** parentKind 省略 (8 列) は親=三角形のまま不変: Rectangle の底辺が親三角形の B 辺に乗る */
@@ -311,8 +309,9 @@ class WebTrapezoidTest {
         assertEquals(1, rects.size)
         val lp = rects[0].calcPoint()
         val parent = trilist.getBy(1)
-        assertTrue(lp.a.left.nearBy(parent.pointAB, 0.001), "8列: 底辺左 ${lp.a.left} != 親pointAB ${parent.pointAB}")
-        assertTrue(lp.a.right.nearBy(parent.pointBC, 0.001), "8列: 底辺右 ${lp.a.right} != 親pointBC ${parent.pointBC}")
+        val onEdge = (lp.a.left.nearBy(parent.pointAB, 0.001) && lp.a.right.nearBy(parent.pointBC, 0.001)) ||
+                     (lp.a.left.nearBy(parent.pointBC, 0.001) && lp.a.right.nearBy(parent.pointAB, 0.001))
+        assertTrue(onEdge, "8列: 底辺 [${lp.a.left}..${lp.a.right}] が親B辺 [${parent.pointAB}..${parent.pointBC}] に乗らない")
     }
 
     /** parentKind=1 だが親が前方参照/範囲外なら独立 fallback */
