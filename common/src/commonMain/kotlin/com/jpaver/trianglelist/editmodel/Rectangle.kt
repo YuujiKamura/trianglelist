@@ -90,7 +90,7 @@ class Rectangle(
                 // 被るので、底辺方向に短辺長 × 20% だけ「同量」オフセットする
                 // (yuuji 2026-06-17 指示: 「短い方の辺を基準に20％ほど辺上にオフセットを同量取ればいい」)
                 val baseDir = g.bl.vectorTo(g.br).normalize()
-                val shift = baseDir.scale(minOf(widthA, widthB) * 0.2)
+                val shift = baseDir.scale(minOf(widthA, widthB) * 0.3)
                 Line(g.midA + shift, g.midC + shift)
             }
             2    -> Line(g.br, g.tr)
