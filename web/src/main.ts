@@ -23,6 +23,8 @@ type TextPrim = {
   field?: string; // 図面枠タイトル欄の識別子 (frame layer のみ、WebFrame.fieldAt)。空欄でも prim が出る
 };
 type CirclePrim = { type: 'circle'; layer: string; cx: number; cy: number; r: number; tri?: number; ded?: number };
+// Rectangle 専用メタ: 描画対象外 (perpFrom 等の識別子)。 main.ts:384 で skip される
+type MetaPrim = { type: 'meta'; kind: 'perp'; tri: number; perpFrom: 'bl' | 'tl' };
 // 三角形の塗り (アプリ MyView.drawEntities:572-576 の写し)。color は CSV 列 10 の index、
 // 実色は FILL_PALETTE が解決する
 type FillPrim = {
@@ -37,7 +39,7 @@ type FillPrim = {
   color: number;
   tri?: number;
 };
-type Prim = LinePrim | TextPrim | CirclePrim | FillPrim;
+type Prim = LinePrim | TextPrim | CirclePrim | FillPrim | MetaPrim;
 
 // Kotlin wasmJs の ESM glue を静的 import してバンドルに乗せる (Vite の正規 module graph)。
 // .wasm 本体は uninstantiated.mjs が fetch('./TriangleList-common-wasm-js.wasm') =
@@ -131,6 +133,7 @@ function bounds(prims: Prim[]): { minX: number; minY: number; maxX: number; maxY
     if (y > maxY) maxY = y;
   };
   for (const p of prims) {
+    if (p.type === 'meta') continue; // meta は識別子のみ、 座標を持たない
     if (p.type === 'line') {
       acc(p.x1, p.y1);
       acc(p.x2, p.y2);
@@ -2118,7 +2121,7 @@ function fabRotate(canvas: HTMLCanvasElement, degrees: number): void {
 // 図形全体 (図面枠を除く) の境界ボックス中央。枠は図形中心に追従して動くので
 // 含めると補正が自己参照になる — 図形本体だけで取る
 function figureCenter(prims: Prim[]): { x: number; y: number } {
-  const b = bounds(prims.filter((p) => p.layer !== 'frame'));
+  const b = bounds(prims.filter((p) => p.type !== 'meta' && p.layer !== 'frame'));
   return { x: (b.minX + b.maxX) / 2, y: (b.minY + b.maxY) / 2 };
 }
 
