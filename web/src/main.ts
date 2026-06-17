@@ -80,6 +80,7 @@ const COLORS: Record<string, string> = {
   dim: '#1a7a1a',
   num: '#1f5fbf',
   guide: '#9aa0a6', // 補助線 (台形の延長=垂線ガイド等) — 点線で薄いグレー
+  ra: '#555555',   // 直角記号 (垂線起点の小正方形) — 実線細い
   ded: '#c0392b', // 控除 = 赤系 (アプリ/DXF の RED 準拠)
   frame: '#8a8a8a', // 図面枠 = 薄グレー (図形より控えめに、DXF では WHITE 相当)
   // 選択/オーバーレイ系 (UI 状態を示す)
@@ -380,6 +381,7 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
 
   for (const p of prims) {
     if (p.type === 'fill') continue; // 塗りは最初のパスで描画済み
+    if (p.type === 'meta') continue; // meta prim は描画対象外 (perpFrom 識別子等の内部情報のみ)
     // 選択中の控除はプリミティブごと色替え (user 指定: 明示的に色替えして見分ける)
     const isSelectedDed = p.layer === 'ded' && dedSelected > 0 && p.ded === dedSelected;
     const color = isSelectedDed ? COLORS.accentOrange : (COLORS[p.layer] ?? '#000000');
@@ -3817,6 +3819,20 @@ if (import.meta.hot) {
           conn: select('newConn').value, ctype: select('newCType').value, lcr: select('newLcr').value,
         },
         shadowLen: shadowPrims ? shadowPrims.length : 0,
+        // 図形ごとの幾何ビュー: 画面を見ずに頂点座標・辺長・接続状態をデバッグできる構造化口。
+        // rows[i] が tri=(i+1) の prims と対応する (1-based tri 番号)。
+        figures: rows.map((r, i) => {
+          const n = i + 1;
+          type Prim = { type: string; layer: string; tri: number; side?: number; x1: number; y1: number; x2: number; y2: number };
+          const lines = (lastPrims as Prim[]).filter(p => p.type === 'line' && p.layer === 'tri' && p.tri === n)
+            .sort((a, b) => (a.side ?? 0) - (b.side ?? 0));
+          const verts = lines.map(l => ({ x: +l.x1.toFixed(6), y: +l.y1.toFixed(6) }));
+          const edgeLengths = lines.map(l => {
+            const dx = l.x2 - l.x1, dy = l.y2 - l.y1;
+            return +(Math.sqrt(dx * dx + dy * dy).toFixed(6));
+          });
+          return { n, kind: r.kind, parent: r.parent, conn: r.conn, connected: r.parent !== '-1', verts, edgeLengths };
+        }),
       },
     });
   });

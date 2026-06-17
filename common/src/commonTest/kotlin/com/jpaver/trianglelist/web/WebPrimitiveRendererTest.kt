@@ -205,4 +205,43 @@ class WebPrimitiveRendererTest {
         val json = WebPrimitiveRenderer.renderCsv(csv, 1f)
         assertEquals(7, count(json, """"ded":1"""), "all deduction prims should carry ded tag")
     }
+
+    @Test
+    fun render_emits_station_flag_when_name_is_present() {
+        // col6 (7番目) is name
+        val named = "1,6.0,5.0,4.0,-1,-1,No.1\n"
+        val json = WebPrimitiveRenderer.renderCsv(named, 1f)
+        // Station Flag: 1 text + 1 line
+        assertTrue(json.contains(""""text":"No.1""""), "station flag text 'No.1' not found")
+        assertTrue(json.contains(""""type":"line","layer":"num""""), "station flag line not found")
+    }
+
+    @Test
+    fun station_flag_angle_flips_with_sokuten_list_vector() {
+        val csv12 = "1,10.0,10.0,10.0,-1,-1,No.1\n2,10.0,10.0,10.0,1,1,No.2\n"
+        val json12 = WebPrimitiveRenderer.renderCsv(csv12, 1f)
+        val angle12 = extractAngle(json12, "No.1")
+
+        val csv21 = "1,10.0,10.0,10.0,-1,-1,No.2\n2,10.0,10.0,10.0,1,1,No.1\n"
+        val json21 = WebPrimitiveRenderer.renderCsv(csv21, 1f)
+        val angle21 = extractAngle(json21, "No.2") // Triangle 1 has No.2 now
+
+        // No.1 -> No.2 (vector=1) vs No.2 -> No.1 (vector=-1) should have 180 deg difference
+        val diff = (angle12 - angle21 + 360.0) % 360.0
+        assertEquals(180.0, diff, 0.01, "Station flag angle should flip 180 deg when station order is reversed")
+    }
+
+    @Test
+    fun render_emits_station_flag_for_rectangle() {
+        val csv = "Rectangle,1,10.0,5.0,5.0,-1,0,0,0,RecStation\n"
+        val json = WebPrimitiveRenderer.renderCsv(csv, 1f)
+        assertTrue(json.contains(""""text":"RecStation""""), "rectangle station flag text not found")
+        assertTrue(json.contains(""""type":"line","layer":"num""""), "rectangle station flag line not found")
+    }
+
+    private fun extractAngle(json: String, text: String): Double {
+        val pattern = """"text":"$text".*?"angle":([-0-9.]+)""".toRegex()
+        val match = pattern.find(json) ?: throw AssertionError("Text '$text' or angle not found in JSON")
+        return match.groupValues[1].toDouble()
+    }
 }

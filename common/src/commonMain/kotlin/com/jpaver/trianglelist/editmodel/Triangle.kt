@@ -289,16 +289,14 @@ class Triangle : EditObject, Cloneable<Triangle> {
     // これで「台形に三角形を接続」が三角形側でも成立する (Rectangle は既に同じ継ぎ目を使う)。
     // side は親の辺番号 (台形 1=B/2=C/3=D、三角形 1=B/2=C)。A長は共有辺の実長になる。
     constructor(parent: EditObject, side: Int, B: Float, C: Float) {
+        // initByParent は既に反転（親辺の終端→始端）した基線を返す。
         val base = initByParent(parent, side)
         val a = base.left.lengthTo(base.right).toFloat()
-        val baseAngle = base.getAngle().toFloat()
-        initBasicArguments(a, B, C, base.left, baseAngle)
-        calcPoints(base.left, baseAngle)
-        // 重なり防止
-        if (apexTowardInterior(parent, base)) {
-            initBasicArguments(a, C, B, base.right, baseAngle + 180f)
-            calcPoints(base.right, baseAngle + 180f)
-        }
+        val start = base.left
+        val angle = base.getAngle().toFloat()
+
+        initBasicArguments(a, B, C, start, angle)
+        calcPoints(start, angle)
     }
 
     /**
@@ -306,41 +304,19 @@ class Triangle : EditObject, Cloneable<Triangle> {
      */
     constructor(parent: EditObject, cParam: ConnParam, B: Float, C: Float) {
         val base = initByParent(parent, cParam.side)
-        val baseAngle = base.getAngle().toFloat()
 
-        // ConnParam 考慮の初期化 (Triangle(ptri, cp, ...) と同じロジックを EditObject へ汎用化)
-        initBasicArguments(cParam.lenA, B, C, base.left, baseAngle)
+        // ConnParam 考慮の初期化
+        initBasicArguments(cParam.lenA, B, C, base.left, base.getAngle().toFloat())
         cParam_ = cParam.clone()
         connectionSide = cParam.side
         connectionType_ = cParam.type
         connectionLCR_ = cParam.lcr
 
         // 二重断面 / フロートのオフセット適用
-        // setOn は引数に Triangle? を取る設計だが、EditObject 親の場合は独立したオフセット処理が必要。
-        // 親種別に依存しないよう initByParent が返した base (Line) を基準に LCR / Type を解決する。
+        // base (initByParent が返した既に反転済みの線) を基準に解決する。
         val l = getBaseOffsetPoint(base, cParam.lenA, cParam.type, cParam.lcr)
         initBasicArguments(cParam.lenA, B, C, l.left, l.getAngle().toFloat())
         calcPoints(l.left, l.getAngle().toFloat())
-
-        // 重なり防止
-        if (apexTowardInterior(parent, base)) {
-            // 反転時は重心ベースで逆側へ (A辺は不変、B↔C 入替)
-            val revCp = cParam.clone()
-            // LCR 反転: Left(0) -> Right(2), Right(2) -> Left(0)
-            revCp.lcr = when(cParam.lcr) {
-                0 -> 2
-                2 -> 0
-                else -> 1
-            }
-            initBasicArguments(cParam.lenA, C, B, base.right, baseAngle + 180f)
-            cParam_ = revCp
-
-            // base の向きを反転させた状態でのオフセットを再計算
-            val revBase = Line(base.right, base.left)
-            val lRev = getBaseOffsetPoint(revBase, revCp.lenA, revCp.type, revCp.lcr)
-            initBasicArguments(revCp.lenA, C, B, lRev.left, lRev.getAngle().toFloat())
-            calcPoints(lRev.left, lRev.getAngle().toFloat())
-        }
     }
 
     /**
@@ -349,40 +325,32 @@ class Triangle : EditObject, Cloneable<Triangle> {
      * type=1 (フロート), type=2 (二重断面), lcr=0(左), 1(中), 2(右)
      */
     private fun getBaseOffsetPoint(base: Line, lenA: Float, type: Int, lcr: Int): Line {
-        // 通常接続 (type=0) なら親の辺をそのまま使う (スライドしない)
-        if (type == 0) {
-            return Line(base.left.clone(), base.right.clone())
-        }
+        // base は既に反転済み (親の終端→始端) である前提。
+        // 通常接続 (type=0) かつ LCR=左(0) なら base そのもの。
         
-        // LCR に応じた基点 (left) のスライド
         val baseLen = base.left.lengthTo(base.right).toFloat()
-        val pLeft = when (lcr) {
-            0 -> base.left.offset(base.right, lenA.toDouble())
-            1 -> base.left.offset(base.right, (baseLen * 0.5f + lenA * 0.5f).toDouble())
-            2 -> base.right.clone()
+        
+        // 基点の決定。lcr=0:左端(base.left), 1:中央, 2:右端(base.right - lenA)
+        // base が既に反転しているので、lcr=0 が親辺の終端（legacy の接続点）になる。
+        val pStart = when (lcr) {
+            0 -> base.left.clone()
+            1 -> base.left.offset(base.right, (baseLen * 0.5 - lenA * 0.5))
+            2 -> base.left.offset(base.right, (baseLen - lenA).toDouble())
             else -> base.left.clone()
         }
         
+        // 方向は base の向きを維持。
+        val angle = base.getAngle()
+        
         // type=2 (二重断面) なら、左側に 1.0 はみ出す
-        val finalPLeft = if (type == 2) {
-            pLeft.crossOffset(base.right, -1.0)
+        val finalPStart = if (type == 2) {
+            pStart.crossOffset(base.right, -1.0)
         } else {
-            pLeft
+            pStart
         }
         
-        // 新しい基線 (角度は base と同じ)
-        return Line(finalPLeft, finalPLeft.offset(lenA.toDouble(), base.getAngle()))
-    }
-
-    // 子三角形の頂点 (pointBC) が親図形の内部を向いているか。base 線に対し「頂点」と「親重心」が
-    // 同じ側 (cross 積が同符号) なら内向き。calcPoints 実行後に呼ぶ (pointBC が確定している前提)。
-    private fun apexTowardInterior(parent: EditObject, base: Line): Boolean {
-        val cp = parent.centroid()
-        val dx = base.right.x - base.left.x
-        val dy = base.right.y - base.left.y
-        val apexSide = dx * (pointBC.y - base.left.y) - dy * (pointBC.x - base.left.x)
-        val centSide = dx * (cp.y - base.left.y) - dy * (cp.x - base.left.x)
-        return apexSide * centSide > 0f
+        // 新しい基線
+        return Line(finalPStart, finalPStart.offset(lenA.toDouble(), angle))
     }
 
     constructor(myParent: Triangle?, dP: InputParameter) {
