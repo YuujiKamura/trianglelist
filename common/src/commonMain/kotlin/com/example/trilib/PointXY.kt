@@ -392,4 +392,17 @@ class PointXY :Cloneable<PointXY> {
         return PointXY(rotatedX, rotatedY)
     }
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is PointXY) return false
+        val range = 0.0001
+        return kotlin.math.abs(x - other.x) < range && kotlin.math.abs(y - other.y) < range
+    }
+
+    override fun hashCode(): Int {
+        var result = x.hashCode()
+        result = 31 * result + y.hashCode()
+        return result
+    }
+
 }

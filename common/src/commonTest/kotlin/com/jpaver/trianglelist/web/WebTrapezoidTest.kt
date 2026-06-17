@@ -82,10 +82,10 @@ class WebTrapezoidTest {
     fun independent_rectangle_emits_four_tri_lines() {
         val json = WebPrimitiveRenderer.renderCsv("Rectangle,1,5,4,3,-1,0\n", 1f)
         assertEquals(4, count(json, """"layer":"tri""""), "Rectangle は 4 辺ちょうど: $json")
-        // 番号サークル 1 + 番号 "1" (三角形0個 → 通し番号の先頭) + 4 寸法 (D 右脚含む)
+        // 番号サークル 1 + 番号 "1" + 3 寸法 (底辺A・上辺C・延長B のみ。斜辺は出さない 2026-06-17)
         assertEquals(1, count(json, """"type":"circle""""))
         assertTrue(json.contains(""""text":"1""""), "番号 1 が出る (三角形からの通し): $json")
-        assertEquals(4, count(json, """"layer":"dim""""), "底辺A・上辺C・延長B + D右脚 の 4 寸法: $json")
+        assertEquals(3, count(json, """"layer":"dim""""), "底辺A・上辺C・延長B の 3 寸法 (斜辺なし): $json")
     }
 
     /** (a)-2 独立 Rectangle の頂点が右台形 (底辺=widthA, 上辺=widthB, 延長=length 直交) になる */
@@ -443,6 +443,53 @@ class WebTrapezoidTest {
         assertTrue(withChild.length > rectOnly.length, "Rectangle 子三角形ぶん DXF が増える")
         assertEquals(count(rectOnly, "AcDbLine") + 3, count(withChild, "AcDbLine"),
             "Rectangle 子三角形の 3 辺ぶん LINE エンティティが増える (DXF に Rectangle 子が出ている): $withChild")
+    }
+
+    /**
+     * DXF の LINE 座標が台形幾何と一致する (座標精度テスト)。
+     * Rectangle,1,length=3,widthA=4,widthB=2,-1,0 (独立, INDEP_TRAP_ANGLE=180) の calcPoint:
+     *   bl=(0,0), br=(-4,≈0), tl=(≈0,-3), tr=(-2,-3)
+     *   ※ br.y と tl.x は sin(π)/cos(-π/2) の浮動小数点誤差で厳密 0 でない (4.9e-13 / 1.8e-13 オーダー)
+     * DXF unitscale=1000 → ×1000。traps_ は trilist の center 移動対象外なので原点起点のまま出る。
+     * 各辺の「非ゼロ」座標値 (widthA/widthB/length が乗る軸) を確認する。
+     */
+    @Test
+    fun dxf_rectangle_line_coordinates_match_geometry() {
+        // 三角形を 1 個混ぜて trilist が非空にする (center 計算が安全になる)
+        val dxf = WebDrawingExport.buildDxfText("1,3.0,4.0,3.0,-1,-1\nRectangle,1,3,4,2,-1,0\n", "")
+        // 底辺A: bl(0,0)→br(-4000,≈0)  ※br.y は sin(π) の丸め誤差で厳密 0 でない
+        assertTrue(dxf.contains("10\n0.0\n20\n0.0\n30\n0.0\n11\n-4000.0\n21"),
+            "底辺A: 始点(0,0) / 終点x=-4000.0 (widthA×1000) が DXF に無い")
+        // 右脚D: br(-4000,≈0)→tr(-2000,-3000)  br.y は誤差 → 始点 x のみ確認、終点は全座標確認
+        val reD = Regex("10\n-4000\\.0\n20\n[^\n]+\n30\n0\\.0\n11\n-2000\\.0\n21\n-3000\\.0")
+        assertTrue(reD.containsMatchIn(dxf),
+            "右脚D: br.x=-4000 → tr(-2000,-3000) (widthB=2, length=3 の組合せ) が DXF に無い")
+        // 上辺C: tr(-2000,-3000)→tl(≈0,-3000)  tl.x は cos(-π/2) の誤差 → 終点 y のみ確認
+        val reC = Regex("10\n-2000\\.0\n20\n-3000\\.0\n30\n0\\.0\n11\n[^\n]+\n21\n-3000\\.0")
+        assertTrue(reC.containsMatchIn(dxf),
+            "上辺C: tr(-2000,-3000) → tl.y=-3000 が DXF に無い")
+        // 左脚B: tl(≈0,-3000)→bl(0,0)  tl.x は誤差 → 終点(0,0) のみ確認
+        val reB = Regex("10\n[^\n]+\n20\n-3000\\.0\n30\n0\\.0\n11\n0\\.0\n21\n0\\.0")
+        assertTrue(reB.containsMatchIn(dxf),
+            "左脚B: tl.y=-3000 → bl(0,0) が DXF に無い")
+    }
+
+    /** SFC の Rectangle 4 辺座標が幾何と一致する (DXF と同じ unitscale=1000、line_feature 形式) */
+    @Test
+    fun sfc_rectangle_line_coordinates_match_geometry() {
+        val sfc = WebDrawingExport.buildSfcText("1,3.0,4.0,3.0,-1,-1\nRectangle,1,3,4,2,-1,0\n", "t.sfc")
+        // 底辺A: bl(0,0)→br(-4000,≈0)  br.y は sin(π) 誤差 → 始点(0,0) と bx=-4000.0 のみ厳密確認
+        val reA = Regex("""line_feature\('[^']+','[^']+','[^']+','[^']+','0\.0','0\.0','-4000\.0','[^']*'\)""")
+        assertTrue(reA.containsMatchIn(sfc), "底辺A: bl(0,0)→br.x=-4000.0 が SFC に無い")
+        // 右脚: br(-4000,≈0)→tr(-2000,-3000)  br.y は誤差 → 始点 x のみ確認
+        val reD = Regex("""line_feature\('[^']+','[^']+','[^']+','[^']+','-4000\.0','[^']*','-2000\.0','-3000\.0'\)""")
+        assertTrue(reD.containsMatchIn(sfc), "右脚: br.x=-4000 → tr(-2000,-3000) が SFC に無い")
+        // 上辺: tr(-2000,-3000)→tl(≈0,-3000)  tl.x は誤差 → 終点 y のみ確認
+        val reC = Regex("""line_feature\('[^']+','[^']+','[^']+','[^']+','-2000\.0','-3000\.0','[^']*','-3000\.0'\)""")
+        assertTrue(reC.containsMatchIn(sfc), "上辺: tr(-2000,-3000) → tl.y=-3000 が SFC に無い")
+        // 左脚: tl(≈0,-3000)→bl(0,0)  tl.x は誤差 → 終点(0,0) のみ確認
+        val reB = Regex("""line_feature\('[^']+','[^']+','[^']+','[^']+','[^']*','-3000\.0','0\.0','0\.0'\)""")
+        assertTrue(reB.containsMatchIn(sfc), "左脚: tl.y=-3000 → bl(0,0) が SFC に無い")
     }
 
     /** SFC でも Rectangle 子三角形が出る */

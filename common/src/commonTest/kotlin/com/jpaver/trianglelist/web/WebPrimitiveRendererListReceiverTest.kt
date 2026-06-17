@@ -105,13 +105,14 @@ class WebPrimitiveRendererListReceiverTest {
     }
 
     @Test
-    fun rectangle_emits_four_dim_specs_when_independent() {
+    fun rectangle_emits_three_dim_specs_when_independent() {
         val list = EditList<EditObject>()
         list.add(Rectangle(5.0, 6.0, 4.0))
         val json = WebPrimitiveRenderer.render(list, ts)
-        // 独立 Rectangle (nodeA=null) → A底辺 / B垂線延長 / C上辺 / D右脚 の 4 寸法
+        // 独立 Rectangle (nodeA=null) → A底辺 / B垂線延長 / C上辺 の 3 寸法。
+        // 斜辺 (D 右脚 / 中央揃え時の左脚) は出さない (2026-06-17 yuuji 指示)。
         val dimTextCount = """"type":"text","layer":"dim"""".toRegex().findAll(json).count()
-        assertEquals(4, dimTextCount, "独立 Rectangle → 寸法 4 (A/B/C/D)")
+        assertEquals(3, dimTextCount, "独立 Rectangle → 寸法 3 (A/B/C、斜辺なし)")
     }
 
     @Test

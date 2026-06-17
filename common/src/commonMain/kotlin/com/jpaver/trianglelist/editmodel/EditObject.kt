@@ -100,7 +100,7 @@ open class EditObject() {
      * 図形の重心 (幾何中心) を vertices() から算出。
      * 子図形を接続する際、 頂点が図形の内側に向いているか (=重なるか) の判定に使う。
      */
-    fun centroid(): PointXY {
+    open fun centroid(): PointXY {
         val vs = vertices()
         if (vs.isEmpty()) return PointXY(0f, 0f)
         var sx = 0.0; var sy = 0.0

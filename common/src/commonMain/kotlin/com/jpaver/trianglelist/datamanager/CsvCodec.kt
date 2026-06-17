@@ -294,6 +294,7 @@ object CsvCodec {
                         else -> Rectangle(l, wa, wb, nodeA = pObj, side = side, alignment = align)
                     }
                     traps.add(rect)
+                    applyRowMeta(c, rect)
                     append(rect)
                 }
                 else -> {
@@ -514,34 +515,39 @@ object CsvCodec {
         else -> 0
     }
 
-    private fun applyRowMeta(c: List<String>, tri: Triangle) {
-        // 測点名 (列6) と色 (列10) — 描画には出ないが bake / XLSX 経路のため保持
-        c.getOrNull(6)?.let { if (it.isNotEmpty()) tri.name = it }
-        c.getOrNull(10)?.toIntOrNull()?.let { tri.setColor(it) }
-        // 番号サークル位置 (列7-9、ユーザー移動時のみ)。座標は絶対値で、flag=true が
-        // recoverState の回転対象から外す
-        if (c.getOrNull(9)?.toBoolean() == true) {
-            val px = c.getOrNull(7)?.toFloatOrNull()
-            val py = c.getOrNull(8)?.toFloatOrNull()
-            if (px != null && py != null) {
-                tri.pointnumber = PointXY(px, py)
-                tri.pointNumber.flag.isMovedByUser = true
-                tri.pointNumber.flag.isAutoAligned = false
+    private fun applyRowMeta(c: List<String>, obj: EditObject) {
+        // 測点名: Triangle は列6、Rectangle は列9
+        val nameIdx = if (c.firstOrNull() == "Rectangle") 9 else 6
+        c.getOrNull(nameIdx)?.let { if (it.isNotEmpty()) obj.name = it }
+
+        if (obj is Triangle) {
+            // 色 (列10)
+            c.getOrNull(10)?.toIntOrNull()?.let { obj.setColor(it) }
+            // 番号サークル位置 (列7-9、ユーザー移動時のみ)。座標は絶対値で、flag=true が
+            // recoverState の回転対象から外す
+            if (c.getOrNull(9)?.toBoolean() == true) {
+                val px = c.getOrNull(7)?.toFloatOrNull()
+                val py = c.getOrNull(8)?.toFloatOrNull()
+                if (px != null && py != null) {
+                    obj.pointnumber = PointXY(px, py)
+                    obj.pointNumber.flag.isMovedByUser = true
+                    obj.pointNumber.flag.isAutoAligned = false
+                }
             }
+            // 寸法アライメント (列11-16)
+            val aligns = (11..16).map { c.getOrNull(it)?.toIntOrNull() }
+            if (aligns.all { it != null }) {
+                obj.setDimAligns(aligns[0]!!, aligns[1]!!, aligns[2]!!, aligns[3]!!, aligns[4]!!, aligns[5]!!)
+            }
+            // 寸法の手動フラグ (列20-21)
+            if (c.getOrNull(21) != null) {
+                obj.dim.flag[1].isMovedByUser = c.getOrNull(20)?.toBoolean() ?: false
+                obj.dim.flag[2].isMovedByUser = c.getOrNull(21)?.toBoolean() ?: false
+            }
+            // 測点アライメント (列26-27)
+            c.getOrNull(26)?.toIntOrNull()?.let { obj.dim.horizontal.s = it }
+            c.getOrNull(27)?.let { obj.dim.flagS.isMovedByUser = it.toBoolean() }
         }
-        // 寸法アライメント (列11-16)
-        val aligns = (11..16).map { c.getOrNull(it)?.toIntOrNull() }
-        if (aligns.all { it != null }) {
-            tri.setDimAligns(aligns[0]!!, aligns[1]!!, aligns[2]!!, aligns[3]!!, aligns[4]!!, aligns[5]!!)
-        }
-        // 寸法の手動フラグ (列20-21)
-        if (c.getOrNull(21) != null) {
-            tri.dim.flag[1].isMovedByUser = c.getOrNull(20)?.toBoolean() ?: false
-            tri.dim.flag[2].isMovedByUser = c.getOrNull(21)?.toBoolean() ?: false
-        }
-        // 測点アライメント (列26-27)
-        c.getOrNull(26)?.toIntOrNull()?.let { tri.dim.horizontal.s = it }
-        c.getOrNull(27)?.let { tri.dim.flagS.isMovedByUser = it.toBoolean() }
     }
 
     /**
