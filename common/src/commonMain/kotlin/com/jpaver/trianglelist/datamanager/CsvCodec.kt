@@ -325,15 +325,19 @@ object CsvCodec {
                                 val cpSide = c.getOrNull(17)?.toIntOrNull()
                                 val cpType = c.getOrNull(18)?.toIntOrNull()
                                 val cpLcr = c.getOrNull(19)?.toIntOrNull()
-                                val cp = if (cpSide != null && cpType != null && cpLcr != null) {
-                                    ConnParam(cpSide, cpType, cpLcr, lengthA * sf)
-                                } else {
-                                    ConnCode.toConnParam(conn, lengthA * sf)
-                                }
-                                val child = if (cp != null) {
-                                    Triangle(pObj as EditObject, cp, lengthB * sf, lengthC * sf)
-                                } else {
-                                    Triangle(pObj, conn, lengthB * sf, lengthC * sf)
+                                        // Rectangle 親: conn は直接 side 番号 (1=B/2=C/3=D)。
+                                // ConnCode に通すと code=3 が「B辺双重断面」と衝突するため、親種別で分岐。
+                                val child = when {
+                                    cpSide != null && cpType != null && cpLcr != null -> {
+                                        val cp = ConnParam(cpSide, cpType, cpLcr, lengthA * sf)
+                                        Triangle(pObj as EditObject, cp, lengthB * sf, lengthC * sf)
+                                    }
+                                    pObj is Rectangle -> Triangle(pObj, conn, lengthB * sf, lengthC * sf)
+                                    else -> {
+                                        val cp = ConnCode.toConnParam(conn, lengthA * sf)
+                                        if (cp != null) Triangle(pObj as EditObject, cp, lengthB * sf, lengthC * sf)
+                                        else Triangle(pObj, conn, lengthB * sf, lengthC * sf)
+                                    }
                                 }
                                 child.parentnumber = parent
                                 child

@@ -7,6 +7,7 @@ import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
@@ -151,6 +152,34 @@ class WebTrapezoidTest {
         val apexSide = dx * (tri.pointBC.y - edge.left.y) - dy * (tri.pointBC.x - edge.left.x)
         val centSide = dx * (cy - edge.left.y) - dy * (cx - edge.left.x)
         assertTrue(apexSide * centSide < 0f, "頂点が Rectangle 内部を向き重なっている: apexSide=$apexSide centSide=$centSide")
+    }
+
+    /**
+     * Triangle が Rectangle の D辺 (side=3) に接続する。
+     * 回帰テスト: conn=3 を ConnCode に通すと「B辺双重断面」に誤解釈されていたバグ。
+     * fix: CsvCodec.buildMixed で pObj is Rectangle のとき conn を直接 side として扱う。
+     */
+    @Test
+    fun triangle_child_of_rectangle_on_d_edge() {
+        // 独立 Rectangle (延長5/底辺10/上辺7) の D辺(side=3) に三角形(B=4,C=4)を接続
+        // parent=1 (Rectangle が混在通し #1)
+        val csv = "Rectangle,1,5,10,7,-1,0\n2,0,4,4,1,3\n"
+        val doc = CsvCodec.parse(csv)
+        val trilist = CsvCodec.build(doc)
+        val (rects, tris) = figs(doc, trilist, 1f)
+        assertEquals(1, rects.size)
+        assertEquals(1, tris.size, "Rectangle D辺を親に三角形が1個建つ")
+        val dEdge = rects[0].getLine(3) // D 右脚
+        val bEdge = rects[0].getLine(1) // B 左脚 (誤接続先)
+        val tri = tris[0]
+        // 底辺が D辺に乗る (順序不問)
+        val onD = (tri.point[0].nearBy(dEdge.left, 0.001) && tri.pointAB.nearBy(dEdge.right, 0.001)) ||
+            (tri.point[0].nearBy(dEdge.right, 0.001) && tri.pointAB.nearBy(dEdge.left, 0.001))
+        // B辺に乗っていないこと (旧バグで誤接続していた辺)
+        val onB = (tri.point[0].nearBy(bEdge.left, 0.001) && tri.pointAB.nearBy(bEdge.right, 0.001)) ||
+            (tri.point[0].nearBy(bEdge.right, 0.001) && tri.pointAB.nearBy(bEdge.left, 0.001))
+        assertFalse(onB, "D辺接続なのに B辺に乗っている — conn=3 が B双重断面に誤解釈されている: p0=${tri.point[0]} pAB=${tri.pointAB} bEdge=$bEdge")
+        assertTrue(onD, "三角形の底辺が Rectangle D辺に乗らない: p0=${tri.point[0]} pAB=${tri.pointAB} dEdge=$dEdge")
     }
 
     /** Rectangle 子三角形が描画される: Rectangle(4辺) + 子三角形(3辺) = tri 線 7 本、 番号サークル 2 */
