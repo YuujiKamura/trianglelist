@@ -63,11 +63,22 @@ open class EditObject() {
         }
     }
 
+    /**
+     * [時計回り展開の原則 / Clockwise Expansion Convention]
+     *
+     * 子図形は親辺を時計回りに継続して外側に展開する:
+     *   - 子の A辺起点 = 親辺の終端 (right)
+     *   - 子の A辺終点 = 親辺の始端 (left)
+     *   - 子の頂点は +90° (右回り) で外側へ伸びる (Rectangle.crossClockwise=90.0)
+     *
+     * 返値の left が接続開始点、getAngle() がそのまま子の進行方向になる。
+     * 実装上は「親辺の forward と逆走」に見えるが、それは結果であって原則ではない。
+     * 原則は「時計回りで外に展開する」こと。
+     */
     fun initByParent(parent: EditObject, side: Int): Line {
-        // 親の形状で場合分けせず、共通契約 (getLine) で 1 本に統一 (user 指針: 場合分けを基底へ吸収)
-        val baseline = parent.getLine(side)
-        parent.setNode2(this,side)
-        return baseline
+        val forward = parent.getLine(side)
+        parent.setNode2(this, side)
+        return Line(forward.right, forward.left)
     }
 
     // ---------- 階層走査ユーティリティ ----------

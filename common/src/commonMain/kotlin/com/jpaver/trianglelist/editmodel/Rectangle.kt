@@ -38,23 +38,13 @@ data class Rectangle(
         var crossClockwise = -90.0
 
         nodeA?.let {
-            var bl = initByParent(it, side)
-            // 重なり防止 (Triangle の apexTowardInterior 相当): 
-            // Rectangle の crossOffset は常に baseline の「左側」へ伸びる。
-            // 親の重心 (centroid) が baseline の「左側」にある場合、親の内部に向かって
-            // 伸びて重なってしまうため、垂直方向だけを反転して外側へ向ける。
-            // baseline 自体を反転すると「子の底辺 = 親の接続辺」の向き込み契約が壊れ、
-            // D 辺接続で子底辺が親 D 辺に乗らなくなる。
-            val cp = it.centroid()
-            val dx = bl.right.x - bl.left.x
-            val dy = bl.right.y - bl.left.y
-            val centSide = dx * (cp.y - bl.left.y) - dy * (cp.x - bl.left.x)
-            if (centSide > 0.0) {
-                crossClockwise = 90.0
-            }
+            // 時計回り展開の原則 (EditObject.initByParent 参照):
+            // initByParent は右回りの起点方向を返す。+90° で外側に展開する。
+            val bl = initByParent(it, side)
             baseline = bl
             basepoint = baseline.left
             angle = baseline.getAngle()
+            crossClockwise = 90.0
         }
 
         // 底辺の実長 (接続時は親辺長になる — その底辺に対して上辺を寄せる)。
@@ -70,7 +60,7 @@ data class Rectangle(
         val topBase = basepoint.offset( alignShift, baseAngle )
 
         val leftB  = topBase.crossOffset( baseline.right, length, crossClockwise )
-        val rightB = leftB.crossOffset( topBase, widthB )
+        val rightB = leftB.crossOffset( topBase, widthB, crossClockwise )
 
         return Line2( baseline, Line(leftB, rightB) )
     }
