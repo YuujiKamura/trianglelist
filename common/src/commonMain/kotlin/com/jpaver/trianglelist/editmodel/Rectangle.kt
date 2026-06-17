@@ -35,7 +35,12 @@ class Rectangle(
     private data class RectangleGeometry(
         val bl: PointXY, val br: PointXY, val tr: PointXY, val tl: PointXY,
         val midA: PointXY, val midC: PointXY,
-        val angle: Double
+        val angle: Double,
+        // 「描画にいる数字」は全部ここで持つ ── 呼び出し側に向き計算をさせない
+        // (yuuji 2026-06-17 指針:「必要な数字は全部エンティティクラス自身がメンバでそろえていれば、ふつうに想起する」)
+        val spine: Line,                  // 垂線 (alignment 込み・中央揃えの短辺×30% shift 込み)
+        val rightAngleMark: Line2,        // 直角記号 (spine 起点・内向き 2 本)
+        val guideLine: Line?              // alignment=0 では null (B 辺と spine が重なる)
     )
 
     private var geoCache: RectangleGeometry? = null
@@ -75,57 +80,49 @@ class Rectangle(
         val midA = bl.calcMidPoint(br)
         val midC = tl.calcMidPoint(tr)
 
-        geoCache = RectangleGeometry(bl, br, tr, tl, midA, midC, curAngle)
+        // 垂線 spine: alignment 別の起点・終点 (中央揃えは番号サークルを避けて短辺×30% shift)
+        val spine = when (alignment) {
+            1    -> {
+                val baseDir = bl.vectorTo(br).normalize()
+                val shift = baseDir.scale(minOf(widthA, widthB) * 0.3)
+                Line(midA + shift, midC + shift)
+            }
+            2    -> Line(br, tr)
+            else -> Line(bl, tl)
+        }
+
+        // 直角記号: spine 起点と spine 方向は確定、内向き 90° の向きも alignment から確定 →
+        //   全 3 点 (p1, p2, p3) を call 時計算なしでここで畳む
+        val sqSize = minOf(widthA, widthB, length) * 0.1
+        val upDir = spine.left.vectorTo(spine.right).normalize()
+        val inDir =
+            if (alignment == 2) PointXY(-upDir.y, upDir.x)   // CCW90 (右寄せ: spine 左側へ)
+            else PointXY(upDir.y, -upDir.x)                  // CW90  (左寄せ・中央: spine 右側へ)
+        val p1 = spine.left + inDir.scale(sqSize)
+        val p3 = spine.left + upDir.scale(sqSize)
+        val p2 = p1 + upDir.scale(sqSize)
+        val rightAngleMark = Line2(Line(p1, p2), Line(p2, p3))
+
+        val guideLine = if (alignment != 0) spine else null
+
+        geoCache = RectangleGeometry(
+            bl, br, tr, tl, midA, midC, curAngle,
+            spine, rightAngleMark, guideLine
+        )
 
         return Line2(Line(bl, br), Line(tl, tr))
     }
 
     private fun geo() = geoCache ?: calcPoint().let { geoCache!! }
 
-    fun getSpine(): Line {
-        val g = geo()
-        return when (alignment) {
-            1    -> {
-                // 中央揃え: 本来は midA → midC が垂線だが、番号サークル (重心) と寸法ラベルが
-                // 被るので、底辺方向に短辺長 × 20% だけ「同量」オフセットする
-                // (yuuji 2026-06-17 指示: 「短い方の辺を基準に20％ほど辺上にオフセットを同量取ればいい」)
-                val baseDir = g.bl.vectorTo(g.br).normalize()
-                val shift = baseDir.scale(minOf(widthA, widthB) * 0.3)
-                Line(g.midA + shift, g.midC + shift)
-            }
-            2    -> Line(g.br, g.tr)
-            else -> Line(g.bl, g.tl)
-        }
-    }
+    /** 垂線 (spine)。中央揃え時の番号サークル回避 shift 込み、起点は底辺との交点。 */
+    fun getSpine(): Line = geo().spine
 
-    /**
-     * 直角記号 (垂線 spine と底辺が直交することを示す小正方形の 2 辺)。
-     * spine.left (底辺との交点 = 起点) に Rectangle 内側向きで描く 2 本のラインを返す。
-     * 描画レイヤ (WebPrimitiveRenderer / 将来の MyView) はこれを呼ぶだけでよく、
-     * 向きや座標を再計算しない (yuuji 2026-06-17 指針:「エンティティに問い合わせたら全部メンバで持ってる形」)。
-     */
-    fun getRightAngleMark(): Pair<Line, Line> {
-        val spine = getSpine()
-        val sqSize = minOf(widthA, widthB, length) * 0.1
-        val upDir = spine.left.vectorTo(spine.right).normalize()
-        // 内側方向 (Rectangle 重心側) — alignment から決定 (重心計算不要):
-        //   0 (左寄せ, spine=左脚): 内側=右 (CW90)
-        //   1 (中央, spine=中点-中点): 両側に Rectangle、慣習で右 (CW90)
-        //   2 (右寄せ, spine=右脚): 内側=左 (CCW90)
-        val baseDir =
-            if (alignment == 2) PointXY(-upDir.y, upDir.x)
-            else PointXY(upDir.y, -upDir.x)
-        val p1 = spine.left + baseDir.scale(sqSize)
-        val p3 = spine.left + upDir.scale(sqSize)
-        val p2 = p1 + upDir.scale(sqSize)
-        return Pair(Line(p1, p2), Line(p2, p3))
-    }
+    /** 直角記号 (spine と底辺の直交を示す小正方形の 2 辺)。Line2 として「描画する 2 本」を返すだけ。 */
+    fun getRightAngleMark(): Line2 = geo().rightAngleMark
 
-    /**
-     * 中央寄せ / 右寄せ時にだけ描く「垂線そのもの」のガイド線 (点線扱い)。
-     * 左寄せ (alignment=0) は左脚 (B辺) と垂線が重なるので不要 → null を返す。
-     */
-    fun getGuideLine(): Line? = if (alignment != 0) getSpine() else null
+    /** 垂線そのもののガイド線。alignment=0 (左寄せ) は B 辺と重なるので null。 */
+    fun getGuideLine(): Line? = geo().guideLine
 
     /** 描画レンダラ向けメタ識別子: 垂線の起点が底辺側 (bl) か上辺側 (tl) か。 */
     val perpFrom: String get() = if (widthA <= widthB) "bl" else "tl"
