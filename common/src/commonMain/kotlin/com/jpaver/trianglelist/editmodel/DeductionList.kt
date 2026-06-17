@@ -2,7 +2,7 @@ package com.jpaver.trianglelist.editmodel
 
 import com.jpaver.trianglelist.viewmodel.InputParameter
 
-class DeductionList : EditList() {
+class DeductionList : EditList<Deduction>() {
     var dedlist_ = ArrayList<Deduction>()
     var current = 0
     var lastTapIndex_ = -1

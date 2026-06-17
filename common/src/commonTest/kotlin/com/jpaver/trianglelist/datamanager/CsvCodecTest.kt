@@ -31,19 +31,20 @@ class CsvCodecTest {
     fun parse_serialize_preserves_everything() {
         val doc = CsvCodec.parse(fullCsv)
         assertEquals(4, doc.preLines.size)
-        assertEquals(2, doc.rows.size)
+        assertEquals(2, doc.figureRows.size)
         assertEquals(15.0f, doc.listAngle!!, 0.001f)
         assertEquals(5.0f, doc.textSize!!, 0.001f) // TextSize は数値として昇格 (ListAngle と同格)
-        assertEquals(1, doc.postLines.size) // ListScale のみ (TextSize は textSize、Deduction は dedRows へ昇格)
+        assertEquals(1.0f, doc.listScale!!, 0.001f) // B04a: ListScale も named field に昇格
+        assertEquals(0, doc.postLines.size) // ListScale は postLines から昇格済み、TextSize/Deduction も別フィールド
         assertEquals(1, doc.dedRows.size)
         assertEquals(13, doc.dedRows[0].chunks.size)
-        assertEquals(28, doc.rows[0].chunks.size)
+        assertEquals(28, doc.figureRows[0].chunks.size)
         // serialize → parse → serialize が固定点 (idempotence)
         val once = CsvCodec.serialize(doc)
         val twice = CsvCodec.serialize(CsvCodec.parse(once))
         assertEquals(once, twice)
         // 行の全トークンが保持される (三角形行・控除行とも)
-        assertEquals(doc.rows[1].chunks, CsvCodec.parse(once).rows[1].chunks)
+        assertEquals(doc.figureRows[1].chunks, CsvCodec.parse(once).figureRows[1].chunks)
         assertEquals(doc.dedRows[0].chunks, CsvCodec.parse(once).dedRows[0].chunks)
     }
 
@@ -94,8 +95,8 @@ class CsvCodecTest {
         val csv = "1,3.0,3.0,3.0,-1,-1" + ",x".repeat(22) + ",FUTURE1,FUTURE2\n" +
             "SomeFutureDirective, 42\n"
         val doc = CsvCodec.parse(csv)
-        assertEquals(30, doc.rows[0].chunks.size)
-        assertEquals("FUTURE2", doc.rows[0].chunks[29])
+        assertEquals(30, doc.figureRows[0].chunks.size)
+        assertEquals("FUTURE2", doc.figureRows[0].chunks[29])
         assertEquals(listOf("SomeFutureDirective, 42"), doc.postLines)
         val out = CsvCodec.serialize(doc)
         assertTrue(out.contains("FUTURE2") && out.contains("SomeFutureDirective, 42"))
@@ -120,7 +121,7 @@ class CsvCodecTest {
         )
         // bake は完全形式 28 列 + ListAngle を書く
         val bakedDoc = CsvCodec.parse(baked)
-        assertEquals(28, bakedDoc.rows[0].chunks.size)
+        assertEquals(28, bakedDoc.figureRows[0].chunks.size)
         assertEquals(10.0f, bakedDoc.listAngle!!, 0.001f)
     }
 
@@ -160,11 +161,11 @@ class CsvCodecTest {
             """{"dims":[{"tri":1,"side":2,"v":3,"h":1}],"numbers":[{"tri":2,"x":9.0,"y":9.5}]}""",
         )
         val baked = CsvCodec.parse(CsvCodec.serialize(CsvCodec.bake(trilist, doc)))
-        val r1 = baked.rows[0].chunks
+        val r1 = baked.figureRows[0].chunks
         assertEquals("1", r1[13]) // dim.horizontal.c ← h override (side=2 は C 辺)
         assertEquals("3", r1[16]) // dim.vertical.c ← v override
         assertEquals("true", r1[21]) // C 辺の override は flag[2] に立つ
-        val r2 = baked.rows[1].chunks
+        val r2 = baked.figureRows[1].chunks
         assertEquals("true", r2[9]) // 番号サークル移動フラグ
         assertEquals(9.0f, r2[7].toFloat(), 0.001f)
         assertEquals(9.5f, r2[8].toFloat(), 0.001f)

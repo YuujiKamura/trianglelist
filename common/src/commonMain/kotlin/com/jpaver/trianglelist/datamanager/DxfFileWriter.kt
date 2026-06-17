@@ -217,6 +217,14 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
             writeDeduction( myDXFDedList.get(number) )
         }
 
+        // Rectangle (台形)。三角形・控除の後に重ねる。番号は三角形からの通し (triCount+idx+1)。
+        // traps_ が空 (app 経路・三角形のみ CSV) なら何も出ず DXF golden 不変
+        for ((i, rect) in traps_.withIndex()) writeRectangle(rect, myDXFTriList.size() + i + 1)
+        // Rectangle を親に持つ Triangle。Rectangle の後に重ねる。番号は三角形 + Rectangle からの通し。
+        // 各 trapTri の mynumber は WebDrawingExport 側で事前にセット済み。
+        // 共有底辺 A の重複表示は元 writeTriangle の (mynumber==1 || connectionSide>2) 判定に委ねる。
+        for (t in trapTris_) writeTriangle(t)
+
         unitscale_ *= printscale_
         activeLayer = "C-TTL-FRAM"
         dxfEntity.setUnitScale(unitscale_)

@@ -160,7 +160,7 @@ class XlsxWriter() {
         }
     }
 
-    fun writeGoukei(rownum: Int, list: EditList, string: String, formulaid: Int, style: CellStyle ){
+    fun writeGoukei(rownum: Int, list: EditList<*>, string: String, formulaid: Int, style: CellStyle ){
         val sumstart = rownum + 1
         val sumend = rownum + list.size()
         val beforesyoukei = sumstart-4

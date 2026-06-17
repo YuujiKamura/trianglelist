@@ -37,6 +37,42 @@ class WebFrameTest {
     }
 
     @Test
+    fun frame_center_matches_mixed_figure_center() {
+        // user 指摘 2026-06-14「混在リスト全体の境界計算してセンタリングするのが出来てない」の pin。
+        // 三角形 + 子台形 (混在) のリストで、枠 bbox 中心 = 全 figure (tri layer 線) bbox 中心 を満たす。
+        // trilist.center だけでは台形・台形子三角形が無視され、figure の重心と枠中心がずれる。
+        val mixedCsv = "1,6.0,5.0,4.0,-1,-1\nRectangle,1,5,10,7,1,1\n"
+
+        // 全 figure (tri layer 線) の bbox 中心 — renderCsv の出力を直接解析
+        val figJson = WebPrimitiveRenderer.renderCsv(mixedCsv, 1f)
+        val figXs = mutableListOf<Double>(); val figYs = mutableListOf<Double>()
+        Regex(""""type":"line","layer":"tri","x1":([-0-9.E]+),"y1":([-0-9.E]+),"x2":([-0-9.E]+),"y2":([-0-9.E]+)""")
+            .findAll(figJson).forEach { m ->
+                figXs.add(m.groupValues[1].toDouble()); figXs.add(m.groupValues[3].toDouble())
+                figYs.add(m.groupValues[2].toDouble()); figYs.add(m.groupValues[4].toDouble())
+            }
+        assertTrue(figXs.isNotEmpty(), "figure tri lines expected: $figJson")
+        val figCx = (figXs.max() + figXs.min()) / 2
+        val figCy = (figYs.max() + figYs.min()) / 2
+
+        // 枠 bbox 中心
+        val frJson = WebFrame.renderFrame(mixedCsv)
+        val frXs = mutableListOf<Double>(); val frYs = mutableListOf<Double>()
+        Regex(""""type":"line","layer":"frame","x1":([-0-9.E]+),"y1":([-0-9.E]+),"x2":([-0-9.E]+),"y2":([-0-9.E]+)""")
+            .findAll(frJson).forEach { m ->
+                frXs.add(m.groupValues[1].toDouble()); frXs.add(m.groupValues[3].toDouble())
+                frYs.add(m.groupValues[2].toDouble()); frYs.add(m.groupValues[4].toDouble())
+            }
+        assertTrue(frXs.isNotEmpty(), "frame lines expected")
+        val frCx = (frXs.max() + frXs.min()) / 2
+        val frCy = (frYs.max() + frYs.min()) / 2
+
+        // 枠中心 = figure 全体中心 (混在リストの境界計算が正しく効いてる)
+        assertEquals(figCx, frCx, 1e-3, "枠 x 中心が figure 全体 x 中心と一致 (frame=$frCx, fig=$figCx)")
+        assertEquals(figCy, frCy, 1e-3, "枠 y 中心が figure 全体 y 中心と一致 (frame=$frCy, fig=$figCy)")
+    }
+
+    @Test
     fun parse_header_skips_meta_rows() {
         // web の serializeState はヘッダの後に ListAngle/TextSize/Deduction 行を出す。
         // ヘッダ 4 行が埋まっていないとき、これらをヘッダ値として誤読しない

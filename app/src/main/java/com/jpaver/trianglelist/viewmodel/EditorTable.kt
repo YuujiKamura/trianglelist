@@ -29,7 +29,7 @@ class EditorTable {
         tV7.setText(tp.pl)
     }
 
-    fun scroll(movement: Int, myList: EditList, secondly: EditTextViewLine, thirdly: EditTextViewLine){
+    fun scroll(movement: Int, myList: EditList<*>, secondly: EditTextViewLine, thirdly: EditTextViewLine){
         val max: Int = myList.size()
         val min = 1
         var current: Int = myList.retrieveCurrent()

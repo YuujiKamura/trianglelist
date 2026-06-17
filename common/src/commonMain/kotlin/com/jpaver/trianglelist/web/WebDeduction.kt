@@ -61,7 +61,7 @@ object WebDeduction {
     fun rotateDeductionLine(line: String, degrees: Float): String {
         val chunks = line.split(",").map { it.trim() }
         if (chunks.firstOrNull() != "Deduction" || chunks.size < 13) return line
-        val doc = CsvCodec.CsvDoc(emptyList(), emptyList(), null, emptyList(), listOf(CsvCodec.CsvRow(chunks)))
+        val doc = CsvCodec.CsvDoc(emptyList(), null, emptyList(), listOf(CsvCodec.CsvRow(chunks)))
         val dedlist = CsvCodec.buildDeductions(doc)
         if (dedlist.size() < 1) return line
         val ded = dedlist.get(1)
@@ -80,7 +80,7 @@ object WebDeduction {
     fun rotateDeductionShape(line: String, degrees: Float): String {
         val chunks = line.split(",").map { it.trim() }
         if (chunks.firstOrNull() != "Deduction" || chunks.size < 13) return line
-        val doc = CsvCodec.CsvDoc(emptyList(), emptyList(), null, emptyList(), listOf(CsvCodec.CsvRow(chunks)))
+        val doc = CsvCodec.CsvDoc(emptyList(), null, emptyList(), listOf(CsvCodec.CsvRow(chunks)))
         val dedlist = CsvCodec.buildDeductions(doc)
         if (dedlist.size() < 1) return line
         val ded = dedlist.get(1)

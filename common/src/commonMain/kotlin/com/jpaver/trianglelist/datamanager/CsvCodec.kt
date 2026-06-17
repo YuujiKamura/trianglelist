@@ -5,11 +5,13 @@ import com.jpaver.trianglelist.editmodel.ConnCode
 import com.jpaver.trianglelist.editmodel.ConnParam
 import com.jpaver.trianglelist.editmodel.Deduction
 import com.jpaver.trianglelist.editmodel.DeductionList
+import com.jpaver.trianglelist.editmodel.EditList
+import com.jpaver.trianglelist.editmodel.EditObject
+import com.jpaver.trianglelist.editmodel.Rectangle
 import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
 import com.jpaver.trianglelist.editmodel.setColor
 import com.jpaver.trianglelist.setDimAligns
-import com.jpaver.trianglelist.setPointNumber
 import com.jpaver.trianglelist.viewmodel.InputParameter
 
 /**
@@ -49,30 +51,51 @@ object CsvCodec {
     }
 
     /**
-     * CSV 文書。preLines = 最初の三角形行より前の行 (ヘッダ等)、postLines = それ以降の
-     * 非三角形行 (ListScale 等)。どちらも原文のまま保持して書き戻す。
+     * CSV 文書。preLines = 最初の図形行より前の行 (ヘッダ等)、postLines = それ以降の
+     * 非図形行 (ListScale 等)。どちらも原文のまま保持して書き戻す。
      * ListAngle 行だけは数値として取り出す (リスト回転の SoT、ADR 0007)。
-     * TextSize 行も同様に昇格 (寸法文字サイズの SoT。アプリ writeCSV:2785 が書き
-     * CsvLoader.readListParameter:404-407 が読む行。単位はアプリの view px、初期値 30)。
-     * dedRows = "Deduction" 先頭の控除行 (ADR 0008 の残課題の昇格)。chunks は列0 =
-     * "Deduction" を含む生の列で、未知の追加列 (14 列目以降) も保持して書き戻す
+     * TextSize 行も同様に昇格 (寸法文字サイズの SoT)。
+     * dedRows = "Deduction" 先頭の控除行。chunks は列0 = "Deduction" を含む生の列。
+     *
+     * figureRows = 三角形 + 台形 (Rectangle) を CSV 出現順で保持する SoT。
+     *   chunks[0] == "Rectangle" → 台形 (Rectangle) 行
+     *   chunks[0].toIntOrNull() != null → 三角形行 (または混在通し番号の台形子三角形行)
+     * user 確定 2026-06-16「まだトレープゾイド言ってんのか、トライトラップとか排除しろと言っただろうに」
+     * ── CSV タグは Rectangle 1 種 (Kotlin class 名と一致)、後方互換も切る。
+     * B-FORCE: rows/trapRows/trapParentedTriRows バケツ廃止 (2026-06-15)。figureRows が唯一の SoT。
      */
     data class CsvDoc(
         val preLines: List<String>,
-        val rows: List<CsvRow>,
         val listAngle: Float?,
         val postLines: List<String>,
         val dedRows: List<CsvRow> = emptyList(),
         val textSize: Float? = null,
+        // B04a: ListScale を named field に昇格 (旧: postLines に生文字列として残存)。
+        val listScale: Float? = null,
+        // 全図形行 (三角形 + 台形 + 台形子三角形) を CSV 出現順で保持する。種別は chunks[0] で判断。
+        val figureRows: List<CsvRow> = emptyList(),
     )
+
+    /**
+     * 独立台形 (parent=-1) の構築向き (度)。三角形の独立は Triangle(...,180f) で add され
+     * recoverState で angle-180 = -180° 回るので、最終実効向きは「底辺が +x・本体が -y (下垂れ)」。
+     * 台形は trilist 外なので recoverState を受けない。本体を三角形と同じ下向きに揃えるため 180°
+     * (= 底辺 -x・本体 -y) で構築する。段1 の独立向きの SoT。目視で最終確定する値 (B1 検証4)。
+     */
+    const val INDEP_TRAP_ANGLE = 180.0
 
     fun parse(text: String): CsvDoc {
         val preLines = mutableListOf<String>()
         val postLines = mutableListOf<String>()
-        val rows = mutableListOf<CsvRow>()
         val dedRows = mutableListOf<CsvRow>()
+        val figureRows = mutableListOf<CsvRow>()
         var listAngle: Float? = null
         var textSize: Float? = null
+        var listScale: Float? = null  // B04a: named field に昇格
+        // B-FORCE: 三角形カウントは「普通三角形行」を追跡するためだけに使う
+        // (parent が三角形数を超えていれば台形 (Rectangle) 親の混在通し番号と解釈するため)
+        var triCount = 0
+        var hasFigure = false  // 最初の図形行より前を preLines、以降の非図形行を postLines に振る
         for (line in text.lineSequence()) {
             if (line.isBlank()) continue
             val chunks = line.split(",").map { it.trim() }
@@ -84,26 +107,51 @@ object CsvCodec {
                 textSize = chunks.getOrNull(1)?.toFloatOrNull() ?: textSize
                 continue
             }
+            // B04a: ListScale を named field に昇格 (postLines に落とさない)
+            if (chunks.firstOrNull() == "ListScale") {
+                listScale = chunks.getOrNull(1)?.toFloatOrNull() ?: listScale
+                continue
+            }
             if (chunks.firstOrNull() == "Deduction") {
                 dedRows.add(CsvRow(chunks))
                 continue
             }
-            val number = if (chunks.size >= 4) chunks[0].toIntOrNull() else null
-            if (number == null || number < 0) {
-                (if (rows.isEmpty()) preLines else postLines).add(line)
+            if (chunks.firstOrNull() == "Rectangle") {
+                hasFigure = true
+                figureRows.add(CsvRow(chunks))
                 continue
             }
-            rows.add(CsvRow(chunks))
+            val number = if (chunks.size >= 4) chunks[0].toIntOrNull() else null
+            if (number == null || number < 0) {
+                (if (!hasFigure) preLines else postLines).add(line)
+                continue
+            }
+            hasFigure = true
+            // user 確定 2026-06-16「親がどうとかでデータ型を分けるな、 トライトラップとか排除しろ」
+            // ── Triangle 行は parent (混在通し番号) で親種別を解決する 1 種類のみ。
+            // CSV タグは Rectangle のみ、 TriTrap タグは完全廃止 (後方互換も切る)。
+            // triCount は build() の trilist.size() 上限判定にだけ使う。
+            figureRows.add(CsvRow(chunks))
+            val parentIdx = chunks.getOrNull(4)?.toIntOrNull() ?: -1
+            // 普通三角形 (parent が三角形数以内、 つまり親が Triangle) のときだけ triCount を進める。
+            // parent が三角形数を超える Triangle 行は build() で skip され buildMixed で構築される。
+            if (parentIdx <= triCount) triCount++
         }
-        return CsvDoc(preLines, rows, listAngle, postLines, dedRows, textSize)
+        return CsvDoc(preLines, listAngle, postLines, dedRows, textSize, listScale, figureRows)
     }
 
     fun serialize(doc: CsvDoc): String {
         val sb = StringBuilder()
         doc.preLines.forEach { sb.append(it).append('\n') }
-        doc.rows.forEach { sb.append(it.chunks.joinToString(",")).append('\n') }
-        // アプリ writeCSV と同じく三角形行の後に書く。値の書式 ("ListAngle, x") も同一
+        // figureRows を CSV 出現順に書く。 user 確定 2026-06-16「TriTrap タグ排除」
+        // ── 台形は Rectangle タグ、 台形子三角形は普通三角形行 (parent = 混在通し番号) で書く。
+        for (row in doc.figureRows) {
+            sb.append(row.chunks.joinToString(",")).append('\n')
+        }
+        // アプリ writeCSV と同じく図形行の後に書く。値の書式 ("ListAngle, x") も同一
         doc.listAngle?.let { sb.append("ListAngle, ").append(it).append('\n') }
+        // B04a: ListScale を named field から書き出す (postLines には残らない)
+        doc.listScale?.let { sb.append("ListScale, ").append(it).append('\n') }
         doc.postLines.forEach { sb.append(it).append('\n') }
         // アプリ writeCSV:2785 と同じ書式・同じ位置 (ListScale 等 postLines の後)
         doc.textSize?.let { sb.append("TextSize, ").append(it).append('\n') }
@@ -113,19 +161,27 @@ object CsvCodec {
     }
 
     /**
-     * CsvDoc → TriangleList。3 phases:
+     * CsvDoc → TriangleList。figureRows を走査して三角形のみを構築する。
+     * 台形 (Rectangle) は figureRows に保持されているが、build() は三角形パイプラインに集中し、
+     * Rectangle は buildMixed() が扱う。 user 確定 2026-06-16: CSV タグは Rectangle 1 種 (TriTrap タグ廃止)。
+     *
+     * 3 phases:
      *   1. 幾何構築 — 180° 基底で add (自動配置 setDimsUnconnectedSideToOuter を含む)
-     *   2. 手動配置・メタの復元 — 全行 add の後に当てる (CsvLoader の行ごと finalize と違い、
-     *      後続の子の add が先行行の保存値を潰せない)
-     *   3. リスト回転 — recoverState で絶対角度へ (アプリ load 経路と同一、ADR 0007)
+     *   2. 手動配置・メタの復元 — 全行 add の後に当てる
+     *   3. リスト回転 — recoverState で絶対角度へ (ADR 0007)
      */
-    fun build(doc: CsvDoc): TriangleList {
+    // B05: applyRecoverState default=true で後方互換。Android は false で呼び二重回転を回避。
+    fun build(doc: CsvDoc, applyRecoverState: Boolean = true): TriangleList {
         val trilist = TriangleList()
         val built = mutableListOf<Pair<CsvRow, Triangle>>()
 
         // phase 1: 幾何構築 (CsvLoader.buildTriangle と同じ分岐)
-        for (row in doc.rows) {
+        // figureRows から三角形行 (Rectangle 以外) のみ処理する
+        for (row in doc.figureRows) {
             val c = row.chunks
+            // Rectangle 行はスキップ (buildMixed() が扱う)
+            val tag = c.firstOrNull()
+            if (tag == "Rectangle") continue
             val lengthA = c.getOrNull(1)?.toFloatOrNull() ?: continue
             val lengthB = c.getOrNull(2)?.toFloatOrNull() ?: continue
             val lengthC = c.getOrNull(3)?.toFloatOrNull() ?: continue
@@ -146,7 +202,7 @@ object CsvCodec {
                 } else {
                     ConnCode.toConnParam(conn, lengthA) ?: continue
                 }
-                trilist.add(Triangle(ptri, cp, lengthB, lengthC), true)
+                trilist.add(Triangle(ptri as Triangle?, cp, lengthB, lengthC), true)
             }
             val tri = trilist.getBy(trilist.size())
             tri.connectionSide = conn
@@ -158,9 +214,148 @@ object CsvCodec {
 
         // phase 3: リスト回転。行が無い CSV も angle=0 → -180° でアプリと同じ向き
         trilist.angle = doc.listAngle ?: 0f
-        trilist.recoverState(PointXY(0f, 0f))
+        // B05: Android は setEditLists 内で recoverState を呼ぶため false で渡して二重回転を回避
+        if (applyRecoverState) trilist.recoverState(PointXY(0f, 0f))
         return trilist
     }
+
+    /**
+     * figureRows から Rectangle (台形) と Triangle (台形子三角形を含む) を混在 EditList に構築する。
+     * user 確定 2026-06-16「親がどうとかでデータ型を分けるな、 トライトラップとか排除しろ」 ──
+     * CSV タグは Rectangle 1 種、 台形子三角形は普通 Triangle 行で parent=混在通し番号で表現。
+     *
+     * trilist は build(doc) で構築済みを渡す。CSV の parent は原則として figureRows の混在通し番号。
+     * buildMixed はその番号から EditObject を引き、接続自体は EditObject.getLine(side) / initByParent に委譲する。
+     * scale は三角形と同じ実効倍率。
+     *
+     * 戻り値: 混在 EditList<EditObject> ── 全 Triangle/Rectangle が同じ list に存在 (figureRows 順)。
+     * caller が分離したい場合は filterIsInstance<Rectangle>() / Triangle.
+     */
+    fun buildMixed(doc: CsvDoc, trilist: TriangleList, scale: Float = 1f): EditList<EditObject> {
+        val mixed = EditList<EditObject>()
+        val s = if (scale > 0f) scale.toDouble() else 1.0
+        val sf = if (scale > 0f) scale else 1f
+        val mixedObjects = mutableListOf<EditObject>()
+        val traps = mutableListOf<Rectangle>()
+        val trapTris = mutableListOf<Triangle>()
+        var triIdx = 0  // build(doc) に含まれる通常 Triangle 行の pull 位置
+
+        fun mixedByNumber(number: Int): EditObject? =
+            if (number in 1..mixedObjects.size) mixedObjects[number - 1] else null
+
+        // 旧 CSV 互換: RectChild 廃止移行中の parent = trilist.size() + Rectangle idx 形式。
+        // 新規経路は mixedByNumber(parent) で解決する。
+        fun legacyCompositeParent(number: Int): EditObject? {
+            val target = number - trilist.size()
+            val ntrap = traps.size
+            return when {
+                target in 1..ntrap -> traps[target - 1]
+                target > ntrap && (target - ntrap - 1) in trapTris.indices -> trapTris[target - ntrap - 1]
+                else -> null
+            }
+        }
+
+        fun append(obj: EditObject) {
+            mixed.add(obj)
+            mixedObjects.add(obj)
+        }
+
+        fun pullTriangle(): Triangle? {
+            triIdx += 1
+            return if (triIdx <= trilist.size()) trilist.getBy(triIdx) else null
+        }
+
+        for (row in doc.figureRows) {
+            val c = row.chunks
+            when (c.firstOrNull()) {
+                "Rectangle" -> {
+                    val length = c.getOrNull(2)?.toFloatOrNull() ?: continue
+                    val widthA = c.getOrNull(3)?.toFloatOrNull() ?: continue
+                    val widthB = c.getOrNull(4)?.toFloatOrNull() ?: continue
+                    val parent = c.getOrNull(5)?.toIntOrNull() ?: -1
+                    val side = c.getOrNull(6)?.toIntOrNull() ?: 0
+                    val align = c.getOrNull(7)?.toIntOrNull() ?: 0
+                    val parentKind = c.getOrNull(8)?.toIntOrNull() ?: 0
+                    val l = length * s; val wa = widthA * s; val wb = widthB * s
+                    fun indep() = Rectangle(l, wa, wb, angle = INDEP_TRAP_ANGLE + (doc.listAngle ?: 0f), basepoint = PointXY(0f, 0f), alignment = align)
+                    fun parentObject(): EditObject? {
+                        if (parent < 1) return null
+                        // Primary schema: parent is the mixed figure number, independent of shape kind.
+                        mixedByNumber(parent)?.let { return it }
+                        // Compatibility for older Rectangle-on-Rectangle rows where parentKind=1 used local Rectangle number.
+                        if (parentKind == 1) traps.getOrNull(parent - 1)?.let { return it }
+                        // Compatibility for old triangle-parent rows whose parent number targeted the prebuilt TriangleList.
+                        return if (parent in 1..trilist.size()) trilist.getBy(parent) else null
+                    }
+                    val pObj = parentObject()
+                    val rect = when {
+                        parent < 1 -> indep()
+                        pObj == null -> indep()
+                        else -> Rectangle(l, wa, wb, nodeA = pObj, side = side, alignment = align)
+                    }
+                    traps.add(rect)
+                    append(rect)
+                }
+                else -> {
+                    val lengthA = c.getOrNull(1)?.toFloatOrNull() ?: continue
+                    val lengthB = c.getOrNull(2)?.toFloatOrNull() ?: continue
+                    val lengthC = c.getOrNull(3)?.toFloatOrNull() ?: continue
+                    val parent = c.getOrNull(4)?.toIntOrNull() ?: -1
+                    val conn = c.getOrNull(5)?.toIntOrNull() ?: -1
+
+                    // 二重構築の撤廃 (2026-06-16): build(doc) が trilist に積む普通三角形 (独立 or 親が
+                    // 「ここまでに積んだ三角形」) は、recoverState/scale/override/番号まで処理済みの
+                    // インスタンスをそのまま再利用する。build() と同一判定 (parent in 1..triIdx) で同期。
+                    // Rectangle 子三角形 (親が混在通し番号で trilist 外) のみ従来どおり新規構築する。
+                    val isTrilistTri = conn < 1 || parent in 1..triIdx
+                    val reused = if (isTrilistTri) pullTriangle() else null
+                    if (reused != null) {
+                        append(reused)
+                    } else {
+                        fun indep() = Triangle(lengthA * sf, lengthB * sf, lengthC * sf, PointXY(0f, 0f), 180f)
+                        val tri = if (conn < 1 || parent < 1) {
+                            indep()
+                        } else {
+                            // 混在通し番号で親を探す
+                            val pObj = mixedByNumber(parent)
+                            if (pObj == null) {
+                                indep() // 親が見つからなければ独立に
+                            } else {
+                                // 完全形式 (列 17-19 = cp.side/type/lcr) の読み取り
+                                val cpSide = c.getOrNull(17)?.toIntOrNull()
+                                val cpType = c.getOrNull(18)?.toIntOrNull()
+                                val cpLcr = c.getOrNull(19)?.toIntOrNull()
+                                val cp = if (cpSide != null && cpType != null && cpLcr != null) {
+                                    ConnParam(cpSide, cpType, cpLcr, lengthA * sf)
+                                } else {
+                                    ConnCode.toConnParam(conn, lengthA * sf)
+                                }
+                                val child = if (cp != null) {
+                                    Triangle(pObj as EditObject, cp, lengthB * sf, lengthC * sf)
+                                } else {
+                                    Triangle(pObj, conn, lengthB * sf, lengthC * sf)
+                                }
+                                child.parentnumber = parent
+                                child
+                            }
+                        }
+                        tri.connectionSide = conn
+                        applyRowMeta(c, tri)
+                        append(tri)
+                    }
+                }
+            }
+        }
+        return mixed
+    }
+
+    /**
+     * SoT 一本化 (2026-06-15): buildMixed の thin wrapper、 build() を呼んで trilist を作ってから委譲。
+     * 既存 caller (= CsvCodecBuildAllTest) は無変更で動く。 外側で setScale / applyJson 等の変形を入れたい
+     * 経路 (= WebPrimitiveRenderer.renderCsv) は build() と buildMixed() を直接呼ぶ。
+     */
+    fun buildAll(doc: CsvDoc, scale: Float = 1f, applyRecoverState: Boolean = true): EditList<EditObject> =
+        buildMixed(doc, build(doc, applyRecoverState), scale)
 
     /**
      * dedRows → DeductionList。アプリの CsvLoader.buildDeductions (CsvLoader.kt:369-392、
@@ -173,8 +368,66 @@ object CsvCodec {
      * 対話回転 (fabRotate:1584-1591) は別経路で、web では行の座標書き換え
      * (WebDeduction.rotateDeductionLine) が担う
      */
-    fun buildDeductions(doc: CsvDoc): DeductionList {
+    // B02: 既存 1 引数版は 2 引数版 (viewscale=1f) へのラッパー。後方互換維持。
+    fun buildDeductions(doc: CsvDoc): DeductionList = buildDeductions(doc, viewscale = 1f)
+
+    // B-FORCE (2026-06-15): Rectangle 系の旧 build 関数群 / buildMixed / MixedBuild を廃止。
+    // 後継は buildMixed(doc, trilist, scale) — figureRows を 1 ループで全図形種別を処理する。
+
+    // -------------------------------------------------------------------------
+    // B01: extractHeader / bakeHeader
+    // -------------------------------------------------------------------------
+
+    /**
+     * CsvDoc.preLines から koujiname/rosenname/gyousyaname/zumennum を構造化して返す。
+     * 旧 CsvLoader.readCsvHeaderLines:347-358 相当。後勝ち (同名行が複数あれば最後を使う)。
+     */
+    fun extractHeader(doc: CsvDoc): HeaderValues {
+        val h = HeaderValues()
+        for (line in doc.preLines) {
+            val chunks = line.split(",").map { it.trim() }
+            if (chunks.size < 2) continue
+            when (chunks[0]) {
+                "koujiname"   -> h.koujiname   = chunks[1]
+                "rosenname"   -> h.rosenname   = chunks[1]
+                "gyousyaname" -> h.gyousyaname = chunks[1]
+                "zumennum"    -> h.zumennum    = chunks[1]
+            }
+        }
+        return h
+    }
+
+    /**
+     * HeaderValues を CsvDoc.preLines の先頭 4 行として書き込む。
+     * 既存の同名行は filter で除去してから先頭に挿入するので重複しない。
+     * BOM 付きコメント等の非ヘッダ行は末尾に残る。
+     */
+    fun bakeHeader(values: HeaderValues, doc: CsvDoc): CsvDoc {
+        val headerKeys = setOf("koujiname", "rosenname", "gyousyaname", "zumennum")
+        val cleaned = doc.preLines.filter { line ->
+            line.split(",").firstOrNull()?.trim() !in headerKeys
+        }
+        val newPre = listOf(
+            "koujiname, ${values.koujiname}",
+            "rosenname, ${values.rosenname}",
+            "gyousyaname, ${values.gyousyaname}",
+            "zumennum, ${values.zumennum}",
+        ) + cleaned
+        return doc.copy(preLines = newPre)
+    }
+
+    // -------------------------------------------------------------------------
+    // B02: buildDeductions(doc, viewscale) overload
+    // -------------------------------------------------------------------------
+
+    /**
+     * viewscale 引数付き overload。旧 CsvLoader.buildDeductions:369-392 相当。
+     * Android は viewscale != 1 で動くため、point/pointFlag を viewscale 倍して
+     * ビュー空間に合わせる。viewscale=1f (デフォルト) は既存 1 引数版と完全等価。
+     */
+    fun buildDeductions(doc: CsvDoc, viewscale: Float): DeductionList {
         val dedlist = DeductionList()
+        val s = if (viewscale > 0f) viewscale.toDouble() else 1.0
         for (row in doc.dedRows) {
             val c = row.chunks
             val num = c.getOrNull(1)?.toIntOrNull() ?: continue
@@ -192,8 +445,8 @@ object CsvCodec {
                         c.getOrNull(2) ?: "", type, num,
                         lengthX, lengthY, 0f,
                         pn, typeToInt(type),
-                        PointXY(px, -py),
-                        PointXY(fx, -fy),
+                        PointXY(px, -py).scale(s),
+                        PointXY(fx, -fy).scale(s),
                     )
                 )
             )
@@ -201,6 +454,53 @@ object CsvCodec {
             if (!sa.isNullOrEmpty()) sa.toDoubleOrNull()?.let { dedlist.get(dedlist.size()).shapeAngle = it }
         }
         return dedlist
+    }
+
+    // -------------------------------------------------------------------------
+    // B03: bakeDeductions(dedlist, doc, viewscale)
+    // -------------------------------------------------------------------------
+
+    /**
+     * 編集後の DeductionList を CsvDoc.dedRows に焼き直す。
+     * 旧 MainActivity.writeCSV:2790-2798 相当。viewscale の逆数で実寸・y 反転して書く。
+     * viewscale=1f のとき既存 dedRows と同値になる (round-trip 等価)。
+     */
+    fun bakeDeductions(dedlist: DeductionList, doc: CsvDoc, viewscale: Float): CsvDoc {
+        val s = if (viewscale > 0f) viewscale.toDouble() else 1.0
+        val newDedRows = (1..dedlist.size()).map { i ->
+            val dd = dedlist.get(i)
+            val pAt = dd.point.scale(PointXY(0f, 0f), 1.0 / s, -1.0 / s)
+            val fAt = dd.pointFlag.scale(PointXY(0f, 0f), 1.0 / s, -1.0 / s)
+            CsvRow(listOf(
+                "Deduction", "${dd.num}", dd.name, "${dd.lengthX}", "${dd.lengthY}",
+                "${dd.overlap_to}", dd.type, "${dd.angle}",
+                "${pAt.x}", "${pAt.y}", "${fAt.x}", "${fAt.y}", "${dd.shapeAngle}",
+            ))
+        }
+        return doc.copy(dedRows = newDedRows)
+    }
+
+    // -------------------------------------------------------------------------
+    // B04: applyListParams(doc, trilist, setTextSize)
+    // -------------------------------------------------------------------------
+
+    /**
+     * CsvDoc 内の TextSize / ListScale をアプリ状態に適用する。
+     * 旧 CsvLoader.readListParameter:394-409 相当。listAngle は build() 内適用済みなので触らない。
+     * setTextSize は MyView の textSize setter を渡す (Android 専用経路; Web は別途扱う)。
+     * ListScale: doc.listScale (named field) を優先し、fallback で postLines から探す (後方互換)。
+     */
+    fun applyListParams(
+        doc: CsvDoc,
+        trilist: TriangleList,
+        setTextSize: (Float) -> Unit,
+    ) {
+        doc.textSize?.let { setTextSize(it) }
+        val scale = doc.listScale ?: doc.postLines.firstNotNullOfOrNull { line ->
+            val chunks = line.split(",").map { it.trim() }
+            if (chunks.getOrNull(0) == "ListScale") chunks.getOrNull(1)?.toFloatOrNull() else null
+        }
+        scale?.let { trilist.setScale(PointXY(0f, 0f), it) }
     }
 
     /** MainActivity.typeToInt:924-929 と同写像 */
@@ -219,7 +519,11 @@ object CsvCodec {
         if (c.getOrNull(9)?.toBoolean() == true) {
             val px = c.getOrNull(7)?.toFloatOrNull()
             val py = c.getOrNull(8)?.toFloatOrNull()
-            if (px != null && py != null) tri.setPointNumber(PointXY(px, py), true)
+            if (px != null && py != null) {
+                tri.pointnumber = PointXY(px, py)
+                tri.pointNumber.flag.isMovedByUser = true
+                tri.pointNumber.flag.isAutoAligned = false
+            }
         }
         // 寸法アライメント (列11-16)
         val aligns = (11..16).map { c.getOrNull(it)?.toIntOrNull() }
@@ -243,28 +547,87 @@ object CsvCodec {
      * preLines/postLines は元文書から引き継ぐ (ヘッダ・Deduction 等の素通し)
      */
     fun bake(trilist: TriangleList, original: CsvDoc): CsvDoc {
-        val rows = (1..trilist.size()).map { i ->
-            val mt = trilist.getBy(i)
-            val pn = mt.pointnumber
-            val cp = ConnCode.toConnParam(mt.connectionSide, mt.lengthNotSized[0], mt.cParam_.lcr)
-                ?: mt.cParam_
-            CsvRow(
-                listOf(
-                    "${mt.mynumber}", "${mt.lengthA_}", "${mt.lengthB_}", "${mt.lengthC_}",
-                    "${mt.parentnumber}", "${mt.connectionSide}",
-                    mt.name, "${pn.x}", "${pn.y}", "${mt.pointNumber.flag.isMovedByUser}",
-                    "${mt.mycolor}",
-                    "${mt.dim.horizontal.a}", "${mt.dim.horizontal.b}", "${mt.dim.horizontal.c}",
-                    "${mt.dim.vertical.a}", "${mt.dim.vertical.b}", "${mt.dim.vertical.c}",
-                    "${cp.side}", "${cp.type}", "${cp.lcr}",
-                    "${mt.dim.flag[1].isMovedByUser}", "${mt.dim.flag[2].isMovedByUser}",
-                    "${mt.angle}", "${mt.pointCA.x}", "${mt.pointCA.y}", "${mt.angleInLocal_}",
-                    "${mt.dim.horizontal.s}", "${mt.dim.flagS.isMovedByUser}",
-                )
-            )
+        // 三角形行を完全形式 28 列で再構築する。
+        val triRows = (1..trilist.size()).map { i -> rowForTriangle(trilist.getBy(i)) }
+        // figureRows を再構築: 三角形行は triRows で置き換え、Rectangle 行は素通し。
+        // user 確定 2026-06-16: CSV タグは Rectangle 1 種 (Trapezoid / TriTrap タグ廃止)。
+        var triIdx = 0
+        val newFigureRows = original.figureRows.map { row ->
+            val tag = row.chunks.firstOrNull()
+            if (tag == "Rectangle") {
+                row  // Rectangle は元の行をそのまま保持
+            } else {
+                triRows.getOrElse(triIdx) { row }.also { triIdx++ }
+            }
         }
-        // dedRows は素通し (控除は TriangleList の外。web の編集は行の置換/追加で dedRows 自体を更新する)。
-        // textSize も素通し (model は持たない値、文書レベルで保持)
-        return CsvDoc(original.preLines, rows, trilist.angle, original.postLines, original.dedRows, original.textSize)
+        // dedRows は素通し。B04a: listScale を trilist.scale から取得して named field に書き込む。
+        return CsvDoc(
+            original.preLines, trilist.angle, original.postLines, original.dedRows, original.textSize,
+            trilist.scale,  // listScale
+            newFigureRows,
+        )
+    }
+
+    /**
+     * mixed EditList を WebPrimitiveRenderer と同じ図形通し番号で焼く。通常 Triangle は
+     * TriangleList と同じインスタンス、Rectangle 子 Triangle は mixed 側だけに存在するため、
+     * Web UI の override を CSV 行へ戻す経路ではこちらを使う。
+     */
+    fun bakeMixed(list: EditList<EditObject>, original: CsvDoc, listAngle: Float?, listScale: Float?): CsvDoc {
+        val newFigureRows = original.figureRows.mapIndexed { idx, row ->
+            if (row.chunks.firstOrNull() == "Rectangle") {
+                row
+            } else {
+                val obj = if (idx + 1 in 1..list.size()) list.get(idx + 1) else null
+                val number = row.chunks.firstOrNull()?.toIntOrNull()
+                if (obj is Triangle) rowForTriangle(obj, number ?: obj.mynumber) else row
+            }
+        }
+        return CsvDoc(
+            original.preLines, listAngle ?: original.listAngle, original.postLines, original.dedRows,
+            original.textSize, listScale ?: original.listScale, newFigureRows,
+        )
+    }
+
+    private fun rowForTriangle(mt: Triangle, number: Int = mt.mynumber): CsvRow {
+        val pn = mt.pointnumber
+        val cp = ConnCode.toConnParam(mt.connectionSide, mt.lengthNotSized[0], mt.cParam_.lcr)
+            ?: mt.cParam_
+        return CsvRow(
+            listOf(
+                "$number", "${mt.lengthA_}", "${mt.lengthB_}", "${mt.lengthC_}",
+                "${mt.parentnumber}", "${mt.connectionSide}",
+                mt.name, "${pn.x}", "${pn.y}", "${mt.pointNumber.flag.isMovedByUser}",
+                "${mt.mycolor}",
+                "${mt.dim.horizontal.a}", "${mt.dim.horizontal.b}", "${mt.dim.horizontal.c}",
+                "${mt.dim.vertical.a}", "${mt.dim.vertical.b}", "${mt.dim.vertical.c}",
+                "${cp.side}", "${cp.type}", "${cp.lcr}",
+                "${mt.dim.flag[1].isMovedByUser}", "${mt.dim.flag[2].isMovedByUser}",
+                "${mt.angle}", "${mt.pointCA.x}", "${mt.pointCA.y}", "${mt.angleInLocal_}",
+                "${mt.dim.horizontal.s}", "${mt.dim.flagS.isMovedByUser}",
+            )
+        )
+    }
+
+    /**
+     * Android 用 combined bake (B08): trilist + dedlist + header + original を
+     * 1 呼び出しで CsvDoc に焼き直す。未知行 (figureRows の Rectangle 部分 /
+     * preLines の補助行 / postLines / textSize) は original から素通し。
+     *
+     * 内部は bakeHeader → bakeDeductions → bake(trilist, doc) の順で呼ぶ。
+     * 順序固定でアトミック、呼び出し側 (MainActivity) は中間 doc を意識しない。
+     *
+     * Web 側は 1 段ずつ bake する経路を維持するため、既存の個別 fun は変更しない。
+     */
+    fun bake(
+        trilist: TriangleList,
+        dedlist: DeductionList,
+        header: HeaderValues,
+        original: CsvDoc,
+        viewscale: Float,
+    ): CsvDoc {
+        val withHeader = bakeHeader(header, original)
+        val withDed = bakeDeductions(dedlist, withHeader, viewscale)
+        return bake(trilist, withDed)
     }
 }

@@ -23,7 +23,7 @@ class fabController(
 ) {
 
 
-    fun EditorClear(elist: EditList, currentNum: Int){
+    fun EditorClear(elist: EditList<*>, currentNum: Int){
         //loadEditTable()
         my_view.setParentSide(elist.size(), 0)
         myEditor.lineRewrite(
@@ -70,7 +70,7 @@ class fabController(
         return true
     }
 
-    fun getList(dMode: Boolean) :EditList{
+    fun getList(dMode: Boolean) :EditList<*>{
         if(dMode == true) return dedlist
         else return trilist
     }

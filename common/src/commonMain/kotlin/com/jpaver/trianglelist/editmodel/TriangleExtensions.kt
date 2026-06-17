@@ -264,21 +264,11 @@ fun Triangle.rotateLCR(): PointXY {
 }
 
 // ---------- 判定系 ----------
-fun Triangle.alreadyHaveChild(pbc: Int): Boolean {
-    if (pbc < 1) return false
-    return when (pbc) {
-        1 -> nodeB != null
-        2 -> nodeC != null
-        else -> false
-    }
-}
+// alreadyHaveChild / hasChild / hasConstantParent は EditObject の共通メンバーに統合 (重複排除)。
+// 混在リスト対応で d スロット (台形子) も見る EditObject 版が SoT。hasChildIn は固有なので残す。
 
 fun Triangle.hasChildIn(cbc: Int): Boolean =
-    (nodeB != null && cbc == 1) || (nodeC != null && cbc == 2)
-
-fun Triangle.hasConstantParent(): Boolean = (mynumber - parentnumber) <= 1
-
-fun Triangle.hasChild(): Boolean = nodeB != null || nodeC != null
+    (node.b != null && cbc == 1) || (node.c != null && cbc == 2)
 
 fun Triangle.isValidLengthes(A: Float = lengthA_, B: Float = lengthB_, C: Float = lengthC_): Boolean =
     !(A + B <= C) && !(B + C <= A) && !(C + A <= B)
