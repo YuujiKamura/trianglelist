@@ -85,7 +85,14 @@ class Rectangle(
     fun getSpine(): Line {
         val g = geo()
         return when (alignment) {
-            1    -> Line(g.midA, g.midC)
+            1    -> {
+                // 中央揃え: 本来は midA → midC が垂線だが、番号サークル (重心) と寸法ラベルが
+                // 被るので、底辺方向に短辺長 × 20% だけ「同量」オフセットする
+                // (yuuji 2026-06-17 指示: 「短い方の辺を基準に20％ほど辺上にオフセットを同量取ればいい」)
+                val baseDir = g.bl.vectorTo(g.br).normalize()
+                val shift = baseDir.scale(minOf(widthA, widthB) * 0.2)
+                Line(g.midA + shift, g.midC + shift)
+            }
             2    -> Line(g.br, g.tr)
             else -> Line(g.bl, g.tl)
         }
