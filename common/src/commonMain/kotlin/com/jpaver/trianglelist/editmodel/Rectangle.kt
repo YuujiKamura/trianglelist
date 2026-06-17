@@ -91,6 +91,38 @@ class Rectangle(
         }
     }
 
+    /**
+     * 直角記号 (垂線 spine と底辺が直交することを示す小正方形の 2 辺)。
+     * spine.left (底辺との交点 = 起点) に Rectangle 内側向きで描く 2 本のラインを返す。
+     * 描画レイヤ (WebPrimitiveRenderer / 将来の MyView) はこれを呼ぶだけでよく、
+     * 向きや座標を再計算しない (yuuji 2026-06-17 指針:「エンティティに問い合わせたら全部メンバで持ってる形」)。
+     */
+    fun getRightAngleMark(): Pair<Line, Line> {
+        val spine = getSpine()
+        val sqSize = minOf(widthA, widthB, length) * 0.1
+        val upDir = spine.left.vectorTo(spine.right).normalize()
+        // 内側方向 (Rectangle 重心側) — alignment から決定 (重心計算不要):
+        //   0 (左寄せ, spine=左脚): 内側=右 (CW90)
+        //   1 (中央, spine=中点-中点): 両側に Rectangle、慣習で右 (CW90)
+        //   2 (右寄せ, spine=右脚): 内側=左 (CCW90)
+        val baseDir =
+            if (alignment == 2) PointXY(-upDir.y, upDir.x)
+            else PointXY(upDir.y, -upDir.x)
+        val p1 = spine.left + baseDir.scale(sqSize)
+        val p3 = spine.left + upDir.scale(sqSize)
+        val p2 = p1 + upDir.scale(sqSize)
+        return Pair(Line(p1, p2), Line(p2, p3))
+    }
+
+    /**
+     * 中央寄せ / 右寄せ時にだけ描く「垂線そのもの」のガイド線 (点線扱い)。
+     * 左寄せ (alignment=0) は左脚 (B辺) と垂線が重なるので不要 → null を返す。
+     */
+    fun getGuideLine(): Line? = if (alignment != 0) getSpine() else null
+
+    /** 描画レンダラ向けメタ識別子: 垂線の起点が底辺側 (bl) か上辺側 (tl) か。 */
+    val perpFrom: String get() = if (widthA <= widthB) "bl" else "tl"
+
     override fun getLine(side: Int): Line {
         val g = geo()
         return when (side) {

@@ -106,25 +106,12 @@ object WebPrimitiveRenderer {
             }
             // Rectangle 専用: meta perp 識別子 + guide 線
             if (obj is Rectangle) {
-                val spine = obj.getSpine()
-                item("""{"type":"meta","kind":"perp","tri":$num,"perpFrom":"${if (obj.widthA <= obj.widthB) "bl" else "tl"}"}""")
-                if (obj.alignment != 0) item(line(spine.left, spine.right, "guide"))
-
-                // 直角記号: spine.left (底辺との交点 = 起点) に内側向きで描く
-                // - upDir   = spine 方向 (底辺→上辺)
-                // - baseDir = upDir に直交、Rectangle 重心側を向く方向
-                // baseDir/upDir はどちらも spine データだけから派生 (寸法と必ず一致)
-                val upDir = spine.left.vectorTo(spine.right).normalize()
-                val cw = PointXY(upDir.y.toFloat(), (-upDir.x).toFloat())   // 時計回り90度
-                val toCent = spine.left.vectorTo(obj.centroid())
-                val baseDir = if (cw.x * toCent.x + cw.y * toCent.y >= 0.0) cw
-                              else PointXY((-upDir.y).toFloat(), upDir.x.toFloat())
-                val sqSize = minOf(obj.widthA, obj.widthB, obj.length) * 0.1
-                val raP1 = spine.left + baseDir.scale(sqSize)
-                val raP2 = raP1 + upDir.scale(sqSize)
-                val raP3 = spine.left + upDir.scale(sqSize)
-                item(line(raP1, raP2, "ra"))
-                item(line(raP2, raP3, "ra"))
+                // 垂線・ガイド・直角記号は Rectangle に問い合わせるだけ (描画ロジックを露出させない)
+                item("""{"type":"meta","kind":"perp","tri":$num,"perpFrom":"${obj.perpFrom}"}""")
+                obj.getGuideLine()?.let { item(line(it.left, it.right, "guide")) }
+                val (raA, raB) = obj.getRightAngleMark()
+                item(line(raA.left, raA.right, "ra"))
+                item(line(raB.left, raB.right, "ra"))
             }
             // 番号位置
             val center = when (obj) {
