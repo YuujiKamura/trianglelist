@@ -56,3 +56,18 @@ Cargo.lock
 .omc/
 __pycache__/
 .claude/settings.local.json
+.claude/worktrees/
+
+# 検証用一時ファイル (camera-eye / playwright screenshot / バックアップ系) は repo に置かない
+# 撮ったら ~/.camera-eye/ で完結させ、 一時画像は commit しない
+/screenshot*.png
+/screenshot*.jpg
+/*_eye.jpg
+/*.bak
+
+# 一時的な CLAUDE 編集稿 (汚染バックアップ・新規稿の出力等)。 CLAUDE.md 本体は対象外
+/CLAUDE_*.md
+
+# 設計 brief は ~/.agents/scratch/<project>/briefs-archive/ に書く運用、 repo 内には置かない
+# (CLAUDE.md「scratch を repo に置くな」を物理層へ)
+/*_BRIEF.md
