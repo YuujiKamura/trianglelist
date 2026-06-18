@@ -1,7 +1,7 @@
 package com.jpaver.trianglelist.web
 
 import com.jpaver.trianglelist.editmodel.EditList
-import com.jpaver.trianglelist.editmodel.EditObject
+import com.jpaver.trianglelist.editmodel.CycleShape
 import com.jpaver.trianglelist.editmodel.Rectangle
 import com.jpaver.trianglelist.editmodel.Triangle
 import kotlin.test.Test
@@ -9,7 +9,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * SoT 一本化 段2 受け口 pin (2026-06-15): WebPrimitiveRenderer.render(list: EditList<EditObject>)
+ * SoT 一本化 段2 受け口 pin (2026-06-15): WebPrimitiveRenderer.render(list: EditList<CycleShape>)
  * の最小スケルトン (塗り + 辺 + 番号サークル) が形状種別 (Triangle / Rectangle) に対して
  * 多態的に正しく prim を吐くことを pin する。
  *
@@ -22,14 +22,14 @@ class WebPrimitiveRendererListReceiverTest {
 
     @Test
     fun empty_list_returns_empty_array() {
-        val list = EditList<EditObject>()
+        val list = EditList<CycleShape>()
         val json = WebPrimitiveRenderer.render(list, ts)
         assertEquals("[]", json, "空 list は [] を返す (golden)")
     }
 
     @Test
     fun single_triangle_outputs_fill_three_lines_circle_text() {
-        val list = EditList<EditObject>()
+        val list = EditList<CycleShape>()
         list.add(Triangle(6f, 5f, 4f))
         val json = WebPrimitiveRenderer.render(list, ts)
         // 期待: fill 1 + line 3 + circle 1 + text 1 = 6 prim
@@ -45,7 +45,7 @@ class WebPrimitiveRendererListReceiverTest {
 
     @Test
     fun single_rectangle_outputs_four_lines_no_fill() {
-        val list = EditList<EditObject>()
+        val list = EditList<CycleShape>()
         list.add(Rectangle(5.0, 6.0, 4.0))
         val json = WebPrimitiveRenderer.render(list, ts)
         val fillCount = """"type":"fill"""".toRegex().findAll(json).count()
@@ -60,7 +60,7 @@ class WebPrimitiveRendererListReceiverTest {
 
     @Test
     fun mixed_list_outputs_in_order() {
-        val list = EditList<EditObject>()
+        val list = EditList<CycleShape>()
         list.add(Triangle(6f, 5f, 4f))
         list.add(Rectangle(5.0, 6.0, 4.0))
         val json = WebPrimitiveRenderer.render(list, ts)
@@ -79,7 +79,7 @@ class WebPrimitiveRendererListReceiverTest {
     fun side_index_is_polymorphic_by_sideCount() {
         // Triangle.sideCount=3 → side=0,1,2 が出る
         // Rectangle.sideCount=4 → side=0,1,2,3 が出る
-        val list = EditList<EditObject>()
+        val list = EditList<CycleShape>()
         list.add(Triangle(6f, 5f, 4f))
         list.add(Rectangle(5.0, 6.0, 4.0))
         val json = WebPrimitiveRenderer.render(list, ts)
@@ -96,7 +96,7 @@ class WebPrimitiveRendererListReceiverTest {
 
     @Test
     fun triangle_emits_three_dim_specs() {
-        val list = EditList<EditObject>()
+        val list = EditList<CycleShape>()
         list.add(Triangle(6f, 5f, 4f))
         val json = WebPrimitiveRenderer.render(list, ts)
         // Triangle (独立、connectionSide=-1) → A/B/C 3 辺の寸法が出る
@@ -106,7 +106,7 @@ class WebPrimitiveRendererListReceiverTest {
 
     @Test
     fun rectangle_emits_three_dim_specs_when_independent() {
-        val list = EditList<EditObject>()
+        val list = EditList<CycleShape>()
         list.add(Rectangle(5.0, 6.0, 4.0))
         val json = WebPrimitiveRenderer.render(list, ts)
         // 独立 Rectangle (nodeA=null) → A底辺 / B垂線延長 / C上辺 の 3 寸法。
@@ -117,7 +117,7 @@ class WebPrimitiveRendererListReceiverTest {
 
     @Test
     fun number_text_uses_1based_index_from_forEachItemIndexed() {
-        val list = EditList<EditObject>()
+        val list = EditList<CycleShape>()
         list.add(Triangle(6f, 5f, 4f))
         list.add(Triangle(5f, 4f, 3f))
         list.add(Rectangle(5.0, 6.0, 4.0))

@@ -2953,7 +2953,7 @@ function addTriOnTrap(canvas: HTMLCanvasElement, newB: string, newC: string): vo
 // 段3 swap (commit 659b509、 WebPrimitiveRenderer.kt:92 新 render(list)) で混在 EditList を
 // 1 ループで吐くようになり、 trilist→traps→trapTris の 3 群分離は消えた。
 // SoT 一本化 段3g (commit 2b1c4e5): composeAll を廃止し buildMixed が figureRows 順で
-// 混在 EditList<EditObject> を 1 本構築、 render の forEachItemIndexed (:117/130) が
+// 混在 EditList<CycleShape> を 1 本構築、 render の forEachItemIndexed (:117/130) が
 // 1-based の tri 番号を振る。 仮挿入は CSV 末尾 → tri 番号は最大値。
 // 段3 前の slice(-4) / [tc*3 + offset] は壊れたので、 これに置換する。
 function pickShadowLines(lines: LinePrim[]): LinePrim[] {

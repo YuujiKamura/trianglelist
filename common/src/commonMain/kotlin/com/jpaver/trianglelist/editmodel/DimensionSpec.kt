@@ -4,7 +4,7 @@ import com.jpaver.trianglelist.label.DimensionPlacement
 
 /**
  * SoT 一本化 段3 寸法多態 (2026-06-15): 図形種別 (Triangle / Rectangle) に依らず
- * 寸法 1 本を表す純データ。EditObject.emitDimensionSpecs() が返し、WebPrimitiveRenderer は
+ * 寸法 1 本を表す純データ。CycleShape.emitDimensionSpecs() が返し、WebPrimitiveRenderer は
  * これを JSON prim 化するだけ — 図形ごとの「寸法をどう計算するか」 (DimensionLayout 呼び・
  * 接続辺の重複防止判定・B 延長の垂線根選び等) はモデル側に閉じ、view layer はもう
  * 図形種別を知らない (=「描画側の場合分けを基底へ吸収」 user 指針 2026-06-14)。

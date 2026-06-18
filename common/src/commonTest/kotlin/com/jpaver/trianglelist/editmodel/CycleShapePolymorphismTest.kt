@@ -7,11 +7,11 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * EditObject の多態 (sideCount / vertices / getLine) の単体 pin。
+ * CycleShape の多態 (sideCount / vertices / getLine) の単体 pin。
  * user 方針 2026-06-14「あらゆる限定操作を基底クラスに寄せろ / 場合分けを吸収しろ」。
  * これが守られていれば、混在リストの上位 (bbox / 辺タップ / 描画) は kind 分岐を持たずに動く。
  */
-class EditObjectPolymorphismTest {
+class CycleShapePolymorphismTest {
 
     // lengthTo は Double を返すので tolerance も Double で受ける (Float キャスト連発を避ける)
     private fun nearF(expected: Double, actual: Double, tolerance: Double = 1e-3, msg: String = "") {
@@ -51,20 +51,19 @@ class EditObjectPolymorphismTest {
         // 台形: 底辺=10, 上辺=7, 延長 (左脚 align=0)=3。右脚 (D) は派生。
         val r = Rectangle(length = 3.0, widthA = 10.0, widthB = 7.0, basepoint = PointXY(0f, 0f))
         nearF(10.0, r.getLine(0).left.lengthTo(r.getLine(0).right), msg = "A底辺 (side=0)")
-        nearF(3.0, r.getLine(1).left.lengthTo(r.getLine(1).right), msg = "B左脚=延長 (side=1, align=0)")
+        // 環閉合順 (2026-06-18) で side index 物理意味を再割当: 1=D 右脚, 2=C 上辺, 3=B 左脚。
+        // D 右脚 (派生): align=0 で bl=(0,0), br=(10,0), tl=(0,3), tr=(7,3) → 右脚 (10,0)→(7,3) = √18 ≈ 4.243。
+        nearF(4.2426, r.getLine(1).left.lengthTo(r.getLine(1).right), tolerance = 0.001, msg = "D右脚 (side=1) 派生長 ≈ √18")
         nearF(7.0, r.getLine(2).left.lengthTo(r.getLine(2).right), msg = "C上辺 (side=2)")
-        // D 右脚 (派生): align=0 で bl=(0,0), br=(10,0), tl=(0,3), tr=(7,3) → 右脚 (10,0)→(7,3) = √(9+9) = √18 ≈ 4.243。
-        // 値を pin することで、user 指摘 2026-06-14「D辺タップの表記が出ない」のリグレッションを防ぐ
-        // (WebPrimitiveRenderer の D 辺 dimText 出力がこの長さに依存)。
-        nearF(4.2426, r.getLine(3).left.lengthTo(r.getLine(3).right), tolerance = 0.001, msg = "D右脚 (side=3) 派生長 ≈ √18")
+        nearF(3.0, r.getLine(3).left.lengthTo(r.getLine(3).right), msg = "B左脚=延長 (side=3, align=0)")
         // 範囲外は空 Line
         nearF(0.0, r.getLine(4).left.lengthTo(r.getLine(4).right), msg = "範囲外 side")
     }
 
     @Test
     fun base_editobject_default_dispatch_returns_empty() {
-        // 親 EditObject を直接 new した場合は空契約 (上位コードが多態 dispatch で困らない既定値)
-        val e = EditObject()
+        // 親 CycleShape を直接 new した場合は空契約 (上位コードが多態 dispatch で困らない既定値)
+        val e = CycleShape()
         assertEquals(0, e.sideCount)
         assertTrue(e.vertices().isEmpty())
         nearF(0.0, e.getLine(0).left.lengthTo(e.getLine(0).right), msg = "default empty line")

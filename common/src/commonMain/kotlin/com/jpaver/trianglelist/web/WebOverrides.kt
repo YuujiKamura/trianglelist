@@ -2,7 +2,7 @@ package com.jpaver.trianglelist.web
 
 import com.example.trilib.PointXY
 import com.jpaver.trianglelist.editmodel.EditList
-import com.jpaver.trianglelist.editmodel.EditObject
+import com.jpaver.trianglelist.editmodel.CycleShape
 import com.jpaver.trianglelist.editmodel.Rectangle
 import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
@@ -54,7 +54,7 @@ object WebOverrides {
     fun applyJson(trilist: TriangleList, overridesJson: String) =
         apply(trilist, parse(overridesJson))
 
-    fun applyJson(list: EditList<EditObject>, overridesJson: String) =
+    fun applyJson(list: EditList<CycleShape>, overridesJson: String) =
         apply(list, parse(overridesJson))
 
     fun parse(json: String): Overrides {
@@ -108,7 +108,7 @@ object WebOverrides {
      * number override は現状 Triangle のみ (Rectangle の pointnumber 移動は別 brief、 描画側が
      * vertices 重心固定 = WebPrimitiveRenderer.kt:167-178)。
      */
-    fun apply(list: EditList<EditObject>, overrides: Overrides) {
+    fun apply(list: EditList<CycleShape>, overrides: Overrides) {
         for (d in overrides.dims) {
             if (d.tri < 1 || d.tri > list.size()) continue
             when (val obj = list.get(d.tri)) {
@@ -122,7 +122,7 @@ object WebOverrides {
         }
     }
 
-    private fun EditList<EditObject>.getTriangleOrNull(num: Int): Triangle? {
+    private fun EditList<CycleShape>.getTriangleOrNull(num: Int): Triangle? {
         if (num < 1 || num > size()) return null
         return get(num) as? Triangle
     }

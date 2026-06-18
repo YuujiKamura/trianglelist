@@ -4,9 +4,9 @@ import com.jpaver.trianglelist.viewmodel.InputParameter
 import com.jpaver.trianglelist.viewmodel.Cloneable
 
 // 編集図形リストの基底 SoT。
-// 三角形 (Triangle) も台形 (Rectangle) も EditObject 派生。派生クラス (TriangleList / DeductionList) は
+// 三角形 (Triangle) も台形 (Rectangle) も CycleShape 派生。派生クラス (TriangleList / DeductionList) は
 // 自前の独立フィールドを廃止し、基底 list を唯一の SoT として使う (2026-06-15 SoT 一本化)。
-open class EditList<T : EditObject>: Cloneable<EditList<T>> {
+open class EditList<T : CycleShape>: Cloneable<EditList<T>> {
 
     protected val list: MutableList<T?> = ArrayList()
 
@@ -24,7 +24,7 @@ open class EditList<T : EditObject>: Cloneable<EditList<T>> {
 
     open fun reverse(): EditList<T> { return this }
     open fun size() :Int { return list.size }
-    open fun get(num: Int) : EditObject {
+    open fun get(num: Int) : CycleShape {
         //if( list_.size > number ) return null
         return list[num - 1]!!
     }
@@ -55,22 +55,22 @@ open class EditList<T : EditObject>: Cloneable<EditList<T>> {
     open fun numberRange(): IntRange = if (list.isEmpty()) IntRange.EMPTY else 1..list.size
 
     /** 全要素を 1 → size の順に巡回 (null は飛ばす)。 */
-    open fun forEachItem(action: (EditObject) -> Unit) {
+    open fun forEachItem(action: (CycleShape) -> Unit) {
         for (e in list) if (e != null) action(e)
     }
 
     /** 番号 (1始まり) 付きで全要素を巡回 (null は飛ばす)。 */
-    open fun forEachItemIndexed(action: (Int, EditObject) -> Unit) {
+    open fun forEachItemIndexed(action: (Int, CycleShape) -> Unit) {
         for ((i, e) in list.withIndex()) if (e != null) action(i + 1, e)
     }
 
-    /** 指定 EditObject の番号 (1始まり)、見つからなければ -1。 */
-    open fun indexOfItem(obj: EditObject?): Int {
+    /** 指定 CycleShape の番号 (1始まり)、見つからなければ -1。 */
+    open fun indexOfItem(obj: CycleShape?): Int {
         if (obj == null) return -1
         for ((i, e) in list.withIndex()) if (e === obj) return i + 1
         return -1
     }
 
-    open fun firstItem(): EditObject? = list.firstOrNull { it != null }
-    open fun lastItem(): EditObject? = list.lastOrNull { it != null }
+    open fun firstItem(): CycleShape? = list.firstOrNull { it != null }
+    open fun lastItem(): CycleShape? = list.lastOrNull { it != null }
 }

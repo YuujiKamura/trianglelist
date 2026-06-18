@@ -51,6 +51,55 @@ fun Triangle.setParentBCFromCLCR() {
 }
 
 // -------------------- setOn オーバーロード群 --------------------
+/**
+ * Rectangle 親対応版 setOn (2026-06-18 追加、 既存 Triangle 親 logic は不変)。
+ * 環閉合順統一規約 (CycleShape.outwardPerpUnit) を使って親 Rectangle の指定辺の **外向き** に
+ * Triangle 子を立てる。 user 指針:「Triangle は触らんでいい、 関数増やせば既存破壊しない」。
+ */
+fun Triangle.setOnRectangle(parent: Rectangle, side: Int, B: Float, C: Float): Triangle {
+    connectionSide = side
+    node.a = parent   // base CycleShape の Node.a スロットに直接保存 (nodeA は Triangle? 限定で Rectangle 入らない)
+    parent.setNode2(this, side)
+    parentnumber = parent.mynumber
+
+    val parentEdge = parent.getLine(side)
+    val A = parentEdge.left.lengthTo(parentEdge.right).toFloat()
+
+    // initByParent と同じ「親辺を反転」: 子 A 辺起点 = 親辺終点
+    point[0] = parentEdge.right
+    angle = parentEdge.right.calcAngleWithXAxis(parentEdge.left).toFloat()
+
+    initBasicArguments(A, B, C, point[0], angle)
+    if (!isValidLengthes()) return this
+    calcPoints(point[0], angle)
+
+    // 親 Rectangle の outward 側に pointBC が出てなければ親辺 (point[0]→pointAB) を軸に線対称鏡映
+    val outward = parent.outwardPerpUnit(side)
+    val midEdge = PointXY((point[0].x + pointAB.x) / 2f, (point[0].y + pointAB.y) / 2f)
+    val dot = (pointBC.x - midEdge.x) * outward.x + (pointBC.y - midEdge.y) * outward.y
+    if (dot < 0f) {
+        val ex = (pointAB.x - point[0].x).toDouble()
+        val ey = (pointAB.y - point[0].y).toDouble()
+        val len2 = ex * ex + ey * ey
+        if (len2 > 0.0) {
+            val tx = (pointBC.x - point[0].x).toDouble()
+            val ty = (pointBC.y - point[0].y).toDouble()
+            val t = (tx * ex + ty * ey) / len2  // pointBC を親辺直線に射影した t
+            val projX = point[0].x + (t * ex).toFloat()
+            val projY = point[0].y + (t * ey).toFloat()
+            pointBC = PointXY(2f * projX - pointBC.x, 2f * projY - pointBC.y)
+        }
+    }
+    // 鏡映で pointBC が動いたら pointcenter / pointnumber を再計算しないと
+    // 番号位置が三角形外 (鏡映前の重心) に残り isCollide=false → DXF/SFC で番号
+    // 引出し矢印 2 本が余分に出る (2026-06-18 WebTrapezoidTest 'dxf_export_includes_
+    // rect_child_triangle_lines' で diff=+5 の余分 2 line を pin)。
+    calculatePointCenter()
+    if (!pointNumber.flag.isMovedByUser) pointnumber = pointcenter
+
+    return this
+}
+
 fun Triangle.setOn(parent: Triangle?, pbc: Int, B: Float, C: Float): Triangle {
     connectionSide = pbc
     if (parent == null) {

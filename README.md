@@ -20,7 +20,7 @@ web/         Web 版 (Vite + Kotlin/Wasm、GitHub Pages 配信)
 docs/adr/    アーキテクチャ決定記録
 ```
 
-Triangle と Rectangle (台形) は `EditObject` 基底の共通契約を実装する。 writer 側は `DrawingFileWriter` 基底に `DrawPrim` のリストを組んで、各形式 (DXF/SFC/PDF/Web) がそれを翻訳する frontend/backend 分離 (詳細は [`docs/adr/`](docs/adr/))。
+Triangle と Rectangle (台形) は `CycleShape` 基底の共通契約を実装する。 writer 側は `DrawingFileWriter` 基底に `DrawPrim` のリストを組んで、各形式 (DXF/SFC/PDF/Web) がそれを翻訳する frontend/backend 分離 (詳細は [`docs/adr/`](docs/adr/))。
 
 ## ビルド
 

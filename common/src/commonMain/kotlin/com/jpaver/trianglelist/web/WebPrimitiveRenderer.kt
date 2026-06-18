@@ -5,7 +5,7 @@ import com.jpaver.trianglelist.datamanager.CsvCodec
 import com.jpaver.trianglelist.editmodel.Deduction
 import com.jpaver.trianglelist.editmodel.DeductionList
 import com.jpaver.trianglelist.editmodel.EditList
-import com.jpaver.trianglelist.editmodel.EditObject
+import com.jpaver.trianglelist.editmodel.CycleShape
 import com.jpaver.trianglelist.editmodel.Rectangle
 import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
@@ -39,13 +39,13 @@ object WebPrimitiveRenderer {
     }
 
     fun render(trilist: TriangleList, textSize: Float): String {
-        val mixed = EditList<EditObject>()
+        val mixed = EditList<CycleShape>()
         for (i in 1..trilist.size()) mixed.add(trilist.getBy(i))
         return render(mixed, textSize, DeductionList(), 1f)
     }
 
     fun render(
-        list: EditList<EditObject>,
+        list: EditList<CycleShape>,
         textSize: Float,
         dedlist: DeductionList = DeductionList(),
         scale: Float = 1f,

@@ -5,14 +5,14 @@ import com.jpaver.trianglelist.viewmodel.InputParameter
 
 // 接続スロット。a=A辺(親と共有), b=B辺, c=C辺, d=D辺(台形=Rectangle の右脚 side=3 用)。
 // d は既定 null で追加 — 三角形(3辺)は b/c までしか使わず、台形(4辺)のみ d を使う (trap-design.md 段4)。
-data class Node(var a: EditObject?=null, var b: EditObject?=null, var c: EditObject?=null, var d: EditObject?=null )
+data class Node(var a: CycleShape?=null, var b: CycleShape?=null, var c: CycleShape?=null, var d: CycleShape?=null )
 
 /**
  * 全図形の基底 (user 方針 2026-06-14「あらゆる限定操作を基底クラスに寄せろ」「台形だから・三角形
  * だからっていう場合分けを吸収しろ」)。形状ごとの差は sideCount / vertices / getLine の多態だけに
  * 集約し、上位 (混在リストの bbox 計算、辺タップ動線、寸法レイアウト等) は kind 分岐なしで動く。
  */
-open class EditObject() {
+open class CycleShape() {
     var node = Node()
     
     // 共通の階層・表示メタデータ (Triangle / Rectangle 共通)
@@ -34,6 +34,66 @@ open class EditObject() {
     open fun getLine(side: Int): Line = Line()
 
     /**
+     * 図形のラインの集合 (環閉合 = 一周巡回順)。 default は side 0..sideCount-1 順 (= Triangle は
+     * これで連続巡回成立)、 巡回順と side index が一致しない図形 (Rectangle: side 1=B 左脚 と side 3=
+     * D 右脚 で巡回順が飛ぶ) は override して巡回順に並べる。 環閉合の検証 / signedArea / 外向き
+     * 算出はすべてここを起点にする。
+     */
+    open fun edges(): List<Line> = (0 until sideCount).map { getLine(it) }
+
+    /**
+     * 環閉合検証: 隣接ラインの end == 次ラインの start が全側面で成立するか。 不成立なら
+     * 周回向きも内側外側も定義不能 ── user 指針 (2026-06-18):「環閉合したデータ群を揃えて初めて
+     * 周回向きと内側外側が決まる」、「成立しない時は早期 return、 単に拒絶すれば済む」。
+     */
+    fun isClosed(): Boolean {
+        val es = edges()
+        if (es.size < 3) return false
+        val EPS = 1e-3f
+        for (i in es.indices) {
+            val curr = es[i]
+            val next = es[(i + 1) % es.size]
+            val dx = curr.right.x - next.left.x
+            val dy = curr.right.y - next.left.y
+            if (dx > EPS || dx < -EPS || dy > EPS || dy < -EPS) return false
+        }
+        return true
+    }
+
+    /**
+     * ラインの集合 (= edges) のシューレース signed area。 環閉合済前提、 違反時は IllegalStateException。
+     *   > 0: CCW、 < 0: CW。 全 CycleShape が CW 規約遵守 (signedArea < 0) であるべき。
+     */
+    fun signedArea(): Double {
+        check(isClosed()) { "signedArea requires closed-loop edges (環閉合違反)" }
+        val es = edges()
+        var s = 0.0
+        for (e in es) {
+            s += e.left.x.toDouble() * e.right.y.toDouble() - e.right.x.toDouble() * e.left.y.toDouble()
+        }
+        return s * 0.5
+    }
+
+    /**
+     * 親辺 side の外向き単位 perpendicular ベクトル。 環閉合済前提、 違反時は IllegalStateException。
+     * 環閉合した edges から signedArea で巡回方向 (CW/CCW) を動的算出、 親辺 forward の外側 perp を
+     * 返す ── user 指針 (2026-06-18):「ラインの集合から外向きを教えてくれる関数を書くことは可能」。
+     */
+    fun outwardPerpUnit(side: Int): PointXY {
+        check(isClosed()) { "outwardPerpUnit requires closed-loop edges (環閉合違反)" }
+        val edge = getLine(side)
+        val dx = (edge.right.x - edge.left.x).toDouble()
+        val dy = (edge.right.y - edge.left.y).toDouble()
+        val len = edge.left.lengthTo(edge.right)
+        if (len <= 0.0) return PointXY(0f, 0f)
+        val ccw = signedArea() > 0.0
+        // CCW (signedArea > 0): forward の **左** が内側、 外側は perpCW = (dy, -dx) / len
+        // CW (signedArea < 0): forward の **右** が内側、 外側は perpCCW = (-dy, dx) / len
+        return if (ccw) PointXY((dy / len).toFloat(), (-dx / len).toFloat())
+        else            PointXY((-dy / len).toFloat(), (dx / len).toFloat())
+    }
+
+    /**
      * 寸法 spec を多態的に返す (SoT 一本化 段3、2026-06-15)。
      * 図形種別に依らず描画側が単一ループで寸法を emit できるよう、各図形が自分用の
      * DimensionSpec リストを返す責務を持つ。空 (= 寸法概念がない図形) は default の emptyList。
@@ -41,7 +101,7 @@ open class EditObject() {
      */
     open fun emitDimensionSpecs(scale: Float): List<DimensionSpec> = emptyList()
 
-    open fun setNode2(target: EditObject, side:Int=0, side2:Int=1 ){
+    open fun setNode2(target: CycleShape, side:Int=0, side2:Int=1 ){
         when(side){
             0 -> {
                 target.setNode2(this, side2 )
@@ -75,7 +135,7 @@ open class EditObject() {
      * 実装上は「親辺の forward と逆走」に見えるが、それは結果であって原則ではない。
      * 原則は「時計回りで外に展開する」こと。
      */
-    fun initByParent(parent: EditObject, side: Int): Line {
+    fun initByParent(parent: CycleShape, side: Int): Line {
         val forward = parent.getLine(side)
         parent.setNode2(this, side)
         return Line(forward.right, forward.left)
@@ -137,18 +197,27 @@ open class EditObject() {
 
     /**
      * 図形がこの点を内側に含むか (タップ判定の共通契約)。
-     * default は vertices() の fan triangulation で N 角形 (N>=3) を汎用判定する。
+     * default は凸多角形 (環閉合済 edges) の edge-sign 一致判定 ── 全 edge について
+     * (b-a) × (p-a) の符号が一致 (= 全て同じ side) ⇔ 内側。 sign==0 は edge / 頂点上を
+     * 内側扱い (boundary inclusive)。 fan 分解の対角線上で false になる数値事故を避ける
+     * (centroid hit が ぎりぎり対角線に乗ると fan の境界で漏れる、 2026-06-18 WebHitTest
+     * 'tri-tri-rect' Rectangle 子 centroid (0.298, -2.216) で発生)。
      * 別実装を持つ図形 (例: Triangle の符号判定) は override で差し替えてよい。
-     * 上位 (WebHitTest 等) は kind 分岐なしにこのメソッドを呼ぶだけで hit test できる。
      */
     open fun containsPoint(p: PointXY): Boolean {
         val v = vertices()
-        if (v.size < 3) return false
-        // 凸多角形を v[0] 起点の扇に分解、各三角形で判定
-        for (i in 1 until v.size - 1) {
-            if (p.isCollide(v[0], v[i], v[i + 1])) return true
+        val n = v.size
+        if (n < 3) return false
+        var hasPos = false
+        var hasNeg = false
+        for (i in 0 until n) {
+            val a = v[i]; val b = v[(i + 1) % n]
+            val cross = (b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x)
+            if (cross > 0f) hasPos = true
+            if (cross < 0f) hasNeg = true
+            if (hasPos && hasNeg) return false
         }
-        return false
+        return true
     }
 
     open fun getParams() : InputParameter { return InputParameter() }

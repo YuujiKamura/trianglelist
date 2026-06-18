@@ -264,8 +264,8 @@ fun Triangle.rotateLCR(): PointXY {
 }
 
 // ---------- 判定系 ----------
-// alreadyHaveChild / hasChild / hasConstantParent は EditObject の共通メンバーに統合 (重複排除)。
-// 混在リスト対応で d スロット (台形子) も見る EditObject 版が SoT。hasChildIn は固有なので残す。
+// alreadyHaveChild / hasChild / hasConstantParent は CycleShape の共通メンバーに統合 (重複排除)。
+// 混在リスト対応で d スロット (台形子) も見る CycleShape 版が SoT。hasChildIn は固有なので残す。
 
 fun Triangle.hasChildIn(cbc: Int): Boolean =
     (node.b != null && cbc == 1) || (node.c != null && cbc == 2)

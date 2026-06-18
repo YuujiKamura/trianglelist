@@ -12,7 +12,7 @@ import kotlin.math.roundToInt
 
 // Utilities have been moved to Utils.kt
 
-class Triangle : EditObject, Cloneable<Triangle> {
+class Triangle : CycleShape, Cloneable<Triangle> {
 
     companion object {
         private const val TAG = "Triangle"
@@ -150,7 +150,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     var pathS = DimOnPath()
     var dimHeight = 0f
 
-    // --- ノード (EditObject の統一ツリーへのプロキシ) ---
+    // --- ノード (CycleShape の統一ツリーへのプロキシ) ---
     var nodeA: Triangle?
         get() = node.a as? Triangle
         set(value) { node.a = value }
@@ -177,7 +177,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     val pointCA: com.example.trilib.PointXY
         get() = point[0].clone()
 
-    // EditObject の多態 (user 指針 2026-06-14「あらゆる限定操作を基底クラスに寄せろ」)。
+    // CycleShape の多態 (user 指針 2026-06-14「あらゆる限定操作を基底クラスに寄せろ」)。
     // 上位の混在リストは sideCount / vertices / getLine の共通契約だけで動き、kind 分岐を消す。
     override val sideCount: Int = 3
     override fun vertices(): List<com.example.trilib.PointXY> = listOf(point[0], pointAB, pointBC)
@@ -193,7 +193,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
      * 寸法ループを移植したもの。図形種別に依らない単一 emit ループを上位 (renderer) に許す。
      * A 辺は親と共有していない時 (nodeA == null && node.a == null) または再接続 (connectionSide > 2)
      * のとき出す。Triangle 子接続は Triangle 独自フィールド nodeA に親を保持し、Rectangle 親 trapTri は
-     * EditObject 基底の node.a に親を保持する (継ぎ目が違う)。両方 null = 親共有なし → A 辺寸法 emit。
+     * CycleShape 基底の node.a に親を保持する (継ぎ目が違う)。両方 null = 親共有なし → A 辺寸法 emit。
      */
     override fun emitDimensionSpecs(scale: Float): List<DimensionSpec> {
         val s = scaleFactor.toDouble()
@@ -220,7 +220,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
     init { pointnumber = com.example.trilib.PointXY(0f, 0f) }
     var pointNumber = PointNumberManager()
 
-    // 番号表示位置は user 手動移動を保持する pointnumber を返す (EditObject 既定の centroid とは別概念)。
+    // 番号表示位置は user 手動移動を保持する pointnumber を返す (CycleShape 既定の centroid とは別概念)。
     override fun pointNumberAnchor(): com.example.trilib.PointXY = pointnumber
 
     // hit test は既存の符号判定 (TriangleExtensions.kt:292 の isCollide) を委譲、上位の kind 分岐を消す。
@@ -300,10 +300,10 @@ class Triangle : EditObject, Cloneable<Triangle> {
     }
 
     // 親 (三角形でも台形でも) の共有辺に底辺(A)を乗せて構築する。混在リストの接続土台:
-    // initByParent (EditObject 共通の継ぎ目) が親種別を問わず getLine(side) で辺を返し node も繋ぐ。
+    // initByParent (CycleShape 共通の継ぎ目) が親種別を問わず getLine(side) で辺を返し node も繋ぐ。
     // これで「台形に三角形を接続」が三角形側でも成立する (Rectangle は既に同じ継ぎ目を使う)。
     // side は親の辺番号 (台形 1=B/2=C/3=D、三角形 1=B/2=C)。A長は共有辺の実長になる。
-    constructor(parent: EditObject, side: Int, B: Float, C: Float) {
+    constructor(parent: CycleShape, side: Int, B: Float, C: Float) {
         // initByParent は既に反転（親辺の終端→始端）した基線を返す。
         val base = initByParent(parent, side)
         val a = base.left.lengthTo(base.right).toFloat()
@@ -311,13 +311,40 @@ class Triangle : EditObject, Cloneable<Triangle> {
         val angle = base.getAngle().toFloat()
 
         initBasicArguments(a, B, C, start, angle)
+        if (!isValidLengthes()) return
         calcPoints(start, angle)
+
+        // 親 Rectangle (環閉合順統一規約 2026-06-18) では子 pointBC を outward 側 (= 親辺の外側)
+        // に揃える。 calcPoints の Triangle 内部規約と Rectangle.getLine の forward 方向が乖離する
+        // ケースで pointBC が親内側に出る、 これを親辺軸の線対称鏡映で外側に折り返す。
+        if (parent is Rectangle) {
+            val outward = parent.outwardPerpUnit(side)
+            val midX = (point[0].x + pointAB.x) / 2f
+            val midY = (point[0].y + pointAB.y) / 2f
+            val dot = (pointBC.x - midX) * outward.x + (pointBC.y - midY) * outward.y
+            if (dot < 0f) {
+                val ex = (pointAB.x - point[0].x).toDouble()
+                val ey = (pointAB.y - point[0].y).toDouble()
+                val len2 = ex * ex + ey * ey
+                if (len2 > 0.0) {
+                    val tx = (pointBC.x - point[0].x).toDouble()
+                    val ty = (pointBC.y - point[0].y).toDouble()
+                    val t = (tx * ex + ty * ey) / len2
+                    val projX = point[0].x + (t * ex).toFloat()
+                    val projY = point[0].y + (t * ey).toFloat()
+                    pointBC = com.example.trilib.PointXY(2f * projX - pointBC.x, 2f * projY - pointBC.y)
+                }
+            }
+            // 鏡映後 pointcenter / pointnumber 再計算 (setOnRectangle と同じ理由)。
+            calculatePointCenter()
+            if (!pointNumber.flag.isMovedByUser) pointnumber = pointcenter
+        }
     }
 
     /**
-     * EditObject (三角形/台形) を親に、ConnParam に従って三角形を構築する (2026-06-16 混成対応)。
+     * CycleShape (三角形/台形) を親に、ConnParam に従って三角形を構築する (2026-06-16 混成対応)。
      */
-    constructor(parent: EditObject, cParam: ConnParam, B: Float, C: Float) {
+    constructor(parent: CycleShape, cParam: ConnParam, B: Float, C: Float) {
         val base = initByParent(parent, cParam.side)
 
         // ConnParam 考慮の初期化
@@ -393,7 +420,7 @@ class Triangle : EditObject, Cloneable<Triangle> {
 
     //endregion　isIt
 
-    //region EditObject implementation
+    //region CycleShape implementation
     override fun getParams(): InputParameter = InputParameter(
         name,
         "",

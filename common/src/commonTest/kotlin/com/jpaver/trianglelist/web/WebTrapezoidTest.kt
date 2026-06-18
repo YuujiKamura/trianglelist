@@ -1,7 +1,7 @@
 package com.jpaver.trianglelist.web
 
 import com.jpaver.trianglelist.datamanager.CsvCodec
-import com.jpaver.trianglelist.editmodel.EditObject
+import com.jpaver.trianglelist.editmodel.CycleShape
 import com.jpaver.trianglelist.editmodel.Rectangle
 import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
@@ -410,7 +410,7 @@ class WebTrapezoidTest {
         val cy = (lp.a.left.y + lp.a.right.y + lp.b.left.y + lp.b.right.y) / 4f
         for (side in 1..3) {
             val edge = rect.getLine(side)
-            val tri = Triangle(rect as EditObject, side, 6f, 6f)
+            val tri = Triangle(rect as CycleShape, side, 6f, 6f)
             val onEdge = (tri.point[0].nearBy(edge.left, 0.001) && tri.pointAB.nearBy(edge.right, 0.001)) ||
                 (tri.point[0].nearBy(edge.right, 0.001) && tri.pointAB.nearBy(edge.left, 0.001))
             assertTrue(onEdge, "side=$side: 三角形A辺が Rectangle 辺に乗らない p0=${tri.point[0]} pAB=${tri.pointAB} edge=$edge")
@@ -431,8 +431,8 @@ class WebTrapezoidTest {
         val triOnly = WebDrawingExport.buildDxfText("1,6.0,5.0,4.0,-1,-1\n", "")
         val withRect = WebDrawingExport.buildDxfText("1,6.0,5.0,4.0,-1,-1\nRectangle,1,5,4,3,-1,0\n", "")
         assertTrue(withRect.length > triOnly.length, "Rectangle ぶん DXF が増える")
-        assertEquals(count(triOnly, "AcDbLine") + 4, count(withRect, "AcDbLine"),
-            "Rectangle の 4 辺ぶん LINE エンティティが増える (DXF に Rectangle が出ている)")
+        assertEquals(count(triOnly, "AcDbLine") + 6, count(withRect, "AcDbLine"),
+            "Rectangle の 4 辺 + 直角マーカー 2 本ぶん LINE エンティティが増える")
     }
 
     /** Rectangle 子三角形も DXF に出る */
