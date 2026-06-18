@@ -229,6 +229,11 @@ class Triangle : EditObject, Cloneable<Triangle> {
     // 段階0 の textSize 配布: 拡張関数 setDimPath(size) で寸法位置キャッシュを再構築する。
     override fun applyDimTextSize(size: Float) { setDimPath(size) }
 
+    // 測点パラメータ: Triangle 固有値 (dim.horizontal.s / scaleFactor / dimHeight) を返す。
+    override fun sokutenHorizontal(): Int = dim.horizontal.s
+    override fun sokutenScale(fallback: Double): Double = scaleFactor.toDouble()
+    override fun sokutenHeight(fallback: Double): Double = dimHeight.toDouble()
+
     // --- スケール係数（スペル修正: scaleFactor） ---
     var scaleFactor = 1f
 
