@@ -59,6 +59,7 @@ import {
 // DXF/SFC は既存 app の出力と同じ Shift_JIS。ブラウザ標準 TextEncoder は UTF-8 専用なので
 // encoding-japanese (MIT, polygonplanet/encoding.js) で Unicode → SJIS バイト化する
 import Encoding from 'encoding-japanese';
+import { safeOpenUrl } from './url-safety';
 
 // 内蔵サンプル (desktop/sample/sample_triangles.csv と同形式)
 const SAMPLE_CSV = `テスト工事
@@ -3673,18 +3674,11 @@ function wireCanvasEvents(canvas: HTMLCanvasElement): void {
     pinchDist = 0;
     if (isClick && view) {
       // 図面枠の url text をクリックしたら別タブで開く (2026-06-18 user 「キャンバス上でクリックすると別タブで開く」)。
-      // 現状 url は wasm 内 zumeninfo.tCredit_ 固定で user 入力経由ではないが、 将来編集可能になった時の
-      // XSS (javascript:/data:/vbscript:/file:) を防ぐため scheme を http/https に限定。
+      // scheme 検証 (XSS 防御) は url-safety.ts の safeOpenUrl に切り出し済、 単体 test 可能。
       const url = hitUrlPrim(canvas, downAt!.x, downAt!.y);
       if (url) {
-        try {
-          const u = new URL(url);
-          if (u.protocol === 'http:' || u.protocol === 'https:') {
-            window.open(u.toString(), '_blank', 'noopener,noreferrer');
-          }
-        } catch {
-          // 不正 URL は無視
-        }
+        const safe = safeOpenUrl(url);
+        if (safe) window.open(safe, '_blank', 'noopener,noreferrer');
         downAt = null;
         return;
       }
