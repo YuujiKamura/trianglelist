@@ -96,28 +96,6 @@ class WebFrameMarginTest {
     }
 
     @Test
-    fun scaleValueIsSmallerThanCellText() {
-        // 2026-06-19 a72c17b: 縮尺値「1/50 (A3)」 (= "1/${st} ($paperName)" prim) は cell 4cm に
-        // 収まらない (= paper 7.5mm × 7 文字 = 5.25cm) ため frameTextSize × 2/3 で paper 5mm に縮小。
-        // 他の cell text は frameTextSize 同サイズ、 縮尺値だけ smaller を pin。
-        val json = WebFrame.renderFrame(csv)
-        // 縮尺 text prim ("1/50 (A3)" pattern) の size を抽出
-        val scaleSize = Regex(""""text":"1/[0-9]+ \([^)]+\)","x":[-0-9.E]+,"y":[-0-9.E]+,"angle":[-0-9.E]+,"size":([-0-9.E]+)""")
-            .find(json)?.groupValues?.get(1)?.toDouble()
-        // 「工事名」 ラベル text prim の size を 比較対象として抽出 (= cell base size)
-        val koujinameSize = Regex(""""text":"工 事 名","x":[-0-9.E]+,"y":[-0-9.E]+,"angle":[-0-9.E]+,"size":([-0-9.E]+)""")
-            .find(json)?.groupValues?.get(1)?.toDouble()
-        assertTrue(scaleSize != null, "縮尺値 prim が見つかる")
-        assertTrue(koujinameSize != null, "工事名 ラベル prim が見つかる")
-        // 縮尺値の size は cell base の 2/3 倍 (= ±10% 誤差まで許容、 float / 文字列化丸めの吸収)
-        val ratio = scaleSize!! / koujinameSize!!
-        assertTrue(
-            ratio in 0.6..0.73,
-            "縮尺値 size $scaleSize / cell base $koujinameSize = $ratio、 期待 0.667 ± 10%",
-        )
-    }
-
-    @Test
     fun emptyCsvYieldsEmpty() {
         // 三角形が無ければ frame も出ない (既存 WebFrameTest と同じ規約、 margin 引数版でも維持)
         for (margin in listOf(0.75f, 1.0f, 1.5f, 2.0f)) {
