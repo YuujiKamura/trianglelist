@@ -474,6 +474,12 @@ open class DrawingFileWriter {
         // 上部タイトル文字の倍率 (frameTextSize の何倍を題字とするか)。 画面 / DXF / SFC 共通。
         const val TITLE_SCALE = 3f
 
+        // 表題欄内 text (writeDrawingFrame の各 cell 内テキスト) の倍率。 ADR 0001 で 表題欄 text は
+        // paper 2.5mm 固定だが cell 高さ paper 10mm に対して余白 7.5mm と空きが大きいので、
+        // 2026-06-18 user 「右下のタイトルフレーム枠内のテキストだが、 枠に収まる範囲でサイズを
+        // 大きくできるか」 で paper 5mm 化 (= ×2.0)、 cell 内で 上下 2.5mm 余白を残す。
+        const val FRAME_CELL_TEXT_SCALE = 2f
+
         // 外枠 (= 図面輪郭) の用紙端からの余白 cm の default 値。 電子納品基準 (国交省 CAD製図基準)
         // で A0/A1 = 20mm、 A2/A3/A4 = 10mm 以上 〜 7.5mm。
         // 2026-06-18 user 指示「デフォルト 15mm くらいが見やすいな」 ── A2 規定 (10mm) と A1 規定
@@ -488,7 +494,7 @@ open class DrawingFileWriter {
 
     open fun writeDrawingFrame(scale: Float = 1f, textsize: Float){
 
-        val frameTextSize = textsize * scale
+        val frameTextSize = textsize * scale * FRAME_CELL_TEXT_SCALE
 
         //外枠と上部のタイトル
         writeOuterFrame(scale)
