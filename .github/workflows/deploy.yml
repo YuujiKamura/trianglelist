@@ -37,8 +37,26 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      # Kotlin/Wasm 出力 (compileSync optimized + dist productionExecutable) を
+      # source hash key で cache。 同一 source の再 deploy で wasm build (~124s) を 0s に
+      # 短絡する (2026-06-18 user 指示 「Actions の状況分析してビルド最適化しろ」)。
+      # key の hash 対象: common/src の Kotlin source + build script + バージョンファイル。
+      # source が変わった時のみ次の Build step が gradle を起動、 そのときも --build-cache で
+      # task 単位の skip を効かせる。
+      - name: Cache Kotlin/Wasm distribution output
+        id: wasm-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            common/build/compileSync/wasmJs/main/productionExecutable/optimized
+            common/build/dist/wasmJs/productionExecutable
+          key: wasm-${{ runner.os }}-${{ hashFiles('common/src/**/*.kt', 'common/build.gradle.kts', 'build.gradle.kts', 'settings.gradle.kts', 'gradle/libs.versions.toml', 'gradle.properties') }}
+          restore-keys: |
+            wasm-${{ runner.os }}-
+
       - name: Build Kotlin/Wasm distribution
-        run: ./gradlew :common:wasmJsBrowserDistribution --no-daemon
+        if: steps.wasm-cache.outputs.cache-hit != 'true'
+        run: ./gradlew :common:wasmJsBrowserDistribution --no-daemon --build-cache
 
       - name: Setup Node
         uses: actions/setup-node@v4
