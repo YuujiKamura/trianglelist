@@ -30,8 +30,10 @@ class WebFrameTest {
                 ys.add(m.groupValues[2].toDouble()); ys.add(m.groupValues[4].toDouble())
             }
         assertTrue(xs.isNotEmpty(), "frame lines expected")
-        assertEquals(40.0 * ps, xs.max() - xs.min(), 1e-3)
-        assertEquals(27.0 * ps, ys.max() - ys.min(), 1e-3)
+        // 外枠寸法: 用紙端から OUTER_MARGIN_CM (= 0.75) 余白、 A3 (42×29.7cm) で 40.5×28.2cm。
+        // 2026-06-18 電子納品基準 (国交省 CAD製図基準) に揃えた、 旧 40×27cm の独自値から変更。
+        assertEquals(40.5 * ps, xs.max() - xs.min(), 1e-3)
+        assertEquals(28.2 * ps, ys.max() - ys.min(), 1e-3)
         assertEquals(center.x.toDouble(), (xs.max() + xs.min()) / 2, 1e-3)
         assertEquals(center.y.toDouble(), (ys.max() + ys.min()) / 2, 1e-3)
     }

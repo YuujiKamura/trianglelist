@@ -436,10 +436,17 @@ open class DrawingFileWriter {
     }
 
     fun writeOuterFrame(scale: Float = 1f){
-        // 外枠描画 (用紙中央・用紙より一回り内側)。A3: 中心(21,14.85)・40×27cm と同値
+        // 外枠描画 (用紙中央・用紙より一回り内側)。
+        // 2026-06-18 user 確認 + 国交省「CAD製図基準」 + 東京都建設局「CAD製図基準・同解説 (令和 6 年 4 月)」:
+        // A3 (= 297×420mm) は用紙端から 7.5mm 余白原則 (= OUTER_MARGIN_CM=0.75)。 A0/A1 は 20mm、
+        // A2/A3/A4 は 10mm 以上 〜 7.5mm の派生規定、 ここでは A3 専用の 7.5mm を採用 (= 旧 40×27cm は
+        // 上下 1.35cm + 左右 1cm の独自値で電子納品基準と乖離)。
+        // 外枠寸法 = (paperWcm - 2×MARGIN) × (paperHcm - 2×MARGIN) = A3 で 40.5×28.2cm。
         val cx = paperWcm / 2f; val cy = paperHcm / 2f
+        val w = (paperWcm - OUTER_MARGIN_CM * 2f) * scale
+        val h = (paperHcm - OUTER_MARGIN_CM * 2f) * scale
         drawScene(listOf(
-            DrawPrim.Rect(com.example.trilib.PointXY(cx, cy, scale), (paperWcm - 2f) * scale, (paperHcm - 2.7f) * scale, WHITE, scale)
+            DrawPrim.Rect(com.example.trilib.PointXY(cx, cy, scale), w, h, WHITE, scale)
         ))
     }
 
@@ -467,6 +474,11 @@ open class DrawingFileWriter {
     companion object {
         // 上部タイトル文字の倍率 (frameTextSize の何倍を題字とするか)。 画面 / DXF / SFC 共通。
         const val TITLE_SCALE = 3f
+
+        // 外枠 (= 図面輪郭) の用紙端からの余白 cm。 電子納品基準 (国交省 CAD製図基準 / 東京都建設局
+        // CAD製図基準・同解説 令和 6 年 4 月) で A3 は **7.5mm** 原則。 A0/A1 は別途 20mm 規定だが
+        // 本アプリは A3 専用なので 0.75 cm を採用 (旧値は左右 1.0cm / 上下 1.35cm の独自値で乖離)。
+        const val OUTER_MARGIN_CM = 0.75f
     }
 
     open fun writeDrawingFrame(scale: Float = 1f, textsize: Float){
