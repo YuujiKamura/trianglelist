@@ -407,7 +407,7 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
       ctx.stroke();
     } else {
       ctx.fillStyle = color;
-      ctx.font = `${Math.max(p.size * s, 8)}px sans-serif`;
+      ctx.font = `${p.size * s}px sans-serif`;
       // alignH=0 (控除 infoStr、DXF writeTextAndLine の左寄せ) 以外は従来どおり中央
       ctx.textAlign = p.alignH === 0 ? 'left' : 'center';
       // DXF 垂直コード → canvas baseline。y 反転後も「1=文字が点の上に乗る」を保つ
@@ -436,7 +436,7 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
     // 寸法テキストと同じスケール感 (モデル単位の文字高さ × ズーム倍率) に合わせる
     const dimSize =
       lastPrims.find((q): q is TextPrim => q.type === 'text' && q.layer === 'dim')?.size ?? 0.25;
-    ctx.font = `${Math.max(dimSize * s, 8)}px sans-serif`;
+    ctx.font = `${dimSize * s}px sans-serif`;
     ctx.textAlign = 'center';
     // 入力中の値をそのまま表示 (アプリ watchedB1_/watchedC1_ と同じくタイプに追従。
     // 再描画は newB/newC の input イベントが起こす — wireNewRowEnter)
@@ -486,7 +486,7 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
     ctx.fillStyle = COLORS.accentOrange;
     const dimSize =
       lastPrims.find((q): q is TextPrim => q.type === 'text' && q.layer === 'dim')?.size ?? 0.25;
-    ctx.font = `${Math.max(dimSize * s, 8)}px sans-serif`;
+    ctx.font = `${dimSize * s}px sans-serif`;
     ctx.textAlign = 'center';
     const bv = input('newB').value;
     const cv = input('newC').value;
@@ -597,7 +597,7 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
       (q): q is TextPrim => q.type === 'text' && q.layer === 'dim' && q.tri === tri && q.side === side,
     );
     if (p) {
-      const fh = Math.max(p.size * s, 8);
+      const fh = p.size * s;
       ctx.font = `${fh}px sans-serif`;
       const w = ctx.measureText(p.text).width;
       const pad = 3;
