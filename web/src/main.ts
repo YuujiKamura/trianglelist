@@ -1432,6 +1432,7 @@ function buildTable(canvas: HTMLCanvasElement): void {
         const parentIsRect = parentNum >= 1 && parentNum <= rows.length && rows[parentNum - 1]?.kind === 'rectangle';
         row.parentKind = parentIsRect ? 1 : 0;
       }
+      buildTable(canvas); // 一覧の △/□ アイコンと辺セル群を再生成 (kind で table 構造が違うため)
       redraw(canvas);
       autosave();
     });
