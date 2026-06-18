@@ -115,13 +115,17 @@ object WebFrame {
          * (デフォルト空白 + 枠内 dblclick で書換え、2026-06-12 user 要望)
          */
         private fun fieldAt(p: PointXY): String? = when {
-            // rx = paperWcm - OUTER_MARGIN_CM = 40 で strx = rx - 7.5 = 32.5 (= 内容列 x、 2026-06-18
-            // 表題欄を外枠右下隅にぴったり寄せたため 旧 31.5 → 32.5、 zumennum 旧 37.5 → 38.5)
-            near(p, 32.5f, 7.35f) -> "koujiname"
-            // writeTopTitle 上部 rosenname y = paperHcm - OUTER_MARGIN_CM - 1.5 - 1.1 = 25.1 (= 旧 26 から外枠基準で更新)
-            near(p, 32.5f, 5.35f) || near(p, 21f, 25.1f) -> "rosenname"
-            near(p, 38.5f, 3.35f) -> "zumennum"
-            near(p, 32.5f, 2.35f) -> "gyousyaname"
+            // DEFAULT_OUTER_MARGIN_CM=1.5 で rx=paperWcm-1.5=40.5、 by=1.5、 strx=rx-7.5=33。
+            // koujiname y=by+5.35=6.85、 rosenname y=by+3.35=4.85、 zumennum (x=rx-1.5=39, y=by+1.35=2.85)、
+            // gyousyaname y=by+0.35=1.85。 writeTopTitle 上部 rosenname y = paperHcm-1.5-1.5-1.1 = 25.6。
+            // 2026-06-18 user 「デフォルト 15mm くらいが見やすい」 で default 2.0→1.5 に変更したため
+            // 座標群を再計算 (= 旧 32.5/38.5/25.1 系から 33/39/25.6 系へ)。
+            // tCredit (url) = (outerMarginCm+0.5, outerMarginCm-1) = (2, 0.5)、 click で別タブ開く識別子。
+            near(p, 33f, 6.85f) -> "koujiname"
+            near(p, 33f, 4.85f) || near(p, 21f, 25.6f) -> "rosenname"
+            near(p, 39f, 2.85f) -> "zumennum"
+            near(p, 33f, 1.85f) -> "gyousyaname"
+            near(p, 2f, 0.5f) -> "url"
             else -> null
         }
 
