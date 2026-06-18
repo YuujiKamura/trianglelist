@@ -72,10 +72,11 @@ class WebFrameMarginTest {
     }
 
     @Test
-    fun urlFieldTagPresent() {
-        // 2026-06-18 url click で別タブ open のため field="url" tag が prim に乗る
+    fun bottomCreditFieldTagPresent() {
+        // BottomCredit region (= 左下 url、 DrawingFileWriter companion KDoc 参照) は canvas click で
+        // 別タブ open のため field="url" tag が prim に乗る (= 2026-06-18 user 要望)。
         val json = WebFrame.renderFrame(csv)
-        assertTrue(json.contains(""""field":"url""""), "url field tag 必須 (= canvas click 経路の識別子)")
+        assertTrue(json.contains(""""field":"url""""), "BottomCredit url field tag 必須 (= canvas click 経路の識別子)")
     }
 
     @Test

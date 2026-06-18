@@ -485,16 +485,23 @@ open class DrawingFileWriter {
         //   size = textsize × TOP_TITLE_SCALE = base の 2 倍 (= ダブルスコア)。
         //
         // **BottomTitleFrame** (= 右下のタイトルフレーム):
-        //   paper 右下、 表題欄 cell 表組 (= 工事名 / 図面名 / 路線名 / 作成日 / 縮尺 / 図面番号
-        //   / 施工者) + url (= 左下 tCredit、 同 base)。 writeDrawingFrame で書く。
+        //   paper 右下、 表題欄 cell 表組のみ (= 工事名 / 図面名 / 路線名 / 作成日 / 縮尺 / 図面番号
+        //   / 施工者)。 writeDrawingFrame で書く。
         //   size = textsize × 1 (= base、 paper 2.5mm)。 拡大する const は意図的に置かない、
         //   拡大したいなら TopTitle (= TOP_TITLE_SCALE) を 上げる側で実装する。
+        //
+        // **BottomCredit** (= 左下のリンク):
+        //   paper 左下、 url 表記 (= http://trianglelist.home.blog) 1 本。 BottomTitleFrame と同じ
+        //   writeDrawingFrame 内で emit するが 物理位置 (左下) は別、 region として分離。
+        //   size = textsize × 1 (= base、 paper 2.5mm、 BottomTitleFrame と同じ)。 click で別タブ
+        //   open + scheme http/https に限定 (web/src/url-safety.ts)。
         // ─────────────────────────────────────────────────────────────────────────────
 
         /** TopTitle (= 上部タイトル) の base 倍率。 user 確定「1 だけがダブルスコアになってる状態が
-         *  期待値」 (2026-06-19、 1 = 上部タイトル) ── BottomTitleFrame (= 右下) は base のまま、 TopTitle
-         *  だけが ×2。 旧 3f は a72c17b 以前から「だいたい合ってる」 状態を出してたが、 user 本意の
-         *  「ダブルスコア」 (= 他の 2 倍) に厳密に合わせて 2f に確定。 */
+         *  期待値」 (2026-06-19、 1 = 上部タイトル) ── BottomTitleFrame (= 右下表題欄) と
+         *  BottomCredit (= 左下 url) は base のまま、 TopTitle だけが ×2。 旧 3f は a72c17b 以前から
+         *  「だいたい合ってる」 状態を出してたが、 user 本意の「ダブルスコア」 (= 他の 2 倍) に
+         *  厳密に合わせて 2f に確定。 */
         const val TOP_TITLE_SCALE = 2f
 
         // 外枠 (= 図面輪郭) の用紙端からの余白 cm の default 値。 電子納品基準 (国交省 CAD製図基準)
@@ -563,11 +570,12 @@ open class DrawingFileWriter {
             DrawPrim.Text(zumeninfo.tScale_,      com.example.trilib.PointXY(rx - 9f, by + 1.35f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
             DrawPrim.Text(zumeninfo.tNum_,        com.example.trilib.PointXY(rx - 4f, by + 1.35f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
             DrawPrim.Text(zumeninfo.tAname_,      com.example.trilib.PointXY(rx - 9f, by + 0.35f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
-            // tCredit (= url): 外枠左下角ぴったり + 外枠下辺の真下 (2026-06-18 user 「内枠の左下角に
-            // テキストはじまりが正確にあってほしい、 内枠の真下くらいに位置どってほしい」)。
-            // x = outerMarginCm (= 外枠左辺)、 alignH=0 (left) で文字左端がアンカーに一致 = テキスト開始
-            // 位置が外枠左下角と正確に合う。 y = outerMarginCm - 0.3 (= 外枠下辺の 0.3cm 下、 「真下くらい」
-            // で接近)。 outerMarginCm を変えれば url も外枠左下に追従。
+            // tCredit (= url、 = BottomCredit region、 companion KDoc 規約参照): 外枠左下角ぴったり +
+            // 外枠下辺の真下 (2026-06-18 user 「内枠の左下角に テキストはじまりが正確にあってほしい、
+            // 内枠の真下くらいに位置どってほしい」)。 x = outerMarginCm (= 外枠左辺)、 alignH=0 (left) で
+            // 文字左端がアンカーに一致 = テキスト開始位置が外枠左下角と正確に合う。 y = outerMarginCm
+            // - 0.3 (= 外枠下辺の 0.3cm 下、 「真下くらい」 で接近)。 outerMarginCm を変えれば url も
+            // 外枠左下に追従。 size は frameTextSize 共用 = base、 BottomTitleFrame と同じ。
             DrawPrim.Text(zumeninfo.tCredit_,     com.example.trilib.PointXY(outerMarginCm, outerMarginCm - 0.3f, scale), w, frameTextSize, 0, 0, 0.0, 1f),
         )
         // 内容: 工事名 (長ければ改行) → 図面名・路線名・作成日・縮尺・図面番号・施工者。 全部 by 基準。
