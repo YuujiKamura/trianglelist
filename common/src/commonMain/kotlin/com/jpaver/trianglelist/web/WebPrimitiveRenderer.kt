@@ -103,7 +103,7 @@ object WebPrimitiveRenderer {
             }
             // Rectangle 専用: meta perp 識別子 + guide 線
             if (obj is Rectangle) {
-                // 垂線・ガイド・直角記号は Rectangle に問い合わせるだけ (描画ロジックを露出させない)
+                // 垂線・ガイド・直角マーカーは Rectangle に問い合わせるだけ (描画ロジックを露出させない)
                 item("""{"type":"meta","kind":"perp","tri":$num,"perpFrom":"${obj.perpFrom}"}""")
                 obj.getGuideLine()?.let { item(line(it.left, it.right, "guide")) }
                 val (raA, raB) = obj.getRightAngleMark()
