@@ -451,24 +451,23 @@ open class DrawingFileWriter {
     }
 
     fun writeTopTitle(scale: Float = 1f, textsize: Float ){
-        // 上のタイトル (用紙上中央アンカー)。A3: x=21=W/2, y は上端基準
+        // 上のタイトル (用紙上中央アンカー)。 cx = 用紙横中心、 y は外枠上辺基準で配置。
+        // 2026-06-18 user 方針「画面と図面で同じレイアウト (冪等)」 + 「すべての部品が外枠基準」 ──
+        // OUTER_MARGIN_CM を変えれば title 群も外枠上辺に追従する。 旧コードは y=paperHcm-2.6 直値
+        // で旧外枠上辺 (= paperHcm-1.35) 基準の暗黙 offset、 = 「なぜ -2.6 か」 が式に出てなかった。
+        // ty = title 上端 (= 外枠上辺の 1.5cm 下、 ×3 倍 title の頭に外枠との余白を確保)。
         val cx = paperWcm / 2f
-        // 文字高は writeDrawingFrame の frameTextSize と同じ textsize×scale 規約に揃える。
-        // DXF は scale=1f (printscale は unitscale 側) なので不変、SFC は scale=printscale_ で
-        // 枠内テキストと同じ実効サイズになる (これが無いと SFC の上中央タイトルだけ printscale 分小さい)。
-        // 2026-06-18 user 方針「画面と図面で同じレイアウト (冪等)」 ── DXF/SFC/web が同一の
-        // writeTopTitle を通るので、 ここで決めた仕様 (= titleScale ×3、 下線幅 = title 文字数 × textsize)
-        // が 3 format 全部に一律伝播。 派生側 (WebFrame / DxfFileWriter / SfcWriter) で個別調整しない。
+        val ty = paperHcm - OUTER_MARGIN_CM - 1.5f
         val titleTextSize = textsize * scale * TITLE_SCALE
         val title = zumeninfo.zumentitle
         // 下線幅は title 文字列長にフィット。 日本語 1 文字 ≒ 1em (等幅)、 ASCII 半角を混ぜる
         // 用途は今のところ無いので length そのままで近似。
         val halfW = (titleTextSize * title.length) / 2f
         drawScene(listOf(
-            DrawPrim.Text(title, com.example.trilib.PointXY(cx, paperHcm - 2.6f, scale), WHITE, titleTextSize, 1, 1, 0.0, scale),
-            DrawPrim.Text(rosenname_, com.example.trilib.PointXY(cx, paperHcm - 3.7f, scale), WHITE, titleTextSize, 1, 1, 0.0, scale),
-            DrawPrim.Line(com.example.trilib.PointXY(cx - halfW, paperHcm - 2.7f, scale), com.example.trilib.PointXY(cx + halfW, paperHcm - 2.7f, scale), WHITE, scale),
-            DrawPrim.Line(com.example.trilib.PointXY(cx - halfW, paperHcm - 2.8f, scale), com.example.trilib.PointXY(cx + halfW, paperHcm - 2.8f, scale), WHITE, scale),
+            DrawPrim.Text(title,      com.example.trilib.PointXY(cx, ty,        scale), WHITE, titleTextSize, 1, 1, 0.0, scale),
+            DrawPrim.Text(rosenname_, com.example.trilib.PointXY(cx, ty - 1.1f, scale), WHITE, titleTextSize, 1, 1, 0.0, scale),
+            DrawPrim.Line(com.example.trilib.PointXY(cx - halfW, ty - 0.1f, scale), com.example.trilib.PointXY(cx + halfW, ty - 0.1f, scale), WHITE, scale),
+            DrawPrim.Line(com.example.trilib.PointXY(cx - halfW, ty - 0.2f, scale), com.example.trilib.PointXY(cx + halfW, ty - 0.2f, scale), WHITE, scale),
         ))
     }
     companion object {
@@ -501,40 +500,42 @@ open class DrawingFileWriter {
         // 右端から 3cm 内側 = 外枠右辺の 1cm 内側 余裕、 表題欄が外枠内に納まる。
         // Y は用紙下端基準 1.35〜7.35 (= 6cm 高さ)、 外枠下辺 (= y=OUTER_MARGIN_CM=2.0) より上に
         // 0.65cm の余裕、 外枠内に納まる。
+        // rx = 表題欄右辺 = 外枠右辺 と共用。 by = 表題欄下辺 = 外枠下辺 と共用。
+        // 全部品はこの rx / by を基準に「rx - N」 / 「by + N」 で配置するので、
+        // OUTER_MARGIN_CM を変えれば表題欄全体が外枠右下隅に追従する (2026-06-18
+        // user 「タイトルとかの部品は、 すべてこの外枠を基準に配置される」 + camera-eye 確認で
+        // 旧 rx-1 の 1cm 余裕が「外枠右下隅から離れすぎ」 と判明、 rx 自体を外枠右辺と一致させた)。
         val rx = paperWcm - OUTER_MARGIN_CM
-        // by = 表題欄下辺 = 外枠下辺 と共用。 全部品はこの by を基準に「by + N」 で配置するので、
-        // OUTER_MARGIN_CM を変えれば表題欄全体が外枠下辺に追従して上下シフトする (2026-06-18
-        // user 指示「タイトルとかの部品は、 すべてこの外枠を基準に配置されるから、 メンバの計算根拠
-        // も反映されているのがいい」)。 旧コードは y=1.35〜7.35 の直値だったが、 これは旧外枠下辺
-        // (= y=1.35cm) 基準の暗黙 offset で「なぜ 1.35 か」 が式に現れていなかった。
         val by = OUTER_MARGIN_CM
         val st = printscale_*100f
-        val strx = (rx - 8.5f) * scale
+        // strx = 内容列の x 開始位置 = 表題欄左辺 (rx-10) + ラベル列幅 (2cm) + 余白 0.5cm
+        // 表題欄 10×6cm: 右辺=rx (= 外枠右辺と共用)、 左辺=rx-10、 ラベル/内容 縦罫=rx-8。
+        val strx = (rx - 7.5f) * scale
         val yKOUJIMEI = (by + 5.35f) * scale
         val yo = 0.2f * scale
         val nengappi = currentDateStringJp()
         val w = WHITE
 
         val prims = mutableListOf<DrawPrim>(
-            // 枠線 (yoko/tate/uchi-tate + 行罫線 + 図面番号欄の縦罫)。 表題欄 10×6cm、 下辺=by。
-            DrawPrim.Line(com.example.trilib.PointXY(rx - 11f, by + 6f, scale), com.example.trilib.PointXY(rx - 1f, by + 6f, scale), w),  // 上辺
-            DrawPrim.Line(com.example.trilib.PointXY(rx - 11f, by, scale),       com.example.trilib.PointXY(rx - 11f, by + 6f, scale), w),  // 左辺
-            DrawPrim.Line(com.example.trilib.PointXY(rx - 9f, by, scale),        com.example.trilib.PointXY(rx - 9f, by + 6f, scale), w),  // ラベル列 縦罫
-            DrawPrim.Line(com.example.trilib.PointXY(rx - 11f, by + 5f, scale), com.example.trilib.PointXY(rx - 1f, by + 5f, scale), w),  // 行罫 (工事名↑/図面名↓ 等)
-            DrawPrim.Line(com.example.trilib.PointXY(rx - 11f, by + 4f, scale), com.example.trilib.PointXY(rx - 1f, by + 4f, scale), w),
-            DrawPrim.Line(com.example.trilib.PointXY(rx - 11f, by + 3f, scale), com.example.trilib.PointXY(rx - 1f, by + 3f, scale), w),
-            DrawPrim.Line(com.example.trilib.PointXY(rx - 11f, by + 2f, scale), com.example.trilib.PointXY(rx - 1f, by + 2f, scale), w),
-            DrawPrim.Line(com.example.trilib.PointXY(rx - 11f, by + 1f, scale), com.example.trilib.PointXY(rx - 1f, by + 1f, scale), w),
-            DrawPrim.Line(com.example.trilib.PointXY(rx - 6f, by + 1f, scale),  com.example.trilib.PointXY(rx - 6f, by + 2f, scale), w),  // 図番欄 縦罫
-            DrawPrim.Line(com.example.trilib.PointXY(rx - 4f, by + 1f, scale),  com.example.trilib.PointXY(rx - 4f, by + 2f, scale), w),
-            // 題字 (左端ラベル列)。 各行の中央は罫 (by+N/N+1) の中間、 y = by + N + 0.35 で 7 文字分の base。
-            DrawPrim.Text(zumeninfo.koujiname,    com.example.trilib.PointXY(rx - 10f, by + 5.35f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
-            DrawPrim.Text(zumeninfo.tDtype_,      com.example.trilib.PointXY(rx - 10f, by + 4.35f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
-            DrawPrim.Text(zumeninfo.tDname_,      com.example.trilib.PointXY(rx - 10f, by + 3.35f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
-            DrawPrim.Text(zumeninfo.tDateHeader_, com.example.trilib.PointXY(rx - 10f, by + 2.35f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
-            DrawPrim.Text(zumeninfo.tScale_,      com.example.trilib.PointXY(rx - 10f, by + 1.35f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
-            DrawPrim.Text(zumeninfo.tNum_,        com.example.trilib.PointXY(rx - 5f,  by + 1.35f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
-            DrawPrim.Text(zumeninfo.tAname_,      com.example.trilib.PointXY(rx - 10f, by + 0.35f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
+            // 枠線 (yoko/tate/uchi-tate + 行罫線 + 図面番号欄の縦罫)。 表題欄 10×6cm、 下辺=by、 右辺=rx。
+            DrawPrim.Line(com.example.trilib.PointXY(rx - 10f, by + 6f, scale), com.example.trilib.PointXY(rx, by + 6f, scale), w),       // 上辺
+            DrawPrim.Line(com.example.trilib.PointXY(rx - 10f, by, scale),       com.example.trilib.PointXY(rx - 10f, by + 6f, scale), w), // 左辺
+            DrawPrim.Line(com.example.trilib.PointXY(rx - 8f, by, scale),        com.example.trilib.PointXY(rx - 8f, by + 6f, scale), w),  // ラベル列 縦罫
+            DrawPrim.Line(com.example.trilib.PointXY(rx - 10f, by + 5f, scale), com.example.trilib.PointXY(rx, by + 5f, scale), w),       // 行罫
+            DrawPrim.Line(com.example.trilib.PointXY(rx - 10f, by + 4f, scale), com.example.trilib.PointXY(rx, by + 4f, scale), w),
+            DrawPrim.Line(com.example.trilib.PointXY(rx - 10f, by + 3f, scale), com.example.trilib.PointXY(rx, by + 3f, scale), w),
+            DrawPrim.Line(com.example.trilib.PointXY(rx - 10f, by + 2f, scale), com.example.trilib.PointXY(rx, by + 2f, scale), w),
+            DrawPrim.Line(com.example.trilib.PointXY(rx - 10f, by + 1f, scale), com.example.trilib.PointXY(rx, by + 1f, scale), w),
+            DrawPrim.Line(com.example.trilib.PointXY(rx - 5f, by + 1f, scale),  com.example.trilib.PointXY(rx - 5f, by + 2f, scale), w),  // 図番欄 縦罫
+            DrawPrim.Line(com.example.trilib.PointXY(rx - 3f, by + 1f, scale),  com.example.trilib.PointXY(rx - 3f, by + 2f, scale), w),
+            // 題字 (左端ラベル列)。 ラベル列中央 x = rx - 9 (= 左辺 rx-10 + 1cm)。
+            DrawPrim.Text(zumeninfo.koujiname,    com.example.trilib.PointXY(rx - 9f, by + 5.35f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tDtype_,      com.example.trilib.PointXY(rx - 9f, by + 4.35f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tDname_,      com.example.trilib.PointXY(rx - 9f, by + 3.35f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tDateHeader_, com.example.trilib.PointXY(rx - 9f, by + 2.35f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tScale_,      com.example.trilib.PointXY(rx - 9f, by + 1.35f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tNum_,        com.example.trilib.PointXY(rx - 4f, by + 1.35f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tAname_,      com.example.trilib.PointXY(rx - 9f, by + 0.35f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
             // tCredit (= url) は紙余白の表記、 外枠外 = paper 下端から 1cm 上に置く (= 由来別軸、 by 基準ではない)
             DrawPrim.Text(zumeninfo.tCredit_,     com.example.trilib.PointXY(8f, 1f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
         )
@@ -543,8 +544,8 @@ open class DrawingFileWriter {
         prims.add(DrawPrim.Text(zumeninfo.zumentitle,                com.example.trilib.PointXY(strx,       (by + 4.35f) * scale), w, frameTextSize, 0, 0, 0.0, 1f))
         prims.add(DrawPrim.Text(rosenname_,                          com.example.trilib.PointXY(strx,       (by + 3.35f) * scale), w, frameTextSize, 0, 0, 0.0, 1f))
         prims.add(DrawPrim.Text(nengappi,                            com.example.trilib.PointXY(strx,       (by + 2.35f) * scale), w, frameTextSize, 0, 0, 0.0, 1f))
-        prims.add(DrawPrim.Text("1/${st.toInt()} ($paperName)",      com.example.trilib.PointXY(rx - 7.5f,  by + 1.35f, scale),    w, frameTextSize, 1, 0, 0.0, 1f))
-        prims.add(DrawPrim.Text(zumennum_,                           com.example.trilib.PointXY(rx - 2.5f,  by + 1.35f, scale),    w, frameTextSize, 1, 0, 0.0, 1f))
+        prims.add(DrawPrim.Text("1/${st.toInt()} ($paperName)",      com.example.trilib.PointXY(rx - 6.5f,  by + 1.35f, scale),    w, frameTextSize, 1, 0, 0.0, 1f))
+        prims.add(DrawPrim.Text(zumennum_,                           com.example.trilib.PointXY(rx - 1.5f,  by + 1.35f, scale),    w, frameTextSize, 1, 0, 0.0, 1f))
         prims.add(DrawPrim.Text(gyousyaname_,                        com.example.trilib.PointXY(strx,       (by + 0.35f) * scale), w, frameTextSize, 0, 0, 0.0, 1f))
 
         drawScene(prims)

@@ -114,10 +114,13 @@ object WebFrame {
          * (デフォルト空白 + 枠内 dblclick で書換え、2026-06-12 user 要望)
          */
         private fun fieldAt(p: PointXY): String? = when {
-            near(p, 31.5f, 7.35f) -> "koujiname"
-            near(p, 31.5f, 5.35f) || near(p, 21f, 26f) -> "rosenname"
-            near(p, 37.5f, 3.35f) -> "zumennum"
-            near(p, 31.5f, 2.35f) -> "gyousyaname"
+            // rx = paperWcm - OUTER_MARGIN_CM = 40 で strx = rx - 7.5 = 32.5 (= 内容列 x、 2026-06-18
+            // 表題欄を外枠右下隅にぴったり寄せたため 旧 31.5 → 32.5、 zumennum 旧 37.5 → 38.5)
+            near(p, 32.5f, 7.35f) -> "koujiname"
+            // writeTopTitle 上部 rosenname y = paperHcm - OUTER_MARGIN_CM - 1.5 - 1.1 = 25.1 (= 旧 26 から外枠基準で更新)
+            near(p, 32.5f, 5.35f) || near(p, 21f, 25.1f) -> "rosenname"
+            near(p, 38.5f, 3.35f) -> "zumennum"
+            near(p, 32.5f, 2.35f) -> "gyousyaname"
             else -> null
         }
 
