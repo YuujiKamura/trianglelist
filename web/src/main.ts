@@ -3672,10 +3672,19 @@ function wireCanvasEvents(canvas: HTMLCanvasElement): void {
     pointers.delete(e.pointerId);
     pinchDist = 0;
     if (isClick && view) {
-      // 図面枠の url text をクリックしたら別タブで開く (2026-06-18 user 「キャンバス上でクリックすると別タブで開く」)
+      // 図面枠の url text をクリックしたら別タブで開く (2026-06-18 user 「キャンバス上でクリックすると別タブで開く」)。
+      // 現状 url は wasm 内 zumeninfo.tCredit_ 固定で user 入力経由ではないが、 将来編集可能になった時の
+      // XSS (javascript:/data:/vbscript:/file:) を防ぐため scheme を http/https に限定。
       const url = hitUrlPrim(canvas, downAt!.x, downAt!.y);
       if (url) {
-        window.open(url, '_blank', 'noopener,noreferrer');
+        try {
+          const u = new URL(url);
+          if (u.protocol === 'http:' || u.protocol === 'https:') {
+            window.open(u.toString(), '_blank', 'noopener,noreferrer');
+          }
+        } catch {
+          // 不正 URL は無視
+        }
         downAt = null;
         return;
       }
