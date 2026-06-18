@@ -110,6 +110,38 @@ open class EditObject() {
         return PointXY((sx / vs.size).toFloat(), (sy / vs.size).toFloat())
     }
 
+    /**
+     * 番号 (mynumber) を画面に表示する基準点。
+     * default は centroid (= 幾何中心)。Triangle のように user が手動で動かした位置を
+     * 保持する場合は override してその位置を返す。上位 (WebPrimitiveRenderer 等) はこの
+     * メソッドを呼ぶだけで kind 分岐なしに番号位置を取れる。
+     */
+    open fun pointNumberAnchor(): PointXY = centroid()
+
+    /**
+     * 描画前の段階0: 寸法の text size を図形に配布する。
+     * default は no-op (寸法を持たない図形)。Triangle / Rectangle 等の寸法を持つ図形は
+     * override して内部の dim キャッシュや height 値を更新する。上位は kind 分岐なしに
+     * 全要素に一括配布できる。
+     */
+    open fun applyDimTextSize(size: Float) {}
+
+    /**
+     * 図形がこの点を内側に含むか (タップ判定の共通契約)。
+     * default は vertices() の fan triangulation で N 角形 (N>=3) を汎用判定する。
+     * 別実装を持つ図形 (例: Triangle の符号判定) は override で差し替えてよい。
+     * 上位 (WebHitTest 等) は kind 分岐なしにこのメソッドを呼ぶだけで hit test できる。
+     */
+    open fun containsPoint(p: PointXY): Boolean {
+        val v = vertices()
+        if (v.size < 3) return false
+        // 凸多角形を v[0] 起点の扇に分解、各三角形で判定
+        for (i in 1 until v.size - 1) {
+            if (p.isCollide(v[0], v[i], v[i + 1])) return true
+        }
+        return false
+    }
+
     open fun getParams() : InputParameter { return InputParameter() }
     open fun getArea(): Float { return 0f }
 

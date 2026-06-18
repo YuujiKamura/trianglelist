@@ -5,6 +5,7 @@ import com.jpaver.trianglelist.getAngleBySide
 import com.jpaver.trianglelist.getLengthByIndex
 import com.jpaver.trianglelist.getPointBySide
 import com.jpaver.trianglelist.setLengthStr
+import com.jpaver.trianglelist.setDimPath
 import com.jpaver.trianglelist.viewmodel.Cloneable
 import com.jpaver.trianglelist.viewmodel.InputParameter
 import kotlin.math.roundToInt
@@ -218,6 +219,15 @@ class Triangle : EditObject, Cloneable<Triangle> {
     var pointnumber = com.example.trilib.PointXY(0f, 0f)
     init { pointnumber = com.example.trilib.PointXY(0f, 0f) }
     var pointNumber = PointNumberManager()
+
+    // 番号表示位置は user 手動移動を保持する pointnumber を返す (EditObject 既定の centroid とは別概念)。
+    override fun pointNumberAnchor(): com.example.trilib.PointXY = pointnumber
+
+    // hit test は既存の符号判定 (TriangleExtensions.kt:292 の isCollide) を委譲、上位の kind 分岐を消す。
+    override fun containsPoint(p: com.example.trilib.PointXY): Boolean = isCollide(p)
+
+    // 段階0 の textSize 配布: 拡張関数 setDimPath(size) で寸法位置キャッシュを再構築する。
+    override fun applyDimTextSize(size: Float) { setDimPath(size) }
 
     // --- スケール係数（スペル修正: scaleFactor） ---
     var scaleFactor = 1f

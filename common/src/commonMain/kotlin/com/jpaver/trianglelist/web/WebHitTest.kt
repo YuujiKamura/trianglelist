@@ -41,15 +41,5 @@ object WebHitTest {
         return 0
     }
 
-    private fun hits(obj: EditObject, tap: PointXY): Boolean = when (obj) {
-        is Triangle -> obj.isCollide(tap)
-        is Rectangle -> {
-            val v = obj.vertices()
-            v.size >= 4 && (
-                tap.isCollide(v[0], v[1], v[2]) ||
-                tap.isCollide(v[0], v[2], v[3])
-            )
-        }
-        else -> false
-    }
+    private fun hits(obj: EditObject, tap: PointXY): Boolean = obj.containsPoint(tap)
 }

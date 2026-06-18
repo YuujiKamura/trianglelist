@@ -62,10 +62,7 @@ object WebPrimitiveRenderer {
 
         // 段階0: textSize 配布
         list.forEachItem { obj ->
-            when (obj) {
-                is Triangle -> obj.setDimPath(textSize)
-                is Rectangle -> obj.dimHeight = textSize
-            }
+            obj.applyDimTextSize(textSize)
         }
 
         // 段階1a: 塗り
@@ -114,19 +111,16 @@ object WebPrimitiveRenderer {
                 item(line(raB.left, raB.right, "ra"))
             }
             // 番号位置
-            val center = when (obj) {
-                is Triangle -> obj.pointnumber
-                is Rectangle -> obj.centroid()
-                else -> PointXY(0f, 0f)
-            }
+            val center = obj.pointNumberAnchor()
             val circleR = textSize * 0.85f
             item("""{"type":"circle","layer":"num","cx":${center.x},"cy":${center.y},"r":$circleR,"tri":$num}""")
             item(text(num.toString(), center, 0.0, textSize, 2, "num", ""","tri":$num"""))
 
-            // 引き出し矢印 (Triangle)
-            if (obj is Triangle && !obj.isCollide(obj.pointnumber)) {
-                val pc = obj.pointcenter
-                val pn = obj.pointnumber
+            // 引き出し矢印: 番号位置が図形外なら幾何中心から矢印を引く (kind 不問)。
+            // Rectangle は pointNumberAnchor()=centroid() なので必ず内部、矢印は描かれない。
+            if (!obj.containsPoint(center)) {
+                val pc = obj.centroid()
+                val pn = center
                 val pnOffsetToC = pn.offset(pc, (circleR * 1.1f).toDouble())
                 val arrowTail = pc.offset(pn, pc.lengthTo(pnOffsetToC) * 0.3).rotate(pc, 10.0)
                 item(line(pc, pnOffsetToC, "num"))
