@@ -10,6 +10,14 @@ Android版: <https://play.google.com/store/apps/details?id=com.jpaver.myapplicat
 
 ブラウザ版: <https://yuujikamura.github.io/trianglelist/> (インストール不要、AIに作らせている台形編集混成の試作版、バグってる可能性あり)
 
+## Web 版の機能 (2026-06 時点)
+
+- **図面枠 ON/OFF**: 上部「☑ 図面枠」 で 表題欄 (12×9cm) + 上部 title + 外枠 + url 描画。 印刷プレビューに近い見た目
+- **外枠余白 UI 切替**: 7.5mm (A3) / 10mm (A2) / 15mm / 20mm (A1)、 電子納品基準準拠、 default 15mm、 localStorage で保存
+- **テキスト縮小は限界なし**: デスクトップ CAD 同等、 zoom out でも 8px stop せずグリフの真サイズで追従 (字間崩れは Canvas 2D rasterizer 限界由来で残る)
+- **形状切替**: 一覧の △ / □ をクリックで Triangle ⇄ Rectangle (台形)、 内部共通動線で 動線負債を回避
+- **冪等性**: 画面と DXF / SFC の layout が一致 (= DrawingFileWriter base 1 か所で 3 format に伝播)
+
 ## 構成
 
 ```
