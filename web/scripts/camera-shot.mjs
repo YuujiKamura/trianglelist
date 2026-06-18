@@ -5,7 +5,7 @@ import { chromium } from 'playwright';
 const url = process.argv[2] || 'http://localhost:5173/';
 const out = process.argv[3] || 'C:/Users/yuuji/.camera-eye/web-shot.png';
 // 中央揃え (alignment=1) 台形 (length=5, widthA=10, widthB=4) を独立で 1 個。
-// → 上辺 4 + 底辺 10 で対称、垂線 5 が真ん中、直角記号と延長 5.0 寸法・上下辺 寸法のみ
+// → 上辺 4 + 底辺 10 で対称、垂線 5 が真ん中、直角マーカーと延長 5.0 寸法・上下辺 寸法のみ
 //   斜辺 寸法は出ない、guide 線が垂線そのもの
 const csv = process.argv[4] || 'Rectangle,1,5,10,4,-1,0,1\n';
 

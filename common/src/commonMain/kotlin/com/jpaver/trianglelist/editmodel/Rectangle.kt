@@ -39,7 +39,7 @@ class Rectangle(
         // 「描画にいる数字」は全部ここで持つ ── 呼び出し側に向き計算をさせない
         // (yuuji 2026-06-17 指針:「必要な数字は全部エンティティクラス自身がメンバでそろえていれば、ふつうに想起する」)
         val spine: Line,                  // 垂線 (alignment 込み・中央揃えの短辺×30% shift 込み)
-        val rightAngleMark: Line2,        // 直角記号 (spine 起点・内向き 2 本)
+        val rightAngleMark: Line2,        // 直角マーカー (spine 起点・内向き 2 本)
         val guideLine: Line?              // alignment=0 では null (B 辺と spine が重なる)
     )
 
@@ -91,13 +91,21 @@ class Rectangle(
             else -> Line(bl, tl)
         }
 
-        // 直角記号: spine 起点と spine 方向は確定、内向き 90° の向きも alignment から確定 →
-        //   全 3 点 (p1, p2, p3) を call 時計算なしでここで畳む
+        // 直角マーカー: spine 起点と上辺方向は確定。内向きは「上辺方向に直交する 2 候補のうち、
+        //   centroid 側を向く方」を採る (alignment・親の有無 / crossClockwise の符号によらず常に内向き、
+        //   2026-06-18 yuuji 指摘「右揃え/左揃え時に外に飛び出る」の修正)。
         val sqSize = minOf(widthA, widthB, length) * 0.1
         val upDir = spine.left.vectorTo(spine.right).normalize()
+        val perpCcw = PointXY(-upDir.y, upDir.x)              // CCW90 of upDir
+        val perpCw  = PointXY( upDir.y, -upDir.x)             // CW90  of upDir
+        val rectCenter = PointXY(
+            ((bl.x + br.x + tr.x + tl.x) * 0.25f),
+            ((bl.y + br.y + tr.y + tl.y) * 0.25f)
+        )
+        val toCenter = spine.left.vectorTo(rectCenter)
         val inDir =
-            if (alignment == 2) PointXY(-upDir.y, upDir.x)   // CCW90 (右寄せ: spine 左側へ)
-            else PointXY(upDir.y, -upDir.x)                  // CW90  (左寄せ・中央: spine 右側へ)
+            if (toCenter.x * perpCcw.x + toCenter.y * perpCcw.y > 0f) perpCcw
+            else perpCw
         val p1 = spine.left + inDir.scale(sqSize)
         val p3 = spine.left + upDir.scale(sqSize)
         val p2 = p1 + upDir.scale(sqSize)
@@ -118,7 +126,7 @@ class Rectangle(
     /** 垂線 (spine)。中央揃え時の番号サークル回避 shift 込み、起点は底辺との交点。 */
     fun getSpine(): Line = geo().spine
 
-    /** 直角記号 (spine と底辺の直交を示す小正方形の 2 辺)。Line2 として「描画する 2 本」を返すだけ。 */
+    /** 直角マーカー (spine と底辺の直交を示す小正方形の 2 辺)。Line2 として「描画する 2 本」を返すだけ。 */
     fun getRightAngleMark(): Line2 = geo().rightAngleMark
 
     /** 垂線そのもののガイド線。alignment=0 (左寄せ) は B 辺と重なるので null。 */
