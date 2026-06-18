@@ -7,6 +7,7 @@
 測量・土木向けに、三角形と台形を接続して土地形状を作図し、 **DXF / SFC / Excel** に出力するアプリ。辺長を直接いじると図形と寸法がその場で連動する対話編集。
 
 Android版: <https://play.google.com/store/apps/details?id=com.jpaver.myapplication/>
+
 ブラウザ版: <https://yuujikamura.github.io/trianglelist/> (インストール不要、AIに作らせている台形編集混成の試作版、バグってる可能性あり)
 
 ## 構成
