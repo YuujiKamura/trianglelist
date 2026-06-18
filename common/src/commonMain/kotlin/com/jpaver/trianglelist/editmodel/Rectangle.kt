@@ -94,7 +94,7 @@ class Rectangle(
         // 直角マーカー: spine 起点と上辺方向は確定。内向きは「上辺方向に直交する 2 候補のうち、
         //   centroid 側を向く方」を採る (alignment・親の有無 / crossClockwise の符号によらず常に内向き、
         //   2026-06-18 yuuji 指摘「右揃え/左揃え時に外に飛び出る」の修正)。
-        val sqSize = minOf(widthA, widthB, length) * 0.1
+        val sqSize = minOf(widthA, widthB, length) * 0.05
         val upDir = spine.left.vectorTo(spine.right).normalize()
         val perpCcw = PointXY(-upDir.y, upDir.x)              // CCW90 of upDir
         val perpCw  = PointXY( upDir.y, -upDir.x)             // CW90  of upDir
