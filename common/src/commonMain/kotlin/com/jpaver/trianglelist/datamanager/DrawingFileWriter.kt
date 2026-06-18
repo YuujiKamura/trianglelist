@@ -449,13 +449,24 @@ open class DrawingFileWriter {
         // 文字高は writeDrawingFrame の frameTextSize と同じ textsize×scale 規約に揃える。
         // DXF は scale=1f (printscale は unitscale 側) なので不変、SFC は scale=printscale_ で
         // 枠内テキストと同じ実効サイズになる (これが無いと SFC の上中央タイトルだけ printscale 分小さい)。
-        val titleTextSize = textsize * scale
+        // 2026-06-18 user 方針「画面と図面で同じレイアウト (冪等)」 ── DXF/SFC/web が同一の
+        // writeTopTitle を通るので、 ここで決めた仕様 (= titleScale ×3、 下線幅 = title 文字数 × textsize)
+        // が 3 format 全部に一律伝播。 派生側 (WebFrame / DxfFileWriter / SfcWriter) で個別調整しない。
+        val titleTextSize = textsize * scale * TITLE_SCALE
+        val title = zumeninfo.zumentitle
+        // 下線幅は title 文字列長にフィット。 日本語 1 文字 ≒ 1em (等幅)、 ASCII 半角を混ぜる
+        // 用途は今のところ無いので length そのままで近似。
+        val halfW = (titleTextSize * title.length) / 2f
         drawScene(listOf(
-            DrawPrim.Text(zumeninfo.zumentitle, com.example.trilib.PointXY(cx, paperHcm - 2.6f, scale), WHITE, titleTextSize, 1, 1, 0.0, scale),
+            DrawPrim.Text(title, com.example.trilib.PointXY(cx, paperHcm - 2.6f, scale), WHITE, titleTextSize, 1, 1, 0.0, scale),
             DrawPrim.Text(rosenname_, com.example.trilib.PointXY(cx, paperHcm - 3.7f, scale), WHITE, titleTextSize, 1, 1, 0.0, scale),
-            DrawPrim.Line(com.example.trilib.PointXY(cx - 2f, paperHcm - 2.7f, scale), com.example.trilib.PointXY(cx + 2f, paperHcm - 2.7f, scale), WHITE, scale),
-            DrawPrim.Line(com.example.trilib.PointXY(cx - 2f, paperHcm - 2.8f, scale), com.example.trilib.PointXY(cx + 2f, paperHcm - 2.8f, scale), WHITE, scale),
+            DrawPrim.Line(com.example.trilib.PointXY(cx - halfW, paperHcm - 2.7f, scale), com.example.trilib.PointXY(cx + halfW, paperHcm - 2.7f, scale), WHITE, scale),
+            DrawPrim.Line(com.example.trilib.PointXY(cx - halfW, paperHcm - 2.8f, scale), com.example.trilib.PointXY(cx + halfW, paperHcm - 2.8f, scale), WHITE, scale),
         ))
+    }
+    companion object {
+        // 上部タイトル文字の倍率 (frameTextSize の何倍を題字とするか)。 画面 / DXF / SFC 共通。
+        const val TITLE_SCALE = 3f
     }
 
     open fun writeDrawingFrame(scale: Float = 1f, textsize: Float){

@@ -77,6 +77,13 @@ class WebDrawingExportGoldenTest {
     }
 
     private fun assertGolden(goldenName: String, actual: String, tokenize: (String) -> List<String>) {
+        // UPDATE_GOLDEN=1 のとき actual で golden を上書きして pass (= 冪等性確保のため base
+        // 改修した時の golden 更新 path、 2026-06-18 user 方針「画面と図面で同じ」)。
+        if (System.getenv("UPDATE_GOLDEN") == "1") {
+            goldenFile(goldenName).writeText(actual, sjis)
+            println("golden updated: $goldenName")
+            return
+        }
         val expectedLines = normalize(goldenFile(goldenName).readText(sjis)).lines()
         val gotLines = normalize(actual).lines()
 
