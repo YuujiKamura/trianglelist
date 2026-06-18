@@ -173,6 +173,9 @@ class Rectangle(
         return PointXY(((g.bl.x + g.br.x + g.tr.x + g.tl.x) / 4).toFloat(), ((g.bl.y + g.br.y + g.tr.y + g.tl.y) / 4).toFloat())
     }
 
+    // 段階0 の textSize 配布: Rectangle は dimHeight を保持するだけ (描画時に直接参照)。
+    override fun applyDimTextSize(size: Float) { dimHeight = size }
+
     fun expandBoundaries(listBound: com.jpaver.trianglelist.Bounds): com.jpaver.trianglelist.Bounds {
         val g = geo()
         val vs = listOf(g.bl, g.br, g.tr, g.tl)
