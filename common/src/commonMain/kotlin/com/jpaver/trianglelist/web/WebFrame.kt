@@ -103,17 +103,21 @@ object WebFrame {
 
         /**
          * タイトル欄の「値」テキストの paper-cm アンカー (DrawingFileWriter の書込み座標の鏡):
-         * 工事名 writeDrawingFrame:273 (33.5, 6.7) / 路線名 :282 (33.5, 4.7) + writeTopTitle:195 (21, 26) /
-         * 図面番号 :288 (39.5, 2.7) / 業者名 :290 (33.5, 1.7)。
+         * 工事名 (strx, by+5.35) / 路線名 (strx, by+3.35) + writeTopTitle (21, paperHcm-3.7) /
+         * 図面番号 (rx-2.5, by+1.35) / 業者名 (strx, by+0.35)。
+         * 2026-06-18 外枠基準 (by = OUTER_MARGIN_CM = 2.0、 rx = paperWcm-OUTER_MARGIN_CM = 40) に
+         * 統一したため fieldAt の near 値も更新: rx=40 で strx = rx-8.5 = 31.5、 zumennum x = rx-2.5 = 37.5、
+         * y は by + N の評価値 (= 7.35 / 5.35 / 3.35 / 2.35)。 writeTopTitle の rosenname は
+         * paperHcm-3.7 = 26.0 (= by 基準でなく paper 上端基準) で不変。
          * web の dblclick 編集 (web/src/main.ts textEditTarget) が欄を特定する識別子で、
          * 値が空でも欄はクリックできる必要があるため、blank でもタグ付き prim は emit する
          * (デフォルト空白 + 枠内 dblclick で書換え、2026-06-12 user 要望)
          */
         private fun fieldAt(p: PointXY): String? = when {
-            near(p, 33.5f, 6.7f) -> "koujiname"
-            near(p, 33.5f, 4.7f) || near(p, 21f, 26f) -> "rosenname"
-            near(p, 39.5f, 2.7f) -> "zumennum"
-            near(p, 33.5f, 1.7f) -> "gyousyaname"
+            near(p, 31.5f, 7.35f) -> "koujiname"
+            near(p, 31.5f, 5.35f) || near(p, 21f, 26f) -> "rosenname"
+            near(p, 37.5f, 3.35f) -> "zumennum"
+            near(p, 31.5f, 2.35f) -> "gyousyaname"
             else -> null
         }
 
