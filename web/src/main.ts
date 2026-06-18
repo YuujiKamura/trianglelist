@@ -1394,12 +1394,47 @@ function buildTable(canvas: HTMLCanvasElement): void {
     tdNum.textContent = String(i + 1);
     tr.appendChild(tdNum);
 
-    // 種別 (kind 一目視認): 三角=△ / 台形=□。 dataset.kind は CP / E2E で kind 別件数を数えるためにも使う
+    // 種別 (kind 一目視認): 三角=△ / 台形=□。 dataset.kind は CP / E2E で kind 別件数を数えるためにも使う。
+    // click で △↔□ 切替 (2026-06-18 user 命令)。 side 0/1/2 (=A/B/C) は両形状で物理意味が共通
+    // (commit 93dc388 で side 番号物理意味固定)、 side 3 (=D 右脚) は Rectangle 専属で
+    // 自分の conn=3 か子が conn=3 のときは切替不可。
     const tdKind = document.createElement('td');
     tdKind.className = 'kind';
     tdKind.dataset.kind = row.kind;
     tdKind.textContent = row.kind === 'rectangle' ? '□' : '△';
-    tdKind.title = row.kind === 'rectangle' ? '台形' : '三角形';
+    tdKind.title = row.kind === 'rectangle' ? '台形 (click で三角形に切替)' : '三角形 (click で台形に切替)';
+    tdKind.style.cursor = 'pointer';
+    tdKind.addEventListener('click', () => {
+      const wouldBeTriangle = row.kind === 'rectangle';
+      // 制約 a: 自分が rectangle で conn=3 (D 右脚に親接続) → triangle に変えると接続辺消失
+      if (wouldBeTriangle && row.conn === '3') {
+        alert('側面 3 (D 右脚) に親接続中、 三角形に変えられません');
+        return;
+      }
+      // 制約 b: 自分の子に conn=3 がある → 形状切替で子の接続辺消失
+      const myNum = i + 1;
+      const hasD3child = rows.some((r) => r.parent === String(myNum) && r.conn === '3');
+      if (hasD3child) {
+        alert('子図形が側面 3 (D 右脚) に接続中、 種別変更不可');
+        return;
+      }
+      // 切替: ea/eb/ec / parent / conn / extras は値ごと持ち越し、 意味だけ kind で変わる
+      // (triangle: ea/eb/ec=辺A/B/C、 rectangle: ea=底辺widthA, eb=延長height, ec=上辺widthB)。
+      if (wouldBeTriangle) {
+        row.kind = 'triangle';
+        delete row.align;
+        delete row.parentKind;
+      } else {
+        row.kind = 'rectangle';
+        row.align = 0;
+        // parentKind: 親が rectangle なら 1、 それ以外は 0
+        const parentNum = parseInt(row.parent ?? '-1', 10);
+        const parentIsRect = parentNum >= 1 && parentNum <= rows.length && rows[parentNum - 1]?.kind === 'rectangle';
+        row.parentKind = parentIsRect ? 1 : 0;
+      }
+      redraw(canvas);
+      autosave();
+    });
     tr.appendChild(tdKind);
 
     // 測点名 (CSV 列6 = extras[0])。描画には出ないが round-trip・書き出しで保持する
