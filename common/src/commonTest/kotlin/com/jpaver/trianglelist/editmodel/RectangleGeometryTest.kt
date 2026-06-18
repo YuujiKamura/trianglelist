@@ -52,7 +52,7 @@ class RectangleGeometryTest {
         // 接続状態: (nodeA, side) のペア。null=独立、非null=親接続あり
         val parentTriangle = Triangle(6f, 5f, 4f)  // 親として使う Triangle
 
-        data class ConnectionCase(val label: String, val nodeA: EditObject?, val side: Int)
+        data class ConnectionCase(val label: String, val nodeA: CycleShape?, val side: Int)
         val connections = listOf(
             ConnectionCase("独立", null, 1),
             ConnectionCase("親=Triangle side=1", parentTriangle, 1),
@@ -124,7 +124,7 @@ class RectangleGeometryTest {
     fun rotateBy_cartesian() {
         val parentTriangle = Triangle(6f, 5f, 4f)
 
-        data class ConnectionCase(val label: String, val nodeA: EditObject?, val side: Int)
+        data class ConnectionCase(val label: String, val nodeA: CycleShape?, val side: Int)
         val connections = listOf(
             ConnectionCase("独立", null, 1),
             ConnectionCase("親接続あり", parentTriangle, 1),

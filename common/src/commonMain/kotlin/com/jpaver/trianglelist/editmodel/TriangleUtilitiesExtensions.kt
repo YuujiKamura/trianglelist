@@ -142,8 +142,8 @@ fun Triangle.getForceLength(i: Int): Float = when (i) {
     else -> 0f
 }
 
-// Triangle.getLine は EditObject の override に降ろした (member function)。
-// extension 版は多態 dispatch されないため、混在リスト経由 (EditObject 参照) で旧版が呼ばれず壊れていた。
+// Triangle.getLine は CycleShape の override に降ろした (member function)。
+// extension 版は多態 dispatch されないため、混在リスト経由 (CycleShape 参照) で旧版が呼ばれず壊れていた。
 
 fun Triangle.getPointBySide(i: Int): com.example.trilib.PointXY? = pointBySide(i)
 fun Triangle.getAngleBySide(i: Int): Float = angleBySide(i)

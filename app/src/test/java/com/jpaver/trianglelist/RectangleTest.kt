@@ -1,7 +1,7 @@
 package com.jpaver.trianglelist
 
 import com.jpaver.trianglelist.editmodel.EditList
-import com.jpaver.trianglelist.editmodel.EditObject
+import com.jpaver.trianglelist.editmodel.CycleShape
 import com.jpaver.trianglelist.editmodel.Rectangle
 import com.jpaver.trianglelist.editmodel.Triangle
 import org.junit.Assert
@@ -17,8 +17,8 @@ class RectangleTest {
     @Test
     fun testList(){
         // 混在の土台: 一本の EditList に台形(Rectangle)と三角形(Triangle)を
-        // EditObject メンバーとして並べて持てる。種別ごとにリスト型を分けない。
-        val shapes = EditList<EditObject>()
+        // CycleShape メンバーとして並べて持てる。種別ごとにリスト型を分けない。
+        val shapes = EditList<CycleShape>()
         shapes.add(rect345)
         shapes.add(tri1)
         Assert.assertEquals(2, shapes.size())

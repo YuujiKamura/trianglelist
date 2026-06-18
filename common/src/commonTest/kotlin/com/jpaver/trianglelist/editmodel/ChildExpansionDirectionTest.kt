@@ -35,9 +35,11 @@ class ChildExpansionDirectionTest {
     }
 
     /** 子の CSV 行 (parent=1、conn=side、alignment は Rectangle のみ反映)。 */
-    private fun childCsv(childKind: String, side: Int, alignment: Int): String = when (childKind) {
-        "Triangle"  -> "2,5.0,4.0,3.0,1,$side"
-        "Rectangle" -> "Rectangle,2,3,4,3,1,$side,$alignment"
+    private fun childCsv(parentKind: String, childKind: String, side: Int, alignment: Int): String = when {
+        // Rectangle 親 + Triangle 子: B/C を大きめにして親辺長 (7 / 5.83 等) で上書き後も三角不等式 OK
+        childKind == "Triangle" && parentKind == "Rectangle" -> "2,10.0,6.0,5.0,1,$side"
+        childKind == "Triangle" -> "2,5.0,4.0,3.0,1,$side"   // Triangle 親既存挙動
+        childKind == "Rectangle" -> "Rectangle,2,3,4,3,1,$side,$alignment"
         else -> error("unknown child kind: $childKind")
     }
 
@@ -55,7 +57,7 @@ class ChildExpansionDirectionTest {
     }
 
     /** 親辺中点 M を挟んで Pc と Cc が反対側にある = 子は親辺の外側へ展開されている。 */
-    private fun expandsOutside(parent: EditObject, side: Int, child: EditObject): Boolean {
+    private fun expandsOutside(parent: CycleShape, side: Int, child: CycleShape): Boolean {
         val edge = parent.getLine(side)
         val mid = PointXY(((edge.left.x + edge.right.x) * 0.5f), ((edge.left.y + edge.right.y) * 0.5f))
         val pc = parent.centroid()
@@ -69,9 +71,7 @@ class ChildExpansionDirectionTest {
      * 既知の失敗ケース (2026-06-18 発見、別 commit で fix 予定)。
      * 直ったら下のチェックが落ちて「list から消せ」と教えてくれる。
      */
-    private val knownFailures = setOf(
-        "Rectangle→Triangle side=2 align=0",
-    )
+    private val knownFailures = setOf<String>()
 
     @Test
     fun child_must_expand_to_outside_of_parent_edge_for_all_combinations() {
@@ -81,7 +81,7 @@ class ChildExpansionDirectionTest {
                 for (side in connectableSides(parentKind)) {
                     for (alignment in childAlignments(childKind)) {
                         val case = Case(parentKind, childKind, side, alignment)
-                        val csv = parentCsv(parentKind) + "\n" + childCsv(childKind, side, alignment)
+                        val csv = parentCsv(parentKind) + "\n" + childCsv(parentKind, childKind, side, alignment)
                         val doc = CsvCodec.parse(csv + "\n")
                         val mixed = CsvCodec.buildAll(doc)
                         if (mixed.size() != 2) {

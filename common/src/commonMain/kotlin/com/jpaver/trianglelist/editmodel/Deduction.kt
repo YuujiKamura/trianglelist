@@ -29,7 +29,7 @@ class Deduction(var num: Int = 0,
                     0f,
                     0f
                 )
-) : EditObject(), Cloneable<Deduction> {
+) : CycleShape(), Cloneable<Deduction> {
 
     constructor(ddp: DeductionParams) :this(
         num = ddp.num,

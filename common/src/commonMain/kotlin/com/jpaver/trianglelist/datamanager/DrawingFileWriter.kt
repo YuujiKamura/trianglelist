@@ -4,7 +4,7 @@ import com.jpaver.trianglelist.*
 import com.jpaver.trianglelist.editmodel.Deduction
 import com.jpaver.trianglelist.editmodel.DeductionList
 import com.jpaver.trianglelist.editmodel.EditList
-import com.jpaver.trianglelist.editmodel.EditObject
+import com.jpaver.trianglelist.editmodel.CycleShape
 import com.jpaver.trianglelist.editmodel.Rectangle
 import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
@@ -763,7 +763,7 @@ open class DrawingFileWriter {
     }
 
     fun writeCalcSheetLine(
-        editObject: EditObject,
+        editObject: CycleShape,
         baseX: Float,
         baseY: Float,
         ts: Float,

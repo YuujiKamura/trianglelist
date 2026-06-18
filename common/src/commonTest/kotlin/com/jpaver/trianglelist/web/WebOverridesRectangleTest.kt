@@ -2,7 +2,7 @@ package com.jpaver.trianglelist.web
 
 import com.jpaver.trianglelist.datamanager.CsvCodec
 import com.jpaver.trianglelist.editmodel.EditList
-import com.jpaver.trianglelist.editmodel.EditObject
+import com.jpaver.trianglelist.editmodel.CycleShape
 import com.jpaver.trianglelist.editmodel.Rectangle
 import com.jpaver.trianglelist.editmodel.Triangle
 import kotlin.test.Test
@@ -142,7 +142,7 @@ class WebOverridesRectangleTest {
 
     // ---- helpers ----
 
-    private fun buildMixed(p: Placement): EditList<EditObject> {
+    private fun buildMixed(p: Placement): EditList<CycleShape> {
         val doc = CsvCodec.parse(p.csv)
         val trilist = CsvCodec.build(doc)
         return CsvCodec.buildMixed(doc, trilist, 1f)
@@ -170,7 +170,7 @@ class WebOverridesRectangleTest {
     }
 
     /** 指定 idx 以外の全図形について、dim* の a/b/c (vertical + horizontal) を文字列で digest */
-    private fun otherDimDigest(mixed: EditList<EditObject>, excludeIdx: Int): String {
+    private fun otherDimDigest(mixed: EditList<CycleShape>, excludeIdx: Int): String {
         val sb = StringBuilder()
         for (i in 1..mixed.size()) {
             if (i == excludeIdx) continue

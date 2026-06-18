@@ -14,16 +14,16 @@ class Rectangle(
     widthB: Double,
     angle: Double = 0.0,
     basepoint: PointXY = PointXY(0f, 0f),
-    nodeA: EditObject? = null,
+    nodeA: CycleShape? = null,
     side: Int = 1,
     alignment: Int = 0
-) : EditObject() {
+) : CycleShape() {
 
     var widthA: Double = widthA; set(value) { field = value; geoCache = null }
     var widthB: Double = widthB; set(value) { field = value; geoCache = null }
     var angle: Double = angle; set(value) { field = value; geoCache = null }
     var basepoint: PointXY = basepoint; set(value) { field = value; geoCache = null }
-    var nodeA: EditObject? = nodeA; set(value) { field = value; geoCache = null }
+    var nodeA: CycleShape? = nodeA; set(value) { field = value; geoCache = null }
     var side: Int = side; set(value) { field = value; geoCache = null }
     var alignment: Int = alignment; set(value) { field = value; geoCache = null }
 
@@ -49,17 +49,12 @@ class Rectangle(
         var baseL = basepoint
         var baseR = basepoint.moveX(widthA, angle)
         var curAngle = angle
-        var crossClockwise = -90.0  // 独立: 親重心が無いので -90 (右側へ展開)
 
         nodeA?.let {
-            // initByParent は親辺を反転 (forward.right, forward.left) して返す。
-            // 反転後の baseline に対して +90 (反時計回り) で外向き = 親の重心と反対側へ展開。
             val bl = initByParent(it, side)
             baseL = bl.left
             baseR = bl.right
             curAngle = bl.getAngle()
-            crossClockwise = 90.0
-
             basepoint = baseL
             angle = curAngle
         }
@@ -72,10 +67,29 @@ class Rectangle(
         }
         val topBaseStart = baseL.offset(baseR, alignShift)
 
+        // 外向き perpendicular ベクトル: 親有り Rect は親図形の outwardPerpUnit (= 親の環閉合した
+        // ラインの集合の signedArea から動的算出) を使う。 独立 Rect (親無し) は親が無いので
+        // 「外向き」 概念が無く、 自分の baseline の perpCCW 方向 (= 数学 +y、 画面下) を初期向きと
+        // して採る ── これは「外向き規定」 ではなく独立 Rect の初期巡回方向の選択。
+        // user 指針 (2026-06-18):「環閉合したデータ群を揃えて初めて周回向きと内側外側が決まる」、
+        // 「ラインの集合から外向きを教えてくれる関数を書くことは可能」。 ±90 という数値 symbol は
+        // 撤廃。
         val bl = baseL
         val br = baseR
-        val tl = topBaseStart.crossOffset(baseR, length, crossClockwise)
-        val tr = tl.crossOffset(topBaseStart, widthB, crossClockwise)
+        val dx = (baseR.x - baseL.x).toDouble()
+        val dy = (baseR.y - baseL.y).toDouble()
+        val safeLen = if (baseLen > 0.0) baseLen else 1.0   // 0 除算ガード (degenerate baseline)
+        val outward = nodeA?.outwardPerpUnit(side) ?: PointXY(
+            (-dy / safeLen).toFloat(), (dx / safeLen).toFloat()
+        )
+        val tl = PointXY(
+            (topBaseStart.x + outward.x * length).toFloat(),
+            (topBaseStart.y + outward.y * length).toFloat()
+        )
+        val tr = PointXY(
+            (tl.x + (dx / safeLen) * widthB).toFloat(),
+            (tl.y + (dy / safeLen) * widthB).toFloat()
+        )
 
         val midA = bl.calcMidPoint(br)
         val midC = tl.calcMidPoint(tr)
@@ -137,11 +151,18 @@ class Rectangle(
 
     override fun getLine(side: Int): Line {
         val g = geo()
+        // side index = 環閉合順 (= 一周巡回順) で連続: side 0 終 br = side 1 起 br ✓、 1 終 tr =
+        // 2 起 tr ✓、 2 終 tl = 3 起 tl ✓、 3 終 bl = 0 起 bl ✓。 user 指針 (2026-06-18):
+        // 「環閉合したデータ群を揃えて初めて周回向きと内側外側が決まる」、「図形によって
+        // 周回方向を逆にする意味がない、 これこそ基底クラスで定める性質で、 全ての連結図形が
+        // 同一方向に周回する前提をまず定める」。 Triangle.getLine の side 0/1/2 と並ぶ統一規約。
+        // 旧側面意味 (1=B 左脚, 2=C 上辺, 3=D 右脚) を環閉合順に再割当 (1=D 右脚, 2=C 上辺,
+        // 3=B 左脚)。
         return when (side) {
-            0 -> Line(g.bl, g.br) // A 底辺 (bl→br)
-            1 -> Line(g.bl, g.tl) // B 左脚/高さ (bl→tl)
-            2 -> Line(g.tl, g.tr) // C 上辺 (tl→tr)
-            3 -> Line(g.tr, g.br) // D 右脚 (tr→br)
+            0 -> Line(g.bl, g.br) // A 底辺
+            1 -> Line(g.br, g.tr) // D 右脚 (環閉合順 2 番目)
+            2 -> Line(g.tr, g.tl) // C 上辺 (環閉合順 3 番目)
+            3 -> Line(g.tl, g.bl) // B 左脚 (環閉合順 4 番目)
             else -> Line()
         }
     }
@@ -150,6 +171,20 @@ class Rectangle(
     override fun vertices(): List<PointXY> {
         val g = geo()
         return listOf(g.bl, g.br, g.tr, g.tl)
+    }
+
+    /**
+     * Rectangle の新 side 規約 (環閉合順 1=D 右脚, 2=C 上辺, 3=B 左脚) に node スロット結線を対応:
+     *   side 1 (D 右脚) → node.d、 side 2 (C 上辺) → node.c、 side 3 (B 左脚) → node.b
+     * 親物理意味 (D/C/B) とスロット名 (d/c/b) の対応は維持、 side index だけ環閉合順に再割当。
+     */
+    override fun setNode2(target: CycleShape, side: Int, side2: Int) {
+        when (side) {
+            0 -> { target.setNode2(this, side2); node.a = target }
+            1 -> { target.node.a = this; node.d = target }  // D 右脚
+            2 -> { target.node.a = this; node.c = target }  // C 上辺
+            3 -> { target.node.a = this; node.b = target }  // B 左脚
+        }
     }
 
     override fun emitDimensionSpecs(scale: Float): List<DimensionSpec> {

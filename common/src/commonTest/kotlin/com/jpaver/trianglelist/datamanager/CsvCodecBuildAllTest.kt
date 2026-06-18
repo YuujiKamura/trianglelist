@@ -1,6 +1,6 @@
 package com.jpaver.trianglelist.datamanager
 
-import com.jpaver.trianglelist.editmodel.EditObject
+import com.jpaver.trianglelist.editmodel.CycleShape
 import com.jpaver.trianglelist.editmodel.Rectangle
 import com.jpaver.trianglelist.editmodel.Triangle
 import kotlin.test.Test
@@ -9,7 +9,7 @@ import kotlin.test.assertTrue
 
 /**
  * SoT 一本化 (2026-06-15): CsvCodec.buildAll が figureRows の出現順を保ったまま
- * 三角形 / Rectangle (台形) / Rectangle 子三角形 を 1 本の EditList<EditObject> に積むことを pin する。
+ * 三角形 / Rectangle (台形) / Rectangle 子三角形 を 1 本の EditList<CycleShape> に積むことを pin する。
  * user 確定 2026-06-16「TriTrap タグ排除」── CSV タグは Rectangle 1 種、台形子三角形は普通三角形行で
  * parent=混在通し番号 (= trilist.size() + Rectangle idx) で表現する。
  */
@@ -88,8 +88,8 @@ class CsvCodecBuildAllTest {
     fun index_of_finds_one_based_number() {
         val doc = parse("1,6.0,5.0,4.0,-1,-1\nRectangle,2,5,4,3,1,1")
         val mixed = CsvCodec.buildAll(doc)
-        val first: EditObject? = mixed.firstItem()
-        val last: EditObject? = mixed.lastItem()
+        val first: CycleShape? = mixed.firstItem()
+        val last: CycleShape? = mixed.lastItem()
         assertEquals(1, mixed.indexOfItem(first), "firstItem の番号 = 1")
         assertEquals(2, mixed.indexOfItem(last),  "lastItem の番号 = 2")
         assertEquals(-1, mixed.indexOfItem(null), "null は -1")

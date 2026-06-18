@@ -6,10 +6,10 @@ import kotlin.test.assertTrue
 
 /**
  * GEOMETRY_UNIFICATION_BRIEF.md Task C: Triangle(parent: Triangle, ...) と
- * Triangle(parent: EditObject, ...) が同一座標を返すことを pin するテスト。
+ * Triangle(parent: CycleShape, ...) が同一座標を返すことを pin するテスト。
  *
  * legacy path: Triangle(parent: Triangle, pbc, B, C) → setOn(parent, pbc, B, C)
- * new path:    Triangle(parent: EditObject, side, B, C) → initByParent + REVERSE
+ * new path:    Triangle(parent: CycleShape, side, B, C) → initByParent + REVERSE
  *
  * 両者の point[0] / pointAB / pointBC が一致すれば、混在リストの接続が
  * legacy setOn と同じ幾何結果を保証できる。
@@ -35,7 +35,7 @@ class GeometryUnificationTest {
     fun legacy_and_editobject_path_are_identical_pbc1() {
         val parent = Triangle(6f, 5f, 4f)
         val legacy = Triangle(parent, 1, 3f, 3f)
-        val newPath = Triangle(parent as EditObject, 1, 3f, 3f)
+        val newPath = Triangle(parent as CycleShape, 1, 3f, 3f)
         assertSameCoords(legacy, newPath, "pbc=1 (B辺接続)")
     }
 
@@ -43,7 +43,7 @@ class GeometryUnificationTest {
     fun legacy_and_editobject_path_are_identical_pbc2() {
         val parent = Triangle(6f, 5f, 4f)
         val legacy = Triangle(parent, 2, 3f, 3f)
-        val newPath = Triangle(parent as EditObject, 2, 3f, 3f)
+        val newPath = Triangle(parent as CycleShape, 2, 3f, 3f)
         assertSameCoords(legacy, newPath, "pbc=2 (C辺接続)")
     }
 
@@ -65,7 +65,7 @@ class GeometryUnificationTest {
             for (pbc in pbcs) {
                 count++
                 val legacy  = Triangle(parent, pbc, 3f, 3f)
-                val newPath = Triangle(parent as EditObject, pbc, 3f, 3f)
+                val newPath = Triangle(parent as CycleShape, pbc, 3f, 3f)
                 assertSameCoords(legacy, newPath, "shape=${s.label} pbc=$pbc")
             }
         }
@@ -77,14 +77,14 @@ class GeometryUnificationTest {
     @Test
     fun child_side_a_matches_parent_edge_length_pbc1() {
         val parent = Triangle(6f, 5f, 4f)
-        val child = Triangle(parent as EditObject, 1, 3f, 3f)
+        val child = Triangle(parent as CycleShape, 1, 3f, 3f)
         near(parent.lengthB.toDouble(), child.length[0].toDouble(), msg = "子 A辺 = 親 B辺長")
     }
 
     @Test
     fun child_side_a_matches_parent_edge_length_pbc2() {
         val parent = Triangle(6f, 5f, 4f)
-        val child = Triangle(parent as EditObject, 2, 3f, 3f)
+        val child = Triangle(parent as CycleShape, 2, 3f, 3f)
         near(parent.lengthC.toDouble(), child.length[0].toDouble(), msg = "子 A辺 = 親 C辺長")
     }
 
@@ -93,7 +93,7 @@ class GeometryUnificationTest {
     @Test
     fun apex_is_outside_parent_for_pbc1() {
         val parent = Triangle(6f, 5f, 4f)
-        val child = Triangle(parent as EditObject, 1, 4f, 4f)
+        val child = Triangle(parent as CycleShape, 1, 4f, 4f)
         val edge = parent.getLine(1)
         val cp = parent.centroid()
         val dx = edge.right.x - edge.left.x
@@ -107,7 +107,7 @@ class GeometryUnificationTest {
     @Test
     fun apex_is_outside_parent_for_pbc2() {
         val parent = Triangle(6f, 5f, 4f)
-        val child = Triangle(parent as EditObject, 2, 4f, 4f)
+        val child = Triangle(parent as CycleShape, 2, 4f, 4f)
         val edge = parent.getLine(2)
         val cp = parent.centroid()
         val dx = edge.right.x - edge.left.x
@@ -129,7 +129,7 @@ class GeometryUnificationTest {
         val rect = Rectangle(5.0, 10.0, 7.0)
         for (side in 1..3) {
             val edge = rect.getLine(side)
-            val child = Triangle(rect as EditObject, side, 5f, 5f)
+            val child = Triangle(rect as CycleShape, side, 5f, 5f)
             val onEdge = (child.point[0].nearBy(edge.left, 0.001) && child.pointAB.nearBy(edge.right, 0.001)) ||
                 (child.point[0].nearBy(edge.right, 0.001) && child.pointAB.nearBy(edge.left, 0.001))
             assertTrue(onEdge,

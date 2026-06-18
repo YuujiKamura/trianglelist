@@ -3,7 +3,7 @@ package com.jpaver.trianglelist.web
 import com.example.trilib.PointXY
 import com.jpaver.trianglelist.datamanager.CsvCodec
 import com.jpaver.trianglelist.datamanager.DrawingFileWriter
-import com.jpaver.trianglelist.editmodel.EditObject
+import com.jpaver.trianglelist.editmodel.CycleShape
 import com.jpaver.trianglelist.viewmodel.TitleParamStr
 
 /**
@@ -31,11 +31,11 @@ object WebFrame {
         val ps = trilist.getPrintScale(1f)
         // 描画 scale は 1f (WebPrimitiveRenderer.renderCsv の effScale と同値、印刷 ps と別軸)。
         // ここで ps を渡すと台形の幾何が壊れて build が空になる (frame: null が消えない原因)。
-        // SoT 一本化 段3g (2026-06-15): buildMixed が figureRows 順の混在 EditList<EditObject> を 1 本で返す。
+        // SoT 一本化 段3g (2026-06-15): buildMixed が figureRows 順の混在 EditList<CycleShape> を 1 本で返す。
         // 旧版は buildFigures の Pair + 手動 buildList で 3 group を順序問わずに足していたが、 ここの bbox 中心
         // 計算には figureRows 順かどうかは無関係、 buildMixed の 戻り値をそのまま流せる。
         val mixedList = CsvCodec.buildMixed(doc, trilist, 1f)
-        val figures: List<EditObject> = (1..mixedList.size()).map { mixedList.get(it) }
+        val figures: List<CycleShape> = (1..mixedList.size()).map { mixedList.get(it) }
         if (figures.isEmpty()) return "[]"
         val header = WebDrawingExport.parseHeader(csv)
         val center = figuresBboxCenter(figures)
@@ -54,9 +54,9 @@ object WebFrame {
     }
 
     /** 混在 figure の頂点 bbox 中心。形状ごとの「三角形なら point[0..2]、台形なら 4 頂点」分岐は
-     *  EditObject.vertices() の多態に吸収されているので、ここは EditObject の list を 1 ループ。
+     *  CycleShape.vertices() の多態に吸収されているので、ここは CycleShape の list を 1 ループ。
      *  上位の図形種別が増えても (例えば多角形を足しても) この計算は変わらない。 */
-    private fun figuresBboxCenter(figures: List<EditObject>): PointXY {
+    private fun figuresBboxCenter(figures: List<CycleShape>): PointXY {
         var minX = Double.POSITIVE_INFINITY; var minY = Double.POSITIVE_INFINITY
         var maxX = Double.NEGATIVE_INFINITY; var maxY = Double.NEGATIVE_INFINITY
         for (f in figures) for (p in f.vertices()) {

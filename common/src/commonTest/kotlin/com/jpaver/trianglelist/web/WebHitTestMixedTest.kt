@@ -2,7 +2,7 @@ package com.jpaver.trianglelist.web
 
 import com.example.trilib.PointXY
 import com.jpaver.trianglelist.datamanager.CsvCodec
-import com.jpaver.trianglelist.editmodel.EditObject
+import com.jpaver.trianglelist.editmodel.CycleShape
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -18,7 +18,7 @@ import kotlin.test.assertTrue
  *   - 図形構成: 5 種 (Tri only-1 / Tri only-3 / Rect only-1 / Tri-Rect-Tri / Tri-Tri-Rect)
  *   - クリック位置: 各構成について「全図形の重心 (= mixed 番号期待)」 + 「遠方外側 1 点 (= 0 期待)」
  *
- * 重心は mixed.get(i).vertices() の平均で計算 (= EditObject.centroid と同型)。CSV の座標式に依存せず
+ * 重心は mixed.get(i).vertices() の平均で計算 (= CycleShape.centroid と同型)。CSV の座標式に依存せず
  * buildMixed の構築結果が source of truth として動く。これにより CSV を増やすときに座標を手計算する
  * 必要がない (軸を増やしたら generator が自動的にケースを増やす)。
  */
@@ -97,7 +97,7 @@ class WebHitTestMixedTest {
         }
     }
 
-    private fun centroidOf(obj: EditObject): PointXY {
+    private fun centroidOf(obj: CycleShape): PointXY {
         val vs = obj.vertices()
         assertTrue(vs.isNotEmpty(), "vertices() returned empty for $obj")
         var sx = 0.0

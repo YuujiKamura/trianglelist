@@ -6,7 +6,9 @@ import com.jpaver.trianglelist.editmodel.ConnParam
 import com.jpaver.trianglelist.editmodel.Deduction
 import com.jpaver.trianglelist.editmodel.DeductionList
 import com.jpaver.trianglelist.editmodel.EditList
-import com.jpaver.trianglelist.editmodel.EditObject
+import com.jpaver.trianglelist.editmodel.setNumber
+import com.jpaver.trianglelist.editmodel.setOnRectangle
+import com.jpaver.trianglelist.editmodel.CycleShape
 import com.jpaver.trianglelist.editmodel.Rectangle
 import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
@@ -225,27 +227,27 @@ object CsvCodec {
      * CSV タグは Rectangle 1 種、 台形子三角形は普通 Triangle 行で parent=混在通し番号で表現。
      *
      * trilist は build(doc) で構築済みを渡す。CSV の parent は原則として figureRows の混在通し番号。
-     * buildMixed はその番号から EditObject を引き、接続自体は EditObject.getLine(side) / initByParent に委譲する。
+     * buildMixed はその番号から CycleShape を引き、接続自体は CycleShape.getLine(side) / initByParent に委譲する。
      * scale は三角形と同じ実効倍率。
      *
-     * 戻り値: 混在 EditList<EditObject> ── 全 Triangle/Rectangle が同じ list に存在 (figureRows 順)。
+     * 戻り値: 混在 EditList<CycleShape> ── 全 Triangle/Rectangle が同じ list に存在 (figureRows 順)。
      * caller が分離したい場合は filterIsInstance<Rectangle>() / Triangle.
      */
-    fun buildMixed(doc: CsvDoc, trilist: TriangleList, scale: Float = 1f): EditList<EditObject> {
-        val mixed = EditList<EditObject>()
+    fun buildMixed(doc: CsvDoc, trilist: TriangleList, scale: Float = 1f): EditList<CycleShape> {
+        val mixed = EditList<CycleShape>()
         val s = if (scale > 0f) scale.toDouble() else 1.0
         val sf = if (scale > 0f) scale else 1f
-        val mixedObjects = mutableListOf<EditObject>()
+        val mixedObjects = mutableListOf<CycleShape>()
         val traps = mutableListOf<Rectangle>()
         val trapTris = mutableListOf<Triangle>()
         var triIdx = 0  // build(doc) に含まれる通常 Triangle 行の pull 位置
 
-        fun mixedByNumber(number: Int): EditObject? =
+        fun mixedByNumber(number: Int): CycleShape? =
             if (number in 1..mixedObjects.size) mixedObjects[number - 1] else null
 
         // 旧 CSV 互換: RectChild 廃止移行中の parent = trilist.size() + Rectangle idx 形式。
         // 新規経路は mixedByNumber(parent) で解決する。
-        fun legacyCompositeParent(number: Int): EditObject? {
+        fun legacyCompositeParent(number: Int): CycleShape? {
             val target = number - trilist.size()
             val ntrap = traps.size
             return when {
@@ -255,7 +257,7 @@ object CsvCodec {
             }
         }
 
-        fun append(obj: EditObject) {
+        fun append(obj: CycleShape) {
             mixed.add(obj)
             mixedObjects.add(obj)
         }
@@ -278,7 +280,7 @@ object CsvCodec {
                     val parentKind = c.getOrNull(8)?.toIntOrNull() ?: 0
                     val l = length * s; val wa = widthA * s; val wb = widthB * s
                     fun indep() = Rectangle(l, wa, wb, angle = INDEP_TRAP_ANGLE + (doc.listAngle ?: 0f), basepoint = PointXY(0f, 0f), alignment = align)
-                    fun parentObject(): EditObject? {
+                    fun parentObject(): CycleShape? {
                         if (parent < 1) return null
                         // Primary schema: parent is the mixed figure number, independent of shape kind.
                         mixedByNumber(parent)?.let { return it }
@@ -308,7 +310,11 @@ object CsvCodec {
                     // 「ここまでに積んだ三角形」) は、recoverState/scale/override/番号まで処理済みの
                     // インスタンスをそのまま再利用する。build() と同一判定 (parent in 1..triIdx) で同期。
                     // Rectangle 子三角形 (親が混在通し番号で trilist 外) のみ従来どおり新規構築する。
-                    val isTrilistTri = conn < 1 || parent in 1..triIdx
+                    // 親が Rectangle (混在通し番号で Rectangle が居る) なら trilist 再利用しない ──
+                    // 独立 Triangle のままだと親 Rectangle と無関係に配置される、 setOnRectangle で
+                    // 親辺に乗せる必要があるため。
+                    val parentIsRectInMixed = parent > 0 && mixedByNumber(parent) is Rectangle
+                    val isTrilistTri = (conn < 1 || parent in 1..triIdx) && !parentIsRectInMixed
                     val reused = if (isTrilistTri) pullTriangle() else null
                     if (reused != null) {
                         append(reused)
@@ -331,12 +337,19 @@ object CsvCodec {
                                 val child = when {
                                     cpSide != null && cpType != null && cpLcr != null -> {
                                         val cp = ConnParam(cpSide, cpType, cpLcr, lengthA * sf)
-                                        Triangle(pObj as EditObject, cp, lengthB * sf, lengthC * sf)
+                                        Triangle(pObj as CycleShape, cp, lengthB * sf, lengthC * sf)
                                     }
-                                    pObj is Rectangle -> Triangle(pObj, conn, lengthB * sf, lengthC * sf)
+                                    pObj is Rectangle -> {
+                                        // 環閉合順統一規約 (2026-06-18) で Rectangle 親対応の専用
+                                        // setOnRectangle path を通す ── Triangle 親限定 constructor
+                                        // (Triangle?) と分離し、 既存 Triangle 親 logic は不変。
+                                        val t = Triangle().apply { setNumber(parent) }
+                                        t.setOnRectangle(pObj, conn, lengthB * sf, lengthC * sf)
+                                        t
+                                    }
                                     else -> {
                                         val cp = ConnCode.toConnParam(conn, lengthA * sf)
-                                        if (cp != null) Triangle(pObj as EditObject, cp, lengthB * sf, lengthC * sf)
+                                        if (cp != null) Triangle(pObj as CycleShape, cp, lengthB * sf, lengthC * sf)
                                         else Triangle(pObj, conn, lengthB * sf, lengthC * sf)
                                     }
                                 }
@@ -359,7 +372,7 @@ object CsvCodec {
      * 既存 caller (= CsvCodecBuildAllTest) は無変更で動く。 外側で setScale / applyJson 等の変形を入れたい
      * 経路 (= WebPrimitiveRenderer.renderCsv) は build() と buildMixed() を直接呼ぶ。
      */
-    fun buildAll(doc: CsvDoc, scale: Float = 1f, applyRecoverState: Boolean = true): EditList<EditObject> =
+    fun buildAll(doc: CsvDoc, scale: Float = 1f, applyRecoverState: Boolean = true): EditList<CycleShape> =
         buildMixed(doc, build(doc, applyRecoverState), scale)
 
     /**
@@ -515,7 +528,7 @@ object CsvCodec {
         else -> 0
     }
 
-    private fun applyRowMeta(c: List<String>, obj: EditObject) {
+    private fun applyRowMeta(c: List<String>, obj: CycleShape) {
         // 測点名: Triangle は列6、Rectangle は列9
         val nameIdx = if (c.firstOrNull() == "Rectangle") 9 else 6
         c.getOrNull(nameIdx)?.let { if (it.isNotEmpty()) obj.name = it }
@@ -583,7 +596,7 @@ object CsvCodec {
      * TriangleList と同じインスタンス、Rectangle 子 Triangle は mixed 側だけに存在するため、
      * Web UI の override を CSV 行へ戻す経路ではこちらを使う。
      */
-    fun bakeMixed(list: EditList<EditObject>, original: CsvDoc, listAngle: Float?, listScale: Float?): CsvDoc {
+    fun bakeMixed(list: EditList<CycleShape>, original: CsvDoc, listAngle: Float?, listScale: Float?): CsvDoc {
         val newFigureRows = original.figureRows.mapIndexed { idx, row ->
             if (row.chunks.firstOrNull() == "Rectangle") {
                 row

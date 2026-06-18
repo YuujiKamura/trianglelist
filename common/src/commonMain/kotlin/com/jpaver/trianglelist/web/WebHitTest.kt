@@ -2,7 +2,7 @@ package com.jpaver.trianglelist.web
 
 import com.example.trilib.PointXY
 import com.jpaver.trianglelist.datamanager.CsvCodec
-import com.jpaver.trianglelist.editmodel.EditObject
+import com.jpaver.trianglelist.editmodel.CycleShape
 import com.jpaver.trianglelist.editmodel.Rectangle
 import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.isCollide
@@ -12,7 +12,7 @@ import com.jpaver.trianglelist.editmodel.isCollide
  * (1-based、0 = 無し)。
  *
  * SoT 一本化 (2026-06-16): WebPrimitiveRenderer / WebOverrides / WebDrawingExport が
- * mixed EditList<EditObject> 経由で動くようになった (Codex insight 126-128) のに合わせ、
+ * mixed EditList<CycleShape> 経由で動くようになった (Codex insight 126-128) のに合わせ、
  * UI のタップ→選択経路も mixed 番号に揃える。これで __tlcp/select?n=<mixed> と UI タップが
  * 同じ番号で動く ── render の tri:N と UI の current/selected が常に一致する。
  *
@@ -41,5 +41,5 @@ object WebHitTest {
         return 0
     }
 
-    private fun hits(obj: EditObject, tap: PointXY): Boolean = obj.containsPoint(tap)
+    private fun hits(obj: CycleShape, tap: PointXY): Boolean = obj.containsPoint(tap)
 }
