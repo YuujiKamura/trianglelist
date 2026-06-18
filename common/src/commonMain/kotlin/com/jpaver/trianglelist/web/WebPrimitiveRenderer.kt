@@ -65,26 +65,15 @@ object WebPrimitiveRenderer {
             obj.applyDimTextSize(textSize)
         }
 
-        // 段階1a: 塗り
+        // 段階1a: 塗り (N 角形を v[0] 起点の扇に分解、Triangle=1 三角・Rectangle=2 三角 統一処理)
         list.forEachItemIndexed { num, obj ->
             val verts = obj.vertices()
-            if (obj is Triangle) {
-                if (verts.size >= 3) {
-                    item(
-                        """{"type":"fill","layer":"fill","x1":${verts[0].x},"y1":${verts[0].y},"x2":${verts[1].x},"y2":${verts[1].y},"x3":${verts[2].x},"y3":${verts[2].y},"color":${obj.mycolor},"tri":$num}"""
-                    )
-                }
-            } else if (obj is Rectangle) {
-                if (verts.size >= 4) {
-                    val bl = verts[0]; val br = verts[1]; val tr = verts[2]; val tl = verts[3]
-                    val color = 4
-                    item(
-                        """{"type":"fill","layer":"fill","x1":${bl.x},"y1":${bl.y},"x2":${br.x},"y2":${br.y},"x3":${tr.x},"y3":${tr.y},"color":$color,"tri":$num}"""
-                    )
-                    item(
-                        """{"type":"fill","layer":"fill","x1":${bl.x},"y1":${bl.y},"x2":${tr.x},"y2":${tr.y},"x3":${tl.x},"y3":${tl.y},"color":$color,"tri":$num}"""
-                    )
-                }
+            if (verts.size < 3) return@forEachItemIndexed
+            for (i in 1 until verts.size - 1) {
+                val a = verts[0]; val b = verts[i]; val c = verts[i + 1]
+                item(
+                    """{"type":"fill","layer":"fill","x1":${a.x},"y1":${a.y},"x2":${b.x},"y2":${b.y},"x3":${c.x},"y3":${c.y},"color":${obj.mycolor},"tri":$num}"""
+                )
             }
         }
 
