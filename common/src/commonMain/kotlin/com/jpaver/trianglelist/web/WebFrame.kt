@@ -120,12 +120,12 @@ object WebFrame {
             // gyousyaname y=by+0.35=1.85。 writeTopTitle 上部 rosenname y = paperHcm-1.5-1.5-1.1 = 25.6。
             // 2026-06-18 user 「デフォルト 15mm くらいが見やすい」 で default 2.0→1.5 に変更したため
             // 座標群を再計算 (= 旧 32.5/38.5/25.1 系から 33/39/25.6 系へ)。
-            // tCredit (url) = (outerMarginCm+0.5, outerMarginCm-1) = (2, 0.5)、 click で別タブ開く識別子。
+            // tCredit (url) = (outerMarginCm, outerMarginCm-0.3) = (1.5, 1.2)、 click で別タブ開く識別子。
             near(p, 33f, 6.85f) -> "koujiname"
             near(p, 33f, 4.85f) || near(p, 21f, 25.6f) -> "rosenname"
             near(p, 39f, 2.85f) -> "zumennum"
             near(p, 33f, 1.85f) -> "gyousyaname"
-            near(p, 2f, 0.5f) -> "url"
+            near(p, 1.5f, 1.2f) -> "url"
             else -> null
         }
 

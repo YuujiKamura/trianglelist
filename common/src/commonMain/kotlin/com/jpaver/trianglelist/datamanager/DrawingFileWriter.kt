@@ -538,10 +538,12 @@ open class DrawingFileWriter {
             DrawPrim.Text(zumeninfo.tScale_,      com.example.trilib.PointXY(rx - 9f, by + 1.35f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
             DrawPrim.Text(zumeninfo.tNum_,        com.example.trilib.PointXY(rx - 4f, by + 1.35f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
             DrawPrim.Text(zumeninfo.tAname_,      com.example.trilib.PointXY(rx - 9f, by + 0.35f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
-            // tCredit (= url): 外枠左下基準で配置 (2026-06-18 user 「内枠の左下に追随するように計算」)。
-            // x = 外枠左辺 + 0.5cm 内側、 y = 外枠下辺の 1cm 下 (= paper 余白に少しはみ出す、 url を
-            // 図面外の表記として目立たせない)。 outerMarginCm を変えれば url も外枠左下に追従。
-            DrawPrim.Text(zumeninfo.tCredit_,     com.example.trilib.PointXY(outerMarginCm + 0.5f, outerMarginCm - 1f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
+            // tCredit (= url): 外枠左下角ぴったり + 外枠下辺の真下 (2026-06-18 user 「内枠の左下角に
+            // テキストはじまりが正確にあってほしい、 内枠の真下くらいに位置どってほしい」)。
+            // x = outerMarginCm (= 外枠左辺)、 alignH=0 (left) で文字左端がアンカーに一致 = テキスト開始
+            // 位置が外枠左下角と正確に合う。 y = outerMarginCm - 0.3 (= 外枠下辺の 0.3cm 下、 「真下くらい」
+            // で接近)。 outerMarginCm を変えれば url も外枠左下に追従。
+            DrawPrim.Text(zumeninfo.tCredit_,     com.example.trilib.PointXY(outerMarginCm, outerMarginCm - 0.3f, scale), w, frameTextSize, 0, 0, 0.0, 1f),
         )
         // 内容: 工事名 (長ければ改行) → 図面名・路線名・作成日・縮尺・図面番号・施工者。 全部 by 基準。
         prims.addAll(kaigyouPrims(koujiname_, 25, strx, yKOUJIMEI, yo, w, frameTextSize))
