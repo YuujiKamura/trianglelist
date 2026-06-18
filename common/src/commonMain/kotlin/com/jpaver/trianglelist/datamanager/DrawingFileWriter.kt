@@ -458,7 +458,8 @@ open class DrawingFileWriter {
         // ty = title 上端 (= 外枠上辺の 1.5cm 下、 ×3 倍 title の頭に外枠との余白を確保)。
         val cx = paperWcm / 2f
         val ty = paperHcm - outerMarginCm - 1.5f
-        val titleTextSize = textsize * scale * TITLE_SCALE
+        // TopTitle (= 上部タイトル「面積展開図」) は base × TOP_TITLE_SCALE = paper 5mm (ダブルスコア)
+        val titleTextSize = textsize * scale * TOP_TITLE_SCALE
         val title = zumeninfo.zumentitle
         // 下線幅は title 文字列長にフィット。 日本語 1 文字 ≒ 1em (等幅)、 ASCII 半角を混ぜる
         // 用途は今のところ無いので length そのままで近似。
@@ -471,14 +472,30 @@ open class DrawingFileWriter {
         ))
     }
     companion object {
-        // 上部タイトル文字の倍率 (frameTextSize の何倍を題字とするか)。 画面 / DXF / SFC 共通。
-        const val TITLE_SCALE = 3f
+        // ─────────────────────────────────────────────────────────────────────────────
+        // 枠内テキスト 3 region 規約 (2026-06-19 user 確定、 drift 防止のため命名分離)
+        // ─────────────────────────────────────────────────────────────────────────────
+        // user は「上部タイトル」 と 「右下のタイトルフレーム」 を 何度か言い分けてきた。 私 (AI) が
+        // 「タイトル表組」 を「表題欄 (= 右下)」 と読み違えて drift した経緯あり (a72c17b / 687d6dd)、
+        // = 名前が似てるから混同が起きる、 = コードで region 名を物理的に分離して 命名軸でも drift
+        // 防止する。
+        //
+        // **TopTitle** (= 上部タイトル):
+        //   paper 上中央、 「面積展開図」 + 路線名 + 下線。 writeTopTitle で書く。
+        //   size = textsize × TOP_TITLE_SCALE = base の 2 倍 (= ダブルスコア)。
+        //
+        // **BottomTitleFrame** (= 右下のタイトルフレーム):
+        //   paper 右下、 表題欄 cell 表組 (= 工事名 / 図面名 / 路線名 / 作成日 / 縮尺 / 図面番号
+        //   / 施工者) + url (= 左下 tCredit、 同 base)。 writeDrawingFrame で書く。
+        //   size = textsize × 1 (= base、 paper 2.5mm)。 拡大する const は意図的に置かない、
+        //   拡大したいなら TopTitle (= TOP_TITLE_SCALE) を 上げる側で実装する。
+        // ─────────────────────────────────────────────────────────────────────────────
 
-        // 表題欄内 text (writeDrawingFrame の各 cell 内テキスト) の倍率。 ADR 0001 で 表題欄 text は
-        // paper 2.5mm 固定だが cell 高さ paper 10mm に対して余白 7.5mm と空きが大きいので、
-        // 2026-06-18 user 「右下のタイトルフレーム枠内のテキストだが、 枠に収まる範囲でサイズを
-        // 大きくできるか」 で paper 5mm 化 (= ×2.0)、 cell 内で 上下 2.5mm 余白を残す。
-        const val FRAME_CELL_TEXT_SCALE = 2f
+        /** TopTitle (= 上部タイトル) の base 倍率。 user 確定「1 だけがダブルスコアになってる状態が
+         *  期待値」 (2026-06-19、 1 = 上部タイトル) ── BottomTitleFrame (= 右下) は base のまま、 TopTitle
+         *  だけが ×2。 旧 3f は a72c17b 以前から「だいたい合ってる」 状態を出してたが、 user 本意の
+         *  「ダブルスコア」 (= 他の 2 倍) に厳密に合わせて 2f に確定。 */
+        const val TOP_TITLE_SCALE = 2f
 
         // 外枠 (= 図面輪郭) の用紙端からの余白 cm の default 値。 電子納品基準 (国交省 CAD製図基準)
         // で A0/A1 = 20mm、 A2/A3/A4 = 10mm 以上 〜 7.5mm。
@@ -494,7 +511,9 @@ open class DrawingFileWriter {
 
     open fun writeDrawingFrame(scale: Float = 1f, textsize: Float){
 
-        val frameTextSize = textsize * scale * FRAME_CELL_TEXT_SCALE
+        // BottomTitleFrame の cell text (= 表題欄 + url) は base (= paper 2.5mm)、 拡大しない。
+        // 規約は companion object「枠内テキスト 3 region 規約」 参照。
+        val frameTextSize = textsize * scale
 
         //外枠と上部のタイトル
         writeOuterFrame(scale)

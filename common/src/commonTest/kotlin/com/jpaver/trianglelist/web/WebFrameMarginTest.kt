@@ -56,26 +56,15 @@ class WebFrameMarginTest {
     }
 
     @Test
-    fun titleBlockExtendsTo12x9cm() {
-        // 2026-06-19 表題欄 比例拡大 (10×6 → 12×9cm) ── 外枠右下隅から 12cm 左 / 9cm 上が
-        // 表題欄の左上隅、 そこに frame line (= ラベル列縦罫 と 行罫) が存在する。
-        val json = WebFrame.renderFrame(csv) // default 1.5cm
-        // 表題欄上辺 = by + 9 = 1.5 + 9 = 10.5、 これが frame line として存在
-        // = json に y1==y2==10.5*ps の line がある
-        val trilist = WebCsvReader.read(csv)
-        val ps = trilist.getPrintScale(1f)
-        // frame line の y1, y2 を収集、 表題欄上辺 by+9 が含まれるか確認
-        val (_, ys) = frameLineExtents(json)
-        // ys.first = 外枠下辺 = by = 1.5 (paper-cm)、 ys.second = 外枠上辺 = paperHcm - by = 28.2
-        // 表題欄上辺 y = by + 9 = 10.5 が figure center 平行移動後の座標として存在することを
-        // 「frame line の y 値集合 に そのオフセット line がある」 で間接確認するのは複雑なので、
-        // 表題欄高さ 9cm の前提を「render の text 数 と cell 数 が整合」 で代用
-        // defaultZumenInfo() で 「工 事 名」「施 工 者」 (全角スペース付) と set されてる
+    fun bottomTitleFrameRendersAllCells() {
+        // BottomTitleFrame (= 右下のタイトルフレーム、 user 用語) 内に 6 ラベル + 4 内容 field 全て存在。
+        // 2026-06-19 user 訂正 で 表題欄 12×9cm 拡大 は revert、 元 10×6cm 戻し。 cell 寸法 pin の
+        // 代わりに「ラベル / 内容 field が全て emit される」 を pin (cell サイズ計算は別 test 不要)。
+        val json = WebFrame.renderFrame(csv)
         val koujinameCount = Regex(""""text":"工 事 名"""").findAll(json).count()
         val gyousyaCount = Regex(""""text":"施 工 者"""").findAll(json).count()
         assertEquals(1, koujinameCount, "工 事 名 ラベル 1 つ")
         assertEquals(1, gyousyaCount, "施 工 者 ラベル 1 つ")
-        // 7 cell (工事名 / 図面名 / 路線名 / 作成日 / 縮尺 / 図面番号 / 施工者) の値 prim が存在
         assertTrue(json.contains(""""field":"koujiname""""), "koujiname tag")
         assertTrue(json.contains(""""field":"rosenname""""), "rosenname tag")
         assertTrue(json.contains(""""field":"zumennum""""), "zumennum tag")
@@ -90,9 +79,13 @@ class WebFrameMarginTest {
     }
 
     @Test
-    fun frameTextSizeIs3xBase() {
-        // 2026-06-19 FRAME_CELL_TEXT_SCALE = 3 ── cell text の paper サイズが base ×3 化
-        assertEquals(3f, DrawingFileWriter.FRAME_CELL_TEXT_SCALE)
+    fun topTitleScaleIsDoubleOfBottomTitleFrame() {
+        // 枠内テキスト 3 region 規約 (user 確定 2026-06-19、 DrawingFileWriter companion KDoc 参照):
+        // - TopTitle (= 上部タイトル「面積展開図」) = base × 2 (= ダブルスコア)
+        // - BottomTitleFrame cell (= 表題欄 工事名 等) + url (= tCredit) = base 同一
+        // const TOP_TITLE_SCALE = 2f を pin (= drift で TopTitle と BottomTitleFrame を 混同して BottomTitleFrame
+        // 側を 拡大した a72c17b / 687d6dd 経緯への regression 防止)。
+        assertEquals(2f, DrawingFileWriter.TOP_TITLE_SCALE)
     }
 
     @Test
