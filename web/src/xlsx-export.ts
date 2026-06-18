@@ -27,7 +27,7 @@ interface TriRow {
 interface TrapRow {
   num: number; // 混在通し番号 (三角形+台形の通し)
   widthA: number; // 底辺
-  length: number; // 延長 (高さ)
+  height: number; // 延長 (= 垂線の長さ、 Rectangle.height と同名)
   widthB: number; // 上辺
 }
 
@@ -83,7 +83,7 @@ export function parseCsvForXlsx(csvText: string): ParsedCsvForXlsx {
       trapezoids.push({
         num: triangles.length + trapezoids.length + 1, // 三角形+台形の通し
         widthA: parseFloat(chunks[3] ?? ''),
-        length: parseFloat(chunks[2] ?? ''),
+        height: parseFloat(chunks[2] ?? ''),
         widthB: parseFloat(chunks[4] ?? ''),
       });
       continue;
@@ -309,7 +309,7 @@ export function buildXlsxWorkbook(csvText: string): ExcelJSImport.Workbook {
     const cells = [2, 3, 4, 5, 6].map((c) => sheet.getCell(r, c));
     cells[0].value = trap.num;
     cells[1].value = round2(trap.widthA);
-    cells[2].value = round2(trap.length);
+    cells[2].value = round2(trap.height);
     cells[3].value = round2(trap.widthB);
     cells[4].value = { formula: `ROUND((C${r}+E${r})*D${r}/2,2)` };
     applyStyle(cells[0], 'C');

@@ -83,7 +83,7 @@ class RectangleGeometryTest {
                                 "lb=(${lb.left},${lb.top},${lb.right},${lb.bottom}) widths=(${wp.widthA},${wp.widthB})"
 
                             val rect = Rectangle(
-                                length = 5.0,
+                                height = 5.0,
                                 widthA = wp.widthA,
                                 widthB = wp.widthB,
                                 angle = angle,
@@ -149,7 +149,7 @@ class RectangleGeometryTest {
 
                         val initBp = PointXY(2f, 3f)
                         val rect = Rectangle(
-                            length = 5.0,
+                            height = 5.0,
                             widthA = 8.0,
                             widthB = 4.0,
                             angle = initAngle,
@@ -192,7 +192,7 @@ class RectangleGeometryTest {
     fun rotateBy_360_returns_to_original() {
         val center = PointXY(0f, 0f)
         val rect = Rectangle(
-            length = 5.0,
+            height = 5.0,
             widthA = 10.0,
             widthB = 4.0,
             angle = 30.0,

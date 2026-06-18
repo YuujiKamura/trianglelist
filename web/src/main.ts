@@ -506,7 +506,7 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
       ctx.restore();
     };
     edgeLabel(shadowPrims[2], `上辺 ${cv}`.trim()); // 上辺
-    // 延長 (= 台形高さ rect.length) のラベルは「短辺起点から立てた垂線」上に出す。
+    // 延長 (= 台形高さ rect.height) のラベルは「短辺起点から立てた垂線」上に出す。
     // shadowPrims[3] (= 左脚 tl→bl) は align ≠ 0 で斜辺になるため、そこに「延長」を貼ると
     // 「斜辺上に延長ラベル」になる (user 指摘 2026-06-14)。WebPrimitiveRenderer.renderRectangle
     // の crossOffset(... ±90) と同じく、短辺判定 + 反対辺端点の base 直交成分で perp 方向を取る。
