@@ -48,8 +48,18 @@ object WebFrame {
         writer.printscale_ = ps
         writer.setNames(header.koujiname, header.rosenname, header.gyousyaname, header.zumennum)
         val textsize = trilist.getPrintTextScale(1f, "dxf") // DxfFileWriter.textscale_:41 と同値
+        // 用紙 (A3 42×29.7cm) の外周枠 ── 図面外枠 (40×27cm) の外側に描いて
+        // 「用紙のサイズが分かる」 形にする (2026-06-18 user 要望「用紙のサイズ枠も描いたほうがいい」)。
+        // layer="paper" で出すので「frame 外枠 = 40×27」 を pin する WebFrameTest と衝突しない。
+        writer.writePaperLine(PointXY(0f, 0f), PointXY(42f, 0f))         // bottom
+        writer.writePaperLine(PointXY(42f, 0f), PointXY(42f, 29.7f))     // right
+        writer.writePaperLine(PointXY(42f, 29.7f), PointXY(0f, 29.7f))   // top
+        writer.writePaperLine(PointXY(0f, 29.7f), PointXY(0f, 0f))       // left
         writer.writeDrawingFrame(1f, textsize)
-        writer.writeTopTitle(1f, textsize)
+        // 上部タイトル文字 を ×2 倍で出す ── 既存の textsize はタイトル欄記入文字と同じスケールで
+        // 上部題字としては小さすぎる (2026-06-18 user 要望「上部のタイトル文字列が流石に小さすぎる」)。
+        // 倍率は web 表示専用 (DXF / SFC は writer 側の writeTopTitle をそのまま通るので不変)。
+        writer.writeTopTitle(1f, textsize * 2f)
         return "[" + writer.out.joinToString(",") + "]"
     }
 
@@ -81,6 +91,14 @@ object WebFrame {
             val a = mx(p1)
             val b = mx(p2)
             out.add("""{"type":"line","layer":"frame","x1":${a.x},"y1":${a.y},"x2":${b.x},"y2":${b.y}}""")
+        }
+
+        // 用紙 (A3 paper) の外周枠用 line。 layer="paper" を frame と分離して、 「外枠 40×27」
+        // を pin する既存 test (WebFrameTest) と衝突させない + web renderer 側で別色描画ができる。
+        fun writePaperLine(p1: PointXY, p2: PointXY) {
+            val a = mx(p1)
+            val b = mx(p2)
+            out.add("""{"type":"line","layer":"paper","x1":${a.x},"y1":${a.y},"x2":${b.x},"y2":${b.y}}""")
         }
 
         /**
