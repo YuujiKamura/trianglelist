@@ -119,9 +119,9 @@ object WebPrimitiveRenderer {
             // 測点 (Station Flag)
             if (obj.name.isNotEmpty()) {
                 val ln = obj.getLine(0)
-                val horizontalS = if (obj is Triangle) obj.dim.horizontal.s else 0
-                val ds = if (obj is Triangle) obj.scaleFactor.toDouble() else effScale.toDouble()
-                val dh = if (obj is Triangle) obj.dimHeight.toDouble() else textSize.toDouble()
+                val horizontalS = obj.sokutenHorizontal()
+                val ds = obj.sokutenScale(effScale.toDouble())
+                val dh = obj.sokutenHeight(textSize.toDouble())
 
                 val place = DimensionLayout.layout(
                     ln.right, ln.left,

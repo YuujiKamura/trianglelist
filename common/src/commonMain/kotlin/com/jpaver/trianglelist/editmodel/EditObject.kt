@@ -127,6 +127,15 @@ open class EditObject() {
     open fun applyDimTextSize(size: Float) {}
 
     /**
+     * 測点 (Station Flag) 描画用のパラメータ 3 種。
+     * default は「測点固有の値を持たない図形」向けに、上位から渡された fallback を返す。
+     * Triangle のみ override して dim.horizontal.s / scaleFactor / dimHeight を返す。
+     */
+    open fun sokutenHorizontal(): Int = 0
+    open fun sokutenScale(fallback: Double): Double = fallback
+    open fun sokutenHeight(fallback: Double): Double = fallback
+
+    /**
      * 図形がこの点を内側に含むか (タップ判定の共通契約)。
      * default は vertices() の fan triangulation で N 角形 (N>=3) を汎用判定する。
      * 別実装を持つ図形 (例: Triangle の符号判定) は override で差し替えてよい。
