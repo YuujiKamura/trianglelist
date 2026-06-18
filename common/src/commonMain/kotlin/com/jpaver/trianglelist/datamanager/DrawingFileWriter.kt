@@ -475,11 +475,11 @@ open class DrawingFileWriter {
         const val TITLE_SCALE = 3f
 
         // 外枠 (= 図面輪郭) の用紙端からの余白 cm の default 値。 電子納品基準 (国交省 CAD製図基準)
-        // で A0/A1 = 20mm、 A2/A3/A4 = 10mm 以上 〜 7.5mm。 本アプリは A3 出力だが「同じ図面を A1 で
-        // 納品」 (2026-06-18 user 指示) の用途で厳しい側 A1=20mm=2.0cm を default に。
-        // 2026-06-18 user 「マージン間隔は UI 上で user が選べるようにしたほうが良いな」 ──
-        // runtime 値は outerMarginCm (var) を介して上書き可能、 const は default 値の正。
-        const val DEFAULT_OUTER_MARGIN_CM = 2.0f
+        // で A0/A1 = 20mm、 A2/A3/A4 = 10mm 以上 〜 7.5mm。
+        // 2026-06-18 user 指示「デフォルト 15mm くらいが見やすいな」 ── A2 規定 (10mm) と A1 規定
+        // (20mm) の中間 15mm を default に (旧 2.0cm から変更)。 UI で 7.5/10/15/20mm のいずれにも
+        // 切替可能、 const はあくまで default 値の正。 runtime 値は var outerMarginCm。
+        const val DEFAULT_OUTER_MARGIN_CM = 1.5f
     }
 
     // 外枠余白の runtime 値。 UI で user が選択した値を WebFrame.renderFrame 経由でここに書き込み、
@@ -538,8 +538,10 @@ open class DrawingFileWriter {
             DrawPrim.Text(zumeninfo.tScale_,      com.example.trilib.PointXY(rx - 9f, by + 1.35f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
             DrawPrim.Text(zumeninfo.tNum_,        com.example.trilib.PointXY(rx - 4f, by + 1.35f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
             DrawPrim.Text(zumeninfo.tAname_,      com.example.trilib.PointXY(rx - 9f, by + 0.35f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
-            // tCredit (= url) は紙余白の表記、 外枠外 = paper 下端から 1cm 上に置く (= 由来別軸、 by 基準ではない)
-            DrawPrim.Text(zumeninfo.tCredit_,     com.example.trilib.PointXY(8f, 1f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
+            // tCredit (= url): 外枠左下基準で配置 (2026-06-18 user 「内枠の左下に追随するように計算」)。
+            // x = 外枠左辺 + 0.5cm 内側、 y = 外枠下辺の 1cm 下 (= paper 余白に少しはみ出す、 url を
+            // 図面外の表記として目立たせない)。 outerMarginCm を変えれば url も外枠左下に追従。
+            DrawPrim.Text(zumeninfo.tCredit_,     com.example.trilib.PointXY(outerMarginCm + 0.5f, outerMarginCm - 1f, scale), w, frameTextSize, 1, 0, 0.0, 1f),
         )
         // 内容: 工事名 (長ければ改行) → 図面名・路線名・作成日・縮尺・図面番号・施工者。 全部 by 基準。
         prims.addAll(kaigyouPrims(koujiname_, 25, strx, yKOUJIMEI, yo, w, frameTextSize))

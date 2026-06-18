@@ -674,7 +674,7 @@ function frameMarginCm(): number {
   const sel = document.getElementById('marginSelect');
   if (sel instanceof HTMLSelectElement && sel.value) return parseFloat(sel.value);
   const stored = localStorage.getItem('frameMarginCm');
-  return stored ? parseFloat(stored) : 2.0;
+  return stored ? parseFloat(stored) : 1.5; // default 15mm (= 2026-06-18 user 「デフォルト 15mm くらいが見やすい」)
 }
 
 // ---- 段階2a: 表編集 UI ----
@@ -3335,6 +3335,27 @@ function textScreenBox(
 }
 
 // dblclick 位置に重なる編集可能テキストを探す (回転テキストはローカル系に逆回転して矩形判定)
+// 図面枠 url text の hit 判定。 frame layer + field="url" の prim を text box で当たり判定、
+// 当たれば url 文字列を返す (= window.open で別タブ)。 編集はしない (= hitEditableText 対象外)。
+function hitUrlPrim(canvas: HTMLCanvasElement, px: number, py: number): string | null {
+  for (const p of lastPrims) {
+    if (p.type !== 'text' || (p as Prim & {layer?: string}).layer !== 'frame') continue;
+    if ((p as Prim & {field?: string}).field !== 'url') continue;
+    const box = textScreenBox(canvas, p as TextPrim);
+    if (!box) continue;
+    const th = (((p as TextPrim).angle ?? 0) * Math.PI) / 180;
+    const dx = px - box.ax;
+    const dy = py - box.ay;
+    const lx = dx * Math.cos(th) - dy * Math.sin(th);
+    const ly = dx * Math.sin(th) + dy * Math.cos(th);
+    const pad = 6;
+    if (lx < box.left - pad || lx > box.left + box.w + pad) continue;
+    if (ly < box.top - pad || ly > box.top + box.fh + pad) continue;
+    return (p as TextPrim).text ?? null;
+  }
+  return null;
+}
+
 function hitEditableText(canvas: HTMLCanvasElement, px: number, py: number): TextEditTarget | null {
   let best: { t: TextEditTarget; d: number } | null = null;
   for (const p of lastPrims) {
@@ -3651,6 +3672,13 @@ function wireCanvasEvents(canvas: HTMLCanvasElement): void {
     pointers.delete(e.pointerId);
     pinchDist = 0;
     if (isClick && view) {
+      // 図面枠の url text をクリックしたら別タブで開く (2026-06-18 user 「キャンバス上でクリックすると別タブで開く」)
+      const url = hitUrlPrim(canvas, downAt!.x, downAt!.y);
+      if (url) {
+        window.open(url, '_blank', 'noopener,noreferrer');
+        downAt = null;
+        return;
+      }
       handleTap(canvas, downAt!.x, downAt!.y);
     }
     downAt = null;
@@ -3816,7 +3844,7 @@ function main(): void {
       sel.appendChild(o);
     }
     const stored = localStorage.getItem('frameMarginCm');
-    sel.value = stored && options.some(([v]) => v === stored) ? stored : '2.0';
+    sel.value = stored && options.some(([v]) => v === stored) ? stored : '1.5';
     sel.addEventListener('change', () => {
       localStorage.setItem('frameMarginCm', sel.value);
       view = null;
