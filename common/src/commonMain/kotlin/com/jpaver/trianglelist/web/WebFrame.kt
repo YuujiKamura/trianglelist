@@ -56,20 +56,10 @@ object WebFrame {
         writer.writePaperLine(PointXY(42f, 29.7f), PointXY(0f, 29.7f))   // top
         writer.writePaperLine(PointXY(0f, 29.7f), PointXY(0f, 0f))       // left
         writer.writeDrawingFrame(1f, textsize)
-        // 上部タイトル ── writer.writeTopTitle (DrawingFileWriter:446) は下線が ±2cm 固定で、
-        // titleTextSize を ×3 にすると下線が文字列より短く見える (2026-06-18 user 要望
-        // 「タイトル下の二重下線がタイトル文字列の長さと揃うようにグリフ計算しろ」)。
-        // ここで自前 prim 構築: 下線幅 = titleTextSize × zumentitle 文字数 / 2 (日本語 1 文字 ≒ 1em 等幅)。
-        // DXF / SFC は writer.writeTopTitle を素で通すので不変、 web 表示専用の置換。
-        val titleTextSize = textsize * 3f
-        val cx = 21f                       // paperWcm (A3=42) / 2
-        val title = writer.zumeninfo.zumentitle
-        val rosen = writer.rosenname_
-        val halfW = (titleTextSize * title.length) / 2f
-        writer.writeTextHV(title, PointXY(cx, 27.1f), 0, titleTextSize, 1, 1, 0.0, 1f)  // y = paperHcm(29.7) - 2.6
-        writer.writeTextHV(rosen, PointXY(cx, 26.0f), 0, titleTextSize, 1, 1, 0.0, 1f)  // y = paperHcm - 3.7
-        writer.writeLine(PointXY(cx - halfW, 27.0f), PointXY(cx + halfW, 27.0f), 0, 1f) // 下線 1: y = paperHcm - 2.7
-        writer.writeLine(PointXY(cx - halfW, 26.9f), PointXY(cx + halfW, 26.9f), 0, 1f) // 下線 2: y = paperHcm - 2.8
+        // 上部タイトル ── 2026-06-18 user 方針「画面と図面で同じレイアウト (冪等)」 を満たすため、
+        // 倍率 (TITLE_SCALE=3) と下線幅 (= title 文字数 × textsize) のロジックは base の
+        // DrawingFileWriter.writeTopTitle 内に集約済。 web 側で個別調整しない (= web/DXF/SFC が同一出力)。
+        writer.writeTopTitle(1f, textsize)
         return "[" + writer.out.joinToString(",") + "]"
     }
 
