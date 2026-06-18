@@ -31,7 +31,7 @@ function tlcpPlugin(): Plugin {
   const pending = new Map<string, Pending>();
   let seq = 0;
 
-  const request = (server: ViteDevServer, channel: 'capture' | 'state' | 'tap' | 'edit' | 'key' | 'click' | 'load' | 'page' | 'select', payload: Record<string, unknown> = {}, timeoutMs = 3000) =>
+  const request = (server: ViteDevServer, channel: 'capture' | 'state' | 'tap' | 'edit' | 'key' | 'click' | 'load' | 'page' | 'select' | 'options', payload: Record<string, unknown> = {}, timeoutMs = 3000) =>
     new Promise<Record<string, unknown>>((resolve, reject) => {
       const id = String(++seq);
       const timer = setTimeout(() => {
@@ -68,7 +68,7 @@ function tlcpPlugin(): Plugin {
           console.warn('[tlcp] headless chromium not available:', (e as Error).message);
         }
       });
-      for (const channel of ['capture', 'state', 'tap', 'edit', 'key', 'click', 'load', 'page', 'select'] as const) {
+      for (const channel of ['capture', 'state', 'tap', 'edit', 'key', 'click', 'load', 'page', 'select', 'options'] as const) {
         server.ws.on(`tlcp:${channel}-res`, (data: { id: string }) => {
           const p = pending.get(data.id);
           if (!p) return; // タブが複数開いていたら最初の応答だけ採用

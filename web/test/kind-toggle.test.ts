@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { health, state, loadCsv, click, options } from './combo/cpClient.ts';
+import { health, state, loadCsv, click, options, key } from './combo/cpClient.ts';
 
 // dev server に当てる integration test。 commit 1755172 で導入した
 // 「一覧の △/□ アイコン click で 三角形 ↔ 台形 切替」 の動作を pin。
@@ -51,7 +51,7 @@ describe('kind-toggle (一覧 △/□ click で 種別切替)', () => {
   // 追加、 hot.on('tlcp:options-req') 登録は browser side で main.ts 再 load 後に有効)。
   // 走らせるには (a) dev server kill → npm run dev で再起動、 (b) localhost:5173 を
   // browser で開いて refresh、 (c) it.skip を it に戻して再走。
-  it.skip('[要再起動] 親 rectangle + 子 rectangle 構成で sideCell-2 の option に "3" (D 辺) が含む', async () => {
+  it('親 rectangle + 子 rectangle 構成で sideCell-2 の option に "3" (D 辺) が含む', async () => {
     const csv = [
       'Rectangle,1,3,10,7,-1,0,0,0',
       'Rectangle,2,2,3,2,1,1,0,1',
@@ -87,7 +87,7 @@ describe('kind-toggle (一覧 △/□ click で 種別切替)', () => {
   });
 
   // dev server 再起動 + browser refresh が必要 (上の [要再起動] と同じ理由)
-  it.skip('[要再起動] click 後の子 sideCell-2 の option に "3" (D 辺) が含む', async () => {
+  it('click 後の子 sideCell-2 の option に "3" (D 辺) が含む', async () => {
     const csv = [
       'Rectangle,1,3,10,7,-1,0,0,0',
       '2,3,3,3,1,1',
