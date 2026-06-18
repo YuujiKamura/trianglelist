@@ -52,6 +52,15 @@
 - **A2. 最初から全体最適化 (simulated annealing 等)**: 段階的フォールバックで足りるかを観測する前に複雑化する。却下
 - **A3. アプリ側から直接書き換える**: viewer-first 方針 (理想形を viewer で演繹して頃合いでフリップ) に反し、5 年 stable な現挙動を観測なしに壊すリスク。却下
 
+## 実装状況 (2026-06-19 時点)
+
+段階 1 (Measurement) 着手済:
+- `common/src/commonMain/kotlin/com/jpaver/trianglelist/label/LabelBox.kt` ── 回転付き矩形 + SAT 衝突判定。 18 test
+- `common/src/commonMain/kotlin/com/jpaver/trianglelist/label/CollisionField.kt` ── obstacle (edge/box/circle) + query(box)/queryCircle()、 `Hit(id, kind, depthMm)` 返却。 8 test
+- `common/src/commonMain/kotlin/com/jpaver/trianglelist/label/DimensionLayout.kt` ── `DimensionPlacement` (dimpoint + verticalDxf) + `layout()`。 17 test
+
+段階 2-4 (Inspector で重なり件数表示 / viewer overlay 目視批評 / アプリ側 Flags→overrides 移行) は未着手、 別 PR の対象。
+
 ## 出典
 
 - yuuji 発話 (2026-06-10): 「クラス関係をいろいろいじってて、最適な包含関係が良くわからなくなっていた」「自動で旗揚げするにはどうするか？を幾つか試行した形跡がある」「正確な当たり判定を持たせることだな」「ならそれでやっていくか」
