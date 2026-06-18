@@ -128,6 +128,14 @@ fun rotateDeductionShape(line: String, degrees: Double): String =
 fun renderFrame(csv: String): String = WebFrame.renderFrame(csv)
 
 /**
+ * 図面枠を user 指定の外枠余白 cm で render (2026-06-18 user 「マージン間隔は UI 上で
+ * user が選べるようにしたほうが良いな」)。 旧 renderFrame は default (2.0cm) で残す。
+ */
+@OptIn(ExperimentalJsExport::class)
+@JsExport
+fun renderFrameWithMargin(csv: String, marginCm: Float): String = WebFrame.renderFrame(csv, marginCm)
+
+/**
  * binaries.executable() のリンクに entry point が要るための no-op。
  * 段階1 は @JsExport 関数を JS から呼ぶだけで、起動時処理は無い。
  */

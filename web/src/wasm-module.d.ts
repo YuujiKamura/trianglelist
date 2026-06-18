@@ -22,4 +22,6 @@ declare module '*/TriangleList-common-wasm-js.mjs' {
   export function rotateDeductionShape(line: string, degrees: number): string;
   // 図面枠 (A3、DXF の writeDrawingFrame と同形) を prim JSON 配列で返す。layer "frame"
   export function renderFrame(csv: string): string;
+  // 外枠余白を user 指定 cm で render (2026-06-18 user 「マージン間隔は UI で選べる」)
+  export function renderFrameWithMargin(csv: string, marginCm: number): string;
 }
