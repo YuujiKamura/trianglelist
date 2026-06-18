@@ -173,6 +173,10 @@ open class DrawingFileWriter {
         val perpFoot = bl.crossOffset(br, rect.length)
         dim(bl, perpFoot, rect.dimVertical.b, rect.dimHorizontal.b, rect.length.toFloat())
         if (rect.alignment != 0) prims += DrawPrim.Line(bl, perpFoot, WHITE)
+        // 直角マーカー (web の getRightAngleMark と同じ 2 本、yuuji 2026-06-18「邪魔かは見ないと分からない」)。
+        val ram = rect.getRightAngleMark()
+        prims += DrawPrim.Line(ram.a.left, ram.a.right, WHITE)
+        prims += DrawPrim.Line(ram.b.left, ram.b.right, WHITE)
         // 番号サークル + 番号 (重心に中央寄せ)
         val center = com.example.trilib.PointXY((bl.x + br.x + tr.x + tl.x) / 4f, (bl.y + br.y + tr.y + tl.y) / 4f)
         prims += DrawPrim.Circle(center, ts * 0.85f, BLUE, 1f)
