@@ -271,15 +271,15 @@ object CsvCodec {
             val c = row.chunks
             when (c.firstOrNull()) {
                 "Rectangle" -> {
-                    val length = c.getOrNull(2)?.toFloatOrNull() ?: continue
+                    val height = c.getOrNull(2)?.toFloatOrNull() ?: continue
                     val widthA = c.getOrNull(3)?.toFloatOrNull() ?: continue
                     val widthB = c.getOrNull(4)?.toFloatOrNull() ?: continue
                     val parent = c.getOrNull(5)?.toIntOrNull() ?: -1
                     val side = c.getOrNull(6)?.toIntOrNull() ?: 0
                     val align = c.getOrNull(7)?.toIntOrNull() ?: 0
                     val parentKind = c.getOrNull(8)?.toIntOrNull() ?: 0
-                    val l = length * s; val wa = widthA * s; val wb = widthB * s
-                    fun indep() = Rectangle(l, wa, wb, angle = INDEP_TRAP_ANGLE + (doc.listAngle ?: 0f), basepoint = PointXY(0f, 0f), alignment = align)
+                    val h = height * s; val wa = widthA * s; val wb = widthB * s
+                    fun indep() = Rectangle(h, wa, wb, angle = INDEP_TRAP_ANGLE + (doc.listAngle ?: 0f), basepoint = PointXY(0f, 0f), alignment = align)
                     fun parentObject(): CycleShape? {
                         if (parent < 1) return null
                         // Primary schema: parent is the mixed figure number, independent of shape kind.
@@ -293,7 +293,7 @@ object CsvCodec {
                     val rect = when {
                         parent < 1 -> indep()
                         pObj == null -> indep()
-                        else -> Rectangle(l, wa, wb, nodeA = pObj, side = side, alignment = align)
+                        else -> Rectangle(h, wa, wb, nodeA = pObj, side = side, alignment = align)
                     }
                     traps.add(rect)
                     applyRowMeta(c, rect)

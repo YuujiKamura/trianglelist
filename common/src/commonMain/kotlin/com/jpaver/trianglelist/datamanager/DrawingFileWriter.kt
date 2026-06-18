@@ -144,7 +144,7 @@ open class DrawingFileWriter {
     /**
      * 台形 1 つを DrawPrim 列に組む (buildTrianglePrims の台形版、ADR 0010 段A コメントが予定した分岐)。
      * web の WebPrimitiveRenderer.renderRectangle と同じ幾何: 4 辺 + 底辺A/上辺C/延長B の寸法 +
-     * 番号サークル。延長 B は「底辺からの垂線 (rect.length)」で、左脚の斜辺長ではない。中央/右寄せ
+     * 番号サークル。延長 B は「底辺からの垂線 (rect.height)」で、左脚の斜辺長ではない。中央/右寄せ
      * (alignment≠0) は左脚が斜辺になるので垂線 bl→perpFoot を補助線で別に引く。
      * 座標は実寸モデル (DrawPrim の約束) なので寸法は実長そのまま。これで backend (各 writer) を
      * 触らず台形が DXF/SFC/PDF に出る。
@@ -162,7 +162,7 @@ open class DrawingFileWriter {
         prims += DrawPrim.Line(br, tr, WHITE)
         prims += DrawPrim.Line(tr, tl, WHITE)
         prims += DrawPrim.Line(tl, bl, WHITE)
-        // 寸法 (DimensionLayout = 三角形と同じ式層)。底辺A・上辺C は実辺長、延長B は垂線 rect.length
+        // 寸法 (DimensionLayout = 三角形と同じ式層)。底辺A・上辺C は実辺長、延長B は垂線 rect.height
         fun dim(start: com.example.trilib.PointXY, end: com.example.trilib.PointXY, v: Int, h: Int, len: Float) {
             val place = DimensionLayout.layout(end, start, v, h, ds, dh, 0.0)
             prims += DrawPrim.Text(len.formattedString(2), place.dimpoint, WHITE, ts, 1, place.verticalDxf, start.calcDimAngle(end), 1f)
@@ -170,8 +170,8 @@ open class DrawingFileWriter {
         }
         dim(bl, br, rect.dimVertical.a, rect.dimHorizontal.a, bl.lengthTo(br).toFloat())
         dim(tr, tl, rect.dimVertical.c, rect.dimHorizontal.c, tr.lengthTo(tl).toFloat())
-        val perpFoot = bl.crossOffset(br, rect.length)
-        dim(bl, perpFoot, rect.dimVertical.b, rect.dimHorizontal.b, rect.length.toFloat())
+        val perpFoot = bl.crossOffset(br, rect.height)
+        dim(bl, perpFoot, rect.dimVertical.b, rect.dimHorizontal.b, rect.height.toFloat())
         if (rect.alignment != 0) prims += DrawPrim.Line(bl, perpFoot, WHITE)
         // 直角マーカー (web の getRightAngleMark と同じ 2 本、yuuji 2026-06-18「邪魔かは見ないと分からない」)。
         val ram = rect.getRightAngleMark()

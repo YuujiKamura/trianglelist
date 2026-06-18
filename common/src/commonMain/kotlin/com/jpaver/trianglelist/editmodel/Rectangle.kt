@@ -9,7 +9,7 @@ data class Line(val left: PointXY = PointXY(0f, 0f), val right: PointXY = PointX
 data class Line2(val a: Line = Line(), val b: Line = Line() )
 
 class Rectangle(
-    val length: Double,
+    val height: Double,  // 垂線方向の延長 (旧 length、 「length だけだと何のことか分からない、 height で一発」 user 2026-06-18)
     widthA: Double,
     widthB: Double,
     angle: Double = 0.0,
@@ -83,8 +83,8 @@ class Rectangle(
             (-dy / safeLen).toFloat(), (dx / safeLen).toFloat()
         )
         val tl = PointXY(
-            (topBaseStart.x + outward.x * length).toFloat(),
-            (topBaseStart.y + outward.y * length).toFloat()
+            (topBaseStart.x + outward.x * height).toFloat(),
+            (topBaseStart.y + outward.y * height).toFloat()
         )
         val tr = PointXY(
             (tl.x + (dx / safeLen) * widthB).toFloat(),
@@ -108,7 +108,7 @@ class Rectangle(
         // 直角マーカー: spine 起点と上辺方向は確定。内向きは「上辺方向に直交する 2 候補のうち、
         //   centroid 側を向く方」を採る (alignment・親の有無 / crossClockwise の符号によらず常に内向き、
         //   2026-06-18 yuuji 指摘「右揃え/左揃え時に外に飛び出る」の修正)。
-        val sqSize = minOf(widthA, widthB, length) * 0.05
+        val sqSize = minOf(widthA, widthB, height) * 0.05
         val upDir = spine.left.vectorTo(spine.right).normalize()
         val perpCcw = PointXY(-upDir.y, upDir.x)              // CCW90 of upDir
         val perpCw  = PointXY( upDir.y, -upDir.x)             // CW90  of upDir
@@ -151,18 +151,21 @@ class Rectangle(
 
     override fun getLine(side: Int): Line {
         val g = geo()
-        // side index = 環閉合順 (= 一周巡回順) で連続: side 0 終 br = side 1 起 br ✓、 1 終 tr =
-        // 2 起 tr ✓、 2 終 tl = 3 起 tl ✓、 3 終 bl = 0 起 bl ✓。 user 指針 (2026-06-18):
-        // 「環閉合したデータ群を揃えて初めて周回向きと内側外側が決まる」、「図形によって
-        // 周回方向を逆にする意味がない、 これこそ基底クラスで定める性質で、 全ての連結図形が
-        // 同一方向に周回する前提をまず定める」。 Triangle.getLine の side 0/1/2 と並ぶ統一規約。
-        // 旧側面意味 (1=B 左脚, 2=C 上辺, 3=D 右脚) を環閉合順に再割当 (1=D 右脚, 2=C 上辺,
-        // 3=B 左脚)。
+        // side 番号 = 物理意味 (0=A 底辺, 1=B 左脚, 2=C 上辺, 3=D 右脚) で固定。 forward は
+        // 環閉合 CW 巡回 (br→bl→tl→tr→br) と一致させる ── 全 CycleShape が CW 規約遵守
+        // (signedArea < 0、 user 指針 2026-06-18「全ての連結図形が同一方向に周回する前提」)。
+        // 0..3 を順に並べると [(br,bl),(bl,tl),(tl,tr),(tr,br)] = 連続巡回 + CW 一周、
+        // edges() の default 実装 (= 0..sideCount-1 を getLine で取る) がそのまま CW 巡回になる
+        // ので override 不要。 initByParent は forward を reverse して子 base.left に渡すので、
+        // side 0 forward を br→bl にしても子の base.left = br (= 旧 bl→br reverse の左 = br と同じ)
+        // にはならない ── ただし子の base 起点が br になるだけで、 base 自身の端点位置は不変
+        // (br→bl 順か bl→br 順かの違い)。 ChildExpansionDirectionTest の cartesian で外向き保証
+        // を gate 化しているので、 万一画面位置がずれたら test が落ちて気づける。
         return when (side) {
-            0 -> Line(g.bl, g.br) // A 底辺
-            1 -> Line(g.br, g.tr) // D 右脚 (環閉合順 2 番目)
-            2 -> Line(g.tr, g.tl) // C 上辺 (環閉合順 3 番目)
-            3 -> Line(g.tl, g.bl) // B 左脚 (環閉合順 4 番目)
+            0 -> Line(g.br, g.bl) // A 底辺 (br→bl、 CW 巡回の起点)
+            1 -> Line(g.bl, g.tl) // B 左脚 (bl→tl、 CW 巡回の 2 番目)
+            2 -> Line(g.tl, g.tr) // C 上辺 (tl→tr、 CW 巡回の 3 番目)
+            3 -> Line(g.tr, g.br) // D 右脚 (tr→br、 CW 巡回の 4 番目、 一周閉じる)
             else -> Line()
         }
     }
@@ -174,16 +177,15 @@ class Rectangle(
     }
 
     /**
-     * Rectangle の新 side 規約 (環閉合順 1=D 右脚, 2=C 上辺, 3=B 左脚) に node スロット結線を対応:
-     *   side 1 (D 右脚) → node.d、 side 2 (C 上辺) → node.c、 side 3 (B 左脚) → node.b
-     * 親物理意味 (D/C/B) とスロット名 (d/c/b) の対応は維持、 side index だけ環閉合順に再割当。
+     * Rectangle の side 番号と node スロットの対応 (物理意味で固定、 環閉合順とは独立):
+     *   side 1 (B 左脚) → node.b、 side 2 (C 上辺) → node.c、 side 3 (D 右脚) → node.d
      */
     override fun setNode2(target: CycleShape, side: Int, side2: Int) {
         when (side) {
             0 -> { target.setNode2(this, side2); node.a = target }
-            1 -> { target.node.a = this; node.d = target }  // D 右脚
+            1 -> { target.node.a = this; node.b = target }  // B 左脚
             2 -> { target.node.a = this; node.c = target }  // C 上辺
-            3 -> { target.node.a = this; node.b = target }  // B 左脚
+            3 -> { target.node.a = this; node.d = target }  // D 右脚
         }
     }
 
@@ -204,7 +206,7 @@ class Rectangle(
 
         val spine = getSpine()
         val placeB = com.jpaver.trianglelist.label.DimensionLayout.layout(spine.right, spine.left, dimVertical.b, dimHorizontal.b, ds, dh, 0.0)
-        val extLen = (length / scale).toFloat()
+        val extLen = (height / scale).toFloat()
         specs.add(DimensionSpec(1, extLen.formattedString(2), placeB, spine.left.calcDimAngle(spine.right), dimHorizontal.b, dimVertical.b, dimHorizontal.b > 2))
         // 斜辺 (D 右脚 / 中央揃え時の左脚 B) は寸法を出さない (底辺・上辺・垂線のみ、過去指摘 2026-06-17)
 
