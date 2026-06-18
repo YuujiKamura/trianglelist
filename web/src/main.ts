@@ -1310,6 +1310,7 @@ function buildTrapRowCells(tr: HTMLTableRowElement, row: Row, i: number, canvas:
     tr.appendChild(tdInd);
   } else {
     const sideSel = document.createElement('select');
+    sideSel.id = `sideCell-${i + 1}`; // tlcp 用 (option 列を test で pin するため)
     for (const [v, label] of connOptionsFor('new', pk)) {
       const opt = document.createElement('option');
       opt.value = v;
@@ -1399,6 +1400,7 @@ function buildTable(canvas: HTMLCanvasElement): void {
     // (commit 93dc388 で side 番号物理意味固定)、 side 3 (=D 右脚) は Rectangle 専属で
     // 自分の conn=3 か子が conn=3 のときは切替不可。
     const tdKind = document.createElement('td');
+    tdKind.id = `kindCell-${i + 1}`; // tlcp 用 (click で kind 切替 test するため)
     tdKind.className = 'kind';
     tdKind.dataset.kind = row.kind;
     tdKind.textContent = row.kind === 'rectangle' ? '□' : '△';
@@ -3912,6 +3914,19 @@ if (import.meta.hot) {
       });
     } else {
       hot.send('tlcp:key-res', { id: data.id, state: { ok: false } });
+    }
+  });
+  // option 列挙: <select id="..."> の option value/text を返す (kind-toggle test 等)
+  hot.on('tlcp:options-req', (data: { id: string; target?: string }) => {
+    const t = document.getElementById(String(data.target ?? ''));
+    if (t instanceof HTMLSelectElement) {
+      const opts = Array.from(t.options).map((o) => ({ value: o.value, text: o.textContent ?? '' }));
+      hot.send('tlcp:options-res', {
+        id: data.id,
+        state: { ok: true, value: t.value, options: opts },
+      });
+    } else {
+      hot.send('tlcp:options-res', { id: data.id, state: { ok: false, options: [] } });
     }
   });
   // クリック注入: ボタン UX (FAB・削除等) の動線を CLI から踏む口

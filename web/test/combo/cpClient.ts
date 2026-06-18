@@ -118,6 +118,11 @@ export async function key(target: string, value: string, keyName?: string): Prom
   return res.json();
 }
 
+export async function options(id: string): Promise<{ ok: boolean; value?: string; options: Array<{ value: string; text: string }> }> {
+  const res = await get(`/__tlcp/options?id=${encodeURIComponent(id)}`);
+  return res.json();
+}
+
 export async function pageBuffer(): Promise<Buffer> {
   const res = await get('/__tlcp/page');
   const arr = await res.arrayBuffer();
