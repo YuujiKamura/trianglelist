@@ -181,6 +181,20 @@ function tlcpPlugin(): Plugin {
           }
           return;
         }
+        // option 列挙: GET /__tlcp/options?id=<select 要素 id> — <select> の option value/text を返す
+        // (kind-toggle test で D 辺 option 出力を実 DOM で pin するため)
+        if (req.url.startsWith('/__tlcp/options')) {
+          try {
+            const q = new URL(req.url, 'http://localhost').searchParams;
+            const data = await request(server, 'options', { target: q.get('id') });
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify(data.state));
+          } catch (e) {
+            res.statusCode = 503;
+            res.end(String(e));
+          }
+          return;
+        }
         // 選択注入: GET /__tlcp/select?n=<番号> — hitTriangle が拾わない図形 (台形等) を直接 selected に
         if (req.url.startsWith('/__tlcp/select')) {
           try {
