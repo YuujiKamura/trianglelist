@@ -56,10 +56,11 @@ object WebFrame {
         writer.writePaperLine(PointXY(42f, 29.7f), PointXY(0f, 29.7f))   // top
         writer.writePaperLine(PointXY(0f, 29.7f), PointXY(0f, 0f))       // left
         writer.writeDrawingFrame(1f, textsize)
-        // 上部タイトル文字 を ×2 倍で出す ── 既存の textsize はタイトル欄記入文字と同じスケールで
-        // 上部題字としては小さすぎる (2026-06-18 user 要望「上部のタイトル文字列が流石に小さすぎる」)。
-        // 倍率は web 表示専用 (DXF / SFC は writer 側の writeTopTitle をそのまま通るので不変)。
-        writer.writeTopTitle(1f, textsize * 2f)
+        // 上部タイトル文字 ── 既存の textsize はタイトル欄記入文字と同じスケールで上部題字として
+        // 小さすぎる (2026-06-18 user 要望「上部のタイトル文字列が流石に小さすぎる」、 第 2 ラウンド
+        // 「タイトルはまだデカくして良い」 で ×2 → ×3 に増額)。 web 表示専用 (DXF / SFC は writer 側の
+        // writeTopTitle をそのまま通るので不変)。
+        writer.writeTopTitle(1f, textsize * 3f)
         return "[" + writer.out.joinToString(",") + "]"
     }
 
