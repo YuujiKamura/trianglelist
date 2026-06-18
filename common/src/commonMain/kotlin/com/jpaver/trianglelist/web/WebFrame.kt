@@ -25,7 +25,7 @@ object WebFrame {
      *  user 指摘 2026-06-14「混在リスト全体の境界計算してセンタリングするのが出来てない」── trilist.center
      *  だけでは台形 / 台形子三角形が含まれず、枠中心と figure 全体中心がずれる。混在リスト全体 (trilist + traps
      *  + trapTris) の頂点 bbox 中心を center にする。paper 幾何中心は (20, 13.5)。 */
-    fun renderFrame(csv: String): String {
+    fun renderFrame(csv: String, marginCm: Float = com.jpaver.trianglelist.datamanager.DrawingFileWriter.DEFAULT_OUTER_MARGIN_CM): String {
         val doc = CsvCodec.parse(csv)
         val trilist = CsvCodec.build(doc)
         val ps = trilist.getPrintScale(1f)
@@ -42,6 +42,7 @@ object WebFrame {
         // paper-cm 系での paper 全体中心は (21, 14.85) (A3 42x29.7cm の中心、writeOuterFrame:432 と同値)。
         // 外枠 (40x27cm) も同じ中心に置かれる。ここを figure 全体中心に合わせる = 枠内センタリング。
         val writer = FramePrimWriter(ps, center.x - 21f * ps, center.y - 14.85f * ps)
+        writer.outerMarginCm = marginCm // UI 選択値を base writeOuterFrame / writeDrawingFrame / writeTopTitle に反映
         writer.zumeninfo = WebDrawingExport.defaultZumenInfo()
         writer.titleTri_ = TitleParamStr()
         writer.titleDed_ = TitleParamStr()

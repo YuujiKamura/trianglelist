@@ -438,13 +438,13 @@ open class DrawingFileWriter {
     fun writeOuterFrame(scale: Float = 1f){
         // 外枠描画 (用紙中央・用紙より一回り内側)。
         // 2026-06-18 user 確認 + 国交省「CAD製図基準」 + 東京都建設局「CAD製図基準・同解説 (令和 6 年 4 月)」:
-        // A3 (= 297×420mm) は用紙端から 7.5mm 余白原則 (= OUTER_MARGIN_CM=0.75)。 A0/A1 は 20mm、
+        // A3 (= 297×420mm) は用紙端から 7.5mm 余白原則 (= outerMarginCm=0.75)。 A0/A1 は 20mm、
         // A2/A3/A4 は 10mm 以上 〜 7.5mm の派生規定、 ここでは A3 専用の 7.5mm を採用 (= 旧 40×27cm は
         // 上下 1.35cm + 左右 1cm の独自値で電子納品基準と乖離)。
         // 外枠寸法 = (paperWcm - 2×MARGIN) × (paperHcm - 2×MARGIN) = A3 で 40.5×28.2cm。
         val cx = paperWcm / 2f; val cy = paperHcm / 2f
-        val w = (paperWcm - OUTER_MARGIN_CM * 2f) * scale
-        val h = (paperHcm - OUTER_MARGIN_CM * 2f) * scale
+        val w = (paperWcm - outerMarginCm * 2f) * scale
+        val h = (paperHcm - outerMarginCm * 2f) * scale
         drawScene(listOf(
             DrawPrim.Rect(com.example.trilib.PointXY(cx, cy, scale), w, h, WHITE, scale)
         ))
@@ -453,11 +453,11 @@ open class DrawingFileWriter {
     fun writeTopTitle(scale: Float = 1f, textsize: Float ){
         // 上のタイトル (用紙上中央アンカー)。 cx = 用紙横中心、 y は外枠上辺基準で配置。
         // 2026-06-18 user 方針「画面と図面で同じレイアウト (冪等)」 + 「すべての部品が外枠基準」 ──
-        // OUTER_MARGIN_CM を変えれば title 群も外枠上辺に追従する。 旧コードは y=paperHcm-2.6 直値
+        // outerMarginCm を変えれば title 群も外枠上辺に追従する。 旧コードは y=paperHcm-2.6 直値
         // で旧外枠上辺 (= paperHcm-1.35) 基準の暗黙 offset、 = 「なぜ -2.6 か」 が式に出てなかった。
         // ty = title 上端 (= 外枠上辺の 1.5cm 下、 ×3 倍 title の頭に外枠との余白を確保)。
         val cx = paperWcm / 2f
-        val ty = paperHcm - OUTER_MARGIN_CM - 1.5f
+        val ty = paperHcm - outerMarginCm - 1.5f
         val titleTextSize = textsize * scale * TITLE_SCALE
         val title = zumeninfo.zumentitle
         // 下線幅は title 文字列長にフィット。 日本語 1 文字 ≒ 1em (等幅)、 ASCII 半角を混ぜる
@@ -474,15 +474,17 @@ open class DrawingFileWriter {
         // 上部タイトル文字の倍率 (frameTextSize の何倍を題字とするか)。 画面 / DXF / SFC 共通。
         const val TITLE_SCALE = 3f
 
-        // 外枠 (= 図面輪郭) の用紙端からの余白 cm。 電子納品基準 (国交省 CAD製図基準 / 東京都建設局
-        // CAD製図基準・同解説 令和 6 年 4 月) は用紙サイズ別に A0/A1=**20mm**、 A2/A3/A4=10mm 以上
-        // 〜 7.5mm の派生規定。
-        // 本アプリは画面表示・印刷の可用性で A3 サイズで出力するが、 user 用途上 「同じ図面を A1 で
-        // 納品する」 場面がある (2026-06-18 user 指示「A1 とかの厳しい基準を当てておくのが正解、
-        // なんでかっていうと可用性を求めて A3 にしてるだけで、 納品時はおなじ用紙を A1 で納品したり
-        // するからだ」)。 = 厳しい側 (A1 = 20mm = 2.0cm) を採用すれば A3/A1 両用に耐える。
-        const val OUTER_MARGIN_CM = 2.0f
+        // 外枠 (= 図面輪郭) の用紙端からの余白 cm の default 値。 電子納品基準 (国交省 CAD製図基準)
+        // で A0/A1 = 20mm、 A2/A3/A4 = 10mm 以上 〜 7.5mm。 本アプリは A3 出力だが「同じ図面を A1 で
+        // 納品」 (2026-06-18 user 指示) の用途で厳しい側 A1=20mm=2.0cm を default に。
+        // 2026-06-18 user 「マージン間隔は UI 上で user が選べるようにしたほうが良いな」 ──
+        // runtime 値は outerMarginCm (var) を介して上書き可能、 const は default 値の正。
+        const val DEFAULT_OUTER_MARGIN_CM = 2.0f
     }
+
+    // 外枠余白の runtime 値。 UI で user が選択した値を WebFrame.renderFrame 経由でここに書き込み、
+    // writeOuterFrame / writeDrawingFrame / writeTopTitle が参照する (= 1 つの軸を変えれば連動)。
+    var outerMarginCm: Float = DEFAULT_OUTER_MARGIN_CM
 
     open fun writeDrawingFrame(scale: Float = 1f, textsize: Float){
 
@@ -492,21 +494,21 @@ open class DrawingFileWriter {
         writeOuterFrame(scale)
 
         // 右下のタイトル枠 (用紙右端アンカー)。rx = 表題欄右辺の paper-cm 座標。
-        // 2026-06-18 user 指示「A1 とかの厳しい基準」 で OUTER_MARGIN_CM=2.0 (= 20mm) に変更した
+        // 2026-06-18 user 指示「A1 とかの厳しい基準」 で outerMarginCm=2.0 (= 20mm) に変更した
         // 結果、 旧 rx=paperWcm (= 表題欄右辺が paper 右端から 1cm 内側、 外枠右辺 =paperWcm-OUTER_MARGIN
         // = 40cm と 41cm で 1cm はみ出し) が外枠外に出てしまうため、 rx を外枠右辺に揃える。
-        // rx = paperWcm - OUTER_MARGIN_CM (= A3 で 40)。 表題欄右辺 = rx-0 ではなく rx-1 で書いてた
+        // rx = paperWcm - outerMarginCm (= A3 で 40)。 表題欄右辺 = rx-0 ではなく rx-1 で書いてた
         // 既存規約を保つために rx を-1 した位置 (= 内側 1cm 余裕) に置く。 結果 表題欄右辺は paper
         // 右端から 3cm 内側 = 外枠右辺の 1cm 内側 余裕、 表題欄が外枠内に納まる。
-        // Y は用紙下端基準 1.35〜7.35 (= 6cm 高さ)、 外枠下辺 (= y=OUTER_MARGIN_CM=2.0) より上に
+        // Y は用紙下端基準 1.35〜7.35 (= 6cm 高さ)、 外枠下辺 (= y=outerMarginCm=2.0) より上に
         // 0.65cm の余裕、 外枠内に納まる。
         // rx = 表題欄右辺 = 外枠右辺 と共用。 by = 表題欄下辺 = 外枠下辺 と共用。
         // 全部品はこの rx / by を基準に「rx - N」 / 「by + N」 で配置するので、
-        // OUTER_MARGIN_CM を変えれば表題欄全体が外枠右下隅に追従する (2026-06-18
+        // outerMarginCm を変えれば表題欄全体が外枠右下隅に追従する (2026-06-18
         // user 「タイトルとかの部品は、 すべてこの外枠を基準に配置される」 + camera-eye 確認で
         // 旧 rx-1 の 1cm 余裕が「外枠右下隅から離れすぎ」 と判明、 rx 自体を外枠右辺と一致させた)。
-        val rx = paperWcm - OUTER_MARGIN_CM
-        val by = OUTER_MARGIN_CM
+        val rx = paperWcm - outerMarginCm
+        val by = outerMarginCm
         val st = printscale_*100f
         // strx = 内容列の x 開始位置 = 表題欄左辺 (rx-10) + ラベル列幅 (2cm) + 余白 0.5cm
         // 表題欄 10×6cm: 右辺=rx (= 外枠右辺と共用)、 左辺=rx-10、 ラベル/内容 縦罫=rx-8。

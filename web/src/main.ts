@@ -52,6 +52,7 @@ import {
   hitTriangle,
   placeDeduction,
   renderFrame,
+  renderFrameWithMargin,
   rotateDeductionLine,
   rotateDeductionShape,
 } from '../wasm/TriangleList-common-wasm-js.mjs';
@@ -648,7 +649,7 @@ function renderCsv(canvas: HTMLCanvasElement, csv: string, label: string): void 
     // 「目いっぱいでなくマージン」の図面らしい余白になる (2026-06-12 user 要望)
     if (frameVisible()) {
       try {
-        prims = prims.concat(JSON.parse(renderFrame(csv)) as Prim[]);
+        prims = prims.concat(JSON.parse(renderFrameWithMargin(csv, frameMarginCm())) as Prim[]);
       } catch (e) {
         console.error('frame render failed', e);
       }
@@ -665,6 +666,15 @@ function renderCsv(canvas: HTMLCanvasElement, csv: string, label: string): void 
 function frameVisible(): boolean {
   const cb = document.getElementById('frameToggle');
   return cb instanceof HTMLInputElement ? cb.checked : false;
+}
+
+// 外枠余白 cm を返す (2026-06-18 user 「マージン間隔は UI 上で user が選べるようにしたほうが
+// 良いな」)。 marginSelect の選択値を localStorage に保存して round-trip、 未設定なら default 2.0cm。
+function frameMarginCm(): number {
+  const sel = document.getElementById('marginSelect');
+  if (sel instanceof HTMLSelectElement && sel.value) return parseFloat(sel.value);
+  const stored = localStorage.getItem('frameMarginCm');
+  return stored ? parseFloat(stored) : 2.0;
 }
 
 // ---- 段階2a: 表編集 UI ----
@@ -3782,6 +3792,39 @@ function main(): void {
     view = null;
     redraw(canvas);
   });
+  // 外枠余白セレクタ: user が UI で margin を切替 (= 2026-06-18 user 要望)。 frameToggle の
+  // 親要素に <select> を動的注入、 選択値を localStorage に保存して round-trip。
+  const ft = document.getElementById('frameToggle');
+  if (ft && ft.parentElement && !document.getElementById('marginSelect')) {
+    const wrap = document.createElement('span');
+    wrap.style.marginLeft = '8px';
+    wrap.style.fontSize = '12px';
+    wrap.textContent = '余白:';
+    const sel = document.createElement('select');
+    sel.id = 'marginSelect';
+    sel.style.marginLeft = '4px';
+    const options: Array<[string, string]> = [
+      ['0.75', '7.5mm (A3)'],
+      ['1.0',  '10mm (A2)'],
+      ['1.5',  '15mm'],
+      ['2.0',  '20mm (A1)'],
+    ];
+    for (const [v, label] of options) {
+      const o = document.createElement('option');
+      o.value = v;
+      o.textContent = label;
+      sel.appendChild(o);
+    }
+    const stored = localStorage.getItem('frameMarginCm');
+    sel.value = stored && options.some(([v]) => v === stored) ? stored : '2.0';
+    sel.addEventListener('change', () => {
+      localStorage.setItem('frameMarginCm', sel.value);
+      view = null;
+      redraw(canvas);
+    });
+    wrap.appendChild(sel);
+    ft.parentElement.appendChild(wrap);
+  }
   wireExportButtons();
   wireCanvasEvents(canvas);
   wireFabs(canvas);
