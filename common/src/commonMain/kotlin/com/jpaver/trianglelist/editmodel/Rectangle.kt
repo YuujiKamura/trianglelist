@@ -29,7 +29,7 @@ class Rectangle(
     var dimScale = 1f
 
     data class RectangleGeometry(
-        val pointBR: PointXY, val pointBL: PointXY, val pointTL: PointXY, val pointTR: PointXY,
+        val pointDA: PointXY, val pointAB: PointXY, val pointBC: PointXY, val pointCD: PointXY,
         val midA: PointXY, val midC: PointXY, val angle: Double,
         val spine: Line, val rightAngleMark: Line2, val guideLine: Line?
     )
@@ -114,7 +114,7 @@ class Rectangle(
     fun calcPoint(): Line2 {
         val g = geo()
         // 外部 (DrawingFileWriter) は bl, br 順を期待しているため、幾何学的な bl, br を渡す
-        return Line2(Line(g.pointBL, g.pointBR), Line(g.pointTL, g.pointTR))
+        return Line2(Line(g.pointAB, g.pointDA), Line(g.pointBC, g.pointCD))
     }
 
     fun getSpine(): Line = geo().spine
@@ -128,10 +128,10 @@ class Rectangle(
         val g = geo()
         // CW 巡回順の辺 (A -> B -> C -> D)
         return when (side) {
-            0 -> Line(g.pointBR, g.pointBL) // A 底辺 (br -> bl)
-            1 -> Line(g.pointBL, g.pointTL) // B 左脚 (bl -> tl)
-            2 -> Line(g.pointTL, g.pointTR) // C 上辺 (tl -> tr)
-            3 -> Line(g.pointTR, g.pointBR) // D 右脚 (tr -> br)
+            0 -> Line(g.pointDA, g.pointAB) // A 底辺 (DA -> AB)
+            1 -> Line(g.pointAB, g.pointBC) // B 左脚 (AB -> BC)
+            2 -> Line(g.pointBC, g.pointCD) // C 上辺 (BC -> CD)
+            3 -> Line(g.pointCD, g.pointDA) // D 右脚 (CD -> DA)
             else -> Line()
         }
     }
@@ -141,7 +141,7 @@ class Rectangle(
     /** 頂点列 (CW 巡回)。 br 起点。 */
     override fun vertices(): List<PointXY> {
         val g = geo()
-        return listOf(g.pointBR, g.pointBL, g.pointTL, g.pointTR) // CW
+        return listOf(g.pointDA, g.pointAB, g.pointBC, g.pointCD) // CW
     }
 
     /** 環閉合 (isClosed) を成立させる巡回順の Line リスト。 A -> B -> C -> D */
@@ -160,8 +160,8 @@ class Rectangle(
             return DimensionSpec(side, len.formattedString(2), place, line.left.calcDimAngle(line.right), h, v, h > 2)
         }
 
-        if (nodeA == null) specs.add(spec(0, Line(g.pointBR, g.pointBL), dimVertical.a, dimHorizontal.a))
-        specs.add(spec(2, Line(g.pointTL, g.pointTR), dimVertical.c, dimHorizontal.c))
+        if (nodeA == null) specs.add(spec(0, Line(g.pointDA, g.pointAB), dimVertical.a, dimHorizontal.a))
+        specs.add(spec(2, Line(g.pointBC, g.pointCD), dimVertical.c, dimHorizontal.c))
 
         val spine = getSpine()
         val placeB = com.jpaver.trianglelist.label.DimensionLayout.layout(spine.right, spine.left, dimVertical.b, dimHorizontal.b, ds, dh, 0.0)
@@ -172,7 +172,7 @@ class Rectangle(
 
     override fun centroid(): PointXY {
         val g = geo()
-        return PointXY((g.pointBR.x + g.pointBL.x + g.pointTL.x + g.pointTR.x) * 0.25, (g.pointBR.y + g.pointBL.y + g.pointTL.y + g.pointTR.y) * 0.25)
+        return PointXY((g.pointDA.x + g.pointAB.x + g.pointBC.x + g.pointCD.x) * 0.25, (g.pointDA.y + g.pointAB.y + g.pointBC.y + g.pointCD.y) * 0.25)
     }
 
     override fun applyDimTextSize(size: Float) {
@@ -182,7 +182,7 @@ class Rectangle(
 
     fun expandBoundaries(bounds: Bounds): Bounds {
         val g = geo()
-        val vs = listOf(g.pointBR, g.pointBL, g.pointTL, g.pointTR)
+        val vs = listOf(g.pointDA, g.pointAB, g.pointBC, g.pointCD)
         var left = bounds.left; var right = bounds.right
         var top = bounds.top; var bottom = bounds.bottom
         for (v in vs) {

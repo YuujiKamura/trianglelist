@@ -539,20 +539,33 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
     const tr = { x: shadowPrims[2].x2, y: shadowPrims[2].y2 };
     const wA = Math.hypot(br.x - bl.x, br.y - bl.y);
     const wB = Math.hypot(tr.x - tl.x, tr.y - tl.y);
-    const bottomShorter = wA <= wB;
-    const baseStart = bottomShorter ? bl : tl;
-    const baseEnd = bottomShorter ? br : tr;
-    const opp = bottomShorter ? tl : bl; // 反対辺の同側端点 (左脚相当)
-    const ex = baseEnd.x - baseStart.x;
-    const ey = baseEnd.y - baseStart.y;
-    const eLen = Math.hypot(ex, ey) || 1;
-    const ux = ex / eLen, uy = ey / eLen;
-    const dx = opp.x - baseStart.x;
-    const dy = opp.y - baseStart.y;
-    const proj = dx * ux + dy * uy;
-    const nxR = dx - proj * ux;
-    const nyR = dy - proj * uy;
-    const perpFoot = { x: baseStart.x + nxR, y: baseStart.y + nyR };
+
+    const align = parseInt(select('newLcr').value) || 0;
+    const midA = { x: (br.x + bl.x) / 2, y: (br.y + bl.y) / 2 };
+    const midC = { x: (tl.x + tr.x) / 2, y: (tl.y + tr.y) / 2 };
+
+    let baseStart = bl;
+    let perpFoot = tl;
+
+    if (align === 2) {
+      baseStart = br;
+      perpFoot = tr;
+    } else if (align === 1) {
+      const ex = bl.x - br.x;
+      const ey = bl.y - br.y;
+      const len = Math.hypot(ex, ey) || 1;
+      const ux = ex / len;
+      const uy = ey / len;
+      const shiftDist = Math.min(wA, wB) * 0.3;
+      const sx_val = ux * shiftDist;
+      const sy_val = uy * shiftDist;
+      baseStart = { x: midA.x + sx_val, y: midA.y + sy_val };
+      perpFoot = { x: midC.x + sx_val, y: midC.y + sy_val };
+    } else {
+      baseStart = bl;
+      perpFoot = tl;
+    }
+
     // 点線+ラベルとも shadow fill (rgba 128/128/128/0.35) と差がつくようオレンジで描く
     // (COLOR.guide は #9aa0a6 で fill とほぼ同色になり埋没する)
     const bvLabel = parseFloat(bv) > 0 ? bv : (Math.hypot(perpFoot.x - baseStart.x, perpFoot.y - baseStart.y)).toFixed(2);
