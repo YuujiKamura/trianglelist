@@ -201,7 +201,7 @@ describe('XLSX read-back (複合図形 / 三角形+台形+RectChild)', () => {
   it('parseCsvForXlsx: 三角形+台形+RectChild が混在通し番号で読める', () => {
     const parsed = parseCsvForXlsx(CSV_MIXED);
     expect(parsed.triangles).toEqual([{ num: 1, a: 3, b: 4, c: 5 }]);
-    expect(parsed.trapezoids).toEqual([{ num: 2, widthA: 4, length: 3, widthB: 2 }]);
+    expect(parsed.trapezoids).toEqual([{ num: 2, widthA: 4, height: 3, widthB: 2 }]);
     expect(parsed.triTraps).toEqual([{ num: 3, a: 2, b: 2, c: 2 }]);
   });
 
@@ -216,11 +216,11 @@ describe('XLSX read-back (複合図形 / 三角形+台形+RectChild)', () => {
       'Rectangle,2,3.0,4.0,2.0,1,1,L,Triangle',
       '3,2.0,2.0,2.0,2,1', // ← RectChild タグ無し、parent=2 が台形を指す
       'ListAngle, 0',
-      '',
+      ' ',
     ].join('\n');
     const parsed = parseCsvForXlsx(modern);
     expect(parsed.triangles).toEqual([{ num: 1, a: 3, b: 4, c: 5 }]);
-    expect(parsed.trapezoids).toEqual([{ num: 2, widthA: 4, length: 3, widthB: 2 }]);
+    expect(parsed.trapezoids).toEqual([{ num: 2, widthA: 4, height: 3, widthB: 2 }]);
     expect(parsed.triTraps).toEqual([{ num: 3, a: 2, b: 2, c: 2 }]);
   });
 

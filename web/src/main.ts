@@ -528,15 +528,15 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
       haloText(ctx, label, 0, -3, COLORS.haloDark, COLORS.accentOrange);
       ctx.restore();
     };
-    edgeLabel(shadowPrims[2], `上辺 ${cv}`.trim()); // 上辺
+    edgeLabel(shadowPrims[2], `上辺 ${cv}`.trim()); // 上辺 (side 2)
     // 延長 (= 台形高さ rect.height) のラベルは「短辺起点から立てた垂線」上に出す。
-    // shadowPrims[3] (= 左脚 tl→bl) は align ≠ 0 で斜辺になるため、そこに「延長」を貼ると
-    // 「斜辺上に延長ラベル」になる (user 指摘 2026-06-14)。WebPrimitiveRenderer.renderRectangle
-    // の crossOffset(... ±90) と同じく、短辺判定 + 反対辺端点の base 直交成分で perp 方向を取る。
-    const bl = { x: shadowPrims[0].x1, y: shadowPrims[0].y1 };
-    const br = { x: shadowPrims[0].x2, y: shadowPrims[0].y2 };
-    const tr = { x: shadowPrims[2].x1, y: shadowPrims[2].y1 };
-    const tl = { x: shadowPrims[2].x2, y: shadowPrims[2].y2 };
+    // shadowPrims[1] (= 左脚 bl→tl) は align ≠ 0 で斜辺になるため、そこに「延長」を貼ると
+    // 「斜辺上に延長ラベル」になる (user 指摘 2026-06-14)。
+    // Rectangle 規約: side 0=br->bl, 1=bl->tl, 2=tl->tr, 3=tr->br
+    const br = { x: shadowPrims[0].x1, y: shadowPrims[0].y1 };
+    const bl = { x: shadowPrims[0].x2, y: shadowPrims[0].y2 };
+    const tl = { x: shadowPrims[2].x1, y: shadowPrims[2].y1 };
+    const tr = { x: shadowPrims[2].x2, y: shadowPrims[2].y2 };
     const wA = Math.hypot(br.x - bl.x, br.y - bl.y);
     const wB = Math.hypot(tr.x - tl.x, tr.y - tl.y);
     const bottomShorter = wA <= wB;
