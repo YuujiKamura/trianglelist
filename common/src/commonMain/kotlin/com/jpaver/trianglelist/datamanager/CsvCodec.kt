@@ -534,8 +534,8 @@ object CsvCodec {
     }
 
     private fun applyRowMeta(c: List<String>, obj: CycleShape) {
-        // 測点名: Triangle は列6、Rectangle は列9
-        val nameIdx = if (c.firstOrNull() == "Rectangle") 9 else 6
+        // 測点名: Triangle は列6、Rectangle は列10 (列9 は type)
+        val nameIdx = if (c.firstOrNull() == "Rectangle") 10 else 6
         c.getOrNull(nameIdx)?.let { if (it.isNotEmpty()) obj.name = it }
 
         if (obj is Triangle) {
@@ -654,7 +654,7 @@ object CsvCodec {
                 "Rectangle", "$number", 
                 "${rawH.toFloat().formattedString(2)}", "${rawWA.toFloat().formattedString(2)}", "${rawWB.toFloat().formattedString(2)}",
                 "${mr.parentnumber}", "${mr.cParam_.side}", "${mr.cParam_.lcr}",
-                "$pKind", "${mr.cParam_.type}"
+                "$pKind", "${mr.cParam_.type}", mr.name
             )
         )
     }

@@ -216,7 +216,7 @@ class Rectangle(
             return DimensionSpec(side, len.formattedString(2), place, ang, h, v, h > 2)
         }
 
-        if (nodeA == null) specs.add(spec(0, Line(g.pointDA, g.pointAB), dimVertical.a, dimHorizontal.a, trapBaseAngle))
+        if (nodeA == null || cParam_.type != 0) specs.add(spec(0, Line(g.pointDA, g.pointAB), dimVertical.a, dimHorizontal.a, trapBaseAngle))
         specs.add(spec(2, Line(g.pointBC, g.pointCD), dimVertical.c, dimHorizontal.c, trapBaseAngle))
 
         val spine = getSpine()
