@@ -86,7 +86,8 @@ const COLORS: Record<string, string> = {
   guide: '#9aa0a6', // 補助線 (台形の延長=垂線ガイド等) — 点線で薄いグレー
   ra: '#555555',   // 直角マーカー (垂線起点の小正方形) — 実線細い
   ded: '#c0392b', // 控除 = 赤系 (アプリ/DXF の RED 準拠)
-  frame: '#8a8a8a', // 図面枠 = 薄グレー (図形より控えめに、DXF では WHITE 相当)
+  frame: '#8a8a8a', // 図面枠の line (= 罫線) = 薄グレー、 図形より控えめ
+  frameText: '#000000', // 図面枠の text (= タイトル / cell 値 / url) = 黒、 読みやすく濃く
   // 選択/オーバーレイ系 (UI 状態を示す)
   selectFill: 'rgba(31, 95, 191, 0.25)', // 選択三角形の塗り (半透明青)
   selectYellow: '#e6b800', // 選択辺・番号リング・寸法ボックス (app paintYellow 相当)
@@ -389,7 +390,8 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
     if (p.type === 'meta') continue; // meta prim は描画対象外 (perpFrom 識別子等の内部情報のみ)
     // 選択中の控除はプリミティブごと色替え (user 指定: 明示的に色替えして見分ける)
     const isSelectedDed = p.layer === 'ded' && dedSelected > 0 && p.ded === dedSelected;
-    const color = isSelectedDed ? COLORS.accentOrange : (COLORS[p.layer] ?? '#000000');
+    const isFrameText = p.type === 'text' && p.layer === 'frame';
+    const color = isSelectedDed ? COLORS.accentOrange : isFrameText ? COLORS.frameText : (COLORS[p.layer] ?? '#000000');
     if (p.type === 'line') {
       ctx.strokeStyle = color;
       ctx.lineWidth = isSelectedDed ? 2 : p.layer === 'tri' ? 1.5 : 1;
@@ -411,14 +413,33 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
       ctx.font = `${p.size * s}px sans-serif`;
       // alignH=0 (控除 infoStr、DXF writeTextAndLine の左寄せ) 以外は従来どおり中央
       ctx.textAlign = p.alignH === 0 ? 'left' : 'center';
-      // DXF 垂直コード → canvas baseline。y 反転後も「1=文字が点の上に乗る」を保つ
-      ctx.textBaseline = p.align === 1 ? 'bottom' : p.align === 3 ? 'top' : 'middle';
-      ctx.save();
-      ctx.translate(sx(p.x), sy(p.y));
-      // モデル座標 CCW の角度は、y 反転した画面では時計回りに掛ける
-      ctx.rotate((-p.angle * Math.PI) / 180);
-      ctx.fillText(p.text, 0, 0);
-      ctx.restore();
+      // frame layer は CAD 標準センタリング (= AutoCAD 73=2 / SXF 中心点) = glyph 物理 bbox を観て
+      // anchor に揃える。 canvas の textBaseline='middle'/'top' は em-box ベースで漢字や英数字の
+      // descender 空き分が ずれて見える、 measureText で actualBoundingBox{Ascent,Descent} を取り
+      // baseline シフトで補正。 align=2 (middle) は glyph 中央 → anchor、 align=3 (top) は
+      // glyph 物理上端 → anchor (= 例: tCredit url を外枠下辺ぴったりの下に物理整列)。
+      const isFrameGlyph = isFrameText && (p.align === 2 || p.align === 3);
+      if (isFrameGlyph) {
+        ctx.textBaseline = 'alphabetic';
+        const m = ctx.measureText(p.text);
+        const shift = p.align === 2
+          ? (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2 // glyph 中央 → anchor
+          : m.actualBoundingBoxAscent; // glyph 上端 → anchor (baseline は anchor の ascent 下)
+        ctx.save();
+        ctx.translate(sx(p.x), sy(p.y) + shift);
+        ctx.rotate((-p.angle * Math.PI) / 180);
+        ctx.fillText(p.text, 0, 0);
+        ctx.restore();
+      } else {
+        // DXF 垂直コード → canvas baseline。y 反転後も「1=文字が点の上に乗る」を保つ
+        ctx.textBaseline = p.align === 1 ? 'bottom' : p.align === 3 ? 'top' : 'middle';
+        ctx.save();
+        ctx.translate(sx(p.x), sy(p.y));
+        // モデル座標 CCW の角度は、y 反転した画面では時計回りに掛ける
+        ctx.rotate((-p.angle * Math.PI) / 180);
+        ctx.fillText(p.text, 0, 0);
+        ctx.restore();
+      }
     }
   }
 
