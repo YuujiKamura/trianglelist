@@ -116,16 +116,15 @@ object WebFrame {
          */
         private fun fieldAt(p: PointXY): String? = when {
             // DEFAULT_OUTER_MARGIN_CM=1.5 で rx=paperWcm-1.5=40.5、 by=1.5、 strx=rx-7.5=33。
-            // koujiname y=by+5.35=6.85、 rosenname y=by+3.35=4.85、 zumennum (x=rx-1.5=39, y=by+1.35=2.85)、
-            // gyousyaname y=by+0.35=1.85。 writeTopTitle 上部 rosenname y = paperHcm-1.5-1.5-1.1 = 25.6。
-            // 2026-06-18 user 「デフォルト 15mm くらいが見やすい」 で default 2.0→1.5 に変更したため
-            // 座標群を再計算 (= 旧 32.5/38.5/25.1 系から 33/39/25.6 系へ)。
-            // tCredit (url) = (outerMarginCm, outerMarginCm-0.3) = (1.5, 1.2)、 click で別タブ開く識別子。
-            near(p, 33f, 6.85f) -> "koujiname"
-            near(p, 33f, 4.85f) || near(p, 21f, 25.6f) -> "rosenname"
-            near(p, 39f, 2.85f) -> "zumennum"
-            near(p, 33f, 1.85f) -> "gyousyaname"
-            near(p, 1.5f, 1.2f) -> "url"
+            // 2026-06-19 cell 中央揃え (alignV=2、 by + N + 0.5) で座標群再計算:
+            // koujiname y=by+5.5=7.0、 rosenname y=by+3.5=5.0、 zumennum (x=rx-1.5=39, y=by+1.5=3.0)、
+            // gyousyaname y=by+0.5=2.0。 writeTopTitle 上部 rosenname y = paperHcm-1.5-1.5-1.1 = 25.6。
+            // tCredit (url) anchor y = outerMarginCm = 1.5 (= 外枠下辺、 alignV=3 + glyph 上端補正)。
+            near(p, 33f, 7.0f) -> "koujiname"
+            near(p, 33f, 5.0f) || near(p, 21f, 25.6f) -> "rosenname"
+            near(p, 39f, 3.0f) -> "zumennum"
+            near(p, 33f, 2.0f) -> "gyousyaname"
+            near(p, 1.5f, 1.5f) -> "url"
             else -> null
         }
 
@@ -155,8 +154,11 @@ object WebFrame {
             }
             val f = if (field != null) ""","field":"$field"""" else ""
             val esc = text.replace("\\", "\\\\").replace("\"", "\\\"")
+            // size は web canvas の paper-cm 単位 (= 寸法系の DrawPrim と整合)。 textsize 引数は
+            // base のお paper-mm 単位 (TOP_TITLE_MM / BOTTOM_MM)、 mm → cm で ÷ 10 が必要。
+            val sizeCm = textsize * ps / 10f
             out.add(
-                """{"type":"text","layer":"frame","text":"$esc","x":${p.x},"y":${p.y},"angle":$angle,"size":${textsize * ps},"align":$v$h$f}"""
+                """{"type":"text","layer":"frame","text":"$esc","x":${p.x},"y":${p.y},"angle":$angle,"size":$sizeCm,"align":$v$h$f}"""
             )
         }
     }

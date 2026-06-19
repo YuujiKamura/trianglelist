@@ -85,4 +85,31 @@ android {
     composeOptions {
         kotlinCompilerExtensionVersion = "2.0.0"
     }
-} 
+}
+
+// IDE Gradle panel から 1 クリックで web dev に wasm 反映するための束ね task。
+// chain: (1) wasmJsBrowserDistribution で wasm build → (2) web/wasm に sync → (3) vite reload trigger。
+val syncWebWasmExec = tasks.register<Exec>("syncWebWasmExec") {
+    workingDir = layout.projectDirectory.dir("../web").asFile
+    val isWindows = System.getProperty("os.name").lowercase().contains("windows")
+    commandLine = if (isWindows) listOf("cmd", "/c", "npm", "run", "sync-wasm")
+                  else listOf("npm", "run", "sync-wasm")
+    dependsOn("wasmJsBrowserDistribution")
+}
+
+abstract class TouchFileTask : DefaultTask() {
+    @get:Internal
+    abstract val targetFile: RegularFileProperty
+
+    @TaskAction
+    fun touch() {
+        targetFile.get().asFile.setLastModified(System.currentTimeMillis())
+    }
+}
+
+tasks.register<TouchFileTask>("syncWebDev") {
+    group = "web"
+    description = "wasm build + web/wasm sync + vite reload trigger (IDE Gradle panel から 1 クリック反映)"
+    dependsOn(syncWebWasmExec)
+    targetFile.set(layout.projectDirectory.file("../web/src/main.ts"))
+}

@@ -80,13 +80,10 @@ class WebFrameMarginTest {
     }
 
     @Test
-    fun topTitleScaleIsDoubleOfBottomTitleFrame() {
-        // 枠内テキスト 3 region 規約 (user 確定 2026-06-19、 DrawingFileWriter companion KDoc 参照):
-        // - TopTitle (= 上部タイトル「面積展開図」) = base × 2 (= ダブルスコア)
-        // - BottomTitleFrame cell (= 表題欄 工事名 等) + url (= tCredit) = base 同一
-        // const TOP_TITLE_SCALE = 2f を pin (= drift で TopTitle と BottomTitleFrame を 混同して BottomTitleFrame
-        // 側を 拡大した a72c17b / 687d6dd 経緯への regression 防止)。
-        assertEquals(2f, DrawingFileWriter.TOP_TITLE_SCALE)
+    fun frameTextMmConstsPinned() {
+        assertEquals(7.0f, DrawingFileWriter.TOP_TITLE_MM, "TopTitle paper mm")
+        assertEquals(5.0f, DrawingFileWriter.BOTTOM_TITLE_MM, "BottomTitleFrame cell paper mm")
+        assertEquals(3.5f, DrawingFileWriter.BOTTOM_CREDIT_MM, "BottomCredit url paper mm")
     }
 
     @Test
