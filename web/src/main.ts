@@ -1410,21 +1410,26 @@ function buildTrapRowCells(tr: HTMLTableRowElement, row: Row, i: number, canvas:
   // 形態列 = CTYPE (辺共有/二重断面/フロート)。台形でも三角形と同じ axis を持たせる
   // (user 2026-06-14「親種別は形態列に書くな、親番号から自動推論」)。値は extras[12] (cp.type) に書く
   // — 三角形と同じ slot を流用、common 側で幾何適用が後段になっても UI 表現は揃える。
-  const kindSel = document.createElement('select');
-  for (const [v, label] of CTYPE_OPTIONS) {
-    const opt = document.createElement('option');
-    opt.value = v;
-    opt.textContent = label;
-    kindSel.appendChild(opt);
+  // 独立行 (pn < 1) は親がいないため形態プルダウンは表示しない。
+  if (pn < 1) {
+    tr.appendChild(document.createElement('td'));
+  } else {
+    const kindSel = document.createElement('select');
+    for (const [v, label] of CTYPE_OPTIONS) {
+      const opt = document.createElement('option');
+      opt.value = v;
+      opt.textContent = label;
+      kindSel.appendChild(opt);
+    }
+    kindSel.value = row.extras[12] || '0';
+    kindSel.addEventListener('change', () => {
+      row.extras[12] = kindSel.value;
+      redraw(canvas);
+    });
+    const tdKind = document.createElement('td');
+    tdKind.appendChild(kindSel);
+    tr.appendChild(tdKind);
   }
-  kindSel.value = row.extras[12] || '0';
-  kindSel.addEventListener('change', () => {
-    row.extras[12] = kindSel.value;
-    redraw(canvas);
-  });
-  const tdKind = document.createElement('td');
-  tdKind.appendChild(kindSel);
-  tr.appendChild(tdKind);
   // 起点列 = 上辺寄せ (LCR_OPTIONS を流用: 値 2右/1中/0左 = align 整数と同値)
   const alignSel = document.createElement('select');
   for (const [v, label] of LCR_OPTIONS) {
