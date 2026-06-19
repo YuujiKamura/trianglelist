@@ -10,6 +10,8 @@
     "build": "npm run sync-wasm && npm run sync-icons && tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run --no-file-parallelism",
+    "test:fast": "vitest run --no-file-parallelism --exclude \"**/chain-interactive.test.ts\" --exclude \"**/kind-toggle.test.ts\"",
+    "test:ui": "vitest run --no-file-parallelism test/chain-interactive.test.ts test/kind-toggle.test.ts",
     "test:combo": "vitest run test/combo-pair.test.ts",
     "test:chain": "vitest run test/chain-coverage.test.ts"
   },
