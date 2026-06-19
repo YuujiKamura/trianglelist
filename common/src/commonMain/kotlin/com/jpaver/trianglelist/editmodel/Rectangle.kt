@@ -1,15 +1,11 @@
 package com.jpaver.trianglelist.editmodel
 
-import com.jpaver.trianglelist.viewmodel.formattedString
 import com.example.trilib.PointXY
-
-data class Line(val left: PointXY = PointXY(0f, 0f), val right: PointXY = PointXY(0f, 0f)){
-    fun getAngle():Double = left.calcAngleWithXAxis(right)
-}
-data class Line2(val a: Line = Line(), val b: Line = Line() )
+import com.jpaver.trianglelist.Bounds
+import com.jpaver.trianglelist.viewmodel.formattedString
 
 class Rectangle(
-    val height: Double,  // 垂線方向の延長 (旧 length、 「length だけだと何のことか分からない、 height で一発」 user 2026-06-18)
+    val height: Double,  // 垂線方向の延長 (旧 length)
     widthA: Double,
     widthB: Double,
     angle: Double = 0.0,
@@ -27,167 +23,129 @@ class Rectangle(
     var side: Int = side; set(value) { field = value; geoCache = null }
     var alignment: Int = alignment; set(value) { field = value; geoCache = null }
 
-    var dimVertical = DimAligns(1, 1, 1, 1)
+    var dimVertical = DimAligns(1, 1, 1)
     var dimHorizontal = DimAligns(0, 0, 0, 0)
-    var dimHeight: Float = 0f
-    var dimScale: Float = 1f
+    var dimHeight = 0f
+    var dimScale = 1f
 
-    private data class RectangleGeometry(
-        val bl: PointXY, val br: PointXY, val tr: PointXY, val tl: PointXY,
-        val midA: PointXY, val midC: PointXY,
-        val angle: Double,
-        // 「描画にいる数字」は全部ここで持つ ── 呼び出し側に向き計算をさせない
-        // (yuuji 2026-06-17 指針:「必要な数字は全部エンティティクラス自身がメンバでそろえていれば、ふつうに想起する」)
-        val spine: Line,                  // 垂線 (alignment 込み・中央揃えの短辺×30% shift 込み)
-        val rightAngleMark: Line2,        // 直角マーカー (spine 起点・内向き 2 本)
-        val guideLine: Line?              // alignment=0 では null (B 辺と spine が重なる)
+    data class RectangleGeometry(
+        val pointBR: PointXY, val pointBL: PointXY, val pointTL: PointXY, val pointTR: PointXY,
+        val midA: PointXY, val midC: PointXY, val angle: Double,
+        val spine: Line, val rightAngleMark: Line2, val guideLine: Line?
     )
 
     private var geoCache: RectangleGeometry? = null
 
-    fun calcPoint(): Line2 {
-        var baseL = basepoint
-        var baseR = basepoint.moveX(widthA, angle)
+    /** 幾何形状の再計算。 br (basepoint) 起点・時計回り (CW) 規約。 */
+    private fun updateGeometry(): RectangleGeometry {
+        // 1. 基点 br と 角度の確定
+        var br = basepoint
         var curAngle = angle
-
+        
         nodeA?.let {
-            val bl = initByParent(it, side)
-            baseL = bl.left
-            baseR = bl.right
-            curAngle = bl.getAngle()
-            basepoint = baseL
+            val initLine = initByParent(it, side)
+            // initByParent は親辺(CW)を反転した Line(forward.right, forward.left) を返す。
+            // 子 baseline の物理的な起点 (br) としてそのまま受ける。
+            br = initLine.left
+            curAngle = initLine.getAngle()
+            basepoint = br
             angle = curAngle
+            widthA = initLine.length
+        }
+        // 2. 底辺の終点 bl を確定 (br -> bl)
+        val bl = br.moveX(widthA, curAngle)
+
+        // 3. 成長方向 (perp) の確定
+        // br -> bl の進行方向の「右手 (+90度)」が図形の内側。
+        // 独立時 (angle=180): br から左に歩き、右手に成長 = y軸プラス (上) 向き。
+        var perp = br.crossOffset(bl, height, 90.0) - br
+        
+        nodeA?.let { p ->
+            val outward = p.outwardPerpUnit(side)
+            // 親接続時、現在の成長方向が親の外向きベクトルと逆なら反転。
+            if (perp.innerProduct(outward) < 0.0) {
+                perp = br.crossOffset(bl, height, -90.0) - br
+            }
         }
 
-        val baseLen = baseL.lengthTo(baseR)
-        val alignShift = when (alignment) {
-            1 -> (baseLen - widthB) / 2.0
-            2 -> baseLen - widthB
-            else -> 0.0
+        // 4. 上辺 tl -> tr の配置 (alignment 考慮)
+        // br(0) -> bl(widthA) の軸上で、tl の位置を決定する。
+        val xShift = when (alignment) {
+            1 -> (widthA + widthB) / 2.0 // 中央寄せ
+            2 -> widthB                  // 右寄せ (tr が br の真上)
+            else -> widthA               // 左寄せ (tl が bl の真上)
         }
-        val topBaseStart = baseL.offset(baseR, alignShift)
+        val tl = br.offset(bl, xShift) + perp
+        val tr = tl + br.vectorTo(bl).normalize().scale(-widthB) // bl->br 方向へ widthB
 
-        // 外向き perpendicular ベクトル: 親有り Rect は親図形の outwardPerpUnit (= 親の環閉合した
-        // ラインの集合の signedArea から動的算出) を使う。 独立 Rect (親無し) は親が無いので
-        // 「外向き」 概念が無く、 自分の baseline の perpCCW 方向 (= 数学 +y、 画面下) を初期向きと
-        // して採る ── これは「外向き規定」 ではなく独立 Rect の初期巡回方向の選択。
-        // user 指針 (2026-06-18):「環閉合したデータ群を揃えて初めて周回向きと内側外側が決まる」、
-        // 「ラインの集合から外向きを教えてくれる関数を書くことは可能」。 ±90 という数値 symbol は
-        // 撤廃。
-        val bl = baseL
-        val br = baseR
-        val dx = (baseR.x - baseL.x).toDouble()
-        val dy = (baseR.y - baseL.y).toDouble()
-        val safeLen = if (baseLen > 0.0) baseLen else 1.0   // 0 除算ガード (degenerate baseline)
-        val outward = nodeA?.outwardPerpUnit(side) ?: PointXY(
-            (-dy / safeLen).toFloat(), (dx / safeLen).toFloat()
-        )
-        val tl = PointXY(
-            (topBaseStart.x + outward.x * height).toFloat(),
-            (topBaseStart.y + outward.y * height).toFloat()
-        )
-        val tr = PointXY(
-            (tl.x + (dx / safeLen) * widthB).toFloat(),
-            (tl.y + (dy / safeLen) * widthB).toFloat()
-        )
-
-        val midA = bl.calcMidPoint(br)
+        val midA = br.calcMidPoint(bl)
         val midC = tl.calcMidPoint(tr)
 
-        // 垂線 spine: alignment 別の起点・終点 (中央揃えは番号サークルを避けて短辺×30% shift)
+        // 5. 垂線 (spine)
         val spine = when (alignment) {
-            1    -> {
-                val baseDir = bl.vectorTo(br).normalize()
-                val shift = baseDir.scale(minOf(widthA, widthB) * 0.3)
+            1 -> {
+                val shift = br.vectorTo(bl).normalize().scale(minOf(widthA, widthB) * 0.3)
                 Line(midA + shift, midC + shift)
             }
-            2    -> Line(br, tr)
+            2 -> Line(br, tr)
             else -> Line(bl, tl)
         }
 
-        // 直角マーカー: spine 起点と上辺方向は確定。内向きは「上辺方向に直交する 2 候補のうち、
-        //   centroid 側を向く方」を採る (alignment・親の有無 / crossClockwise の符号によらず常に内向き、
-        //   2026-06-18 yuuji 指摘「右揃え/左揃え時に外に飛び出る」の修正)。
+        // 6. 直角マーカー
         val sqSize = minOf(widthA, widthB, height) * 0.05
-        val upDir = spine.left.vectorTo(spine.right).normalize()
-        val perpCcw = PointXY(-upDir.y, upDir.x)              // CCW90 of upDir
-        val perpCw  = PointXY( upDir.y, -upDir.x)             // CW90  of upDir
-        val rectCenter = PointXY(
-            ((bl.x + br.x + tr.x + tl.x) * 0.25f),
-            ((bl.y + br.y + tr.y + tl.y) * 0.25f)
-        )
-        val toCenter = spine.left.vectorTo(rectCenter)
-        val inDir =
-            if (toCenter.x * perpCcw.x + toCenter.y * perpCcw.y > 0f) perpCcw
-            else perpCw
+        val up = spine.left.vectorTo(spine.right).normalize()
+        val center = PointXY((br.x + bl.x + tl.x + tr.x) * 0.25, (br.y + bl.y + tl.y + tr.y) * 0.25)
+        val toCenter = spine.left.vectorTo(center)
+        val rightDir = PointXY(up.y, -up.x)
+        val inDir = if (toCenter.innerProduct(rightDir) > 0.0) rightDir else PointXY(-up.y, up.x)
+        
         val p1 = spine.left + inDir.scale(sqSize)
-        val p3 = spine.left + upDir.scale(sqSize)
-        val p2 = p1 + upDir.scale(sqSize)
+        val p3 = spine.left + up.scale(sqSize)
+        val p2 = p1 + up.scale(sqSize)
         val rightAngleMark = Line2(Line(p1, p2), Line(p2, p3))
 
-        val guideLine = if (alignment != 0) spine else null
-
-        geoCache = RectangleGeometry(
-            bl, br, tr, tl, midA, midC, curAngle,
-            spine, rightAngleMark, guideLine
-        )
-
-        return Line2(Line(bl, br), Line(tl, tr))
+        return RectangleGeometry(br, bl, tl, tr, midA, midC, curAngle, spine, rightAngleMark, if (alignment != 0) spine else null)
+            .also { geoCache = it }
     }
 
-    private fun geo() = geoCache ?: calcPoint().let { geoCache!! }
+    private fun geo() = geoCache ?: updateGeometry()
 
-    /** 垂線 (spine)。中央揃え時の番号サークル回避 shift 込み、起点は底辺との交点。 */
+    /** 座標のペア (底辺 Line(bl,br) と 上辺 Line(tl,tr)) を返す。 互換性維持のためのメソッド。 */
+    fun calcPoint(): Line2 {
+        val g = geo()
+        // 外部 (DrawingFileWriter) は bl, br 順を期待しているため、幾何学的な bl, br を渡す
+        return Line2(Line(g.pointBL, g.pointBR), Line(g.pointTL, g.pointTR))
+    }
+
     fun getSpine(): Line = geo().spine
-
-    /** 直角マーカー (spine と底辺の直交を示す小正方形の 2 辺)。Line2 として「描画する 2 本」を返すだけ。 */
     fun getRightAngleMark(): Line2 = geo().rightAngleMark
-
-    /** 垂線そのもののガイド線。alignment=0 (左寄せ) は B 辺と重なるので null。 */
     fun getGuideLine(): Line? = geo().guideLine
 
-    /** 描画レンダラ向けメタ識別子: 垂線の起点が底辺側 (bl) か上辺側 (tl) か。 */
-    val perpFrom: String get() = if (widthA <= widthB) "bl" else "tl"
+    var perpFrom: String = "B"
+        get() = if (alignment == 2) "D" else "B"
 
     override fun getLine(side: Int): Line {
         val g = geo()
-        // side 番号 = 物理意味 (0=A 底辺, 1=B 左脚, 2=C 上辺, 3=D 右脚) で固定。 forward は
-        // 環閉合 CW 巡回 (br→bl→tl→tr→br) と一致させる ── 全 CycleShape が CW 規約遵守
-        // (signedArea < 0、 user 指針 2026-06-18「全ての連結図形が同一方向に周回する前提」)。
-        // 0..3 を順に並べると [(br,bl),(bl,tl),(tl,tr),(tr,br)] = 連続巡回 + CW 一周、
-        // edges() の default 実装 (= 0..sideCount-1 を getLine で取る) がそのまま CW 巡回になる
-        // ので override 不要。 initByParent は forward を reverse して子 base.left に渡すので、
-        // side 0 forward を br→bl にしても子の base.left = br (= 旧 bl→br reverse の左 = br と同じ)
-        // にはならない ── ただし子の base 起点が br になるだけで、 base 自身の端点位置は不変
-        // (br→bl 順か bl→br 順かの違い)。 ChildExpansionDirectionTest の cartesian で外向き保証
-        // を gate 化しているので、 万一画面位置がずれたら test が落ちて気づける。
+        // CW 巡回順の辺 (A -> B -> C -> D)
         return when (side) {
-            0 -> Line(g.br, g.bl) // A 底辺 (br→bl、 CW 巡回の起点)
-            1 -> Line(g.bl, g.tl) // B 左脚 (bl→tl、 CW 巡回の 2 番目)
-            2 -> Line(g.tl, g.tr) // C 上辺 (tl→tr、 CW 巡回の 3 番目)
-            3 -> Line(g.tr, g.br) // D 右脚 (tr→br、 CW 巡回の 4 番目、 一周閉じる)
+            0 -> Line(g.pointBR, g.pointBL) // A 底辺 (br -> bl)
+            1 -> Line(g.pointBL, g.pointTL) // B 左脚 (bl -> tl)
+            2 -> Line(g.pointTL, g.pointTR) // C 上辺 (tl -> tr)
+            3 -> Line(g.pointTR, g.pointBR) // D 右脚 (tr -> br)
             else -> Line()
         }
     }
 
     override val sideCount: Int = 4
+    
+    /** 頂点列 (CW 巡回)。 br 起点。 */
     override fun vertices(): List<PointXY> {
         val g = geo()
-        return listOf(g.bl, g.br, g.tr, g.tl)
+        return listOf(g.pointBR, g.pointBL, g.pointTL, g.pointTR) // CW
     }
 
-    /**
-     * Rectangle の side 番号と node スロットの対応 (物理意味で固定、 環閉合順とは独立):
-     *   side 1 (B 左脚) → node.b、 side 2 (C 上辺) → node.c、 side 3 (D 右脚) → node.d
-     */
-    override fun setNode2(target: CycleShape, side: Int, side2: Int) {
-        when (side) {
-            0 -> { target.setNode2(this, side2); node.a = target }
-            1 -> { target.node.a = this; node.b = target }  // B 左脚
-            2 -> { target.node.a = this; node.c = target }  // C 上辺
-            3 -> { target.node.a = this; node.d = target }  // D 右脚
-        }
-    }
+    /** 環閉合 (isClosed) を成立させる巡回順の Line リスト。 A -> B -> C -> D */
+    override fun edges(): List<Line> = listOf(getLine(0), getLine(1), getLine(2), getLine(3))
 
     override fun emitDimensionSpecs(scale: Float): List<DimensionSpec> {
         val g = geo()
@@ -196,57 +154,54 @@ class Rectangle(
         val specs = mutableListOf<DimensionSpec>()
 
         fun spec(side: Int, line: Line, v: Int, h: Int): DimensionSpec {
+            // layout は「右手」を内側と判定。 CW 辺では右手=内側なので、そのまま渡す。
             val place = com.jpaver.trianglelist.label.DimensionLayout.layout(line.right, line.left, v, h, ds, dh, 0.0)
             val len = (line.left.lengthTo(line.right) / scale).toFloat()
             return DimensionSpec(side, len.formattedString(2), place, line.left.calcDimAngle(line.right), h, v, h > 2)
         }
 
-        if (nodeA == null) specs.add(spec(0, Line(g.bl, g.br), dimVertical.a, dimHorizontal.a))
-        specs.add(spec(2, Line(g.tr, g.tl), dimVertical.c, dimHorizontal.c))
+        if (nodeA == null) specs.add(spec(0, Line(g.pointBR, g.pointBL), dimVertical.a, dimHorizontal.a))
+        specs.add(spec(2, Line(g.pointTL, g.pointTR), dimVertical.c, dimHorizontal.c))
 
         val spine = getSpine()
         val placeB = com.jpaver.trianglelist.label.DimensionLayout.layout(spine.right, spine.left, dimVertical.b, dimHorizontal.b, ds, dh, 0.0)
         val extLen = (height / scale).toFloat()
         specs.add(DimensionSpec(1, extLen.formattedString(2), placeB, spine.left.calcDimAngle(spine.right), dimHorizontal.b, dimVertical.b, dimHorizontal.b > 2))
-        // 斜辺 (D 右脚 / 中央揃え時の左脚 B) は寸法を出さない (底辺・上辺・垂線のみ、過去指摘 2026-06-17)
-
         return specs
     }
 
     override fun centroid(): PointXY {
         val g = geo()
-        return PointXY(((g.bl.x + g.br.x + g.tr.x + g.tl.x) / 4).toFloat(), ((g.bl.y + g.br.y + g.tr.y + g.tl.y) / 4).toFloat())
+        return PointXY((g.pointBR.x + g.pointBL.x + g.pointTL.x + g.pointTR.x) * 0.25, (g.pointBR.y + g.pointBL.y + g.pointTL.y + g.pointTR.y) * 0.25)
     }
 
-    // 段階0 の textSize 配布: Rectangle は dimHeight を保持するだけ (描画時に直接参照)。
-    override fun applyDimTextSize(size: Float) { dimHeight = size }
+    override fun applyDimTextSize(size: Float) {
+        dimHeight = size
+        geoCache = null
+    }
 
-    fun expandBoundaries(listBound: com.jpaver.trianglelist.Bounds): com.jpaver.trianglelist.Bounds {
+    fun expandBoundaries(bounds: Bounds): Bounds {
         val g = geo()
-        val vs = listOf(g.bl, g.br, g.tr, g.tl)
-
-        var myLeft   = vs[0].x
-        var myTop    = vs[0].y
-        var myRight  = vs[0].x
-        var myBottom = vs[0].y
+        val vs = listOf(g.pointBR, g.pointBL, g.pointTL, g.pointTR)
+        var left = bounds.left; var right = bounds.right
+        var top = bounds.top; var bottom = bounds.bottom
         for (v in vs) {
-            if (v.x < myLeft)   myLeft   = v.x
-            if (v.x > myRight)  myRight  = v.x
-            if (v.y < myBottom) myBottom = v.y
-            if (v.y > myTop)    myTop    = v.y
+            left = minOf(left, v.x); right = maxOf(right, v.x)
+            top = maxOf(top, v.y); bottom = minOf(bottom, v.y)
         }
-
-        return com.jpaver.trianglelist.Bounds(
-            left   = minOf(myLeft,   listBound.left),
-            top    = maxOf(myTop,    listBound.top),
-            right  = maxOf(myRight,  listBound.right),
-            bottom = minOf(myBottom, listBound.bottom),
-        )
+        return Bounds(left, top, right, bottom)
     }
 
     fun rotateBy(center: PointXY, degrees: Float) {
-        if (nodeA != null) return
         basepoint = basepoint.rotate(center, degrees.toDouble())
-        angle += degrees
+        angle += degrees.toDouble()
+        geoCache = null
     }
 }
+
+class Line(val left: PointXY = PointXY(0f, 0f), val right: PointXY = PointXY(0f, 0f)) {
+    fun getAngle(): Double = left.calcAngleWithXAxis(right)
+    val length = left.lengthTo(right)
+}
+
+data class Line2(val a: Line, val b: Line)

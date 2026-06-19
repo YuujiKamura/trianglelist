@@ -472,3 +472,40 @@ data class AcousticPointCloud(
 
 ---
 *「思考実験をえんえんとやっててもお腹は膨らまない」- 技術アイデアから実装への転換点*
+
+## 許可されたコマンド
+
+```
+Bash(mkdir:*)
+Bash(rm:*)
+Bash(mv:*)
+Bash(cp:*)
+Bash(ls:*)
+Bash(cat:*)
+Bash(head:*)
+Bash(tail:*)
+Bash(which:*)
+Bash(echo:*)
+Bash(git:*)
+Bash(git add:*)
+Bash(git commit:*)
+Bash(git push:*)
+Bash(git checkout:*)
+Bash(git branch:*)
+Bash(git merge:*)
+Bash(git stash:*)
+Bash(git restore:*)
+Bash(git rm:*)
+Bash(git log:*)
+Bash(git status:*)
+Bash(git diff:*)
+Bash(npm:*)
+Bash(npm install:*)
+Bash(npm run:*)
+Bash(npm test:*)
+Bash(node:*)
+Bash(npx:*)
+Bash(tsc:*)
+Bash(./gradlew:*)
+Bash(gradlew:*)
+```

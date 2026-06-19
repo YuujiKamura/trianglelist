@@ -136,9 +136,10 @@ open class CycleShape() {
      * 原則は「時計回りで外に展開する」こと。
      */
     fun initByParent(parent: CycleShape, side: Int): Line {
-        val forward = parent.getLine(side)
         parent.setNode2(this, side)
-        return Line(forward.right, forward.left)
+
+        val refLine = parent.getLine(side)
+        return Line(refLine.right, refLine.left)
     }
 
     // ---------- 階層走査ユーティリティ ----------
