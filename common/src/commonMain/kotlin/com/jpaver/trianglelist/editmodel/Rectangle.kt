@@ -207,14 +207,17 @@ class Rectangle(
         val dh = dimHeight.toDouble()
         val specs = mutableListOf<DimensionSpec>()
 
-        fun spec(side: Int, line: Line, v: Int, h: Int): DimensionSpec {
+        val trapBaseAngle = getLine(0).getAngle()
+
+        fun spec(side: Int, line: Line, v: Int, h: Int, fixedAngle: Double? = null): DimensionSpec {
             val place = com.jpaver.trianglelist.label.DimensionLayout.layout(line.right, line.left, v, h, ds, dh, 0.0)
             val len = (line.left.lengthTo(line.right) / scale).toFloat()
-            return DimensionSpec(side, len.formattedString(2), place, line.left.calcDimAngle(line.right), h, v, h > 2)
+            val ang = fixedAngle ?: line.left.calcDimAngle(line.right)
+            return DimensionSpec(side, len.formattedString(2), place, ang, h, v, h > 2)
         }
 
-        if (nodeA == null) specs.add(spec(0, Line(g.pointDA, g.pointAB), dimVertical.a, dimHorizontal.a))
-        specs.add(spec(2, Line(g.pointBC, g.pointCD), dimVertical.c, dimHorizontal.c))
+        if (nodeA == null) specs.add(spec(0, Line(g.pointDA, g.pointAB), dimVertical.a, dimHorizontal.a, trapBaseAngle))
+        specs.add(spec(2, Line(g.pointBC, g.pointCD), dimVertical.c, dimHorizontal.c, trapBaseAngle))
 
         val spine = getSpine()
         val placeB = com.jpaver.trianglelist.label.DimensionLayout.layout(spine.right, spine.left, dimVertical.b, dimHorizontal.b, ds, dh, 0.0)

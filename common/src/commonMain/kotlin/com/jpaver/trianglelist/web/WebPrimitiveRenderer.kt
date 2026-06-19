@@ -128,7 +128,11 @@ object WebPrimitiveRenderer {
                     DimensionLayout.SIDE_SOKUTEN, horizontalS,
                     ds, dh, 0.0
                 )
-                val angle = place.pointB.calcSokAngle(place.pointA, sokutenListVector)
+                val angle = if (obj is Rectangle) {
+                    obj.getLine(0).getAngle()
+                } else {
+                    place.pointB.calcSokAngle(place.pointA, sokutenListVector)
+                }
                 item(text(obj.name, place.dimpoint, angle, textSize, 1, "num", ""","tri":$num"""))
                 item(line(place.pointA, place.pointB, "num", ""","tri":$num"""))
             }
