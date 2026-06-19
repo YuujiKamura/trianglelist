@@ -221,6 +221,9 @@ let dedSelected = 0; // 選択中の控除番号 (1-based、0 = 非選択)
 // 新規入力で「追加」が作る図形種別。FAB fabFigureKind でトグル、syncForm がラベルを切替える
 let figureKind: 'triangle' | 'rectangle' = 'triangle';
 
+// ---- テキスト反転閾値 (2026-06-19 試行用) ----
+let thresholdAngle = 90;
+
 // Deduction CSV 行の表示用パース (列順は MainActivity.writeCSV:2795)。座標列 8/9 は
 // モデル座標 (y 上向き、保存時に Y 反転済みの値) なのでそのまま hit/マーカーに使える
 type DedView = { num: number; name: string; lenX: string; lenY: string; pn: string; type: string; x: number; y: number; fx: number; fy: number };
@@ -678,7 +681,7 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
 
 function renderCsv(canvas: HTMLCanvasElement, csv: string, label: string): void {
   try {
-    const json = renderCsvToPrimitivesWithOverrides(csv, 1.0, overridesJson());
+    const json = renderCsvToPrimitivesWithOverrides(csv, 1.0, overridesJson(), thresholdAngle);
     let prims = JSON.parse(json) as Prim[];
     // 図面枠 (A3、DXF の writeDrawingFrame と同形)。lastPrims に足すので fit も枠込み —
     // 「目いっぱいでなくマージン」の図面らしい余白になる (2026-06-12 user 要望)
@@ -3929,6 +3932,16 @@ function main(): void {
   wireFabs(canvas);
   wireRosenName(canvas);
   wireNewRowEnter(canvas);
+  // テキスト反転閾値スライダーの配線
+  const slider = document.getElementById('thresholdSlider') as HTMLInputElement | null;
+  const valDisp = document.getElementById('thresholdVal');
+  if (slider && valDisp) {
+    slider.addEventListener('input', () => {
+      thresholdAngle = parseFloat(slider.value);
+      valDisp.textContent = slider.value;
+      redraw(canvas);
+    });
+  }
   // 形態 select の変化で追従: 三角形は起点 select の有効/無効、台形は親種別なので接続辺の D 有無 (onCTypeChange)。
   // 加えて、新規行フォームの各値変更を即座にシャドーへ反映 (user 2026-06-14「起点プルダウン選択を
   // トリガーにキャンバスが書き換わるのが本来の姿」)。buildShadow が newA/newB/newC/newLcr を読むので、

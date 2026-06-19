@@ -538,11 +538,13 @@ object CsvCodec {
         val nameIdx = if (c.firstOrNull() == "Rectangle") 10 else 6
         c.getOrNull(nameIdx)?.let { if (it.isNotEmpty()) obj.name = it }
 
+        // 測点アライメント (26-27列目) は全図形共通 (2026-06-19 基底化)
+        c.getOrNull(26)?.toIntOrNull()?.let { obj.dimHorizontal.s = it }
+
         if (obj is Triangle) {
             // 色 (列10)
             c.getOrNull(10)?.toIntOrNull()?.let { obj.setColor(it) }
-            // 番号サークル位置 (列7-9、ユーザー移動時のみ)。座標は絶対値で、flag=true が
-            // recoverState の回転対象から外す
+            // 番号サークル位置 (列7-9、ユーザー移動時のみ)
             if (c.getOrNull(9)?.toBoolean() == true) {
                 val px = c.getOrNull(7)?.toFloatOrNull()
                 val py = c.getOrNull(8)?.toFloatOrNull()
@@ -562,8 +564,7 @@ object CsvCodec {
                 obj.dim.flag[1].isMovedByUser = c.getOrNull(20)?.toBoolean() ?: false
                 obj.dim.flag[2].isMovedByUser = c.getOrNull(21)?.toBoolean() ?: false
             }
-            // 測点アライメント (列26-27)
-            c.getOrNull(26)?.toIntOrNull()?.let { obj.dim.horizontal.s = it }
+            // 測点手動フラグ (27列目)
             c.getOrNull(27)?.let { obj.dim.flagS.isMovedByUser = it.toBoolean() }
         }
     }
@@ -648,15 +649,22 @@ object CsvCodec {
         val rawWA = if (sf > 0.0) mr.widthA / sf else mr.widthA
         val rawWB = if (sf > 0.0) mr.widthB / sf else mr.widthB
         val pKind = if (mr.nodeA is Rectangle) 1 else 0
-        
-        return CsvRow(
-            listOf(
-                "Rectangle", "$number", 
-                "${rawH.toFloat().formattedString(2)}", "${rawWA.toFloat().formattedString(2)}", "${rawWB.toFloat().formattedString(2)}",
-                "${mr.parentnumber}", "${mr.cParam_.side}", "${mr.cParam_.lcr}",
-                "$pKind", "${mr.cParam_.type}", mr.name
-            )
+
+        // Rectangle も Triangle と同様に 28 列形式で出力する (2026-06-19)
+        // 測点名(10), 測点アライメント(26), 測点手動フラグ(27) 等を埋める
+        val chunks = mutableListOf(
+            "Rectangle", "$number",
+            "${rawH.toFloat().formattedString(2)}", "${rawWA.toFloat().formattedString(2)}", "${rawWB.toFloat().formattedString(2)}",
+            "${mr.parentnumber}", "${mr.cParam_.side}", "${mr.cParam_.lcr}",
+            "$pKind", "${mr.cParam_.type}", mr.name
         )
+        // 11列目〜25列目を空文字またはデフォルトで埋める
+        repeat(15) { chunks.add("") }
+        // 26列目: 測点アライメント, 27列目: 測点手動フラグ (ダミーで false)
+        chunks.add("${mr.dimHorizontal.s}")
+        chunks.add("false")
+
+        return CsvRow(chunks)
     }
 
     /**

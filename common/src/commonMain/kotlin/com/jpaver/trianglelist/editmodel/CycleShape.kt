@@ -24,6 +24,13 @@ open class CycleShape() {
     open var isColored = false
     open var isFloating = false
 
+    // --- 寸法・測点管理の基底化 (2026-06-19) ---
+    open var dimVertical = DimAligns(1, 1, 1, 1)
+    open var dimHorizontal = DimAligns(0, 0, 0, 0)
+    open var dimHeight = 0f
+    open var dimScale = 1f
+    open var dimThresholdAngle = 90f // テキスト角度反転の閾値 (90度: 指示によりデフォルト変更)
+
     /** 辺数 (三角形=3, 台形=4)。上位コードはこの値で配列 stride を決め、kind 分岐を消す。 */
     open val sideCount: Int = 0
 
@@ -98,8 +105,9 @@ open class CycleShape() {
      * 図形種別に依らず描画側が単一ループで寸法を emit できるよう、各図形が自分用の
      * DimensionSpec リストを返す責務を持つ。空 (= 寸法概念がない図形) は default の emptyList。
      * scale は CSV のビュー scale (renderCsv の effScale と同値)、辺長 / scale で実寸を出す系で使う。
+     * sokutenListVector はリスト全体の回転方向（0:上向き, 1:下向き等）で、測点の角度計算に使用する。
      */
-    open fun emitDimensionSpecs(scale: Float): List<DimensionSpec> = emptyList()
+    open fun emitDimensionSpecs(scale: Float, sokutenListVector: Int = 0): List<DimensionSpec> = emptyList()
 
     open fun setNode2(target: CycleShape, side:Int=0, side2:Int=1 ){
         when(side){
@@ -189,12 +197,11 @@ open class CycleShape() {
 
     /**
      * 測点 (Station Flag) 描画用のパラメータ 3 種。
-     * default は「測点固有の値を持たない図形」向けに、上位から渡された fallback を返す。
-     * Triangle のみ override して dim.horizontal.s / scaleFactor / dimHeight を返す。
+     * 基底クラスで管理される dimHorizontal.s / dimScale / dimHeight を返す。
      */
-    open fun sokutenHorizontal(): Int = 0
-    open fun sokutenScale(fallback: Double): Double = fallback
-    open fun sokutenHeight(fallback: Double): Double = fallback
+    open fun sokutenHorizontal(): Int = dimHorizontal.s
+    open fun sokutenScale(fallback: Double): Double = if (dimScale > 0) dimScale.toDouble() else fallback
+    open fun sokutenHeight(fallback: Double): Double = if (dimHeight > 0) dimHeight.toDouble() else fallback
 
     /**
      * 図形がこの点を内側に含むか (タップ判定の共通契約)。
