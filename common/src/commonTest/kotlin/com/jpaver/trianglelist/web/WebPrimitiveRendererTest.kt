@@ -233,7 +233,7 @@ class WebPrimitiveRendererTest {
 
     @Test
     fun render_emits_station_flag_for_rectangle() {
-        val csv = "Rectangle,1,10.0,5.0,5.0,-1,0,0,0,RecStation\n"
+        val csv = "Rectangle,1,10.0,5.0,5.0,-1,0,0,0,0,RecStation\n"
         val json = WebPrimitiveRenderer.renderCsv(csv, 1f)
         assertTrue(json.contains(""""text":"RecStation""""), "rectangle station flag text not found")
         assertTrue(json.contains(""""type":"line","layer":"num""""), "rectangle station flag line not found")

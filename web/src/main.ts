@@ -749,6 +749,9 @@ type Row = {
   // parent は常に混在通し番号。parentKind は UI 表示と旧 CSV 互換用で、モデル接続の主キーではない。
   // 三角形では未使用。省略時 0 で後方互換 (R2 の 8 列 Rectangle CSV は親=三角形のまま不変)
   parentKind?: number;
+  // 台形のみ: 接続形態 (0=完全共有/1=フロート/2=二重断面)。CSV 10 列目 type。
+  // 三角形では未使用。省略時 0 で後方互換
+  ctype?: number;
 };
 
 // 三角形として描画される行の数。
@@ -785,6 +788,7 @@ function createRectangleRow(args: {
   extras?: string[];
   align?: number;
   parentKind?: number; // 省略時は parent から自動推論
+  ctype?: number;
 }): Row {
   const pk = args.parentKind ?? inferParentKind(parseInt(args.parent, 10));
   return {
@@ -794,6 +798,7 @@ function createRectangleRow(args: {
     extras: args.extras ?? [],
     align: args.align ?? 0,
     parentKind: pk,
+    ctype: args.ctype ?? 0,
   };
 }
 
@@ -891,6 +896,9 @@ function parseCsvToState(csv: string): void {
     if (chunks[0] === 'Rectangle') {
       const al = intOrNull(chunks[7] ?? '') ?? 0; // 8列目 align、省略時0で後方互換
       const pk = intOrNull(chunks[8] ?? '') ?? 0; // 9列目 parentKind (0三角形/1台形)、省略時0で後方互換
+      const ct = intOrNull(chunks[9] ?? '') ?? 0; // 10列目 type (0=共有/1=フロート/2=二重断面)
+      const rectName = chunks[10] ?? '';           // 11列目 name (測点名)
+      const rectExtras: string[] = rectName ? [rectName] : [];
       rows.push(createRectangleRow({
         ea: newEdge(chunks[3] ?? ''), // 底辺(widthA)
         eb: newEdge(chunks[2] ?? ''), // 延長(length)
@@ -899,6 +907,8 @@ function parseCsvToState(csv: string): void {
         conn: chunks[6] ?? '0', // side (1=B/2=C/3=D、3 は parentKind=1 の台形親のみ)
         align: al >= 0 && al <= 2 ? al : 0,
         parentKind: pk >= 0 && pk <= 1 ? pk : 0, // CSV 既存値を尊重 (auto 推論より優先)
+        ctype: ct >= 0 && ct <= 2 ? ct : 0,
+        extras: rectExtras,
       }));
       continue;
     }
@@ -971,7 +981,7 @@ function serializeState(): string {
     } else if (r.kind === 'rectangle') {
       trapNum++;
       lines.push(
-        `Rectangle,${trapNum},${edgeVal(r, 'b')},${edgeVal(r, 'a')},${edgeVal(r, 'c')},${r.parent},${r.conn},${r.align ?? 0},${r.parentKind ?? 0}`,
+        `Rectangle,${trapNum},${edgeVal(r, 'b')},${edgeVal(r, 'a')},${edgeVal(r, 'c')},${r.parent},${r.conn},${r.align ?? 0},${r.parentKind ?? 0},${r.ctype ?? 0},${nameOf(r)}`,
       );
     }
   });
@@ -1421,11 +1431,20 @@ function buildTrapRowCells(tr: HTMLTableRowElement, row: Row, i: number, canvas:
       opt.textContent = label;
       kindSel.appendChild(opt);
     }
-    kindSel.value = row.extras[12] || '0';
-    kindSel.addEventListener('change', () => {
-      row.extras[12] = kindSel.value;
-      redraw(canvas);
-    });
+    // Rectangle は ctype フィールド、Triangle は extras[12] (cp.type slot)
+    if (row.kind === 'rectangle') {
+      kindSel.value = String(row.ctype ?? 0);
+      kindSel.addEventListener('change', () => {
+        row.ctype = intOrNull(kindSel.value) ?? 0;
+        redraw(canvas);
+      });
+    } else {
+      kindSel.value = row.extras[12] || '0';
+      kindSel.addEventListener('change', () => {
+        row.extras[12] = kindSel.value;
+        redraw(canvas);
+      });
+    }
     const tdKind = document.createElement('td');
     tdKind.appendChild(kindSel);
     tr.appendChild(tdKind);
