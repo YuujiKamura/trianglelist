@@ -1114,7 +1114,7 @@ function syncForm(): void {
     const pnum = intOrNull(cur.parent) ?? -1;
     const pk = (pnum >= 1 && pnum <= rows.length && rows[pnum - 1]?.kind === 'rectangle') ? 1 : 0;
     cur.parentKind = pk; // CSV 出力の整合 (col 9) を保つ
-    setSelectOptions(select('curCType'), CTYPE_OPTIONS, cur.extras[12] || '0');
+    setSelectOptions(select('curCType'), CTYPE_OPTIONS, String(cur.ctype ?? 0));
     select('curCType').disabled = false;
     setSelectOptions(select('curConn'), connOptionsFor('cur', pk));
     select('curConn').value = pnum >= 1 ? trapSideValue(cur.conn, pk) : '-1';
@@ -1824,6 +1824,9 @@ function rewriteCurrentRectangle(canvas: HTMLCanvasElement): void {
   r.conn = String(side);
   r.align = align >= 0 && align <= 2 ? align : 0;
   r.parentKind = parent >= 1 ? parentKind : 0;
+  // 形態 (ctype) もカレント行に反映する
+  const ct = intOrNull(select('curCType').value) ?? 0;
+  r.ctype = ct >= 0 && ct <= 2 ? ct : 0;
   setName(r, input('curName').value);
   buildTable(canvas);
   syncForm();
@@ -2003,6 +2006,10 @@ function addRectangle(canvas: HTMLCanvasElement): void {
   }
   // 上辺の寄せ = 起点(lcr)列を流用 (0左/1中/2右)。台形モードで常時有効化済 (syncForm)
   const align = intOrNull(select('newLcr').value) ?? 0;
+  // 形態 (ctype) と測点名 (name) も新規行に反映する
+  const ct = intOrNull(select('newCType').value) ?? 0;
+  const rectName = input('newName').value.trim();
+  const rectExtras: string[] = rectName ? [rectName] : [];
   takeUndoSnap();
   // 台形 Row を suffix 末尾へ (辺A=底辺/辺B=延長/辺C=上辺、conn=side、align=上辺寄せ、parentKind=親種別)
   rows.push(createRectangleRow({
@@ -2013,6 +2020,8 @@ function addRectangle(canvas: HTMLCanvasElement): void {
     conn: String(side),
     align: align >= 0 && align <= 2 ? align : 0,
     parentKind: parent >= 1 ? parentKind : 0,
+    ctype: ct >= 0 && ct <= 2 ? ct : 0,
+    extras: rectExtras,
   }));
   const num = rows.length - t; // 台形内連番 (suffix での位置)
   // 新規入力行をリセット (三角形追加と同じ後始末)
