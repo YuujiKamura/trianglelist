@@ -59,12 +59,19 @@ class ChildExpansionDirectionTest {
     /** 親辺中点 M を挟んで Pc と Cc が反対側にある = 子は親辺の外側へ展開されている。 */
     private fun expandsOutside(parent: CycleShape, side: Int, child: CycleShape): Boolean {
         val edge = parent.getLine(side)
-        val mid = PointXY(((edge.left.x + edge.right.x) * 0.5f), ((edge.left.y + edge.right.y) * 0.5f))
+        val l = edge.left
+        val r = edge.right
         val pc = parent.centroid()
         val cc = child.centroid()
-        val vpx = mid.x - pc.x; val vpy = mid.y - pc.y
-        val vcx = mid.x - cc.x; val vcy = mid.y - cc.y
-        return (vpx * vcx + vpy * vcy) < 0f
+        
+        // 辺の法線ベクトル N = (-(r.y - l.y), r.x - l.x)
+        val nx = -(r.y - l.y)
+        val ny = r.x - l.x
+        
+        val dotP = (pc.x - l.x) * nx + (pc.y - l.y) * ny
+        val dotC = (cc.x - l.x) * nx + (cc.y - l.y) * ny
+        
+        return (dotP * dotC) < 0.0
     }
 
     /**

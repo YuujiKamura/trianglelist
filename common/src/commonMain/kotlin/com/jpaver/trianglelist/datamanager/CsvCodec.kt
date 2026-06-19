@@ -15,6 +15,7 @@ import com.jpaver.trianglelist.editmodel.TriangleList
 import com.jpaver.trianglelist.editmodel.setColor
 import com.jpaver.trianglelist.setDimAligns
 import com.jpaver.trianglelist.viewmodel.InputParameter
+import com.jpaver.trianglelist.viewmodel.formattedString
 
 /**
  * CSV の文書モデルと codec (ADR 0008)。
@@ -271,6 +272,7 @@ object CsvCodec {
             val c = row.chunks
             when (c.firstOrNull()) {
                 "Rectangle" -> {
+                    val num = c.getOrNull(1)?.toIntOrNull() ?: -1
                     val height = c.getOrNull(2)?.toFloatOrNull() ?: continue
                     val widthA = c.getOrNull(3)?.toFloatOrNull() ?: continue
                     val widthB = c.getOrNull(4)?.toFloatOrNull() ?: continue
@@ -278,6 +280,7 @@ object CsvCodec {
                     val side = c.getOrNull(6)?.toIntOrNull() ?: 0
                     val align = c.getOrNull(7)?.toIntOrNull() ?: 0
                     val parentKind = c.getOrNull(8)?.toIntOrNull() ?: 0
+                    val type = c.getOrNull(9)?.toIntOrNull() ?: 0
                     val h = height * s; val wa = widthA * s; val wb = widthB * s
                     fun indep() = Rectangle(h, wa, wb, angle = INDEP_TRAP_ANGLE + (doc.listAngle ?: 0f), basepoint = PointXY(0f, 0f), alignment = align)
                     fun parentObject(): CycleShape? {
@@ -295,6 +298,8 @@ object CsvCodec {
                         pObj == null -> indep()
                         else -> Rectangle(h, wa, wb, nodeA = pObj, side = side, alignment = align)
                     }
+                    rect.cParam_ = ConnParam(side, type, align, widthA)
+                    rect.mynumber = num
                     traps.add(rect)
                     applyRowMeta(c, rect)
                     append(rect)
@@ -598,10 +603,15 @@ object CsvCodec {
      */
     fun bakeMixed(list: EditList<CycleShape>, original: CsvDoc, listAngle: Float?, listScale: Float?): CsvDoc {
         val newFigureRows = original.figureRows.mapIndexed { idx, row ->
+            val obj = if (idx + 1 in 1..list.size()) list.get(idx + 1) else null
             if (row.chunks.firstOrNull() == "Rectangle") {
-                row
+                if (obj is Rectangle) {
+                    val number = row.chunks.getOrNull(1)?.toIntOrNull() ?: obj.mynumber
+                    rowForRectangle(obj, number)
+                } else {
+                    row
+                }
             } else {
-                val obj = if (idx + 1 in 1..list.size()) list.get(idx + 1) else null
                 val number = row.chunks.firstOrNull()?.toIntOrNull()
                 if (obj is Triangle) rowForTriangle(obj, number ?: obj.mynumber) else row
             }
@@ -628,6 +638,23 @@ object CsvCodec {
                 "${mt.dim.flag[1].isMovedByUser}", "${mt.dim.flag[2].isMovedByUser}",
                 "${mt.angle}", "${mt.pointCA.x}", "${mt.pointCA.y}", "${mt.angleInLocal_}",
                 "${mt.dim.horizontal.s}", "${mt.dim.flagS.isMovedByUser}",
+            )
+        )
+    }
+
+    private fun rowForRectangle(mr: Rectangle, number: Int): CsvRow {
+        val sf = mr.dimScale.toDouble()
+        val rawH = if (sf > 0.0) mr.height / sf else mr.height
+        val rawWA = if (sf > 0.0) mr.widthA / sf else mr.widthA
+        val rawWB = if (sf > 0.0) mr.widthB / sf else mr.widthB
+        val pKind = if (mr.nodeA is Rectangle) 1 else 0
+        
+        return CsvRow(
+            listOf(
+                "Rectangle", "$number", 
+                "${rawH.toFloat().formattedString(2)}", "${rawWA.toFloat().formattedString(2)}", "${rawWB.toFloat().formattedString(2)}",
+                "${mr.parentnumber}", "${mr.cParam_.side}", "${mr.cParam_.lcr}",
+                "$pKind", "${mr.cParam_.type}"
             )
         )
     }

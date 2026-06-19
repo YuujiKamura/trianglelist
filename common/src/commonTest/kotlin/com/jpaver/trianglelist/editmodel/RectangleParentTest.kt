@@ -116,4 +116,20 @@ class RectangleParentTest {
         assertSame(childD, parent.node.d, "side=3 が node.d を結線していない (3=D 右脚)")
         assertTrue(parent.node.b == null, "side=2/3 で node.b が汚れた")
     }
+
+    /** 二重断面接続 (type=2) の接続テスト。親辺から外側に 1.0 浮くことを確認。 */
+    @Test
+    fun child_floating_connection_type2() {
+        val parent = base() // bl=(0,0) br=(10,0) tl=(0,5) tr=(4,5)
+        // B左脚 (0,0) -> (0,5) の外側 (outward) は (-1.0, 0.0)
+        val child = Rectangle(2.0, 3.0, 2.0, nodeA = parent, side = 1)
+        
+        // type = 2 (二重断面接続), lcr = 2 (右寄せ)
+        child.cParam_ = ConnParam(1, 2, 2, 3.0f)
+        val g = child.calcPoint()
+        
+        // 親辺の終点 (0,5) から外側 (-1.0, 0.0) へ 1.0 シフトした点が子の起点
+        // 子の起点DA = (-1.0, 5.0)
+        assertPoint(PointXY(-1f, 5f), g.a.right, "Floating type2 DA")
+    }
 }
