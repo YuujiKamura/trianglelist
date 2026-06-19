@@ -50,8 +50,8 @@ fun hitTriangle(csv: String, x: Float, y: Float): Int =
  */
 @OptIn(ExperimentalJsExport::class)
 @JsExport
-fun renderCsvToPrimitivesWithOverrides(csv: String, scale: Float, overridesJson: String): String =
-    WebPrimitiveRenderer.renderCsv(csv, scale, overridesJson)
+fun renderCsvToPrimitivesWithOverrides(csv: String, scale: Float, overridesJson: String, thresholdAngle: Float = -45f): String =
+    WebPrimitiveRenderer.renderCsv(csv, scale, overridesJson, thresholdAngle)
 
 /** Web 段階2e (task #15): overrides 付き DXF。W/H フリップ・番号移動が書き出しにも乗る */
 @OptIn(ExperimentalJsExport::class)

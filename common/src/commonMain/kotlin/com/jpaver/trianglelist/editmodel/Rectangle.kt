@@ -71,11 +71,6 @@ class Rectangle(
     var side: Int = side; set(value) { field = value; geoCache = null }
     var alignment: Int = alignment; set(value) { field = value; geoCache = null }
 
-    var dimVertical = DimAligns(1, 1, 1)
-    var dimHorizontal = DimAligns(0, 0, 0, 0)
-    var dimHeight = 0f
-    var dimScale = 1f
-
     data class RectangleGeometry(
         val pointDA: PointXY, val pointAB: PointXY, val pointBC: PointXY, val pointCD: PointXY,
         val midA: PointXY, val midC: PointXY, val angle: Double,
@@ -201,13 +196,25 @@ class Rectangle(
     /** 環閉合 (isClosed) を成立させる巡回順の Line リスト。 A -> B -> C -> D */
     override fun edges(): List<Line> = listOf(getLine(0), getLine(1), getLine(2), getLine(3))
 
-    override fun emitDimensionSpecs(scale: Float): List<DimensionSpec> {
+    override fun emitDimensionSpecs(scale: Float, sokutenListVector: Int): List<DimensionSpec> {
         val g = geo()
         val ds = dimScale.toDouble()
         val dh = dimHeight.toDouble()
         val specs = mutableListOf<DimensionSpec>()
 
-        val trapBaseAngle = getLine(0).getAngle()
+        // 2026-06-19: 幅員寸法と測点は「上辺(C辺)」の向きに固定する (yuuji 指示)
+        // [可読性拡張]: 指定された閾値 (dimThresholdAngle) を下限に、それを超える下向きの傾きは
+        // 180度反転して「上向き」を維持する。
+        val rawTopAngle = getLine(2).getAngle()
+        val thresh = dimThresholdAngle.toDouble()
+        val topSideAngle = run {
+            var a = rawTopAngle
+            while (a <= -180.0) a += 360.0
+            while (a > 180.0) a -= 360.0
+            if (a <= thresh) a + 180.0
+            else if (a > thresh + 180.0) a - 180.0
+            else a
+        }
 
         fun spec(side: Int, line: Line, v: Int, h: Int, fixedAngle: Double? = null): DimensionSpec {
             val place = com.jpaver.trianglelist.label.DimensionLayout.layout(line.right, line.left, v, h, ds, dh, 0.0)
@@ -216,13 +223,26 @@ class Rectangle(
             return DimensionSpec(side, len.formattedString(2), place, ang, h, v, h > 2)
         }
 
-        if (nodeA == null || cParam_.type != 0) specs.add(spec(0, Line(g.pointDA, g.pointAB), dimVertical.a, dimHorizontal.a, trapBaseAngle))
-        specs.add(spec(2, Line(g.pointBC, g.pointCD), dimVertical.c, dimHorizontal.c, trapBaseAngle))
+        if (nodeA == null || cParam_.type != 0) specs.add(spec(0, Line(g.pointDA, g.pointAB), dimVertical.a, dimHorizontal.a, topSideAngle))
+        specs.add(spec(2, Line(g.pointBC, g.pointCD), dimVertical.c, dimHorizontal.c, topSideAngle))
 
         val spine = getSpine()
         val placeB = com.jpaver.trianglelist.label.DimensionLayout.layout(spine.right, spine.left, dimVertical.b, dimHorizontal.b, ds, dh, 0.0)
         val extLen = (height / scale).toFloat()
         specs.add(DimensionSpec(1, extLen.formattedString(2), placeB, spine.left.calcDimAngle(spine.right), dimHorizontal.b, dimVertical.b, dimHorizontal.b > 2))
+
+        // 測点 (Station Flag) - 2026-06-19 SoT 統合
+        if (name.isNotEmpty()) {
+            val ln0 = getLine(0)
+            val placeS = com.jpaver.trianglelist.label.DimensionLayout.layout(
+                ln0.right, ln0.left,
+                com.jpaver.trianglelist.label.DimensionLayout.SIDE_SOKUTEN, dimHorizontal.s,
+                ds, dh, 0.0
+            )
+            // 測点も補正済み角度に固定
+            specs.add(DimensionSpec(4, name, placeS, topSideAngle, dimHorizontal.s, com.jpaver.trianglelist.label.DimensionLayout.SIDE_SOKUTEN, true))
+        }
+
         return specs
     }
 

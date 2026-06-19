@@ -148,7 +148,14 @@ class Triangle : CycleShape, Cloneable<Triangle> {
     // --- バウンディングボックス・寸法 ---
     var myBP_ = Bounds(0.0, 0.0, 0.0, 0.0)
     var pathS = DimOnPath()
-    var dimHeight = 0f
+
+    override var dimHeight: Float
+        get() = super.dimHeight
+        set(value) { super.dimHeight = value }
+
+    override var dimScale: Float
+        get() = super.dimScale
+        set(value) { super.dimScale = value }
 
     // --- ノード (CycleShape の統一ツリーへのプロキシ) ---
     var nodeA: Triangle?
@@ -194,8 +201,9 @@ class Triangle : CycleShape, Cloneable<Triangle> {
      * A 辺は親と共有していない時 (nodeA == null && node.a == null) または再接続 (connectionSide > 2)
      * のとき出す。Triangle 子接続は Triangle 独自フィールド nodeA に親を保持し、Rectangle 親 trapTri は
      * CycleShape 基底の node.a に親を保持する (継ぎ目が違う)。両方 null = 親共有なし → A 辺寸法 emit。
+     * sokutenListVector はリスト全体の回転方向で、測点の角度計算に使用する。
      */
-    override fun emitDimensionSpecs(scale: Float): List<DimensionSpec> {
+    override fun emitDimensionSpecs(scale: Float, sokutenListVector: Int): List<DimensionSpec> {
         val s = scaleFactor.toDouble()
         val dh = dimHeight.toDouble()
         val placeA = com.jpaver.trianglelist.label.DimensionLayout.layout(pointAB, point[0], dim.vertical.a, dim.horizontal.a, s, dh, 0.0)
@@ -209,6 +217,23 @@ class Triangle : CycleShape, Cloneable<Triangle> {
         }
         specs.add(DimensionSpec(1, strLengthB, placeB, pointBC.calcDimAngle(pointAB), dim.horizontal.b, dim.vertical.b, dim.horizontal.b > 2))
         specs.add(DimensionSpec(2, strLengthC, placeC, pointCA.calcDimAngle(pointBC), dim.horizontal.c, dim.vertical.c, dim.horizontal.c > 2))
+
+        // 測点 (Station Flag) - 2026-06-19 SoT 統合
+        if (name.isNotEmpty()) {
+            val ln0 = getLine(0)
+            val horizontalS = sokutenHorizontal()
+            val ds = sokutenScale(scale.toDouble())
+            val dhS = sokutenHeight(dh)
+
+            val place = com.jpaver.trianglelist.label.DimensionLayout.layout(
+                ln0.right, ln0.left,
+                com.jpaver.trianglelist.label.DimensionLayout.SIDE_SOKUTEN, horizontalS,
+                ds, dhS, 0.0
+            )
+            val ang = place.pointB.calcSokAngle(place.pointA, sokutenListVector)
+            specs.add(DimensionSpec(4, name, place, ang, horizontalS, com.jpaver.trianglelist.label.DimensionLayout.SIDE_SOKUTEN, true))
+        }
+
         return specs
     }
 
@@ -234,8 +259,10 @@ class Triangle : CycleShape, Cloneable<Triangle> {
     override fun sokutenScale(fallback: Double): Double = scaleFactor.toDouble()
     override fun sokutenHeight(fallback: Double): Double = dimHeight.toDouble()
 
-    // --- スケール係数（スペル修正: scaleFactor） ---
-    var scaleFactor = 1f
+    // --- スケール係数 ---
+    var scaleFactor: Float
+        get() = dimScale
+        set(value) { dimScale = value }
 
     //region constructor
     // 基本引数設定共通処理

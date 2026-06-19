@@ -12,12 +12,20 @@ class Dims(val triangle: Triangle) : Cloneable<Dims> {
     // ──────────────────────────────
 
     // region properties and clone
-    var vertical = DimAligns(1, 1, 1, 1)
-    var horizontal = DimAligns(0, 0, 0, 0)
+    var vertical: DimAligns
+        get() = triangle.dimVertical
+        set(value) { triangle.dimVertical = value }
+    var horizontal: DimAligns
+        get() = triangle.dimHorizontal
+        set(value) { triangle.dimHorizontal = value }
     var flag = arrayOf(Flags(), Flags(), Flags())
     var flagS = Flags()
-    var height = 0f
-    var scale = 1f
+    var height: Float
+        get() = triangle.dimHeight
+        set(value) { triangle.dimHeight = value }
+    var scale: Float
+        get() = triangle.dimScale
+        set(value) { triangle.dimScale = value }
 
     override fun clone(): Dims {
         val b = Dims(triangle)

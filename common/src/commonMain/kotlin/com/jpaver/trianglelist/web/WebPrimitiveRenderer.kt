@@ -23,9 +23,9 @@ object WebPrimitiveRenderer {
     const val DEFAULT_TEXT_SIZE = 0.25f
     const val APP_DEFAULT_TEXT_SIZE = 30f
 
-    fun renderCsv(csv: String, scale: Float): String = renderCsv(csv, scale, "")
+    fun renderCsv(csv: String, scale: Float): String = renderCsv(csv, scale, "", 90f)
 
-    fun renderCsv(csv: String, scale: Float, overridesJson: String): String {
+    fun renderCsv(csv: String, scale: Float, overridesJson: String, thresholdAngle: Float = 90f): String {
         val doc = CsvCodec.parse(csv)
         val trilist = CsvCodec.build(doc)
         if (scale != 1f && scale > 0f) trilist.setScale(PointXY(0f, 0f), scale)
@@ -35,7 +35,7 @@ object WebPrimitiveRenderer {
         val mixed = CsvCodec.buildMixed(doc, trilist, effScale)
         WebOverrides.applyJson(mixed, overridesJson)
         trilist.arrangePointNumbers()
-        return render(mixed, textSize, CsvCodec.buildDeductions(doc), effScale, trilist.sokutenListVector)
+        return render(mixed, textSize, CsvCodec.buildDeductions(doc), effScale, trilist.sokutenListVector, thresholdAngle)
     }
 
     fun render(trilist: TriangleList, textSize: Float): String {
@@ -50,6 +50,7 @@ object WebPrimitiveRenderer {
         dedlist: DeductionList = DeductionList(),
         scale: Float = 1f,
         sokutenListVector: Int = 0,
+        thresholdAngle: Float = 90f
     ): String {
         val sb = StringBuilder()
         sb.append('[')
@@ -63,6 +64,8 @@ object WebPrimitiveRenderer {
         // 段階0: textSize 配布
         list.forEachItem { obj ->
             obj.applyDimTextSize(textSize)
+            // 閾値を動的配布 (CycleShape 経由)
+            obj.dimThresholdAngle = thresholdAngle
         }
 
         // 段階1a: 塗り (N 角形を v[0] 起点の扇に分解、Triangle=1 三角・Rectangle=2 三角 統一処理)
@@ -86,7 +89,7 @@ object WebPrimitiveRenderer {
                 item(line(ln.left, ln.right, "tri", ""","tri":$num,"side":$side"""))
             }
             // 寸法
-            for (spec in obj.emitDimensionSpecs(effScale)) {
+            for (spec in obj.emitDimensionSpecs(effScale, sokutenListVector)) {
                 item(dimText(spec.text, spec.place, spec.angle, textSize, num, spec.side, spec.h, spec.v))
                 if (spec.emitFlag) item(line(spec.place.pointA, spec.place.pointB, "dim"))
             }
@@ -114,27 +117,6 @@ object WebPrimitiveRenderer {
                 val arrowTail = pc.offset(pn, pc.lengthTo(pnOffsetToC) * 0.3).rotate(pc, 10.0)
                 item(line(pc, pnOffsetToC, "num"))
                 item(line(pc, arrowTail, "num"))
-            }
-
-            // 測点 (Station Flag)
-            if (obj.name.isNotEmpty()) {
-                val ln = obj.getLine(0)
-                val horizontalS = obj.sokutenHorizontal()
-                val ds = obj.sokutenScale(effScale.toDouble())
-                val dh = obj.sokutenHeight(textSize.toDouble())
-
-                val place = DimensionLayout.layout(
-                    ln.right, ln.left,
-                    DimensionLayout.SIDE_SOKUTEN, horizontalS,
-                    ds, dh, 0.0
-                )
-                val angle = if (obj is Rectangle) {
-                    obj.getLine(0).getAngle()
-                } else {
-                    place.pointB.calcSokAngle(place.pointA, sokutenListVector)
-                }
-                item(text(obj.name, place.dimpoint, angle, textSize, 1, "num", ""","tri":$num"""))
-                item(line(place.pointA, place.pointB, "num", ""","tri":$num"""))
             }
         }
 
