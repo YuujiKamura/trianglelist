@@ -2824,6 +2824,7 @@ function wireNewRowEnter(canvas: HTMLCanvasElement): void {
     input(from).addEventListener('keydown', (e) => {
       if (e.key !== 'Enter' || e.isComposing) return;
       e.preventDefault();
+      input(from).dispatchEvent(new Event('change'));
       moveTo(to);
     });
   }
