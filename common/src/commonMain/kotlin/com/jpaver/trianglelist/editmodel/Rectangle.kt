@@ -45,11 +45,16 @@ class Rectangle(
             val parentLen = refLine.length
             val wA = widthA
 
-            // LCRアライメント（0=左, 1=中, 2=右）に応じた基準点（DA=右下）の算出
-            val ptLcr = when (cParam_.lcr) {
-                0 -> refLine.right.offset(refLine.left, wA) // 左寄せ (起点 DA を終点側へオフセット)
-                1 -> refLine.left.offset(refLine.right, parentLen * 0.5 + wA * 0.5) // 中央寄せ
-                else -> refLine.right.clone() // 右寄せ (親辺の終点をそのまま起点とする)
+            // type = 0 (完全共有) の場合は LCR シフトを行わず、親辺の終点をそのまま起点(DA)とする。
+            // それ以外（type = 1, 2）は LCR アライメントに応じた基準点（DA=右下）の算出を行う。
+            val ptLcr = if (cParam_.type == 0) {
+                refLine.right.clone()
+            } else {
+                when (cParam_.lcr) {
+                    0 -> refLine.right.offset(refLine.left, wA) // 左寄せ (起点 DA を終点側へオフセット)
+                    1 -> refLine.left.offset(refLine.right, parentLen * 0.5 + wA * 0.5) // 中央寄せ
+                    else -> refLine.right.clone() // 右寄せ (親辺の終点をそのまま起点とする)
+                }
             }
 
             // type = 2 (二重断面接続 / Floating) の場合は垂直方向（外側）に 1.0 浮かせる
@@ -91,7 +96,7 @@ class Rectangle(
             // 親接続時は、ゲッターから返る basepoint=DA, angle=(DA->ABの方向) をそのまま使用する
             ptDA = basepoint
             curAngle = angle
-            ptAB = ptDA.moveX(effectiveWidthA, curAngle)
+            ptAB = ptDA.moveX(effectiveWidthA, curAngle + 180.0)
         } else {
             // 独立時のみ、 angle の向きによって起点と終点の左右割当を切り替える
             val rad = angle / 180.0 * PI
