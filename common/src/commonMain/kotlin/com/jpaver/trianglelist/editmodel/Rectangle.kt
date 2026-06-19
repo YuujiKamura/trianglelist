@@ -17,18 +17,49 @@ class Rectangle(
     alignment: Int = 0
 ) : CycleShape() {
 
+    // 三角形と同格の接続パラメータプロパティを追加
+    var cParam_ = ConnParam(side, 0, alignment, widthA.toFloat())
+        set(value) { field = value; geoCache = null }
+
+    init {
+        nodeA?.setNode2(this, side)
+    }
+
     var widthA: Double = widthA
-        get() = nodeA?.let { initByParent(it, side).length } ?: field
+        get() = nodeA?.let { parent ->
+            if (cParam_.type == 0) parent.getLine(side).length else field
+        } ?: field
         set(value) { field = value; geoCache = null }
 
     var widthB: Double = widthB; set(value) { field = value; geoCache = null }
 
     var angle: Double = angle
-        get() = nodeA?.let { initByParent(it, side).getAngle() } ?: field
+        get() = nodeA?.let { parent ->
+            parent.getLine(side).getAngle()
+        } ?: field
         set(value) { field = value; geoCache = null }
 
     var basepoint: PointXY = basepoint
-        get() = nodeA?.let { initByParent(it, side).left } ?: field
+        get() = nodeA?.let { parent ->
+            val refLine = parent.getLine(side)
+            val parentLen = refLine.length
+            val wA = widthA
+
+            // LCRアライメント（0=左, 1=中, 2=右）に応じた基準点（DA=右下）の算出
+            val ptLcr = when (cParam_.lcr) {
+                0 -> refLine.right.offset(refLine.left, wA) // 左寄せ (起点 DA を終点側へオフセット)
+                1 -> refLine.left.offset(refLine.right, parentLen * 0.5 + wA * 0.5) // 中央寄せ
+                else -> refLine.right.clone() // 右寄せ (親辺の終点をそのまま起点とする)
+            }
+
+            // type = 2 (二重断面接続 / Floating) の場合は垂直方向（外側）に 1.0 浮かせる
+            if (cParam_.type == 2) {
+                val outward = parent.outwardPerpUnit(side)
+                ptLcr + outward.scale(1.0)
+            } else {
+                ptLcr
+            }
+        } ?: field
         set(value) { field = value; geoCache = null }
 
     var nodeA: CycleShape? = nodeA; set(value) { field = value; geoCache = null }
