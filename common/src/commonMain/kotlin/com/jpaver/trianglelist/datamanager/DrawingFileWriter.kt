@@ -22,6 +22,7 @@ open class DrawingFileWriter {
     open lateinit var zumeninfo : ZumenInfo
     open lateinit var titleTri_ : TitleParamStr
     open lateinit var titleDed_ : TitleParamStr
+    open var zumenAreaText: String = ""
 
     var koujiname_: String = ""
     var rosenname_ = ""
@@ -462,12 +463,79 @@ open class DrawingFileWriter {
         val title = zumeninfo.zumentitle
         // 下線幅は title 文字列長にフィット (paper-cm 単位)。 日本語 1 文字 ≒ 1em、 1em ≒ TOP_TITLE_MM。
         val halfW = (TOP_TITLE_MM / 10f) * title.length / 2f
-        drawScene(listOf(
-            DrawPrim.Text(title,      com.example.trilib.PointXY(cx, ty,        scale), WHITE, titleTextSize, 1, 1, 0.0, scale),
-            DrawPrim.Text(rosenname_, com.example.trilib.PointXY(cx, ty - 1.1f, scale), WHITE, titleTextSize, 1, 1, 0.0, scale),
+        
+        val prims = mutableListOf<DrawPrim>(
+            DrawPrim.Text(title, com.example.trilib.PointXY(cx, ty, scale), WHITE, titleTextSize, 1, 1, 0.0, scale),
             DrawPrim.Line(com.example.trilib.PointXY(cx - halfW, ty - 0.1f, scale), com.example.trilib.PointXY(cx + halfW, ty - 0.1f, scale), WHITE, scale),
-            DrawPrim.Line(com.example.trilib.PointXY(cx - halfW, ty - 0.2f, scale), com.example.trilib.PointXY(cx + halfW, ty - 0.2f, scale), WHITE, scale),
-        ))
+            DrawPrim.Line(com.example.trilib.PointXY(cx - halfW, ty - 0.2f, scale), com.example.trilib.PointXY(cx + halfW, ty - 0.2f, scale), WHITE, scale)
+        )
+
+        if (zumenAreaText.isNotEmpty()) {
+            prims.add(DrawPrim.Text(zumenAreaText, com.example.trilib.PointXY(cx, ty - 0.8f, scale), WHITE, BOTTOM_TITLE_MM * scale, 1, 1, 0.0, scale))
+            prims.add(DrawPrim.Text(rosenname_, com.example.trilib.PointXY(cx, ty - 1.6f, scale), WHITE, titleTextSize, 1, 1, 0.0, scale))
+        } else {
+            prims.add(DrawPrim.Text(rosenname_, com.example.trilib.PointXY(cx, ty - 1.1f, scale), WHITE, titleTextSize, 1, 1, 0.0, scale))
+        }
+
+        drawScene(prims)
+    }
+
+    fun calculateAndSetZumenAreaText(shapes: List<CycleShape>, deductions: List<Deduction>) {
+        val shapeMap = shapes.associateBy { it.mynumber }
+        val colorNetAreas = FloatArray(5) { 0f }
+        for (shape in shapes) {
+            val color = shape.mycolor.coerceIn(0, 4)
+            colorNetAreas[color] += shape.getArea()
+        }
+        for (ded in deductions) {
+            if (ded.overlap_to != 0) {
+                val parentShape = shapeMap[ded.overlap_to]
+                val color = parentShape?.mycolor?.coerceIn(0, 4) ?: 4
+                colorNetAreas[color] -= ded.getArea()
+            }
+        }
+        
+        val totalArea = shapes.sumOf { it.getArea().toDouble() } - deductions.filter { it.overlap_to != 0 }.sumOf { it.getArea().toDouble() }
+        val totalAreaFloat = maxOf(0f, totalArea.toFloat())
+        
+        val colorOrder = listOf(0, 3, 2, 4, 1)
+        val colorNames = mapOf(
+            0 to "桃",
+            3 to "緑",
+            2 to "黄",
+            4 to "空",
+            1 to "青"
+        )
+        
+        fun formatArea(value: Float): String {
+            val d = value.toDouble()
+            val negative = d < 0.0
+            val digits = 2
+            var factor = 1.0
+            repeat(digits) { factor *= 10.0 }
+            val scaled = (if (negative) -d else d) * factor
+            var units = kotlin.math.floor(scaled).toLong()
+            if (scaled - units >= 0.5) units += 1
+            val s = units.toString().padStart(digits + 1, '0')
+            val intPart = s.dropLast(digits)
+            val body = if (digits == 0) intPart else intPart + "." + s.takeLast(digits)
+            return if (negative) "-$body" else body
+        }
+        
+        val colorList = mutableListOf<String>()
+        for (c in colorOrder) {
+            val area = maxOf(0f, colorNetAreas[c])
+            if (area > 0f) {
+                val name = colorNames[c] ?: ""
+                colorList.add("$name=${formatArea(area)}㎡")
+            }
+        }
+        
+        zumenAreaText = if (colorList.isNotEmpty()) {
+            "面積: A=${formatArea(totalAreaFloat)}㎡ (${colorList.joinToString(", ")})"
+        } else {
+            "面積: A=${formatArea(totalAreaFloat)}㎡"
+        }
     }
     companion object {
         // 枠内テキスト 3 region: TopTitle (上部) / BottomTitleFrame (右下表題欄) / BottomCredit (左下 url)。

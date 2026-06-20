@@ -229,6 +229,11 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         activeLayer = "C-TTL-FRAM"
         dxfEntity.setUnitScale(unitscale_)
         dxfEntity.setActiveLayer(activeLayer)
+
+        val shapes = trilist_.trilist + traps_ + trapTris_
+        val deductions = dedlist_.dedlist_
+        calculateAndSetZumenAreaText(shapes, deductions)
+
         writeDrawingFrame(textsize = textscale_)
         writeTopTitle(textsize = textscale_)
         unitscale_ = 1000f

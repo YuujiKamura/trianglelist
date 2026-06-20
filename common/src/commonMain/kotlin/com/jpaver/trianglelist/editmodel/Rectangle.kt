@@ -5,6 +5,7 @@ import com.jpaver.trianglelist.Bounds
 import com.jpaver.trianglelist.viewmodel.formattedString
 import kotlin.math.PI
 import kotlin.math.cos
+import kotlin.math.roundToInt
 
 class Rectangle(
     val height: Double,  // 垂線方向の延長 (旧 length)
@@ -266,6 +267,11 @@ class Rectangle(
             top = maxOf(top, v.y); bottom = minOf(bottom, v.y)
         }
         return Bounds(left, top, right, bottom)
+    }
+
+    override fun getArea(): Float {
+        val area = kotlin.math.abs(signedArea()).toFloat()
+        return (area * 100f).roundToInt() / 100f
     }
 
     fun rotateBy(center: PointXY, degrees: Float) {

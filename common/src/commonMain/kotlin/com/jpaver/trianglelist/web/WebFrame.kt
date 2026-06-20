@@ -56,6 +56,8 @@ object WebFrame {
         writer.writePaperLine(PointXY(42f, 0f), PointXY(42f, 29.7f))     // right
         writer.writePaperLine(PointXY(42f, 29.7f), PointXY(0f, 29.7f))   // top
         writer.writePaperLine(PointXY(0f, 29.7f), PointXY(0f, 0f))       // left
+        val dedlist = CsvCodec.buildDeductions(doc)
+        writer.calculateAndSetZumenAreaText(figures, dedlist.dedlist_)
         writer.writeDrawingFrame(1f, textsize)
         // 上部タイトル ── 2026-06-18 user 方針「画面と図面で同じレイアウト (冪等)」 を満たすため、
         // 倍率 (TITLE_SCALE=3) と下線幅 (= title 文字数 × textsize) のロジックは base の
