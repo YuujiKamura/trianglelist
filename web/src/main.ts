@@ -82,7 +82,7 @@ T-001
 const COLORS: Record<string, string> = {
   // base レイヤ (prim.layer 名と一致)
   tri: '#222222',
-  dim: '#1a7a1a',
+  dim: '#000000',
   num: '#1f5fbf',
   guide: '#9aa0a6', // 補助線 (台形の延長=垂線ガイド等) — 点線で薄いグレー
   ra: '#555555',   // 直角マーカー (垂線起点の小正方形) — 実線細い
