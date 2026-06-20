@@ -142,6 +142,7 @@ class DxfParser {
         val arcs = mutableListOf<DxfArc>()
         val lwPolylines = mutableListOf<DxfLwPolyline>()
         val texts = mutableListOf<DxfText>()
+        val hatches = mutableListOf<DxfHatch>()
         
         while (peekableIterator.hasNext()) {
             val (code, value) = readGroupCodePair(peekableIterator) ?: continue
@@ -182,8 +183,7 @@ class DxfParser {
                         }
                         "HATCH" -> {
                             if (currentSection == "ENTITIES") {
-                                // HATCHは読み飛ばす（表示用のため）
-                                skipEntity(peekableIterator)
+                                parseHatchEntity(peekableIterator)?.let { hatches.add(it) }
                             }
                         }
                         else -> {
@@ -210,6 +210,7 @@ class DxfParser {
             arcs = arcs,
             lwPolylines = lwPolylines,
             texts = texts,
+            hatches = hatches,
             header = header
         )
     }
@@ -483,5 +484,61 @@ class DxfParser {
                 currentHeader
             }
         }
+    }
+
+    private fun parseHatchEntity(iterator: PeekableIterator<String>): DxfHatch? {
+        var layer = "0"
+        var color = 7
+        var trueColor: Int? = null
+        val vertices = mutableListOf<Pair<Double, Double>>()
+
+        var currentX = 0.0
+        var currentY = 0.0
+        var insideBoundaryLoop = false
+
+        while (iterator.hasNext()) {
+            val groupCodeStr = iterator.peek() ?: break
+            val groupCode = groupCodeStr.trim().toIntOrNull() ?: break
+            if (groupCode == 0) break
+
+            iterator.next()
+            val value = iterator.next()
+
+            when (groupCode) {
+                8 -> layer = value
+                62 -> color = value.trim().toIntOrNull() ?: 7
+                420 -> trueColor = value.trim().toIntOrNull()
+                92, 93 -> insideBoundaryLoop = true
+                97, 75, 76, 52, 41, 77, 78, 98 -> insideBoundaryLoop = false
+                10 -> {
+                    if (insideBoundaryLoop) {
+                        currentX = value.toDoubleOrNull() ?: 0.0
+                    }
+                }
+                20 -> {
+                    if (insideBoundaryLoop) {
+                        currentY = value.toDoubleOrNull() ?: 0.0
+                        vertices.add(Pair(currentX, currentY))
+                    }
+                }
+            }
+        }
+
+        if (vertices.isEmpty()) return null
+        
+        val uniqueVertices = if (vertices.size > 1 && 
+            kotlin.math.abs(vertices.first().first - vertices.last().first) < 1e-3 && 
+            kotlin.math.abs(vertices.first().second - vertices.last().second) < 1e-3) {
+            vertices.dropLast(1)
+        } else {
+            vertices
+        }
+
+        return DxfHatch(
+            vertices = uniqueVertices,
+            color = color,
+            layer = layer,
+            trueColor = trueColor
+        )
     }
 }

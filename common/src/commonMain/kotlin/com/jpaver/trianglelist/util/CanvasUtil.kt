@@ -6,6 +6,7 @@ import com.jpaver.trianglelist.dxf.DxfCircle
 import com.jpaver.trianglelist.dxf.DxfArc
 import com.jpaver.trianglelist.dxf.DxfLwPolyline
 import com.jpaver.trianglelist.dxf.DxfText
+import com.jpaver.trianglelist.dxf.DxfHatch
 
 /**
  * Canvas 用のユーティリティクラス
@@ -23,6 +24,9 @@ object CanvasUtil {
             poly.copy(vertices = poly.vertices.map { (x, y) -> x to -y })
         },
         texts = parseResult.texts.map { it.copy(y = -it.y) },
+        hatches = parseResult.hatches.map { hatch ->
+            hatch.copy(vertices = hatch.vertices.map { (x, y) -> x to -y })
+        },
         header = parseResult.header?.copy(
             acadVer = parseResult.header.acadVer,
             insUnits = parseResult.header.insUnits,

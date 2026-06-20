@@ -9,11 +9,12 @@ data class DxfParseResult(
     val arcs: List<DxfArc> = emptyList(),
     val lwPolylines: List<DxfLwPolyline> = emptyList(),
     val texts: List<DxfText> = emptyList(),
+    val hatches: List<DxfHatch> = emptyList(),
     val header: DxfHeader? = null,
     /**
      * 紙の縮尺の分母。1/50 の図面なら 50f。
      * trianglelist 出力 DXF では DrawingFileWriter.writeDrawingFrame が必ず
-     * `1/${st.toInt()} (A3)` 形式の TEXT を埋め込むので、それを正規表現で抽出する。
+     * `1/${st.toInt()} (A3)` 形式 of TEXT を埋め込むので、それを正規表現で抽出する。
      * 取得できなければ null。
      */
     val drawingScaleDenominator: Float? = null
@@ -94,4 +95,14 @@ data class DxfHeader(
     val limMax: Pair<Double, Double> = Pair(0.0, 0.0), // 図面制限最大値
     val insBase: Triple<Double, Double, Double> = Triple(0.0, 0.0, 0.0), // 挿入基点
     val dimScale: Double = 1.0 // 寸法尺度
+)
+
+/**
+ * DXF HATCH エンティティ
+ */
+data class DxfHatch(
+    val vertices: List<Pair<Double, Double>>,
+    val color: Int = 7,
+    val layer: String = "0",
+    val trueColor: Int? = null
 )
