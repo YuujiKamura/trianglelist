@@ -213,7 +213,7 @@ class WebPrimitiveRendererTest {
         val json = WebPrimitiveRenderer.renderCsv(named, 1f)
         // Station Flag: 1 text + 1 line
         assertTrue(json.contains(""""text":"No.1""""), "station flag text 'No.1' not found")
-        assertTrue(json.contains(""""type":"line","layer":"num""""), "station flag line not found")
+        assertTrue(json.contains(""""type":"line","layer":"dim""""), "station flag line not found")
     }
 
     @Test
@@ -236,7 +236,7 @@ class WebPrimitiveRendererTest {
         val csv = "Rectangle,1,10.0,5.0,5.0,-1,0,0,0,0,RecStation\n"
         val json = WebPrimitiveRenderer.renderCsv(csv, 1f)
         assertTrue(json.contains(""""text":"RecStation""""), "rectangle station flag text not found")
-        assertTrue(json.contains(""""type":"line","layer":"num""""), "rectangle station flag line not found")
+        assertTrue(json.contains(""""type":"line","layer":"dim""""), "rectangle station flag line not found")
     }
 
     private fun extractAngle(json: String, text: String): Double {

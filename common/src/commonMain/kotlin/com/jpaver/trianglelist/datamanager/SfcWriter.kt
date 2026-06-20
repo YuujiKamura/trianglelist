@@ -68,6 +68,10 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, filename: String,
 
         // 図面枠: 縮尺は枠の scale 引数 (printscale) だけに乗せる。primitive が ×unitscale するので
         // 枠座標は printscale 倍で渡す (DXF が unitscale*=printscale でやっているのと同じ最終倍率)。
+        val shapes = trilist_.trilist + traps_ + trapTris_
+        val deductions = dedlist_.dedlist_
+        calculateAndSetZumenAreaText(shapes, deductions)
+
         writeDrawingFrame(printscale_, textscale_)
         // 図面上中央のタイトル (図面名・路線名 + 下線)。DXF は DxfFileWriter:225 で writeTopTitle を
         // 呼ぶが SFC は呼んでおらず、SFC だけ上中央タイトルが欠落していた (user 指摘 2026-06-12)。
