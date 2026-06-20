@@ -58,20 +58,11 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, filename: String,
             dedlist_ = dedlist_.reverse()
         }
 
-        for ( trinumber in 1 .. trilistNumbered.size() ){
-            writeTriangle( trilistNumbered.get(trinumber) )
-        }
+        // 1. 各図形のハッチングを描画 (Z-order のため先行描画)
+        drawAllHatches(trilistNumbered, traps_, trapTris_)
 
-        // Rectangle (台形)。三角形の後に重ねる。番号は三角形からの通し。traps_ 空なら SFC golden 不変
-        for ((i, rect) in traps_.withIndex()) writeRectangle(rect, trilistNumbered.size() + i + 1)
-        // Rectangle を親に持つ Triangle。番号は三角形 + Rectangle からの通し (mynumber は WebDrawingExport で
-        // 事前にセット済み)。trapTris_ 空なら SFC golden 不変。user 確定 2026-06-16「TriTrap タグ排除」。
-        for (t in trapTris_) writeTriangle(t)
-
-        // deduction
-        for (dednumber in 1 .. dedlist_.size()) {
-            writeDeduction( dedlist_.get(dednumber) )
-        }
+        // 2. 本体の描画 (線・文字・寸法・控除)
+        drawAllMainEntities(trilistNumbered, traps_, trapTris_, dedlist_)
 
         // 図面枠: 縮尺は枠の scale 引数 (printscale) だけに乗せる。primitive が ×unitscale するので
         // 枠座標は printscale 倍で渡す (DXF が unitscale*=printscale でやっているのと同じ最終倍率)。
@@ -243,6 +234,17 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, filename: String,
         apnd( "ENDSEC;" )
         apnd( "END-ISO-10303-21;" )
         return
+    }
+
+    override fun writeHatch(points: List<com.example.trilib.PointXY>, color: Int, colorIdx: Int, scale: Float) {
+        val colors = arrayOf(COLOR_PINK, COLOR_ORANGE, COLOR_YELLOW, COLOR_GREEN, COLOR_SKY)
+        val c = colors[colorIdx.coerceIn(0, 4)]
+        val coordsStr = points.joinToString(",") { 
+            val px = it.x * unitscale_
+            val py = it.y * unitscale_
+            "'$px','$py'"
+        }
+        adas("face_fill_feature('1','$c','1','1','1','1','${points.size}',$coordsStr)")
     }
 
     /**

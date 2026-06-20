@@ -3,6 +3,7 @@ package com.jpaver.trianglelist.editmodel
 import com.example.trilib.PointXY
 import com.jpaver.trianglelist.Bounds
 import com.jpaver.trianglelist.viewmodel.formattedString
+import com.jpaver.trianglelist.viewmodel.InputParameter
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.roundToInt
@@ -274,6 +275,17 @@ class Rectangle(
             top = maxOf(top, v.y); bottom = minOf(bottom, v.y)
         }
         return Bounds(left, top, right, bottom)
+    }
+
+    override fun getParams(): InputParameter {
+        return InputParameter(
+            name = name,
+            type = "Rectangle",
+            number = mynumber,
+            a = widthA.toFloat(),
+            b = widthB.toFloat(),
+            c = height.toFloat()
+        )
     }
 
     override fun getArea(): Float {

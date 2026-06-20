@@ -50,4 +50,11 @@ sealed interface DrawPrim {
         val angle: Double = 0.0,
         val scale: Float = 1f,
     ) : DrawPrim
+
+    data class Hatch(
+        val points: List<PointXY>,
+        val color: Int,
+        val colorIdx: Int,
+        val scale: Float = 1f,
+    ) : DrawPrim
 }
