@@ -681,7 +681,7 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
 
 function renderCsv(canvas: HTMLCanvasElement, csv: string, label: string): void {
   try {
-    const json = renderCsvToPrimitivesWithOverrides(csv, 1.0, overridesJson(), thresholdAngle);
+    const json = (renderCsvToPrimitivesWithOverrides as any)(csv, 1.0, overridesJson(), thresholdAngle);
     let prims = JSON.parse(json) as Prim[];
     // 図面枠 (A3、DXF の writeDrawingFrame と同形)。lastPrims に足すので fit も枠込み —
     // 「目いっぱいでなくマージン」の図面らしい余白になる (2026-06-12 user 要望)
@@ -1101,7 +1101,29 @@ function syncForm(): void {
   el('thEdgeB').textContent = isTrap ? '延長(B)' : '辺B';
   el('thEdgeC').textContent = isTrap ? '上辺(C)' : '辺C';
 
+  const newKindTd = el('newKind');
+  if (newKindTd) {
+    newKindTd.textContent = isTrap ? '□' : '△';
+    newKindTd.dataset.kind = figureKind;
+    newKindTd.title = isTrap ? '台形 (クリックで三角形に切り替え)' : '三角形 (クリックで台形に切り替え)';
+  }
+
   const cur = current >= 1 ? rows[current - 1] : null;
+
+  const curKindTd = el('curKind');
+  if (curKindTd) {
+    if (cur) {
+      curKindTd.textContent = cur.kind === 'rectangle' ? '□' : '△';
+      curKindTd.dataset.kind = cur.kind;
+      curKindTd.title = cur.kind === 'rectangle' ? '台形 (クリックで三角形に切り替え)' : '三角形 (クリックで台形に切り替え)';
+      curKindTd.style.cursor = 'pointer';
+    } else {
+      curKindTd.textContent = '';
+      curKindTd.dataset.kind = '';
+      curKindTd.title = '';
+      curKindTd.style.cursor = 'default';
+    }
+  }
   // 現在行の番号表示は行自身の種別に従う (三角形 = 番号、台形 = T{k})
   input('curNum').value = cur ? String(current) : '';
   input('curName').value = cur ? nameOf(cur) : '';
@@ -3858,6 +3880,19 @@ function loadCsv(canvas: HTMLCanvasElement, csv: string, label: string): void {
   if (bad) setStatus(`⚠ 読込: ${bad.reason}`);
 }
 
+function resizeCanvas(canvas: HTMLCanvasElement): void {
+  const wrap = canvas.parentElement;
+  if (!wrap) return;
+  const w = wrap.clientWidth;
+  const h = wrap.clientHeight;
+  if (canvas.width !== w || canvas.height !== h) {
+    canvas.width = w;
+    canvas.height = h;
+    view = null; // 全体 fit を再計算
+    redraw(canvas);
+  }
+}
+
 function main(): void {
   const canvas = document.getElementById('cv') as HTMLCanvasElement | null;
   const fileInput = document.getElementById('file') as HTMLInputElement | null;
@@ -3968,6 +4003,26 @@ function main(): void {
   // 一覧表と同じ即時反映に揃える。辺C は Enter 確定 (1976) と二重になるが rewriteCurrent は冪等。
   for (const id of ['curName', 'curA', 'curB', 'curC', 'curParent', 'curConn', 'curCType', 'curLcr']) {
     document.getElementById(id)?.addEventListener('change', () => rewriteCurrent(canvas));
+  }
+
+  // 新規・現在の種別切り替え列クリックイベント
+  document.getElementById('newKind')?.addEventListener('click', () => {
+    toggleFigureKind();
+  });
+  document.getElementById('curKind')?.addEventListener('click', () => {
+    if (current >= 1 && current <= rows.length) {
+      reshapeCurrent(canvas);
+      autosave();
+    }
+  });
+
+  // ResizeObserver で #canvasWrap のサイズ変更を検知してリサイズ
+  const wrapEl = document.getElementById('canvasWrap');
+  if (wrapEl) {
+    const ro = new ResizeObserver(() => {
+      resizeCanvas(canvas);
+    });
+    ro.observe(wrapEl);
   }
 
   fileInput.addEventListener('change', () => {
