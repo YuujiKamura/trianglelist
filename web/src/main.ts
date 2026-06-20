@@ -2160,18 +2160,16 @@ function reshapeCurrent(canvas: HTMLCanvasElement): void {
       ea: r.ea, eb: r.eb, ec: r.ec,
       parent: r.parent, conn: r.conn, extras: r.extras,
     });
-    rows.splice(idx, 1);
-    rows.push(newR);
   } else {
     newR = createTriangleRow({
       ea: r.ea, eb: r.eb, ec: r.ec,
       parent: r.parent, conn: r.conn, extras: r.extras,
     });
-    const tc = rows.filter((x, i) => i !== idx && x.kind === 'triangle').length;
-    rows.splice(idx, 1);
-    rows.splice(tc, 0, newR);
   }
-  current = rows.indexOf(newR) + 1;
+  rows[idx] = newR;
+  // 共有インデックスがズレないよう、全行に対して辺共有を張り直す
+  rows.forEach((row) => relinkEdgeA(row));
+  current = idx + 1;
   selected = current;
   // 種別反転で図形の bounds が変わる (三角形⇄台形は辺数も形状も違う)。 既存 view (反転前の fit)
   // のままだと描画位置がズレ「センタリングが外れる」(user 報告 2026-06-16)。 loadCsv/addRectangle/
