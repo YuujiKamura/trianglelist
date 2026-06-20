@@ -4,6 +4,7 @@ import com.jpaver.trianglelist.dxf.DxfConstants
 import com.jpaver.trianglelist.editmodel.Deduction
 import com.jpaver.trianglelist.editmodel.DeductionList
 import com.jpaver.trianglelist.editmodel.Triangle
+import com.jpaver.trianglelist.editmodel.Rectangle
 import com.jpaver.trianglelist.editmodel.TriangleList
 import com.jpaver.trianglelist.editmodel.ZumenInfo
 import com.jpaver.trianglelist.viewmodel.TitleParamStr
@@ -201,15 +202,32 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         val sixtytwo = arrayOf( 254, 254, 51, 254, 7)
         val color = arrayOf( RED, ORANGE, YELLOW, GREEN, BLUE )
 
-        val sprit = false
+        // 1. 各図形（三角形、台形、子三角形）の個別塗りつぶし（HATCH）を先行して描画する
+        activeLayer = "C-COL-HATCH"
+        dxfEntity.setActiveLayer(activeLayer)
 
-        if( sprit == true ){
-            writeSpritTrilist(myDXFTriList,trilistNumbered,color,sixtytwo)
+        // 三角形リストの塗りつぶし
+        for (index in 1 .. myDXFTriList.size()) {
+            val tri = trilistNumbered.get(index)
+            writeTriangleHatch(tri, color, sixtytwo)
         }
-        else{
-            for (index in 1 .. myDXFTriList.size()) {
-                writeTriangle(trilistNumbered.get(index))
-            }
+
+        // 台形（Rectangle）の塗りつぶし
+        for (rect in traps_) {
+            writeRectangleHatch(rect, color, sixtytwo)
+        }
+
+        // 台形の子三角形の塗りつぶし
+        for (t in trapTris_) {
+            writeTriangleHatch(t, color, sixtytwo)
+        }
+
+        // 2. 本体の描画（線・テキスト等）。レイヤーを "0" に設定
+        activeLayer = "0"
+        dxfEntity.setActiveLayer(activeLayer)
+
+        for (index in 1 .. myDXFTriList.size()) {
+            writeTriangle(trilistNumbered.get(index))
         }
 
         // deduction
@@ -332,6 +350,21 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         p(79, 0); p(146, 0.0)
     }
 
+    private fun writeTriangleHatch(tri: Triangle, colorArr: Array<Int>, sixtytwoArr: Array<Int>) {
+        val cIdx = tri.mycolor.coerceIn(0, 4)
+        val (pca, pab, pbc) = xyPointXYTriple(tri)
+        val points = arrayListOf(pca, pab, pbc, pca)
+        dxfEntity.writeDXFTriHatch(writer, points, colorArr[cIdx], sixtytwoArr[cIdx])
+    }
+
+    private fun writeRectangleHatch(rect: Rectangle, colorArr: Array<Int>, sixtytwoArr: Array<Int>) {
+        val cIdx = rect.mycolor.coerceIn(0, 4)
+        val lp = rect.calcPoint()
+        val bl = lp.a.left;  val br = lp.a.right
+        val tl = lp.b.left;  val tr = lp.b.right
+        val points = arrayListOf(bl, br, tr, tl, bl)
+        dxfEntity.writeDXFTriHatch(writer, points, colorArr[cIdx], sixtytwoArr[cIdx])
+    }
 
     fun writeSpritTrilist(myDXFTriList: TriangleList, trilistNumbered: TriangleList, color: Array<Int>, sixtytwo:Array<Int> ){
         val spritByColors = myDXFTriList.spritByColors()

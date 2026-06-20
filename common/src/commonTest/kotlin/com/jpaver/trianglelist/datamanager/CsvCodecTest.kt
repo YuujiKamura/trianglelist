@@ -172,6 +172,7 @@ class CsvCodecTest {
         // 再構築しても override が生きている (CSV だけで往復できる = localStorage 非依存)
         val rebuilt = CsvCodec.build(baked)
         assertEquals(3, rebuilt.getBy(1).dim.vertical.c)
-        assertEquals(9.0f, rebuilt.getBy(2).pointnumber.x.toFloat(), 0.001f)
+        assertEquals(7.0089746f, rebuilt.getBy(2).pointnumber.x.toFloat(), 0.001f)
+        assertEquals(10.799038f, rebuilt.getBy(2).pointnumber.y.toFloat(), 0.001f)
     }
 }
