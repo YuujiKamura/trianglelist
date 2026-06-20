@@ -352,6 +352,12 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
   if (!ctx) return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+  // 図面枠 (frame レイヤ) がある場合、 描画範囲 (bounds) が大幅に変わるため view をリセットして全体表示する。
+  // これを行わないと、 図面タイトルなどが画面外 (左上など) に追いやられて見える (user 2026-06-20 指摘)。
+  const hasFrame = prims.some(p => p.type !== 'meta' && (p.layer === 'frame' || p.layer === 'paper'));
+  const wasFrame = lastPrims.some(p => p.type !== 'meta' && (p.layer === 'frame' || p.layer === 'paper'));
+  if (hasFrame !== wasFrame) view = null;
+
   if (!view) view = fitTransform(canvas, prims);
   const v = view;
   const s = v.scale;
@@ -2328,7 +2334,7 @@ function fabRotate(canvas: HTMLCanvasElement, degrees: number): void {
   buildDedTable(canvas);
   setStatus(`回転: ${listAngle}°`);
   redraw(canvas);
-  if (v && before) {
+  if (v && before && view === v) { // view が null にリセットされていない場合のみ補正 (2026-06-20 ジャンプ防止)
     const after = figureCenter(lastPrims);
     v.offsetX += (before.x - after.x) * v.scale;
     v.offsetY += (after.y - before.y) * v.scale; // 画面 y は反転系 (py = -y*scale + offsetY)
@@ -2337,10 +2343,13 @@ function fabRotate(canvas: HTMLCanvasElement, degrees: number): void {
 }
 
 // 図形全体 (図面枠を除く) の境界ボックス中央。枠は図形中心に追従して動くので
-// 含めると補正が自己参照になる — 図形本体だけで取る
+// 含めると補正が自己参照になる — 図形本体だけで取る。
+// 面積表示や寸法線・テキストは反転閾値や配置ルールで不連続にジャンプするため、図形の骨格 (tri/ded) のみから中心を計算する
 function figureCenter(prims: Prim[]): { x: number; y: number } {
-  // テキストは反転閾値などによってアンカー座標が不連続に変化するため、図形中心の計算から除外する
-  const b = bounds(prims.filter((p) => p.type !== 'meta' && p.layer !== 'frame' && p.type !== 'text'));
+  const b = bounds(prims.filter((p) => p.type !== 'meta' && (p.layer === 'tri' || p.layer === 'ded') && p.type !== 'text'));
+  if (b.minX === Infinity || b.maxX === -Infinity) {
+    return { x: 0, y: 0 };
+  }
   return { x: (b.minX + b.maxX) / 2, y: (b.minY + b.maxY) / 2 };
 }
 
@@ -2401,10 +2410,12 @@ function fabFillColor(canvas: HTMLCanvasElement): void {
     return;
   }
   colorIndex = (colorIndex + 1) % FILL_PALETTE.length;
-  // CSV 列 10 = extras[4] (extras は列 6 以降)。間の列 7-9 (番号サークル) は空文字で
-  // 埋める — 空文字は CsvCodec.applyRowMeta が無視する (toFloatOrNull/toBoolean が効かない)
-  while (r.extras.length < 5) r.extras.push('');
-  r.extras[4] = String(colorIndex);
+  // 11 列目 (index 10) が色 (mycolor)。
+  // 三角形: base(6列) + extensions(4列: 番号等) + 色 -> extras[4]
+  // 台形: baseChunks(10列) + 色 -> extras[0]
+  const colorExtraIdx = r.kind === 'rectangle' ? 0 : 4;
+  while (r.extras.length <= colorExtraIdx) r.extras.push('');
+  r.extras[colorExtraIdx] = String(colorIndex);
   syncFillColorFab();
   redraw(canvas);
   setStatus(`色: 三角形 ${n} → ${FILL_NAMES[colorIndex]} (${colorIndex})`);
