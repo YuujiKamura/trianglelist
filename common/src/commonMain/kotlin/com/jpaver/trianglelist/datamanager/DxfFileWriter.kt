@@ -191,57 +191,15 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
             myDXFDedList.reverse()
         }
 
-        // アウトラインの描画
-        //myDXFTriList.setChildsToAllParents()
-
-        val RED = 16769517//16769000//16773364//16767449
-        val ORANGE = 16770756//16766660//16774376//16766890
-        val YELLOW = 16777180//n16646073//16775353//16776633//16776929//16777130
-        val GREEN = 14482130//14811071//13828031//15400929//11796394
-        val BLUE = 14939391//14941951//14286079
-        val sixtytwo = arrayOf( 254, 254, 51, 254, 7)
-        val color = arrayOf( RED, ORANGE, YELLOW, GREEN, BLUE )
-
         // 1. 各図形（三角形、台形、子三角形）の個別塗りつぶし（HATCH）を先行して描画する
         activeLayer = "C-COL-HATCH"
         dxfEntity.setActiveLayer(activeLayer)
-
-        // 三角形リストの塗りつぶし
-        for (index in 1 .. myDXFTriList.size()) {
-            val tri = trilistNumbered.get(index)
-            writeTriangleHatch(tri, color, sixtytwo)
-        }
-
-        // 台形（Rectangle）の塗りつぶし
-        for (rect in traps_) {
-            writeRectangleHatch(rect, color, sixtytwo)
-        }
-
-        // 台形の子三角形の塗りつぶし
-        for (t in trapTris_) {
-            writeTriangleHatch(t, color, sixtytwo)
-        }
+        drawAllHatches(trilistNumbered, traps_, trapTris_)
 
         // 2. 本体の描画（線・テキスト等）。レイヤーを "0" に設定
         activeLayer = "0"
         dxfEntity.setActiveLayer(activeLayer)
-
-        for (index in 1 .. myDXFTriList.size()) {
-            writeTriangle(trilistNumbered.get(index))
-        }
-
-        // deduction
-        for (number in 1 .. myDXFDedList.size()) {
-            writeDeduction( myDXFDedList.get(number) )
-        }
-
-        // Rectangle (台形)。三角形・控除の後に重ねる。番号は三角形からの通し (triCount+idx+1)。
-        // traps_ が空 (app 経路・三角形のみ CSV) なら何も出ず DXF golden 不変
-        for ((i, rect) in traps_.withIndex()) writeRectangle(rect, myDXFTriList.size() + i + 1)
-        // Rectangle を親に持つ Triangle。Rectangle の後に重ねる。番号は三角形 + Rectangle からの通し。
-        // 各 trapTri の mynumber は WebDrawingExport 側で事前にセット済み。
-        // 共有底辺 A の重複表示は元 writeTriangle の (mynumber==1 || connectionSide>2) 判定に委ねる。
-        for (t in trapTris_) writeTriangle(t)
+        drawAllMainEntities(trilistNumbered, traps_, trapTris_, myDXFDedList)
 
         unitscale_ *= printscale_
         activeLayer = "C-TTL-FRAM"
@@ -350,20 +308,21 @@ class DxfFileWriter(override var trilist_: TriangleList = TriangleList(),
         p(79, 0); p(146, 0.0)
     }
 
-    private fun writeTriangleHatch(tri: Triangle, colorArr: Array<Int>, sixtytwoArr: Array<Int>) {
-        val cIdx = tri.mycolor.coerceIn(0, 4)
-        val (pca, pab, pbc) = xyPointXYTriple(tri)
-        val points = arrayListOf(pca, pab, pbc, pca)
-        dxfEntity.writeDXFTriHatch(writer, points, colorArr[cIdx], sixtytwoArr[cIdx])
+    override fun writeHatch(points: List<com.example.trilib.PointXY>, color: Int, colorIdx: Int, scale: Float) {
+        val sixtytwo = arrayOf(254, 254, 51, 254, 7)
+        val cIdx = colorIdx.coerceIn(0, 4)
+        val pointsList = ArrayList(points)
+        dxfEntity.writeDXFTriHatch(writer, pointsList, color, sixtytwo[cIdx])
     }
 
-    private fun writeRectangleHatch(rect: Rectangle, colorArr: Array<Int>, sixtytwoArr: Array<Int>) {
-        val cIdx = rect.mycolor.coerceIn(0, 4)
-        val lp = rect.calcPoint()
-        val bl = lp.a.left;  val br = lp.a.right
-        val tl = lp.b.left;  val tr = lp.b.right
-        val points = arrayListOf(bl, br, tr, tl, bl)
-        dxfEntity.writeDXFTriHatch(writer, points, colorArr[cIdx], sixtytwoArr[cIdx])
+    override fun getHatchColor(colorIdx: Int): Int {
+        val RED = 16769517
+        val ORANGE = 16770756
+        val YELLOW = 16777180
+        val GREEN = 14482130
+        val BLUE = 14939391
+        val color = arrayOf( RED, ORANGE, YELLOW, GREEN, BLUE )
+        return color[colorIdx.coerceIn(0, 4)]
     }
 
     fun writeSpritTrilist(myDXFTriList: TriangleList, trilistNumbered: TriangleList, color: Array<Int>, sixtytwo:Array<Int> ){

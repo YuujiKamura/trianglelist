@@ -416,6 +416,8 @@ open class DrawingFileWriter {
 
     open fun writeTextAndLine(st: String, p1: com.example.trilib.PointXY, p2: com.example.trilib.PointXY, textsize: Float, scale: Float) {}
 
+    open fun writeHatch(points: List<com.example.trilib.PointXY>, color: Int, colorIdx: Int, scale: Float = 1f) {}
+
     /**
      * DrawPrim のリストを各 backend のプリミティブ実装へ 1:1 でディスパッチ (ADR 0010 段A)。
      * sealed なので when は全 prim を網羅し、新 prim 追加時の漏れはコンパイルエラーで止まる。
@@ -427,6 +429,78 @@ open class DrawingFileWriter {
             is DrawPrim.Rect   -> writeRect(p.center, p.sizeX, p.sizeY, p.color, p.scale)
             is DrawPrim.Circle -> writeCircle(p.center, p.size, p.color, p.scale)
             is DrawPrim.Text   -> writeTextHV(p.text, p.pos, p.color, p.size, p.alignH, p.alignV, p.angle, p.scale)
+            is DrawPrim.Hatch  -> writeHatch(p.points, p.color, p.colorIdx, p.scale)
+        }
+    }
+
+    /** 三角形 1 つのハッチングプリミティブをビルド */
+    protected open fun buildTriangleHatchPrims(tri: Triangle): List<DrawPrim> {
+        val cIdx = tri.mycolor.coerceIn(0, 4)
+        val color = getHatchColor(cIdx)
+        val (pca, pab, pbc) = xyPointXYTriple(tri)
+        val points = listOf(pca, pab, pbc, pca)
+        return listOf(DrawPrim.Hatch(points, color, cIdx))
+    }
+
+    /** 台形 1 つのハッチングプリミティブをビルド */
+    protected open fun buildRectangleHatchPrims(rect: Rectangle): List<DrawPrim> {
+        val cIdx = rect.mycolor.coerceIn(0, 4)
+        val color = getHatchColor(cIdx)
+        val lp = rect.calcPoint()
+        val bl = lp.a.left;  val br = lp.a.right
+        val tl = lp.b.left;  val tr = lp.b.right
+        val points = listOf(bl, br, tr, tl, bl)
+        return listOf(DrawPrim.Hatch(points, color, cIdx))
+    }
+
+    /** ハッチング用のRGB色値を取得 (各ファイルライターでオーバーライド) */
+    open fun getHatchColor(colorIdx: Int): Int {
+        return WHITE
+    }
+
+    /**
+     * ハッチング（背景の塗りつぶし）だけをまとめて描画する共通処理。
+     * Z-order（重ね順）を保ち、線や文字の下に隠すために、本体描画の前に呼び出す。
+     */
+    fun drawAllHatches(
+        trilistNumbered: TriangleList,
+        traps: List<Rectangle>,
+        trapTris: List<Triangle>
+    ) {
+        val prims = ArrayList<DrawPrim>()
+        for (index in 1..trilistNumbered.size()) {
+            val tri = trilistNumbered.get(index)
+            prims.addAll(buildTriangleHatchPrims(tri))
+        }
+        for (rect in traps) {
+            prims.addAll(buildRectangleHatchPrims(rect))
+        }
+        for (t in trapTris) {
+            prims.addAll(buildTriangleHatchPrims(t))
+        }
+        drawScene(prims)
+    }
+
+    /**
+     * 本体（線・文字・寸法・控除）を描画する共通処理。
+     */
+    fun drawAllMainEntities(
+        trilistNumbered: TriangleList,
+        traps: List<Rectangle>,
+        trapTris: List<Triangle>,
+        dedlist: DeductionList
+    ) {
+        for (index in 1..trilistNumbered.size()) {
+            writeTriangle(trilistNumbered.get(index))
+        }
+        for (number in 1..dedlist.size()) {
+            writeDeduction(dedlist.get(number))
+        }
+        for ((i, rect) in traps.withIndex()) {
+            writeRectangle(rect, trilistNumbered.size() + i + 1)
+        }
+        for (t in trapTris) {
+            writeTriangle(t)
         }
     }
 
@@ -696,57 +770,91 @@ open class DrawingFileWriter {
         //可変
         var mutable_baseY = 27f * printscale_ * scale
 
-        val sprit = false
-        if( sprit ){
-            val tlSpC = trilist.spritByColors()
-            for( index in 4 downTo 0 ){
-                if( tlSpC[index].size() > 0 ) {
-                    mutable_baseY = writeCalcSheetEditList(
-                        tlSpC[ index ],
-                        titleTri_,
-                        baseX,
-                        mutable_baseY,
-                        textsize,
-                        xoffset,
-                        scale,
-                        shokeiNum
-                    )
-                    shokeiNum ++
-                }
-            }
-        }
-        else{
-            if( trilist.size() > 0 ) {
-                mutable_baseY = writeCalcSheetEditList(
-                    trilist,
-                    titleTri_,
-                    baseX,
-                    mutable_baseY,
-                    textsize,
-                    xoffset,
-                    scale,
-                    shokeiNum
-                )
-                shokeiNum ++
-            }
+        // 1. 三角形リスト
+        if( trilist.size() > 0 ) {
+            mutable_baseY = writeCalcSheetEditList(
+                trilist,
+                titleTri_,
+                baseX,
+                mutable_baseY,
+                textsize,
+                xoffset,
+                scale,
+                shokeiNum
+            )
+            shokeiNum ++
         }
 
-        if( dedlist.size() > 0 ) mutable_baseY = writeCalcSheetEditList(
-            dedlist,
-            titleDed_,
-            baseX,
-            mutable_baseY,
-            textsize,
-            xoffset,
-            scale,
-            shokeiNum
-        )
+        // 2. 台形リスト (Rectangle)
+        if (traps_.isNotEmpty()) {
+            val titleTrap = TitleParamStr(
+                type = "面積",
+                n = "番号",
+                a = "下底",
+                b = "上底",
+                c = "高さ"
+            )
+            val trapEditList = object : EditList<Rectangle>() {
+                override fun getArea(): Float = traps_.sumOf { it.getArea().toDouble() }.toFloat()
+                override fun size(): Int = traps_.size
+                override fun get(num: Int): CycleShape = traps_[num - 1]
+            }
+            mutable_baseY = writeCalcSheetEditList(
+                trapEditList,
+                titleTrap,
+                baseX,
+                mutable_baseY,
+                textsize,
+                xoffset,
+                scale,
+                shokeiNum
+            )
+            shokeiNum ++
+        }
+
+        // 3. 台形の子三角形
+        if (trapTris_.isNotEmpty()) {
+            val trapTriEditList = object : EditList<Triangle>() {
+                override fun getArea(): Float = trapTris_.sumOf { it.getArea().toDouble() }.toFloat()
+                override fun size(): Int = trapTris_.size
+                override fun get(num: Int): CycleShape = trapTris_[num - 1]
+            }
+            mutable_baseY = writeCalcSheetEditList(
+                trapTriEditList,
+                titleTri_,
+                baseX,
+                mutable_baseY,
+                textsize,
+                xoffset,
+                scale,
+                shokeiNum
+            )
+            shokeiNum ++
+        }
+
+        // 4. 控除リスト
+        if( dedlist.size() > 0 ) {
+            mutable_baseY = writeCalcSheetEditList(
+                dedlist,
+                titleDed_,
+                baseX,
+                mutable_baseY,
+                textsize,
+                xoffset,
+                scale,
+                shokeiNum
+            )
+        }
 
         mutable_baseY -= yoffset
         writeTextHV(zumeninfo.mGoukei_,
             com.example.trilib.PointXY(baseX, mutable_baseY), WHITE, textsize, 1, 1, 0.0, scale)
+
+        val totalArea = trilist_.getArea() + traps_.sumOf { it.getArea().toDouble() } + trapTris_.sumOf { it.getArea().toDouble() } - dedlist_.getArea()
+        val totalAreaFloat = maxOf(0.0, totalArea).toFloat()
+
         writeTextHV(
-            ( trilist_.getArea() - dedlist_.getArea() ).formattedString(2),
+            totalAreaFloat.formattedString(2),
             com.example.trilib.PointXY(baseX + xoffset * 4, mutable_baseY),
             WHITE,
             textsize,
@@ -845,7 +953,7 @@ open class DrawingFileWriter {
         var color = WHITE
         if( editList is DeductionList) color = RED
 
-        if( editList is TriangleList) {
+        if( editList !is DeductionList) {
             writeTextHV(titleParamStr.n,
                 com.example.trilib.PointXY(baseX, basey), color, ts, 1, 1, 0.0, scale)
             writeTextHV(
@@ -938,7 +1046,7 @@ open class DrawingFileWriter {
         val yspacer = -ts * 0.01f
 
 
-        if( editObject is Triangle) {
+        if( editObject is Triangle || editObject is Rectangle) {
             writeTextHV(param.number.toString(),
                 com.example.trilib.PointXY(baseX, baseY), color, ts, 1, 1, 0.0, scale)
             writeTextHV(
