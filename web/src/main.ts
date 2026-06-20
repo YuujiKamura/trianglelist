@@ -46,6 +46,7 @@ type Prim = LinePrim | TextPrim | CirclePrim | FillPrim | MetaPrim;
 // document base 相対で読むため、sync-wasm が web/public/ 直下に置く
 import {
   renderCsvToPrimitivesWithOverrides,
+  renderCsvToPrimitivesWithOverridesAndThreshold,
   buildDxfTextNumReverse,
   buildSfcTextNumReverse,
   buildCsvTextWithOverrides,
@@ -681,7 +682,7 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
 
 function renderCsv(canvas: HTMLCanvasElement, csv: string, label: string): void {
   try {
-    const json = (renderCsvToPrimitivesWithOverrides as any)(csv, 1.0, overridesJson(), thresholdAngle);
+    const json = renderCsvToPrimitivesWithOverridesAndThreshold(csv, 1.0, overridesJson(), thresholdAngle);
     let prims = JSON.parse(json) as Prim[];
     // 図面枠 (A3、DXF の writeDrawingFrame と同形)。lastPrims に足すので fit も枠込み —
     // 「目いっぱいでなくマージン」の図面らしい余白になる (2026-06-12 user 要望)
