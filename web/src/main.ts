@@ -2302,7 +2302,8 @@ function fabRotate(canvas: HTMLCanvasElement, degrees: number): void {
 // 図形全体 (図面枠を除く) の境界ボックス中央。枠は図形中心に追従して動くので
 // 含めると補正が自己参照になる — 図形本体だけで取る
 function figureCenter(prims: Prim[]): { x: number; y: number } {
-  const b = bounds(prims.filter((p) => p.type !== 'meta' && p.layer !== 'frame'));
+  // テキストは反転閾値などによってアンカー座標が不連続に変化するため、図形中心の計算から除外する
+  const b = bounds(prims.filter((p) => p.type !== 'meta' && p.layer !== 'frame' && p.type !== 'text'));
   return { x: (b.minX + b.maxX) / 2, y: (b.minY + b.maxY) / 2 };
 }
 
