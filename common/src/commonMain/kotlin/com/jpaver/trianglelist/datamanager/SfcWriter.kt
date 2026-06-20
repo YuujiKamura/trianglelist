@@ -21,6 +21,13 @@ class SfcWriter(trilist: TriangleList, dedlist: DeductionList, filename: String,
     // 旧 override は footer の用紙宣言以外で使われていなかったので削除し、footer は paper を直接読む。
     var circleSize = textscale_ * 0.8f
 
+    override var COLOR_PINK   = 6
+    override var COLOR_ORANGE = 2
+    override var COLOR_YELLOW = 5
+    override var COLOR_GREEN  = 3
+    override var COLOR_SKY    = 7
+
+
 
     override fun writeEntities(){
         // サークルサイズの更新

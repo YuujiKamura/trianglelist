@@ -22,7 +22,8 @@ open class DrawingFileWriter {
     open lateinit var zumeninfo : ZumenInfo
     open lateinit var titleTri_ : TitleParamStr
     open lateinit var titleDed_ : TitleParamStr
-    open var zumenAreaText: String = ""
+    data class AreaSegment(val text: String, val color: Int)
+    val zumenAreaSegments = mutableListOf<AreaSegment>()
 
     var koujiname_: String = ""
     var rosenname_ = ""
@@ -55,6 +56,11 @@ open class DrawingFileWriter {
     open var WHITE = 8
     open var BLUE  = 4
     open var RED   = 2
+    open var COLOR_PINK   = 6
+    open var COLOR_ORANGE = 30
+    open var COLOR_YELLOW = 2
+    open var COLOR_GREEN  = 3
+    open var COLOR_SKY    = 4
 
 //endregion parameter
     fun stringTriple(tri: Triangle): Triple<String, String, String> {
@@ -470,8 +476,36 @@ open class DrawingFileWriter {
             DrawPrim.Line(com.example.trilib.PointXY(cx - halfW, ty - 0.2f, scale), com.example.trilib.PointXY(cx + halfW, ty - 0.2f, scale), WHITE, scale)
         )
 
-        if (zumenAreaText.isNotEmpty()) {
-            prims.add(DrawPrim.Text(zumenAreaText, com.example.trilib.PointXY(cx, ty - 0.8f, scale), WHITE, BOTTOM_TITLE_MM * scale, 1, 1, 0.0, scale))
+        fun getTextWidth(text: String, fs: Float): Float {
+            var w = 0f
+            for (ch in text) {
+                val isHalf = ch.code in 0x20..0x7E
+                w += if (isHalf) fs * 0.5f else fs * 1.0f
+            }
+            return w
+        }
+
+        if (zumenAreaSegments.isNotEmpty()) {
+            val fs = BOTTOM_TITLE_MM * scale
+            var totalWidth = 0f
+            for (seg in zumenAreaSegments) {
+                totalWidth += getTextWidth(seg.text, fs)
+            }
+            var curX = cx - (totalWidth / 2f)
+            for (seg in zumenAreaSegments) {
+                val segW = getTextWidth(seg.text, fs)
+                prims.add(DrawPrim.Text(
+                    seg.text,
+                    com.example.trilib.PointXY(curX, ty - 0.8f, scale),
+                    seg.color,
+                    fs,
+                    0, // alignH: 0 = Left
+                    1, // alignV: 1 = Bottom
+                    0.0,
+                    scale
+                ))
+                curX += segW
+            }
             prims.add(DrawPrim.Text(rosenname_, com.example.trilib.PointXY(cx, ty - 1.6f, scale), WHITE, titleTextSize, 1, 1, 0.0, scale))
         } else {
             prims.add(DrawPrim.Text(rosenname_, com.example.trilib.PointXY(cx, ty - 1.1f, scale), WHITE, titleTextSize, 1, 1, 0.0, scale))
@@ -499,12 +533,12 @@ open class DrawingFileWriter {
         val totalAreaFloat = maxOf(0f, totalArea.toFloat())
         
         val colorOrder = listOf(0, 3, 2, 4, 1)
-        val colorNames = mapOf(
-            0 to "桃",
-            3 to "緑",
-            2 to "黄",
-            4 to "空",
-            1 to "青"
+        val colorAbstractCodes = mapOf(
+            0 to COLOR_PINK,
+            3 to COLOR_GREEN,
+            2 to COLOR_YELLOW,
+            4 to COLOR_SKY,
+            1 to COLOR_ORANGE
         )
         
         fun formatArea(value: Float): String {
@@ -522,19 +556,20 @@ open class DrawingFileWriter {
             return if (negative) "-$body" else body
         }
         
-        val colorList = mutableListOf<String>()
-        for (c in colorOrder) {
-            val area = maxOf(0f, colorNetAreas[c])
-            if (area > 0f) {
-                val name = colorNames[c] ?: ""
-                colorList.add("$name=${formatArea(area)}㎡")
-            }
-        }
+        zumenAreaSegments.clear()
         
-        zumenAreaText = if (colorList.isNotEmpty()) {
-            "面積: A=${formatArea(totalAreaFloat)}㎡ (${colorList.joinToString(", ")})"
+        val activeColors = colorOrder.filter { colorNetAreas[it] > 0f }
+        if (activeColors.size <= 1) {
+            zumenAreaSegments.add(AreaSegment("面積: A=${formatArea(totalAreaFloat)}㎡", WHITE))
         } else {
-            "面積: A=${formatArea(totalAreaFloat)}㎡"
+            zumenAreaSegments.add(AreaSegment("面積: A=${formatArea(totalAreaFloat)}㎡ (", WHITE))
+            for ((idx, c) in activeColors.withIndex()) {
+                val area = maxOf(0f, colorNetAreas[c])
+                val colorCode = colorAbstractCodes[c] ?: WHITE
+                zumenAreaSegments.add(AreaSegment("■:", colorCode))
+                val suffix = if (idx == activeColors.lastIndex) "${formatArea(area)}㎡)" else "${formatArea(area)}㎡, "
+                zumenAreaSegments.add(AreaSegment(suffix, WHITE))
+            }
         }
     }
     companion object {

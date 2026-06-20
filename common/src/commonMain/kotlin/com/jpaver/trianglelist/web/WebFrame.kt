@@ -160,7 +160,7 @@ object WebFrame {
             // base のお paper-mm 単位 (TOP_TITLE_MM / BOTTOM_MM)、 mm → cm で ÷ 10 が必要。
             val sizeCm = textsize * ps / 10f
             out.add(
-                """{"type":"text","layer":"frame","text":"$esc","x":${p.x},"y":${p.y},"angle":$angle,"size":$sizeCm,"align":$v$h$f}"""
+                """{"type":"text","layer":"frame","text":"$esc","x":${p.x},"y":${p.y},"angle":$angle,"size":$sizeCm,"align":$v$h$f,"color":$color}"""
             )
         }
     }
