@@ -491,12 +491,13 @@ open class DrawingFileWriter {
             for (seg in zumenAreaSegments) {
                 totalWidth += getTextWidth(seg.text, fs)
             }
+            totalWidth /= 10f
             var curX = cx - (totalWidth / 2f)
             for (seg in zumenAreaSegments) {
-                val segW = getTextWidth(seg.text, fs)
+                val segW = getTextWidth(seg.text, fs) / 10f
                 prims.add(DrawPrim.Text(
                     seg.text,
-                    com.example.trilib.PointXY(curX, ty - 0.8f, scale),
+                    com.example.trilib.PointXY(curX, ty - 0.9f, scale),
                     seg.color,
                     fs,
                     0, // alignH: 0 = Left
@@ -506,9 +507,9 @@ open class DrawingFileWriter {
                 ))
                 curX += segW
             }
-            prims.add(DrawPrim.Text(rosenname_, com.example.trilib.PointXY(cx, ty - 1.6f, scale), WHITE, titleTextSize, 1, 1, 0.0, scale))
+            prims.add(DrawPrim.Text(rosenname_, com.example.trilib.PointXY(cx, ty - 1.8f, scale), WHITE, titleTextSize, 1, 1, 0.0, scale))
         } else {
-            prims.add(DrawPrim.Text(rosenname_, com.example.trilib.PointXY(cx, ty - 1.1f, scale), WHITE, titleTextSize, 1, 1, 0.0, scale))
+            prims.add(DrawPrim.Text(rosenname_, com.example.trilib.PointXY(cx, ty - 1.2f, scale), WHITE, titleTextSize, 1, 1, 0.0, scale))
         }
 
         drawScene(prims)
@@ -534,11 +535,11 @@ open class DrawingFileWriter {
         
         val colorOrder = listOf(0, 3, 2, 4, 1)
         val colorAbstractCodes = mapOf(
-            0 to COLOR_PINK,
-            3 to COLOR_GREEN,
-            2 to COLOR_YELLOW,
-            4 to COLOR_SKY,
-            1 to COLOR_ORANGE
+            0 to 100, // Web COLORS.pink (webColorMap 準拠)
+            3 to 103, // Web COLORS.green
+            2 to 102, // Web COLORS.yellow
+            4 to 104, // Web COLORS.sky
+            1 to 101  // Web COLORS.orange
         )
         
         fun formatArea(value: Float): String {
