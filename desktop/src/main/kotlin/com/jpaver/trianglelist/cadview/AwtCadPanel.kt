@@ -386,6 +386,7 @@ class AwtCadPanel : JPanel() {
         drawOriginCross(g2d)
 
         // エンティティ描画
+        drawHatches(g2d, data.hatches)
         drawLines(g2d, data.lines)
         drawCircles(g2d, data.circles)
         drawArcs(g2d, data.arcs)
@@ -445,6 +446,9 @@ class AwtCadPanel : JPanel() {
         }
         data.texts.forEach { text ->
             xs += text.x; ys += text.y
+        }
+        data.hatches.forEach { hatch ->
+            hatch.vertices.forEach { (x, y) -> xs += x; ys += y }
         }
 
         if (xs.isEmpty() || ys.isEmpty()) return null
@@ -605,6 +609,30 @@ class AwtCadPanel : JPanel() {
             } else {
                 textLayout.draw(g2d, alignedX.toFloat(), baselineY.toFloat())
             }
+        }
+    }
+
+    private fun drawHatches(g2d: Graphics2D, hatches: List<DxfHatch>) {
+        hatches.forEach { hatch ->
+            if (hatch.vertices.size < 3) return@forEach
+            
+            val color = if (hatch.trueColor != null) {
+                val rgb = hatch.trueColor!!
+                Color((rgb shr 16) and 0xFF, (rgb shr 8) and 0xFF, rgb and 0xFF)
+            } else {
+                aciToAwtColor(hatch.color)
+            }
+            g2d.color = color
+
+            val path = GeneralPath()
+            val first = hatch.vertices.first()
+            path.moveTo(first.first.toFloat(), first.second.toFloat())
+            hatch.vertices.drop(1).forEach { (x, y) ->
+                path.lineTo(x.toFloat(), y.toFloat())
+            }
+            path.closePath()
+
+            g2d.fill(path)
         }
     }
 }
