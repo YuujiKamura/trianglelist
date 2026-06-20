@@ -73,10 +73,12 @@
         min-width: 320px;
         height: calc(100vh - 70px);
         box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
       }
       canvas {
         background: #fff; border: 1px solid #ccc; touch-action: none; cursor: grab;
-        width: 100%; height: 100%; display: block;
+        width: 100%; flex: 1; min-height: 200px; display: block;
         box-sizing: border-box;
       }
       /* FAB 群 (アプリ fabs.xml と同じ配置): 上端起点。右= [B][C][✎] 横並び + その下に縦列
