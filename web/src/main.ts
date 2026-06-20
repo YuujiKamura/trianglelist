@@ -4058,6 +4058,8 @@ function main(): void {
   for (const id of ['curName', 'curA', 'curB', 'curC', 'curParent', 'curConn', 'curCType', 'curLcr']) {
     document.getElementById(id)?.addEventListener('change', () => rewriteCurrent(canvas));
   }
+  // 測点名 (curName) は入力中に即座にキャンバスに反映されるよう input イベントも監視する
+  document.getElementById('curName')?.addEventListener('input', () => rewriteCurrent(canvas));
 
   // 新規・現在の種別切り替え列クリックイベント
   document.getElementById('newKind')?.addEventListener('click', () => {
