@@ -126,6 +126,37 @@ class CsvCodecTrapRoundTripTest {
         assertEquals(doc1.listAngle, doc2.listAngle, "旧 CSV listAngle 保持")
     }
 
+    /** Rectangle の色 (mycolor)・アライメント・各種プロパティの round-trip 等価検証 */
+    @Test
+    fun rect_color_and_properties_roundtrip() {
+        val csv = "koujiname, Rectangle色テスト\n" +
+                  "rosenname, テスト路線\n" +
+                  "gyousyaname, テスト業者\n" +
+                  "zumennum, 1\n" +
+                  "Rectangle, 1, 3.00, 2.00, 4.00, -1, 0, 1, 0, 0, RecStation, , , , 3, , , , , , , , , , , , 2, false\n" + // color=3, align=1 (中央), dimHorizontal.s = 2
+                  "ListAngle, 0.0\n" +
+                  "ListScale, 1.0\n" +
+                  "TextSize, 5.0\n"
+        val doc1 = CsvCodec.parse(csv)
+        val rectRows1 = doc1.rectRows()
+        assertEquals(1, rectRows1.size)
+        assertEquals("3", rectRows1[0].chunks.getOrNull(14), "parse 時に 15列目の色が 3 であること")
+        assertEquals("1", rectRows1[0].chunks.getOrNull(7), "parse 時に 8列目の align が 1 であること")
+        assertEquals("2", rectRows1[0].chunks.getOrNull(26), "parse 時に 27列目の dimHorizontal.s が 2 であること")
+
+        val trilist = CsvCodec.build(doc1)
+        val baked = CsvCodec.bake(trilist, doc1)
+        val serialized = CsvCodec.serialize(baked)
+        val doc2 = CsvCodec.parse(serialized)
+
+        val rectRows2 = doc2.rectRows()
+        assertEquals(1, rectRows2.size)
+        assertEquals("3", rectRows2[0].chunks.getOrNull(14), "round-trip 後に 15列目の色が 3 であること")
+        assertEquals("1", rectRows2[0].chunks.getOrNull(7), "round-trip 後に 8列目の align が 1 であること")
+        assertEquals("2", rectRows2[0].chunks.getOrNull(26), "round-trip 後に 27列目の dimHorizontal.s が 2 であること")
+    }
+
+
     /** dedRows の round-trip 等価 (viewscale=1) */
     @Test
     fun dedRows_roundtrip_viewscale1() {

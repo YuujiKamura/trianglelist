@@ -122,6 +122,24 @@ class WebOverridesRectangleTest {
     }
 
     @Test
+    fun `side 3 D-edge override sets showSide3 and properties`() {
+        val p = placements.last()  // tri-rect-tri
+        val mixed = buildMixed(p)
+        val rect = mixed.get(p.rectIdx) as Rectangle
+        
+        assertEquals(false, rect.showSide3, "デフォルトでは showSide3 は false")
+        
+        WebOverrides.applyJson(
+            mixed,
+            """{"dims":[{"tri":${p.rectIdx},"side":3,"h":4,"v":3}]}""",
+        )
+        
+        assertEquals(true, rect.showSide3, "side 3 override 適用後は showSide3 が true になる")
+        assertEquals(4, rect.dimHorizontalD, "dimHorizontalD が 4 に更新される")
+        assertEquals(3, rect.dimVerticalD, "dimVerticalD が 3 に更新される")
+    }
+
+    @Test
     fun `side 4 sokuten override does not touch any dim axis on Rectangle`() {
         val p = placements.last()
         val mixed = buildMixed(p)
