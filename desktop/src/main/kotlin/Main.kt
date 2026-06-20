@@ -15,6 +15,7 @@ import com.jpaver.trianglelist.cadview.CADViewAwt
 import com.jpaver.trianglelist.cadview.ViewStateManager
 import com.jpaver.trianglelist.dxf.DxfParseResult
 import com.jpaver.trianglelist.dxf.DxfParser
+import com.jpaver.trianglelist.dxf.SfcParser
 import com.jpaver.trianglelist.dxf.CrosswalkGenerator
 import com.jpaver.trianglelist.dxf.DxfText
 import com.jpaver.trianglelist.dxf.MarkingCommand
@@ -31,8 +32,8 @@ fun main(args: Array<String>) = application {
     val isTestMode = args.contains("--test") || args.contains("-t")
     val isDebugMode = args.contains("--debug") || args.contains("-d")
     val useAwtViewer = args.contains("--viewer=awt")
-    // DXFファイルパスを取得（オプション以外の引数）
-    val dxfFilePath = args.firstOrNull { !it.startsWith("-") && it.endsWith(".dxf", ignoreCase = true) }
+    // DXF/SFCファイルパスを取得（オプション以外の引数）
+    val dxfFilePath = args.firstOrNull { !it.startsWith("-") && (it.endsWith(".dxf", ignoreCase = true) || it.endsWith(".sfc", ignoreCase = true)) }
 
     // デスクトップサイズを取得して左下1/4に配置
     val screenSize = Toolkit.getDefaultToolkit().screenSize
@@ -101,16 +102,19 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
         }
     }
 
-    fun loadDxfFile(file: File): DxfParseResult? {
+    fun loadCadFile(file: File): DxfParseResult? {
         return try {
-            // trianglelist 出力の DXF は $DWGCODEPAGE=ANSI_932 (DxfHeader) 固定。
+            // trianglelist 出力の DXF/SFC は MS932 固定。
             // UTF-8 default で読むと日本語が壊れる。
-            val dxfContent = file.readText(java.nio.charset.Charset.forName("MS932"))
-            val parser = DxfParser()
-            val result = parser.parse(dxfContent)
+            val content = file.readText(java.nio.charset.Charset.forName("MS932"))
+            val result = if (file.extension.equals("sfc", ignoreCase = true)) {
+                SfcParser().parse(content)
+            } else {
+                DxfParser().parse(content)
+            }
 
-            println("=== DXF Loaded: ${file.name} (${file.absolutePath}) ===")
-            println("Lines: ${result.lines.size}, Circles: ${result.circles.size}, Arcs: ${result.arcs.size}, Polylines: ${result.lwPolylines.size}, Texts: ${result.texts.size}")
+            println("=== CAD Loaded: ${file.name} (${file.absolutePath}) ===")
+            println("Lines: ${result.lines.size}, Circles: ${result.circles.size}, Arcs: ${result.arcs.size}, Polylines: ${result.lwPolylines.size}, Texts: ${result.texts.size}, Hatches: ${result.hatches.size}")
 
             result.lwPolylines.forEachIndexed { idx, poly ->
                 val xs = poly.vertices.map { it.first }
@@ -124,7 +128,7 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
 
             result
         } catch (e: Exception) {
-            println("Error loading DXF file: ${e.message}")
+            println("Error loading CAD file: ${e.message}")
             null
         }
     }
@@ -142,7 +146,7 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                     initialOffset = offset
                 }
 
-                loadDxfFile(file)?.let { result ->
+                loadCadFile(file)?.let { result ->
                     parseResult = result
                     currentFile = file
                     lastModified = file.lastModified()
@@ -164,7 +168,7 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                         val newModified = file.lastModified()
                         if (newModified > lastModified) {
                             println("File changed, reloading...")
-                            loadDxfFile(file)?.let { result ->
+                            loadCadFile(file)?.let { result ->
                                 parseResult = result
                                 lastModified = newModified
                             }
@@ -218,7 +222,7 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                 val target = File(path)
                                 if (target.exists()) {
                                     run {
-                                        loadDxfFile(target)?.let { result ->
+                                        loadCadFile(target)?.let { result ->
                                             parseResult = result
                                             currentFile = target
                                             lastModified = target.lastModified()
@@ -452,7 +456,7 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
     if (showDialog) {
         LaunchedEffect(Unit) {
             val frame = Frame()
-            val dialog = FileDialog(frame, "DXFファイルを選択", FileDialog.LOAD)
+            val dialog = FileDialog(frame, "CADファイルを選択", FileDialog.LOAD)
             dialog.isVisible = true
 
             dialog.file?.let { fileName ->
@@ -471,7 +475,7 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                     initialOffset = null
                 }
 
-                loadDxfFile(selectedFile)?.let { result ->
+                loadCadFile(selectedFile)?.let { result ->
                     parseResult = result
                     currentFile = selectedFile
                     lastModified = selectedFile.lastModified()
@@ -494,7 +498,7 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Button(onClick = { showDialog = true }) {
-                Text("DXFファイルを開く")
+                Text("CADファイルを開く")
             }
 
             Button(

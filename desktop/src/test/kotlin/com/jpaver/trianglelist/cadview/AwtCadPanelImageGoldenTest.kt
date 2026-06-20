@@ -1,6 +1,7 @@
 package com.jpaver.trianglelist.cadview
 
 import com.jpaver.trianglelist.dxf.DxfParser
+import com.jpaver.trianglelist.dxf.SfcParser
 import com.jpaver.trianglelist.web.WebDrawingExport
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
@@ -167,5 +168,51 @@ class AwtCadPanelImageGoldenTest {
         val ratio = diffRatio(first, second)
         println("same-JVM re-render diff: ${"%.6f".format(ratio)}")
         assertTrue("同一 JVM の再描画で diff $ratio — 描画が非決定的", ratio == 0.0)
+    }
+
+    private fun renderToImageSfc(csv: String): BufferedImage {
+        val sfc = WebDrawingExport.buildSfcText(csv, "awt-sample.sfc")
+            .replace(datePattern, "#### 年 ## 月 ## 日")
+        val parsed = SfcParser().parse(sfc).let { r ->
+            r.copy(texts = r.texts.filter { it.text.isNotEmpty() })
+        }
+        val panel = AwtCadPanel()
+        panel.setBounds(0, 0, WIDTH, HEIGHT) // fitToView が width/height を使うので paint 前に必須
+        panel.setParseResult(parsed)
+        val image = BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB)
+        val g = image.createGraphics()
+        try {
+            panel.paint(g)
+        } finally {
+            g.dispose()
+        }
+        return image
+    }
+
+    private fun assertImageGoldenSfc(goldenName: String, csv: String) {
+        val actual = renderToImageSfc(csv)
+        val golden = goldenFile(goldenName)
+        if (!golden.exists()) {
+            golden.parentFile.mkdirs()
+            ImageIO.write(actual, "png", golden)
+            fail("golden 初回記録 (SFC): ${golden.absolutePath} に書いた。PNG を目視批評してから再実行しろ")
+        }
+        val expected = ImageIO.read(golden)
+        val ratio = diffRatio(expected, actual)
+        println("image golden diff SFC ($goldenName): ${"%.6f".format(ratio)} (許容 $MAX_DIFF_RATIO)")
+        if (ratio > MAX_DIFF_RATIO) {
+            val dump = File(repoRoot(), "desktop/build/golden-img-actual/$goldenName")
+            dump.parentFile.mkdirs()
+            ImageIO.write(actual, "png", dump)
+            fail(
+                "SFC 描画が golden と不一致 ($goldenName): 差分ピクセル割合 ${"%.6f".format(ratio)} > $MAX_DIFF_RATIO。" +
+                    "実描画を ${dump.absolutePath} に残した"
+            )
+        }
+    }
+
+    @Test
+    fun imageSampleCsvSfcMatchesGolden() {
+        assertImageGoldenSfc("awt-sample-sfc.png", sampleCsv)
     }
 }
