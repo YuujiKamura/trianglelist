@@ -21,6 +21,7 @@ type TextPrim = {
   v?: number; // vertical 実効値 (1=外/3=内)
   ded?: number; // 控除番号 (ded layer のみ)。選択中の控除の色替えに使う
   field?: string; // 図面枠タイトル欄の識別子 (frame layer のみ、WebFrame.fieldAt)。空欄でも prim が出る
+  color?: number;
 };
 type CirclePrim = { type: 'circle'; layer: string; cx: number; cy: number; r: number; tri?: number; ded?: number };
 // Rectangle 専用メタ: 描画対象外 (perpFrom 等の識別子)。 main.ts:384 で skip される

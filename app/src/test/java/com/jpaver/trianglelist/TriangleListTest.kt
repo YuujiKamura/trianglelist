@@ -9,7 +9,6 @@ import com.jpaver.trianglelist.editmodel.Deduction
 import com.jpaver.trianglelist.editmodel.DeductionList
 import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
-import com.jpaver.trianglelist.editmodel.alreadyHaveChild
 import com.jpaver.trianglelist.editmodel.control_rotate
 import com.jpaver.trianglelist.editmodel.hasChildIn
 import com.jpaver.trianglelist.editmodel.isCollide
