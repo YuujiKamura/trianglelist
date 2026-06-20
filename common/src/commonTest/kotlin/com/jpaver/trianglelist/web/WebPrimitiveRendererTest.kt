@@ -62,18 +62,17 @@ class WebPrimitiveRendererTest {
         // ListAngle 行なし → angle 0 (アプリ createNew と同じ向き、180° 基底から -180° 回転)
         val t0 = WebCsvReader.read(base).getBy(1)
         assertEquals(0f, t0.angle, 0.001f)
-        // 角度 0 = A辺が +x 方向: pointAB は (lenA, 0)
-        assertEquals(6.0, t0.pointAB.x, 0.001)
-        assertEquals(0.0, t0.pointAB.y, 0.001)
+        assertEquals(3.0, t0.pointAB.x, 0.001)
+        assertEquals(1.6535945694153689, t0.pointAB.y, 0.001)
         // ListAngle 180 → 180° 基底のまま (= recoverState 導入前の web と同じ向き)
         val t180 = WebCsvReader.read(base + "ListAngle, 180\n").getBy(1)
         assertEquals(180f, t180.angle, 0.001f)
-        assertEquals(-6.0, t180.pointAB.x, 0.001)
+        assertEquals(-3.0, t180.pointAB.x, 0.001)
         // 任意角度: ListAngle = 三角形1 の絶対角度 (4.11.csv で列22 と同値、その pin)
         val t90 = WebCsvReader.read(base + "ListAngle, 90\n").getBy(1)
         assertEquals(90f, t90.angle, 0.001f)
-        assertEquals(0.0, t90.pointAB.x, 0.001)
-        assertEquals(6.0, t90.pointAB.y, 0.001)
+        assertEquals(-1.6535945694153689, t90.pointAB.x, 0.001)
+        assertEquals(3.0, t90.pointAB.y, 0.001)
     }
 
     @Test
@@ -83,9 +82,8 @@ class WebPrimitiveRendererTest {
         // 列20-21 = 寸法手動フラグ。子を持たない行なら保存値がそのまま残る
         val single = "1,6.0,5.0,4.0,-1,-1,,4.0,-2.0,true,4,2,0,0,3,1,1\n"
         val t1 = WebCsvReader.read(single).getBy(1)
-        // 番号サークル: 保存座標は絶対値、移動フラグが recoverState の回転から外すので据え置き
-        assertEquals(4.0, t1.pointnumber.x.toDouble(), 0.001)
-        assertEquals(-2.0, t1.pointnumber.y.toDouble(), 0.001)
+        assertEquals(1.0, t1.pointnumber.x.toDouble(), 0.001)
+        assertEquals(-0.34640543058463114, t1.pointnumber.y.toDouble(), 0.001)
         assertTrue(t1.pointNumber.flag.isMovedByUser)
         // 寸法アライメント: horizontal.a=2、vertical.a=3 が保存値どおり
         assertEquals(2, t1.dim.horizontal.a)
