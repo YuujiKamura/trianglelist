@@ -217,8 +217,8 @@ class Rectangle(
             var a = rawTopAngle
             while (a <= -180.0) a += 360.0
             while (a > 180.0) a -= 360.0
-            if (a <= thresh) a + 180.0
-            else if (a > thresh + 180.0) a - 180.0
+            if (a > thresh) a - 180.0
+            else if (a < -thresh) a + 180.0
             else a
         }
 
