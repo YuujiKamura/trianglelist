@@ -205,7 +205,7 @@ object CsvCodec {
                 } else {
                     ConnCode.toConnParam(conn, lengthA) ?: continue
                 }
-                trilist.add(Triangle(ptri as Triangle?, cp, lengthB, lengthC), true)
+                trilist.add(Triangle(ptri, cp, lengthB, lengthC), true)
             }
             val tri = trilist.getBy(trilist.size())
             tri.connectionSide = conn

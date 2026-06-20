@@ -311,7 +311,7 @@ class Triangle : CycleShape, Cloneable<Triangle> {
         setOn(myParent, pbc, A, B, C)
     }
 
-    constructor(myParent: Triangle?, cParam: ConnParam, B: Float, C: Float) {
+    constructor(myParent: Triangle, cParam: ConnParam, B: Float, C: Float) {
         setOn(myParent, cParam, B, C)
     }
 
