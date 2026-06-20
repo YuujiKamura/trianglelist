@@ -2400,8 +2400,9 @@ function fabFillColor(canvas: HTMLCanvasElement): void {
   colorIndex = (colorIndex + 1) % FILL_PALETTE.length;
   // 11 列目 (index 10) が色 (mycolor)。
   // 三角形: base(6列) + extensions(4列: 番号等) + 色 -> extras[4]
-  // 台形: baseChunks(10列) + 色 -> extras[0]
-  const colorExtraIdx = r.kind === 'rectangle' ? 0 : 4;
+  // 台形: baseChunks(10列) + extensions(4列) + 色 -> extras[4]
+  // (CsvCodec.kt:543 により、RectangleもTriangleもextrasの4番目(相対インデックス)がmycolorになる)
+  const colorExtraIdx = 4;
   while (r.extras.length <= colorExtraIdx) r.extras.push('');
   r.extras[colorExtraIdx] = String(colorIndex);
   syncFillColorFab();

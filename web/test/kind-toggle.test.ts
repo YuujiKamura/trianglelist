@@ -119,4 +119,50 @@ describe('kind-toggle (一覧 △/□ click で 種別切替)', () => {
     // 親が triangle なので、 子の parentKind は 0 ── D 辺 option は出ない (正しい)
     expect(s.rows[1].parentKind).toBe(0);
   });
+
+  describe('台形と三角形の色替え (fabFillColor)', () => {
+    it('台形の色替えをクリックしたとき、測点名ではなく extras[4] に色が保存されること', async () => {
+      const csv = [
+        'Rectangle,1,3.00,10.00,7.00,-1,0,0,0,0,RecStation,,,,4',
+      ].join('\n');
+      await loadCsv(csv);
+
+      let s = await state();
+      expect(s.rows[0].kind).toBe('rectangle');
+      expect(s.rows[0].extras[0]).toBe('RecStation'); // 測点名
+      expect(s.rows[0].extras[4] ?? '4').toBe('4');   // 初期色 (4)
+
+      const r = await click('fabFillColor');
+      expect((r as any).ok).toBe(true);
+
+      await new Promise((res) => setTimeout(res, 200));
+      s = await state();
+      
+      // colorIndex が (4 + 1) % 5 = 0 になるはず
+      expect(s.rows[0].extras[4]).toBe('0');
+      // 測点名 (extras[0]) が汚染されていないこと
+      expect(s.rows[0].extras[0]).toBe('RecStation');
+    });
+
+    it('三角形の色替えをクリックしたとき、extras[4] に色が保存され、測点名 extras[0] は影響を受けないこと', async () => {
+      const csv = [
+        '1,3.00,3.00,3.00,-1,-1,TriStation,,,,4',
+      ].join('\n');
+      await loadCsv(csv);
+
+      let s = await state();
+      expect(s.rows[0].kind).toBe('triangle');
+      expect(s.rows[0].extras[0]).toBe('TriStation');
+      expect(s.rows[0].extras[4] ?? '4').toBe('4');
+
+      const r = await click('fabFillColor');
+      expect((r as any).ok).toBe(true);
+
+      await new Promise((res) => setTimeout(res, 200));
+      s = await state();
+
+      expect(s.rows[0].extras[4]).toBe('0');
+      expect(s.rows[0].extras[0]).toBe('TriStation');
+    });
+  });
 });
