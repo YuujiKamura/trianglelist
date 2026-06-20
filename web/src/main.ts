@@ -2316,12 +2316,6 @@ function fabRotate(canvas: HTMLCanvasElement, degrees: number): void {
     return;
   }
   if (rows.length === 0) return;
-  // 回転の見かけの起点 = 図形全体 (図面枠を除く) の境界ボックス中央 (2026-06-12 user 要望)。
-  // 幾何は listAngle → recoverState が三角形 1 基準で回すので、画面上では図形が振り回される —
-  // 回転前後の bbox 中央が同じ画面点に写るよう view を平行移動して「中央起点の回転」に見せる。
-  // 幾何・CSV・DXF には触れない view 層だけの補正
-  const v = view;
-  const before = v ? figureCenter(lastPrims) : null;
   listAngle += degrees;
   // シャドー三角形は親辺の現座標を借りて組むので、回転で親辺が動いたら組み直さないと
   // 旧座標のまま置き去りになる (2026-06-13 user 報告)。serializeState は更新後の listAngle を
@@ -2334,12 +2328,6 @@ function fabRotate(canvas: HTMLCanvasElement, degrees: number): void {
   buildDedTable(canvas);
   setStatus(`回転: ${listAngle}°`);
   redraw(canvas);
-  if (v && before && view === v) { // view が null にリセットされていない場合のみ補正 (2026-06-20 ジャンプ防止)
-    const after = figureCenter(lastPrims);
-    v.offsetX += (before.x - after.x) * v.scale;
-    v.offsetY += (after.y - before.y) * v.scale; // 画面 y は反転系 (py = -y*scale + offsetY)
-    draw(canvas, lastPrims);
-  }
 }
 
 // 図形全体 (図面枠を除く) の境界ボックス中央。枠は図形中心に追従して動くので
