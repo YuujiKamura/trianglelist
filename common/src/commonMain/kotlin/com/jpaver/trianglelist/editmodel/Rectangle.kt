@@ -197,6 +197,10 @@ class Rectangle(
     /** 環閉合 (isClosed) を成立させる巡回順の Line リスト。 A -> B -> C -> D */
     override fun edges(): List<Line> = listOf(getLine(0), getLine(1), getLine(2), getLine(3))
 
+    var showSide3: Boolean = false
+    var dimHorizontalD: Int = 0
+    var dimVerticalD: Int = 1
+
     override fun emitDimensionSpecs(scale: Float, sokutenListVector: Int): List<DimensionSpec> {
         val g = geo()
         val ds = dimScale.toDouble()
@@ -226,6 +230,9 @@ class Rectangle(
 
         if (nodeA == null || cParam_.type != 0) specs.add(spec(0, Line(g.pointDA, g.pointAB), dimVertical.a, dimHorizontal.a, topSideAngle))
         specs.add(spec(2, Line(g.pointBC, g.pointCD), dimVertical.c, dimHorizontal.c, topSideAngle))
+        if (showSide3) {
+            specs.add(spec(3, Line(g.pointCD, g.pointDA), dimVerticalD, dimHorizontalD, topSideAngle))
+        }
 
         val spine = getSpine()
         val placeB = com.jpaver.trianglelist.label.DimensionLayout.layout(spine.right, spine.left, dimVertical.b, dimHorizontal.b, ds, dh, 0.0)

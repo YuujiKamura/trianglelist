@@ -534,16 +534,19 @@ object CsvCodec {
     }
 
     private fun applyRowMeta(c: List<String>, obj: CycleShape) {
+        val isRect = c.firstOrNull() == "Rectangle"
         // 測点名: Triangle は列6、Rectangle は列10 (列9 は type)
-        val nameIdx = if (c.firstOrNull() == "Rectangle") 10 else 6
+        val nameIdx = if (isRect) 10 else 6
         c.getOrNull(nameIdx)?.let { if (it.isNotEmpty()) obj.name = it }
+
+        // 色 (Rectangleは列14、Triangleは列10)
+        val colorIdx = if (isRect) 14 else 10
+        c.getOrNull(colorIdx)?.toIntOrNull()?.let { obj.mycolor = it; obj.isColored = true }
 
         // 測点アライメント (26-27列目) は全図形共通 (2026-06-19 基底化)
         c.getOrNull(26)?.toIntOrNull()?.let { obj.dimHorizontal.s = it }
 
         if (obj is Triangle) {
-            // 色 (列10)
-            c.getOrNull(10)?.toIntOrNull()?.let { obj.setColor(it) }
             // 番号サークル位置 (列7-9、ユーザー移動時のみ)
             if (c.getOrNull(9)?.toBoolean() == true) {
                 val px = c.getOrNull(7)?.toFloatOrNull()
@@ -658,8 +661,14 @@ object CsvCodec {
             "${mr.parentnumber}", "${mr.cParam_.side}", "${mr.cParam_.lcr}",
             "$pKind", "${mr.cParam_.type}", mr.name
         )
-        // 11列目〜25列目を空文字またはデフォルトで埋める
-        repeat(15) { chunks.add("") }
+        // 11列目(インデックス10)は name
+        // 12列目(インデックス11)〜15列目(インデックス14)
+        chunks.add("") // 11
+        chunks.add("") // 12
+        chunks.add("") // 13
+        chunks.add("${mr.mycolor}") // 14
+        repeat(11) { chunks.add("") } // 15..25
+        
         // 26列目: 測点アライメント, 27列目: 測点手動フラグ (ダミーで false)
         chunks.add("${mr.dimHorizontal.s}")
         chunks.add("false")

@@ -154,11 +154,15 @@ object WebOverrides {
      * `DimensionSpec(3, ..., 1, 0)`)、 side 4 (測点) は Triangle 専用なので、 両方とも黙って skip。
      */
     private fun applyDim(rect: Rectangle, d: DimOverride) {
+        if (d.side == 3) {
+            rect.showSide3 = true
+        }
         d.h?.takeIf { it in 0..4 }?.let { h ->
             when (d.side) {
                 SIDE_A -> rect.dimHorizontal.a = h
                 SIDE_B -> rect.dimHorizontal.b = h
                 SIDE_C -> rect.dimHorizontal.c = h
+                3 -> rect.dimHorizontalD = h
             }
         }
         d.v?.takeIf { it == 1 || it == 3 }?.let { v ->
@@ -166,6 +170,7 @@ object WebOverrides {
                 SIDE_A -> rect.dimVertical.a = v
                 SIDE_B -> rect.dimVertical.b = v
                 SIDE_C -> rect.dimVertical.c = v
+                3 -> rect.dimVerticalD = v
             }
         }
     }
