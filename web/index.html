@@ -22,10 +22,11 @@
       }
       #layout {
         display: flex; flex-wrap: wrap; gap: 12px;
-        padding: 12px; align-items: flex-start; justify-content: center;
+        padding: 12px; align-items: stretch; justify-content: center;
       }
       #tablePanel {
         background: #fff; border: 1px solid #ccc; padding: 8px; max-width: 100%;
+        flex: 0 0 auto;
       }
       #tablePanel h2 { font-size: 13px; margin: 0 0 6px; font-weight: 600; color: #1f3a5f; }
       #rosenLabel { display: block; font-size: 12px; margin-bottom: 6px; }
@@ -52,8 +53,18 @@
       #exportBtns label { font-size: 12px; display: flex; align-items: center; gap: 2px; }
       /* touch-action: none — pointer events で pan/pinch を取るため、ブラウザ既定の
          タッチスクロール/ズームを canvas 上では止める */
-      #canvasWrap { position: relative; max-width: 100%; }
-      canvas { background: #fff; border: 1px solid #ccc; touch-action: none; cursor: grab; max-width: 100%; }
+      #canvasWrap {
+        position: relative;
+        flex: 1 1 600px;
+        min-width: 320px;
+        height: calc(100vh - 70px);
+        box-sizing: border-box;
+      }
+      canvas {
+        background: #fff; border: 1px solid #ccc; touch-action: none; cursor: grab;
+        width: 100%; height: 100%; display: block;
+        box-sizing: border-box;
+      }
       /* FAB 群 (アプリ fabs.xml と同じ配置): 上端起点。右= [B][C][✎] 横並び + その下に縦列
          (undo→W→H→旗→削除、fabs.xml の constraint チェーン順)。左= ⛶ の下に ▲▼。間隔は詰め気味 */
       .fabcol { position: absolute; top: 12px; display: flex; flex-direction: column; gap: 6px; }
@@ -120,7 +131,7 @@
     <main>
       <div id="layout">
         <section id="tablePanel">
-          <h2>三角形リスト</h2>
+
           <label id="rosenLabel">路線名 <input id="rosenName" type="text" /></label>
           <!-- 2 行フォーム: 新規入力行 (次番号プリセット) / カレント行。
                前行は廃止 (user 2026-06-11: 全行一覧があるので不要、現行スマホ版も 2 行) -->
@@ -130,7 +141,7 @@
           <table class="tri" id="editorForm">
             <thead>
               <tr>
-                <th></th><th>番号</th><th>測点名</th><th id="thEdgeA">辺A</th><th id="thEdgeB">辺B</th><th id="thEdgeC">辺C</th>
+                <th></th><th>番号</th><th>種別</th><th>測点名</th><th id="thEdgeA">辺A</th><th id="thEdgeB">辺B</th><th id="thEdgeC">辺C</th>
                 <th>親番号</th><th>接続辺</th><th>形態</th><th>起点</th>
               </tr>
             </thead>
@@ -138,6 +149,7 @@
               <tr class="formNew">
                 <th>新規</th>
                 <td><input id="newNum" type="number" readonly /></td>
+                <td id="newKind" class="kind" style="cursor: pointer;" title="クリックで図形種別 (△/□) を切り替え">△</td>
                 <td><input id="newName" type="text" /></td>
                 <td><input id="newA" type="number" step="0.01" /></td>
                 <td><input id="newB" type="number" step="0.01" /></td>
@@ -167,6 +179,7 @@
               <tr class="formCur">
                 <th>現在</th>
                 <td><input id="curNum" type="number" readonly /></td>
+                <td id="curKind" class="kind" style="cursor: pointer;" title="クリックで図形種別 (△/□) を切り替え"></td>
                 <td><input id="curName" type="text" /></td>
                 <td><input id="curA" type="number" step="0.01" /></td>
                 <td><input id="curB" type="number" step="0.01" /></td>
