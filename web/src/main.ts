@@ -225,7 +225,7 @@ let dedSelected = 0; // 選択中の控除番号 (1-based、0 = 非選択)
 let figureKind: 'triangle' | 'rectangle' = 'triangle';
 
 // ---- テキスト反転閾値 (2026-06-19 試行用) ----
-let thresholdAngle = 90;
+let thresholdAngle = 125;
 
 // Deduction CSV 行の表示用パース (列順は MainActivity.writeCSV:2795)。座標列 8/9 は
 // モデル座標 (y 上向き、保存時に Y 反転済みの値) なのでそのまま hit/マーカーに使える

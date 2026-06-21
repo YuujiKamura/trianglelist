@@ -29,7 +29,7 @@ open class CycleShape() {
     open var dimHorizontal = DimAligns(0, 0, 0, 0)
     open var dimHeight = 0f
     open var dimScale = 1f
-    open var dimThresholdAngle = 90f // テキスト角度反転の閾値 (90度: 指示によりデフォルト変更)
+    open var dimThresholdAngle = 125f // テキスト角度反転の閾値 (125度: 指示によりデフォルト変更)
 
     /** 辺数 (三角形=3, 台形=4)。上位コードはこの値で配列 stride を決め、kind 分岐を消す。 */
     open val sideCount: Int = 0
