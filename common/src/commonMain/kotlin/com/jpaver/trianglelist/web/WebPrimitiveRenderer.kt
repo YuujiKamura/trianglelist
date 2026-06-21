@@ -23,9 +23,9 @@ object WebPrimitiveRenderer {
     const val DEFAULT_TEXT_SIZE = 0.25f
     const val APP_DEFAULT_TEXT_SIZE = 30f
 
-    fun renderCsv(csv: String, scale: Float): String = renderCsv(csv, scale, "", 90f)
+    fun renderCsv(csv: String, scale: Float): String = renderCsv(csv, scale, "", 125f)
 
-    fun renderCsv(csv: String, scale: Float, overridesJson: String, thresholdAngle: Float = 90f): String {
+    fun renderCsv(csv: String, scale: Float, overridesJson: String, thresholdAngle: Float = 125f): String {
         val doc = CsvCodec.parse(csv)
         val trilist = CsvCodec.build(doc)
         if (scale != 1f && scale > 0f) trilist.setScale(PointXY(0f, 0f), scale)
@@ -50,7 +50,7 @@ object WebPrimitiveRenderer {
         dedlist: DeductionList = DeductionList(),
         scale: Float = 1f,
         sokutenListVector: Int = 0,
-        thresholdAngle: Float = 90f
+        thresholdAngle: Float = 125f
     ): String {
         val sb = StringBuilder()
         sb.append('[')
