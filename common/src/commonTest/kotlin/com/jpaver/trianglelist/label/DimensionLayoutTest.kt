@@ -170,4 +170,27 @@ class DimensionLayoutTest {
         val withGap = DimensionLayout.layout(PointXY(0f, 0f), PointXY(0f, 10f), vertical = DimensionLayout.SIDE_SOKUTEN, horizontal = 0, gapPaperMm = 5.0)
         assertSamePlacement(noGap, withGap)
     }
+
+    @Test
+    fun `測点名テキストの文字幅に基づいてアンダーラインの長さが動的に計算される`() {
+        // text = "No.1" の場合 (全ASCII文字: 4文字 * 0.6 * dimheight(0.05) + 0.4 * dimheight = 0.12 + 0.02 = 0.14)
+        // 隙間 0.5*scale(1.0) = 0.5. よって外側は 0.5 から 0.5+0.14=0.64 までの長さになる
+        val pAscii = DimensionLayout.layout(
+            PointXY(0f, 0f), PointXY(0f, 10f),
+            vertical = DimensionLayout.SIDE_SOKUTEN, horizontal = 0,
+            scale = 1.0, dimheight = 0.05, text = "No.1"
+        )
+        assertPoint(0.0, -0.5, pAscii.pointA, "pointA")
+        assertPoint(0.0, -0.64, pAscii.pointB, "pointB")
+
+        // text = "測点" の場合 (全角文字: 2文字 * 1.0 * dimheight(0.05) + 0.4 * dimheight = 0.10 + 0.02 = 0.12)
+        // 外側は 0.5 から 0.5+0.12=0.62 までの長さになる
+        val pKanji = DimensionLayout.layout(
+            PointXY(0f, 0f), PointXY(0f, 10f),
+            vertical = DimensionLayout.SIDE_SOKUTEN, horizontal = 0,
+            scale = 1.0, dimheight = 0.05, text = "測点"
+        )
+        assertPoint(0.0, -0.5, pKanji.pointA, "pointA")
+        assertPoint(0.0, -0.62, pKanji.pointB, "pointB")
+    }
 }

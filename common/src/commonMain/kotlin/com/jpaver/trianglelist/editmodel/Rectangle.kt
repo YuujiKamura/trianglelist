@@ -246,7 +246,7 @@ class Rectangle(
             val placeS = com.jpaver.trianglelist.label.DimensionLayout.layout(
                 ln0.right, ln0.left,
                 com.jpaver.trianglelist.label.DimensionLayout.SIDE_SOKUTEN, dimHorizontal.s,
-                ds, dh, 0.0
+                ds, dh, 0.0, name
             )
             // 測点も補正済み角度に固定
             specs.add(DimensionSpec(4, name, placeS, topSideAngle, dimHorizontal.s, com.jpaver.trianglelist.label.DimensionLayout.SIDE_SOKUTEN, true))

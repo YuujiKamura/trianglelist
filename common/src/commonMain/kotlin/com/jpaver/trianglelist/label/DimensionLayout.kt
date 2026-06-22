@@ -40,6 +40,18 @@ object DimensionLayout {
     const val INNER = 3
     const val OUTER = 1
 
+    internal fun estimateTextWidth(text: String, dimHeight: Double): Double {
+        var width = 0.0
+        for (char in text) {
+            width += if (char.code in 0..127) {
+                dimHeight * 0.6
+            } else {
+                dimHeight * 1.0
+            }
+        }
+        return width
+    }
+
     fun layout(
         leftP: PointXY,
         rightP: PointXY,
@@ -47,7 +59,8 @@ object DimensionLayout {
         horizontal: Int,
         scale: Double = 1.0,
         dimheight: Double = 0.05,
-        gapPaperMm: Double = 0.0
+        gapPaperMm: Double = 0.0,
+        text: String = ""
     ): DimensionPlacement {
         val offsetUpper = -dimheight * 0.2
         val offsetLower = dimheight * 0.9
@@ -70,8 +83,11 @@ object DimensionLayout {
                 lp = rightP
                 rp = leftP
             }
-            val outerleft = lp.offset(rp, -3.0 * scale)
-            val outerright = lp.offset(rp, -0.5 * scale)
+            val textWidth = estimateTextWidth(text, dimheight)
+            val sukima = 0.5 * scale
+            val lineLength = if (text.isNotEmpty()) textWidth + (dimheight * 0.4) else 2.5 * scale
+            val outerleft = lp.offset(rp, -(sukima + lineLength))
+            val outerright = lp.offset(rp, -sukima)
             pointA = outerleft
             pointB = outerright
             // 上下逆さまにならない様に y 降順へ正規化

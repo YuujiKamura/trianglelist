@@ -25,6 +25,9 @@ class Triangle : CycleShape, Cloneable<Triangle> {
             val b = Triangle()
 
             b.scaleFactor = scaleFactor
+            b.dimHeight = dimHeight
+            b.dimScale = dimScale
+            b.dimThresholdAngle = dimThresholdAngle
             b.pointNumber = pointNumber.clone()
             b.dimpoint = dimpoint.copy()//cloneArray(dimpoints) // 代入だと参照になるので要素ごとにクローン
             b.dimOnPath = dimOnPath.map { it.copy() }.toTypedArray()
@@ -228,7 +231,7 @@ class Triangle : CycleShape, Cloneable<Triangle> {
             val place = com.jpaver.trianglelist.label.DimensionLayout.layout(
                 ln0.right, ln0.left,
                 com.jpaver.trianglelist.label.DimensionLayout.SIDE_SOKUTEN, horizontalS,
-                ds, dhS, 0.0
+                ds, dhS, 0.0, name
             )
             val ang = place.pointB.calcSokAngle(place.pointA, sokutenListVector)
             specs.add(DimensionSpec(4, name, place, ang, horizontalS, com.jpaver.trianglelist.label.DimensionLayout.SIDE_SOKUTEN, true))

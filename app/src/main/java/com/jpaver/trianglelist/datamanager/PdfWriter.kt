@@ -374,6 +374,8 @@ class PdfWriter(printScale: Float, triangleList: TriangleList) : DrawingFileWrit
         paint.style = Paint.Style.FILL
         paint.textSize = size
         paint.letterSpacing = 0.05f
+        paint.isLinearText = true
+        paint.isSubpixelText = true
         if( align == 0 ) paint.textAlign = Paint.Align.LEFT
         if( align == 1 ) paint.textAlign = Paint.Align.CENTER
         if( align == 2 ) paint.textAlign = Paint.Align.RIGHT

@@ -87,7 +87,7 @@ open class DrawingFileWriter {
     }
 
     fun writeSokuten(tri: Triangle, normalizedvector:Int, ts:Float, color:Int, align1:Int, align2:Int ){
-        tri.setDimPath()
+        tri.setDimPath(ts)
         tri.setDimPoint()
         val pa = tri.pathS.pointA
         val pb = tri.pathS.pointB
@@ -291,7 +291,7 @@ open class DrawingFileWriter {
         val place = DimensionLayout.layout(
             tri.pointAB, tri.point[0],
             DimensionLayout.SIDE_SOKUTEN, tri.dim.horizontal.s,
-            tri.scaleFactor.toDouble(), tri.dimHeight.toDouble(), 0.0
+            tri.scaleFactor.toDouble(), tri.dimHeight.toDouble(), 0.0, tri.name
         )
         val pa = place.pointA
         val pb = place.pointB

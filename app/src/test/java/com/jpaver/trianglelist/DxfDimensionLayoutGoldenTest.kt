@@ -66,17 +66,19 @@ class DxfDimensionLayoutGoldenTest {
 
         // Dims.setAligns(sa..sc, ha..hc): 前半 3 つが horizontal、後半 3 つが vertical
         tList[1].setDimAligns(0, 1, 2, 1, 1, 3)
-        tList[1].setDimPath()
+        tList[1].setDimPath(0.05f)
         tList[1].setDimPoint()
         tList[2].setDimAligns(0, 3, 0, 1, 1, 1)
-        tList[2].setDimPath()
+        tList[2].setDimPath(0.05f)
         tList[2].setDimPoint()
         tList[3].setDimAligns(0, 0, 4, 3, 1, 1)
-        tList[3].setDimPath()
+        tList[3].setDimPath(0.05f)
         tList[3].setDimPoint()
 
         tList[1].name = "No.0"
+        tList[1].setDimPath(0.05f)
         tList[2].name = "No.1"
+        tList[2].setDimPath(0.05f)
         return tList
     }
 
