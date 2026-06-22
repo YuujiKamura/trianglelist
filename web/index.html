@@ -21,8 +21,8 @@
         font-family: ui-monospace, monospace; white-space: nowrap;
       }
       #layout {
-        display: flex; flex-wrap: wrap; gap: 12px;
-        padding: 12px; align-items: stretch; justify-content: center;
+        display: flex; flex-direction: column; gap: 12px;
+        padding: 12px; align-items: stretch;
       }
       #tablePanel {
         background: #fff; border: 1px solid #ccc; padding: 8px; max-width: 100%;
@@ -47,12 +47,35 @@
         #layout {
           flex: 1;
           min-height: 0;
+          flex-direction: row;
           flex-wrap: nowrap;
           overflow: hidden;
         }
         #tablePanel {
           height: 100%;
-          overflow-y: auto;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+        }
+        #tablePanel > #rosenLabel,
+        #tablePanel > #editorForm,
+        #tablePanel > #exportBtns {
+          flex: 0 0 auto;
+        }
+        #tablePanel details {
+          flex: 0 0 auto;
+          display: flex;
+          flex-direction: column;
+          min-height: 0;
+        }
+        #tablePanel details[open] {
+          flex: 1 1 0%;
+          min-height: 100px;
+        }
+        #tablePanel details summary,
+        #tablePanel details #addRow,
+        #tablePanel details #dedForm {
+          flex: 0 0 auto;
         }
         #canvasWrap {
           height: 100% !important;
@@ -87,7 +110,7 @@
         position: relative;
         flex: 1 1 600px;
         min-width: 320px;
-        height: calc(100vh - 70px);
+        height: 500px;
         box-sizing: border-box;
         display: flex;
         flex-direction: column;
@@ -149,6 +172,22 @@
       #dedForm input[type="text"] { width: 80px; font-size: 12px; }
       #dedForm input[type="number"] { width: 64px; font-size: 12px; }
       #dedForm button { font-size: 12px; }
+      .list-table-wrapper {
+        max-height: 220px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        margin: 6px 0;
+      }
+      @media (min-width: 900px) {
+        .list-table-wrapper {
+          max-height: none;
+          overflow-y: auto;
+          flex: 1 1 auto;
+          min-height: 0;
+          border: 1px solid #ddd;
+          margin: 6px 0;
+        }
+      }
     </style>
   </head>
   <body>
@@ -244,15 +283,17 @@
           <!-- 既存の全行表は「一覧」として残す (行クリック選択は維持) -->
           <details id="listDetails" open>
             <summary>一覧 (全行)</summary>
-            <table class="tri" id="triTable">
-              <thead>
-                <tr>
-                  <th>番号</th><th>種別</th><th>測点名</th><th>辺A</th><th>辺B</th><th>辺C</th>
-                  <th>親番号</th><th>接続辺</th><th>形態</th><th>起点</th><th></th>
-                </tr>
-              </thead>
-              <tbody id="triRows"></tbody>
-            </table>
+            <div class="list-table-wrapper">
+              <table class="tri" id="triTable">
+                <thead>
+                  <tr>
+                    <th>番号</th><th>種別</th><th>測点名</th><th>辺A</th><th>辺B</th><th>辺C</th>
+                    <th>親番号</th><th>接続辺</th><th>形態</th><th>起点</th><th></th>
+                  </tr>
+                </thead>
+                <tbody id="triRows"></tbody>
+              </table>
+            </div>
             <button id="addRow" type="button">行を追加</button>
           </details>
           <!-- 控除 (Deduction) — アプリの控除モード (flipDeductionMode) の web 版。
@@ -260,14 +301,16 @@
                (アプリの形状自動判定 MainActivity.kt:1778-1779 と同じ)。幾何は common 側 -->
           <details id="dedDetails">
             <summary>控除リスト (赤)</summary>
-            <table class="tri" id="dedTable">
-              <thead>
-                <tr>
-                  <th>番号</th><th>名称</th><th>寸法1</th><th>寸法2</th><th>形状</th><th>親</th><th></th><th></th>
-                </tr>
-              </thead>
-              <tbody id="dedRows"></tbody>
-            </table>
+            <div class="list-table-wrapper">
+              <table class="tri" id="dedTable">
+                <thead>
+                  <tr>
+                    <th>番号</th><th>名称</th><th>寸法1</th><th>寸法2</th><th>形状</th><th>親</th><th></th><th></th>
+                  </tr>
+                </thead>
+                <tbody id="dedRows"></tbody>
+              </table>
+            </div>
             <div id="dedForm">
               <label>名称 <input id="dedName" type="text" /></label>
               <label>寸法1 <input id="dedLenX" type="number" step="0.01" min="0" /></label>

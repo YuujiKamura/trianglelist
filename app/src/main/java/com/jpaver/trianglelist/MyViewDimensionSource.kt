@@ -38,7 +38,7 @@ object MyViewDimensionSource {
         DimensionLayout.layout(
             tri.pointAB, tri.point[0],
             DimensionLayout.SIDE_SOKUTEN, tri.dim.horizontal.s,
-            tri.scaleFactor.toDouble(), tri.dimHeight.toDouble(), 0.0
+            tri.scaleFactor.toDouble(), tri.dimHeight.toDouble(), 0.0, tri.name
         )
 
     /** 影三角形は B/C 辺の寸法値のみ描く (drawShadowTriangle)。shadowTri の dimOnPath[1]/[2] に対応。 */

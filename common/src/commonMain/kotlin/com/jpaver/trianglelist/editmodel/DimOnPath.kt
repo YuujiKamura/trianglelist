@@ -6,7 +6,8 @@ data class DimOnPath(
     var rightP: com.example.trilib.PointXY = com.example.trilib.PointXY(10f, 10f),
     var vertical: Int = 1,
     var horizontal: Int = 0,
-    private var dimheight: Double = 0.05
+    private var dimheight: Double = 0.05,
+    var text: String = ""
 ) {
 
     var pointA: com.example.trilib.PointXY = com.example.trilib.PointXY(0f, 0f)
@@ -52,8 +53,10 @@ data class DimOnPath(
             }
         }
 
-        val tmp = leftpoint.offset( rightpoint, -3.0 * this.scale)
-        val outerright = leftpoint.offset(rightpoint, -0.5 * this.scale)
+        val textWidth = com.jpaver.trianglelist.label.DimensionLayout.estimateTextWidth(text, dimheight)
+        val lineLength = if (text.isNotEmpty()) textWidth + (dimheight * 0.4) else 2.5 * scale
+        val tmp = leftpoint.offset( rightpoint, -(0.5 * scale + lineLength))
+        val outerright = leftpoint.offset(rightpoint, -0.5 * scale)
         val outerleft  = tmp
 
         setPointAB( outerleft, outerright )
