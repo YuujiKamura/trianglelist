@@ -4031,6 +4031,44 @@ function main(): void {
       redraw(canvas);
     });
   }
+  // レイアウト境界幅スライダーの配線
+  let layoutThreshold = 900;
+  const storedThreshold = localStorage.getItem('layoutThreshold');
+  if (storedThreshold) {
+    const val = parseInt(storedThreshold, 10);
+    if (!isNaN(val)) {
+      layoutThreshold = val;
+    }
+  }
+  const layoutSlider = document.getElementById('layoutThresholdSlider') as HTMLInputElement | null;
+  const layoutValDisp = document.getElementById('layoutThresholdVal');
+  if (layoutSlider && layoutValDisp) {
+    layoutSlider.value = String(layoutThreshold);
+    layoutValDisp.textContent = String(layoutThreshold);
+  }
+  const updateLayout = () => {
+    const width = window.innerWidth;
+    const body = document.body;
+    if (width >= layoutThreshold) {
+      if (!body.classList.contains('layout-row')) {
+        body.classList.add('layout-row');
+      }
+    } else {
+      if (body.classList.contains('layout-row')) {
+        body.classList.remove('layout-row');
+      }
+    }
+  };
+  if (layoutSlider && layoutValDisp) {
+    layoutSlider.addEventListener('input', () => {
+      layoutThreshold = parseInt(layoutSlider.value, 10);
+      layoutValDisp.textContent = layoutSlider.value;
+      localStorage.setItem('layoutThreshold', String(layoutThreshold));
+      updateLayout();
+    });
+  }
+  window.addEventListener('resize', updateLayout);
+  updateLayout();
   // 形態 select の変化で追従: 三角形は起点 select の有効/無効、台形は親種別なので接続辺の D 有無 (onCTypeChange)。
   // 加えて、新規行フォームの各値変更を即座にシャドーへ反映 (user 2026-06-14「起点プルダウン選択を
   // トリガーにキャンバスが書き換わるのが本来の姿」)。buildShadow が newA/newB/newC/newLcr を読むので、

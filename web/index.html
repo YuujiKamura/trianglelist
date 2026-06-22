@@ -28,58 +28,56 @@
         background: #fff; border: 1px solid #ccc; padding: 8px; max-width: 100%;
         flex: 0 0 auto;
       }
-      @media (min-width: 900px) {
-        body {
-          display: flex;
-          flex-direction: column;
-          height: 100vh;
-          overflow: hidden;
-        }
-        header {
-          flex: 0 0 auto;
-        }
-        main {
-          flex: 1;
-          min-height: 0;
-          display: flex;
-          flex-direction: column;
-        }
-        #layout {
-          flex: 1;
-          min-height: 0;
-          flex-direction: row;
-          flex-wrap: nowrap;
-          overflow: hidden;
-        }
-        #tablePanel {
-          height: 100%;
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-        }
-        #tablePanel > #rosenLabel,
-        #tablePanel > #editorForm,
-        #tablePanel > #exportBtns {
-          flex: 0 0 auto;
-        }
-        #tablePanel details {
-          flex: 0 0 auto;
-          display: flex;
-          flex-direction: column;
-          min-height: 0;
-        }
-        #tablePanel details[open] {
-          flex: 1 1 0%;
-          min-height: 100px;
-        }
-        #tablePanel details summary,
-        #tablePanel details #addRow,
-        #tablePanel details #dedForm {
-          flex: 0 0 auto;
-        }
-        #canvasWrap {
-          height: 100% !important;
-        }
+      body.layout-row {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+      }
+      body.layout-row header {
+        flex: 0 0 auto;
+      }
+      body.layout-row main {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      body.layout-row #layout {
+        flex: 1;
+        min-height: 0;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        overflow: hidden;
+      }
+      body.layout-row #tablePanel {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      body.layout-row #tablePanel > #rosenLabel,
+      body.layout-row #tablePanel > #editorForm,
+      body.layout-row #tablePanel > #exportBtns {
+        flex: 0 0 auto;
+      }
+      body.layout-row #tablePanel details {
+        flex: 0 0 auto;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      body.layout-row #tablePanel details[open] {
+        flex: 1 1 0%;
+        min-height: 100px;
+      }
+      body.layout-row #tablePanel details summary,
+      body.layout-row #tablePanel details #addRow,
+      body.layout-row #tablePanel details #dedForm {
+        flex: 0 0 auto;
+      }
+      body.layout-row #canvasWrap {
+        height: 100% !important;
       }
       #tablePanel h2 { font-size: 13px; margin: 0 0 6px; font-weight: 600; color: #1f3a5f; }
       #rosenLabel { display: block; font-size: 12px; margin-bottom: 6px; }
@@ -178,15 +176,13 @@
         border: 1px solid #ddd;
         margin: 6px 0;
       }
-      @media (min-width: 900px) {
-        .list-table-wrapper {
-          max-height: none;
-          overflow-y: auto;
-          flex: 1 1 auto;
-          min-height: 0;
-          border: 1px solid #ddd;
-          margin: 6px 0;
-        }
+      body.layout-row .list-table-wrapper {
+        max-height: none;
+        overflow-y: auto;
+        flex: 1 1 auto;
+        min-height: 0;
+        border: 1px solid #ddd;
+        margin: 6px 0;
       }
     </style>
   </head>
@@ -334,10 +330,16 @@
         </section>
         <div id="canvasWrap">
           <canvas id="cv" width="1200" height="800"></canvas>
-          <div id="thresholdPanel" style="margin-top: 8px; font-size: 12px; display: flex; gap: 8px; align-items: center; background: rgba(255,255,255,0.8); padding: 4px 8px; border-radius: 4px; border: 1px solid #ccc;">
-            <label for="thresholdSlider">テキスト反転閾値: <span id="thresholdVal">125</span>°</label>
-            <input type="range" id="thresholdSlider" min="-180" max="180" value="125" step="5" style="width: 200px;" />
-            <span style="opacity: 0.7;">(台形の寸法・測点方向の調整用)</span>
+          <div id="thresholdPanel" style="margin-top: 8px; font-size: 12px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; background: rgba(255,255,255,0.8); padding: 4px 8px; border-radius: 4px; border: 1px solid #ccc;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <label for="thresholdSlider">テキスト反転閾値: <span id="thresholdVal">125</span>°</label>
+              <input type="range" id="thresholdSlider" min="-180" max="180" value="125" step="5" style="width: 120px;" />
+              <span style="opacity: 0.7;">(台形調整用)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; border-left: 1px solid #ccc; padding-left: 12px;">
+              <label for="layoutThresholdSlider">レイアウト境界幅: <span id="layoutThresholdVal">900</span>px</label>
+              <input type="range" id="layoutThresholdSlider" min="400" max="1600" value="900" step="50" style="width: 120px;" />
+            </div>
           </div>
           <div class="fabcol" id="fabLeft">
             <!-- アプリ fabs.xml 左上横列 [resetView][rot_l][rot_r] と同じ並び -->
