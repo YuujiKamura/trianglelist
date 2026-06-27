@@ -352,21 +352,11 @@ open class TriangleList : EditList<Triangle> {
         }
     }
 
-    /**
-     * CSV 状態から幾何座標を再構築する。
-     * 回転 (angle) 適用後の座標空間において、プロジェクト全体の重心 (center) が
-     * 原点 (0,0) に位置するように自動調整する (2026-06-20 回転ドリフト根本治療)。
-     * これにより UI 側での座標補正が不要になり、回転ジャンプ現象が解消される。
-     */
     fun recoverState(bp: com.example.trilib.PointXY = com.example.trilib.PointXY(0f, 0f)) {
         basepoint = bp.clone()
         trilist.map {
             it.recover_rotate(basepoint, angle - 180)
         }
-        
-        // 重心を原点 (0,0) にリセットする
-        val c = center
-        move(com.example.trilib.PointXY(-c.x, -c.y))
     }
 
     override fun size(): Int {
