@@ -2316,18 +2316,24 @@ function fabRotate(canvas: HTMLCanvasElement, degrees: number): void {
     return;
   }
   if (rows.length === 0) return;
+  const v = view;
+  // 回転前の「図形全体の幾何中心」の画面位置を記録
+  const beforeCenterM = v ? figureCenter(lastPrims) : null;
+  const beforeCenterP = beforeCenterM && v ? { x: beforeCenterM.x * v.scale + v.offsetX, y: -beforeCenterM.y * v.scale + v.offsetY } : null;
+
   listAngle += degrees;
-  // シャドー三角形は親辺の現座標を借りて組むので、回転で親辺が動いたら組み直さないと
-  // 旧座標のまま置き去りになる (2026-06-13 user 報告)。serializeState は更新後の listAngle を
-  // 書くので、ここで buildShadow すれば回転後の親辺に乗る。edgeSel が立つ時だけ再構築
   if (edgeSel) buildShadow();
-  // 控除の連動 (MainActivity.kt:1587 myDeductionList.rotate(origin, -degrees) 準拠)。
-  // 三角形は listAngle → recoverState が回すが、控除の CSV 座標は絶対値なので
-  // 行自体を common (rotateDeductionLine) で回して書き直す
   dedLines = dedLines.map((l) => rotateDeductionLine(l, degrees));
   buildDedTable(canvas);
   setStatus(`回転: ${listAngle}°`);
   redraw(canvas);
+
+  // 回転後の新しい「幾何中心」が、画面上の同じ位置に来るようにカメラを平行移動
+  if (v && beforeCenterP && view === v) {
+    const afterCenterM = figureCenter(lastPrims);
+    v.offsetX = beforeCenterP.x - afterCenterM.x * v.scale;
+    v.offsetY = beforeCenterP.y + afterCenterM.y * v.scale;
+  }
 }
 
 // 図形全体 (図面枠を除く) の境界ボックス中央。枠は図形中心に追従して動くので

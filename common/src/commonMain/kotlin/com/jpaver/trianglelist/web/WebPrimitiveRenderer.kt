@@ -25,10 +25,17 @@ object WebPrimitiveRenderer {
 
     fun renderCsv(csv: String, scale: Float): String = renderCsv(csv, scale, "", 125f)
 
-    fun renderCsv(csv: String, scale: Float, overridesJson: String, thresholdAngle: Float = 125f): String {
+    fun renderCsv(
+        csv: String,
+        scale: Float,
+        overridesJson: String = "",
+        thresholdAngle: Float = 125f,
+        applyCentering: Boolean = true // 未使用だが JS 境界互換のため残す
+    ): String {
         val doc = CsvCodec.parse(csv)
         val trilist = CsvCodec.build(doc)
         if (scale != 1f && scale > 0f) trilist.setScale(PointXY(0f, 0f), scale)
+        
         val sizeRatio = (doc.textSize?.takeIf { it > 0f } ?: APP_DEFAULT_TEXT_SIZE) / APP_DEFAULT_TEXT_SIZE
         val effScale = if (scale > 0f) scale else 1f
         val textSize = DEFAULT_TEXT_SIZE * sizeRatio * effScale
