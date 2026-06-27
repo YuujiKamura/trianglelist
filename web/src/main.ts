@@ -1015,6 +1015,7 @@ function serializeState(): string {
         String(r.parentKind ?? 0),
         String(r.ctype ?? 0)
       ];
+      // 11 列目 (index 10) = 名前, 12 列目 (index 11) = 色 (2026-06-20 CsvCodec と整合)
       lines.push([...baseChunks, ...r.extras].join(','));
     }
   });
@@ -2404,13 +2405,19 @@ function fabFillColor(canvas: HTMLCanvasElement): void {
     return;
   }
   colorIndex = (colorIndex + 1) % FILL_PALETTE.length;
-  // 11 列目 (index 10) が色 (mycolor)。
-  // 三角形: base(6列) + extensions(4列: 番号等) + 色 -> extras[4]
-  // 台形: baseChunks(10列) + extensions(4列) + 色 -> extras[4]
-  // (CsvCodec.kt:543 により、RectangleもTriangleもextrasの4番目(相対インデックス)がmycolorになる)
-  const colorExtraIdx = 4;
-  while (r.extras.length <= colorExtraIdx) r.extras.push('');
-  r.extras[colorExtraIdx] = String(colorIndex);
+  // 11 列目 (index 10) が色 (mycolor) となる相対 index を算出
+  // Triangle: base(6) + ext(4) + color -> extras[4]
+  // Rectangle: baseChunks(10) + color -> extras[0]
+  const colorExtraIdx = r.kind === 'rectangle' ? 0 : 4;
+
+  // 既存の extras を維持しつつ、色だけを上書き (2026-06-20 副作用防止)
+  if (r.extras.length <= colorExtraIdx) {
+    while (r.extras.length < colorExtraIdx) r.extras.push('');
+    r.extras.push(String(colorIndex));
+  } else {
+    r.extras[colorExtraIdx] = String(colorIndex);
+  }
+
   syncFillColorFab();
   redraw(canvas);
   setStatus(`色: 三角形 ${n} → ${FILL_NAMES[colorIndex]} (${colorIndex})`);
