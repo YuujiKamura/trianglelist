@@ -58,6 +58,12 @@ fun renderCsvToPrimitivesWithOverrides(csv: String, scale: Float, overridesJson:
 fun renderCsvToPrimitivesWithOverridesAndThreshold(csv: String, scale: Float, overridesJson: String, thresholdAngle: Float): String =
     WebPrimitiveRenderer.renderCsv(csv, scale, overridesJson, thresholdAngle)
 
+/** プレビュー（シャドー）用描画。重心固定をスキップし、親辺の座標を維持する (2026-06-20) */
+@OptIn(ExperimentalJsExport::class)
+@JsExport
+fun renderShadow(csv: String, scale: Float, overridesJson: String): String =
+    WebPrimitiveRenderer.renderCsv(csv, scale, overridesJson, applyCentering = false)
+
 /** Web 段階2e (task #15): overrides 付き DXF。W/H フリップ・番号移動が書き出しにも乗る */
 @OptIn(ExperimentalJsExport::class)
 @JsExport
