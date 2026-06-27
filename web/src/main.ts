@@ -3109,9 +3109,6 @@ function selectRectangle(canvas: HTMLCanvasElement, tri: number, side: number): 
   edgeSel = null;
   shadowPrims = null;
   updateRowHighlight();
-  if (side === 3) {
-    upsertDimOverride(tri, 3, { h: 0, v: 1 });
-  }
   syncForm();
   draw(canvas, lastPrims);
   const name = trapSideName(side);
@@ -3132,9 +3129,6 @@ function presetTriOnTrap(canvas: HTMLCanvasElement, tri: number, side: number): 
   }
   selected = tri;
   current = tri;
-  if (side === 3) {
-    upsertDimOverride(tri, 3, { h: 0, v: 1 });
-  }
   // 三角形辺タップ (selectEdge) と同じプリセット動線:
   //   - selectedDim で黄色ハイライト (子の種別問わず立てる)
   //   - newA に親辺長 (台形親なら trapEdgeLen)

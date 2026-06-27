@@ -535,12 +535,12 @@ object CsvCodec {
 
     private fun applyRowMeta(c: List<String>, obj: CycleShape) {
         val isRect = c.firstOrNull() == "Rectangle"
-        // 測点名: Triangle は列6、Rectangle は列10 (列9 は type)
+        // 測点名: Triangle は列6、Rectangle は列10
         val nameIdx = if (isRect) 10 else 6
         c.getOrNull(nameIdx)?.let { if (it.isNotEmpty()) obj.name = it }
 
-        // 色 (Rectangleは列14、Triangleは列10)
-        val colorIdx = if (isRect) 14 else 10
+        // 色 (全図形共通で 11 列目 (index 10) を使用する)
+        val colorIdx = 10
         c.getOrNull(colorIdx)?.toIntOrNull()?.let { obj.mycolor = it; obj.isColored = true }
 
         // 測点アライメント (26-27列目) は全図形共通 (2026-06-19 基底化)

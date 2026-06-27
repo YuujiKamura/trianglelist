@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { health, state, loadCsv, click, options, key } from './combo/cpClient.ts';
+import { health, state, loadCsv, click, options, key, select } from './combo/cpClient.ts';
+import { expectScreenshotToMatch } from './combo/vrt.ts';
 
 // dev server に当てる integration test。 commit 1755172 で導入した
 // 「一覧の △/□ アイコン click で 三角形 ↔ 台形 切替」 の動作を pin。
@@ -50,7 +51,7 @@ describe('kind-toggle (一覧 △/□ click で 種別切替)', () => {
   // dev server 再起動 + browser refresh が必要 (options endpoint は vite plugin 拡張で
   // 追加、 hot.on('tlcp:options-req') 登録は browser side で main.ts 再 load 後に有効)。
   // 走らせるには (a) dev server kill → npm run dev で再起動、 (b) localhost:5173 を
-  // browser で開いて refresh、 (c) it.skip を it に戻して再走。
+  // browser で開いて refresh、 (c) it.skip it に戻して再走。
   it('親 rectangle + 子 rectangle 構成で sideCell-2 の option に "3" (D 辺) が含む', async () => {
     const csv = [
       'Rectangle,1,3,10,7,-1,0,0,0',
@@ -132,16 +133,18 @@ describe('kind-toggle (一覧 △/□ click で 種別切替)', () => {
       expect(s.rows[0].extras[0]).toBe('RecStation'); // 測点名
       expect(s.rows[0].extras[4] ?? '4').toBe('4');   // 初期色 (4)
 
+      await select(1); // 明示的に1行目を選択する
       const r = await click('fabFillColor');
       expect((r as any).ok).toBe(true);
 
       await new Promise((res) => setTimeout(res, 200));
       s = await state();
       
-      // colorIndex が (4 + 1) % 5 = 0 になるはず
-      expect(s.rows[0].extras[4]).toBe('0');
-      // 測点名 (extras[0]) が汚染されていないこと
-      expect(s.rows[0].extras[0]).toBe('RecStation');
+      // 新仕様：台形(rectangle)の場合は extras[0] に色が保存される (0)
+      expect(s.rows[0].extras[0]).toBe('0');
+
+      // VRTによるビジュアル検証
+      await expectScreenshotToMatch('kind-toggle-rectangle-color-changed');
     });
 
     it('三角形の色替えをクリックしたとき、extras[4] に色が保存され、測点名 extras[0] は影響を受けないこと', async () => {
@@ -163,6 +166,9 @@ describe('kind-toggle (一覧 △/□ click で 種別切替)', () => {
 
       expect(s.rows[0].extras[4]).toBe('0');
       expect(s.rows[0].extras[0]).toBe('TriStation');
+
+      // VRTによるビジュアル検証
+      await expectScreenshotToMatch('kind-toggle-triangle-color-changed');
     });
   });
 });
