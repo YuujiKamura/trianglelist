@@ -713,6 +713,17 @@ open class DrawingFileWriter {
         // 内容列の実幅 (= 文字が収まるべき箱)。TextFit.fitSize に渡して、決め打ちサイズで
         // はみ出す前に縮める。右端に 0.2cm 余白を残す。
         val contentBoxWidth = (rx - strx / scale) - 0.2f
+        // 縮尺/図面番号 の 4 要素 (ラベル2+内容2) 個別の箱幅。外部 CAD (CADWe'll) で実際に開いて
+        // 初めて発覚: この行だけラベルも内容も TextFit を適用しておらず、均等 4 分割の狭い列に
+        // 実フォント (MS Gothic 系、さわらびゴシックより字幅が広い) で描くと隣とぶつかっていた
+        // (2026-08-12、dumptexts で座標を数値確認: 4 要素が 2.25cm 間隔の中心配置なのに幅チェック皆無)。
+        val labelBoxWidth = (labelDivider - boxLeft) - 0.1f
+        val scaleContentBoxWidth = (midDivider - labelDivider) - 0.1f
+        val numLabelBoxWidth = (subDivider - midDivider) - 0.1f
+        val numContentBoxWidth = (rx - subDivider) - 0.1f
+        // 決め打ちサイズで箱に収まらない文字列は TextFit で縮める。全 cell 共通の入口にする
+        // (長い工事名だけ改行、他は無条件はみ出し、という非対称が今回の不具合の元だった)。
+        fun fitted(text: String, boxWidth: Float): Float = TextFit.fitSize(text, boxWidth, frameTextSize).size
 
         val yKOUJIMEI = (by + 5.5f) * scale // cell 中央 (alignV=2 と整合)
         val yo = 0.2f * scale
@@ -733,13 +744,13 @@ open class DrawingFileWriter {
             DrawPrim.Line(com.example.trilib.PointXY(subDivider, by + 1f, scale), com.example.trilib.PointXY(subDivider, by + 2f, scale), w),
             // 題字 (左端ラベル列)。 y = cell 中央 (= cellBottomY + 0.5cm)、 alignV=2 (middle) で
             // CAD 標準センタリング (= AutoCAD group code 73=2、 SXF 中心点指定、 backend で glyph bbox 中央化)。
-            DrawPrim.Text(zumeninfo.koujiname,    com.example.trilib.PointXY(labelCenter, by + 5.5f, scale), w, frameTextSize, 1, 2, 0.0, 1f),
-            DrawPrim.Text(zumeninfo.tDtype_,      com.example.trilib.PointXY(labelCenter, by + 4.5f, scale), w, frameTextSize, 1, 2, 0.0, 1f),
-            DrawPrim.Text(zumeninfo.tDname_,      com.example.trilib.PointXY(labelCenter, by + 3.5f, scale), w, frameTextSize, 1, 2, 0.0, 1f),
-            DrawPrim.Text(zumeninfo.tDateHeader_, com.example.trilib.PointXY(labelCenter, by + 2.5f, scale), w, frameTextSize, 1, 2, 0.0, 1f),
-            DrawPrim.Text(zumeninfo.tScale_,      com.example.trilib.PointXY(labelCenter, by + 1.5f, scale), w, frameTextSize, 1, 2, 0.0, 1f),
-            DrawPrim.Text(zumeninfo.tNum_,        com.example.trilib.PointXY(numLabelCenter, by + 1.5f, scale), w, frameTextSize, 1, 2, 0.0, 1f),
-            DrawPrim.Text(zumeninfo.tAname_,      com.example.trilib.PointXY(labelCenter, by + 0.5f, scale), w, frameTextSize, 1, 2, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.koujiname,    com.example.trilib.PointXY(labelCenter, by + 5.5f, scale), w, fitted(zumeninfo.koujiname, labelBoxWidth), 1, 2, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tDtype_,      com.example.trilib.PointXY(labelCenter, by + 4.5f, scale), w, fitted(zumeninfo.tDtype_, labelBoxWidth), 1, 2, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tDname_,      com.example.trilib.PointXY(labelCenter, by + 3.5f, scale), w, fitted(zumeninfo.tDname_, labelBoxWidth), 1, 2, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tDateHeader_, com.example.trilib.PointXY(labelCenter, by + 2.5f, scale), w, fitted(zumeninfo.tDateHeader_, labelBoxWidth), 1, 2, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tScale_,      com.example.trilib.PointXY(labelCenter, by + 1.5f, scale), w, fitted(zumeninfo.tScale_, labelBoxWidth), 1, 2, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tNum_,        com.example.trilib.PointXY(numLabelCenter, by + 1.5f, scale), w, fitted(zumeninfo.tNum_, numLabelBoxWidth), 1, 2, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tAname_,      com.example.trilib.PointXY(labelCenter, by + 0.5f, scale), w, fitted(zumeninfo.tAname_, labelBoxWidth), 1, 2, 0.0, 1f),
             // tCredit (= url、 = BottomCredit region): 外枠左下角 anchor + alignV=3 (top、 anchor が
             // text 上端)。 anchor y = outerMarginCm (= 外枠下辺ぴったり) = text 上端を外枠下辺と
             // 一致させる、 = 文字は外枠下辺の真下に物理的に降りる。 web canvas で glyph 物理上端
@@ -747,13 +758,6 @@ open class DrawingFileWriter {
             // alignH=0 (left) で文字左端 = 外枠左辺ぴったり。 outerMarginCm を変えれば url も追従。
             DrawPrim.Text(zumeninfo.tCredit_,     com.example.trilib.PointXY(outerMarginCm, outerMarginCm, scale), w, creditTextSize, 0, 3, 0.0, 1f),
         )
-        // 内容: 決め打ちサイズで箱に収まらない文字列は TextFit で縮める。全 cell 共通の入口にする
-        // (長い工事名だけ改行、他は無条件はみ出し、という非対称が今回の不具合の元だった)。
-        fun fitted(text: String, boxWidth: Float = contentBoxWidth): Float = TextFit.fitSize(text, boxWidth, frameTextSize).size
-        // 縮尺 / 図面番号 の content box は 3cm 相当 (旧レイアウトの列幅) を比例スケールした値。
-        val scaleBoxWidth = (midDivider - labelDivider) - 0.2f
-        val numBoxWidth = (rx - subDivider) - 0.2f
-
         // 工事名は縮小を先に試し、縮小の下限 (TextFit の minSize) でも収まらない特に長い文字列だけ
         // 改行にフォールバックする (2026-08-12: 旧仕様は無条件改行で、縮小後なら 1 行に収まる
         // ケースでも改行し、2 行目が下のセルの罫線を越えて衝突するバグがあった。実際に長い工事名で
@@ -765,12 +769,12 @@ open class DrawingFileWriter {
             prims.add(DrawPrim.Text(koujiname_, com.example.trilib.PointXY(strx, yKOUJIMEI, scale), w, koujinameFit.size, 0, 2, 0.0, 1f))
         }
         // 内容 prim も cell 中央 + alignV=2 (middle) で 統一 (= CAD 標準)。
-        prims.add(DrawPrim.Text(zumeninfo.zumentitle, com.example.trilib.PointXY(strx, (by + 4.5f) * scale), w, fitted(zumeninfo.zumentitle), 0, 2, 0.0, 1f))
-        prims.add(DrawPrim.Text(rosenname_,           com.example.trilib.PointXY(strx, (by + 3.5f) * scale), w, fitted(rosenname_), 0, 2, 0.0, 1f))
-        prims.add(DrawPrim.Text(nengappi,             com.example.trilib.PointXY(strx, (by + 2.5f) * scale), w, fitted(nengappi), 0, 2, 0.0, 1f))
-        prims.add(DrawPrim.Text("1/${st.toInt()} ($paperName)", com.example.trilib.PointXY(scaleContentX, by + 1.5f, scale), w, fitted("1/${st.toInt()} ($paperName)", scaleBoxWidth), 1, 2, 0.0, 1f))
-        prims.add(DrawPrim.Text(zumennum_,            com.example.trilib.PointXY(numContentX, by + 1.5f, scale), w, fitted(zumennum_, numBoxWidth), 1, 2, 0.0, 1f))
-        prims.add(DrawPrim.Text(gyousyaname_,         com.example.trilib.PointXY(strx, (by + 0.5f) * scale), w, fitted(gyousyaname_), 0, 2, 0.0, 1f))
+        prims.add(DrawPrim.Text(zumeninfo.zumentitle, com.example.trilib.PointXY(strx, (by + 4.5f) * scale), w, fitted(zumeninfo.zumentitle, contentBoxWidth), 0, 2, 0.0, 1f))
+        prims.add(DrawPrim.Text(rosenname_,           com.example.trilib.PointXY(strx, (by + 3.5f) * scale), w, fitted(rosenname_, contentBoxWidth), 0, 2, 0.0, 1f))
+        prims.add(DrawPrim.Text(nengappi,             com.example.trilib.PointXY(strx, (by + 2.5f) * scale), w, fitted(nengappi, contentBoxWidth), 0, 2, 0.0, 1f))
+        prims.add(DrawPrim.Text("1/${st.toInt()} ($paperName)", com.example.trilib.PointXY(scaleContentX, by + 1.5f, scale), w, fitted("1/${st.toInt()} ($paperName)", scaleContentBoxWidth), 1, 2, 0.0, 1f))
+        prims.add(DrawPrim.Text(zumennum_,            com.example.trilib.PointXY(numContentX, by + 1.5f, scale), w, fitted(zumennum_, numContentBoxWidth), 1, 2, 0.0, 1f))
+        prims.add(DrawPrim.Text(gyousyaname_,         com.example.trilib.PointXY(strx, (by + 0.5f) * scale), w, fitted(gyousyaname_, contentBoxWidth), 0, 2, 0.0, 1f))
 
         drawScene(prims)
     }
