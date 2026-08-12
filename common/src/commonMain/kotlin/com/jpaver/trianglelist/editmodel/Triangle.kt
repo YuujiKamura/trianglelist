@@ -214,7 +214,13 @@ class Triangle : CycleShape, Cloneable<Triangle> {
         val placeC = com.jpaver.trianglelist.label.DimensionLayout.layout(point[0], pointBC, dim.vertical.c, dim.horizontal.c, s, dh, 0.0)
         this.setLengthStr()
         val specs = mutableListOf<DimensionSpec>()
-        val emitA = (nodeA == null && node.a == null) || connectionSide > 2
+        // connectionSide (コード 3-10) だけでなく connectionType_ (ConnParam.type) も見る:
+        // CSV ロード経路 (ConnParam コンストラクタ、Triangle.kt:383) は connectionSide に
+        // cParam.side (1 or 2 のみ) を入れ、type/lcr は connectionType_/connectionLCR_ に
+        // 別で持つ。connectionSide だけで判定すると二重断面/フロート接続の A 辺が
+        // 「未接続」扱いになり、寸法が消える (TriangleList.setDimsUnconnectedSideToOuter:338-341
+        // が既に同じ理由で connectionType_ も見る修正済み、emitA だけ漏れていた)。
+        val emitA = (nodeA == null && node.a == null) || connectionSide > 2 || connectionType_ > 0
         if (emitA) {
             specs.add(DimensionSpec(0, strLengthA, placeA, pointAB.calcDimAngle(pointCA), dim.horizontal.a, dim.vertical.a, dim.horizontal.a > 2))
         }

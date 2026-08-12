@@ -504,15 +504,17 @@ open class DrawingFileWriter {
         }
     }
 
-    /** 改行付きテキスト (題字の工事名) を DrawPrim.Text 群に展開 (旧 writeTextWithKaigyou/splitAndWriteText の純粋版) */
+    /** 改行付きテキスト (題字の工事名) を DrawPrim.Text 群に展開 (旧 writeTextWithKaigyou/splitAndWriteText の純粋版)
+     *  alignV=2 (中央) で他の表題欄 cell (図面名/路線名/作成日/縮尺/施工者、writeDrawingFrame 参照) と揃える
+     *  ── 旧 alignV=0 (ベースライン) は同じ cell 内で他行と縦位置がずれる原因だった (2026-08-12)。 */
     private fun kaigyouPrims(str: String, iKaigyou: Int, xr: Float, yb: Float, yo: Float, color: Int, textsize: Float): List<DrawPrim.Text> {
         if (str.length <= iKaigyou) {
-            return listOf(DrawPrim.Text(str, com.example.trilib.PointXY(xr, yb), color, textsize, 0, 0, 0.0, 1f))
+            return listOf(DrawPrim.Text(str, com.example.trilib.PointXY(xr, yb), color, textsize, 0, 2, 0.0, 1f))
         }
         val parts = if (str.contains(" ")) str.split(' ', limit = 2)
                     else listOf(str.substring(0, iKaigyou), str.substring(iKaigyou))
-        val out = mutableListOf(DrawPrim.Text(parts[0], com.example.trilib.PointXY(xr, yb + yo), color, textsize, 0, 0, 0.0, 1f))
-        if (parts.size > 1) out.add(DrawPrim.Text(parts[1], com.example.trilib.PointXY(xr, yb - yo), color, textsize, 0, 0, 0.0, 1f))
+        val out = mutableListOf(DrawPrim.Text(parts[0], com.example.trilib.PointXY(xr, yb + yo), color, textsize, 0, 2, 0.0, 1f))
+        if (parts.size > 1) out.add(DrawPrim.Text(parts[1], com.example.trilib.PointXY(xr, yb - yo), color, textsize, 0, 2, 0.0, 1f))
         return out
     }
 
