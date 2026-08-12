@@ -116,22 +116,34 @@ object WebFrame {
          * 値が空でも欄はクリックできる必要があるため、blank でもタグ付き prim は emit する
          * (デフォルト空白 + 枠内 dblclick で書換え、2026-06-12 user 要望)
          */
-        private fun fieldAt(p: PointXY): String? = when {
-            // DEFAULT_OUTER_MARGIN_CM=1.5 で rx=paperWcm-1.5=40.5、 by=1.5、 strx=rx-7.5=33。
-            // 2026-06-19 cell 中央揃え (alignV=2、 by + N + 0.5) で座標群再計算:
-            // koujiname y=by+5.5=7.0、 rosenname y=by+3.5=5.0、 zumennum (x=rx-1.5=39, y=by+1.5=3.0)、
-            // gyousyaname y=by+0.5=2.0。 writeTopTitle 上部 rosenname y = paperHcm-1.5-1.5-1.1 = 25.6。
-            // tCredit (url) anchor y = outerMarginCm = 1.5 (= 外枠下辺、 alignV=3 + glyph 上端補正)。
-            near(p, 33f, 7.0f) -> "koujiname"
-            near(p, 33f, 5.0f) || near(p, 21f, 25.6f) -> "rosenname"
-            near(p, 39f, 3.0f) -> "zumennum"
-            near(p, 33f, 2.0f) -> "gyousyaname"
-            near(p, 1.5f, 1.5f) -> "url"
-            else -> null
+        private fun fieldAt(p: PointXY): String? {
+            // DrawingFileWriter.writeDrawingFrame/writeTopTitle と同じ式で毎回計算する (2026-08-12) ──
+            // 以前はここに rx/strx/zumennum x の決め打ち literal (33/39 等、DEFAULT_OUTER_MARGIN_CM=1.5
+            // 前提) を置いていたが、表題欄の幅が折り線基準の計算値になった (writeDrawingFrame 参照) ため
+            // 決め打ちが即ズレて "koujiname tag" が拾えなくなった。そもそも outerMarginCm は margin
+            // セレクタ UI で変更可能な値なので、決め打ち literal は margin を変えた時点で本来ズレていた
+            // (今回の box 幅変更で顕在化しただけ)。this (= FramePrimWriter : DrawingFileWriter) が
+            // 持つ paperWcm/outerMarginCm から都度算出し、二重管理を無くす。
+            val rx = paperWcm - outerMarginCm
+            val by = outerMarginCm
+            val foldX = paperWcm * 0.75f
+            val boxWidth = rx - foldX
+            val strx = rx - (7.5f / 10f) * boxWidth
+            val numContentX = rx - (1.5f / 10f) * boxWidth
+            val ty = paperHcm - outerMarginCm - 1.5f
+            return when {
+                near(p, strx, by + 5.5f) -> "koujiname"
+                near(p, strx, by + 4.5f) -> "zumentitle"
+                near(p, strx, by + 3.5f) || near(p, paperWcm / 2f, ty - 1.2f) || near(p, paperWcm / 2f, ty - 1.8f) -> "rosenname"
+                near(p, numContentX, by + 1.5f) -> "zumennum"
+                near(p, strx, by + 0.5f) -> "gyousyaname"
+                near(p, outerMarginCm, outerMarginCm) -> "url"
+                else -> null
+            }
         }
 
         private fun near(p: PointXY, x: Float, y: Float): Boolean =
-            kotlin.math.abs(p.x - x) < 0.01f && kotlin.math.abs(p.y - y) < 0.01f
+            kotlin.math.abs(p.x - x) < 0.2f && kotlin.math.abs(p.y - y) < 0.6f
 
         override fun writeTextHV(
             text: String,

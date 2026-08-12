@@ -543,28 +543,31 @@ open class DrawingFileWriter {
         val ty = paperHcm - outerMarginCm - 1.5f
         // textsize (引数) はもう使わない ── writeTopTitle/writeDrawingFrame は drawingScale を
         // 打ち消した paper 固定 cm 空間で動くため、サイズは role だけで決まる (TextSizePolicy 参照)。
-        val titleTextSize = TextSizePolicy.resolve(TextRole.TopTitle, scale)
+        var titleTextSize = TextSizePolicy.resolve(TextRole.TopTitle, scale)
+        var areaFs = TextSizePolicy.resolve(TextRole.BottomTitleFrame, scale)
         val title = zumeninfo.zumentitle
 
-        fun getTextWidth(text: String, fs: Float): Float {
-            var w = 0f
-            for (ch in text) {
-                val isHalf = ch.code in 0x20..0x7E
-                w += if (isHalf) fs * 0.5f else fs * 1.0f
-            }
-            return w
+        // タイトルブロック (タイトル文字 / 面積合計行 / 路線名) が外枠の外にはみ出ないよう、外枠幅を
+        // 上限とした「箱」を先に決め、それに収まるサイズへ逆算する (2026-08-12 user 指示「枠のサイズを
+        // 記憶しておいて、収まるように上手くコントロールする」)。実測 (dumptexts) で下線幅の計算ミスが
+        // 2 回見つかった経緯があるので、role 由来の base サイズを無条件に使わず必ずここで検算する。
+        val maxWidth = paperWcm - outerMarginCm * 2f
+        val titleWidthAtBase = TextFit.estimateWidth(title, titleTextSize)
+        val areaTotalWidthAtBase = zumenAreaSegments.sumOf { TextFit.estimateWidth(it.text, areaFs).toDouble() }.toFloat()
+        val rosennameWidthAtBase = TextFit.estimateWidth(rosenname_, titleTextSize)
+        val widestAtBase = maxOf(titleWidthAtBase, areaTotalWidthAtBase, rosennameWidthAtBase)
+        if (widestAtBase > maxWidth && widestAtBase > 0f) {
+            val shrink = maxWidth / widestAtBase
+            titleTextSize *= shrink
+            areaFs *= shrink
         }
 
-        // 面積合計は BottomTitleFrame の小さめサイズ (二次的な注記のため主タイトルより一段小さく、
-        // = 表題欄 cell と同じ role を意図的に借用)。下線幅は「面積展開図」だけでなくこの面積合計
-        // 行の実幅も含めて決める ── 面積合計は数字桁数次第でタイトルより長くなることがあり、
-        // title.length だけで下線を決めると面積合計テキストが下線からはみ出る (2026-08-12、
-        // dumptexts で実座標を数値検証して確認: 修正前は下線の外に左右とも 62.5 model 単位はみ出てた)。
-        val areaFs = TextSizePolicy.resolve(TextRole.BottomTitleFrame, scale)
-        val areaTotalWidth = zumenAreaSegments.sumOf { getTextWidth(it.text, areaFs).toDouble() }.toFloat()
-        // 下線幅は title 文字列長 (paper-cm 単位、日本語 1 文字 ≒ 1em ≒ titleTextSize) と
-        // 面積合計行の実幅、大きい方に合わせる。
-        val halfW = maxOf(TextSizePolicy.resolve(TextRole.TopTitle) * title.length, areaTotalWidth) / 2f
+        val titleWidth = TextFit.estimateWidth(title, titleTextSize)
+        val areaTotalWidth = zumenAreaSegments.sumOf { TextFit.estimateWidth(it.text, areaFs).toDouble() }.toFloat()
+        // 下線幅は title 文字列長 (paper-cm 単位) と面積合計行の実幅、大きい方に合わせる ── 面積合計は
+        // 数字桁数次第でタイトルより長くなることがあり、title.length だけで下線を決めると面積合計
+        // テキストが下線からはみ出る (2026-08-12、dumptexts で実座標を数値検証して確認)。
+        val halfW = maxOf(titleWidth, areaTotalWidth) / 2f
 
         val prims = mutableListOf<DrawPrim>(
             DrawPrim.Text(title, com.example.trilib.PointXY(cx, ty, scale), WHITE, titleTextSize, 1, 1, 0.0, scale),
@@ -576,7 +579,7 @@ open class DrawingFileWriter {
             val fs = areaFs
             var curX = cx - (areaTotalWidth / 2f)
             for (seg in zumenAreaSegments) {
-                val segW = getTextWidth(seg.text, fs)
+                val segW = TextFit.estimateWidth(seg.text, fs)
                 prims.add(DrawPrim.Text(
                     seg.text,
                     com.example.trilib.PointXY(curX, ty - 0.9f, scale),
@@ -681,53 +684,62 @@ open class DrawingFileWriter {
         //外枠と上部のタイトル
         writeOuterFrame(scale)
 
-        // 右下のタイトル枠 (用紙右端アンカー)。rx = 表題欄右辺の paper-cm 座標。
-        // 2026-06-18 user 指示「A1 とかの厳しい基準」 で outerMarginCm=2.0 (= 20mm) に変更した
-        // 結果、 旧 rx=paperWcm (= 表題欄右辺が paper 右端から 1cm 内側、 外枠右辺 =paperWcm-OUTER_MARGIN
-        // = 40cm と 41cm で 1cm はみ出し) が外枠外に出てしまうため、 rx を外枠右辺に揃える。
-        // rx = paperWcm - outerMarginCm (= A3 で 40)。 表題欄右辺 = rx-0 ではなく rx-1 で書いてた
-        // 既存規約を保つために rx を-1 した位置 (= 内側 1cm 余裕) に置く。 結果 表題欄右辺は paper
-        // 右端から 3cm 内側 = 外枠右辺の 1cm 内側 余裕、 表題欄が外枠内に納まる。
-        // Y は用紙下端基準 1.35〜7.35 (= 6cm 高さ)、 外枠下辺 (= y=outerMarginCm=2.0) より上に
-        // 0.65cm の余裕、 外枠内に納まる。
-        // rx = 表題欄右辺 = 外枠右辺 と共用。 by = 表題欄下辺 = 外枠下辺 と共用。
-        // 全部品はこの rx / by を基準に「rx - N」 / 「by + N」 で配置するので、
-        // outerMarginCm を変えれば表題欄全体が外枠右下隅に追従する (2026-06-18
-        // user 「タイトルとかの部品は、 すべてこの外枠を基準に配置される」 + camera-eye 確認で
-        // 旧 rx-1 の 1cm 余裕が「外枠右下隅から離れすぎ」 と判明、 rx 自体を外枠右辺と一致させた)。
+        // rx = 表題欄右辺 = 外枠右辺と共用 (outerMarginCm に追従)。by = 表題欄下辺 = 外枠下辺と共用。
         val rx = paperWcm - outerMarginCm
         val by = outerMarginCm
         val st = printscale_*100f
-        // strx = 内容列の x 開始位置 = 表題欄左辺 (rx-10) + ラベル列幅 (2cm) + 余白 0.5cm
-        // 表題欄 10×6cm: 右辺=rx (= 外枠右辺と共用)、 左辺=rx-10、 ラベル/内容 縦罫=rx-8。
-        val strx = (rx - 7.5f) * scale
+
+        // 表題欄の左辺 = 紙を「中央で谷折り→右側フラップが紙幅の 1/4 になるよう蛇腹折り」した時の
+        // 折り線 (2026-08-12 user 確定)。foldX は outerMarginCm に依存しない紙面固定値、rx は外枠右端
+        // (= outerMarginCm 依存) なので、表題欄の幅 boxWidth = rx - foldX は outerMarginCm を変えると
+        // 連動して変わる (= 「フラップの中で右辺/下辺は内枠の分だけ狭くなる」を式で表現)。
+        // 旧仕様は幅固定 10cm 決め打ちで、折り線ともマージン変更とも無関係だった。
+        val foldX = paperWcm * 0.75f
+        val boxWidth = rx - foldX
+        // 内訳は旧 10cm 前提レイアウトの各要素比率 (rx からのオフセット ÷ 10) をそのまま保つ ──
+        // 個々のセル比率を再設計するのではなく、幅が変わっても崩れないよう相似形にスケールするだけ。
+        fun px(oldOffsetFromRx: Float): Float = rx - (oldOffsetFromRx / 10f) * boxWidth
+
+        val boxLeft = px(10f)          // == foldX
+        val labelDivider = px(8f)
+        val labelCenter = px(9f)
+        val strx = px(7.5f) * scale
+        val midDivider = px(5f)        // 縮尺 / 図面番号 の左右分割
+        val subDivider = px(3f)        // 図面番号 label/content 分割
+        val scaleContentX = px(6.5f)
+        val numLabelCenter = px(4f)
+        val numContentX = px(1.5f)
+
+        // 内容列の実幅 (= 文字が収まるべき箱)。TextFit.fitSize に渡して、決め打ちサイズで
+        // はみ出す前に縮める。右端に 0.2cm 余白を残す。
+        val contentBoxWidth = (rx - strx / scale) - 0.2f
+
         val yKOUJIMEI = (by + 5.5f) * scale // cell 中央 (alignV=2 と整合)
         val yo = 0.2f * scale
         val nengappi = currentDateStringJp()
         val w = WHITE
 
         val prims = mutableListOf<DrawPrim>(
-            // 枠線 (yoko/tate/uchi-tate + 行罫線 + 図面番号欄の縦罫)。 表題欄 10×6cm、 下辺=by、 右辺=rx。
-            DrawPrim.Line(com.example.trilib.PointXY(rx - 10f, by + 6f, scale), com.example.trilib.PointXY(rx, by + 6f, scale), w),       // 上辺
-            DrawPrim.Line(com.example.trilib.PointXY(rx - 10f, by, scale),       com.example.trilib.PointXY(rx - 10f, by + 6f, scale), w), // 左辺
-            DrawPrim.Line(com.example.trilib.PointXY(rx - 8f, by, scale),        com.example.trilib.PointXY(rx - 8f, by + 6f, scale), w),  // ラベル列 縦罫
-            DrawPrim.Line(com.example.trilib.PointXY(rx - 10f, by + 5f, scale), com.example.trilib.PointXY(rx, by + 5f, scale), w),       // 行罫
-            DrawPrim.Line(com.example.trilib.PointXY(rx - 10f, by + 4f, scale), com.example.trilib.PointXY(rx, by + 4f, scale), w),
-            DrawPrim.Line(com.example.trilib.PointXY(rx - 10f, by + 3f, scale), com.example.trilib.PointXY(rx, by + 3f, scale), w),
-            DrawPrim.Line(com.example.trilib.PointXY(rx - 10f, by + 2f, scale), com.example.trilib.PointXY(rx, by + 2f, scale), w),
-            DrawPrim.Line(com.example.trilib.PointXY(rx - 10f, by + 1f, scale), com.example.trilib.PointXY(rx, by + 1f, scale), w),
-            DrawPrim.Line(com.example.trilib.PointXY(rx - 5f, by + 1f, scale),  com.example.trilib.PointXY(rx - 5f, by + 2f, scale), w),  // 図番欄 縦罫
-            DrawPrim.Line(com.example.trilib.PointXY(rx - 3f, by + 1f, scale),  com.example.trilib.PointXY(rx - 3f, by + 2f, scale), w),
-            // 題字 (左端ラベル列)。 ラベル列中央 x = rx - 9 (= 左辺 rx-10 + 1cm)。
-            // y = cell 中央 (= cellBottomY + 0.5cm)、 alignV=2 (middle) で CAD 標準センタリング
-            // (= AutoCAD group code 73=2、 SXF 中心点指定、 backend で glyph bbox 中央化)。
-            DrawPrim.Text(zumeninfo.koujiname,    com.example.trilib.PointXY(rx - 9f, by + 5.5f, scale), w, frameTextSize, 1, 2, 0.0, 1f),
-            DrawPrim.Text(zumeninfo.tDtype_,      com.example.trilib.PointXY(rx - 9f, by + 4.5f, scale), w, frameTextSize, 1, 2, 0.0, 1f),
-            DrawPrim.Text(zumeninfo.tDname_,      com.example.trilib.PointXY(rx - 9f, by + 3.5f, scale), w, frameTextSize, 1, 2, 0.0, 1f),
-            DrawPrim.Text(zumeninfo.tDateHeader_, com.example.trilib.PointXY(rx - 9f, by + 2.5f, scale), w, frameTextSize, 1, 2, 0.0, 1f),
-            DrawPrim.Text(zumeninfo.tScale_,      com.example.trilib.PointXY(rx - 9f, by + 1.5f, scale), w, frameTextSize, 1, 2, 0.0, 1f),
-            DrawPrim.Text(zumeninfo.tNum_,        com.example.trilib.PointXY(rx - 4f, by + 1.5f, scale), w, frameTextSize, 1, 2, 0.0, 1f),
-            DrawPrim.Text(zumeninfo.tAname_,      com.example.trilib.PointXY(rx - 9f, by + 0.5f, scale), w, frameTextSize, 1, 2, 0.0, 1f),
+            // 枠線 (yoko/tate/uchi-tate + 行罫線 + 図面番号欄の縦罫)。下辺=by、右辺=rx、左辺=boxLeft (折り線)。
+            DrawPrim.Line(com.example.trilib.PointXY(boxLeft, by + 6f, scale), com.example.trilib.PointXY(rx, by + 6f, scale), w),       // 上辺
+            DrawPrim.Line(com.example.trilib.PointXY(boxLeft, by, scale),       com.example.trilib.PointXY(boxLeft, by + 6f, scale), w), // 左辺 (= 折り線)
+            DrawPrim.Line(com.example.trilib.PointXY(labelDivider, by, scale),  com.example.trilib.PointXY(labelDivider, by + 6f, scale), w),  // ラベル列 縦罫
+            DrawPrim.Line(com.example.trilib.PointXY(boxLeft, by + 5f, scale), com.example.trilib.PointXY(rx, by + 5f, scale), w),       // 行罫
+            DrawPrim.Line(com.example.trilib.PointXY(boxLeft, by + 4f, scale), com.example.trilib.PointXY(rx, by + 4f, scale), w),
+            DrawPrim.Line(com.example.trilib.PointXY(boxLeft, by + 3f, scale), com.example.trilib.PointXY(rx, by + 3f, scale), w),
+            DrawPrim.Line(com.example.trilib.PointXY(boxLeft, by + 2f, scale), com.example.trilib.PointXY(rx, by + 2f, scale), w),
+            DrawPrim.Line(com.example.trilib.PointXY(boxLeft, by + 1f, scale), com.example.trilib.PointXY(rx, by + 1f, scale), w),
+            DrawPrim.Line(com.example.trilib.PointXY(midDivider, by + 1f, scale), com.example.trilib.PointXY(midDivider, by + 2f, scale), w),  // 図番欄 縦罫
+            DrawPrim.Line(com.example.trilib.PointXY(subDivider, by + 1f, scale), com.example.trilib.PointXY(subDivider, by + 2f, scale), w),
+            // 題字 (左端ラベル列)。 y = cell 中央 (= cellBottomY + 0.5cm)、 alignV=2 (middle) で
+            // CAD 標準センタリング (= AutoCAD group code 73=2、 SXF 中心点指定、 backend で glyph bbox 中央化)。
+            DrawPrim.Text(zumeninfo.koujiname,    com.example.trilib.PointXY(labelCenter, by + 5.5f, scale), w, frameTextSize, 1, 2, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tDtype_,      com.example.trilib.PointXY(labelCenter, by + 4.5f, scale), w, frameTextSize, 1, 2, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tDname_,      com.example.trilib.PointXY(labelCenter, by + 3.5f, scale), w, frameTextSize, 1, 2, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tDateHeader_, com.example.trilib.PointXY(labelCenter, by + 2.5f, scale), w, frameTextSize, 1, 2, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tScale_,      com.example.trilib.PointXY(labelCenter, by + 1.5f, scale), w, frameTextSize, 1, 2, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tNum_,        com.example.trilib.PointXY(numLabelCenter, by + 1.5f, scale), w, frameTextSize, 1, 2, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tAname_,      com.example.trilib.PointXY(labelCenter, by + 0.5f, scale), w, frameTextSize, 1, 2, 0.0, 1f),
             // tCredit (= url、 = BottomCredit region): 外枠左下角 anchor + alignV=3 (top、 anchor が
             // text 上端)。 anchor y = outerMarginCm (= 外枠下辺ぴったり) = text 上端を外枠下辺と
             // 一致させる、 = 文字は外枠下辺の真下に物理的に降りる。 web canvas で glyph 物理上端
@@ -735,15 +747,30 @@ open class DrawingFileWriter {
             // alignH=0 (left) で文字左端 = 外枠左辺ぴったり。 outerMarginCm を変えれば url も追従。
             DrawPrim.Text(zumeninfo.tCredit_,     com.example.trilib.PointXY(outerMarginCm, outerMarginCm, scale), w, creditTextSize, 0, 3, 0.0, 1f),
         )
-        // 内容: 工事名 (長ければ改行) → 図面名・路線名・作成日・縮尺・図面番号・施工者。 全部 by 基準。
-        prims.addAll(kaigyouPrims(koujiname_, 25, strx, yKOUJIMEI, yo, w, frameTextSize))
+        // 内容: 決め打ちサイズで箱に収まらない文字列は TextFit で縮める。全 cell 共通の入口にする
+        // (長い工事名だけ改行、他は無条件はみ出し、という非対称が今回の不具合の元だった)。
+        fun fitted(text: String, boxWidth: Float = contentBoxWidth): Float = TextFit.fitSize(text, boxWidth, frameTextSize).size
+        // 縮尺 / 図面番号 の content box は 3cm 相当 (旧レイアウトの列幅) を比例スケールした値。
+        val scaleBoxWidth = (midDivider - labelDivider) - 0.2f
+        val numBoxWidth = (rx - subDivider) - 0.2f
+
+        // 工事名は縮小を先に試し、縮小の下限 (TextFit の minSize) でも収まらない特に長い文字列だけ
+        // 改行にフォールバックする (2026-08-12: 旧仕様は無条件改行で、縮小後なら 1 行に収まる
+        // ケースでも改行し、2 行目が下のセルの罫線を越えて衝突するバグがあった。実際に長い工事名で
+        // 描画して確認済み)。
+        val koujinameFit = TextFit.fitSize(koujiname_, contentBoxWidth, frameTextSize)
+        if (koujinameFit.wraps) {
+            prims.addAll(kaigyouPrims(koujiname_, 25, strx, yKOUJIMEI, yo, w, koujinameFit.size))
+        } else {
+            prims.add(DrawPrim.Text(koujiname_, com.example.trilib.PointXY(strx, yKOUJIMEI, scale), w, koujinameFit.size, 0, 2, 0.0, 1f))
+        }
         // 内容 prim も cell 中央 + alignV=2 (middle) で 統一 (= CAD 標準)。
-        prims.add(DrawPrim.Text(zumeninfo.zumentitle,                com.example.trilib.PointXY(strx,       (by + 4.5f) * scale), w, frameTextSize, 0, 2, 0.0, 1f))
-        prims.add(DrawPrim.Text(rosenname_,                          com.example.trilib.PointXY(strx,       (by + 3.5f) * scale), w, frameTextSize, 0, 2, 0.0, 1f))
-        prims.add(DrawPrim.Text(nengappi,                            com.example.trilib.PointXY(strx,       (by + 2.5f) * scale), w, frameTextSize, 0, 2, 0.0, 1f))
-        prims.add(DrawPrim.Text("1/${st.toInt()} ($paperName)",      com.example.trilib.PointXY(rx - 6.5f,  by + 1.5f, scale),    w, frameTextSize, 1, 2, 0.0, 1f))
-        prims.add(DrawPrim.Text(zumennum_,                           com.example.trilib.PointXY(rx - 1.5f,  by + 1.5f, scale),    w, frameTextSize, 1, 2, 0.0, 1f))
-        prims.add(DrawPrim.Text(gyousyaname_,                        com.example.trilib.PointXY(strx,       (by + 0.5f) * scale), w, frameTextSize, 0, 2, 0.0, 1f))
+        prims.add(DrawPrim.Text(zumeninfo.zumentitle, com.example.trilib.PointXY(strx, (by + 4.5f) * scale), w, fitted(zumeninfo.zumentitle), 0, 2, 0.0, 1f))
+        prims.add(DrawPrim.Text(rosenname_,           com.example.trilib.PointXY(strx, (by + 3.5f) * scale), w, fitted(rosenname_), 0, 2, 0.0, 1f))
+        prims.add(DrawPrim.Text(nengappi,             com.example.trilib.PointXY(strx, (by + 2.5f) * scale), w, fitted(nengappi), 0, 2, 0.0, 1f))
+        prims.add(DrawPrim.Text("1/${st.toInt()} ($paperName)", com.example.trilib.PointXY(scaleContentX, by + 1.5f, scale), w, fitted("1/${st.toInt()} ($paperName)", scaleBoxWidth), 1, 2, 0.0, 1f))
+        prims.add(DrawPrim.Text(zumennum_,            com.example.trilib.PointXY(numContentX, by + 1.5f, scale), w, fitted(zumennum_, numBoxWidth), 1, 2, 0.0, 1f))
+        prims.add(DrawPrim.Text(gyousyaname_,         com.example.trilib.PointXY(strx, (by + 0.5f) * scale), w, fitted(gyousyaname_), 0, 2, 0.0, 1f))
 
         drawScene(prims)
     }
