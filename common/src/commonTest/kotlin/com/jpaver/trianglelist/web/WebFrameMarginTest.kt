@@ -82,17 +82,28 @@ class WebFrameMarginTest {
     }
 
     @Test
-    fun frameTextSizeFollowsEntityTextScale() {
-        // 2026-08-12: Web 版着手前 (b8ff1e13、5 年間) は TopTitle/BottomTitleFrame とも
-        // dimension text と同じ entityTextSize (= textscale_) をそのまま使っており、専用の
-        // 固定 mm 定数は存在しなかった。TOP_TITLE_MM=7.0 等の独立定数は Web 期に生まれた逸脱
-        // (writeTopTitle が引数の textsize を握りつぶし定数に差し替えていた) だったため、
-        // 固定値 pin をやめ「全 role が entityTextSize にそのまま追従する」構造を pin する。
-        for (entityTextSize in listOf(0.25f, 0.35f, 1.0f, 5.0f)) {
-            assertEquals(entityTextSize, TextSizePolicy.resolve(TextRole.TopTitle, entityTextSize), "TopTitle は entityTextSize と同値")
-            assertEquals(entityTextSize, TextSizePolicy.resolve(TextRole.BottomTitleFrame, entityTextSize), "BottomTitleFrame は entityTextSize と同値")
-            assertEquals(entityTextSize, TextSizePolicy.resolve(TextRole.BottomCredit, entityTextSize), "BottomCredit は entityTextSize と同値")
-        }
+    fun frameTextSizeFollowsJisPaperMmLadder() {
+        // 2026-08-12 最終版: writeTopTitle/writeDrawingFrame は drawingScale を打ち消した
+        // paper 固定 cm 空間で動く (ADR 0001)。scale/TextSizePolicy.kt の JIS Z 8313 準拠
+        // paper mm 階段 (TITLE=7.0 > FRAME_LABEL=5.0 > DIMENSION=3.5) を ÷10 (mm→cm) しただけの
+        // 値になる。AwtCadPanelImageGoldenTest で目視確認済み (タイトルが最も大きく表題欄が続く)。
+        //
+        // 途中 2 案を目視で棄却した経緯: (a) 全 role を entityTextSize に統一 → タイトルが
+        // 寸法値と同じ極小サイズになり最も目立たない文字になった。(b) JIS mm を paperToModel で
+        // model 空間に変換 → paper 固定空間に model 空間の数値を渡し画面が文字で埋まる大惨事に
+        // なった。paperToModel は寸法値のような drawingScale 依存の model 空間専用、この関数群には
+        // 適用しない。
+        assertEquals(0.7f, TextSizePolicy.resolve(TextRole.TopTitle), "TopTitle = 7.0mm/10")
+        assertEquals(0.5f, TextSizePolicy.resolve(TextRole.BottomTitleFrame), "BottomTitleFrame = 5.0mm/10")
+        assertEquals(0.35f, TextSizePolicy.resolve(TextRole.BottomCredit), "BottomCredit = 3.5mm/10")
+        // 階層 (TopTitle > BottomTitleFrame > BottomCredit) を明示的に pin ── 個々の値より
+        // 「タイトルが一番大きい」という関係の方が壊れやすい (今回の 2 敗はどちらもこの階層を
+        // 保てていなかった)。
+        val title = TextSizePolicy.resolve(TextRole.TopTitle)
+        val frame = TextSizePolicy.resolve(TextRole.BottomTitleFrame)
+        val credit = TextSizePolicy.resolve(TextRole.BottomCredit)
+        assertTrue(title > frame, "TopTitle は BottomTitleFrame より大きい")
+        assertTrue(frame > credit, "BottomTitleFrame は BottomCredit より大きい")
     }
 
     @Test

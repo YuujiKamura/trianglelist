@@ -539,10 +539,12 @@ open class DrawingFileWriter {
         // ty = title 上端 (= 外枠上辺の 1.5cm 下、 ×3 倍 title の頭に外枠との余白を確保)。
         val cx = paperWcm / 2f
         val ty = paperHcm - outerMarginCm - 1.5f
-        val titleTextSize = TextSizePolicy.resolve(TextRole.TopTitle, textsize, scale)
+        // textsize (引数) はもう使わない ── writeTopTitle/writeDrawingFrame は drawingScale を
+        // 打ち消した paper 固定 cm 空間で動くため、サイズは role だけで決まる (TextSizePolicy 参照)。
+        val titleTextSize = TextSizePolicy.resolve(TextRole.TopTitle, scale)
         val title = zumeninfo.zumentitle
         // 下線幅は title 文字列長にフィット (paper-cm 単位)。 日本語 1 文字 ≒ 1em、 1em ≒ titleTextSize。
-        val halfW = (TextSizePolicy.resolve(TextRole.TopTitle, textsize) / 10f) * title.length / 2f
+        val halfW = TextSizePolicy.resolve(TextRole.TopTitle) * title.length / 2f
         
         val prims = mutableListOf<DrawPrim>(
             DrawPrim.Text(title, com.example.trilib.PointXY(cx, ty, scale), WHITE, titleTextSize, 1, 1, 0.0, scale),
@@ -560,9 +562,9 @@ open class DrawingFileWriter {
         }
 
         if (zumenAreaSegments.isNotEmpty()) {
-            // 面積合計は TopTitle 直下、文字サイズも TopTitle と同じ (全role が entityTextSize に
-            // 一律に決まる規約なので titleTextSize と同値、あえて使い回さず resolve を再呼び)。
-            val fs = TextSizePolicy.resolve(TextRole.TopTitle, textsize, scale)
+            // 面積合計は TopTitle 直下、文字は BottomTitleFrame と同じ小さめサイズ (二次的な
+            // 注記のため主タイトルより一段小さく、= 表題欄 cell と同じ role を意図的に借用)。
+            val fs = TextSizePolicy.resolve(TextRole.BottomTitleFrame, scale)
             var totalWidth = 0f
             for (seg in zumenAreaSegments) {
                 totalWidth += getTextWidth(seg.text, fs)
@@ -669,8 +671,8 @@ open class DrawingFileWriter {
 
     open fun writeDrawingFrame(scale: Float = 1f, textsize: Float){
 
-        val frameTextSize = TextSizePolicy.resolve(TextRole.BottomTitleFrame, textsize, scale)
-        val creditTextSize = TextSizePolicy.resolve(TextRole.BottomCredit, textsize, scale)
+        val frameTextSize = TextSizePolicy.resolve(TextRole.BottomTitleFrame, scale)
+        val creditTextSize = TextSizePolicy.resolve(TextRole.BottomCredit, scale)
 
         //外枠と上部のタイトル
         writeOuterFrame(scale)
