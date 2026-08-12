@@ -21,12 +21,14 @@ object TextSizePolicy {
     /** 寸法値・注記の paper mm 標準 (JIS Z 8313 / CAD 製図基準の主流)。 */
     const val DIMENSION_PAPER_MM: Float = 3.5f
 
-    /** 図面枠の項目内容 (工事名・路線名等) の paper mm 標準。 */
-    const val FRAME_LABEL_PAPER_MM: Float = 5.0f
+    /** 図面枠の項目内容 (工事名・路線名等) の paper mm 標準。2026-08-12 desktop/sample/sample.dxf
+     *  (user が最適と判断した既存表題欄) の実測値 (model 125.0mm ÷ 1/50 scale = paper 2.5mm、
+     *  JIS ラダー最小段) に合わせて確定。 */
+    const val FRAME_LABEL_PAPER_MM: Float = 2.5f
 
-    /** 図面タイトル (面積展開図など) の paper mm 標準。2026-08-12 user 指示「もっとでかく」で
-     *  JIS ラダーの次段 (7→10mm) へ。実際の CADWe'll 描画で確認済み。 */
-    const val TITLE_PAPER_MM: Float = 10.0f
+    /** 図面タイトル (面積展開図など) の paper mm 標準。2026-08-12 user 指示「上部タイトルは
+     *  表題欄に対して2倍」: FRAME_LABEL_PAPER_MM (2.5mm) の 2 倍。 */
+    const val TITLE_PAPER_MM: Float = FRAME_LABEL_PAPER_MM * 2f
 
     /** paper mm を model mm に換算。drawingScaleDenominator は 1/50 図面なら 50f。 */
     fun paperToModel(paperMm: Float, drawingScaleDenominator: Float): Float =
