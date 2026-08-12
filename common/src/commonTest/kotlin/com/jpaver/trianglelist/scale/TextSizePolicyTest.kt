@@ -10,7 +10,8 @@ class TextSizePolicyTest {
     fun `JIS 主流の paper mm 定数が階段の中の値`() {
         assertEquals(3.5f, TextSizePolicy.DIMENSION_PAPER_MM, delta)
         assertEquals(5.0f, TextSizePolicy.FRAME_LABEL_PAPER_MM, delta)
-        assertEquals(7.0f, TextSizePolicy.TITLE_PAPER_MM, delta)
+        // 2026-08-12 user 指示「上部タイトルはもっとでかくしたい」: JIS ラダーの次段 (7→10mm) へ。
+        assertEquals(10.0f, TextSizePolicy.TITLE_PAPER_MM, delta)
     }
 
     @Test

@@ -547,19 +547,28 @@ open class DrawingFileWriter {
         var areaFs = TextSizePolicy.resolve(TextRole.BottomTitleFrame, scale)
         val title = zumeninfo.zumentitle
 
-        // タイトルブロック (タイトル文字 / 面積合計行 / 路線名) が外枠の外にはみ出ないよう、外枠幅を
+        // タイトルブロック (タイトル文字+路線名 / 面積合計行) が外枠の外にはみ出ないよう、外枠幅を
         // 上限とした「箱」を先に決め、それに収まるサイズへ逆算する (2026-08-12 user 指示「枠のサイズを
         // 記憶しておいて、収まるように上手くコントロールする」)。実測 (dumptexts) で下線幅の計算ミスが
         // 2 回見つかった経緯があるので、role 由来の base サイズを無条件に使わず必ずここで検算する。
+        //
+        // shrink 係数は「タイトル+路線名」グループと「面積合計行」グループで別々に算出する
+        // (2026-08-12 user 指示「上部タイトルはもっとでかくしたい。管理を分けたほうが良い」)。
+        // 旧実装は 3 者の最大幅から単一の shrink を出して両方に掛けていたため、色分け内訳が
+        // 増えて長くなりがちな面積合計行にタイトル自体が引きずられて縮んでいた。タイトルと
+        // 路線名は表示上も同じ「大見出し」グループ (同じ titleTextSize を共有) なので、そちらは
+        // 従来通り互いに連動させたまま、面積合計行 (BottomTitleFrame サイズ級の注記) だけを
+        // 独立させる。
         val maxWidth = paperWcm - outerMarginCm * 2f
         val titleWidthAtBase = TextFit.estimateWidth(title, titleTextSize)
-        val areaTotalWidthAtBase = zumenAreaSegments.sumOf { TextFit.estimateWidth(it.text, areaFs).toDouble() }.toFloat()
         val rosennameWidthAtBase = TextFit.estimateWidth(rosenname_, titleTextSize)
-        val widestAtBase = maxOf(titleWidthAtBase, areaTotalWidthAtBase, rosennameWidthAtBase)
-        if (widestAtBase > maxWidth && widestAtBase > 0f) {
-            val shrink = maxWidth / widestAtBase
-            titleTextSize *= shrink
-            areaFs *= shrink
+        val titleGroupWidest = maxOf(titleWidthAtBase, rosennameWidthAtBase)
+        if (titleGroupWidest > maxWidth && titleGroupWidest > 0f) {
+            titleTextSize *= maxWidth / titleGroupWidest
+        }
+        val areaTotalWidthAtBase = zumenAreaSegments.sumOf { TextFit.estimateWidth(it.text, areaFs).toDouble() }.toFloat()
+        if (areaTotalWidthAtBase > maxWidth && areaTotalWidthAtBase > 0f) {
+            areaFs *= maxWidth / areaTotalWidthAtBase
         }
 
         val titleWidth = TextFit.estimateWidth(title, titleTextSize)
@@ -569,10 +578,21 @@ open class DrawingFileWriter {
         // テキストが下線からはみ出る (2026-08-12、dumptexts で実座標を数値検証して確認)。
         val halfW = maxOf(titleWidth, areaTotalWidth) / 2f
 
+        // 縦間隔は titleTextSize に比例させる (2026-08-12、タイトルを 7→10mm に拡大した際に固定 cm
+        // offset のままだと面積合計行がタイトル本体・下線と衝突することを実描画の目視で発見)。
+        // 旧定数 (0.1/0.2/0.9/1.8/1.2cm) はどれも旧 titleTextSize=0.7cm を 7 分割した「行内単位」の
+        // 整数倍だったため、lineUnit = titleTextSize / 7f を単位に据えて同じ比率のまま拡大に追従させる。
+        val lineUnit = titleTextSize / 7f
+        val underlineGap1 = lineUnit * 1f  // 旧 0.1cm
+        val underlineGap2 = lineUnit * 2f  // 旧 0.2cm
+        val areaLineGap = lineUnit * 9f    // 旧 0.9cm
+        val rosennameGapWithArea = lineUnit * 18f  // 旧 1.8cm
+        val rosennameGapNoArea = lineUnit * 12f    // 旧 1.2cm
+
         val prims = mutableListOf<DrawPrim>(
             DrawPrim.Text(title, com.example.trilib.PointXY(cx, ty, scale), WHITE, titleTextSize, 1, 1, 0.0, scale),
-            DrawPrim.Line(com.example.trilib.PointXY(cx - halfW, ty - 0.1f, scale), com.example.trilib.PointXY(cx + halfW, ty - 0.1f, scale), WHITE, scale),
-            DrawPrim.Line(com.example.trilib.PointXY(cx - halfW, ty - 0.2f, scale), com.example.trilib.PointXY(cx + halfW, ty - 0.2f, scale), WHITE, scale)
+            DrawPrim.Line(com.example.trilib.PointXY(cx - halfW, ty - underlineGap1, scale), com.example.trilib.PointXY(cx + halfW, ty - underlineGap1, scale), WHITE, scale),
+            DrawPrim.Line(com.example.trilib.PointXY(cx - halfW, ty - underlineGap2, scale), com.example.trilib.PointXY(cx + halfW, ty - underlineGap2, scale), WHITE, scale)
         )
 
         if (zumenAreaSegments.isNotEmpty()) {
@@ -582,7 +602,7 @@ open class DrawingFileWriter {
                 val segW = TextFit.estimateWidth(seg.text, fs)
                 prims.add(DrawPrim.Text(
                     seg.text,
-                    com.example.trilib.PointXY(curX, ty - 0.9f, scale),
+                    com.example.trilib.PointXY(curX, ty - areaLineGap, scale),
                     seg.color,
                     fs,
                     0, // alignH: 0 = Left
@@ -592,9 +612,9 @@ open class DrawingFileWriter {
                 ))
                 curX += segW
             }
-            prims.add(DrawPrim.Text(rosenname_, com.example.trilib.PointXY(cx, ty - 1.8f, scale), WHITE, titleTextSize, 1, 1, 0.0, scale))
+            prims.add(DrawPrim.Text(rosenname_, com.example.trilib.PointXY(cx, ty - rosennameGapWithArea, scale), WHITE, titleTextSize, 1, 1, 0.0, scale))
         } else {
-            prims.add(DrawPrim.Text(rosenname_, com.example.trilib.PointXY(cx, ty - 1.2f, scale), WHITE, titleTextSize, 1, 1, 0.0, scale))
+            prims.add(DrawPrim.Text(rosenname_, com.example.trilib.PointXY(cx, ty - rosennameGapNoArea, scale), WHITE, titleTextSize, 1, 1, 0.0, scale))
         }
 
         drawScene(prims)
