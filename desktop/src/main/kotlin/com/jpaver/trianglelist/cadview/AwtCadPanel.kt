@@ -566,6 +566,11 @@ class AwtCadPanel : JPanel() {
             // AffineTransform が自動でスケールするのでそのまま使用
             val fontSize = text.height.toFloat()
             if (fontSize <= 0f) return@forEach
+            // 空文字は TextLayout が IllegalArgumentException を投げる (図枠の空欄セル由来、
+            // 見た目には出ない要素なのでここで安全にスキップする。2026-08-12: --viewer=awt の
+            // ライブ viewer がこれで白画面クラッシュしていた ── AwtCadPanelImageGoldenTest は
+            // 呼び出し側で個別に filter していたが、panel 自体には guard が無かった)。
+            if (text.text.isEmpty()) return@forEach
 
             val font = Font("SansSerif", Font.PLAIN, 1).deriveFont(fontSize)
             g2d.font = font

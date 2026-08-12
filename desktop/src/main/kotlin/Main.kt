@@ -209,7 +209,10 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                 while (true) {
                     val socket = server.accept()
                     try {
-                        val line = socket.getInputStream().bufferedReader().readLine()?.trim()
+                        // 2026-08-12: プラットフォーム default charset (Windows では MS932 系) だと
+                        // client 側が UTF-8 で送った日本語 filter 文字列 (dumptexts <日本語>) が化ける。
+                        // CP は明示的に UTF-8 固定にする。
+                        val line = socket.getInputStream().bufferedReader(Charsets.UTF_8).readLine()?.trim()
                         if (line == null) {
                             socket.close()
                             continue
@@ -394,8 +397,66 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                     }
                                 }
                             }
+                            line.startsWith("dumptexts") -> {
+                                // タイトル文字列の目視によるセンタリング判断は主観に頼るので、
+                                // parseResult.texts の実座標を客観的な数値で取る (2026-08-12)。
+                                // 「dumptexts [containsフィルタ]」で部分一致する text だけ絞れる。
+                                val filter = line.removePrefix("dumptexts").trim()
+                                val r = parseResult
+                                if (r == null) {
+                                    out.write("error: no parseResult\n".toByteArray())
+                                } else {
+                                    val matched = if (filter.isEmpty()) r.texts else r.texts.filter { it.text.contains(filter) }
+                                    if (matched.isEmpty()) {
+                                        out.write("error: no texts matched '$filter'\n".toByteArray())
+                                    } else {
+                                        val lines = matched.joinToString("\n") { t ->
+                                            "text=\"${t.text}\" x=%.4f y=%.4f height=%.4f alignH=${t.alignH} alignV=${t.alignV}".format(t.x, t.y, t.height)
+                                        }
+                                        out.write("$lines\n".toByteArray(Charsets.UTF_8))
+                                    }
+                                }
+                            }
+                            line.startsWith("renderbuffer") -> {
+                                // Robot/OS スクリーンショットを一切使わず、AwtCadPanel.paint() で
+                                // オフスクリーン BufferedImage に直接描画して PNG 保存する (2026-08-12
+                                // user 指示「スクショ以外の方法でコントローラからバッファ画像を確認
+                                // できるようにしろ」)。ウィンドウの可視性・重なり・前面化・DPI に
+                                // 一切依存しない ── AwtCadPanelImageGoldenTest と同じ技法をライブの
+                                // parseResult に適用するだけ。「renderbuffer <path> [w] [h]」。
+                                val args = line.removePrefix("renderbuffer").trim().split(" ").filter { it.isNotBlank() }
+                                val path = args.getOrNull(0)
+                                val w = args.getOrNull(1)?.toIntOrNull() ?: 1600
+                                val h = args.getOrNull(2)?.toIntOrNull() ?: 1200
+                                val r = parseResult
+                                if (path == null) {
+                                    out.write("error: renderbuffer needs <path> [w] [h]\n".toByteArray())
+                                } else if (r == null) {
+                                    out.write("error: no parseResult (open a file first)\n".toByteArray())
+                                } else {
+                                    try {
+                                        // AWT の TextLayout は空文字で例外を投げる (図枠の空欄セル由来)。
+                                        // AwtCadPanelImageGoldenTest と同じ除外を適用する。
+                                        val rFiltered = r.copy(texts = r.texts.filter { it.text.isNotEmpty() })
+                                        val panel = com.jpaver.trianglelist.cadview.AwtCadPanel()
+                                        panel.setBounds(0, 0, w, h)
+                                        panel.setParseResult(rFiltered)
+                                        val img = java.awt.image.BufferedImage(w, h, java.awt.image.BufferedImage.TYPE_INT_RGB)
+                                        val g = img.createGraphics()
+                                        try { panel.paint(g) } finally { g.dispose() }
+                                        val outFile = java.io.File(path)
+                                        outFile.parentFile?.mkdirs()
+                                        javax.imageio.ImageIO.write(img, "png", outFile)
+                                        out.write("ok ${outFile.absolutePath} ${w}x${h}\n".toByteArray())
+                                        println("CP renderbuffer: ${outFile.absolutePath} (${w}x${h}, no screenshot)")
+                                    } catch (e: Exception) {
+                                        out.write("error: ${e.message}\n".toByteArray())
+                                        println("CP renderbuffer error: ${e.message}")
+                                    }
+                                }
+                            }
                             else -> {
-                                out.write("error: unknown command (open|zoom|pan|view|fit|state|capture)\n".toByteArray())
+                                out.write("error: unknown command (open|zoom|pan|view|fit|state|capture|renderbuffer)\n".toByteArray())
                             }
                         }
                     } catch (e: Exception) {
