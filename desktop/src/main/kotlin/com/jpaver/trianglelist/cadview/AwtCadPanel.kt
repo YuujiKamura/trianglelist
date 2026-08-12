@@ -27,6 +27,27 @@ class AwtCadPanel : JPanel() {
     private var lastDragPoint: Point? = null
 
     companion object {
+        // DXF は STYLE テーブルの XDATA (ACAD/1000) で "@MS Gothic" を既に宣言している
+        // (DxfTable.kt) が、MS Gothic 自体は Microsoft 資産で自由に同梱できない。
+        // web 版が Compose/Skia 描画で既に使っている「さわらびゴシック」(SIL OFL 1.1、
+        // 自由に再配布可、common/src/desktopMain/resources/jp_font.ttf に1箇所だけ置き、
+        // :desktop が :common に依存しているので classpath 経由で見える) を、こちらの
+        // 内製ビューワーの近似フォントとして統一する (2026-08-12、PlatformTextMetrics.desktop.kt
+        // の実測フォントとも同一ファイル)。旧 "SansSerif" は Java のデフォルト論理フォントで、
+        // 日本語グリフの幅比率が実際の CAD 環境 (MS Gothic 系) と揃う保証が無かった。
+        val japaneseFont: Font? by lazy {
+            try {
+                AwtCadPanel::class.java.classLoader.getResourceAsStream("jp_font.ttf")?.use { stream ->
+                    Font.createFont(Font.TRUETYPE_FONT, stream)
+                }
+            } catch (e: Exception) {
+                println("さわらびゴシック読み込み失敗、SansSerif にフォールバック: ${e.message}")
+                null
+            }
+        }
+
+        fun baseFont(): Font = japaneseFont ?: Font("SansSerif", Font.PLAIN, 1)
+
         // ACI カラーテーブル (0-255) — java.awt.Color 版（全インスタンスで共有）
         private val aciColorTable: Array<Color> = arrayOf(
         Color(0, 0, 0),          // 0: ByBlock
@@ -572,7 +593,7 @@ class AwtCadPanel : JPanel() {
             // 呼び出し側で個別に filter していたが、panel 自体には guard が無かった)。
             if (text.text.isEmpty()) return@forEach
 
-            val font = Font("SansSerif", Font.PLAIN, 1).deriveFont(fontSize)
+            val font = baseFont().deriveFont(fontSize)
             g2d.font = font
             val frc = g2d.fontRenderContext
             val textLayout = TextLayout(text.text, font, frc)
