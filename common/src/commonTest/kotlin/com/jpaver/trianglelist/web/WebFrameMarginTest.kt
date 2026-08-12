@@ -93,7 +93,8 @@ class WebFrameMarginTest {
         // model 空間に変換 → paper 固定空間に model 空間の数値を渡し画面が文字で埋まる大惨事に
         // なった。paperToModel は寸法値のような drawingScale 依存の model 空間専用、この関数群には
         // 適用しない。
-        assertEquals(0.7f, TextSizePolicy.resolve(TextRole.TopTitle), "TopTitle = 7.0mm/10")
+        // 2026-08-12 user 指示でタイトルを JIS ラダー次段 (7→10mm) へ拡大。
+        assertEquals(1.0f, TextSizePolicy.resolve(TextRole.TopTitle), "TopTitle = 10.0mm/10")
         assertEquals(0.5f, TextSizePolicy.resolve(TextRole.BottomTitleFrame), "BottomTitleFrame = 5.0mm/10")
         assertEquals(0.35f, TextSizePolicy.resolve(TextRole.BottomCredit), "BottomCredit = 3.5mm/10")
         // 階層 (TopTitle > BottomTitleFrame > BottomCredit) を明示的に pin ── 個々の値より

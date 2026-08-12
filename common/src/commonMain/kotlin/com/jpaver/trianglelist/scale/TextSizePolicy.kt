@@ -24,8 +24,9 @@ object TextSizePolicy {
     /** 図面枠の項目内容 (工事名・路線名等) の paper mm 標準。 */
     const val FRAME_LABEL_PAPER_MM: Float = 5.0f
 
-    /** 図面タイトル (面積展開図など) の paper mm 標準。 */
-    const val TITLE_PAPER_MM: Float = 7.0f
+    /** 図面タイトル (面積展開図など) の paper mm 標準。2026-08-12 user 指示「もっとでかく」で
+     *  JIS ラダーの次段 (7→10mm) へ。実際の CADWe'll 描画で確認済み。 */
+    const val TITLE_PAPER_MM: Float = 10.0f
 
     /** paper mm を model mm に換算。drawingScaleDenominator は 1/50 図面なら 50f。 */
     fun paperToModel(paperMm: Float, drawingScaleDenominator: Float): Float =
