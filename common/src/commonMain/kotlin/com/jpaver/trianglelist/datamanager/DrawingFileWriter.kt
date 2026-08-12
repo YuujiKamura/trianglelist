@@ -543,14 +543,6 @@ open class DrawingFileWriter {
         // 打ち消した paper 固定 cm 空間で動くため、サイズは role だけで決まる (TextSizePolicy 参照)。
         val titleTextSize = TextSizePolicy.resolve(TextRole.TopTitle, scale)
         val title = zumeninfo.zumentitle
-        // 下線幅は title 文字列長にフィット (paper-cm 単位)。 日本語 1 文字 ≒ 1em、 1em ≒ titleTextSize。
-        val halfW = TextSizePolicy.resolve(TextRole.TopTitle) * title.length / 2f
-        
-        val prims = mutableListOf<DrawPrim>(
-            DrawPrim.Text(title, com.example.trilib.PointXY(cx, ty, scale), WHITE, titleTextSize, 1, 1, 0.0, scale),
-            DrawPrim.Line(com.example.trilib.PointXY(cx - halfW, ty - 0.1f, scale), com.example.trilib.PointXY(cx + halfW, ty - 0.1f, scale), WHITE, scale),
-            DrawPrim.Line(com.example.trilib.PointXY(cx - halfW, ty - 0.2f, scale), com.example.trilib.PointXY(cx + halfW, ty - 0.2f, scale), WHITE, scale)
-        )
 
         fun getTextWidth(text: String, fs: Float): Float {
             var w = 0f
@@ -561,18 +553,28 @@ open class DrawingFileWriter {
             return w
         }
 
+        // 面積合計は BottomTitleFrame の小さめサイズ (二次的な注記のため主タイトルより一段小さく、
+        // = 表題欄 cell と同じ role を意図的に借用)。下線幅は「面積展開図」だけでなくこの面積合計
+        // 行の実幅も含めて決める ── 面積合計は数字桁数次第でタイトルより長くなることがあり、
+        // title.length だけで下線を決めると面積合計テキストが下線からはみ出る (2026-08-12、
+        // dumptexts で実座標を数値検証して確認: 修正前は下線の外に左右とも 62.5 model 単位はみ出てた)。
+        val areaFs = TextSizePolicy.resolve(TextRole.BottomTitleFrame, scale)
+        val areaTotalWidth = zumenAreaSegments.sumOf { getTextWidth(it.text, areaFs).toDouble() }.toFloat()
+        // 下線幅は title 文字列長 (paper-cm 単位、日本語 1 文字 ≒ 1em ≒ titleTextSize) と
+        // 面積合計行の実幅、大きい方に合わせる。
+        val halfW = maxOf(TextSizePolicy.resolve(TextRole.TopTitle) * title.length, areaTotalWidth) / 2f
+
+        val prims = mutableListOf<DrawPrim>(
+            DrawPrim.Text(title, com.example.trilib.PointXY(cx, ty, scale), WHITE, titleTextSize, 1, 1, 0.0, scale),
+            DrawPrim.Line(com.example.trilib.PointXY(cx - halfW, ty - 0.1f, scale), com.example.trilib.PointXY(cx + halfW, ty - 0.1f, scale), WHITE, scale),
+            DrawPrim.Line(com.example.trilib.PointXY(cx - halfW, ty - 0.2f, scale), com.example.trilib.PointXY(cx + halfW, ty - 0.2f, scale), WHITE, scale)
+        )
+
         if (zumenAreaSegments.isNotEmpty()) {
-            // 面積合計は TopTitle 直下、文字は BottomTitleFrame と同じ小さめサイズ (二次的な
-            // 注記のため主タイトルより一段小さく、= 表題欄 cell と同じ role を意図的に借用)。
-            val fs = TextSizePolicy.resolve(TextRole.BottomTitleFrame, scale)
-            var totalWidth = 0f
+            val fs = areaFs
+            var curX = cx - (areaTotalWidth / 2f)
             for (seg in zumenAreaSegments) {
-                totalWidth += getTextWidth(seg.text, fs)
-            }
-            totalWidth /= 10f
-            var curX = cx - (totalWidth / 2f)
-            for (seg in zumenAreaSegments) {
-                val segW = getTextWidth(seg.text, fs) / 10f
+                val segW = getTextWidth(seg.text, fs)
                 prims.add(DrawPrim.Text(
                     seg.text,
                     com.example.trilib.PointXY(curX, ty - 0.9f, scale),
