@@ -12,7 +12,7 @@ android {
     defaultConfig {
         applicationId = "com.jpaver.myapplication"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1351
         versionName = "7.63"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -33,17 +33,17 @@ android {
         create("dev") {
             dimension = "mode"
             applicationId = "com.jpaver.myapplication"
-            targetSdk = 35
+            targetSdk = 36
         }
         create("free") {
             dimension = "mode"
             applicationId = "com.jpaver.myapplication"
-            targetSdk = 35
+            targetSdk = 36
         }
         create("full") {
             dimension = "mode"
             applicationId = "com.paver.myapplication"
-            targetSdk = 35
+            targetSdk = 36
         }
     }
 
@@ -102,7 +102,7 @@ dependencies {
     testImplementation("org.powermock:powermock-api-mockito:1.7.4")
     testImplementation("org.mockito:mockito-core:5.18.0")
     testImplementation("org.mockito:mockito-inline:5.2.0")
-    testImplementation("org.robolectric:robolectric:4.15.1")
+    testImplementation("org.robolectric:robolectric:4.16.1")
     testImplementation("androidx.test:core:1.7.0")
     testImplementation("androidx.test.ext:junit:1.3.0")
     testImplementation("androidx.test.espresso:espresso-core:3.7.0")

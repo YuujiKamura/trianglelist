@@ -4,6 +4,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import com.jpaver.trianglelist.datamanager.DrawingFileWriter
+import com.jpaver.trianglelist.datamanager.TextRole
+import com.jpaver.trianglelist.datamanager.TextSizePolicy
 
 /**
  * 2026-06-18 / 06-19 で 1 軸化した「外枠 余白」 と 「表題欄 12×9cm 比例拡大」 + url 配置 を
@@ -80,10 +82,17 @@ class WebFrameMarginTest {
     }
 
     @Test
-    fun frameTextMmConstsPinned() {
-        assertEquals(7.0f, DrawingFileWriter.TOP_TITLE_MM, "TopTitle paper mm")
-        assertEquals(5.0f, DrawingFileWriter.BOTTOM_TITLE_MM, "BottomTitleFrame cell paper mm")
-        assertEquals(3.5f, DrawingFileWriter.BOTTOM_CREDIT_MM, "BottomCredit url paper mm")
+    fun frameTextSizeFollowsEntityTextScale() {
+        // 2026-08-12: Web 版着手前 (b8ff1e13、5 年間) は TopTitle/BottomTitleFrame とも
+        // dimension text と同じ entityTextSize (= textscale_) をそのまま使っており、専用の
+        // 固定 mm 定数は存在しなかった。TOP_TITLE_MM=7.0 等の独立定数は Web 期に生まれた逸脱
+        // (writeTopTitle が引数の textsize を握りつぶし定数に差し替えていた) だったため、
+        // 固定値 pin をやめ「全 role が entityTextSize にそのまま追従する」構造を pin する。
+        for (entityTextSize in listOf(0.25f, 0.35f, 1.0f, 5.0f)) {
+            assertEquals(entityTextSize, TextSizePolicy.resolve(TextRole.TopTitle, entityTextSize), "TopTitle は entityTextSize と同値")
+            assertEquals(entityTextSize, TextSizePolicy.resolve(TextRole.BottomTitleFrame, entityTextSize), "BottomTitleFrame は entityTextSize と同値")
+            assertEquals(entityTextSize, TextSizePolicy.resolve(TextRole.BottomCredit, entityTextSize), "BottomCredit は entityTextSize と同値")
+        }
     }
 
     @Test

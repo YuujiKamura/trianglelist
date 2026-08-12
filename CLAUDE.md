@@ -1,11 +1,26 @@
 # Claude Code セッション記録
 
+## commit/push権限 — commitは指示不要 (セーブポイント)、pushは毎回指示必要 (2026-08-12 user指示)
+
+- `git commit` は許可を求めず自由に行ってよい。ローカルのセーブポイントに過ぎず、取り消しが容易なため
+- `git push` は毎回 user の明示指示が必要。global CLAUDE.md Rule 3 (「自分repoへの検証済pushはper-action認可不要」) より本ファイルが優先する (指示階層: repo固有 > global、本プロジェクトではglobalよりpushを厳格に扱う)
+- 適用条件は変わらず Rule 1 (全種類test verify) が前提: verify未済のまま commit してよいわけではない、あくまで「commitに認可は要らない」の話
+
 ## 作業履歴DB (insights) の記入ルール — 2026-06-10 user 指示
 
 - DB: `~/user-context-vault/repos/trianglelist/history.sqlite` (commits/file_changes/branches/insights)。スキーマと再構築は `scripts/build_history_db.py`
 - **全 insight エントリに出典とパスを明記しろ**: `evidence` (出典 / 一次資料 / 観測事実) 必須 + `code_refs` (file:line / commit hash) か `related_md` のどちらか必須
 - trigger `insights_require_source` が出典なし INSERT を物理 reject する。これは「user が自分で理解していないコードが増える」のを防ぐため ── エントリから必ず実コードに辿れること
 - 逆引き GUI: 専用 viewer (Gemini デザイン 2026-06-10) は `cd ~/user-context-vault/tools/history-viewer && python app.py` → http://localhost:8902 。トピック束ね + 全文検索 + code_refs クリックコピー。汎用探索は `uvx datasette serve ~/user-context-vault/repos/trianglelist/history.sqlite --port 8901` (FTS 有効化済み)
+
+## モデル層の開発ルール — TDD必須 (2026-08-12 user指示「モデル層は基本TDDでやってきた」)
+
+`common/src/commonMain/kotlin/com/jpaver/trianglelist/editmodel/` と `datamanager/` (dxf/label/viewmodel含む、Android/Web/Desktop 3プラットフォームが共有するcommonMainのモデル・書き出しロジック全般。CsvCodec / TriangleList / Triangle / Rectangle / CycleShape / DrawingFileWriter / DxfFileWriter / SfcWriter 等) を変更するときは **テストを先に書いてから実装する (TDD)**。
+
+- 新規関数・新規分岐を足す前に、期待値をassertするtestを先に書き、redを確認してから実装する
+- 既存挙動の変更(bug fix含む)も、再現するfailing testを先に書いてから直す。後追いでtestを足すだけの順序は不可
+- 理由: モデル層は3プラットフォームが共有する唯一のSoTで、目視でないと気づきにくい回帰(重心ズレ・shadow drift・extras[]のindex衝突・タイトル文字サイズ肥大など)が過去に繰り返し起きている。実装が先だと「たまたま動く」状態でtestを後付けしがちで、期待値の確定自体が漏れる。先にfailing testを書くことで「何が正しい挙動か」を実装より前に固定する
+- 適用範囲は「モデル」であって「画面」ではない: `MainActivity`/`MyView`(Android)や`web/src`・`web-js/src`配下のUI/描画呼び出し側コードはこのルールの対象外(そちらはRule 1の通常の実走verifyで足りる)
 
 ## 三角形接続の仕様
 

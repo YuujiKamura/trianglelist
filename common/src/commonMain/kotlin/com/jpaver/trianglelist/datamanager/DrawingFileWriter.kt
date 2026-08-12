@@ -539,10 +539,10 @@ open class DrawingFileWriter {
         // ty = title 上端 (= 外枠上辺の 1.5cm 下、 ×3 倍 title の頭に外枠との余白を確保)。
         val cx = paperWcm / 2f
         val ty = paperHcm - outerMarginCm - 1.5f
-        val titleTextSize = TOP_TITLE_MM * scale
+        val titleTextSize = TextSizePolicy.resolve(TextRole.TopTitle, textsize, scale)
         val title = zumeninfo.zumentitle
-        // 下線幅は title 文字列長にフィット (paper-cm 単位)。 日本語 1 文字 ≒ 1em、 1em ≒ TOP_TITLE_MM。
-        val halfW = (TOP_TITLE_MM / 10f) * title.length / 2f
+        // 下線幅は title 文字列長にフィット (paper-cm 単位)。 日本語 1 文字 ≒ 1em、 1em ≒ titleTextSize。
+        val halfW = (TextSizePolicy.resolve(TextRole.TopTitle, textsize) / 10f) * title.length / 2f
         
         val prims = mutableListOf<DrawPrim>(
             DrawPrim.Text(title, com.example.trilib.PointXY(cx, ty, scale), WHITE, titleTextSize, 1, 1, 0.0, scale),
@@ -560,7 +560,9 @@ open class DrawingFileWriter {
         }
 
         if (zumenAreaSegments.isNotEmpty()) {
-            val fs = BOTTOM_TITLE_MM * scale
+            // 面積合計は TopTitle 直下、文字サイズも TopTitle と同じ (全role が entityTextSize に
+            // 一律に決まる規約なので titleTextSize と同値、あえて使い回さず resolve を再呼び)。
+            val fs = TextSizePolicy.resolve(TextRole.TopTitle, textsize, scale)
             var totalWidth = 0f
             for (seg in zumenAreaSegments) {
                 totalWidth += getTextWidth(seg.text, fs)
@@ -649,16 +651,9 @@ open class DrawingFileWriter {
     }
     companion object {
         // 枠内テキスト 3 region: TopTitle (上部) / BottomTitleFrame (右下表題欄) / BottomCredit (左下 url)。
-        // size は下の 3 const、 paper mm 単位、 IDE で直接書き換え可能、 各 region 独立軸。
-
-        /** TopTitle (= 上部「面積展開図」) の paper mm サイズ。 */
-        const val TOP_TITLE_MM = 7.0f
-
-        /** BottomTitleFrame (= 右下表題欄 cell) の paper mm サイズ。 */
-        const val BOTTOM_TITLE_MM = 5.0f
-
-        /** BottomCredit (= 左下 url) の paper mm サイズ。 */
-        const val BOTTOM_CREDIT_MM = 3.5f
+        // size は TextSizePolicy.resolve(TextRole, scale) に一本化済み (2026-08-12)。旧 TOP_TITLE_MM /
+        // BOTTOM_TITLE_MM / BOTTOM_CREDIT_MM の public const はここから削除し、TextSizePolicy 内
+        // private const へ移設した ── DrawingFileWriter から数値を直接触れないようにする意図。
 
         // 外枠 (= 図面輪郭) の用紙端からの余白 cm の default 値。 電子納品基準 (国交省 CAD製図基準)
         // で A0/A1 = 20mm、 A2/A3/A4 = 10mm 以上 〜 7.5mm。
@@ -674,8 +669,8 @@ open class DrawingFileWriter {
 
     open fun writeDrawingFrame(scale: Float = 1f, textsize: Float){
 
-        val frameTextSize = BOTTOM_TITLE_MM * scale
-        val creditTextSize = BOTTOM_CREDIT_MM * scale
+        val frameTextSize = TextSizePolicy.resolve(TextRole.BottomTitleFrame, textsize, scale)
+        val creditTextSize = TextSizePolicy.resolve(TextRole.BottomCredit, textsize, scale)
 
         //外枠と上部のタイトル
         writeOuterFrame(scale)
