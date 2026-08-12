@@ -544,50 +544,65 @@ open class DrawingFileWriter {
         // textsize (引数) はもう使わない ── writeTopTitle/writeDrawingFrame は drawingScale を
         // 打ち消した paper 固定 cm 空間で動くため、サイズは role だけで決まる (TextSizePolicy 参照)。
         var titleTextSize = TextSizePolicy.resolve(TextRole.TopTitle, scale)
-        var areaFs = TextSizePolicy.resolve(TextRole.BottomTitleFrame, scale)
+        // サブタイトル行 (路線名+面積合計) も TopTitle と同じ role/サイズ (2026-08-12 user 指示
+        // 「路線＋面積のサイズも二倍にしていい」= 表題欄 (BottomTitleFrame) の 2 倍、TITLE_PAPER_MM が
+        // 元々 FRAME_LABEL_PAPER_MM*2 で定義されているのでその値をそのまま使う)。shrink 管理は
+        // titleTextSize とは独立した変数 (areaFs) のまま維持し、後続の shrink 判定を分離できるようにする。
+        var areaFs = TextSizePolicy.resolve(TextRole.TopTitle, scale)
         val title = zumeninfo.zumentitle
 
-        // タイトルブロック (タイトル文字+路線名 / 面積合計行) が外枠の外にはみ出ないよう、外枠幅を
+        // タイトルブロック (タイトル文字 / サブタイトル行) が外枠の外にはみ出ないよう、外枠幅を
         // 上限とした「箱」を先に決め、それに収まるサイズへ逆算する (2026-08-12 user 指示「枠のサイズを
         // 記憶しておいて、収まるように上手くコントロールする」)。実測 (dumptexts) で下線幅の計算ミスが
         // 2 回見つかった経緯があるので、role 由来の base サイズを無条件に使わず必ずここで検算する。
         //
-        // shrink 係数は「タイトル+路線名」グループと「面積合計行」グループで別々に算出する
+        // shrink 係数は「タイトル」と「サブタイトル行 (路線名+面積合計)」で別々に算出する
         // (2026-08-12 user 指示「上部タイトルはもっとでかくしたい。管理を分けたほうが良い」)。
-        // 旧実装は 3 者の最大幅から単一の shrink を出して両方に掛けていたため、色分け内訳が
-        // 増えて長くなりがちな面積合計行にタイトル自体が引きずられて縮んでいた。タイトルと
-        // 路線名は表示上も同じ「大見出し」グループ (同じ titleTextSize を共有) なので、そちらは
-        // 従来通り互いに連動させたまま、面積合計行 (BottomTitleFrame サイズ級の注記) だけを
-        // 独立させる。
+        // 旧実装は 3 者の最大幅から単一の shrink を出して全部に掛けていたため、色分け内訳が
+        // 増えて長くなりがちな面積合計行にタイトル自体が引きずられて縮んでいた。
+        //
+        // サブタイトル行は 路線名 + 面積合計 を同一行にまとめる (2026-08-12 user 指示「路線名と面積は
+        // 同一行で表現していいぞ。路線名　面積　の形で」、旧実装は縦に 2 行だった)。各要素を個別 prim
+        // で左詰めに並べる (= 手動 X 座標計算) と位置がずれるバグを踏んだため、1 本の文字列に連結して
+        // 1 個の text prim として中央寄せで描画する (2026-08-12 user 指示「ストリングは連結して一個の
+        // 文字列にして表現しろ」)。色分け内訳の色は失うが、位置計算のバグ源を断つ方を優先する。
         val maxWidth = paperWcm - outerMarginCm * 2f
         val titleWidthAtBase = TextFit.estimateWidth(title, titleTextSize)
-        val rosennameWidthAtBase = TextFit.estimateWidth(rosenname_, titleTextSize)
-        val titleGroupWidest = maxOf(titleWidthAtBase, rosennameWidthAtBase)
-        if (titleGroupWidest > maxWidth && titleGroupWidest > 0f) {
-            titleTextSize *= maxWidth / titleGroupWidest
+        if (titleWidthAtBase > maxWidth && titleWidthAtBase > 0f) {
+            titleTextSize *= maxWidth / titleWidthAtBase
         }
-        val areaTotalWidthAtBase = zumenAreaSegments.sumOf { TextFit.estimateWidth(it.text, areaFs).toDouble() }.toFloat()
-        if (areaTotalWidthAtBase > maxWidth && areaTotalWidthAtBase > 0f) {
-            areaFs *= maxWidth / areaTotalWidthAtBase
+
+        val subtitleText = buildString {
+            append(rosenname_)
+            if (rosenname_.isNotEmpty() && zumenAreaSegments.isNotEmpty()) append("　")
+            zumenAreaSegments.forEach { append(it.text) }
+        }
+        val subtitleWidthAtBase = TextFit.estimateWidth(subtitleText, areaFs)
+        if (subtitleWidthAtBase > maxWidth && subtitleWidthAtBase > 0f) {
+            areaFs *= maxWidth / subtitleWidthAtBase
         }
 
         val titleWidth = TextFit.estimateWidth(title, titleTextSize)
-        val areaTotalWidth = zumenAreaSegments.sumOf { TextFit.estimateWidth(it.text, areaFs).toDouble() }.toFloat()
-        // 下線幅は title 文字列長 (paper-cm 単位) と面積合計行の実幅、大きい方に合わせる ── 面積合計は
-        // 数字桁数次第でタイトルより長くなることがあり、title.length だけで下線を決めると面積合計
-        // テキストが下線からはみ出る (2026-08-12、dumptexts で実座標を数値検証して確認)。
-        val halfW = maxOf(titleWidth, areaTotalWidth) / 2f
+        val subtitleWidth = TextFit.estimateWidth(subtitleText, areaFs)
+        // 下線幅は title 文字列長 (paper-cm 単位) とサブタイトル行の実幅、大きい方に合わせる ──
+        // サブタイトル行は路線名や面積の桁数次第でタイトルより長くなることがあり、title.length だけで
+        // 下線を決めるとサブタイトルテキストが下線からはみ出る (2026-08-12、dumptexts で実座標を
+        // 数値検証して確認)。
+        val halfW = maxOf(titleWidth, subtitleWidth) / 2f
 
-        // 縦間隔は titleTextSize に比例させる (2026-08-12、タイトルを 7→10mm に拡大した際に固定 cm
-        // offset のままだと面積合計行がタイトル本体・下線と衝突することを実描画の目視で発見)。
-        // 旧定数 (0.1/0.2/0.9/1.8/1.2cm) はどれも旧 titleTextSize=0.7cm を 7 分割した「行内単位」の
-        // 整数倍だったため、lineUnit = titleTextSize / 7f を単位に据えて同じ比率のまま拡大に追従させる。
+        // 下線の間隔は titleTextSize に比例させる (2026-08-12、タイトルを 7→10mm に拡大した際に
+        // 固定 cm offset のままだとタイトル本体・下線が衝突することを実描画の目視で発見)。
         val lineUnit = titleTextSize / 7f
         val underlineGap1 = lineUnit * 1f  // 旧 0.1cm
         val underlineGap2 = lineUnit * 2f  // 旧 0.2cm
-        val areaLineGap = lineUnit * 9f    // 旧 0.9cm
-        val rosennameGapWithArea = lineUnit * 18f  // 旧 1.8cm
-        val rosennameGapNoArea = lineUnit * 12f    // 旧 1.2cm
+        // サブタイトル行の縦オフセットは「下線の位置 + サブタイトル自身の実サイズ」から逆算する
+        // (2026-08-12 user 指示「位置がおかしいぞ、テキストサイズを基にしてオフセット計算しろ」)。
+        // サブタイトル行を表題欄の 2 倍 (= titleTextSize と同サイズ) に拡大した結果、旧 lineUnit*9
+        // 固定比率 (小さいサブタイトル前提) では下線と衝突した。alignV=1 (Bottom) 描画は指定 y から
+        // 上方向にフォントサイズぶん伸びるため、下線の下に「サブタイトル自身の高さ + 余白」を確保する。
+        // 実描画で目視して「もうすこし下」と判定、user 指示「テキスト一個分オフセット追加」で
+        // areaFs をもう 1 つぶん (計 2.2 倍) 加算する。
+        val subtitleLineGap = underlineGap2 + areaFs * 2.2f
 
         val prims = mutableListOf<DrawPrim>(
             DrawPrim.Text(title, com.example.trilib.PointXY(cx, ty, scale), WHITE, titleTextSize, 1, 1, 0.0, scale),
@@ -595,26 +610,8 @@ open class DrawingFileWriter {
             DrawPrim.Line(com.example.trilib.PointXY(cx - halfW, ty - underlineGap2, scale), com.example.trilib.PointXY(cx + halfW, ty - underlineGap2, scale), WHITE, scale)
         )
 
-        if (zumenAreaSegments.isNotEmpty()) {
-            val fs = areaFs
-            var curX = cx - (areaTotalWidth / 2f)
-            for (seg in zumenAreaSegments) {
-                val segW = TextFit.estimateWidth(seg.text, fs)
-                prims.add(DrawPrim.Text(
-                    seg.text,
-                    com.example.trilib.PointXY(curX, ty - areaLineGap, scale),
-                    seg.color,
-                    fs,
-                    0, // alignH: 0 = Left
-                    1, // alignV: 1 = Bottom
-                    0.0,
-                    scale
-                ))
-                curX += segW
-            }
-            prims.add(DrawPrim.Text(rosenname_, com.example.trilib.PointXY(cx, ty - rosennameGapWithArea, scale), WHITE, titleTextSize, 1, 1, 0.0, scale))
-        } else {
-            prims.add(DrawPrim.Text(rosenname_, com.example.trilib.PointXY(cx, ty - rosennameGapNoArea, scale), WHITE, titleTextSize, 1, 1, 0.0, scale))
+        if (subtitleText.isNotEmpty()) {
+            prims.add(DrawPrim.Text(subtitleText, com.example.trilib.PointXY(cx, ty - subtitleLineGap, scale), WHITE, areaFs, 1, 1, 0.0, scale))
         }
 
         drawScene(prims)

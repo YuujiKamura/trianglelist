@@ -85,26 +85,27 @@ class WebFrameMarginTest {
     fun frameTextSizeFollowsJisPaperMmLadder() {
         // 2026-08-12 最終版: writeTopTitle/writeDrawingFrame は drawingScale を打ち消した
         // paper 固定 cm 空間で動く (ADR 0001)。scale/TextSizePolicy.kt の JIS Z 8313 準拠
-        // paper mm 階段 (TITLE=7.0 > FRAME_LABEL=5.0 > DIMENSION=3.5) を ÷10 (mm→cm) しただけの
-        // 値になる。AwtCadPanelImageGoldenTest で目視確認済み (タイトルが最も大きく表題欄が続く)。
+        // paper mm 階段を ÷10 (mm→cm) しただけの値になる。
         //
         // 途中 2 案を目視で棄却した経緯: (a) 全 role を entityTextSize に統一 → タイトルが
         // 寸法値と同じ極小サイズになり最も目立たない文字になった。(b) JIS mm を paperToModel で
         // model 空間に変換 → paper 固定空間に model 空間の数値を渡し画面が文字で埋まる大惨事に
         // なった。paperToModel は寸法値のような drawingScale 依存の model 空間専用、この関数群には
         // 適用しない。
-        // 2026-08-12 user 指示でタイトルを JIS ラダー次段 (7→10mm) へ拡大。
-        assertEquals(1.0f, TextSizePolicy.resolve(TextRole.TopTitle), "TopTitle = 10.0mm/10")
-        assertEquals(0.5f, TextSizePolicy.resolve(TextRole.BottomTitleFrame), "BottomTitleFrame = 5.0mm/10")
+        //
+        // 2026-08-12 desktop/sample/sample.dxf (user が最適と判断) の実測 (model 125.0mm ÷ 1/50
+        // scale = paper 2.5mm) に合わせて FRAME_LABEL を 5.0→2.5mm へ、TopTitle はその 2 倍
+        // (user 指示) で 5.0mm へ確定。結果 FRAME_LABEL(2.5mm) が BottomCredit(3.5mm) を下回り、
+        // 旧階層 (TopTitle > FRAME_LABEL > CREDIT) は成立しなくなった ── 表題欄が url 注記より
+        // 小さいのは意図通り (sample.dxf 実測ベース)、旧階層 assertion は削除して新階層で pin する。
+        assertEquals(0.5f, TextSizePolicy.resolve(TextRole.TopTitle), "TopTitle = 5.0mm/10")
+        assertEquals(0.25f, TextSizePolicy.resolve(TextRole.BottomTitleFrame), "BottomTitleFrame = 2.5mm/10")
         assertEquals(0.35f, TextSizePolicy.resolve(TextRole.BottomCredit), "BottomCredit = 3.5mm/10")
-        // 階層 (TopTitle > BottomTitleFrame > BottomCredit) を明示的に pin ── 個々の値より
-        // 「タイトルが一番大きい」という関係の方が壊れやすい (今回の 2 敗はどちらもこの階層を
-        // 保てていなかった)。
         val title = TextSizePolicy.resolve(TextRole.TopTitle)
         val frame = TextSizePolicy.resolve(TextRole.BottomTitleFrame)
         val credit = TextSizePolicy.resolve(TextRole.BottomCredit)
-        assertTrue(title > frame, "TopTitle は BottomTitleFrame より大きい")
-        assertTrue(frame > credit, "BottomTitleFrame は BottomCredit より大きい")
+        assertTrue(title > credit, "TopTitle は BottomCredit より大きい")
+        assertTrue(credit > frame, "BottomCredit は BottomTitleFrame より大きい (sample.dxf 実測反映後の新階層)")
     }
 
     @Test

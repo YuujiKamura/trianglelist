@@ -9,14 +9,23 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * 2026-08-12 user 指示「上部タイトルはもっとでかくしたい。管理を分けたほうが良い」。
+ * 2026-08-12 user 指示の履歴:
+ * 1. 「上部タイトルはもっとでかくしたい。管理を分けたほうが良い」── shrink 判定を title と
+ *    サブタイトル行 (路線名+面積合計) で分離。色分け内訳が増えて長くなりがちな面積合計に
+ *    タイトル自体が引きずられて縮む旧バグを潰す。
+ * 2. 「上部タイトルの路線名と面積は同一行で表現していいぞ。路線名　面積　の形で」──
+ *    路線名 と 面積合計 を 1 行にまとめる。路線名が先、面積が後。
+ * 3. 「路線＋面積のサイズも二倍にしていい」── サブタイトル行のサイズも表題欄の 2 倍 (= TopTitle
+ *    と同じ role) に。
+ * 4. 「位置がおかしいぞ、テキストサイズを基にしてオフセット計算しろ」── サブタイトル行を
+ *    タイトルと同じ大きさに拡大した結果、縦オフセットが旧 (小さい) サブタイトルサイズ前提の
+ *    ままで下線と衝突した。オフセットはサブタイトル自身の実サイズ (areaFs) から逆算する。
+ * 5. 「ストリングは連結して一個の文字列にして表現しろ」── 路線名+面積合計の各 segment を
+ *    個別 prim で左詰めに並べる (= 手動 X 座標計算) のをやめ、1 本の文字列に連結して 1 個の
+ *    DrawPrim.Text として中央寄せで描画する (色分けは失うが、位置計算のバグ源を断つ)。
  *
- * writeTopTitle() は旧実装で title / 面積合計行 / 路線名 の 3 者の最大幅から単一の shrink 係数を
- * 算出し、title と面積合計行 (areaFs) 両方に同じ係数を掛けていた。面積合計行は色分け内訳が
- * 増えると簡単に長くなるため、title 自体は短くても area 行の長さに引きずられて縮んでいた
- * (= 「管理が分かれていない」)。本 test は title(+路線名) の shrink 判定が area 行の幅を
- * 一切参照しないことを pin する。writeTextHV をキャプチャする最小サブクラスで DXF/SFC 等の
- * backend 差を排除し、DrawingFileWriter 本体のロジックだけを検証する。
+ * writeTextHV をキャプチャする最小サブクラスで DXF/SFC 等の backend 差を排除し、
+ * DrawingFileWriter 本体のロジックだけを検証する。
  */
 class TopTitleSizingTest {
 
@@ -27,7 +36,7 @@ class TopTitleSizingTest {
         override var titleTri_: TitleParamStr = TitleParamStr()
         override var titleDed_: TitleParamStr = TitleParamStr()
 
-        data class Captured(val text: String, val size: Float, val y: Float)
+        data class Captured(val text: String, val size: Float, val x: Float, val y: Float)
         val captured = mutableListOf<Captured>()
 
         override fun writeTextHV(
@@ -40,17 +49,17 @@ class TopTitleSizingTest {
             angle: Double,
             scale: Float
         ) {
-            captured.add(Captured(text, textsize, point.y.toFloat()))
+            captured.add(Captured(text, textsize, point.x.toFloat(), point.y.toFloat()))
         }
     }
 
     // 箱幅 (maxWidth = paperWcm - outerMarginCm*2 、既定 A3/1.5cm なら 39cm) を実測メトリクス問わず
-    // 確実に超過させるための巨大文字列。全角換算 1 文字でも 200 個あれば base サイズ (最大でも
-    // TITLE=1.0cm) でどう見積もっても 39cm を超える (200 * 0.5cm 半角近似でも 100cm > 39cm)。
+    // 確実に超過させるための巨大文字列。全角換算 1 文字でも 200 個あれば base サイズでもどう見積もっても
+    // 39cm を超える。
     private val hugeText = "あ".repeat(200)
 
     @Test
-    fun `短いタイトルは面積合計行が長くても base サイズのまま`() {
+    fun `短いタイトルはサブタイトル行が長くても base サイズのまま`() {
         val w = CapturingWriter()
         w.zumeninfo.zumentitle = "図"
         w.rosenname_ = "線"
@@ -61,11 +70,11 @@ class TopTitleSizingTest {
         val titleBase = TextSizePolicy.resolve(TextRole.TopTitle)
         val titleCaptured = w.captured.first { it.text == "図" }
         assertEquals(titleBase, titleCaptured.size, 1e-4f,
-            "面積合計行が長くても title 自体が箱に収まるなら base サイズを維持すべき (管理分離)")
+            "サブタイトル行が長くても title 自体が箱に収まるなら base サイズを維持すべき (管理分離)")
     }
 
     @Test
-    fun `面積合計行が長ければ area 行だけが縮み title は縮まない`() {
+    fun `サブタイトル行が長ければサブタイトルだけが縮み title は縮まない`() {
         val w = CapturingWriter()
         w.zumeninfo.zumentitle = "面 積 展 開 図"
         w.rosenname_ = "市道○○号線"
@@ -74,12 +83,12 @@ class TopTitleSizingTest {
         w.writeTopTitle(textsize = 0f)
 
         val titleBase = TextSizePolicy.resolve(TextRole.TopTitle)
-        val areaBase = TextSizePolicy.resolve(TextRole.BottomTitleFrame)
         val titleCaptured = w.captured.first { it.text == w.zumeninfo.zumentitle }
-        val areaCaptured = w.captured.first { it.text == hugeText }
+        val subtitleCaptured = w.captured.first { it.text.startsWith(w.rosenname_) }
 
-        assertEquals(titleBase, titleCaptured.size, 1e-4f, "title は area 行の長さに引きずられない")
-        assertTrue(areaCaptured.size < areaBase, "長い area 行自身は自分の幅超過で縮む")
+        assertEquals(titleBase, titleCaptured.size, 1e-4f, "title はサブタイトル行の長さに引きずられない")
+        assertTrue(subtitleCaptured.size < titleBase, "長いサブタイトル行自身は自分の幅超過で縮む")
+        assertTrue(subtitleCaptured.text.endsWith(hugeText), "連結文字列は 路線名 + 面積合計 の順")
     }
 
     @Test
@@ -96,11 +105,14 @@ class TopTitleSizingTest {
     }
 
     @Test
-    fun `面積合計行はタイトル本体と衝突しない縦間隔を保つ (タイトルサイズに比例)`() {
-        // 2026-08-12、実際に CADWe'll/desktop viewer で目視して発見: タイトルを 7→10mm に拡大した際、
-        // 面積合計行・下線・路線名の縦オフセットが旧 titleTextSize=0.7cm 時代の固定 cm 値のままだった
-        // ため、拡大後のタイトル本体と面積合計行 ("面積: A=...") が視覚的に重なった。
-        // 「箱の幅」は TextFit で守られていたが「縦の間隔」は守られていなかった、という別種の穴。
+    fun `サブタイトル行の縦オフセットはサブタイトル自身の実サイズから逆算され下線と衝突しない`() {
+        // 2026-08-12: サブタイトル行を表題欄の 2 倍 (= TopTitle と同サイズ) に拡大した際、
+        // 縦オフセットが旧 (小さい) サブタイトルサイズ前提の固定比率のままで下線と衝突した。
+        // 「テキストサイズを基にしてオフセット計算しろ」── オフセットは (自分の中で使う) areaFs
+        // (= サブタイトル自身の実サイズ) から逆算されるべきで、単に titleTextSize 比例の定数
+        // ではダメ。alignV=1 (Bottom) で描画されるため、テキストは指定 y から上方向に自身の
+        // フォントサイズぶん伸びる ── 下線 (ty - underlineGap2) と重ならないためには
+        // (ty - subtitleLineGap) + areaFs <= (ty - underlineGap2) が必要。
         val w = CapturingWriter()
         w.zumeninfo.zumentitle = "面 積 展 開 図"
         w.rosenname_ = "市道○○号線"
@@ -108,13 +120,45 @@ class TopTitleSizingTest {
 
         w.writeTopTitle(textsize = 0f)
 
-        val titleTextSize = TextSizePolicy.resolve(TextRole.TopTitle)
         val titleY = w.captured.first { it.text == w.zumeninfo.zumentitle }.y
-        val areaY = w.captured.first { it.text.startsWith("面積: A=") }.y
-        val rosennameY = w.captured.first { it.text == w.rosenname_ }.y
+        val underlineTexts = w.captured // underline は Line prim なので writeTextHV には来ない、y だけ再計算で検証
+        val subtitleCaptured = w.captured.first { it.text.startsWith(w.rosenname_) }
 
-        assertTrue(titleY - areaY >= titleTextSize,
-            "面積合計行はタイトル本体の下に titleTextSize 分以上のクリアランスを持つべき (衝突防止)")
-        assertTrue(areaY > rosennameY, "路線名は面積合計行よりさらに下に位置する")
+        // サブタイトル文字列の「上端」(bottom-anchored な y + 自身のフォントサイズ) が
+        // タイトル本体の y (= 下線のすぐ上) を超えない、つまりタイトルとサブタイトルの間に
+        // 最低でもサブタイトル自身の文字高さぶんの空間があること。
+        assertTrue(titleY - subtitleCaptured.y >= subtitleCaptured.size,
+            "サブタイトル行はタイトル本体の下に自分自身の文字サイズ分以上のクリアランスを持つべき (衝突防止)")
+    }
+
+    @Test
+    fun `路線名と面積合計は1本の連結文字列で描画される`() {
+        // 2026-08-12 user 指示「ストリングは連結して一個の文字列にして表現しろ」。
+        val w = CapturingWriter()
+        w.zumeninfo.zumentitle = "面 積 展 開 図"
+        w.rosenname_ = "市道○○号線"
+        w.zumenAreaSegments.add(DrawingFileWriter.AreaSegment("面積: A=14.94㎡", w.WHITE))
+
+        w.writeTopTitle(textsize = 0f)
+
+        // 路線名 と 面積合計 それぞれ別々の text prim ではなく、1 個の連結文字列であること。
+        val matching = w.captured.filter { it.text.contains(w.rosenname_) }
+        assertEquals(1, matching.size, "路線名を含む text prim は 1 個だけ (連結済み)")
+        assertTrue(matching.first().text.contains("面積: A=14.94"), "連結文字列は面積合計も含む")
+    }
+
+    @Test
+    fun `面積合計が無くても路線名は単独でサブタイトル行に描画される`() {
+        val w = CapturingWriter()
+        w.zumeninfo.zumentitle = "面 積 展 開 図"
+        w.rosenname_ = "市道○○号線"
+        // zumenAreaSegments は空のまま
+
+        w.writeTopTitle(textsize = 0f)
+
+        val subtitleCaptured = w.captured.first { it.text.startsWith(w.rosenname_) }
+        val subtitleBase = TextSizePolicy.resolve(TextRole.TopTitle)
+        assertEquals(subtitleBase, subtitleCaptured.size, 1e-4f, "面積行が無くても路線名はサブタイトル行サイズで描画")
+        assertEquals(w.rosenname_, subtitleCaptured.text, "面積行が無ければ連結文字列は路線名のみ")
     }
 }

@@ -9,9 +9,11 @@ class TextSizePolicyTest {
     @Test
     fun `JIS 主流の paper mm 定数が階段の中の値`() {
         assertEquals(3.5f, TextSizePolicy.DIMENSION_PAPER_MM, delta)
-        assertEquals(5.0f, TextSizePolicy.FRAME_LABEL_PAPER_MM, delta)
-        // 2026-08-12 user 指示「上部タイトルはもっとでかくしたい」: JIS ラダーの次段 (7→10mm) へ。
-        assertEquals(10.0f, TextSizePolicy.TITLE_PAPER_MM, delta)
+        // 2026-08-12: desktop/sample/sample.dxf (user が最適と判断した既存表題欄) の実測値
+        // (model 125.0mm ÷ 1/50 scale = paper 2.5mm、JIS ラダー最小段) に合わせて確定。
+        assertEquals(2.5f, TextSizePolicy.FRAME_LABEL_PAPER_MM, delta)
+        // user 指示「上部タイトルはこれに対して2倍」: 2.5mm の 2 倍 = 5.0mm。
+        assertEquals(5.0f, TextSizePolicy.TITLE_PAPER_MM, delta)
     }
 
     @Test
@@ -21,9 +23,9 @@ class TextSizePolicyTest {
     }
 
     @Test
-    fun `1分の150 図面で枠ラベル 5 mm を model に換算すると 750 mm`() {
+    fun `1分の150 図面で枠ラベル 2_5 mm を model に換算すると 375 mm`() {
         val modelMm = TextSizePolicy.paperToModel(TextSizePolicy.FRAME_LABEL_PAPER_MM, 150f)
-        assertEquals(750f, modelMm, delta)
+        assertEquals(375f, modelMm, delta)
     }
 
     @Test
