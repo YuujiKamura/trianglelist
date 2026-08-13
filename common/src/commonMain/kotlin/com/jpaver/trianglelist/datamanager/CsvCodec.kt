@@ -579,18 +579,45 @@ object CsvCodec {
      * preLines/postLines は元文書から引き継ぐ (ヘッダ・Deduction 等の素通し)
      */
     fun bake(trilist: TriangleList, original: CsvDoc): CsvDoc {
-        // 三角形行を完全形式 28 列で再構築する。
+        // 三角形行の「値」と「件数」は trilist (現在の生きたモデル) を単一の source of truth として
+        // 完全に再構築する。original.figureRows を件数の基準にしない — 2026-08-13 発見のバグ
+        // (original を map しているだけだと trilist が育っても新規行が append されず消える) の修正。
         val triRows = (1..trilist.size()).map { i -> rowForTriangle(trilist.getBy(i)) }
-        // figureRows を再構築: 三角形行は triRows で置き換え、Rectangle 行は素通し。
+        // Rectangle 行、および Rectangle 子三角形行 (タグは平タグだが parent が
+        // trilist の範囲外 = build() が trilist に組み込まない行、buildMixed 専用) は
+        // trilist の管轄外なので original の並び順のまま素通しする。
         // user 確定 2026-06-16: CSV タグは Rectangle 1 種 (Trapezoid / TriTrap タグ廃止)。
         var triIdx = 0
-        val newFigureRows = original.figureRows.map { row ->
-            val tag = row.chunks.firstOrNull()
+        var builtSoFar = 0 // build() が original を読んだ場合の trilist 組み込み数を模す (行の分類専用)
+        val newFigureRows = mutableListOf<CsvRow>()
+        for (row in original.figureRows) {
+            val c = row.chunks
+            val tag = c.firstOrNull()
             if (tag == "Rectangle") {
-                row  // Rectangle は元の行をそのまま保持
-            } else {
-                triRows.getOrElse(triIdx) { row }.also { triIdx++ }
+                newFigureRows.add(row)
+                continue
             }
+            // build():177-223 と同じ判定。conn<1 (独立) は常に trilist 入り、それ以外は
+            // parent がその時点までに組み込まれた三角形数の範囲内でなければ trilist 管轄外
+            // (= Rectangle 子三角形、buildMixed 専用行) として素通しする。
+            val parent = c.getOrNull(4)?.toIntOrNull() ?: -1
+            val conn = c.getOrNull(5)?.toIntOrNull() ?: -1
+            val belongsToTrilist = conn < 1 || parent in 1..builtSoFar
+            if (!belongsToTrilist) {
+                newFigureRows.add(row)
+                continue
+            }
+            builtSoFar++
+            if (triIdx < triRows.size) {
+                newFigureRows.add(triRows[triIdx])
+                triIdx++
+            }
+            // else: trilist が縮んで original 側のこの行が既に対応を失っている → 古い行は引き継がない
+        }
+        // trilist 側に original を上回る追加分が残っていれば末尾に append する
+        while (triIdx < triRows.size) {
+            newFigureRows.add(triRows[triIdx])
+            triIdx++
         }
         // dedRows は素通し。B04a: listScale を trilist.scale から取得して named field に書き込む。
         return CsvDoc(
