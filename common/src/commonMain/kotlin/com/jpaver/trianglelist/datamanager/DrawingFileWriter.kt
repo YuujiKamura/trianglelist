@@ -543,12 +543,18 @@ open class DrawingFileWriter {
         val ty = paperHcm - outerMarginCm - 1.5f
         // textsize (引数) はもう使わない ── writeTopTitle/writeDrawingFrame は drawingScale を
         // 打ち消した paper 固定 cm 空間で動くため、サイズは role だけで決まる (TextSizePolicy 参照)。
-        var titleTextSize = TextSizePolicy.resolve(TextRole.TopTitle, scale)
+        // 2026-08-13 発見のバグ修正: ここでは常に scale=1 (default) で resolve する。DXF は常に
+        // scale=1 で呼ぶので影響なしだが、SFC は scale=printscale_ を直渡しする経路があり、
+        // ここで scale 依存の値を作ってしまうと後段で ty 等の scale 非依存アンカーと算術演算
+        // (subtitleLineGap 等) した上でさらに PointXY(...,scale) で scale を掛けるため、scale が
+        // 実質 2 重に掛かってしまう (DrawingFileWriterScaleConsistencyTest で再現)。scale は
+        // 最終的な DrawPrim 生成時 (位置は PointXY 経由、サイズは *scale) に一度だけ適用する。
+        var titleTextSize = TextSizePolicy.resolve(TextRole.TopTitle)
         // サブタイトル行 (路線名+面積合計) も TopTitle と同じ role/サイズ (2026-08-12 user 指示
         // 「路線＋面積のサイズも二倍にしていい」= 表題欄 (BottomTitleFrame) の 2 倍、TITLE_PAPER_MM が
         // 元々 FRAME_LABEL_PAPER_MM*2 で定義されているのでその値をそのまま使う)。shrink 管理は
         // titleTextSize とは独立した変数 (areaFs) のまま維持し、後続の shrink 判定を分離できるようにする。
-        var areaFs = TextSizePolicy.resolve(TextRole.TopTitle, scale)
+        var areaFs = TextSizePolicy.resolve(TextRole.TopTitle)
         val title = zumeninfo.zumentitle
 
         // タイトルブロック (タイトル文字 / サブタイトル行) が外枠の外にはみ出ないよう、外枠幅を
@@ -605,13 +611,13 @@ open class DrawingFileWriter {
         val subtitleLineGap = underlineGap2 + areaFs * 2.2f
 
         val prims = mutableListOf<DrawPrim>(
-            DrawPrim.Text(title, com.example.trilib.PointXY(cx, ty, scale), WHITE, titleTextSize, 1, 1, 0.0, scale),
+            DrawPrim.Text(title, com.example.trilib.PointXY(cx, ty, scale), WHITE, titleTextSize * scale, 1, 1, 0.0, scale),
             DrawPrim.Line(com.example.trilib.PointXY(cx - halfW, ty - underlineGap1, scale), com.example.trilib.PointXY(cx + halfW, ty - underlineGap1, scale), WHITE, scale),
             DrawPrim.Line(com.example.trilib.PointXY(cx - halfW, ty - underlineGap2, scale), com.example.trilib.PointXY(cx + halfW, ty - underlineGap2, scale), WHITE, scale)
         )
 
         if (subtitleText.isNotEmpty()) {
-            prims.add(DrawPrim.Text(subtitleText, com.example.trilib.PointXY(cx, ty - subtitleLineGap, scale), WHITE, areaFs, 1, 1, 0.0, scale))
+            prims.add(DrawPrim.Text(subtitleText, com.example.trilib.PointXY(cx, ty - subtitleLineGap, scale), WHITE, areaFs * scale, 1, 1, 0.0, scale))
         }
 
         drawScene(prims)
@@ -695,8 +701,13 @@ open class DrawingFileWriter {
 
     open fun writeDrawingFrame(scale: Float = 1f, textsize: Float){
 
-        val frameTextSize = TextSizePolicy.resolve(TextRole.BottomTitleFrame, scale)
-        val creditTextSize = TextSizePolicy.resolve(TextRole.BottomCredit, scale)
+        // 2026-08-13 発見のバグ修正 (writeTopTitle と同根): ここも常に scale=1 で resolve する。
+        // frameTextSize/creditTextSize を scale 依存にすると、scale 非依存の boxWidth 群
+        // (contentBoxWidth 等) との TextFit 比較基準がズレて縮小判定が scale ごとに変わってしまう
+        // (DXF は常に scale=1 なので影響なし、SFC の scale=printscale_ 直渡し経路でだけ発生)。
+        // scale は最終的な DrawPrim 生成時に *scale で一度だけ適用する。
+        val frameTextSize = TextSizePolicy.resolve(TextRole.BottomTitleFrame)
+        val creditTextSize = TextSizePolicy.resolve(TextRole.BottomCredit)
 
         //外枠と上部のタイトル
         writeOuterFrame(scale)
@@ -761,19 +772,19 @@ open class DrawingFileWriter {
             DrawPrim.Line(com.example.trilib.PointXY(subDivider, by + 1f, scale), com.example.trilib.PointXY(subDivider, by + 2f, scale), w),
             // 題字 (左端ラベル列)。 y = cell 中央 (= cellBottomY + 0.5cm)、 alignV=2 (middle) で
             // CAD 標準センタリング (= AutoCAD group code 73=2、 SXF 中心点指定、 backend で glyph bbox 中央化)。
-            DrawPrim.Text(zumeninfo.koujiname,    com.example.trilib.PointXY(labelCenter, by + 5.5f, scale), w, fitted(zumeninfo.koujiname, labelBoxWidth), 1, 2, 0.0, 1f),
-            DrawPrim.Text(zumeninfo.tDtype_,      com.example.trilib.PointXY(labelCenter, by + 4.5f, scale), w, fitted(zumeninfo.tDtype_, labelBoxWidth), 1, 2, 0.0, 1f),
-            DrawPrim.Text(zumeninfo.tDname_,      com.example.trilib.PointXY(labelCenter, by + 3.5f, scale), w, fitted(zumeninfo.tDname_, labelBoxWidth), 1, 2, 0.0, 1f),
-            DrawPrim.Text(zumeninfo.tDateHeader_, com.example.trilib.PointXY(labelCenter, by + 2.5f, scale), w, fitted(zumeninfo.tDateHeader_, labelBoxWidth), 1, 2, 0.0, 1f),
-            DrawPrim.Text(zumeninfo.tScale_,      com.example.trilib.PointXY(labelCenter, by + 1.5f, scale), w, fitted(zumeninfo.tScale_, labelBoxWidth), 1, 2, 0.0, 1f),
-            DrawPrim.Text(zumeninfo.tNum_,        com.example.trilib.PointXY(numLabelCenter, by + 1.5f, scale), w, fitted(zumeninfo.tNum_, numLabelBoxWidth), 1, 2, 0.0, 1f),
-            DrawPrim.Text(zumeninfo.tAname_,      com.example.trilib.PointXY(labelCenter, by + 0.5f, scale), w, fitted(zumeninfo.tAname_, labelBoxWidth), 1, 2, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.koujiname,    com.example.trilib.PointXY(labelCenter, by + 5.5f, scale), w, fitted(zumeninfo.koujiname, labelBoxWidth) * scale, 1, 2, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tDtype_,      com.example.trilib.PointXY(labelCenter, by + 4.5f, scale), w, fitted(zumeninfo.tDtype_, labelBoxWidth) * scale, 1, 2, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tDname_,      com.example.trilib.PointXY(labelCenter, by + 3.5f, scale), w, fitted(zumeninfo.tDname_, labelBoxWidth) * scale, 1, 2, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tDateHeader_, com.example.trilib.PointXY(labelCenter, by + 2.5f, scale), w, fitted(zumeninfo.tDateHeader_, labelBoxWidth) * scale, 1, 2, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tScale_,      com.example.trilib.PointXY(labelCenter, by + 1.5f, scale), w, fitted(zumeninfo.tScale_, labelBoxWidth) * scale, 1, 2, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tNum_,        com.example.trilib.PointXY(numLabelCenter, by + 1.5f, scale), w, fitted(zumeninfo.tNum_, numLabelBoxWidth) * scale, 1, 2, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tAname_,      com.example.trilib.PointXY(labelCenter, by + 0.5f, scale), w, fitted(zumeninfo.tAname_, labelBoxWidth) * scale, 1, 2, 0.0, 1f),
             // tCredit (= url、 = BottomCredit region): 外枠左下角 anchor + alignV=3 (top、 anchor が
             // text 上端)。 anchor y = outerMarginCm (= 外枠下辺ぴったり) = text 上端を外枠下辺と
             // 一致させる、 = 文字は外枠下辺の真下に物理的に降りる。 web canvas で glyph 物理上端
             // (= measureText.actualBoundingBoxAscent) 補正、 CAD 標準センタリングと同じ「グリフを観る」 path。
             // alignH=0 (left) で文字左端 = 外枠左辺ぴったり。 outerMarginCm を変えれば url も追従。
-            DrawPrim.Text(zumeninfo.tCredit_,     com.example.trilib.PointXY(outerMarginCm, outerMarginCm, scale), w, creditTextSize, 0, 3, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tCredit_,     com.example.trilib.PointXY(outerMarginCm, outerMarginCm, scale), w, creditTextSize * scale, 0, 3, 0.0, 1f),
         )
         // 工事名は縮小を先に試し、縮小の下限 (TextFit の minSize) でも収まらない特に長い文字列だけ
         // 改行にフォールバックする (2026-08-12: 旧仕様は無条件改行で、縮小後なら 1 行に収まる
@@ -781,17 +792,17 @@ open class DrawingFileWriter {
         // 描画して確認済み)。
         val koujinameFit = TextFit.fitSize(koujiname_, contentBoxWidth, frameTextSize)
         if (koujinameFit.wraps) {
-            prims.addAll(kaigyouPrims(koujiname_, 25, strx, yKOUJIMEI, yo, w, koujinameFit.size))
+            prims.addAll(kaigyouPrims(koujiname_, 25, strx, yKOUJIMEI, yo, w, koujinameFit.size * scale))
         } else {
-            prims.add(DrawPrim.Text(koujiname_, com.example.trilib.PointXY(strx, yKOUJIMEI, scale), w, koujinameFit.size, 0, 2, 0.0, 1f))
+            prims.add(DrawPrim.Text(koujiname_, com.example.trilib.PointXY(strx, yKOUJIMEI, scale), w, koujinameFit.size * scale, 0, 2, 0.0, 1f))
         }
         // 内容 prim も cell 中央 + alignV=2 (middle) で 統一 (= CAD 標準)。
-        prims.add(DrawPrim.Text(zumeninfo.zumentitle, com.example.trilib.PointXY(strx, (by + 4.5f) * scale), w, fitted(zumeninfo.zumentitle, contentBoxWidth), 0, 2, 0.0, 1f))
-        prims.add(DrawPrim.Text(rosenname_,           com.example.trilib.PointXY(strx, (by + 3.5f) * scale), w, fitted(rosenname_, contentBoxWidth), 0, 2, 0.0, 1f))
-        prims.add(DrawPrim.Text(nengappi,             com.example.trilib.PointXY(strx, (by + 2.5f) * scale), w, fitted(nengappi, contentBoxWidth), 0, 2, 0.0, 1f))
-        prims.add(DrawPrim.Text("1/${st.toInt()} ($paperName)", com.example.trilib.PointXY(scaleContentX, by + 1.5f, scale), w, fitted("1/${st.toInt()} ($paperName)", scaleContentBoxWidth), 1, 2, 0.0, 1f))
-        prims.add(DrawPrim.Text(zumennum_,            com.example.trilib.PointXY(numContentX, by + 1.5f, scale), w, fitted(zumennum_, numContentBoxWidth), 1, 2, 0.0, 1f))
-        prims.add(DrawPrim.Text(gyousyaname_,         com.example.trilib.PointXY(strx, (by + 0.5f) * scale), w, fitted(gyousyaname_, contentBoxWidth), 0, 2, 0.0, 1f))
+        prims.add(DrawPrim.Text(zumeninfo.zumentitle, com.example.trilib.PointXY(strx, (by + 4.5f) * scale), w, fitted(zumeninfo.zumentitle, contentBoxWidth) * scale, 0, 2, 0.0, 1f))
+        prims.add(DrawPrim.Text(rosenname_,           com.example.trilib.PointXY(strx, (by + 3.5f) * scale), w, fitted(rosenname_, contentBoxWidth) * scale, 0, 2, 0.0, 1f))
+        prims.add(DrawPrim.Text(nengappi,             com.example.trilib.PointXY(strx, (by + 2.5f) * scale), w, fitted(nengappi, contentBoxWidth) * scale, 0, 2, 0.0, 1f))
+        prims.add(DrawPrim.Text("1/${st.toInt()} ($paperName)", com.example.trilib.PointXY(scaleContentX, by + 1.5f, scale), w, fitted("1/${st.toInt()} ($paperName)", scaleContentBoxWidth) * scale, 1, 2, 0.0, 1f))
+        prims.add(DrawPrim.Text(zumennum_,            com.example.trilib.PointXY(numContentX, by + 1.5f, scale), w, fitted(zumennum_, numContentBoxWidth) * scale, 1, 2, 0.0, 1f))
+        prims.add(DrawPrim.Text(gyousyaname_,         com.example.trilib.PointXY(strx, (by + 0.5f) * scale), w, fitted(gyousyaname_, contentBoxWidth) * scale, 0, 2, 0.0, 1f))
 
         drawScene(prims)
     }
