@@ -1,0 +1,70 @@
+# GitHub Actions - Play Console への公開 (internal track 固定、2026-08-15)
+#
+# 手動起動のみ (deploy.yml と同じ方針、push では公開されない)。
+# 本番トラックへの昇格は Play Console 側の手作業とする (自動昇格による事故を防ぐため)。
+#
+# 前提となる GitHub Secrets:
+#   trianglelistfirebase - Play Console と紐付けた service account の JSON 鍵の中身をそのまま
+#   DEBUG_KEYSTORE_BASE64 - このリポジトリの release ビルドが署名に使っている
+#                                    ~/.android/debug.keystore を base64 化したもの。
+#                                    (release buildType が signingConfigs.getByName("debug") を使っている
+#                                    ため、CI で新規生成される別鍵で署名すると Play Console の
+#                                    アップロード鍵不一致で拒否される — 必ず同じ鍵を使う)
+#                                    作成: certutil -encode "%USERPROFILE%\.android\debug.keystore" tmp.b64
+#                                    (PowerShellなら [Convert]::ToBase64String([IO.File]::ReadAllBytes("$env:USERPROFILE\.android\debug.keystore")) | Out-File keystore.b64)
+
+name: Publish to Play Console (internal track)
+
+on:
+  workflow_dispatch:
+    inputs:
+      flavor:
+        description: "公開するフレーバー"
+        required: true
+        type: choice
+        options:
+          - free
+          - full
+          - both
+        default: both
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Restore debug keystore (release signing key for this repo)
+        run: |
+          mkdir -p "$HOME/.android"
+          echo "${{ secrets.DEBUG_KEYSTORE_BASE64 }}" | base64 -d > "$HOME/.android/debug.keystore"
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # push 型 CI (android-ci.yml) が既に共有ロジックを検証しているはずだが、公開直前に
+      # app モジュールだけもう一度実走する (ここが red のまま公開するのは絶対に避ける)。
+      - name: Run app module unit tests
+        run: ./gradlew :app:testDevDebugUnitTest --no-daemon --build-cache
+
+      - name: Publish free (internal track)
+        if: ${{ inputs.flavor == 'free' || inputs.flavor == 'both' }}
+        env:
+          ANDROID_PUBLISHER_CREDENTIALS: ${{ secrets.trianglelistfirebase }}
+        run: ./gradlew :app:publishFreeReleaseBundle --no-daemon --build-cache
+
+      - name: Publish full (internal track)
+        if: ${{ inputs.flavor == 'full' || inputs.flavor == 'both' }}
+        env:
+          ANDROID_PUBLISHER_CREDENTIALS: ${{ secrets.trianglelistfirebase }}
+        run: ./gradlew :app:publishFullReleaseBundle --no-daemon --build-cache
