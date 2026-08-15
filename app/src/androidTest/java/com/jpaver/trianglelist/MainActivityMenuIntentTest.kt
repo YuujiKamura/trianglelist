@@ -81,6 +81,17 @@ class MainActivityMenuIntentTest {
 
     @Test
     fun contactMenuItem_launchesEmailIntentWithFixedSubject() {
+        // openContactMail() は resolveActivity で事前チェックしており、メール処理可能な
+        // アプリが端末に無ければ startActivity を呼ばず Toast のみ出す (これは正しい設計、
+        // 2026-08-16 に実機テストで verify35(AVD) が mailto: を解決できないことを発見)。
+        // この前提が満たされない端末ではテスト自体を skip する (fail ではなく assumption)。
+        val probe = Intent(Intent.ACTION_SENDTO, android.net.Uri.parse("mailto:"))
+        val targetContext = InstrumentationRegistry.getInstrumentation().targetContext
+        org.junit.Assume.assumeTrue(
+            "この端末にメール処理可能なアプリが無いため skip (mailto: を解決できない)",
+            probe.resolveActivity(targetContext.packageManager) != null,
+        )
+
         tapMenuItem(R.string.action_contact)
 
         val sent = Intents.getIntents().last()
