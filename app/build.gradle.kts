@@ -4,6 +4,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("io.github.takahirom.roborazzi")
+    id("com.github.triplet.play") version "4.1.1"
 }
 
 android {
@@ -165,4 +166,14 @@ tasks.register("prepareRelease") {
             println("❌ versionCode の取得に失敗しました")
         }
     }
+}
+
+// Play Console への公開 (gradle-play-publisher, ADR: 2026-08-15 「CI自動化」)。
+// service account JSON は ANDROID_PUBLISHER_CREDENTIALS 環境変数から読む (未設定時は
+// publish 系タスクの実行時にのみ失敗する、通常の build/test には影響しない)。
+// devフレーバーはPlay非公開のためpublish対象外 (free/fullのみ自動でタスクが生える)。
+// track は internal 固定 ── 本番への昇格は Play Console 側の手作業とする (事故防止)。
+play {
+    track.set("internal")
+    defaultToAppBundles.set(true)
 }
