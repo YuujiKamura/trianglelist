@@ -1,10 +1,24 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("io.github.takahirom.roborazzi")
     id("com.github.triplet.play") version "4.1.1"
+}
+
+// 2026-08-16 発見: releaseビルドが長らく signingConfigs.getByName("debug") (マシン依存の使い捨て鍵)
+// で署名されており、Play Console が実際に登録してる正規のアップロード鍵 (TriangleListKey.jks,
+// SHA1 89:AD:18:BB:...) と一致していなかった (アップロード時に「署名鍵が違う」で拒否されて発覚)。
+// keystore.properties (gitignore 済み、リポジトリには入れない) が存在すればそれを正規鍵として使う。
+// 無ければ debug 鍵にフォールバックする (ローカルの動作確認用ビルドはこれで壊れない、
+// 実際に Play Console へ上げる時だけ keystore.properties が必須)。
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties()
+val hasReleaseKeystore = keystorePropertiesFile.exists()
+if (hasReleaseKeystore) {
+    keystoreProperties.load(keystorePropertiesFile.inputStream())
 }
 
 android {
@@ -20,11 +34,22 @@ android {
         multiDexEnabled = true
     }
 
+    signingConfigs {
+        if (hasReleaseKeystore) {
+            create("release") {
+                storeFile = file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (hasReleaseKeystore) signingConfigs.getByName("release") else signingConfigs.getByName("debug")
         }
     }
     
