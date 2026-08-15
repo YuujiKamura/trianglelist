@@ -724,6 +724,32 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
+    // 手動の「評価する」導線は Google 公式ガイダンス通り launchReviewFlow を直接叩かない
+    // (quota で無言無視される可能性があるため)。Play ストアの商品ページへ直接飛ばす。
+    private fun openPlayStoreListing() {
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, "market://details?id=$packageName".toUri()))
+        } catch (e: ActivityNotFoundException) {
+            launchViewIntent("https://play.google.com/store/apps/details?id=$packageName".toUri())
+        }
+    }
+
+    private fun openContactMail() {
+        val intent = Intent(Intent.ACTION_SENDTO, "mailto:".toUri()).apply {
+            putExtra(Intent.EXTRA_EMAIL, arrayOf("yuujikamura@gmail.com"))
+            putExtra(Intent.EXTRA_SUBJECT, "【問い合わせ】ヘロンの面積展開図：TriangleList")
+        }
+        if (intent.resolveActivity(packageManager) != null) {
+            startActivity(intent)
+        } else {
+            Toast.makeText(this, "No email app installed.", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    // 自動レビュー打診 (カスタム Snackbar + 3 回別名図面出力 + 30 日隔での再打診) は設計討議中
+    // (2026-08-15)。Google 純正 In-App Review API は結果が一切分からない不透明仕様のため
+    // 不採用と決定済み、自前 UI に置き換える方針のみ確定・実装はまだ。TODO: 実装する。
+
     override fun onDialogPositiveClick(dialog: DialogFragment?) {
         Log.d("MainActivityLifeCycle", "onDialogPositiveClick")
         mIsCreateNew = true
@@ -787,6 +813,12 @@ class MainActivity : AppCompatActivity(),
             R.id.action_usage, R.id.action_privacy -> {
                 val url = if (item.itemId == R.id.action_usage) "https://trianglelist.home.blog" else "https://trianglelist.home.blog/2023/06/28/%e3%83%97%e3%83%a9%e3%82%a4%e3%83%90%e3%82%b7%e3%83%bc%e3%83%9d%e3%83%aa%e3%82%b7%e3%83%bc%e3%81%ab%e3%81%a4%e3%81%84%e3%81%a6/"
                 launchViewIntent(url.toUri())
+            }
+            R.id.action_rate_app -> {
+                openPlayStoreListing()
+            }
+            R.id.action_contact -> {
+                openContactMail()
             }
             else -> return super.onOptionsItemSelected(item)
         }
