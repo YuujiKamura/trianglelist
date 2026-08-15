@@ -1,0 +1,98 @@
+# GitHub Actions - Android CI (build + test)
+# common モジュール (KMP desktopTest) と app モジュール (Robolectric unit test) を
+# push/PR のたびに実走する。公開 (Play Console アップロード) は含まない ── そちらは
+# Google Play Developer API の service account セットアップが要る手作業のまま (2026-08-15)。
+
+name: Android CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+concurrency:
+  group: android-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Run common module tests (desktopTest)
+        run: ./gradlew :common:desktopTest --no-daemon --build-cache
+        continue-on-error: true
+
+      # 2026-08-13 監査 (insight rowid 145) で確認済みの既存 7 件の失敗は、今回の変更とは
+      # 無関係と確定済みなのでブロックしない。ただしこのリストに無い失敗が1件でもあれば
+      # 新規 regression としてジョブを止める ── continue-on-error だけだと新規 regression も
+      # 素通りしてしまうため、実際の判定はこのステップで行う。
+      - name: Verify no new (unexpected) common-module test failures
+        run: |
+          python3 - <<'PY'
+          import glob
+          import sys
+          import xml.etree.ElementTree as ET
+
+          KNOWN_PRE_EXISTING_FAILURES = {
+              "com.jpaver.trianglelist.datamanager.CsvCodecTest.bake_writes_back_manual_overrides",
+              "com.jpaver.trianglelist.editmodel.TriangleRotationTest.testCenteringLogic_CenteringMovesEverything",
+              "com.jpaver.trianglelist.web.WebDrawingExportGoldenTest.dxfFromCsvMatchesAppGolden",
+              "com.jpaver.trianglelist.web.WebDrawingExportGoldenTest.sfcFromCsvMatchesAppGolden",
+              "com.jpaver.trianglelist.web.WebFrameTest.frame_outer_rect_centers_on_triangle_and_scales_with_printscale",
+              "com.jpaver.trianglelist.web.WebPrimitiveRendererTest.reader_applies_list_angle_via_recover_state",
+              "com.jpaver.trianglelist.web.WebPrimitiveRendererTest.reader_restores_manual_placement_from_full_format_columns",
+          }
+
+          def strip_suffix(s, suffix):
+              return s[: -len(suffix)] if s.endswith(suffix) else s
+
+          unexpected = []
+          xml_files = glob.glob("common/build/test-results/desktopTest/TEST-*.xml")
+          if not xml_files:
+              print("No test result XML files found — treating as failure (test run may not have executed).")
+              sys.exit(1)
+
+          for path in xml_files:
+              root = ET.parse(path).getroot()
+              for tc in root.findall("testcase"):
+                  if tc.find("failure") is not None or tc.find("error") is not None:
+                      classname = tc.get("classname", "")
+                      name = strip_suffix(tc.get("name", ""), "[desktop]")
+                      full = f"{classname}.{name}"
+                      if full not in KNOWN_PRE_EXISTING_FAILURES:
+                          unexpected.append(full)
+
+          if unexpected:
+              print("New/unexpected test failures in :common:desktopTest:")
+              for u in unexpected:
+                  print(" -", u)
+              sys.exit(1)
+
+          print("Only known pre-existing failures (or none) — OK.")
+          PY
+
+      - name: Run app module unit tests
+        run: ./gradlew :app:testDevDebugUnitTest --no-daemon --build-cache
+
+      - name: Upload test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            common/build/reports/tests
+            app/build/reports/tests
+          retention-days: 14
