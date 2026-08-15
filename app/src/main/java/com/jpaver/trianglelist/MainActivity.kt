@@ -2437,18 +2437,16 @@ class MainActivity : AppCompatActivity(),
                 val intent = Intent(Intent.ACTION_SEND_MULTIPLE)
                 intent.putExtra(Intent.EXTRA_STREAM, makeShareUris(shareFiles) )
                 Log.d("SendMail", "contentUrl add succeed." )
-                intent.type = "*/*" // MIMEタイプを指定（汎用）
-
-                //intent.type = "message/rfc822"
-                intent.setPackage("com.google.android.gm")
-                Log.d("SendMail", "intent setPackage succeed." )
+                // message/rfc822 でメール送信可能なアプリだけに絞り込む (Gmail 限定はやめた、
+                // 2026-08-16 user 指示「汎用化させておこうか」── Gmail 以外のメールアプリ
+                // (Outlook 等、業務端末では珍しくない) を使ってる人を締め出さないため)。
+                intent.type = "message/rfc822"
 
                 try {
-                    sendMailLauncher.launch(intent) //startActivity(intent)
+                    sendMailLauncher.launch(Intent.createChooser(intent, "Choose an email app"))
                 } catch (e: ActivityNotFoundException) {
-                    // Gmailアプリがインストールされていない場合の処理
-                    Log.d("SendMail", "Gmail is not installed." )
-                    Toast.makeText(this, "Gmail is not installed.", Toast.LENGTH_LONG).show()
+                    Log.d("SendMail", "No email app installed." )
+                    Toast.makeText(this, "No email app installed.", Toast.LENGTH_LONG).show()
 
                 }
 
