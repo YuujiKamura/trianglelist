@@ -8,6 +8,9 @@
 .kotlin
 .idea
 /local.properties
+/keystore.properties
+*.keystore
+*.jks
 /build
 /captures
 .externalNativeBuild
