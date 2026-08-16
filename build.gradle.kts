@@ -4,6 +4,7 @@
 plugins {
     id("com.android.application") apply false
     id("com.android.library") apply false
+    id("com.android.kotlin.multiplatform.library") apply false
     id("org.jetbrains.kotlin.android") apply false
     id("org.jetbrains.kotlin.jvm") apply false
     id("org.jetbrains.kotlin.multiplatform") apply false
@@ -18,7 +19,7 @@ tasks.register("buildAndTest") {
     
     dependsOn(":app:assembleDevDebug")
     dependsOn(":app:testDevDebugUnitTest")
-    dependsOn(":common:testDebugUnitTest")
+    dependsOn(":common:testAndroidHostTest")
     dependsOn(":desktop:test")
     
     doLast {

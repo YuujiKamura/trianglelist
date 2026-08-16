@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("org.jetbrains.kotlin.multiplatform")
-    id("com.android.library")
+    id("com.android.kotlin.multiplatform.library")
     id("org.jetbrains.compose")
     id("org.jetbrains.kotlin.plugin.compose")
 }
@@ -19,10 +19,17 @@ composeCompiler {
 }
 
 kotlin {
-    androidTarget {
+    android {
+        namespace = "com.jpaver.trianglelist.common"
+        compileSdk = 36
+        minSdk = 26
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_1_8)
         }
+        androidResources {
+            enable = false
+        }
+        withHostTestBuilder {}.configure {}
     }
 
     jvm("desktop")
@@ -70,20 +77,6 @@ kotlin {
                 implementation(compose.material3)
             }
         }
-    }
-}
-
-android {
-    namespace = "com.jpaver.trianglelist.common"
-    compileSdk = 36
-    defaultConfig {
-        minSdk = 26
-    }
-    buildFeatures {
-        compose = true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "2.0.0"
     }
 }
 
