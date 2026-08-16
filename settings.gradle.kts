@@ -55,5 +55,10 @@ rootProject.name = "TriangleList"
 include(":app")
 include(":desktop")
 include(":common")
-include(":web")
+// web/ はリポジトリに未コミット (ローカル専用、2026-08-16 発見)。CI のフレッシュ checkout や
+// Gradle 設定キャッシュ未ヒット時に "Configuring project ':web' without an existing directory
+// is not allowed" で全ビルドが落ちるため、存在する時だけ include する。
+if (file("web").isDirectory) {
+    include(":web")
+}
 // include(":core")  // 一時的にコメントアウト
