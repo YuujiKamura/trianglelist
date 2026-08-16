@@ -8,10 +8,13 @@
 
 name: Deploy web to GitHub Pages
 
+# 2026-08-16: web/ の中身が Vite npm project (package.json/package-lock.json/dist) から
+# Kotlin/Wasm Gradle サブモジュール (build.gradle.kts + src/wasmJsMain) に入れ替わり、
+# 本ワークフローが前提とする web/package-lock.json 等が存在しなくなったため全 push で
+# 失敗し続けていた (旧 Vite 実装は web-js/ に移動済みだが本ワークフローは未追従)。
+# どちらを正とするか未確定のため、直すまでは push トリガーを止めて手動起動のみに戻す
+# (このファイル冒頭のコメントが元々意図していた運用に合わせる)。
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:
