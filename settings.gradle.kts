@@ -8,6 +8,7 @@ pluginManagement {
     plugins {
         id("com.android.application") version "9.2.1"
         id("com.android.library") version "9.2.1"
+        id("com.android.kotlin.multiplatform.library") version "9.2.1"
         id("org.jetbrains.kotlin.android") version "2.2.10"
         id("org.jetbrains.kotlin.jvm") version "2.0.0"
         id("org.jetbrains.kotlin.multiplatform") version "2.0.0"
@@ -54,4 +55,5 @@ rootProject.name = "TriangleList"
 include(":app")
 include(":desktop")
 include(":common")
+include(":web")
 // include(":core")  // 一時的にコメントアウト
