@@ -1,7 +1,7 @@
-# GitHub Actions - Play Console への公開 (internal track 固定、2026-08-15)
+# GitHub Actions - Play Console への公開 (2026-08-15、2026-08-16 track を選択式に変更)
 #
 # 手動起動のみ (deploy.yml と同じ方針、push では公開されない)。
-# 本番トラックへの昇格は Play Console 側の手作業とする (自動昇格による事故を防ぐため)。
+# track の既定値は internal (事故防止)。production は明示的に選んだ時だけ。
 #
 # 前提となる GitHub Secrets:
 #   trianglelistfirebase      - Play Console と紐付けた service account の JSON 鍵の中身をそのまま
@@ -13,7 +13,7 @@
 #                                gh secret set で直接設定済み (手動 base64 コピペでの文字化けを回避)。
 #   RELEASE_KEYSTORE_PASSWORD - 上記 keystore の store password (= key password)。
 
-name: Publish to Play Console (internal track)
+name: Publish to Play Console
 
 on:
   workflow_dispatch:
@@ -27,6 +27,14 @@ on:
           - full
           - both
         default: both
+      track:
+        description: "公開先トラック (production は実ユーザー全員に即時影響、慎重に)"
+        required: true
+        type: choice
+        options:
+          - internal
+          - production
+        default: internal
 
 permissions:
   contents: read
@@ -64,14 +72,14 @@ jobs:
       - name: Run app module unit tests
         run: ./gradlew :app:testDevDebugUnitTest --no-daemon --build-cache
 
-      - name: Publish free (internal track)
+      - name: Publish free
         if: ${{ inputs.flavor == 'free' || inputs.flavor == 'both' }}
         env:
           ANDROID_PUBLISHER_CREDENTIALS: ${{ secrets.trianglelistfirebase }}
-        run: ./gradlew :app:publishFreeReleaseBundle --no-daemon --build-cache
+        run: ./gradlew :app:publishFreeReleaseBundle --track ${{ inputs.track }} --no-daemon --build-cache
 
-      - name: Publish full (internal track)
+      - name: Publish full
         if: ${{ inputs.flavor == 'full' || inputs.flavor == 'both' }}
         env:
           ANDROID_PUBLISHER_CREDENTIALS: ${{ secrets.trianglelistfirebase }}
-        run: ./gradlew :app:publishFullReleaseBundle --no-daemon --build-cache
+        run: ./gradlew :app:publishFullReleaseBundle --track ${{ inputs.track }} --no-daemon --build-cache
