@@ -1746,6 +1746,7 @@ function addRow(canvas: HTMLCanvasElement): void {
   if (rows.length === 0) {
     rows.push(createTriangleRow({ ea: newEdge('3.0'), eb: newEdge('3.0'), ec: newEdge('3.0'), parent: '-1', conn: '-1' }));
     clearSelection();
+    view = null; // 行を増やしたので全体 fit に戻す (fabReplace / addRectangle と対称)
     buildTable(canvas);
     syncForm();
     redraw(canvas);
@@ -1765,6 +1766,11 @@ function addRow(canvas: HTMLCanvasElement): void {
     conn: '1',
   }));
   clearSelection(); // 行構成が変わるので選択解除
+  // 行を増やしたので全体 fit に戻す。他の追加動線 (fabReplace / addRectangle / addTriOnTrap) と
+  // 削除動線 (performDelete) は全部これをやっていて、addRow だけ抜けていた。抜けていると
+  // 「キャンバスをパン/ズームした後に『行を追加』を押す」と、増えた図形が古い view のまま
+  // 描かれ、図面枠も表題欄も画面外・図形だけ隅に残る絵になる。
+  view = null;
   buildTable(canvas);
   syncForm();
   redraw(canvas);
