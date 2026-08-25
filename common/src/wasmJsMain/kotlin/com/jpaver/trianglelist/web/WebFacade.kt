@@ -147,6 +147,17 @@ fun renderFrame(csv: String): String = WebFrame.renderFrame(csv)
 fun renderFrameWithMargin(csv: String, marginCm: Float): String = WebFrame.renderFrame(csv, marginCm)
 
 /**
+ * 寸法テキストの当たり判定ボックス全件 + めり込み有無 (2026-08-25): ModelOverlapAnalyzer
+ * (DXF を経由しないモデル層の判定) を CSV に対して直接走らせる。JS 側は返ってきた
+ * cx/cy/w/h/rot (モデル座標系) をそのまま view transform に通して描くだけでよい ──
+ * 判定 box と画面表示 box を一致させる (「描画が真実、箱はその鏡」)。
+ */
+@OptIn(ExperimentalJsExport::class)
+@JsExport
+fun overlapBoxesJson(csv: String, scale: Float, overridesJson: String, thresholdAngle: Float): String =
+    WebOverlap.overlayJson(csv, scale, overridesJson, thresholdAngle)
+
+/**
  * binaries.executable() のリンクに entry point が要るための no-op。
  * 段階1 は @JsExport 関数を JS から呼ぶだけで、起動時処理は無い。
  */
