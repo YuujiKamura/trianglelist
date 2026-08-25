@@ -40,13 +40,12 @@ actual object PlatformTextMetrics {
         if (ink > 0f) ink / REF_SIZE else TextFit.ASSUMED_CAP_HEIGHT_RATIO
     }
 
-    /** @param capHeight キャップハイト (em ではない)。返る幅は同じ座標系に乗る。 */
-    actual fun measureWidthOrNull(text: String, capHeight: Float): Float? {
+    actual fun measureWidthOrNull(text: String, capHeight: CapHeight): Float? {
         if (text.isEmpty()) return 0f
         val f = font ?: return null
         val advance = TextLayout(text, f, frc).advance
-        // advance は REF_SIZE (em) で測った値。capHeight を em に直してから比例させる
-        val em = capHeight / capHeightRatio
-        return advance / REF_SIZE * em
+        // advance は REF_SIZE (em) で測った値なので、em に直してから比例させる。
+        // toEm を通さずに capHeight を使うと約 25% 過小になる ── 型がそれを防ぐ。
+        return advance / REF_SIZE * capHeight.toEm(capHeightRatio).value
     }
 }

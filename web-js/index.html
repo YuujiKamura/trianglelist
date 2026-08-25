@@ -346,7 +346,17 @@
               <label for="layoutThresholdSlider">レイアウト境界幅: <span id="layoutThresholdVal">900</span>px</label>
               <input type="range" id="layoutThresholdSlider" min="400" max="1600" value="900" step="50" style="width: 120px;" />
             </div>
+            <div style="display: flex; align-items: center; gap: 6px; border-left: 1px solid #ccc; padding-left: 12px;">
+              <label title="文字サイズが paper mm から画面 px までどう変換されるかを段ごとに表示する">
+                <input type="checkbox" id="textSizeDebug" /> 文字サイズ内訳
+              </label>
+            </div>
           </div>
+          <!-- 文字サイズの変換段を全部見せるデバッグ表 (2026-08-25 user 指示「プロパティが
+               どう作用するのか画面にデバッグ表示しろ」)。 paper mm → policy cm → prim size
+               (× ps) → 画面 px の各段を、実際に描いた prim から逆算して出す。 単位の取り違え
+               (二重 ÷10 等) はこの表を観れば一段でどこがおかしいか分かる。 -->
+          <div id="textSizePanel" style="display: none; margin-top: 6px; font-size: 11px; background: #fffbe6; border: 1px solid #d9c98a; border-radius: 4px; padding: 6px 8px; overflow-x: auto;"></div>
           <div class="fabcol" id="fabLeft">
             <!-- アプリ fabs.xml 左上横列 [resetView][rot_l][rot_r] と同じ並び -->
             <!-- アイコンはアプリの drawable-nodpi と共通 (sync-icons.mjs)。対応は fabs.xml の

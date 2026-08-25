@@ -147,9 +147,9 @@ class TextSizeBackendParityTest {
         assertEquals(ps, psFromGeometry, tol, "座標に効いている ps と getPrintScale が不一致")
 
         val sizes = webFrameTextSizes(web)
-        val titlePaperMm = TextSizePolicy.resolve(TextRole.TopTitle).toDouble() * 10.0
-        val creditPaperMm = TextSizePolicy.resolve(TextRole.BottomCredit).toDouble() * 10.0
-        val framePaperMm = TextSizePolicy.resolve(TextRole.BottomTitleFrame).toDouble() * 10.0
+        val titlePaperMm = TextSizePolicy.resolve(TextRole.TopTitle).value.toDouble() * 10.0
+        val creditPaperMm = TextSizePolicy.resolve(TextRole.BottomCredit).value.toDouble() * 10.0
+        val framePaperMm = TextSizePolicy.resolve(TextRole.BottomTitleFrame).value.toDouble() * 10.0
 
         // 錨には縮小のかからないものを選ぶ。表題欄のセル内テキストは TextFit.fitSize が
         // 箱に合わせて縮めるので「最小 = policy の base」は成り立たない (縮小は仕様)。

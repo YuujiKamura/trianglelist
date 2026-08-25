@@ -8,5 +8,5 @@ package com.jpaver.trianglelist.datamanager
  * fs へ線形スケール」の形を踏襲する。
  */
 actual object PlatformTextMetrics {
-    actual fun measureWidthOrNull(text: String, capHeight: Float): Float? = null
+    actual fun measureWidthOrNull(text: String, capHeight: CapHeight): Float? = null
 }

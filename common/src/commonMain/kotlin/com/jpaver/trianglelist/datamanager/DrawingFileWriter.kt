@@ -598,7 +598,7 @@ open class DrawingFileWriter {
 
         // 下線の間隔は titleTextSize に比例させる (2026-08-12、タイトルを 7→10mm に拡大した際に
         // 固定 cm offset のままだとタイトル本体・下線が衝突することを実描画の目視で発見)。
-        val lineUnit = titleTextSize / 7f
+        val lineUnit = titleTextSize.value / 7f
         val underlineGap1 = lineUnit * 1f  // 旧 0.1cm
         val underlineGap2 = lineUnit * 2f  // 旧 0.2cm
         // サブタイトル行の縦オフセットは「下線の位置 + サブタイトル自身の実サイズ」から逆算する
@@ -608,16 +608,16 @@ open class DrawingFileWriter {
         // 上方向にフォントサイズぶん伸びるため、下線の下に「サブタイトル自身の高さ + 余白」を確保する。
         // 実描画で目視して「もうすこし下」と判定、user 指示「テキスト一個分オフセット追加」で
         // areaFs をもう 1 つぶん (計 2.2 倍) 加算する。
-        val subtitleLineGap = underlineGap2 + areaFs * 2.2f
+        val subtitleLineGap = underlineGap2 + areaFs.value * 2.2f
 
         val prims = mutableListOf<DrawPrim>(
-            DrawPrim.Text(title, com.example.trilib.PointXY(cx, ty, scale), WHITE, titleTextSize * scale, 1, 1, 0.0, scale),
+            DrawPrim.Text(title, com.example.trilib.PointXY(cx, ty, scale), WHITE, titleTextSize.value * scale, 1, 1, 0.0, scale),
             DrawPrim.Line(com.example.trilib.PointXY(cx - halfW, ty - underlineGap1, scale), com.example.trilib.PointXY(cx + halfW, ty - underlineGap1, scale), WHITE, scale),
             DrawPrim.Line(com.example.trilib.PointXY(cx - halfW, ty - underlineGap2, scale), com.example.trilib.PointXY(cx + halfW, ty - underlineGap2, scale), WHITE, scale)
         )
 
         if (subtitleText.isNotEmpty()) {
-            prims.add(DrawPrim.Text(subtitleText, com.example.trilib.PointXY(cx, ty - subtitleLineGap, scale), WHITE, areaFs * scale, 1, 1, 0.0, scale))
+            prims.add(DrawPrim.Text(subtitleText, com.example.trilib.PointXY(cx, ty - subtitleLineGap, scale), WHITE, areaFs.value * scale, 1, 1, 0.0, scale))
         }
 
         drawScene(prims)
@@ -751,7 +751,9 @@ open class DrawingFileWriter {
         val numContentBoxWidth = (rx - subDivider) - 0.1f
         // 決め打ちサイズで箱に収まらない文字列は TextFit で縮める。全 cell 共通の入口にする
         // (長い工事名だけ改行、他は無条件はみ出し、という非対称が今回の不具合の元だった)。
-        fun fitted(text: String, boxWidth: Float): Float = TextFit.fitSize(text, boxWidth, frameTextSize).size
+        // DrawPrim.Text.size は Float (寸法系 model / 枠系 paper-cm の両方を運ぶ ADR 0001 の
+        // 2 path 構造のため型を付けていない)。キャップハイト型はここで境界を越えて落ちる。
+        fun fitted(text: String, boxWidth: Float): Float = TextFit.fitSize(text, boxWidth, frameTextSize).size.value
 
         val yKOUJIMEI = (by + 5.5f) * scale // cell 中央 (alignV=2 と整合)
         val yo = 0.2f * scale
@@ -784,7 +786,7 @@ open class DrawingFileWriter {
             // 一致させる、 = 文字は外枠下辺の真下に物理的に降りる。 web canvas で glyph 物理上端
             // (= measureText.actualBoundingBoxAscent) 補正、 CAD 標準センタリングと同じ「グリフを観る」 path。
             // alignH=0 (left) で文字左端 = 外枠左辺ぴったり。 outerMarginCm を変えれば url も追従。
-            DrawPrim.Text(zumeninfo.tCredit_,     com.example.trilib.PointXY(outerMarginCm, outerMarginCm, scale), w, creditTextSize * scale, 0, 3, 0.0, 1f),
+            DrawPrim.Text(zumeninfo.tCredit_,     com.example.trilib.PointXY(outerMarginCm, outerMarginCm, scale), w, creditTextSize.value * scale, 0, 3, 0.0, 1f),
         )
         // 工事名は縮小を先に試し、縮小の下限 (TextFit の minSize) でも収まらない特に長い文字列だけ
         // 改行にフォールバックする (2026-08-12: 旧仕様は無条件改行で、縮小後なら 1 行に収まる
@@ -792,9 +794,9 @@ open class DrawingFileWriter {
         // 描画して確認済み)。
         val koujinameFit = TextFit.fitSize(koujiname_, contentBoxWidth, frameTextSize)
         if (koujinameFit.wraps) {
-            prims.addAll(kaigyouPrims(koujiname_, 25, strx, yKOUJIMEI, yo, w, koujinameFit.size * scale))
+            prims.addAll(kaigyouPrims(koujiname_, 25, strx, yKOUJIMEI, yo, w, koujinameFit.size.value * scale))
         } else {
-            prims.add(DrawPrim.Text(koujiname_, com.example.trilib.PointXY(strx, yKOUJIMEI, scale), w, koujinameFit.size * scale, 0, 2, 0.0, 1f))
+            prims.add(DrawPrim.Text(koujiname_, com.example.trilib.PointXY(strx, yKOUJIMEI, scale), w, koujinameFit.size.value * scale, 0, 2, 0.0, 1f))
         }
         // 内容 prim も cell 中央 + alignV=2 (middle) で 統一 (= CAD 標準)。
         prims.add(DrawPrim.Text(zumeninfo.zumentitle, com.example.trilib.PointXY(strx, (by + 4.5f) * scale), w, fitted(zumeninfo.zumentitle, contentBoxWidth) * scale, 0, 2, 0.0, 1f))

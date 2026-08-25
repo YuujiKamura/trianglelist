@@ -106,8 +106,8 @@ class WebFrameMarginTest {
         val sizes = frameTextSizes(json)
         assertTrue(sizes.isNotEmpty(), "frame text prim が 1 つも無い")
 
-        val creditCm = TextSizePolicy.resolve(TextRole.BottomCredit).toDouble()
-        val titleCm = TextSizePolicy.resolve(TextRole.TopTitle).toDouble()
+        val creditCm = TextSizePolicy.resolve(TextRole.BottomCredit).value.toDouble()
+        val titleCm = TextSizePolicy.resolve(TextRole.TopTitle).value.toDouble()
         // 最大 = TopTitle (この fixture では箱に収まるので縮小されない)
         assertEquals(titleCm * ps, sizes.max(), 1e-4,
             "最大の frame text (= TopTitle) は policy cm × ps。実 ${sizes.max()} / 期待 ${titleCm * ps}")
@@ -143,12 +143,12 @@ class WebFrameMarginTest {
         // 表題欄が url 注記より小さいのは通常の図面の強弱関係として不自然 ── FRAME_LABEL を
         // DIMENSION/BottomCredit と同格の 3.5mm (JIS 次の段) へ引き上げ、TopTitle はその
         // 2 倍の 7.0mm。旧階層 (title > frame > credit という逆転無しの自然な強弱) に戻す。
-        assertEquals(0.7f, TextSizePolicy.resolve(TextRole.TopTitle), "TopTitle = 7.0mm/10")
-        assertEquals(0.35f, TextSizePolicy.resolve(TextRole.BottomTitleFrame), "BottomTitleFrame = 3.5mm/10")
-        assertEquals(0.35f, TextSizePolicy.resolve(TextRole.BottomCredit), "BottomCredit = 3.5mm/10")
-        val title = TextSizePolicy.resolve(TextRole.TopTitle)
-        val frame = TextSizePolicy.resolve(TextRole.BottomTitleFrame)
-        val credit = TextSizePolicy.resolve(TextRole.BottomCredit)
+        assertEquals(0.7f, TextSizePolicy.resolve(TextRole.TopTitle).value, "TopTitle = 7.0mm/10")
+        assertEquals(0.35f, TextSizePolicy.resolve(TextRole.BottomTitleFrame).value, "BottomTitleFrame = 3.5mm/10")
+        assertEquals(0.35f, TextSizePolicy.resolve(TextRole.BottomCredit).value, "BottomCredit = 3.5mm/10")
+        val title = TextSizePolicy.resolve(TextRole.TopTitle).value
+        val frame = TextSizePolicy.resolve(TextRole.BottomTitleFrame).value
+        val credit = TextSizePolicy.resolve(TextRole.BottomCredit).value
         assertTrue(title > credit, "TopTitle は BottomCredit より大きい")
         assertEquals(credit, frame, "BottomCredit と BottomTitleFrame は同格 (どちらも DIMENSION_PAPER_MM 準拠)")
     }

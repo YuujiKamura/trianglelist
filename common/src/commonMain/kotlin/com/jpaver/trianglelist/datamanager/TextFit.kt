@@ -35,10 +35,11 @@ object TextFit {
      * さわらびゴシック実測)。対応していないプラットフォーム (Android/Web、未実装) と
      * DXF 経路は、em に直してから半角/全角の粗い近似にフォールバックする。
      */
-    fun estimateWidth(text: String, capHeight: Float): Float {
+    fun estimateWidth(text: String, capHeight: CapHeight): Float {
         PlatformTextMetrics.measureWidthOrNull(text, capHeight)?.let { return it }
-        // advance は em 基準の量なので、キャップハイトを em に直してから積む
-        val em = capHeight / ASSUMED_CAP_HEIGHT_RATIO
+        // advance は em 基準の量なので、キャップハイトを em に直してから積む。
+        // toEm を通さずに capHeight をそのまま積むと 26% 過小になる ── 型がそれを防ぐ。
+        val em = capHeight.toEm(ASSUMED_CAP_HEIGHT_RATIO).value
         var w = 0f
         for (ch in text) {
             val isHalf = ch.code in 0x20..0x7E
@@ -49,7 +50,7 @@ object TextFit {
 
     /** box 幅に収まる最大サイズ。収まらなければ minSize まで縮める。
      *  縮めても収まらない場合は wraps=true (呼び出し側が改行するかの判断材料)。 */
-    data class FitResult(val size: Float, val wraps: Boolean)
+    data class FitResult(val size: CapHeight, val wraps: Boolean)
 
     /** estimateWidth は半角/全角の粗い近似 (= 自前ビューワの近似であって外部 CAD の実フォントの
      *  実測値ではない、2026-08-12 user 指摘)。DXF の STYLE は "Standard" のまま具体フォント指定が
@@ -64,12 +65,18 @@ object TextFit {
     // 本来の意味 (開く側 CAD のフォント差を吸収する余裕) に戻す。
     private const val SAFETY_MARGIN = 0.95f
 
-    fun fitSize(text: String, boxWidth: Float, baseSize: Float, minSize: Float = baseSize * 0.5f): FitResult {
+    fun fitSize(
+        text: String,
+        boxWidth: Float,
+        baseSize: CapHeight,
+        minSize: CapHeight = baseSize * 0.5f,
+    ): FitResult {
         val targetWidth = boxWidth * SAFETY_MARGIN
         if (text.isEmpty() || boxWidth <= 0f) return FitResult(baseSize, false)
         val baseWidth = estimateWidth(text, baseSize)
         if (baseWidth <= targetWidth) return FitResult(baseSize, false)
-        val shrunk = (baseSize * targetWidth / baseWidth).coerceAtLeast(minSize)
+        val scaled = baseSize * (targetWidth / baseWidth)
+        val shrunk = if (scaled < minSize) minSize else scaled
         val stillOverflows = estimateWidth(text, shrunk) > targetWidth
         return FitResult(shrunk, stillOverflows)
     }

@@ -22,13 +22,23 @@ import com.jpaver.trianglelist.scale.TextSizePolicy as PaperModelPolicy
  * この ÷10 が抜けていたこと (TOP_TITLE_MM=7.0 を cm 空間にそのまま渡し 10 倍巨大化) だった。
  */
 object TextSizePolicy {
-    /** @param scale DrawPrim 側の追加スケール (通常 1f)。drawingScale とは無関係 (paper 固定のため)。 */
-    fun resolve(role: TextRole, scale: Float = 1f): Float {
+    /**
+     * role の文字サイズを paper-cm 系の [CapHeight] で返す。
+     *
+     * 返り値がキャップハイト型なのは、この先で「em として使う」誤りを型で止めるため
+     * (2026-08-25、web の ctx.font / desktop の AWT Font size / TextFit の幅推定で
+     * 同じ取り違えが 3 箇所見つかった)。em が要る場所は必ず [CapHeight.toEm] を通す。
+     *
+     * @param scale DrawPrim 側の追加スケール (通常 1f)。drawingScale とは無関係 (paper 固定のため)。
+     */
+    fun resolve(role: TextRole, scale: Float = 1f): CapHeight {
         val paperMm = when (role) {
             TextRole.TopTitle -> PaperModelPolicy.TITLE_PAPER_MM
             TextRole.BottomTitleFrame -> PaperModelPolicy.FRAME_LABEL_PAPER_MM
             TextRole.BottomCredit -> PaperModelPolicy.DIMENSION_PAPER_MM
         }
-        return (paperMm / 10f) * scale
+        // mm → cm は 1 箇所だけ (ここ)。呼び出し側で二度と割らないための集約点でもある
+        // ── 2026-08-12 に WebFrame が同じ ÷10 を重ねて枠テキストが 1/10 になった。
+        return CapHeight((paperMm / 10f) * scale)
     }
 }
