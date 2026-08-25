@@ -168,9 +168,16 @@ object WebFrame {
             }
             val f = if (field != null) ""","field":"$field"""" else ""
             val esc = text.replace("\\", "\\\\").replace("\"", "\\\"")
-            // size は web canvas の paper-cm 単位 (= 寸法系の DrawPrim と整合)。 textsize 引数は
-            // base のお paper-mm 単位 (TOP_TITLE_MM / BOTTOM_MM)、 mm → cm で ÷ 10 が必要。
-            val sizeCm = textsize * ps / 10f
+            // size は座標と同じ空間に乗せる ── 座標が mx() で paper-cm × ps なので、size も
+            // paper-cm × ps。textsize 引数は DrawPrim.Text.size = TextSizePolicy.resolve(role)
+            // = paperMm/10 で既に paper-cm なので、単位変換は不要。
+            //
+            // 2026-08-25 修正: ここに mm→cm の ÷10 が残っていた。4157042a (2026-08-12) で
+            // resolve() が paper-mm でなく paper-cm を返すよう単位が変わったのに、その時
+            // WebFrame は変更対象に入らず ÷10 が取り残され、二重変換で web の枠テキストだけ
+            // 1/10 (表題欄 3.5mm → 0.35mm) に潰れていた。DXF は writeTextHV を素通しするため
+            // 無傷で、web だけが被る非対称だった (user 指摘「タイトル系のテキストが小さい」)。
+            val sizeCm = textsize * ps
             out.add(
                 """{"type":"text","layer":"frame","text":"$esc","x":${p.x},"y":${p.y},"angle":$angle,"size":$sizeCm,"align":$v$h$f,"color":$color}"""
             )
