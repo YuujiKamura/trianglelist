@@ -10,5 +10,5 @@ package com.jpaver.trianglelist.datamanager
  */
 expect object PlatformTextMetrics {
     /** text の実測 advance 幅を fs (呼び出し側の単位、通常 paper-cm) 基準で返す。null = 未対応/失敗。 */
-    fun measureWidthOrNull(text: String, fs: Float): Float?
+    fun measureWidthOrNull(text: String, capHeight: Float): Float?
 }

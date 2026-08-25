@@ -106,17 +106,22 @@ class WebFrameMarginTest {
         val sizes = frameTextSizes(json)
         assertTrue(sizes.isNotEmpty(), "frame text prim が 1 つも無い")
 
-        val frameCm = TextSizePolicy.resolve(TextRole.BottomTitleFrame).toDouble()
+        val creditCm = TextSizePolicy.resolve(TextRole.BottomCredit).toDouble()
         val titleCm = TextSizePolicy.resolve(TextRole.TopTitle).toDouble()
-        // 縮小 (TextFit) が掛かる cell もあるので、最大 = TopTitle、最小でも frame 相当は出る想定。
+        // 最大 = TopTitle (この fixture では箱に収まるので縮小されない)
         assertEquals(titleCm * ps, sizes.max(), 1e-4,
             "最大の frame text (= TopTitle) は policy cm × ps。実 ${sizes.max()} / 期待 ${titleCm * ps}")
-        // 枠線の実寸から逆算しても同じ結論になること (座標系の一致を線側からも押さえる)
+        // 枠線の実寸から逆算しても同じ結論になること (座標系の一致を線側からも押さえる)。
+        // 錨は表題欄のセル内テキストではなく url (BottomCredit) を使う ── セル内は
+        // TextFit.fitSize が箱に合わせて縮めるので base サイズのまま出るとは限らない。
         val (xs, _) = frameLineExtents(json)
         val outerWidthCm = (xs.second - xs.first) / ps
         assertEquals(39.0, outerWidthCm, 1e-3, "default margin 1.5cm の外枠幅 = 39cm")
-        assertEquals(frameCm / 39.0, sizes.min() / (xs.second - xs.first), 1e-4,
-            "表題欄テキストと外枠幅の比 = policy cm / 39cm (単位が二重変換されていない証拠)")
+        val urlSize = Regex(""""type":"text","layer":"frame","text":"http[^"]*".*?"size":([-0-9.E]+)""")
+            .find(json)?.groupValues?.get(1)?.toDouble()
+        assertTrue(urlSize != null, "url (BottomCredit) prim が無い")
+        assertEquals(creditCm / 39.0, urlSize!! / (xs.second - xs.first), 1e-4,
+            "url テキストと外枠幅の比 = policy cm / 39cm (単位が二重変換されていない証拠)")
     }
 
     @Test
