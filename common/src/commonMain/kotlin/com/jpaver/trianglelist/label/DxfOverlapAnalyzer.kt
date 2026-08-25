@@ -6,35 +6,6 @@ import com.jpaver.trianglelist.dxf.DxfText
 import kotlin.math.hypot
 
 /**
- * 重なりペア 1 件。textId は必ず TEXT 側、otherId は相手 (TEXT は LABEL、LINE は EDGE、
- * CIRCLE は CIRCLE)。TEXT 同士のペアは A-B / B-A を正規化して 1 件にする。
- * depthMm は重なり深さ (model mm): 0 = 境界接触 (contact、寸法値が自分の辺に
- * 寄り添う正常配置もここに落ちる)、> 0 = めり込み (intrusion)。
- */
-data class OverlapPair(
-    val textId: String,
-    val otherId: String,
-    val otherKind: ObstacleKind,
-    val depthMm: Double,
-)
-
-/**
- * 番号サークルと認識された TEXT↔CIRCLE のペア (rev6)。番号サークルは円が当たり判定の
- * 主体で、内部の番号 TEXT は円に内包されて一緒に動くだけ ── 判定の世界に入れない。
- */
-data class CircledNumber(val textId: String, val circleId: String)
-
-/** 図面 1 枚分の重なり集計。事実の数値のみで、良し悪しの判定や閾値は持たない。 */
-data class OverlapReport(
-    /** 判定対象の TEXT 数 (サークル番号としてペアリングされた TEXT を除いた後)。 */
-    val totalTexts: Int,
-    val overlappingTexts: Int,
-    val pairs: List<OverlapPair>,
-    /** ペアリング結果 (観測の透明性のため、どの TEXT がどの円の番号と認識されたか)。 */
-    val circledNumbers: List<CircledNumber> = emptyList(),
-)
-
-/**
  * DXF パース結果 → CollisionField 集計の純関数 (ADR 0002 段階 2: まず測る、直すのは後)。
  *
  * 全 LINE を辺、全 CIRCLE を円プリミティブ、全 TEXT を係数近似の LabelBox として
