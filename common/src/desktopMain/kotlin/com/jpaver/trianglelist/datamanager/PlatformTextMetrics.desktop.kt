@@ -26,10 +26,27 @@ actual object PlatformTextMetrics {
         }
     }
 
-    actual fun measureWidthOrNull(text: String, fs: Float): Float? {
+    /**
+     * このフォントのキャップハイト / em 比を 'A' のインク実高から実測する。
+     *
+     * AWT の font size は em、TextFit が渡してくるのはキャップハイト (DXF group code 40 と
+     * 同じ量) ── 別の量なので、そのまま deriveFont に渡すと advance を約 25% 過小に返す。
+     * 比は フォント固有の性質なので定数を置かず測る (TextRenderer が Skia で行っているのと
+     * 同じ、ezdxf の make_font(name, cap_height) / QCAD RTextRenderer と同型)。
+     */
+    private val capHeightRatio: Float by lazy {
+        val f = font ?: return@lazy TextFit.ASSUMED_CAP_HEIGHT_RATIO
+        val ink = TextLayout("A", f, frc).bounds.height.toFloat()
+        if (ink > 0f) ink / REF_SIZE else TextFit.ASSUMED_CAP_HEIGHT_RATIO
+    }
+
+    /** @param capHeight キャップハイト (em ではない)。返る幅は同じ座標系に乗る。 */
+    actual fun measureWidthOrNull(text: String, capHeight: Float): Float? {
         if (text.isEmpty()) return 0f
         val f = font ?: return null
         val advance = TextLayout(text, f, frc).advance
-        return advance / REF_SIZE * fs
+        // advance は REF_SIZE (em) で測った値。capHeight を em に直してから比例させる
+        val em = capHeight / capHeightRatio
+        return advance / REF_SIZE * em
     }
 }
