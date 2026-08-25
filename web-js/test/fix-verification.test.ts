@@ -1,6 +1,25 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { health, state, tap, click, loadCsv } from './combo/cpClient.ts';
-import { bounds } from './combo/primAnalyzer.ts';
+
+/**
+ * line prim 群の bbox。
+ *
+ * 2026-08-25 修正: 元は './combo/primAnalyzer.ts' から `bounds` を import していたが、
+ * その関数は primAnalyzer に存在せず (export は groupByTri / chainAndClose / analyzeTri /
+ * detectTriOverlaps / dimLabelsByTri のみ)、実行時に `TypeError: bounds is not a function`
+ * で落ちていた ── この test は「回転ドリフト修正の検証」という名前のまま、一度も
+ * assertion まで到達していなかった。テスト内で完結させる。
+ */
+function bounds(prims: any[]): { minX: number; maxX: number; minY: number; maxY: number } {
+  const xs: number[] = [];
+  const ys: number[] = [];
+  for (const p of prims) {
+    if (typeof p.x1 === 'number') { xs.push(p.x1, p.x2); ys.push(p.y1, p.y2); }
+    else if (typeof p.x === 'number') { xs.push(p.x); ys.push(p.y); }
+  }
+  if (!xs.length) throw new Error('bounds: 対象 prim が無い');
+  return { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) };
+}
 
 beforeAll(async () => {
   const ok = await health();

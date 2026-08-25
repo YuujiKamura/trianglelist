@@ -6,37 +6,40 @@ package com.jpaver.trianglelist.datamanager
 object TextFit {
 
     /**
-     * 実測できないプラットフォームで仮定するキャップハイト / em 比。
+     * レイアウト計算で仮定するキャップハイト / em 比。
      *
-     * 定数なのは「実測手段が無いから」であって補正値ではない ── 実測できる経路
-     * (PlatformTextMetrics、web canvas の measureText、desktop Skia の 'A' 実測) は
-     * 必ずそちらを使い、ここには落ちてこない。DXF の STYLE は "Standard" のままで
-     * 開く側の CAD がどの実フォントで描くか確定できないため、DXF 経路だけは原理的に
-     * 実測不能で、ここを通る。
-     *
-     * 値は「cap < em はどのフォントでも成り立ち、比は概ね 0.70〜0.80」から中央付近を取る
-     * (実測値: sans-serif 0.74 / MS Gothic 0.77)。
+     * 「cap < em はどのフォントでも成り立ち、比は概ね 0.70〜0.80」から中央付近を取る
+     * (実測値: sans-serif 0.74 / MS Gothic 0.77 / さわらびゴシック 0.70)。
      */
     const val ASSUMED_CAP_HEIGHT_RATIO: Float = 0.75f
 
     /**
-     * 文字列の描画幅を返す。
+     * 文字列の描画幅を返す。**プラットフォームに依らず同じ値を返す** (決定的)。
      *
      * **capHeight はキャップハイト** (= DXF TEXT の group code 40 と同じ量、大文字の高さ)。
      * em ではない。返る幅は capHeight と同じ座標系 (呼び出し側の paper-cm) に乗る。
      *
-     * 2026-08-25 修正: 旧実装は全角 1 文字の advance を `fs * 1.0`、つまり
+     * 2026-08-25 修正 (1): 旧実装は全角 1 文字の advance を `fs * 1.0`、つまり
      * 「1 全角 = 1 キャップハイト」と置いていたが、実際の全角 advance は 1.0 **em**。
      * em はキャップハイトより 3 割ほど大きいので、幅を約 26% 過小に見積もっていた
      * (表題欄の「図面番号」がセル幅 0.8999 に対し実描画 0.9459 ではみ出した)。
      * font-size を em と cap で取り違えていたのと同じ間違いが幅側にもあった形。
      *
-     * PlatformTextMetrics が実フォントで計測できればそれを使う (2026-08-12、desktop のみ対応、
-     * さわらびゴシック実測)。対応していないプラットフォーム (Android/Web、未実装) と
-     * DXF 経路は、em に直してから半角/全角の粗い近似にフォールバックする。
+     * 2026-08-25 修正 (2): PlatformTextMetrics (desktop だけ実装済みの さわらびゴシック実測)
+     * を**レイアウト判断から外した**。実測は desktop でしか動かず Android/wasmJs は null を
+     * 返すため、同じ CSV から生成した DXF の文字サイズがプラットフォームごとに違っていた
+     * (「工 事 名」が app 151.4 / desktop・web 163、WebDrawingExportGoldenTest が検出)。
+     *
+     * レイアウトは決定的でなければならない:
+     *  - user 方針「画面と図面で同じレイアウト (冪等)」(2026-06-18)
+     *  - golden test の趣旨「スマホアプリと Web で同じ図面ファイルが出る = 部品が本当に共通」
+     *  - そもそも DXF の STYLE は "Standard" で、開く側の CAD がどの実フォントで描くかは
+     *    こちらで確定できない ── 手元のフォントを測って相手の描画幅を決めるのは原理的に誤り
+     *
+     * 実フォント実測 (PlatformTextMetrics) は「その画面で今描いた文字の実幅」が要る用途
+     * (当たり判定・カーソル位置) 専用で、共有レイアウトの決定には使わない。
      */
     fun estimateWidth(text: String, capHeight: CapHeight): Float {
-        PlatformTextMetrics.measureWidthOrNull(text, capHeight)?.let { return it }
         // advance は em 基準の量なので、キャップハイトを em に直してから積む。
         // toEm を通さずに capHeight をそのまま積むと 26% 過小になる ── 型がそれを防ぐ。
         val em = capHeight.toEm(ASSUMED_CAP_HEIGHT_RATIO).value

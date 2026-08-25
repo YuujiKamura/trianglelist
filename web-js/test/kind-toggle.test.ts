@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeAll } from 'vitest';
-import { health, state, loadCsv, click, options, key, select } from './combo/cpClient.ts';
+import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
+import { health, state, loadCsv, click, options, key, select, tap } from './combo/cpClient.ts';
 import { expectScreenshotToMatch } from './combo/vrt.ts';
 
 // dev server に当てる integration test。 commit 1755172 で導入した
@@ -11,6 +11,63 @@ beforeAll(async () => {
   const ok = await health();
   if (!ok) throw new Error('dev server (http://localhost:5173) が立ってない');
 }, 10_000);
+
+/**
+ * UI が静止する (state が 3 連続で同じ) まで待つ。時間ではなく変化が止まったことを待つ。
+ * 2026-08-25 追加: VRT スクショが直前の test の残留 UI 状態を写して flaky になっていたため。
+ */
+async function waitQuiescent(): Promise<void> {
+  let last = '';
+  let stable = 0;
+  for (let i = 0; i < 60; i++) {
+    const s: any = await state();
+    const cur = JSON.stringify(s?.newRow ?? null)
+      + '|' + String(s?.selected ?? '')
+      + '|' + String(s?.prims?.length ?? 0)
+      + '|' + String(s?.deductionMode ?? '')
+      + '|' + String(s?.rows?.length ?? 0);
+    stable = cur === last ? stable + 1 : 0;
+    last = cur;
+    if (stable >= 2) return;
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  throw new Error(`画面が静止しない: ${last}`);
+}
+
+/**
+ * アプリを既知の初期状態へ戻す (アプリ自身の「新規作成」)。
+ * この file も VRT スクショを撮るので、vrt-scenarios と同じ理由でリセットが要る ──
+ * 両者を同じスイートで回すと、控除モード / 控除リストの開閉 / fab ハイライト /
+ * 種別に連動するヘッダ表記 が相互に漏れて双方の snapshot が壊れる (2026-08-25)。
+ */
+/**
+ * 新規行フォームのテキスト入力をクリアし、反映を確認する。
+ *
+ * 「新規作成」(newDrawing) は rows / モード / 選択は初期化するが **新規行フォームは
+ * 触らない** (2026-08-25 実測)。残ったままだと次の test のスクショに写る。
+ *
+ * select (接続辺 / 形態 / 起点) は触らない ── 親番号や選択から派生して自動で決まる値なので、
+ * 外から値を入れると逆に非決定になる。実際、旧実装が key('newLcr','0') で左起点を強制して
+ * いたせいで「右起点 (派生値) と 左起点 (強制値)」が混ざり 27px の flaky になっていた。
+ * 親番号を空にすれば select 側も一意に落ち着く (conn=1 / ctype=0 / lcr=2)。
+ */
+async function clearNewRowInputs(): Promise<void> {
+  for (let attempt = 0; attempt < 20; attempt++) {
+    for (const id of ['newA', 'newB', 'newC', 'newParent']) await key(id, '');
+    const s: any = await state();
+    const n = s?.newRow;
+    if (n && n.a === '' && n.b === '' && n.c === '' && n.parent === '') return;
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  throw new Error('新規行フォームがクリアされない');
+}
+
+beforeEach(async () => {
+  await click('newDrawing');
+  await tap(0, 0);
+  await clearNewRowInputs();
+  await waitQuiescent();
+});
 
 // page HTML を取って <select id="sideCell-N"> の option value 列を抽出
 async function sideOptionsOf(triNum: number): Promise<string[]> {
@@ -144,7 +201,8 @@ describe('kind-toggle (一覧 △/□ click で 種別切替)', () => {
       expect(s.rows[0].extras[0]).toBe('0');
 
       // VRTによるビジュアル検証
-      await expectScreenshotToMatch('kind-toggle-rectangle-color-changed');
+      await waitQuiescent();
+    await expectScreenshotToMatch('kind-toggle-rectangle-color-changed');
     });
 
     it('三角形の色替えをクリックしたとき、extras[4] に色が保存され、測点名 extras[0] は影響を受けないこと', async () => {
@@ -168,7 +226,8 @@ describe('kind-toggle (一覧 △/□ click で 種別切替)', () => {
       expect(s.rows[0].extras[0]).toBe('TriStation');
 
       // VRTによるビジュアル検証
-      await expectScreenshotToMatch('kind-toggle-triangle-color-changed');
+      await waitQuiescent();
+    await expectScreenshotToMatch('kind-toggle-triangle-color-changed');
     });
   });
 });

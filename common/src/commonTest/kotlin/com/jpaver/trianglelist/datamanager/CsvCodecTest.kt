@@ -172,7 +172,10 @@ class CsvCodecTest {
         // 再構築しても override が生きている (CSV だけで往復できる = localStorage 非依存)
         val rebuilt = CsvCodec.build(baked)
         assertEquals(3, rebuilt.getBy(1).dim.vertical.c)
-        assertEquals(7.0089746f, rebuilt.getBy(2).pointnumber.x.toFloat(), 0.001f)
-        assertEquals(10.799038f, rebuilt.getBy(2).pointnumber.y.toFloat(), 0.001f)
+        // 番号サークルは移動フラグ付きなので CSV の絶対座標 (9.0, 9.5) がそのまま復元される。
+        // 2026-08-25 復元: b4d6e104 (06-20) がモデル層 centering 前提の値に書き換えたが、
+        // 56be21de (06-27) が centering をモデルから外した際に戻されず red のままだった。
+        assertEquals(9.0f, rebuilt.getBy(2).pointnumber.x.toFloat(), 0.001f)
+        assertEquals(9.5f, rebuilt.getBy(2).pointnumber.y.toFloat(), 0.001f)
     }
 }

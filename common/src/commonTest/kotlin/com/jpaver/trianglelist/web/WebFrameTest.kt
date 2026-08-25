@@ -34,8 +34,17 @@ class WebFrameTest {
         // 2026-06-18 user 指示「デフォルト 15mm くらいが見やすい」 ── 旧 default 2.0cm から 1.5cm に
         assertEquals(39.0 * ps, xs.max() - xs.min(), 1e-3)
         assertEquals(26.7 * ps, ys.max() - ys.min(), 1e-3)
-        assertEquals(0.0, (xs.max() + xs.min()) / 2, 1e-3)
-        assertEquals(0.0, (ys.max() + ys.min()) / 2, 1e-3)
+        // 枠中心 = 図形中心 (test 名 "centers_on_triangle" そのもの)。
+        // 2026-08-25 復元: b4d6e104 がここを center.x/y から 0.0 の決め打ちに書き換えていたが、
+        // WebCsvReader.read は図形を原点に寄せない (最初の頂点が (0,0) で始まるだけ) ので
+        // 0.0 は成り立たない前提だった。実際 6/5/4 の三角形は bbox 中心 x=3.0 に来る。
+        //
+        // 当時 0.0 に緩めたのは、bbox 計算に 2 つのバグ (calcBounds の原点シード /
+        // setBoundaryBox の第 3 頂点欠落) があって trilist.center と枠側の
+        // figuresBboxCenter が食い違っていたため ── 症状に合わせて assertion を動かした形。
+        // 両方直したので元の意図に戻す。
+        assertEquals(center.x.toDouble(), (xs.max() + xs.min()) / 2, 1e-3)
+        assertEquals(center.y.toDouble(), (ys.max() + ys.min()) / 2, 1e-3)
     }
 
     @Test

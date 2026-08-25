@@ -2974,7 +2974,7 @@ class MainActivity : AppCompatActivity(),
             return
         }
 
-        file.bufferedReader( charset("Shift_JIS") ).useLines { lines ->
+        file.bufferedReader( charset("windows-31j") ).useLines { lines -> // CP932
             val logContent = lines.take(10).joinToString(separator = "\n")
             Log.d("FileLoader", "$callerMethodName: Preview of $filePath:\n$logContent")
         }

@@ -206,8 +206,37 @@ open class TriangleList : EditList<Triangle> {
     }
 
 
+    /**
+     * リスト全体の bbox。
+     *
+     * 2026-08-25 修正: 種を `Bounds(0,0,0,0)` にしていたため **bbox が常に原点を含んで**
+     * いた。expandBoundaries は種を「既存の範囲」として min/max を取るので、原点を種に
+     * するのは「原点も図形の一部」と宣言したのと同じ ── 図形が原点から遠いほど中心が
+     * 原点側へ引っ張られる。三角形を (100,100) に置くと bbox が 0..105 になり中心 52.5、
+     * その分 move しても今度は bbox が 0..52 になって中心 23.75 が残る (= 冪等でない)。
+     *
+     * この 1 バグが 3 つの failing test の共通原因だった:
+     *  - TriangleRotationTest.testCenteringLogic (23.75 が残る)
+     *  - WebFrameTest.frame_outer_rect_centers (図面枠の中心が図形中心と 3.0 ずれる)
+     *  - web-js fix-verification.test.ts (回転時に図形中心が画面上で動く)
+     *
+     * 正しくは最初の図形の bbox を種にする。空リストのときだけゼロ Bounds を返す
+     * (呼び出し側が「図形が無い」を 0 で扱う既存挙動を維持)。
+     */
     fun calcBounds(): Bounds {
-        myBounds = Bounds(0.0, 0.0, 0.0, 0.0)
+        if (trilist.isEmpty()) {
+            myBounds = Bounds(0.0, 0.0, 0.0, 0.0)
+            return myBounds
+        }
+        // 種は「何も含まない範囲」= min/max の単位元 (反転した無限大)。expandBoundaries は
+        // left/bottom に min、right/top に max を取るので、この種は 1 個目の図形の bbox を
+        // そのまま通す。原点 (0,0) を種にすると原点が bbox に含まれてしまう。
+        myBounds = Bounds(
+            left = Double.POSITIVE_INFINITY,
+            top = Double.NEGATIVE_INFINITY,
+            right = Double.NEGATIVE_INFINITY,
+            bottom = Double.POSITIVE_INFINITY,
+        )
         for (i in trilist.indices) {
             myBounds = trilist[i].expandBoundaries(myBounds)
         }
