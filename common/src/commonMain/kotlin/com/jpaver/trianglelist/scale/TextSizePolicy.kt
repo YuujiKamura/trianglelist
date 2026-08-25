@@ -21,13 +21,16 @@ object TextSizePolicy {
     /** 寸法値・注記の paper mm 標準 (JIS Z 8313 / CAD 製図基準の主流)。 */
     const val DIMENSION_PAPER_MM: Float = 3.5f
 
-    /** 図面枠の項目内容 (工事名・路線名等) の paper mm 標準。2026-08-12 desktop/sample/sample.dxf
-     *  (user が最適と判断した既存表題欄) の実測値 (model 125.0mm ÷ 1/50 scale = paper 2.5mm、
-     *  JIS ラダー最小段) に合わせて確定。 */
-    const val FRAME_LABEL_PAPER_MM: Float = 2.5f
+    /** 図面枠の項目内容 (工事名・路線名等) の paper mm 標準。
+     *  2026-08-12 に desktop/sample/sample.dxf の実測値 (2.5mm、JIS ラダー最小段) へ一旦
+     *  合わせたが、DIMENSION_PAPER_MM (3.5mm) より表題欄の方が小さいという逆転を生み、
+     *  web 画面でタイトル系の文字が判読できないレベルまで縮む結果になった (2026-08-25 user
+     *  指摘)。表題欄・タイトルは寸法値より格下ではないはずなので、DIMENSION_PAPER_MM と
+     *  同格の 3.5mm (JIS ラダー次の段) に引き上げる。 */
+    const val FRAME_LABEL_PAPER_MM: Float = 3.5f
 
-    /** 図面タイトル (面積展開図など) の paper mm 標準。2026-08-12 user 指示「上部タイトルは
-     *  表題欄に対して2倍」: FRAME_LABEL_PAPER_MM (2.5mm) の 2 倍。 */
+    /** 図面タイトル (面積展開図など) の paper mm 標準。user 指示「上部タイトルは
+     *  表題欄に対して2倍」: FRAME_LABEL_PAPER_MM (3.5mm) の 2 倍 = 7.0mm (JIS ラダー次の段)。 */
     const val TITLE_PAPER_MM: Float = FRAME_LABEL_PAPER_MM * 2f
 
     /** paper mm を model mm に換算。drawingScaleDenominator は 1/50 図面なら 50f。 */

@@ -9,11 +9,13 @@ class TextSizePolicyTest {
     @Test
     fun `JIS 主流の paper mm 定数が階段の中の値`() {
         assertEquals(3.5f, TextSizePolicy.DIMENSION_PAPER_MM, delta)
-        // 2026-08-12: desktop/sample/sample.dxf (user が最適と判断した既存表題欄) の実測値
-        // (model 125.0mm ÷ 1/50 scale = paper 2.5mm、JIS ラダー最小段) に合わせて確定。
-        assertEquals(2.5f, TextSizePolicy.FRAME_LABEL_PAPER_MM, delta)
-        // user 指示「上部タイトルはこれに対して2倍」: 2.5mm の 2 倍 = 5.0mm。
-        assertEquals(5.0f, TextSizePolicy.TITLE_PAPER_MM, delta)
+        // 2026-08-25 user 指摘: 2026-08-12 に sample.dxf 実測値 (2.5mm) へ縮小した結果、
+        // 表題欄 (FRAME_LABEL) が寸法値 (DIMENSION 3.5mm) より小さい逆転が生じ、web の
+        // 画面表示でタイトル系の文字が小さすぎると判明。表題欄は寸法値と同格以上にする
+        // 方針で DIMENSION_PAPER_MM と同じ 3.5mm (JIS 次の段) に引き上げる。
+        assertEquals(3.5f, TextSizePolicy.FRAME_LABEL_PAPER_MM, delta)
+        // user 指示「上部タイトルはこれに対して2倍」: 3.5mm の 2 倍 = 7.0mm (JIS ラダーの次の段)。
+        assertEquals(7.0f, TextSizePolicy.TITLE_PAPER_MM, delta)
     }
 
     @Test
@@ -23,9 +25,9 @@ class TextSizePolicyTest {
     }
 
     @Test
-    fun `1分の150 図面で枠ラベル 2_5 mm を model に換算すると 375 mm`() {
+    fun `1分の150 図面で枠ラベル 3_5 mm を model に換算すると 525 mm`() {
         val modelMm = TextSizePolicy.paperToModel(TextSizePolicy.FRAME_LABEL_PAPER_MM, 150f)
-        assertEquals(375f, modelMm, delta)
+        assertEquals(525f, modelMm, delta)
     }
 
     @Test

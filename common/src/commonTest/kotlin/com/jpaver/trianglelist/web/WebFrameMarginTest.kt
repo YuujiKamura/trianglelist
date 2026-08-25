@@ -81,6 +81,44 @@ class WebFrameMarginTest {
         assertTrue(json.contains(""""field":"url""""), "BottomCredit url field tag 必須 (= canvas click 経路の識別子)")
     }
 
+    /** prim JSON から layer="frame" の text の size を全部拾う。 */
+    private fun frameTextSizes(json: String): List<Double> =
+        Regex(""""type":"text","layer":"frame".*?"size":([-0-9.E]+)""")
+            .findAll(json).map { it.groupValues[1].toDouble() }.toList()
+
+    @Test
+    fun frameTextSizeIsInTheSameCoordinateSpaceAsFrameLines() {
+        // 2026-08-25 user 指摘「web のタイトル系テキストが小さい」の regression pin。
+        //
+        // 枠線は mx() が paper-cm に ×ps して吐く (= 画面共有のモデル座標)。テキストの size も
+        // 同じ空間に乗っていなければならない ── なのに FramePrimWriter.writeTextHV は
+        // 「textsize は paper-mm だから ÷10 が要る」前提の ÷10 を持ったままだった。4157042a
+        // (2026-08-12) で TextSizePolicy.resolve() が paper-cm を返すよう単位が変わったのに
+        // web 側の ÷10 が残り、二重変換で枠テキストだけ 1/10 (表題欄 3.5mm → 0.35mm) になった。
+        // DXF は writeTextHV を素通しするので無傷、web だけが被る非対称だった。
+        //
+        // policy 値そのもの (frameTextSizeFollowsJisPaperMmLadder) を pin しても、その先の
+        // 単位変換が壊れていれば素通りする ── 実際に素通りした。emit された size を、同じ
+        // JSON に入っている枠線の実寸と突き合わせる形で pin し直す (= 「描画が真実」)。
+        val trilist = WebCsvReader.read(csv)
+        val ps = trilist.getPrintScale(1f)
+        val json = WebFrame.renderFrame(csv)
+        val sizes = frameTextSizes(json)
+        assertTrue(sizes.isNotEmpty(), "frame text prim が 1 つも無い")
+
+        val frameCm = TextSizePolicy.resolve(TextRole.BottomTitleFrame).toDouble()
+        val titleCm = TextSizePolicy.resolve(TextRole.TopTitle).toDouble()
+        // 縮小 (TextFit) が掛かる cell もあるので、最大 = TopTitle、最小でも frame 相当は出る想定。
+        assertEquals(titleCm * ps, sizes.max(), 1e-4,
+            "最大の frame text (= TopTitle) は policy cm × ps。実 ${sizes.max()} / 期待 ${titleCm * ps}")
+        // 枠線の実寸から逆算しても同じ結論になること (座標系の一致を線側からも押さえる)
+        val (xs, _) = frameLineExtents(json)
+        val outerWidthCm = (xs.second - xs.first) / ps
+        assertEquals(39.0, outerWidthCm, 1e-3, "default margin 1.5cm の外枠幅 = 39cm")
+        assertEquals(frameCm / 39.0, sizes.min() / (xs.second - xs.first), 1e-4,
+            "表題欄テキストと外枠幅の比 = policy cm / 39cm (単位が二重変換されていない証拠)")
+    }
+
     @Test
     fun frameTextSizeFollowsJisPaperMmLadder() {
         // 2026-08-12 最終版: writeTopTitle/writeDrawingFrame は drawingScale を打ち消した
@@ -94,18 +132,20 @@ class WebFrameMarginTest {
         // 適用しない。
         //
         // 2026-08-12 desktop/sample/sample.dxf (user が最適と判断) の実測 (model 125.0mm ÷ 1/50
-        // scale = paper 2.5mm) に合わせて FRAME_LABEL を 5.0→2.5mm へ、TopTitle はその 2 倍
-        // (user 指示) で 5.0mm へ確定。結果 FRAME_LABEL(2.5mm) が BottomCredit(3.5mm) を下回り、
-        // 旧階層 (TopTitle > FRAME_LABEL > CREDIT) は成立しなくなった ── 表題欄が url 注記より
-        // 小さいのは意図通り (sample.dxf 実測ベース)、旧階層 assertion は削除して新階層で pin する。
-        assertEquals(0.5f, TextSizePolicy.resolve(TextRole.TopTitle), "TopTitle = 5.0mm/10")
-        assertEquals(0.25f, TextSizePolicy.resolve(TextRole.BottomTitleFrame), "BottomTitleFrame = 2.5mm/10")
+        // scale = paper 2.5mm) に合わせて FRAME_LABEL を 5.0→2.5mm へ、TopTitle はその 2 倍で
+        // 5.0mm へ縮小した。結果 FRAME_LABEL(2.5mm) が BottomCredit(3.5mm) を下回る逆転が生じ、
+        // web 画面でタイトル系の文字が判読できないほど小さくなった (2026-08-25 user 指摘)。
+        // 表題欄が url 注記より小さいのは通常の図面の強弱関係として不自然 ── FRAME_LABEL を
+        // DIMENSION/BottomCredit と同格の 3.5mm (JIS 次の段) へ引き上げ、TopTitle はその
+        // 2 倍の 7.0mm。旧階層 (title > frame > credit という逆転無しの自然な強弱) に戻す。
+        assertEquals(0.7f, TextSizePolicy.resolve(TextRole.TopTitle), "TopTitle = 7.0mm/10")
+        assertEquals(0.35f, TextSizePolicy.resolve(TextRole.BottomTitleFrame), "BottomTitleFrame = 3.5mm/10")
         assertEquals(0.35f, TextSizePolicy.resolve(TextRole.BottomCredit), "BottomCredit = 3.5mm/10")
         val title = TextSizePolicy.resolve(TextRole.TopTitle)
         val frame = TextSizePolicy.resolve(TextRole.BottomTitleFrame)
         val credit = TextSizePolicy.resolve(TextRole.BottomCredit)
         assertTrue(title > credit, "TopTitle は BottomCredit より大きい")
-        assertTrue(credit > frame, "BottomCredit は BottomTitleFrame より大きい (sample.dxf 実測反映後の新階層)")
+        assertEquals(credit, frame, "BottomCredit と BottomTitleFrame は同格 (どちらも DIMENSION_PAPER_MM 準拠)")
     }
 
     @Test
