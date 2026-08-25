@@ -52,6 +52,7 @@ import {
   buildSfcTextNumReverse,
   buildCsvTextWithOverrides,
   hitTriangle,
+  overlapBoxesJson,
   placeDeduction,
   renderFrame,
   renderFrameWithMargin,
@@ -62,6 +63,8 @@ import {
 // encoding-japanese (MIT, polygonplanet/encoding.js) で Unicode → SJIS バイト化する
 import Encoding from 'encoding-japanese';
 import { safeOpenUrl } from './url-safety';
+// キャップハイト (prim の size) ⇄ canvas の font-size (em)。別の量なので混ぜない
+import { capHeightRatio, fontPxForCapPx, setFontForCapPx, FONT_FAMILY } from './text-metrics';
 
 // 内蔵サンプル (desktop/sample/sample_triangles.csv と同形式)
 const SAMPLE_CSV = `テスト工事
@@ -169,6 +172,12 @@ type ViewTransform = { scale: number; offsetX: number; offsetY: number };
 
 let view: ViewTransform | null = null; // null = 次の draw で bounds-fit を計算し直す
 let lastPrims: Prim[] = []; // ズーム・パン時に wasm を呼び直さず再描画するためのキャッシュ
+// 寸法テキストの当たり判定ボックス (common ModelOverlapAnalyzer 判定、DXF非経由)。
+// cx/cy/w/h/rot はモデル座標系 ── 判定が見ている box をそのまま view transform に通して描く
+// ("描画が真実、箱はその鏡" を JS 境界の先まで保つ、dblclick 編集用の textScreenBox とは別物)。
+// draw() が読んでオーバーレイを描く。renderCsv() が図形を再計算するたびに更新する
+type DimOverlayBox = { id: string; cx: number; cy: number; w: number; h: number; rot: number; intrusion: boolean };
+let dimOverlayBoxes: DimOverlayBox[] = [];
 let selected = 0; // 選択中の三角形番号 (1-based、0 = 非選択)
 
 // ---- 段階2e: 手動 override (ADR 0003 の「式 ⊕ override」の override 側) ----
@@ -347,6 +356,108 @@ function haloText(ctx: CanvasRenderingContext2D, text: string, x: number, y: num
   ctx.fillText(text, x, y);
 }
 
+/**
+ * 文字サイズが「紙の mm」から「画面の px」へ何段の変換を通って出てくるかを、実際に描いた
+ * prim から逆算して表に出す (2026-08-25 user 指示「プロパティがどう作用するのか画面に
+ * デバッグ表示しろ」)。
+ *
+ * 段は 4 つ:
+ *   (1) policy paper mm  … scale/TextSizePolicy の JIS 階段 (TITLE 7.0 / FRAME 3.5 …)
+ *   (2) prim size        … wasm が吐いた値。 枠系は paper-cm × ps のはず
+ *   (3) paper mm 逆算    … (2) を ps と cm→mm で紙に戻した値。 (1) と一致しなければ
+ *                          途中の単位変換が壊れている (= 今回の二重 ÷10 がここで出る)
+ *   (4) 画面 px          … prim size × view scale。 canvas の font-size に渡る実値
+ *
+ * ps (= printscale) は「紙 1cm がモデル何単位か」で、同じ JSON の paper 枠線の実寸から
+ * 逆算する (paper 外周は A3 = 42×29.7cm 固定)。 定数を持たず描画結果から取るので、
+ * 「観ている表 = 実際に描いた物」 が保たれる。
+ */
+function renderTextSizePanel(prims: Prim[], viewScale: number, ctx?: CanvasRenderingContext2D): void {
+  const el = document.getElementById('textSizePanel');
+  const chk = document.getElementById('textSizeDebug') as HTMLInputElement | null;
+  if (!el) return;
+  if (!chk || !chk.checked) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+
+  // paper 外周 (A3 42cm 幅) の実寸から ps を逆算
+  const paperXs: number[] = [];
+  for (const p of prims) if (p.type === 'line' && p.layer === 'paper') paperXs.push(p.x1, p.x2);
+  const ps = paperXs.length ? (Math.max(...paperXs) - Math.min(...paperXs)) / 42 : NaN;
+
+  // 期待値 (common/scale/TextSizePolicy の JIS 階段)。 wasm 側の正と二重管理になるので、
+  // 「一致しなければ赤」の参照値としてのみ使う (描画の正はあくまで prim 側)
+  const EXPECT_MM: Record<string, number> = { タイトル: 7.0, 'url (注記)': 3.5 };
+
+  const texts = prims.filter((p): p is TextPrim => p.type === 'text');
+  const frameTexts = texts.filter((p) => p.layer === 'frame');
+  const dimTexts = texts.filter((p) => p.layer === 'dim');
+  // 単位の検算は「TextFit の縮小が掛からないもの」を錨にする ── 表題欄のセル内テキストは
+  // 箱に合わせて縮むのが正常動作なので、base と一致しなくても異常ではない。url (BottomCredit)
+  // だけは fitted() を通らず base サイズのまま出るので、これが単位の物差しになる。
+  const rows: Array<[string, string, number]> = [];
+  if (frameTexts.length) {
+    const sizes = frameTexts.map((p) => p.size);
+    rows.push(['タイトル', 'frame (最大)', Math.max(...sizes)]);
+    const url = frameTexts.find((p) => p.text.startsWith('http'));
+    if (url) rows.push(['url (注記)', 'frame', url.size]);
+    rows.push(['表題欄 (最小)', 'frame', Math.min(...sizes)]);
+  }
+  if (dimTexts.length) rows.push(['寸法値', 'dim', dimTexts[0].size]);
+
+  // キャップハイト / em の実測比 (定数ではなくフォントから測った値)
+  const capRatio = ctx ? capHeightRatio(ctx) : NaN;
+
+  const cell = (s: string, extra = '') => `<td style="padding:1px 8px;${extra}">${s}</td>`;
+  let html = '<table style="border-collapse:collapse;white-space:nowrap;">'
+    + '<tr style="border-bottom:1px solid #d9c98a;text-align:left;">'
+    + '<th style="padding:1px 8px;">対象</th><th style="padding:1px 8px;">layer</th>'
+    + '<th style="padding:1px 8px;">prim size</th><th style="padding:1px 8px;">→ 紙 mm 逆算</th>'
+    + '<th style="padding:1px 8px;">期待 mm</th><th style="padding:1px 8px;">cap px</th>'
+    + '<th style="padding:1px 8px;">font px (em)</th>'
+    + '<th style="padding:1px 8px;">判定</th></tr>';
+  for (const [label, layer, size] of rows) {
+    // prim size (モデル単位) → 紙 cm は ÷ps、 cm → mm は ×10
+    const paperMm = (size / ps) * 10;
+    const px = size * viewScale;
+    const fontPx = ctx ? fontPxForCapPx(ctx, px) : NaN;
+    const expect = EXPECT_MM[label];
+    // 寸法値は drawingScale 依存 (model 空間)、表題欄の最小は TextFit の縮小が掛かるので、
+    // どちらも「期待 mm と一致」を求めない ── 求めると正常動作を赤で誤検出する
+    const checked = expect !== undefined && isFinite(paperMm);
+    const ratio = checked ? paperMm / expect : NaN;
+    const ok = checked && Math.abs(ratio - 1) < 0.02;
+    let verdict: string;
+    if (checked) {
+      verdict = ok
+        ? '<span style="color:#0a0;">OK</span>'
+        : `<span style="color:#c00;font-weight:700;">${ratio.toFixed(3)}倍 ずれ</span>`;
+    } else if (label.startsWith('表題欄')) {
+      // 縮小は仕様。base を超えていたら単位側の異常なのでそこだけ赤
+      const base = EXPECT_MM['url (注記)'];
+      verdict = paperMm > base * 1.02
+        ? '<span style="color:#c00;font-weight:700;">base 超過</span>'
+        : `<span style="opacity:0.7;">縮小 (TextFit ${(paperMm / base).toFixed(2)}倍)</span>`;
+    } else {
+      verdict = '—';
+    }
+    html += '<tr>' + cell(label) + cell(layer) + cell(size.toFixed(4))
+      + cell(isFinite(paperMm) ? paperMm.toFixed(2) + ' mm' : '—')
+      + cell(checked ? expect.toFixed(1) + ' mm' : '—')
+      + cell(px.toFixed(1) + ' px')
+      + cell(isFinite(fontPx) ? fontPx.toFixed(1) + ' px' : '—')
+      + cell(verdict) + '</tr>';
+  }
+  html += '</table>';
+  html += `<div style="margin-top:4px;opacity:0.75;">ps (紙1cm→モデル) = ${isFinite(ps) ? ps.toFixed(4) : '—'}`
+    + ` / view scale (モデル→px) = ${viewScale.toFixed(2)}`
+    + ` / キャップハイト比 (実測 'A') = ${isFinite(capRatio) ? capRatio.toFixed(4) : '—'}</div>`;
+  html += '<div style="margin-top:2px;opacity:0.75;">変換段: policy mm → ÷10 → paper cm → ×ps →'
+    + ' prim size (キャップハイト) → ×view → cap px → ÷キャップハイト比 → font px (em)</div>';
+  html += '<div style="margin-top:2px;opacity:0.75;">※ cap px = 大文字の物理高さ (当たり判定の箱はこちら)、'
+    + 'font px = canvas に渡す em。別の量なので混ぜない</div>';
+  el.innerHTML = html;
+}
+
 function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
@@ -363,6 +474,9 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
   const s = v.scale;
   const sx = (x: number) => x * s + v.offsetX;
   const sy = (y: number) => -y * s + v.offsetY; // モデル (y 上向き) → 画面 (y 下向き)
+
+  // 文字サイズの変換段デバッグ表 (checkbox ON の時だけ)。 view scale が要るのでここで呼ぶ
+  renderTextSizePanel(prims, s, ctx);
 
   // 三角形の塗り (アプリ MyView.drawEntities:572-576 と同じく「塗り全部 → 線・文字」の z-order)。
   // 選択ハイライトより下に敷くので最初に描く
@@ -434,7 +548,7 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
       ctx.stroke();
     } else {
       ctx.fillStyle = color;
-      ctx.font = `${p.size * s}px sans-serif`;
+      setFontForCapPx(ctx, p.size * s);
       // alignH=0 (控除 infoStr、DXF writeTextAndLine の左寄せ) 以外は従来どおり中央
       ctx.textAlign = p.alignH === 0 ? 'left' : 'center';
       // frame layer は CAD 標準センタリング (= AutoCAD 73=2 / SXF 中心点) = glyph 物理 bbox を観て
@@ -467,6 +581,23 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
     }
   }
 
+  // 寸法テキストの当たり判定ボックスを常に重ね描き (common ModelOverlapAnalyzer が実際に
+  // 見ている box そのもの、寸法サイズ・重なり有無に関わらず全件表示 — user 指摘 2026-08-25
+  // 「寸法サイズによらず枠出せばいいだろうに」)。cx/cy/w/h/rot はモデル座標系そのまま
+  // (WebOverlap.overlayJson) なので view transform (sx/sy/s) を素直に適用するだけでよい ──
+  // dblclick 編集用の textScreenBox (別の幅計算) を流用していたら「グリフ幅に box が
+  // フィットしない」(user 指摘) になった、判定 box をそのまま描くことで解消
+  for (const b of dimOverlayBoxes) {
+    ctx.save();
+    ctx.translate(sx(b.cx), sy(b.cy));
+    ctx.rotate((-b.rot * Math.PI) / 180);
+    ctx.strokeStyle = b.intrusion ? '#ff0000' : '#999999';
+    ctx.lineWidth = b.intrusion ? 2 : 1;
+    ctx.setLineDash(b.intrusion ? [3, 2] : [2, 2]);
+    ctx.strokeRect((-b.w / 2) * s, (-b.h / 2) * s, b.w * s, b.h * s);
+    ctx.restore();
+  }
+
   // 段階2g: シャドー三角形 (グレー塗り + B/C ラベル、MyView.drawShadowTriangle と同じ見せ方)。
   // ラベルの値は新規入力行の B/C (アプリの watchedB1_/watchedC1_ 相当) を都度読む
   if (shadowPrims && shadowPrims.length === 3) {
@@ -482,7 +613,7 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
     // 寸法テキストと同じスケール感 (モデル単位の文字高さ × ズーム倍率) に合わせる
     const dimSize =
       lastPrims.find((q): q is TextPrim => q.type === 'text' && q.layer === 'dim')?.size ?? 0.25;
-    ctx.font = `${dimSize * s}px sans-serif`;
+    setFontForCapPx(ctx, dimSize * s);
     ctx.textAlign = 'center';
     // 入力中の値をそのまま表示 (アプリ watchedB1_/watchedC1_ と同じくタイプに追従。
     // 再描画は newB/newC の input イベントが起こす — wireNewRowEnter)
@@ -532,7 +663,7 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
     ctx.fillStyle = COLORS.accentOrange;
     const dimSize =
       lastPrims.find((q): q is TextPrim => q.type === 'text' && q.layer === 'dim')?.size ?? 0.25;
-    ctx.font = `${dimSize * s}px sans-serif`;
+    setFontForCapPx(ctx, dimSize * s);
     ctx.textAlign = 'center';
     const bv = input('newB').value;
     const cv = input('newC').value;
@@ -656,8 +787,9 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
       (q): q is TextPrim => q.type === 'text' && q.layer === 'dim' && q.tri === tri && q.side === side,
     );
     if (p) {
+      // capPx = 描かれる大文字の高さ (箱はこちらで組む)、font は em に直して設定する
       const fh = p.size * s;
-      ctx.font = `${fh}px sans-serif`;
+      setFontForCapPx(ctx, fh);
       const w = ctx.measureText(p.text).width;
       const pad = 3;
       // fillText と同じ baseline 規約: align 1 = 点の上に文字 (box は -h..0)、3 = 下、2 = 中央
@@ -667,7 +799,7 @@ function draw(canvas: HTMLCanvasElement, prims: Prim[]): void {
       ctx.rotate((-p.angle * Math.PI) / 180);
       ctx.lineWidth = 1.5;
       ctx.strokeRect(-w / 2 - pad, top - pad, w + pad * 2, fh + pad * 2);
-      ctx.font = `bold ${fh}px sans-serif`;
+      setFontForCapPx(ctx, fh, true);
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
       // 辺名の文字もシャドーのグレーに溶けるので暗縁取り (シャドー上辺/延長と共通の haloText)
@@ -704,6 +836,12 @@ function renderCsv(canvas: HTMLCanvasElement, csv: string, label: string): void 
   try {
     const json = renderCsvToPrimitivesWithOverridesAndThreshold(csv, 1.0, overridesJson(), thresholdAngle);
     let prims = JSON.parse(json) as Prim[];
+    try {
+      dimOverlayBoxes = JSON.parse(overlapBoxesJson(csv, 1.0, overridesJson(), thresholdAngle)) as DimOverlayBox[];
+    } catch (e) {
+      dimOverlayBoxes = [];
+      console.error('overlap check failed', e);
+    }
     // 図面枠 (A3、DXF の writeDrawingFrame と同形)。lastPrims に足すので fit も枠込み —
     // 「目いっぱいでなくマージン」の図面らしい余白になる (2026-06-12 user 要望)
     if (frameVisible()) {
@@ -3481,8 +3619,10 @@ function textScreenBox(
   const v = view;
   const ctx = canvas.getContext('2d');
   if (!v || !ctx) return null;
+  // fh は capPx (箱の高さ)。 measureText は draw() と同じ font 設定でないと幅が合わないので
+  // em に直して設定する (「描画が真実、箱はその鏡」を 2 つの量を分けたまま保つ)
   const fh = Math.max(p.size * v.scale, 8);
-  ctx.font = `${fh}px sans-serif`;
+  setFontForCapPx(ctx, fh);
   // 空欄の枠タイトル (field タグ付き・text="") にも文字 3 つ分の当たり/編集ボックスを与える
   const w = Math.max(ctx.measureText(p.text).width, fh * 3);
   return {
@@ -3613,7 +3753,13 @@ function openTextEditor(canvas: HTMLCanvasElement, target: TextEditTarget): void
   inp.style.transformOrigin = '0 0';
   inp.style.transform = `rotate(${-target.prim.angle}deg) translate(${(box.left - pad) * k}px, ${(box.top - pad) * k}px)`;
   inp.style.width = `${Math.max((box.w + pad * 2) * k, 48) + 24}px`;
-  inp.style.font = `${Math.max(box.fh * k, 11)}px sans-serif`;
+  // box.fh は capPx。 input の font-size は em なので、canvas 側と同じ変換を通して
+  // 「編集中の文字が下の描画と同じ大きさに見える」を保つ
+  {
+    const mctx = canvas.getContext('2d');
+    const capPx = Math.max(box.fh * k, 11);
+    inp.style.font = `${mctx ? fontPxForCapPx(mctx, capPx) : capPx}px ${FONT_FAMILY}`;
+  }
   inp.style.padding = '2px 4px';
   inp.style.border = `2px solid ${COLORS.selectYellow}`;
   inp.style.borderRadius = '3px';
@@ -4043,6 +4189,18 @@ function main(): void {
       valDisp.textContent = slider.value;
       redraw(canvas);
     });
+  }
+  // 文字サイズ内訳デバッグ表示の配線 (2026-08-25)
+  const tsChk = document.getElementById('textSizeDebug') as HTMLInputElement | null;
+  if (tsChk) {
+    tsChk.checked = localStorage.getItem('textSizeDebug') === '1';
+    tsChk.addEventListener('change', () => {
+      localStorage.setItem('textSizeDebug', tsChk.checked ? '1' : '0');
+      redraw(canvas);
+    });
+    // 復元は初回 draw より後に走るので、ON なら描き直して表を出す
+    // (これが無いと「チェックは入っているのに表が出ない」状態で開く)
+    if (tsChk.checked) redraw(canvas);
   }
   // レイアウト境界幅スライダーの配線
   let layoutThreshold = 900;

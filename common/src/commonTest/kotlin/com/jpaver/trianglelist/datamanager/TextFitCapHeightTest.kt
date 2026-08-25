@@ -33,19 +33,19 @@ class TextFitCapHeightTest {
         // 「1 全角 = 1 キャップハイト」と置いていた旧実装はこれを満たさない。
         // desktop はさわらびゴシック実測経路、他は fallback 経路を通るが、
         // どちらでも満たされなければならない性質なのでここで押さえる。
-        val capHeight = 1.0f
+        val capHeight = CapHeight(1.0f)
         val w = TextFit.estimateWidth("図", capHeight)
         assertTrue(
-            w > capHeight * 1.2f,
+            w > capHeight.value * 1.2f,
             "全角 1 文字の幅がキャップハイト相当しかない ($w) ── em と cap を取り違えている"
         )
-        assertTrue(w < capHeight * 1.6f, "逆に広すぎる ($w) ── 変換が二重に掛かっていないか")
+        assertTrue(w < capHeight.value * 1.6f, "逆に広すぎる ($w) ── 変換が二重に掛かっていないか")
     }
 
     @Test
     fun `半角は全角より狭い`() {
         // 実測経路では厳密に 1対2 にはならない (フォント依存) ので、大小関係だけ押さえる
-        val capHeight = 1.0f
+        val capHeight = CapHeight(1.0f)
         val full = TextFit.estimateWidth("図", capHeight)
         val half = TextFit.estimateWidth("A", capHeight)
         assertTrue(half < full, "半角 ($half) が全角 ($full) 以上になっている")
@@ -66,8 +66,8 @@ class TextFitCapHeightTest {
     @Test
     fun `幅はキャップハイトに比例する`() {
         // 単位が一貫していれば、サイズを 2 倍にした幅はちょうど 2 倍になる
-        val a = TextFit.estimateWidth("図面番号", 0.175f)
-        val b = TextFit.estimateWidth("図面番号", 0.350f)
+        val a = TextFit.estimateWidth("図面番号", CapHeight(0.175f))
+        val b = TextFit.estimateWidth("図面番号", CapHeight(0.350f))
         assertEquals(a * 2f, b, tol)
     }
 
@@ -77,7 +77,7 @@ class TextFitCapHeightTest {
         // 旧実装は estimateWidth("図面番号", 0.175) = 0.70 で target 0.765 以下 → 無縮小 →
         // 実描画 0.9459 ではみ出した。単位を直すと縮小が効いて箱に収まる。
         val cellWidth = 0.8999f
-        val baseSize = 0.175f
+        val baseSize = CapHeight(0.175f)
         val fit = TextFit.fitSize("図面番号", cellWidth, baseSize)
         val fittedWidth = TextFit.estimateWidth("図面番号", fit.size)
         assertTrue(

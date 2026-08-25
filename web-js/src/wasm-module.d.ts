@@ -24,4 +24,7 @@ declare module '*/TriangleList-common-wasm-js.mjs' {
   export function renderFrame(csv: string): string;
   // 外枠余白を user 指定 cm で render (2026-06-18 user 「マージン間隔は UI で選べる」)
   export function renderFrameWithMargin(csv: string, marginCm: number): string;
+  // 寸法テキストの当たり判定ボックス全件 + めり込み有無 (ModelOverlapAnalyzer、DXF非経由)。
+  // モデル座標系の cx/cy/w/h/rot をそのまま返す ── JS は view transform を適用するだけ
+  export function overlapBoxesJson(csv: string, scale: number, overridesJson: string, thresholdAngle: number): string;
 }

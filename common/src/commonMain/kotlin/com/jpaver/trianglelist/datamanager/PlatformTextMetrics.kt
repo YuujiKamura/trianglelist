@@ -9,6 +9,15 @@ package com.jpaver.trianglelist.datamanager
  * null を返し、呼び出し側 (TextFit) が既存の半角/全角近似にフォールバックする。
  */
 expect object PlatformTextMetrics {
-    /** text の実測 advance 幅を fs (呼び出し側の単位、通常 paper-cm) 基準で返す。null = 未対応/失敗。 */
-    fun measureWidthOrNull(text: String, capHeight: Float): Float?
+    /**
+     * text の実測 advance 幅を返す。null = 未対応/失敗。
+     *
+     * 引数は [CapHeight] (= 大文字の高さ、DXF group code 40 と同じ量) であって em ではない。
+     * 実装はプラットフォームのフォント API に渡す前に必ず [CapHeight.toEm] を通すこと ──
+     * AWT の Font size も Skia の Font size も CSS の font-size も em なので、そのまま
+     * 渡すと advance を約 25% 過小に返す (2026-08-25 に desktop 実装で実際に踏んだ)。
+     *
+     * 返る幅は引数と同じ座標系 (呼び出し側の paper-cm / model) に乗る。
+     */
+    fun measureWidthOrNull(text: String, capHeight: CapHeight): Float?
 }

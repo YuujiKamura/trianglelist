@@ -67,7 +67,7 @@ class TopTitleSizingTest {
 
         w.writeTopTitle(textsize = 0f)
 
-        val titleBase = TextSizePolicy.resolve(TextRole.TopTitle)
+        val titleBase = TextSizePolicy.resolve(TextRole.TopTitle).value
         val titleCaptured = w.captured.first { it.text == "図" }
         assertEquals(titleBase, titleCaptured.size, 1e-4f,
             "サブタイトル行が長くても title 自体が箱に収まるなら base サイズを維持すべき (管理分離)")
@@ -82,7 +82,7 @@ class TopTitleSizingTest {
 
         w.writeTopTitle(textsize = 0f)
 
-        val titleBase = TextSizePolicy.resolve(TextRole.TopTitle)
+        val titleBase = TextSizePolicy.resolve(TextRole.TopTitle).value
         val titleCaptured = w.captured.first { it.text == w.zumeninfo.zumentitle }
         val subtitleCaptured = w.captured.first { it.text.startsWith(w.rosenname_) }
 
@@ -99,7 +99,7 @@ class TopTitleSizingTest {
 
         w.writeTopTitle(textsize = 0f)
 
-        val titleBase = TextSizePolicy.resolve(TextRole.TopTitle)
+        val titleBase = TextSizePolicy.resolve(TextRole.TopTitle).value
         val titleCaptured = w.captured.first { it.text == hugeText }
         assertTrue(titleCaptured.size < titleBase, "title 自身が長すぎれば当然縮む (管理分離しても無制限オーバーフローはしない)")
     }
@@ -157,7 +157,7 @@ class TopTitleSizingTest {
         w.writeTopTitle(textsize = 0f)
 
         val subtitleCaptured = w.captured.first { it.text.startsWith(w.rosenname_) }
-        val subtitleBase = TextSizePolicy.resolve(TextRole.TopTitle)
+        val subtitleBase = TextSizePolicy.resolve(TextRole.TopTitle).value
         assertEquals(subtitleBase, subtitleCaptured.size, 1e-4f, "面積行が無くても路線名はサブタイトル行サイズで描画")
         assertEquals(w.rosenname_, subtitleCaptured.text, "面積行が無ければ連結文字列は路線名のみ")
     }

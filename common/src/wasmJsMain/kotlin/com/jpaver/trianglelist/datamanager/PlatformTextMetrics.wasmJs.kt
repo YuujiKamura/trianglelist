@@ -9,5 +9,5 @@ package com.jpaver.trianglelist.datamanager
  * (= TextFit の半角/全角近似にフォールバック) にしている。
  */
 actual object PlatformTextMetrics {
-    actual fun measureWidthOrNull(text: String, capHeight: Float): Float? = null
+    actual fun measureWidthOrNull(text: String, capHeight: CapHeight): Float? = null
 }
