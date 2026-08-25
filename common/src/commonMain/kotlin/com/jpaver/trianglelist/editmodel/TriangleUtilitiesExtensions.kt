@@ -121,13 +121,25 @@ fun Triangle.pointCenter_(): com.example.trilib.PointXY = com.example.trilib.Poi
 
 fun collision(): Boolean = true
 
+/**
+ * 三角形の bbox を myBP_ に入れる。
+ *
+ * 2026-08-25 修正: 旧実装は pointAB と pointBC の 2 頂点しか見ておらず、**第 3 頂点
+ * (point[0] = pointCA) が bbox から抜けていた**。三角形は 3 頂点なので 2 点の min/max では
+ * 当然足りず、第 3 頂点がその箱の外にある形 (= 大半) で必ずずれる。
+ *
+ * 影響: TriangleList.center (calcBounds → ここ) と CycleShape.vertices() ベースの bbox
+ * (WebFrame.figuresBboxCenter) が食い違い、図面枠の中心が図形中心から 3.0 ずれていた
+ * (WebFrameTest.frame_outer_rect_centers)。
+ *
+ * 頂点の正は vertices() (= CycleShape の多態契約) なので、そこから取って二重管理を無くす。
+ */
 fun Triangle.setBoundaryBox() {
-    val lb = pointAB.min(pointBC)
-    myBP_.left = lb.x
-    myBP_.bottom = lb.y
-    val rt = pointAB.max(pointBC)
-    myBP_.right = rt.x
-    myBP_.top = rt.y
+    val vs = vertices()
+    myBP_.left = vs.minOf { it.x }
+    myBP_.right = vs.maxOf { it.x }
+    myBP_.bottom = vs.minOf { it.y }
+    myBP_.top = vs.maxOf { it.y }
 }
 
 fun Triangle.getLengthByIndex(i: Int): Float = when (i) {

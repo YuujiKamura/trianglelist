@@ -29,7 +29,7 @@ object DxfLowLevelChecks {
      */
     fun run(file: File): List<String> {
         val bytes = file.readBytes()
-        val lines = file.readLines(Charset.forName("Shift_JIS")) // read as CP932 for pair checks
+        val lines = file.readLines(Charset.forName("windows-31j")) // CP932 ("Shift_JIS" 別名では ㎡ が化ける)
         val errs = run(lines).toMutableList()
         checkEncoding(bytes, errs)
         return errs

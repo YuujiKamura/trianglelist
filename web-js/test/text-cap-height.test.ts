@@ -26,8 +26,21 @@ describe('renderer: キャップハイトの契約', () => {
   beforeAll(async () => {
     browser = await chromium.launch({ headless: true });
     page = await browser.newPage();
-    await page.goto(BASE, { waitUntil: 'domcontentloaded' });
-    // vite dev はソースを ES module として配るので production コードをそのまま import できるが、
+
+    // **アプリのページ (/) は開かない**。dev server の tlcp は「最初に応答したページ」を
+    // 採用する設計なので、ここでアプリを開くと CP のクライアントが 2 つになり、他の test
+    // (VRT / combo) のスクショや state が このページのものと混ざる ── 実際に混ざって
+    // VRT scenario 1 が「新規行フォームの残留状態」の差分で落ちた (2026-08-25)。
+    //
+    // ここで要るのは src/text-metrics.ts と canvas だけなので、同 origin の空ページを
+    // 立ててそこへ module を import する。vite dev は任意 URL に SPA fallback を返すため
+    // about:blank ではなく data URL でもなく、`/@vite/client` を持たない素の HTML を
+    // route intercept で返す (main.ts が走らない = tlcp に登録されない)。
+    await page.route('**/__test_blank__', (r) =>
+      r.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: '<!doctype html><title>t</title>' }),
+    );
+    await page.goto(`${BASE}/__test_blank__`, { waitUntil: 'domcontentloaded' });
+
     // page.evaluate に渡す関数の中に import() を直接書くと vitest の SSR 変換が
     // __vite_ssr_dynamic_import__ に書き換えてしまい、ブラウザ側で ReferenceError になる。
     // 文字列越しに Function で組み立てて変換を回避し、page 側の global に置く。

@@ -51,7 +51,27 @@ class TextFitCapHeightTest {
         assertTrue(half < full, "半角 ($half) が全角 ($full) 以上になっている")
     }
 
-    // ---- 実測できない経路 (DXF: STYLE=Standard で開く側のフォント不定) の fallback 式 ----
+    @Test
+    fun `幅推定はプラットフォーム実測に影響されない`() {
+        // 2026-08-25: estimateWidth が PlatformTextMetrics (desktop だけ実装済みの
+        // さわらびゴシック実測) を使っていたため、同じ CSV から生成した DXF の文字サイズが
+        // プラットフォームごとに違っていた (「工 事 名」が app 151.4 / desktop・web 163)。
+        // レイアウトは決定的でなければならない ── user 方針「画面と図面で同じレイアウト
+        // (冪等)」と、golden test の趣旨「スマホアプリと Web で同じ図面ファイルが出る」。
+        //
+        // この test は desktop (= PlatformTextMetrics が実測を返す唯一のターゲット) で走る。
+        // estimateWidth が実測を使っていれば heuristic 式と一致しないので落ちる。
+        val cap = CapHeight(0.35f)
+        val text = "工 事 名"
+        val em = cap.value / TextFit.ASSUMED_CAP_HEIGHT_RATIO
+        val expected = 3 * em + 2 * (em * 0.5f) // 全角 3 + 半角 (空白) 2
+        assertEquals(
+            expected, TextFit.estimateWidth(text, cap), tol,
+            "estimateWidth がプラットフォーム実測に依存している ── レイアウトが端末ごとに変わる"
+        )
+    }
+
+    // ---- 決定的な heuristic 式 (全プラットフォーム共通) ----
 
     @Test
     fun `fallback 比は cap と em の間の妥当な範囲にある`() {

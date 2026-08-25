@@ -30,7 +30,7 @@ import kotlin.test.fail
  */
 class WebDrawingExportGoldenTest {
 
-    private val sjis = Charset.forName("Shift_JIS")
+    private val sjis = Charset.forName("windows-31j") // CP932、app の書き出し側と同じ
     private val datePattern = Regex("""\d+ 年 \d+ 月 \d+ 日""")
     private val numericTolerance = 1e-3 + 1e-9
 

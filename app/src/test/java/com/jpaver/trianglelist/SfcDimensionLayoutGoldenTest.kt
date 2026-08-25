@@ -40,7 +40,7 @@ class SfcDimensionLayoutGoldenTest {
     @get:Rule
     val tempFolder = TemporaryFolder()
 
-    private val charset = Charset.forName("SJIS")
+    private val charset = Charset.forName("windows-31j") // CP932、書き出し側と同じ
     private val datePattern = Regex("""\d+ 年 \d+ 月 \d+ 日""")
 
     // ---- fixtures (DxfDimensionLayoutGoldenTest と同一形状) ----
