@@ -32,7 +32,7 @@ class Triangle : CycleShape, Cloneable<Triangle> {
             b.dimpoint = dimpoint.copy()//cloneArray(dimpoints) // 代入だと参照になるので要素ごとにクローン
             b.dimOnPath = dimOnPath.map { it.copy() }.toTypedArray()
             b.pathS = pathS.copy()
-            b.dim = dim.clone()
+            b.dim = dim.cloneFor(b) // 複製先に紐づける (元の triangle を掴むと画面/書き出しに反映されない)
 
             b.dimHorizontalA = dimHorizontalA
             b.dimHorizontalB = dimHorizontalB

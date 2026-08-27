@@ -27,8 +27,19 @@ class Dims(val triangle: Triangle) : Cloneable<Dims> {
         get() = triangle.dimScale
         set(value) { triangle.dimScale = value }
 
-    override fun clone(): Dims {
-        val b = Dims(triangle)
+    /**
+     * **複製先の三角形に紐づけて**複製する (2026-08-27)。
+     *
+     * Dims は horizontal/vertical/height/scale を triangle 側のフィールドへの proxy として
+     * 持つ。複製時に元の triangle を掴んだままだと、
+     *   - 複製の dim.horizontal を読むと**元の三角形の値**が返る
+     *   - 複製自身の dimHorizontal は誰も埋めないので既定値のまま残る
+     *   - 複製の setter が**元の三角形を書き換える**
+     * という 3 つの事故が同時に起きる。アプリ画面はモデルを clone してから描くので、
+     * 自動配置の結果が画面に出ない原因になっていた。
+     */
+    fun cloneFor(owner: Triangle): Dims {
+        val b = Dims(owner)
         b.vertical = vertical.copy()
         b.horizontal = horizontal.copy()
         b.height = height
@@ -36,8 +47,12 @@ class Dims(val triangle: Triangle) : Cloneable<Dims> {
         b.flag = Array(flag.size) { idx -> flag[idx].copy() }
         b.flagS = flagS.copy()
         b.scale = scale
+        b.enableAutoHorizontal = enableAutoHorizontal
         return b
     }
+
+    /** 所有者を変えない複製。複製した三角形に付ける時は必ず cloneFor(複製先) を使うこと。 */
+    override fun clone(): Dims = cloneFor(triangle)
     // endregion properties
 
     // region constants
