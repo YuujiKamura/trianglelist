@@ -1697,12 +1697,12 @@ class MainActivity : AppCompatActivity(),
      * 回転。FAB からも MyView のピンチ (MyView.kt:227) からも呼ばれる。
      * ピンチは setCommonFabListener を通らないので、保存要求はここで出す。
      */
-    fun fabRotate(degrees: Float, bSeparateFreeMode: Boolean, isRotateDedBoxShape: Boolean = true ){
+    fun fabRotate(degrees: Float, bSeparateFreeMode: Boolean, isRotateDedBoxShape: Boolean = true, isGesture: Boolean = false ){
         requestAutosave()
         if(!deductionMode) {
             trianglelist.rotate(PointXY(0f, 0f), degrees, trianglelist.lastTapNumber, bSeparateFreeMode )
             myDeductionList.rotate(PointXY(0f, 0f), -degrees )
-            myview.setTriangleList(trianglelist, viewscale)
+            myview.setTriangleList(trianglelist, viewscale, moveCenter = false, isArrange = !isGesture)
             myview.setDeductionList(myDeductionList, viewscale)
             myview.invalidate()//resetViewToLSTP()
         }
@@ -1714,6 +1714,12 @@ class MainActivity : AppCompatActivity(),
             current_deduction.rotateShape( current_deduction.point, (-degrees).toDouble() )
             myview.setDeductionList(myDeductionList, viewscale)
             myview.invalidate()
+        }
+    }
+
+    fun onGestureEnd() {
+        if(!deductionMode) {
+            myview.setTriangleList(trianglelist, viewscale, moveCenter = false, isArrange = true)
         }
     }
 

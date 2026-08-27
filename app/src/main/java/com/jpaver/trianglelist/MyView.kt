@@ -222,7 +222,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
         rotateGestureDetector = RotateGestureDetector(object : RotateGestureDetector.SimpleOnRotateGestureDetector() {
             override fun onRotate(degrees: Float, focusX: Float, focusY: Float): Boolean {
-                (context as MainActivity).fabRotate(-degrees * 3, false, false)
+                (context as MainActivity).fabRotate(-degrees * 3, false, false, true)
 
                 return true
             }
@@ -295,6 +295,9 @@ class MyView(context: Context, attrs: AttributeSet?) :
         }
 
         if( event.action == ACTION_UP ) {
+            if (isScaleBegin) {
+                (context as? MainActivity)?.onGestureEnd()
+            }
             isScaleBegin = false
             isViewScaling = false
             isViewScrolling = false
@@ -432,7 +435,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
     }
 
     //ボタンが押された時の結果としt呼ばれるほかに、回転操作(fabRotate)でも毎秒以下の間隔で呼ばれる
-    fun setTriangleList(editlist: EditList<*>, setscale: Float, moveCenter: Boolean = true){
+    fun setTriangleList(editlist: EditList<*>, setscale: Float, moveCenter: Boolean = true, isArrange: Boolean = true){
         //if( myTriangleList.size() > 0 ) trilistStored_ = myTriangleList.clone()
         (editlist as TriangleList)
         myScale = setscale    // 描画倍率は外から指定する
@@ -441,7 +444,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
             PointXY(
                 0f,
                 0f
-            ), setscale, paintTexS.textSize )
+            ), setscale, paintTexS.textSize, isArrangeDims = true, isArrangePointNumbers = isArrange )
 
         if( moveCenter ) setCenterInModelToLastTappedTriNumber() //画面を動かしてしまうので注意
         transOnce = true
