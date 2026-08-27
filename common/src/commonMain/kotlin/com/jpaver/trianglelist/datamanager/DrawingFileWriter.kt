@@ -78,31 +78,16 @@ open class DrawingFileWriter {
         return Triple(pca, pab, pbc)
     }
 
-    fun writeTextSwitch(str: String, point: com.example.trilib.PointXY, ts:Float, color:Int, align1: Int, align2:Int, angle: Double ){
-        //引数の数でテキスト描画関数を変える
-        when(align2){
-            -1   -> writeTextA9( str, point, color, ts, align1, angle, 1f)
-            else -> writeTextHV( str, point, color, ts, align1, align2, angle, 1f)
-        }
-    }
-
-    fun writeSokuten(tri: Triangle, normalizedvector:Int, ts:Float, color:Int, align1:Int, align2:Int ){
-        tri.setDimPath(ts)
-        tri.setDimPoint()
-        val pa = tri.pathS.pointA
-        val pb = tri.pathS.pointB
-        writeTextSwitch( tri.name, tri.dimpoint.s, ts, color, align1, align2, pb.calcSokAngle( pa, normalizedvector ) )
-        writeLine( pa, pb, color)
-    }
-    fun writeDimFlags(tri: Triangle, color: Int){
-        // DimTextの旗上げ
-        val tPathA = tri.dimOnPath[0]
-        val tPathB = tri.dimOnPath[1]
-        val tPathC = tri.dimOnPath[2]
-        if(tri.dim.horizontal.a > 2) writeLine( tPathA.pointA, tPathA.pointB, color)
-        if(tri.dim.horizontal.b > 2) writeLine( tPathB.pointA, tPathB.pointB, color)
-        if(tri.dim.horizontal.c > 2) writeLine( tPathC.pointA, tPathC.pointB, color)
-    }
+    // 2026-08-27 削除: writeSokuten / writeTextSwitch / writeDimFlags。
+    // いずれも DrawPrim 化 (cc5f3af6) 以前の実装で、以後どこからも呼ばれていなかった。
+    // 現行は sokutenPrims / dimFlagPrims が担当する。放置すると害が実際にあった:
+    //  - writeSokuten は測点名の角度に pb.calcSokAngle(pa, vector) を使っており、
+    //    2026-08-27 に「画面と逆向き + 番号順で 180 度反転」として直した式そのもの。
+    //    残しておくと次に読む人が間違った実装を写す
+    //  - writeDimFlags は tri.dimOnPath (旧キャッシュ) を読む経路で、
+    //    DimensionLayout へ移行した現在の設計と食い違う
+    // writeTextSwitch は writeSokuten が唯一の呼び出し元だったため道連れ。
+    // writeTextA9 は SfcWriter が使うので残す。
 
     fun setNames(kn: String, rn: String, gn: String, zn: String){
         koujiname_ = kn
