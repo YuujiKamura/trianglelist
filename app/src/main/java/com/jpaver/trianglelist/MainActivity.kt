@@ -1637,6 +1637,10 @@ class MainActivity : AppCompatActivity(),
         myview.invalidate()
     }
 
+    /** 検証用: 共有ファイルの生成経路を androidTest から叩く (makeShareUris は private) */
+    @androidx.annotation.VisibleForTesting
+    fun makeShareUrisForTest(fileNames: List<String>) { makeShareUris(fileNames) }
+
     /** 計測用: 現在のリスト回転角。androidTest から読む (モデルは private のため) */
     @androidx.annotation.VisibleForTesting
     fun currentListAngleForTest(): Float = trianglelist.angle
@@ -2582,6 +2586,17 @@ class MainActivity : AppCompatActivity(),
         Log.d("ShareFiles", "process done.")
     }
 
+    /**
+     * 共有するファイルを**毎回生成し直して**から URI を返す。
+     *
+     * 以前は `if(!newFile.exists()) saveToPrivate(...)` で「無いときだけ」生成していた。
+     * ファイル名は strDateRosenname() = 日付 + 路線名なので同じ日は同じ名前になり、
+     * 2 回目以降の共有では 1 回目の中身がそのまま相手に届いていた (2026-08-27 発見)。
+     * 共有後の削除 (handleShareFilesResult) は RESULT_OK のときだけで、
+     * 共有アプリの多くは成功しても CANCELED を返すため、ファイルは実際に残る。
+     *
+     * 共有は「今の図面を渡す」操作なので、存在チェックによる省略はしない。
+     */
     private fun makeShareUris(fileNames: List<String>): ArrayList<Uri> {
         // URIのリストを作成
         val uris = ArrayList<Uri>()
@@ -2589,12 +2604,9 @@ class MainActivity : AppCompatActivity(),
         shareUris.clear()
         // ファイル名のリストをループして各ファイルのURIを取得
         for (fileName in fileNames) {
-            //ファイルが保存されているか確認し、正しくない場合保存を行う。
             val newFile = File(filesDir, fileName)
-            if(!newFile.exists())
-            {
-                saveToPrivate(fileName)
-            }
+            // 常に現在のモデルから作り直す (古い中身を送らないため)
+            saveToPrivate(fileName)
             if(newFile.exists())
             {
                 val uri = getAppLocalFile(this, fileName)
@@ -2836,11 +2848,12 @@ class MainActivity : AppCompatActivity(),
     private fun saveCSVtoPrivate(filename: String = PrivateCSVFileName): Boolean {
         Log.d("CSVWrite", "saveCSVtoPrivate: filename=$filename")
 
-        // 同じファイルを連続で保存する場合のみスキップする。
-        if (filename == lastSavedCsvName && isCSVsavedToPrivate) {
-            Log.d("CSVWrite", "saveCSVtoPrivate: $filename already saved")
-            return true // 既に保存済みなら、ここで処理を終了する
-        }
+        // 「同じ名前で連続保存ならスキップ」する最適化がここにあったが、削除した (2026-08-27)。
+        // スキップの可否を isCSVsavedToPrivate という 1 個のフラグで判定していて、
+        // そのフラグを倒すのは setCommonFabListener 経由の autosave だけだった。
+        // ラッパを通らない編集 (MyView のピンチ回転など) の後に共有すると
+        // 「保存済み」と誤判定して書き直さず、古い中身のまま相手に渡っていた。
+        // 数 KB の書き込みを惜しんで内容の正しさを失う取引なので、常に書く。
 
         try {
             setTitles()
