@@ -172,6 +172,17 @@ fun Triangle.recover_rotate(basepoint: PointXY, addDegree: Float) {
     if (!pointNumber.flag.isMovedByUser) pointnumber = pointnumber.rotate(basepoint, addDegree.toDouble())
 }
 
+/**
+ * 復元済みの向きから更に addDegree だけ回す (recoverState の個別回転差分の適用)。
+ * recover_rotate と違い angleInLocal_ は上書きせず加算する。手動移動された番号サークルを
+ * 回さない点は recover_rotate と同じ (保存値が絶対座標のため)。
+ */
+fun Triangle.rotateLocalBy(basepoint: PointXY, addDegree: Float) {
+    angleInLocal_ += addDegree
+    rotate_body(basepoint, addDegree)
+    if (!pointNumber.flag.isMovedByUser) pointnumber = pointnumber.rotate(basepoint, addDegree.toDouble())
+}
+
 fun Triangle.rotate_body(basepoint: PointXY, addDegree: Float) {
     point[0] = point[0].rotate(basepoint, addDegree.toDouble())
     angle += addDegree

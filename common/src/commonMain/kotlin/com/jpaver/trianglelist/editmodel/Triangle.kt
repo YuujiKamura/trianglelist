@@ -100,6 +100,14 @@ class Triangle : CycleShape, Cloneable<Triangle> {
     var lengthNotSized = FloatArray(3)
     var angle = 180f
     var angleInLocal_ = 0f
+
+    /**
+     * CSV 列25 が持つ「この三角形の最終ローカル角」。読み込み時だけ入り、通常は null。
+     * 一様なリスト回転なら (listAngle - 180) と等しく、フロート部分回転
+     * (TriangleList.rotate の separationFreeMode 経路) だけがそこから外れる。
+     * TriangleList.recoverState がこの差分を復元に使う。
+     */
+    var restoredAngleInLocal_: Float? = null
     var dedcount = 0f
     var strLengthA = ""
     var strLengthB = ""

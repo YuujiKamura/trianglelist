@@ -381,10 +381,25 @@ open class TriangleList : EditList<Triangle> {
         }
     }
 
+    /**
+     * 読み込み直後の一様なリスト回転の復元。全三角形を (angle - 180) だけ回す。
+     *
+     * さらに、CSV 列25 (angleInLocal_) が復元されている三角形については、一様回転から
+     * 外れた分 = フロート図形の部分回転 (rotate の separationFreeMode 経路が
+     * this.angle を進めずに一部だけ回すケース) を後から足し戻す。ListAngle だけでは
+     * 部分回転を表現できないため、これが無いと共有/保存から復帰した時に
+     * その回転だけ消える (2026-08-27 実機報告)。
+     *
+     * 列25 が無い旧 CSV は restoredAngleInLocal_ が null のまま = 差分 0 で従来と同じ挙動。
+     */
     fun recoverState(bp: com.example.trilib.PointXY = com.example.trilib.PointXY(0f, 0f)) {
         basepoint = bp.clone()
-        trilist.map {
-            it.recover_rotate(basepoint, angle - 180)
+        val listLocal = angle - 180
+        // recover_rotate は angleInLocal_ を上書きするので、差分は先に確定させておく
+        val extras = trilist.map { (it.restoredAngleInLocal_ ?: listLocal) - listLocal }
+        trilist.forEach { it.recover_rotate(basepoint, listLocal) }
+        trilist.forEachIndexed { i, tri ->
+            if (extras[i] != 0f) tri.rotateLocalBy(basepoint, extras[i])
         }
     }
 

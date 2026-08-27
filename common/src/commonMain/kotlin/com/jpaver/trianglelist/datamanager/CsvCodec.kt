@@ -43,7 +43,9 @@ import com.jpaver.trianglelist.viewmodel.formattedString
  *   11-13 寸法 horizontal a/b/c   14-16 寸法 vertical a/b/c
  *   17-19 cp.side, cp.type, cp.lcr
  *   20-21 寸法手動フラグ b/c
- *   22-25 angle, pointCA.x, pointCA.y, angleInLocal (幾何キャッシュ — 読み側は再計算する)
+ *   22-24 angle, pointCA.x, pointCA.y (幾何キャッシュ — 読み側は再計算する)
+ *   25    angleInLocal — 個別回転の SoT。一様なリスト回転は ListAngle が持つが、
+ *         フロート図形の部分回転はここにしか残らないので読み側も復元する (2026-08-27)
  *   26-27 測点 horizontal, 測点手動フラグ
  */
 object CsvCodec {
@@ -569,6 +571,10 @@ object CsvCodec {
             }
             // 測点手動フラグ (27列目)
             c.getOrNull(27)?.let { obj.dim.flagS.isMovedByUser = it.toBoolean() }
+            // 個別回転 (列25 = angleInLocal_)。rowForTriangle が昔から書いているのに
+            // 旧 CsvLoader / CsvCodec のどちらも読んでいなかった列 (2026-08-27 発見)。
+            // フロート図形の部分回転はこの値にしか残らないので、読まないと復帰時に戻る。
+            c.getOrNull(25)?.toFloatOrNull()?.let { obj.restoredAngleInLocal_ = it }
         }
     }
 
