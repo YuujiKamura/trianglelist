@@ -44,6 +44,13 @@ kotlin {
         // は旧名で固定済みなので、出力名を明示して互換を維持する
         outputModuleName.set("TriangleList-common-wasm-js")
         browser()
+        // テスト実行ホストとして Node も宣言する (2026-08-27)。
+        // browser() しか無いと wasmJsTest が karma + webpack + ヘッドレス Chrome を
+        // 毎回立ち上げる wasmJsBrowserTest 一択になり、中身が軽くても数分かかっていた。
+        // commonTest はモデル層だけで DOM に触らないので Node で十分で、
+        // wasm バックエンド固有の差 (例: String.format が無い) も同じように捕まる。
+        // 配信物は従来どおり browser 側の成果物を使う。
+        nodejs()
         binaries.executable()
         generateTypeScriptDefinitions()
     }
