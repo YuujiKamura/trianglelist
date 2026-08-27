@@ -23,6 +23,19 @@ class CADViewRenderer {
      * @param textMeasurer テキスト測定器
      * @param debugMode デバッグモード（true時にテキストの描画起点・範囲をボックス表示）
      */
+    // flipYAxis の結果キャッシュ (同一 parseResult の間だけ有効。参照が変わったら作り直す)
+    private var flipSource: DxfParseResult? = null
+    private var flipCache: DxfParseResult? = null
+
+    private fun flippedOf(parseResult: DxfParseResult): DxfParseResult {
+        val cached = flipCache
+        if (flipSource === parseResult && cached != null) return cached
+        val flipped = CanvasUtil.flipYAxis(parseResult)
+        flipSource = parseResult
+        flipCache = flipped
+        return flipped
+    }
+
     fun drawAllEntities(
         drawScope: DrawScope,
         parseResult: DxfParseResult,
@@ -30,8 +43,11 @@ class CADViewRenderer {
         textMeasurer: TextMeasurer,
         debugMode: Boolean = false
     ) {
-        // 事前にY軸反転したデータを取得
-        val data = CanvasUtil.flipYAxis(parseResult)
+        // 事前にY軸反転したデータを取得。
+        // flipYAxis は全エンティティを作り直すので、毎フレーム呼ぶとパン/ズームが重くなる
+        // (実データ 8.25 で線数百 + TEXT 233 本を毎フレーム複製していた、2026-08-27)。
+        // renderer は remember で 1 個保持されるので、同じ parseResult の間は使い回す。
+        val data = flippedOf(parseResult)
         // 線分を描画
         data.lines.forEach { line ->
             val color = ColorConverter.aciToColor(line.color)
