@@ -657,7 +657,8 @@ class MainActivity : AppCompatActivity(),
         // 「この後プロセスが殺されうる」ことが保証された唯一の点。保存はここに置く。
         // 操作ごとの配線 (setCommonFabListener の autosave) はラッパを通らない操作
         // (MyView のピンチ回転など) が漏れるので、最後の砦としてここで 1 回保存する。
-        autosave()
+        // デバウンス待ちが残っていても取りこぼさないよう flush する。
+        flushAutosave()
         super.onStop()
     }
 
@@ -1288,10 +1289,55 @@ class MainActivity : AppCompatActivity(),
         fab_numreverse = bindingMain.fabTable.fabNumreverse
     }
 
-    private fun autosave() {
-        isCSVsavedToPrivate = false
-        isCSVsavedToPrivate = saveCSVtoPrivate()
+    // ---- 自動保存 (変更駆動 + デバウンス) ----------------------------------
+    //
+    // 以前は「どの操作が保存を要するか」を setCommonFabListener の isSaveCSV 引数で
+    // 操作ごとに人間が判断していた。全ての変更経路を正しく数え続ける前提の仕組みで、
+    // 実際 MyView のピンチ回転 (fabRotate 直呼び) が漏れて、共有チューザー往復で
+    // 巻き戻る事故になった (2026-08-27)。
+    //
+    // 今は「変更したかもしれない」タイミングで requestAutosave() を投げるだけにして、
+    // 実際に書くかどうかは **焼いた本文が前回と違うか** で決める。呼び過ぎても
+    // デバウンスが束ね、内容が同じなら書かないので、投げる側は正確さを要求されない。
+    private val autosaveHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val autosaveRunnable = Runnable { flushAutosave() }
+
+    /** 連続操作 (ピンチ等) を 1 回の書き込みに束ねる待ち時間 */
+    private val AUTOSAVE_DEBOUNCE_MS = 700L
+
+    /** モデルが変わったかもしれない時に呼ぶ。多めに呼んで構わない */
+    fun requestAutosave() {
+        autosaveHandler.removeCallbacks(autosaveRunnable)
+        autosaveHandler.postDelayed(autosaveRunnable, AUTOSAVE_DEBOUNCE_MS)
     }
+
+    /** 待ちを打ち切って即座に保存する。内容が前回と同じなら書かない */
+    fun flushAutosave(): Boolean {
+        autosaveHandler.removeCallbacks(autosaveRunnable)
+        // 復元の可否が決まる前に書くと、空のモデルで既存ファイルを潰しうる。
+        // isViewAttached は onAttachedToWindow の末尾で立つため、起動直後の
+        // 正当な保存 (読み込み直後の基準確定・createNew の永続化) まで弾いてしまう。
+        if (!session.isRestored) return false
+        return try {
+            val text = bakeCsvText()
+            if (text == session.lastSavedCsv) {
+                Log.d("CSVWrite", "flushAutosave: unchanged, skip")
+                return true
+            }
+            BufferedWriter(OutputStreamWriter(openFileOutput(PrivateCSVFileName, MODE_PRIVATE), "windows-31j"))
+                .use { it.write(text) }
+            session.lastSavedCsv = text
+            isCSVsavedToPrivate = true
+            lastSavedCsvName = PrivateCSVFileName
+            Log.d("CSVWrite", "flushAutosave: written (${text.length} chars)")
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    private fun autosave() = requestAutosave()
 
     val BLINKSECOND = 1
 
@@ -1306,8 +1352,10 @@ class MainActivity : AppCompatActivity(),
 
             action()
 
-            if (!isSaveCSV) return@setOnClickListener
-            autosave()
+            // isSaveCSV の真偽に関わらず投げる。実際に書くかは内容比較が決めるので、
+            // 「この FAB はモデルを変えるか」を人間が判断する必要はもう無い。
+            // (引数は呼び出し側の互換のために残してあるが、保存判断には使わない)
+            requestAutosave()
         }
     }
 
@@ -1645,7 +1693,12 @@ class MainActivity : AppCompatActivity(),
     @androidx.annotation.VisibleForTesting
     fun currentListAngleForTest(): Float = trianglelist.angle
 
+    /**
+     * 回転。FAB からも MyView のピンチ (MyView.kt:227) からも呼ばれる。
+     * ピンチは setCommonFabListener を通らないので、保存要求はここで出す。
+     */
     fun fabRotate(degrees: Float, bSeparateFreeMode: Boolean, isRotateDedBoxShape: Boolean = true ){
+        requestAutosave()
         if(!deductionMode) {
             trianglelist.rotate(PointXY(0f, 0f), degrees, trianglelist.lastTapNumber, bSeparateFreeMode )
             myDeductionList.rotate(PointXY(0f, 0f), -degrees )
@@ -2816,19 +2869,7 @@ class MainActivity : AppCompatActivity(),
 
     private fun writeCSV(writer: Writer): Boolean {
         return try {
-            rosenname = findViewById<EditText>(R.id.rosenname).text.toString()
-            setTitles()
-
-            val updatedDoc = CsvCodec.bake(
-                trilist = trianglelist,
-                dedlist = myDeductionList,
-                header = HeaderValues(koujiname, rosenname, gyousyaname, zumennum),
-                original = currentDoc,
-                viewscale = viewscale,
-            )
-            this.currentDoc = updatedDoc  // SoT 更新
-
-            writer.write(CsvCodec.serialize(updatedDoc))
+            writer.write(bakeCsvText())
             true
         } catch (e: Exception) {
             e.printStackTrace()
@@ -2840,6 +2881,21 @@ class MainActivity : AppCompatActivity(),
                 e.printStackTrace()
             }
         }
+    }
+
+    /** 現在のモデルから CSV 本文を焼く。currentDoc (SoT) もここで更新する */
+    private fun bakeCsvText(): String {
+        rosenname = findViewById<EditText>(R.id.rosenname).text.toString()
+        setTitles()
+        val updatedDoc = CsvCodec.bake(
+            trilist = trianglelist,
+            dedlist = myDeductionList,
+            header = HeaderValues(koujiname, rosenname, gyousyaname, zumennum),
+            original = currentDoc,
+            viewscale = viewscale,
+        )
+        this.currentDoc = updatedDoc  // SoT 更新
+        return CsvCodec.serialize(updatedDoc)
     }
 
     val PrivateCSVFileName = "privateTrilist.csv"
@@ -2929,8 +2985,10 @@ class MainActivity : AppCompatActivity(),
         Log.d("CSVParser", "parseCSV: figureRows=${doc.figureRows.size}")
 
         setEditLists(trilist, dedlist)
+        // 読み込み直後に 1 回書いて基準 (lastSavedCsv) を確定させる。
+        // これが無いと最初の requestAutosave で必ず「変わった」と判定される。
         isCSVsavedToPrivate = false
-        saveCSVtoPrivate()
+        flushAutosave()
         return true
     }
 
@@ -2996,6 +3054,9 @@ class MainActivity : AppCompatActivity(),
         val file = File(filepath)
         if( !file.exists() ) {
             createNew()
+            // 新規図面もその場で永続化する。ここで書かないと次回起動時にまた
+            // 「ファイルが無い」で作り直しになり、初回に触った内容が残らない。
+            flushAutosave()
             showToast("The PrivateCSV file does not exist.")
             return
         }
