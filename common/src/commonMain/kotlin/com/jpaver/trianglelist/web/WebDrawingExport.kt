@@ -1,6 +1,7 @@
 package com.jpaver.trianglelist.web
 
 import com.jpaver.trianglelist.datamanager.CsvCodec
+import com.jpaver.trianglelist.label.DimensionTextEscape
 import com.jpaver.trianglelist.label.NumberCircleEscape
 import com.jpaver.trianglelist.scale.TextSizePolicy
 import com.jpaver.trianglelist.datamanager.DxfFileWriter
@@ -148,9 +149,11 @@ object WebDrawingExport {
         buildDxfText(csv, overridesJson, numReverse, dimTextPaperMm, false)
 
     /**
-     * escapeNumbers=true で番号サークルの自動退避を掛ける (NumberCircleEscape)。
-     * 可読サイズにすると寸法値が番号に乗るため、番号を辺方向へ少しスライドさせて
-     * 寸法値の居場所を空ける (2026-08-27 user)。既定 false = 従来出力そのまま。
+     * escapeNumbers=true で自動退避を掛ける。順番は user 指示の梯子どおり:
+     *   1. 番号サークルを辺方向へスライド (NumberCircleEscape) ── 自由に動ける方が先
+     *   2. 残った文字どうしの重なりを寸法値の配置変更で解く (DimensionTextEscape、
+     *      少しスライド → だめなら旗揚げ)
+     * 既定 false = 従来出力そのまま。
      */
     fun buildDxfText(
         csv: String,
@@ -178,8 +181,10 @@ object WebDrawingExport {
                 TextSizePolicy.paperToModel(it, trilist.getPrintScale(1f) * 100f) /
                     TextSizePolicy.MM_PER_MODEL_UNIT
             } ?: trilist.getPrintTextScale(1f, "dxf")
-            val moves = NumberCircleEscape.solve(mixedDxf, textSize = dimModelSize)
-            NumberCircleEscape.apply(mixedDxf, moves)
+            val numberMoves = NumberCircleEscape.solve(mixedDxf, textSize = dimModelSize)
+            NumberCircleEscape.apply(mixedDxf, numberMoves)
+            val dimMoves = DimensionTextEscape.solve(mixedDxf, textSize = dimModelSize)
+            DimensionTextEscape.apply(mixedDxf, dimMoves)
         }
         if (dimTextPaperMm != null && dimTextPaperMm > 0f) {
             // 縮尺分母 = getPrintScale の倍率 × 100 (0.5 → 1/50、1.5 → 1/150。

@@ -53,5 +53,39 @@ class NumberEscapeRealDataTest {
         assertTrue(moves.none { it.isFlagOut }, "図形内で解けるはずが外へ出た: ${moves.filter { it.isFlagOut }}")
         assertEquals(0, circleAfter, "番号サークルの衝突が残った (before=$circleBefore)")
         assertTrue(labelAfter <= labelBefore, "退避で文字どうしが増えた: $labelBefore → $labelAfter")
+
+        // スライドだけでどこまで解けるか (旗揚げ無し) ── user「少しスライドさせるだけで
+        // 解決できると思う」の検証。ここで解けない分だけが旗揚げの対象
+        val slideOnly = com.jpaver.trianglelist.label.DimensionTextEscape
+            .solve(list, textSize = ts, allowFlagOut = false)
+        println("slideOnly=${slideOnly.size} 件")
+        slideOnly.forEach { println("  slide #${it.shapeNumber} 辺${it.side}: ${it.from} → ${it.to}") }
+
+        // 続けて寸法値側 (スライド → 旗揚げ)
+        val dimMoves = com.jpaver.trianglelist.label.DimensionTextEscape.solve(list, textSize = ts)
+        println("dimMoves=${dimMoves.size}")
+        dimMoves.forEach { println("  dim #${it.shapeNumber} 辺${it.side}: ${it.from} → ${it.to}") }
+        com.jpaver.trianglelist.label.DimensionTextEscape.apply(list, dimMoves)
+        val (labelFinal, circleFinal, totalFinal) = counts()
+        println("final : 文字どうし=$labelFinal 円=$circleFinal 計=$totalFinal")
+        assertEquals(0, labelFinal, "文字どうしの衝突が残った")
+
+        // 子がいる辺の旗揚げは回転順で右の端へ出す = 実装コードでは OUTER_LEFT(4)
+        // (2026-08-27 user「４だとC辺に子がいて…左に出してる。これを右に変えればそれでいい」)。
+        // コード名と実際に出る側が逆になっているので、名前ではなくこの対応を pin する。
+        val shapes = mutableMapOf<Int, com.jpaver.trianglelist.editmodel.CycleShape>()
+        list.forEachItemIndexed { num, sh -> shapes[num] = sh }
+        fun childOf(num: Int, side: Int) = shapes[num]?.node?.let {
+            when (side) { 0 -> it.a; 1 -> it.b; 2 -> it.c; else -> null }
+        }
+        val flagged = dimMoves.filter { it.to == 3 || it.to == 4 }
+        println("旗揚げ ${flagged.size} 件")
+        for (m in flagged) {
+            val hasChild = childOf(m.shapeNumber, m.side) != null
+            println("  #${m.shapeNumber}辺${m.side} → ${m.to} (子あり=$hasChild)")
+            if (hasChild) {
+                assertEquals(4, m.to, "子がいる辺の旗揚げが右端 (コード 4) でない: #${m.shapeNumber}辺${m.side}")
+            }
+        }
     }
 }
