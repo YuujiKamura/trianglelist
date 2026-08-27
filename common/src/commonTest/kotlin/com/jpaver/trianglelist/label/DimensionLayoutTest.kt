@@ -2,6 +2,7 @@ package com.jpaver.trianglelist.label
 
 import com.example.trilib.PointXY
 import kotlin.test.Test
+import kotlin.test.assertTrue
 import kotlin.test.assertEquals
 
 class DimensionLayoutTest {
@@ -111,6 +112,31 @@ class DimensionLayoutTest {
         assertPoint(0.0, -3.0, p.pointB, "pointB")
         assertEquals(0.0, p.offsetV, eps)
         assertPoint(0.0, -1.75, p.dimpoint, "dimpoint")
+    }
+
+    @Test
+    fun `測点名の旗線は長さゼロにならずdimpointがNaNにならない`() {
+        // dimheight=0 だと textWidth=0 -> lineLength=0 -> pointA==pointB になり、
+        // dimpoint の零ベクトル normalize() が NaN を返して DXF に "NaN" 座標が出る
+        // (2026-06-22 552070ca の回帰。CAD 側は数値化に失敗して原点へ描く)。
+        for (dh in listOf(0.0, 0.05, 0.25)) {
+            for (h in listOf(0, 1)) {
+                val p = DimensionLayout.layout(
+                    PointXY(0f, 0f), PointXY(0f, 10f),
+                    vertical = DimensionLayout.SIDE_SOKUTEN, horizontal = h,
+                    scale = 1.0, dimheight = dh, text = "No.1"
+                )
+                assertTrue(
+                    !p.dimpoint.x.isNaN() && !p.dimpoint.y.isNaN(),
+                    "dimheight=$dh horizontal=$h で dimpoint が NaN: ${p.dimpoint.x},${p.dimpoint.y}"
+                )
+                // 文字高さが正なら旗線も必ず長さを持つ (高さ 0 は文字自体が不可視なので不問)
+                if (dh > 0.0) assertTrue(
+                    p.pointA.lengthTo(p.pointB) > 0.0,
+                    "dimheight=$dh horizontal=$h で測点線が長さ 0: A=${p.pointA.x},${p.pointA.y} B=${p.pointB.x},${p.pointB.y}"
+                )
+            }
+        }
     }
 
     @Test

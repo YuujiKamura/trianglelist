@@ -288,10 +288,14 @@ open class DrawingFileWriter {
         align1: Int,
         align2: Int
     ): List<DrawPrim> {
+        // 高さは「実際に文字を描く ts」を渡す。tri.dimHeight は画面描画が setDimPathTextSize で
+        // 埋めるキャッシュで、書き出し経路では 0f のまま (CycleShape.kt:30) — それを渡すと
+        // 旗線長 = textWidth + dimheight*0.4 が 0 になり dimpoint が NaN 化する。
+        // 直下の DrawPrim.Text も ts で描くので、レイアウトと実寸がこれで一致する。
         val place = DimensionLayout.layout(
             tri.pointAB, tri.point[0],
             DimensionLayout.SIDE_SOKUTEN, tri.dim.horizontal.s,
-            tri.scaleFactor.toDouble(), tri.dimHeight.toDouble(), 0.0, tri.name
+            tri.scaleFactor.toDouble(), ts.toDouble(), 0.0, tri.name
         )
         val pa = place.pointA
         val pb = place.pointB
