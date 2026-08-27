@@ -228,7 +228,7 @@ open class DrawingFileWriter {
 
         // 測点
         if (tri.name != "") {
-            prims += sokutenPrims(tri, trilist_.sokutenListVector, textSize, BLUE, 1, 1)
+            prims += sokutenPrims(tri, textSize, BLUE, 1, 1)
         }
         return prims
     }
@@ -279,10 +279,21 @@ open class DrawingFileWriter {
         }
     }
 
-    /** 測点名テキスト + 測点線 (旧 writeSokutenFromLayout)。位置は DimensionLayout(SIDE_SOKUTEN) */
+    /**
+     * 測点名テキスト + 測点線 (旧 writeSokutenFromLayout)。位置は DimensionLayout(SIDE_SOKUTEN)。
+     *
+     * 向きは旗線と同じ pointA -> pointB 方向 = 図形の進行方向にテキストの頭が向く (user 仕様、
+     * 2026-08-27)。読みやすさ優先で 180 度畳む寸法値 (calcDimAngle、PointXY.kt:279 の
+     * `if (90 < angle) angle -= 180.0`) とは扱いが違い、測点名は逆さまになっても進行方向を優先する。
+     * 画面 (MyView.kt:667 drawTextOnPath + makePath) が同じ pointA -> pointB を辿るので、
+     * これで画面と書き出しの向きが一致する (SokutenAngleParityTest が gate)。
+     *
+     * 以前は pointB -> pointA (画面と逆) を使い、さらに trilist_.sokutenListVector が
+     * 負のとき 180 度反転していた。後者は「測点番号が増える向き」に頭を向ける挙動で、
+     * 「図形の進行方向」という仕様とは別物のため落とした。
+     */
     private fun sokutenPrims(
         tri: Triangle,
-        normalizedvector: Int,
         ts: Float,
         color: Int,
         align1: Int,
@@ -300,7 +311,7 @@ open class DrawingFileWriter {
         val pa = place.pointA
         val pb = place.pointB
         return listOf(
-            DrawPrim.Text(tri.name, place.dimpoint, color, ts, align1, align2, pb.calcSokAngle(pa, normalizedvector), 1f),
+            DrawPrim.Text(tri.name, place.dimpoint, color, ts, align1, align2, pa.calcSokAngle(pb, 1), 1f),
             DrawPrim.Line(pa, pb, color),
         )
     }
