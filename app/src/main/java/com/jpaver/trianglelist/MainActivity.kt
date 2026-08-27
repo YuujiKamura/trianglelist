@@ -817,6 +817,10 @@ class MainActivity : AppCompatActivity(),
             R.id.action_new -> {
                 MyDialogFragment().show(supportFragmentManager, "dialog.basic")
             }
+            R.id.action_text_size_mm -> {
+                showDrawingTextSizeDialog()
+                return true
+            }
             R.id.action_auto_arrange -> {
                 // OFF にしても既に確定した配置は巻き戻さない (自動が触るのは今から決める分だけ)。
                 // user が手で動かした配置は ON/OFF に関わらず不可侵
@@ -985,8 +989,9 @@ class MainActivity : AppCompatActivity(),
         val dedArea = myDeductionList.getArea()
         val triArea = trianglelist.getArea()
         val totalArea = roundByUnderTwo(triArea - dedArea).formattedString(2)
-        title = rStr.menseki_ + ": $totalArea m^2"
-        supportActionBar?.subtitle = drawingTextSizeLabel()
+        // 紙面での寸法値の大きさをタイトルに畳んで出す。AppBar は 40dp 固定 (描画領域を
+        // 稼ぐため activity_main.xml で意図的に低い) なので subtitle は切れる ── 1 行に収める
+        title = rStr.menseki_ + ": $totalArea m^2" + drawingTextSizeLabel()
         rosenname = findViewById<EditText>(R.id.rosenname).text.toString()
     }
 
@@ -998,19 +1003,58 @@ class MainActivity : AppCompatActivity(),
      * JIS Z 8313 の寸法値 3.5mm に乗っているかを user がその場で判断できる。
      * A+/A- で文字サイズを変えると DXF に書かれる大きさも変わるので、その効果もここに出る。
      */
+    /**
+     * 寸法値の紙面サイズを JIS の呼び寸法階段から選ばせる (2026-08-27 user
+     * 「スイートスポットである3.5mmとかが設定できるようにしたほうが良い」)。
+     *
+     * A+/A- で数字を見ながら追い込むのは手順として弱い ── 図面規格の側に「正解の目盛り」が
+     * あるので、そこから選ばせる。選ぶと画面の文字サイズが逆算されて設定され、
+     * DXF/SFC に書かれる大きさもそれに追従する (drawingTextScale が唯一の出所)。
+     *
+     * 画面文字サイズには上下限がある (MyView.adjustTextSize、8..80px) ので、縮尺が
+     * 大きいと選んだ mm に届かないことがある。結果は必ずタイトルの現状表示に出る。
+     */
+    private fun showDrawingTextSizeDialog() {
+        val denominator = trianglelist.getPrintScale(1f) * 100f
+        if (denominator <= 0f) return
+        val ladder = com.jpaver.trianglelist.scale.TextSizePolicy.PAPER_MM_LADDER
+        val current = com.jpaver.trianglelist.scale.TextSizePolicy
+            .modelSizeToPaperMm(myview.drawingTextScale(), denominator)
+        val labels = ladder.map { mm ->
+            val jis = if (mm == com.jpaver.trianglelist.scale.TextSizePolicy.DIMENSION_PAPER_MM) " (JIS 標準)" else ""
+            "%.1f mm%s".format(mm, jis)
+        }.toTypedArray()
+        val checked = ladder.indices.minByOrNull { kotlin.math.abs(ladder[it] - current) } ?: 1
+
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("寸法の紙面サイズ (1:%d)".format(denominator.toInt()))
+            .setSingleChoiceItems(labels, checked) { dialog, which ->
+                val model = com.jpaver.trianglelist.scale.TextSizePolicy
+                    .paperMmToModelSize(ladder[which], denominator)
+                myview.setDrawingTextScale(model)
+                myview.setTriangleList(trianglelist, viewscale, moveCenter = false)
+                myview.invalidate()
+                setTitles()
+                dialog.dismiss()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
     private fun drawingTextSizeLabel(): String {
         val denominator = trianglelist.getPrintScale(1f) * 100f
         if (denominator <= 0f) return ""
         val paperMm = com.jpaver.trianglelist.scale.TextSizePolicy
             .modelSizeToPaperMm(myview.drawingTextScale(), denominator)
+        if (paperMm <= 0f) return ""
         val jis = com.jpaver.trianglelist.scale.TextSizePolicy.DIMENSION_PAPER_MM
-        val ratio = if (paperMm > 0f) jis / paperMm else 0f
-        val gap = when {
-            ratio in 0.95f..1.05f -> "JIS"
-            ratio > 1.05f -> "JIS比 %.1f倍小".format(ratio)
-            else -> "JIS比 %.1f倍大".format(1f / ratio)
+        // JIS からの乖離は 5% を超えた時だけ 1 文字添える (タイトル 1 行に収めるため)
+        val mark = when {
+            paperMm < jis * 0.95f -> "小"
+            paperMm > jis * 1.05f -> "大"
+            else -> ""
         }
-        return "寸法 %.1fmm / 1:%d (%s)".format(paperMm, denominator.toInt(), gap)
+        return " | 寸法 %.1fmm%s".format(paperMm, mark)
     }
 
     private fun roundByUnderTwo(fp: Float) :Float {

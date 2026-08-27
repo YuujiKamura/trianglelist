@@ -43,6 +43,11 @@
         android:title="@string/action_send_mail"
         app:showAsAction="never" />
     <item
+        android:id="@+id/action_text_size_mm"
+        android:orderInCategory="89"
+        android:title="@string/action_text_size_mm"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/action_auto_arrange"
         android:orderInCategory="90"
         android:checkable="true"

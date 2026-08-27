@@ -76,4 +76,5 @@
     <string name="action_privacy">プライバシーポリシー</string>
     <string name="action_save_xlsx">Xlsx出力</string>
     <string name="action_auto_arrange">寸法の自動配置</string>
+    <string name="action_text_size_mm">寸法の紙面サイズ</string>
 </resources>
