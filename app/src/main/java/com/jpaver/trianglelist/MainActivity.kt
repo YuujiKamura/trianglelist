@@ -317,7 +317,7 @@ class MainActivity : AppCompatActivity(),
         return uri.path?.substringAfterLast('/') ?: ""
     }
 
-    private fun loadFileWithEncoding(uri: Uri, encoding: String = "Shift-JIS", onFileLoaded: (BufferedReader) -> Unit) {
+    private fun loadFileWithEncoding(uri: Uri, encoding: String = "windows-31j", onFileLoaded: (BufferedReader) -> Unit) {
         try {
             contentResolver.openInputStream(uri)?.use { inputStream ->
                 val reader = BufferedReader(InputStreamReader(inputStream, encoding))
@@ -2217,8 +2217,8 @@ class MainActivity : AppCompatActivity(),
                 // 保存処理
                 contentResolver.openOutputStream(uri)?.use { outputStream ->
                     when (fileType) {
-                        "DXF" -> saveDXF(BufferedWriter(OutputStreamWriter(outputStream, "Shift-JIS")))
-                        "CSV" -> writeCSV(BufferedWriter(OutputStreamWriter(outputStream, "Shift-JIS")))
+                        "DXF" -> saveDXF(BufferedWriter(OutputStreamWriter(outputStream, "windows-31j")))
+                        "CSV" -> writeCSV(BufferedWriter(OutputStreamWriter(outputStream, "windows-31j")))
                         "PDF" -> savePDF(outputStream)
                         "SFC" -> saveSFC(BufferedOutputStream(outputStream))
                         "XLSX" -> {
@@ -2252,7 +2252,7 @@ class MainActivity : AppCompatActivity(),
 
     private fun saveDxfToPrivate(filename: String = PRIVATE_FILENAME_DXF ) {
         saveToFile(filename) { outputStream ->
-            BufferedWriter(OutputStreamWriter(outputStream, "Shift-JIS")).use { bufferedWriter ->
+            BufferedWriter(OutputStreamWriter(outputStream, "windows-31j")).use { bufferedWriter ->
                 saveDXF(bufferedWriter)
             }
         }
@@ -2823,7 +2823,7 @@ class MainActivity : AppCompatActivity(),
 
         try {
             setTitles()
-            BufferedWriter(OutputStreamWriter(openFileOutput(filename, MODE_PRIVATE), "Shift-JIS")).use { writer ->
+            BufferedWriter(OutputStreamWriter(openFileOutput(filename, MODE_PRIVATE), "windows-31j")).use { writer ->
                 val isSaved = writeCSV(writer)
                 if (isSaved) {
                     isCSVsavedToPrivate = true
@@ -2860,7 +2860,7 @@ class MainActivity : AppCompatActivity(),
         loadContent.launch( intent )
     }
 
-    fun openFileAsBufferedReader( fileName: String, encoding: String = "Shift-JIS", context: Context = this ): BufferedReader? {
+    fun openFileAsBufferedReader( fileName: String, encoding: String = "windows-31j", context: Context = this ): BufferedReader? {
         return try {
             val inputStream = context.openFileInput(fileName)  // 'context'は現在のContextオブジェクト
             BufferedReader(InputStreamReader(inputStream, encoding))
