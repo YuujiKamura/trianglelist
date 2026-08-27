@@ -34,6 +34,7 @@ fun main(args: Array<String>) = application {
     val useAwtViewer = args.contains("--viewer=awt")
     // DXF/SFCファイルパスを取得（オプション以外の引数）
     val dxfFilePath = args.firstOrNull { !it.startsWith("-") && (it.endsWith(".dxf", ignoreCase = true) || it.endsWith(".sfc", ignoreCase = true)) }
+        ?: args.firstOrNull { !it.startsWith("-") && it.endsWith(".csv", ignoreCase = true) }?.let { csvToDxfForViewer(it) }
 
     // デスクトップサイズを取得して左下1/4に配置
     val screenSize = Toolkit.getDefaultToolkit().screenSize
@@ -62,6 +63,29 @@ fun main(args: Array<String>) = application {
             CADViewerApp(initialFilePath = dxfFilePath, initialDebugMode = isDebugMode, useAwtViewer = useAwtViewer, awtWindow = window)
         }
     }
+}
+
+/**
+ * 開発ループ高速化 (2026-08-27): viewer に CSV をそのまま渡せるようにする。
+ * アプリ本番と同じ書き出し経路 (WebDrawingExport.buildDxfText → common DxfFileWriter) で
+ * DXF に変換して build/viewer-dxf/ に置き、それを開く。
+ *
+ * これが無いと「samples の CSV を viewer で見る」たびに別タスク (gradle test 経由の
+ * 書き出し probe、約 20 秒) を挟むことになる ── 実データで見た目を検証する動線が
+ * 遅いと、検証そのものが省かれる。CSV は MS932 (アプリ保存出力そのまま)。
+ */
+private fun csvToDxfForViewer(csvPath: String): String? = try {
+    val ms932 = java.nio.charset.Charset.forName("MS932")
+    val csvFile = File(csvPath).absoluteFile
+    val dxf = com.jpaver.trianglelist.web.WebDrawingExport.buildDxfText(csvFile.readText(ms932))
+    val outDir = File(System.getProperty("user.dir"), "build/viewer-dxf").apply { mkdirs() }
+    val out = File(outDir, csvFile.nameWithoutExtension + ".dxf")
+    out.writeText(dxf, ms932)
+    println("CSV → DXF: ${csvFile.absolutePath} → ${out.absolutePath}")
+    out.absolutePath
+} catch (e: Exception) {
+    System.err.println("CSV 変換に失敗: $csvPath (${e.message})")
+    null
 }
 
 @Composable
@@ -652,6 +676,45 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                     style = MaterialTheme.typography.caption,
                     color = androidx.compose.ui.graphics.Color(0xFFFF6600)
                 )
+            }
+        }
+
+        // 衝突サマリ + 凡例。boxes on の枠の色が何を意味するかを画面上で対応づける
+        // (色だけ出しても「赤が何件で何と当たっているのか」は引きの倍率では読めない)。
+        if (showLabelBoxes) {
+            parseResult?.let { result ->
+                val kinds = remember(result) {
+                    com.jpaver.trianglelist.label.DxfOverlapAnalyzer.analyze(result, metrics = cpLabelMetrics)
+                        .collisionKindByText
+                }
+                val labelN = kinds.count { it.value == com.jpaver.trianglelist.label.ObstacleKind.LABEL }
+                val circleN = kinds.count { it.value == com.jpaver.trianglelist.label.ObstacleKind.CIRCLE }
+                val total = com.jpaver.trianglelist.label.DxfOverlapAnalyzer
+                    .textBoxes(result, metrics = cpLabelMetrics).size
+                Row(
+                    modifier = Modifier.padding(bottom = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "[衝突] ${kinds.size}/$total  ",
+                        style = MaterialTheme.typography.caption
+                    )
+                    Text(
+                        text = "■ 文字どうし $labelN",
+                        style = MaterialTheme.typography.caption,
+                        color = androidx.compose.ui.graphics.Color(0xFFE53935)
+                    )
+                    Text(
+                        text = "  ■ 番号サークル $circleN",
+                        style = MaterialTheme.typography.caption,
+                        color = androidx.compose.ui.graphics.Color(0xFF8E24AA)
+                    )
+                    Text(
+                        text = "  ■ 衝突なし ${total - kinds.size}",
+                        style = MaterialTheme.typography.caption,
+                        color = androidx.compose.ui.graphics.Color.Blue
+                    )
+                }
             }
         }
 

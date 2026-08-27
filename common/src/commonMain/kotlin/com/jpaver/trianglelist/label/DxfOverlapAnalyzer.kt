@@ -83,6 +83,11 @@ object DxfOverlapAnalyzer {
         val active = mutableListOf<Pair<String, LabelBox>>()
         val circledNumbers = mutableListOf<CircledNumber>()
         parseResult.texts.forEachIndexed { index, text ->
+            // 中身の無い TEXT (図枠の空セル等) は判定の世界に入れない。インク幅 0 の box は
+            // 「重なり深さ = 無限大」の幽霊ペアを作り、ビューワーで中身の無い所に
+            // 衝突色の枠が出る (2026-08-27 実データ 8.25 の text:90 x text:96 @Infinity)。
+            // 読めなくなる文字が無いものは、被判定でも障害物でもない。
+            if (text.text.isBlank()) return@forEachIndexed
             val id = textId(index, text.text)
             val box = toLabelBox(text, textWidthFactor, metrics)
             val circleIndex = parseResult.circles.indexOfFirst { isCircledNumber(box, it) }

@@ -29,6 +29,31 @@ class DxfOverlapAnalyzerTest {
     }
 
     @Test
+    fun `中身の無い TEXT は判定の世界に入らない`() {
+        // 図枠の表には空セル (空文字 TEXT) が並ぶ。インク幅 0 の box は「重なり深さ = 無限大」
+        // という幽霊ペアを作り、ビューワーでは中身の無い所に衝突色の枠が出る
+        // (2026-08-27 実データ 8.25 で text:90 x text:96 @Infinity として観測)。
+        // 読めなくなる文字が無い以上、判定の対象にも障害物にもならない。
+        val parseResult = DxfParseResult(
+            texts = listOf(
+                DxfText(x = 0.0, y = 0.0, text = "", height = 1.0),
+                DxfText(x = 0.0, y = 0.0, text = "   ", height = 1.0),
+                DxfText(x = 0.0, y = 0.0, text = "AB", height = 1.0),
+            ),
+        )
+
+        val report = DxfOverlapAnalyzer.analyze(parseResult)
+
+        assertEquals(1, report.totalTexts, "空文字/空白のみの TEXT が判定に残っている: ${report.pairs}")
+        assertTrue(report.pairs.isEmpty(), "空 TEXT との幽霊ペアが出た: ${report.pairs}")
+        assertEquals(
+            listOf("text:2:AB"),
+            DxfOverlapAnalyzer.textBoxes(parseResult).map { it.first },
+            "overlay にも空 TEXT の枠が出てはいけない",
+        )
+    }
+
+    @Test
     fun `テキストを辺が貫くと EDGE 種別のペアが深さ付きで返る`() {
         // 半角 "ABCD" height=2 → 幅 = 4×0.5×2×1.299 = 5.196、box は x∈[0,5.196], y∈[0,2]。
         // x=2 の縦線が貫く → 押し出し量は左端まで 2 (右端 3.196 より近い)

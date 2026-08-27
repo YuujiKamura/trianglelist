@@ -53,6 +53,27 @@ compose.desktop {
     }
 }
 
+// 開発ループ高速化 (2026-08-27): viewer の runtime classpath をファイルに落とす。
+// `./gradlew :desktop:run` は起動のたびに configuration + task graph で 20-30 秒かかるが、
+// classpath さえ手元にあれば `java -cp @file MainKt` で数秒で立つ。
+// コード変更時は :desktop:compileKotlin (インクリメンタル数秒) だけ回せばよい。
+// 使い方は desktop/scripts/cad-dev.ps1 を参照。
+tasks.register("dumpRuntimeClasspath") {
+    group = "application"
+    description = "viewer 起動用の classpath を build/viewer-classpath.txt に書き出す"
+    val out = layout.buildDirectory.file("viewer-classpath.txt")
+    val cp = sourceSets["main"].runtimeClasspath
+    inputs.files(cp)
+    outputs.file(out)
+    doLast {
+        // java の引数ファイル形式 (-cp @file)。Windows の \ は引数ファイル内で
+        // エスケープ扱いになるため / に正規化する
+        val sep = File.pathSeparator
+        val joined = cp.joinToString(sep) { it.absolutePath.replace(File.separatorChar, '/') }
+        out.get().asFile.writeText("-cp " + "\"" + joined + "\"" + System.lineSeparator())
+    }
+}
+
 // テストモード用のカスタムタスク
 tasks.register<JavaExec>("runTest") {
     group = "application"

@@ -52,6 +52,13 @@ fun CADView(
     val labelBoxes = remember(parseResult, labelMetrics) {
         com.jpaver.trianglelist.label.DxfOverlapAnalyzer.textBoxes(parseResult, metrics = labelMetrics)
     }
+    // 枠の色分け: 「その寸法テキストが何と衝突しているか」(common OverlapReport が決める、
+    // 判定と同じ analyze 経路)。box を描く経路と判定する経路が同一なので、
+    // 画面の色 = 判定結果そのもの (2026-08-27 user 指示「正しく色分けした枠」)
+    val collisionKinds = remember(parseResult, labelMetrics) {
+        com.jpaver.trianglelist.label.DxfOverlapAnalyzer.analyze(parseResult, metrics = labelMetrics)
+            .collisionKindByText
+    }
     // 較正検証データ: renderer の実描画 layout 箱と判定 box の数値比較 (boxes on で 1 回出力)
     val overlayTextRenderer = remember { com.jpaver.trianglelist.adapter.TextRenderer() }
     val flippedTexts = remember(parseResult) {
@@ -60,8 +67,12 @@ fun CADView(
     LaunchedEffect(showLabelBoxes, parseResult) {
         if (!showLabelBoxes) return@LaunchedEffect
         println("[boxes] density=${overlayDensity.density} fontScale=${overlayDensity.fontScale} capRatio=${com.jpaver.trianglelist.adapter.TextRenderer.capHeightRatio} msGothic=${com.jpaver.trianglelist.adapter.TextRenderer.msGothicTypeface != null}")
-        labelBoxes.forEachIndexed { i, (id, box) ->
-            val t = flippedTexts.getOrNull(i) ?: return@forEachIndexed
+        labelBoxes.forEach { (id, box) ->
+            // id は "text:<元 texts の index>:<内容>"。labelBoxes は番号サークル・空文字を
+            // 落とした後の列なので、順番で引くと別のテキストと突き合わせてしまう
+            // (ratioW=0.27 のような無意味な数字が出ていた原因)。index を id から取る
+            val srcIndex = id.split(':').getOrNull(1)?.toIntOrNull() ?: return@forEach
+            val t = flippedTexts.getOrNull(srcIndex) ?: return@forEach
             val b = overlayTextRenderer.calculateTextBounds(t, scale, textMeasurer, overlayDensity)
             val renderedW = b[1] - b[0]
             val renderedH = b[3] - b[2]
@@ -76,6 +87,16 @@ fun CADView(
         }
     }
 
+    // CP (zoom / pan / view) からの外部指定を実際のビューへ反映する。
+    // initialScale / initialOffset は remember の初期値としてしか読まれていなかったため、
+    // 「ok scale=...」と返るのに画面が動かない (= CP 越しの目視検証ができない) 状態だった。
+    // 値が変わった時だけ追従させる ── 内部のドラッグ/ホイール操作は上書きしない
+    LaunchedEffect(initialScale, initialOffset) {
+        initialScale?.let { scale = it }
+        initialOffset?.let { offset = it }
+        if (initialScale != null || initialOffset != null) isInitialized = true
+    }
+
     // ビューステートが変更されたら通知
     LaunchedEffect(scale, offset) {
         if (isInitialized) {
@@ -85,11 +106,12 @@ fun CADView(
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val density = LocalDensity.current
-        // parseResultが変わっても、初回のみスケール・オフセットを計算（ホットリロード時は保持）
-        LaunchedEffect(parseResult, maxWidth, maxHeight) {
-            if (isInitialized) return@LaunchedEffect
+        // 全体フィット計算。初回composition と CP の「fit」(initial* = null) の両方から呼ぶ ──
+        // 以前は初回 LaunchedEffect の中に埋まっていて、CP fit が「ok」を返すだけで
+        // 画面が動かなかった (isInitialized が立ったままなので再計算されない)
+        fun fitToView() {
             if (parseResult.lines.isEmpty() && parseResult.circles.isEmpty() &&
-                parseResult.arcs.isEmpty() && parseResult.lwPolylines.isEmpty() && parseResult.texts.isEmpty()) return@LaunchedEffect
+                parseResult.arcs.isEmpty() && parseResult.lwPolylines.isEmpty() && parseResult.texts.isEmpty()) return
 
             val canvasW = with(density) { maxWidth.toPx() }
             val canvasH = with(density) { maxHeight.toPx() }
@@ -105,7 +127,7 @@ fun CADView(
 
             val width = maxX - minX
             val height = maxY - minY
-            if (width <= 0f || height <= 0f) return@LaunchedEffect
+            if (width <= 0f || height <= 0f) return
 
             // 図面のサイズに合わせてスケールを計算（余裕を持たせる）
             val newScale = min(canvasW / width, canvasH / height) * 0.9f
@@ -131,6 +153,16 @@ fun CADView(
             println("Scale: $newScale, Offset: $offset")
 
             isInitialized = true
+        }
+
+        // 初回のみ (parseResult が変わってもホットリロード時は保持)
+        LaunchedEffect(parseResult, maxWidth, maxHeight) {
+            if (isInitialized) return@LaunchedEffect
+            fitToView()
+        }
+        // CP 「fit」= initialScale/initialOffset を両方 null にする合図 → 全体フィットへ戻す
+        LaunchedEffect(initialScale, initialOffset, maxWidth, maxHeight) {
+            if (initialScale == null && initialOffset == null) fitToView()
         }
 
         Canvas(
@@ -219,17 +251,28 @@ fun CADView(
             // LabelBox overlay: 既存描画の上に青枠で重ねる。canvas world は Y 反転済み
             // DXF 座標 (CanvasUtil.flipYAxis) なので、DXF 座標の corners を -y で写す
             if (showLabelBoxes) {
-                for ((_, box) in labelBoxes) {
+                // 衝突ありを後に描く ── 団子になっている所ほど枠が重なるので、
+                // 衝突なし (青) が上に乗って衝突色を隠すのを防ぐ
+                val ordered = labelBoxes.sortedBy { (id, _) -> if (collisionKinds[id] == null) 0 else 1 }
+                for ((id, box) in ordered) {
+                    val kind = collisionKinds[id]
                     val corners = box.corners()
                     val path = androidx.compose.ui.graphics.Path().apply {
                         moveTo(corners[0].x.toFloat(), (-corners[0].y).toFloat())
                         for (i in 1 until corners.size) lineTo(corners[i].x.toFloat(), (-corners[i].y).toFloat())
                         close()
                     }
+                    // 衝突ありは薄い塗りも敷く。線だけだと引きの倍率で枠が消えて
+                    // 「衝突しているのに気づけない」(実データ 8.25 の目視で確認)
+                    if (kind != null) {
+                        drawPath(path, color = collisionColor(kind).copy(alpha = 0.22f))
+                    }
                     drawPath(
                         path,
-                        color = Color.Blue,
-                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5f / scale)
+                        color = collisionColor(kind),
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(
+                            width = (if (kind == null) 1.5f else 2.5f) / scale
+                        )
                     )
                 }
             }
@@ -254,4 +297,19 @@ fun CADView(
             }
         }
     }
+}
+
+/**
+ * 衝突種別 → 枠の色。common の ObstacleKind (判定側の語彙) と 1:1 で対応させる ──
+ * 画面の色が判定結果の翻訳であって、独自解釈を挟まないようにするため。
+ *   赤 = 寸法値どうしが重なる (数字が読めない、最悪)
+ *   紫 = 番号サークルに当たる
+ *   青 = 衝突なし (判定 box の可視化のみ、従来の色)
+ * 辺 (EDGE) はそもそも色分け対象に入らない (OverlapReport.collisionKindByText 参照 ──
+ * 縦アライメントのパディングのせいで寸法値はほぼ必ず自分の辺に当たるため)。
+ */
+private fun collisionColor(kind: com.jpaver.trianglelist.label.ObstacleKind?): Color = when (kind) {
+    com.jpaver.trianglelist.label.ObstacleKind.LABEL -> Color(0xFFE53935)
+    com.jpaver.trianglelist.label.ObstacleKind.CIRCLE -> Color(0xFF8E24AA)
+    else -> Color.Blue
 }
