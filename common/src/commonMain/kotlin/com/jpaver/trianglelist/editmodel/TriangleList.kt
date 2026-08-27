@@ -392,8 +392,26 @@ open class TriangleList : EditList<Triangle> {
     fun recoverState(bp: com.example.trilib.PointXY = com.example.trilib.PointXY(0f, 0f)) {
         basepoint = bp.clone()
         val listLocal = angle - 180
+        
+        // 剛体接続 (connectionSide < 9) の場合、親と同一の角度で回転しなければならない。
+        // 追加タイミングのズレによる angleInLocal_ の非同期を無視し、フロート根本の値を継承する。
+        fun getEffectiveRestoredAngle(tri: Triangle): Float {
+            var current = tri
+            var count = 0
+            while (current.parentnumber > 0 && current.connectionSide < 9 && count < trilist.size) {
+                val pIdx = current.parentnumber - 1
+                if (pIdx in trilist.indices) {
+                    current = trilist[pIdx]
+                    count++
+                } else {
+                    break
+                }
+            }
+            return current.restoredAngleInLocal_ ?: listLocal
+        }
+
         // recover_rotate は angleInLocal_ を上書きするので、差分は先に確定させておく
-        val extras = trilist.map { (it.restoredAngleInLocal_ ?: listLocal) - listLocal }
+        val extras = trilist.map { getEffectiveRestoredAngle(it) - listLocal }
         trilist.forEach { it.recover_rotate(basepoint, listLocal) }
         trilist.forEachIndexed { i, tri ->
             if (extras[i] != 0f) tri.rotateLocalBy(basepoint, extras[i])
