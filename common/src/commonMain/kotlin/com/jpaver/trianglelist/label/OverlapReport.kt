@@ -42,6 +42,12 @@ data class OverlapReport(
      */
     val contacts: List<OverlapPair> get() = pairs.filter { it.depthMm <= LabelBox.EPS }
 
-    /** 実際のめり込み (depthMm > EPS)。位置調整が必要な「本当の重なり」はこちら。 */
-    val intrusions: List<OverlapPair> get() = pairs.filter { it.depthMm > LabelBox.EPS }
+    /**
+     * 実際のめり込み (depthMm > EPS)。
+     * ただし、テキスト同士 (LABEL vs LABEL) の場合は、境界接触 (depth=0) であっても
+     * 視覚的に「重なって読めない」問題となるため、無条件で intrusion 扱いとする。
+     */
+    val intrusions: List<OverlapPair> get() = pairs.filter { 
+        it.depthMm > LabelBox.EPS || it.otherKind == ObstacleKind.LABEL
+    }
 }
