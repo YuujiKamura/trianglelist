@@ -59,6 +59,23 @@ fun CADView(
         com.jpaver.trianglelist.label.DxfOverlapAnalyzer.analyze(parseResult, metrics = labelMetrics)
             .collisionKindByText
     }
+    // overlay の Path は model 座標そのもの (canvas 側の transform が拡大/移動を担う) なので
+    // 1 度作れば pan/zoom で作り直す必要がない。毎フレーム 200 個の Path を組むと
+    // パンが目に見えて重くなる (2026-08-27 user「パン操作とか結構重いな」)。
+    // 衝突ありを後ろに並べておく = 灰/青が衝突色の上に乗るのを防ぐ (描画順)
+    val overlayPaths = remember(labelBoxes, collisionKinds) {
+        labelBoxes
+            .sortedBy { (id, _) -> if (collisionKinds[id] == null) 0 else 1 }
+            .map { (id, box) ->
+                val corners = box.corners()
+                val path = androidx.compose.ui.graphics.Path().apply {
+                    moveTo(corners[0].x.toFloat(), (-corners[0].y).toFloat())
+                    for (i in 1 until corners.size) lineTo(corners[i].x.toFloat(), (-corners[i].y).toFloat())
+                    close()
+                }
+                Triple(path, collisionColor(collisionKinds[id]), collisionKinds[id] != null)
+            }
+    }
     // 較正検証データ: renderer の実描画 layout 箱と判定 box の数値比較 (boxes on で 1 回出力)
     val overlayTextRenderer = remember { com.jpaver.trianglelist.adapter.TextRenderer() }
     val flippedTexts = remember(parseResult) {
@@ -251,27 +268,15 @@ fun CADView(
             // LabelBox overlay: 既存描画の上に青枠で重ねる。canvas world は Y 反転済み
             // DXF 座標 (CanvasUtil.flipYAxis) なので、DXF 座標の corners を -y で写す
             if (showLabelBoxes) {
-                // 衝突ありを後に描く ── 団子になっている所ほど枠が重なるので、
-                // 衝突なし (青) が上に乗って衝突色を隠すのを防ぐ
-                val ordered = labelBoxes.sortedBy { (id, _) -> if (collisionKinds[id] == null) 0 else 1 }
-                for ((id, box) in ordered) {
-                    val kind = collisionKinds[id]
-                    val corners = box.corners()
-                    val path = androidx.compose.ui.graphics.Path().apply {
-                        moveTo(corners[0].x.toFloat(), (-corners[0].y).toFloat())
-                        for (i in 1 until corners.size) lineTo(corners[i].x.toFloat(), (-corners[i].y).toFloat())
-                        close()
-                    }
+                for ((path, color, colliding) in overlayPaths) {
                     // 衝突ありは薄い塗りも敷く。線だけだと引きの倍率で枠が消えて
                     // 「衝突しているのに気づけない」(実データ 8.25 の目視で確認)
-                    if (kind != null) {
-                        drawPath(path, color = collisionColor(kind).copy(alpha = 0.22f))
-                    }
+                    if (colliding) drawPath(path, color = color.copy(alpha = 0.22f))
                     drawPath(
                         path,
-                        color = collisionColor(kind),
+                        color = color,
                         style = androidx.compose.ui.graphics.drawscope.Stroke(
-                            width = (if (kind == null) 1.5f else 2.5f) / scale
+                            width = (if (colliding) 2.5f else 1.5f) / scale
                         )
                     )
                 }

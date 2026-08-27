@@ -138,24 +138,73 @@ object DimensionTextEscape {
         // 判定だけ少し大きい文字で行う (余白 + 近似メトリクスと実測の差の吸収)。
         // 詳細は NumberCircleEscape.DEFAULT_CLEARANCE
         val judgeSize = textSize * (1f + clearance)
-        fun collisions(): Map<String, ObstacleKind> =
-            ModelOverlapAnalyzer.analyze(list, judgeSize, scale, sokutenListVector, thresholdAngle, metrics)
-                .collisionKindByText
 
         val shapes = mutableMapOf<Int, CycleShape>()
         list.forEachItemIndexed { num, shape -> shapes[num] = shape }
+
+        // ---- 衝突状態を差分で持つ ----
+        // 候補を 1 つ試すたびに全 57 本を判定し直すと、実データの探索が 196ms かかる
+        // (2026-08-27 実測)。編集のたびに走らせるにはこれでは遅い。
+        // 1 本動かして変わるのは「その 1 本の当たり」と「相手側の当たり」だけなので、
+        // 動かした box だけ再クエリして差分を反映する。
+        //
+        // 図形の辺 (EDGE) は判定に入れない ── 判定 box は縦アライメントのパディング分
+        // グリフより大きく、辺沿いの寸法値はほぼ必ず辺に当たる (OverlapReport 参照)。
+        val obstacles = CollisionField()
+        list.forEachItemIndexed { num, obj ->
+            obstacles.addCircle("circle:$num", obj.pointNumberAnchor(), (judgeSize * 0.85f).toDouble())
+        }
+        val boxById = linkedMapOf<String, LabelBox>()
+        for ((id, box) in ModelOverlapAnalyzer.boxes(list, judgeSize, scale, sokutenListVector, thresholdAngle, metrics)) {
+            boxById[id] = box
+        }
+        val partners = boxById.keys.associateWith { mutableSetOf<String>() }
+        val circleHit = boxById.keys.associateWithTo(mutableMapOf()) { false }
+
+        fun hitsOf(id: String, box: LabelBox): Pair<Set<String>, Boolean> {
+            val labelHits = boxById.entries
+                .filter { it.key != id && box.penetrationDepth(it.value) != null }
+                .map { it.key }.toSet()
+            val circle = obstacles.query(box, excludeId = id).any { it.kind == ObstacleKind.CIRCLE }
+            return labelHits to circle
+        }
+        for ((id, box) in boxById) {
+            val (labelHits, circle) = hitsOf(id, box)
+            partners.getValue(id).addAll(labelHits)
+            labelHits.forEach { partners.getValue(it).add(id) }
+            circleHit[id] = circle
+        }
+        fun collidingCount(): Int =
+            boxById.keys.count { partners.getValue(it).isNotEmpty() || circleHit.getValue(it) }
+
+        /** 図形 num の box を作り直し、当たり状態を差分更新する。 */
+        fun refreshShape(num: Int) {
+            val shape = shapes[num] ?: return
+            val fresh = ModelOverlapAnalyzer.boxesOf(shape, num, judgeSize, scale, sokutenListVector, metrics)
+            for ((id, box) in fresh) {
+                if (!boxById.containsKey(id)) continue
+                // 旧状態を相手側から外す
+                partners.getValue(id).forEach { partners.getValue(it).remove(id) }
+                partners.getValue(id).clear()
+                boxById[id] = box
+                val (labelHits, circle) = hitsOf(id, box)
+                partners.getValue(id).addAll(labelHits)
+                labelHits.forEach { partners.getValue(it).add(id) }
+                circleHit[id] = circle
+            }
+        }
 
         val originals = mutableMapOf<Pair<Int, Int>, Int>()
         val applied = mutableMapOf<Pair<Int, Int>, Int>()
 
         repeat(maxPasses) {
             var improved = false
-            var baseline = collisions()
-            if (baseline.isEmpty()) return@repeat
+            var baseline = collidingCount()
+            if (baseline == 0) return@repeat
 
             // 対象は「文字どうし」で衝突している寸法値のみ。番号サークルとの衝突は
             // NumberCircleEscape の担当 (自由に動ける方を先に動かす)
-            val targets = baseline.filterValues { it == ObstacleKind.LABEL }.keys.sorted()
+            val targets = boxById.keys.filter { partners.getValue(it).isNotEmpty() }.sorted()
             for (id in targets) {
                 val (num, side) = parseId(id) ?: continue
                 val shape = shapes[num] ?: continue
@@ -171,8 +220,9 @@ object DimensionTextEscape {
 
                 for (candidate in ladder) {
                     setHorizontal(shape, side, candidate)
-                    val after = collisions()
-                    if (after.size < baseline.size) {
+                    refreshShape(num)
+                    val after = collidingCount()
+                    if (after < baseline) {
                         originals.getOrPut(num to side) { current }
                         applied[num to side] = candidate
                         baseline = after
@@ -180,6 +230,7 @@ object DimensionTextEscape {
                         break
                     }
                     setHorizontal(shape, side, current) // 効かなかったら戻す
+                    refreshShape(num)
                 }
             }
             if (!improved) return@repeat

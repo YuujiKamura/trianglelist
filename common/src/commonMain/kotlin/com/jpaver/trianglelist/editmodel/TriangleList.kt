@@ -339,9 +339,36 @@ open class TriangleList : EditList<Triangle> {
         }
 
         //全体のスケールが終わってから一度だけ呼ぶ
-        if(isArrangePointNumbers) arrangePointNumbers()
+        if(isArrangePointNumbers) {
+            arrangePointNumbers()
+            arrangeLabelsWithoutCollision(ts)
+        }
 
         return this
+    }
+
+    /**
+     * 既定配置のあと、**実際に衝突しているラベルだけ**を置き直す (2026-08-27)。
+     *
+     * 「書き出し時の補正」でも「描画時の補正」でもなく、モデルが自分の配置を決める工程の
+     * 一部として置く (user 指示「この補正処理はモデル層の中でやってほしい」「図面に
+     * 書き出すフェーズとか、画面に表示するときの補正という位置づけ…それもなんかなー」)。
+     * 結果は pointnumber / dimHorizontal という既存の永続フィールドに入るだけなので、
+     * 画面・DXF・SFC・PDF・CSV が同じ配置を見る。
+     *
+     * 順番は「自由に動ける番号サークルを先に、辺に縛られた寸法値を後に」。
+     * user が自分で動かした配置には触らない (各 Escape が isMovedByUser で降りる)。
+     *
+     * ts は「その時に実際に描かれる文字の大きさ」。判定と描画の大きさがずれると
+     * 避けたはずの所が重なるので、呼び出し側が渡している値をそのまま使う。
+     * 衝突が無ければ検出だけで終わる (実データ 図形25 で約 5ms、EscapeCostTest)。
+     */
+    fun arrangeLabelsWithoutCollision(ts: Float) {
+        if (ts <= 0f) return
+        val numberMoves = com.jpaver.trianglelist.label.NumberCircleEscape.solve(this, ts)
+        com.jpaver.trianglelist.label.NumberCircleEscape.apply(this, numberMoves)
+        val dimMoves = com.jpaver.trianglelist.label.DimensionTextEscape.solve(this, ts)
+        com.jpaver.trianglelist.label.DimensionTextEscape.apply(this, dimMoves)
     }
 
     fun setDimPathTextSize(ts: Float) {
@@ -354,6 +381,19 @@ open class TriangleList : EditList<Triangle> {
         trilist.forEachIndexed { _, triangle ->
             action(triangle)
         }
+    }
+
+    // 基底 EditList の巡回 API を自前 trilist に向け直す (2026-08-27)。
+    // TriangleList は SoT 一本化 (2026-06-15) の途中段階で、基底の list ではなく
+    // trilist に実体を持っている。そのため基底の forEachItem 系は**常に空**を返し、
+    // 基底 API を使う共通ロジック (ModelOverlapAnalyzer や自動配置) が TriangleList に
+    // 対して何もしない状態だった ── 実データ 8 図形で box 17 件 vs 0 件で判明。
+    override fun forEachItem(action: (CycleShape) -> Unit) {
+        trilist.forEach { action(it) }
+    }
+
+    override fun forEachItemIndexed(action: (Int, CycleShape) -> Unit) {
+        trilist.forEachIndexed { i, t -> action(i + 1, t) }
     }
 
     fun setDimsUnconnectedSideToOuter(target: Triangle?) {

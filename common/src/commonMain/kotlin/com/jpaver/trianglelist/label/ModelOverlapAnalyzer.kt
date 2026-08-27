@@ -106,6 +106,39 @@ object ModelOverlapAnalyzer {
             .map { spec -> "dim:$num:${spec.side}" to toLabelBox(spec, textSize.toDouble(), metrics) }
 
     /**
+     * 既に作ってある box 群に対して衝突を集計する (box の再計算をしない版)。
+     * 配置の探索が候補ごとに呼ぶので、ここは純粋な幾何クエリだけに保つ。
+     */
+    fun analyzeBoxes(
+        list: EditList<out CycleShape>,
+        entries: List<Pair<String, LabelBox>>,
+        textSize: Float,
+    ): OverlapReport {
+        val field = CollisionField()
+        list.forEachItemIndexed { num, obj ->
+            obj.edges().forEachIndexed { side, line ->
+                field.addEdge("edge:$num:$side", line.left, line.right)
+            }
+            field.addCircle("circle:$num", obj.pointNumberAnchor(), (textSize * 0.85f).toDouble())
+        }
+        for ((id, box) in entries) field.addBox(id, box)
+
+        var overlappingTexts = 0
+        val seenPairKeys = mutableSetOf<String>()
+        val pairs = mutableListOf<OverlapPair>()
+        for ((id, box) in entries) {
+            val hits = field.query(box, excludeId = id)
+            if (hits.isNotEmpty()) overlappingTexts++
+            for (hit in hits) {
+                val key = if (id < hit.id) "$id|${hit.id}" else "${hit.id}|$id"
+                if (!seenPairKeys.add(key)) continue
+                pairs.add(OverlapPair(textId = id, otherId = hit.id, otherKind = hit.kind, depthMm = hit.depthMm))
+            }
+        }
+        return OverlapReport(totalTexts = entries.size, overlappingTexts = overlappingTexts, pairs = pairs)
+    }
+
+    /**
      * DimensionSpec → LabelBox 変換。DxfOverlapAnalyzer.toLabelBox の模写だが、
      * DXF の TEXT 回転/整列コードではなく DimensionSpec.angle / place.verticalDxf を直接使う
      * (書き出しを経由しないので DXF 表現に翻訳し直す必要がない)。

@@ -27,6 +27,33 @@ class EscapeCostTest {
         error("repo root not found")
     }
 
+    /** 図形数を増やした時のコスト。アプリはモデル更新のたびに走らせるので、実機で
+     *  現実的な規模 (50〜100 図形) が耐えられるかを見る。 */
+    @Test
+    fun `図形数を増やした時の自動配置コスト`() {
+        val nl = 10.toChar().toString()
+        for (n in listOf(10, 25, 50, 100)) {
+            val csv = buildString {
+                append("1,4.0,3.0,3.5,-1,-1").append(nl)
+                for (i in 2..n) append("$i,3.0,2.8,3.2,${i - 1},${if (i % 2 == 0) 1 else 2}").append(nl)
+            }
+            val list = com.jpaver.trianglelist.datamanager.CsvCodec
+                .build(com.jpaver.trianglelist.datamanager.CsvCodec.parse(csv))
+            list.arrangeLabelsWithoutCollision(0.525f) // ウォームアップ兼 1 回目
+            val start = System.nanoTime()
+            list.arrangeLabelsWithoutCollision(0.525f) // 2 回目 = 収束後の定常コスト
+            val steadyMs = (System.nanoTime() - start) / 1e6
+
+            val fresh = com.jpaver.trianglelist.datamanager.CsvCodec
+                .build(com.jpaver.trianglelist.datamanager.CsvCodec.parse(csv))
+            val coldStart = System.nanoTime()
+            fresh.arrangeLabelsWithoutCollision(0.525f)
+            val coldMs = (System.nanoTime() - coldStart) / 1e6
+
+            println("[scale] 図形$n 初回=%.1fms 収束後=%.1fms".format(coldMs, steadyMs))
+        }
+    }
+
     @Test
     fun `検出は編集ごとに回せる安さ 補正はボタン向きの重さ`() {
         val csv = File(repoRoot(), "samples/8.25_bad.csv")
