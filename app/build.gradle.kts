@@ -197,7 +197,12 @@ tasks.register("prepareRelease") {
 // service account JSON は ANDROID_PUBLISHER_CREDENTIALS 環境変数から読む (未設定時は
 // publish 系タスクの実行時にのみ失敗する、通常の build/test には影響しない)。
 // devフレーバーはPlay非公開のためpublish対象外 (free/fullのみ自動でタスクが生える)。
-// track は internal 固定 ── 本番への昇格は Play Console 側の手作業とする (事故防止)。
+// track の既定は internal (事故防止)。ここを素で叩くと必ず internal に行く。
+// production へは .github/workflows/android-release.yml の track 入力で
+// --track production を明示した時だけ出る。CI から本番に出せるので
+// 「Play Console 側の手作業でしか昇格できない」わけではない ── 昇格を止めているのは
+// 仕組みではなく運用 (user の明示指示が要る、CLAUDE.md Rule 3 の外部 action 認可)。
+// 実績: 2026-08-27 に 7.65 (versionCode 1354) を free/full とも CI から production へ公開。
 play {
     track.set("internal")
     defaultToAppBundles.set(true)
