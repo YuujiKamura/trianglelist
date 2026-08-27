@@ -41,4 +41,29 @@ class TextSizePolicyDimensionTest {
             1e-4f,
         )
     }
+
+    @Test
+    fun `model 単位の文字サイズを紙 mm に直す`() {
+        // 2026-08-27: アプリ画面に「紙面での寸法値の大きさ」を出すための換算。
+        // 単位の取り違えがこのセッションの事故の主犯なので、往復をテストで固定する。
+        // 1/150 図面で model 0.48 (アプリが DXF に書く既定値 = myview.textSize 30 × 0.016) は
+        // 紙 3.2mm ── JIS の 3.5mm にほぼ乗っている
+        assertEquals(3.2f, TextSizePolicy.modelSizeToPaperMm(0.48f, 150f), 1e-4f)
+        // 一方、配置の判定に使っていた getPrintTextScale の 0.25 は紙 1.667mm = 基準の半分以下
+        assertEquals(1.6667f, TextSizePolicy.modelSizeToPaperMm(0.25f, 150f), 1e-3f)
+        assertEquals(0f, TextSizePolicy.modelSizeToPaperMm(0.48f, 0f), 1e-6f)
+    }
+
+    @Test
+    fun `dimensionModelSize と modelSizeToPaperMm は逆演算`() {
+        for (denominator in kotlin.collections.listOf(50f, 150f, 600f)) {
+            val model = TextSizePolicy.dimensionModelSize(denominator)
+            assertEquals(
+                TextSizePolicy.DIMENSION_PAPER_MM,
+                TextSizePolicy.modelSizeToPaperMm(model, denominator),
+                1e-3f,
+                "縮尺 1/$denominator で往復しない",
+            )
+        }
+    }
 }

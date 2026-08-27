@@ -379,9 +379,27 @@ open class TriangleList : EditList<Triangle> {
      * (getPrintTextScale は DxfFileWriter.textscale_ と同じ経路)。
      */
     fun arrangeLabelsForDrawing() {
+        // policy 判定を **getPrintTextScale より先**に置く。getPrintScale は測定のために
+        // リストを一度 scale して戻す (= calcPoints が走り、user 未固定の番号位置が
+        // 既定へ戻る) 副作用があるため、引数位置で評価すると OFF でも配置が動く
+        // (2026-08-27 LabelArrangePolicyTest が検出)
+        if (!com.jpaver.trianglelist.label.LabelArrangePolicy.enabled) return
+        arrangeLabelsForDrawing(getPrintTextScale(1f, "dxf"))
+    }
+
+    /**
+     * **実際に図面へ書かれる文字サイズ**を渡して配置を確定する。
+     *
+     * サイズを引数にした理由 (2026-08-27): アプリは writer.textscale_ に
+     * myview.textSize * 0.016f (ADR 0001) を入れており、モデルの getPrintTextScale とは
+     * 別の値だった。実測で 1.37〜1.92 倍のずれがあり、「0.25 の文字が入る前提で旗揚げを
+     * 決めて 0.48 の文字を書く」状態になっていた ── デスクトップビューワで見ると
+     * 接触判定と旗揚げの具合が違って見える、の原因。判定は必ず「実際に書くサイズ」で行う。
+     */
+    fun arrangeLabelsForDrawing(ts: Float) {
         // 設定で切られていたら既定配置のまま (LabelArrangePolicy 参照)
         if (!com.jpaver.trianglelist.label.LabelArrangePolicy.enabled) return
-        arrangeLabelsWithoutCollision(getPrintTextScale(1f, "dxf"))
+        arrangeLabelsWithoutCollision(ts)
     }
 
     fun arrangeLabelsWithoutCollision(ts: Float) {
