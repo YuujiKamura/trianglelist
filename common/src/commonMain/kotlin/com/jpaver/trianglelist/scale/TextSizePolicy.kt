@@ -33,6 +33,24 @@ object TextSizePolicy {
      *  表題欄に対して2倍」: FRAME_LABEL_PAPER_MM (3.5mm) の 2 倍 = 7.0mm (JIS ラダー次の段)。 */
     const val TITLE_PAPER_MM: Float = FRAME_LABEL_PAPER_MM * 2f
 
+    /**
+     * 図面単位 (m) あたりの mm。図形は m で持ち、DXF 書き出しで 1000 倍して mm にする。
+     * 紙 mm ↔ model 単位の換算でここを無印の 1000 で書くと、どちらの単位の話か消える。
+     */
+    const val MM_PER_MODEL_UNIT: Float = 1000f
+
+    /**
+     * 寸法値の model 単位サイズ (= 図形と同じ m 空間の大きさ) を JIS の紙 mm から求める。
+     * drawingScaleDenominator は 1/150 図面なら 150f (TriangleList.getPrintScale × 100)。
+     *
+     * 紙面に対して視認できる最低限の大きさは JIS Z 8313 の 3.5mm で決まっていて、
+     * 図面の縮尺が決まれば model 上の大きさは一意 ── 文字サイズは掃くパラメータではない
+     * (2026-08-27 user)。0 除算は 0 を返す (NaN 座標を図面に撒かないため)。
+     */
+    fun dimensionModelSize(drawingScaleDenominator: Float): Float =
+        if (drawingScaleDenominator == 0f) 0f
+        else paperToModel(DIMENSION_PAPER_MM, drawingScaleDenominator) / MM_PER_MODEL_UNIT
+
     /** paper mm を model mm に換算。drawingScaleDenominator は 1/50 図面なら 50f。 */
     fun paperToModel(paperMm: Float, drawingScaleDenominator: Float): Float =
         paperMm * drawingScaleDenominator
