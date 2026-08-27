@@ -9,6 +9,7 @@ import com.jpaver.trianglelist.myName_
 import com.jpaver.trianglelist.parentSide
 import com.jpaver.trianglelist.pointCenter_
 import com.jpaver.trianglelist.setDimPath
+import com.jpaver.trianglelist.setDimPoint
 import com.jpaver.trianglelist.setLengthStr
 import com.jpaver.trianglelist.toStrings
 import com.jpaver.trianglelist.viewmodel.InputParameter
@@ -369,6 +370,15 @@ open class TriangleList : EditList<Triangle> {
         com.jpaver.trianglelist.label.NumberCircleEscape.apply(this, numberMoves)
         val dimMoves = com.jpaver.trianglelist.label.DimensionTextEscape.solve(this, ts)
         com.jpaver.trianglelist.label.DimensionTextEscape.apply(this, dimMoves)
+
+        // 判定は余白込みの少し大きい文字で行う (NumberCircleEscape.DEFAULT_CLEARANCE) ため、
+        // その過程で dimHeight が判定用サイズのまま残る。画面は tri.dimHeight を使って
+        // 寸法位置を計算する (MyViewDimensionSource) ので、**塗る大きさと配置計算の大きさが
+        // ずれたまま**描かれてしまう。実際に描く ts に戻してからキャッシュを作り直す。
+        forEach { triangle ->
+            triangle.setDimPath(ts)
+            triangle.setDimPoint()
+        }
     }
 
     fun setDimPathTextSize(ts: Float) {
