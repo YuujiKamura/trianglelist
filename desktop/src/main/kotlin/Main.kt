@@ -33,8 +33,12 @@ fun main(args: Array<String>) = application {
     val isDebugMode = args.contains("--debug") || args.contains("-d")
     val useAwtViewer = args.contains("--viewer=awt")
     // DXF/SFCファイルパスを取得（オプション以外の引数）
+    // --textmm=<紙 mm>: CSV から起こす時の寸法値サイズを紙面基準で指定する。
+    // 既定 (未指定) は従来の固定表。JIS Z 8313 の寸法値は 3.5mm
+    val dimTextPaperMm = args.firstOrNull { it.startsWith("--textmm=") }?.substringAfter("=")?.toFloatOrNull()
     val dxfFilePath = args.firstOrNull { !it.startsWith("-") && (it.endsWith(".dxf", ignoreCase = true) || it.endsWith(".sfc", ignoreCase = true)) }
-        ?: args.firstOrNull { !it.startsWith("-") && it.endsWith(".csv", ignoreCase = true) }?.let { csvToDxfForViewer(it) }
+        ?: args.firstOrNull { !it.startsWith("-") && it.endsWith(".csv", ignoreCase = true) }
+            ?.let { csvToDxfForViewer(it, dimTextPaperMm) }
 
     // デスクトップサイズを取得して左下1/4に配置
     val screenSize = Toolkit.getDefaultToolkit().screenSize
@@ -74,12 +78,14 @@ fun main(args: Array<String>) = application {
  * 書き出し probe、約 20 秒) を挟むことになる ── 実データで見た目を検証する動線が
  * 遅いと、検証そのものが省かれる。CSV は MS932 (アプリ保存出力そのまま)。
  */
-private fun csvToDxfForViewer(csvPath: String): String? = try {
+private fun csvToDxfForViewer(csvPath: String, dimTextPaperMm: Float? = null): String? = try {
     val ms932 = java.nio.charset.Charset.forName("MS932")
     val csvFile = File(csvPath).absoluteFile
-    val dxf = com.jpaver.trianglelist.web.WebDrawingExport.buildDxfText(csvFile.readText(ms932))
+    val dxf = com.jpaver.trianglelist.web.WebDrawingExport
+        .buildDxfText(csvFile.readText(ms932), "", false, dimTextPaperMm)
     val outDir = File(System.getProperty("user.dir"), "build/viewer-dxf").apply { mkdirs() }
-    val out = File(outDir, csvFile.nameWithoutExtension + ".dxf")
+    val suffix = dimTextPaperMm?.let { "_" + it.toString().replace('.', 'p') + "mm" } ?: ""
+    val out = File(outDir, csvFile.nameWithoutExtension + suffix + ".dxf")
     out.writeText(dxf, ms932)
     println("CSV → DXF: ${csvFile.absolutePath} → ${out.absolutePath}")
     out.absolutePath

@@ -1,6 +1,7 @@
 package com.jpaver.trianglelist.web
 
 import com.jpaver.trianglelist.datamanager.CsvCodec
+import com.jpaver.trianglelist.scale.TextSizePolicy
 import com.jpaver.trianglelist.datamanager.DxfFileWriter
 import com.jpaver.trianglelist.datamanager.SfcWriter
 import com.jpaver.trianglelist.editmodel.Rectangle
@@ -129,7 +130,20 @@ object WebDrawingExport {
      * (番号の振り直し resetNumReverse + 控除リスト reverse) + :361-363 (面積計算書の行順) が正。
      * CSV 保存には影響しない (ファイル仕様不変)。numReverse=false なら従来と同一出力
      */
-    fun buildDxfText(csv: String, overridesJson: String, numReverse: Boolean): String {
+    fun buildDxfText(csv: String, overridesJson: String, numReverse: Boolean): String =
+        buildDxfText(csv, overridesJson, numReverse, null)
+
+    /**
+     * 寸法値を紙 mm 指定で書き出す経路 (2026-08-27)。dimTextPaperMm に値を渡すと、
+     * 寸法値・番号・測点名の大きさを TextScaleCalculator の固定表ではなく
+     * 「紙面基準」で決める ── JIS Z 8313 の 3.5mm が「視認できる最低限」であり、
+     * 図面の縮尺が決まれば model 上の大きさは一意に決まるため (TextSizePolicy 参照)。
+     *
+     * null なら従来どおり (固定表)。既定を紙面基準へ切り替えるのは、寸法値どうしの
+     * 自動退避が入ってから ── 今切り替えると重なったままの図面が出るだけになる
+     * (実データ 8.25 は JIS サイズで 57 寸法中 16 件が衝突)。
+     */
+    fun buildDxfText(csv: String, overridesJson: String, numReverse: Boolean, dimTextPaperMm: Float?): String {
         val header = parseHeader(csv)
         val doc = CsvCodec.parse(csv)
         val trilist = readForExport(csv)
@@ -141,6 +155,13 @@ object WebDrawingExport {
             viewscale_ = 1f // web の ded はビュー倍率 1 (アプリ既定 47.6 のままだと座標が 1/47.6 に縮む)
             startTriNumber_ = 1
             isReverse_ = numReverse
+        }
+        if (dimTextPaperMm != null && dimTextPaperMm > 0f) {
+            // 縮尺分母 = getPrintScale の倍率 × 100 (0.5 → 1/50、1.5 → 1/150。
+            // getPrintTextScale が printScale × 10 を表の key にしているのと同じ対応)
+            val denominator = trilist.getPrintScale(1f) * 100f
+            writer.textscale_ = TextSizePolicy.paperToModel(dimTextPaperMm, denominator) /
+                TextSizePolicy.MM_PER_MODEL_UNIT
         }
         writer.titleTri_ = TitleParamStr()
         writer.titleDed_ = TitleParamStr()

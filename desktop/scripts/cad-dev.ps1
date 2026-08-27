@@ -13,6 +13,7 @@ param(
     [switch]$Boxes,                                     # 起動後に「boxes on」を送る
     [string]$Capture = "",                              # 起動後にスクショを撮る出力先
     [string]$View = "",                                 # 「<scale> <ox> <oy>」で視点指定
+    [double]$TextMm = 0,                                # CSV から起こす時の寸法値サイズ (紙 mm)。JIS は 3.5
     [switch]$NoBuild,                                   # コンパイルを飛ばす (実行中の再起動だけ)
     [int]$CpPort = 9876,
     [int]$TimeoutSec = 90
@@ -34,11 +35,24 @@ Get-Process java -ErrorAction SilentlyContinue |
     Where-Object { $_.MainWindowTitle -eq 'CAD Viewer' } |
     ForEach-Object { Stop-Process -Id $_.Id -Force }
 
+# ポートが空くまで待つ。ここを待たないと、死にかけの旧 viewer に繋がって
+# 「ready in 0.0s」→ 直後に接続断、という紛らわしい失敗になる
+$freeSw = [Diagnostics.Stopwatch]::StartNew()
+while ($freeSw.Elapsed.TotalSeconds -lt 10) {
+    try {
+        $probe = New-Object System.Net.Sockets.TcpClient
+        $probe.Connect("127.0.0.1", $CpPort)
+        $probe.Close()
+        Start-Sleep -Milliseconds 200
+    } catch { break }
+}
+
 $argList = @("@$cpFile", "-Dcompose.swing.render.on.graphics=true", "MainKt")
 if ($File) {
     $target = if ([System.IO.Path]::IsPathRooted($File)) { $File } else { Join-Path $repo $File }
     $argList += (Resolve-Path -LiteralPath $target).Path
 }
+if ($TextMm -gt 0) { $argList += "--textmm=$TextMm" }
 # PATH の java は古いことがある (実測: class file 60.0 までしか読めない JRE)。
 # gradle と同じ JDK を使う - JAVA_HOME 優先、無ければ PATH の java
 $javaExe = if ($env:JAVA_HOME -and (Test-Path (Join-Path $env:JAVA_HOME "bin/java.exe"))) {
