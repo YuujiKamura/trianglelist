@@ -95,7 +95,9 @@ fun Triangle.setOnRectangle(parent: Rectangle, side: Int, B: Float, C: Float): T
     // 引出し矢印 2 本が余分に出る (2026-06-18 WebTrapezoidTest 'dxf_export_includes_
     // rect_child_triangle_lines' で diff=+5 の余分 2 line を pin)。
     calculatePointCenter()
-    if (!pointNumber.flag.isMovedByUser) pointnumber = pointcenter
+    // 退避 (NumberCircleEscape) 済みの番号も既定位置へ戻さない ── 戻すと
+    // 書き出し時のクローン経路で退避が消える (2026-08-27 実バグ)
+    if (!pointNumber.flag.isMovedByUser && !pointNumber.flag.isEscaped) pointnumber = pointcenter
 
     return this
 }

@@ -381,7 +381,9 @@ class Triangle : CycleShape, Cloneable<Triangle> {
             }
             // 鏡映後 pointcenter / pointnumber 再計算 (setOnRectangle と同じ理由)。
             calculatePointCenter()
-            if (!pointNumber.flag.isMovedByUser) pointnumber = pointcenter
+            // 退避 (NumberCircleEscape) 済みの番号も既定位置へ戻さない ── 戻すと
+            // 書き出し時のクローン経路で退避が消える (2026-08-27 実バグ)
+            if (!pointNumber.flag.isMovedByUser && !pointNumber.flag.isEscaped) pointnumber = pointcenter
         }
     }
 

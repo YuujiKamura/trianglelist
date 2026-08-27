@@ -17,7 +17,9 @@ fun Triangle.calcPoints(basepoint: PointXY = this.point[0], _angle: Float = this
     calculateInternalAngles()
     calculatePointCenter()
     arrangeDims(isArrangeDims)
-    if (!pointNumber.flag.isMovedByUser) pointnumber = pointcenter
+    // 退避 (NumberCircleEscape) 済みの番号も既定位置へ戻さない ── 戻すと
+    // 書き出し時のクローン経路で退避が消える (2026-08-27 実バグ)
+    if (!pointNumber.flag.isMovedByUser && !pointNumber.flag.isEscaped) pointnumber = pointcenter
     setBoundaryBox()
 }
 
