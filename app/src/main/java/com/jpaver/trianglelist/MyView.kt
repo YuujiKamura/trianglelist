@@ -443,7 +443,7 @@ class MyView(context: Context, attrs: AttributeSet?) :
         // 画面用のコピーに画面サイズで別途掛けると、同じ図面が画面と DXF で違う配置になる
         // (2026-08-27 user「アプリと図面が食い違うのはバグ」)。ここが唯一の確定点なので、
         // 画面も書き出しも同じ結果を読む。ピンチ操作中は isArrange=false で飛ばす
-        if (isArrange) editlist.arrangeLabelsForDrawing()
+        if (isArrange) editlist.arrangeLabelsForDrawing(drawingTextScale())
         trianglelist = editlist.clone()
         trianglelist.attachToTheView(
             PointXY(
@@ -936,6 +936,15 @@ class MyView(context: Context, attrs: AttributeSet?) :
         val myy: Float = Y - ( (metrics.ascent + metrics.descent) / 2 )
         return myy
     }
+
+    /**
+     * 図面 (DXF/SFC) に実際に書かれる寸法文字の大きさ (model 単位)。
+     * 0.016 = 元 JIS 物理基準 0.014 を目視 +14% 調整した値 (ADR 0001)。
+     *
+     * 配置の判定も書き出しもこの 1 つの値を使う ── 別々の式を持つと
+     * 「入る前提で決めた配置」と「実際に書く文字」がずれる (2026-08-27 実測で 1.37〜1.92 倍)。
+     */
+    fun drawingTextScale(): Float = textSize * 0.016f
 
     fun adjustTextSize(ts: Float): Float = when {
         ts <= 5f -> 8f

@@ -51,6 +51,19 @@ object TextSizePolicy {
         if (drawingScaleDenominator == 0f) 0f
         else paperToModel(DIMENSION_PAPER_MM, drawingScaleDenominator) / MM_PER_MODEL_UNIT
 
+    /**
+     * model 単位の文字サイズ (図形と同じ m 空間の大きさ) を紙 mm に直す。
+     * dimensionModelSize の逆演算。
+     *
+     * 「この図面の寸法値は紙の上で何 mm か」を画面に出すための換算 (2026-08-27 user
+     * 「スマホアプリの画面内で、紙面の寸法値のミリ単位での現状表示をしたほうが良い」)。
+     * 単位 (model 単位 / model mm / paper mm) の取り違えがこのセッションの事故の主犯なので、
+     * 換算はここに集約して往復をテストで固定する。
+     */
+    fun modelSizeToPaperMm(modelSize: Float, drawingScaleDenominator: Float): Float =
+        if (drawingScaleDenominator == 0f) 0f
+        else modelToPaper(modelSize * MM_PER_MODEL_UNIT, drawingScaleDenominator)
+
     /** paper mm を model mm に換算。drawingScaleDenominator は 1/50 図面なら 50f。 */
     fun paperToModel(paperMm: Float, drawingScaleDenominator: Float): Float =
         paperMm * drawingScaleDenominator

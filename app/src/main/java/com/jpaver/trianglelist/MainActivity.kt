@@ -986,7 +986,31 @@ class MainActivity : AppCompatActivity(),
         val triArea = trianglelist.getArea()
         val totalArea = roundByUnderTwo(triArea - dedArea).formattedString(2)
         title = rStr.menseki_ + ": $totalArea m^2"
+        supportActionBar?.subtitle = drawingTextSizeLabel()
         rosenname = findViewById<EditText>(R.id.rosenname).text.toString()
+    }
+
+    /**
+     * 図面 (紙) の上で寸法値が何 mm になるかを表示用に組む (2026-08-27 user
+     * 「スマホアプリの画面内で、紙面の寸法値のミリ単位での現状表示をしたほうが良い」)。
+     *
+     * 画面の px ではなく**紙の mm** を出す ── 図面としての大きさはこれで決まるし、
+     * JIS Z 8313 の寸法値 3.5mm に乗っているかを user がその場で判断できる。
+     * A+/A- で文字サイズを変えると DXF に書かれる大きさも変わるので、その効果もここに出る。
+     */
+    private fun drawingTextSizeLabel(): String {
+        val denominator = trianglelist.getPrintScale(1f) * 100f
+        if (denominator <= 0f) return ""
+        val paperMm = com.jpaver.trianglelist.scale.TextSizePolicy
+            .modelSizeToPaperMm(myview.drawingTextScale(), denominator)
+        val jis = com.jpaver.trianglelist.scale.TextSizePolicy.DIMENSION_PAPER_MM
+        val ratio = if (paperMm > 0f) jis / paperMm else 0f
+        val gap = when {
+            ratio in 0.95f..1.05f -> "JIS"
+            ratio > 1.05f -> "JIS比 %.1f倍小".format(ratio)
+            else -> "JIS比 %.1f倍大".format(1f / ratio)
+        }
+        return "寸法 %.1fmm / 1:%d (%s)".format(paperMm, denominator.toInt(), gap)
     }
 
     private fun roundByUnderTwo(fp: Float) :Float {
@@ -2711,7 +2735,7 @@ class MainActivity : AppCompatActivity(),
         // 既に確定させているのが通常だが、**画面を経由せずに書き出す経路があっても
         // 図面が崩れない**ようにここでも呼ぶ ── 配置が view 側の呼び出しに依存したままだと、
         // 画面更新のタイミング次第で書き出しの中身が変わる (2026-08-27)
-        trianglelist.arrangeLabelsForDrawing()
+        trianglelist.arrangeLabelsForDrawing(myview.drawingTextScale())
 
         //想定と違う結果になりえる
         //trianglelist.arrangePointNumbers()
@@ -2721,7 +2745,7 @@ class MainActivity : AppCompatActivity(),
         writer.titleTri_ = titleTriStr
         writer.titleDed_ = titleDedStr
         // 0.016 = 元 JIS 物理基準 0.014 (= paper 0.35mm 文字) を目視 +14% 調整した値。 詳細は ADR 0001。
-        writer.textscale_ = myview.textSize * 0.016f
+        writer.textscale_ = myview.drawingTextScale()
 
         writer.writer = bWriter
         writer.drawingLength = trianglelist.measureMostLongLine()
@@ -2743,7 +2767,7 @@ class MainActivity : AppCompatActivity(),
         // 既に確定させているのが通常だが、**画面を経由せずに書き出す経路があっても
         // 図面が崩れない**ようにここでも呼ぶ ── 配置が view 側の呼び出しに依存したままだと、
         // 画面更新のタイミング次第で書き出しの中身が変わる (2026-08-27)
-        trianglelist.arrangeLabelsForDrawing()
+        trianglelist.arrangeLabelsForDrawing(myview.drawingTextScale())
 
         val writer = SfcWriter(trianglelist.clone(), myDeductionList.clone(), filename, drawingStartNumber, 47.6f)
         writer.setNames(koujiname, rosenname, gyousyaname, zumennum)
@@ -2767,7 +2791,7 @@ class MainActivity : AppCompatActivity(),
         // 既に確定させているのが通常だが、**画面を経由せずに書き出す経路があっても
         // 図面が崩れない**ようにここでも呼ぶ ── 配置が view 側の呼び出しに依存したままだと、
         // 画面更新のタイミング次第で書き出しの中身が変わる (2026-08-27)
-        trianglelist.arrangeLabelsForDrawing()
+        trianglelist.arrangeLabelsForDrawing(myview.drawingTextScale())
         val writer = PdfWriter(
                 trianglelist.getPrintScale(1f),
                 trianglelist
