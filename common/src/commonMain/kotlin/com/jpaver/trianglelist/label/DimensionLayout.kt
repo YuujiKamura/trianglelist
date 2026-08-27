@@ -136,7 +136,12 @@ object DimensionLayout {
             }
         }
 
-        val dimpoint = pointA.calcMidPoint(pointB).offset(pointB, offsetH)
+        // pointA==pointB (長さ 0 の旗線) だと offset の normalize() が零ベクトルを割って
+        // NaN を返し、DXF に "NaN" 座標が出て CAD が原点に描く (2026-06-22 552070ca の回帰)。
+        // 移動量が無い / 移動方向が定まらない場合は中点をそのまま使う。
+        val mid = pointA.calcMidPoint(pointB)
+        val dimpoint = if (offsetH == 0.0 || pointA.lengthTo(pointB) == 0.0) mid
+                       else mid.offset(pointB, offsetH)
 
         // DIMGAP 相当 (Phase 4 の口)。gap=0 なら一切触らない = DimOnPath と同値。
         // 測点名 (offsetV=0) は寸法値ではないため gap 対象外。
