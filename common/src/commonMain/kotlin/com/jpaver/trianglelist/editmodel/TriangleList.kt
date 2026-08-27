@@ -379,6 +379,8 @@ open class TriangleList : EditList<Triangle> {
      * (getPrintTextScale は DxfFileWriter.textscale_ と同じ経路)。
      */
     fun arrangeLabelsForDrawing() {
+        // 設定で切られていたら既定配置のまま (LabelArrangePolicy 参照)
+        if (!com.jpaver.trianglelist.label.LabelArrangePolicy.enabled) return
         arrangeLabelsWithoutCollision(getPrintTextScale(1f, "dxf"))
     }
 

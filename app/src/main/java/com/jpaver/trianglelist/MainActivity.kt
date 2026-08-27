@@ -104,6 +104,9 @@ class MainActivity : AppCompatActivity(),
     //region viewbinding init
     private lateinit var prefSetting: SharedPreferences
 
+    /** 寸法の自動配置 ON/OFF を覚える設定キー。既定 true。 */
+    private val PREF_AUTO_ARRANGE = "auto_arrange_labels"
+
     private lateinit var bindingMain: ActivityMainBinding
 
     private lateinit var myview: MyView
@@ -494,6 +497,11 @@ class MainActivity : AppCompatActivity(),
         adMobInit()
 
         prefSetting = PreferenceManager.getDefaultSharedPreferences(this)
+        // 寸法の自動配置 ON/OFF (2026-08-27 user 要望)。プロセス全体で 1 つの設定なので
+        // 起動時に model 層の policy へ流し込む ── 呼び出し側が個別に判定を持つと
+        // 「画面だけ効いている」ような食い違いが生まれる
+        com.jpaver.trianglelist.label.LabelArrangePolicy.enabled =
+            prefSetting.getBoolean(PREF_AUTO_ARRANGE, true)
 
         myDeductionList = DeductionList()
 
@@ -696,6 +704,8 @@ class MainActivity : AppCompatActivity(),
         Log.d("MainActivityLifeCycle", "onCreateOptionsMenu")
         // 上部のOptionsMenuの表示　Inflate the menu; this adds items to the action bar if it is present.
         menuInflater.inflate(R.menu.menu_main, menu)
+        menu.findItem(R.id.action_auto_arrange)?.isChecked =
+            com.jpaver.trianglelist.label.LabelArrangePolicy.enabled
         return true
     }
 
@@ -806,6 +816,17 @@ class MainActivity : AppCompatActivity(),
         when (item.itemId) {
             R.id.action_new -> {
                 MyDialogFragment().show(supportFragmentManager, "dialog.basic")
+            }
+            R.id.action_auto_arrange -> {
+                // OFF にしても既に確定した配置は巻き戻さない (自動が触るのは今から決める分だけ)。
+                // user が手で動かした配置は ON/OFF に関わらず不可侵
+                val next = !com.jpaver.trianglelist.label.LabelArrangePolicy.enabled
+                com.jpaver.trianglelist.label.LabelArrangePolicy.enabled = next
+                item.isChecked = next
+                prefSetting.edit { putBoolean(PREF_AUTO_ARRANGE, next) }
+                myview.setTriangleList(trianglelist, viewscale, moveCenter = false)
+                myview.invalidate()
+                return true
             }
             R.id.action_save_csv -> {
                 launchIntentBasedOnFileType("CSV", "text/csv", ".csv")

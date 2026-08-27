@@ -124,4 +124,5 @@
     <string name="rosenname_hint" translatable="false">input rosenname</string>
     <string name="editor_number" translatable="false">　</string>
 
+    <string name="action_auto_arrange">寸法の自動配置</string>
 </resources>
