@@ -90,8 +90,8 @@ class DxfOverlapAnalyzerTest {
 
     @Test
     fun `テキスト同士の重なりは A-B と B-A を 1 ペアに正規化する`() {
-        // 両方左寄せ height=1 (幅 2.598、インク高 1.0): "ABCD" は y∈[0,1]、
-        // "EFGH" は y∈[0.5,1.5] → y 方向の食い込み 0.5 が最小軸
+        // 両方左寄せ height=1 (幅 2.598、インク高 = 1 × DIGIT_INK_PER_CAP): "ABCD" は
+        // y∈[0, ink]、"EFGH" は y∈[0.5, 0.5+ink] → y 方向の食い込み (ink - 0.5) が最小軸
         val parseResult = DxfParseResult(
             texts = listOf(
                 DxfText(x = 0.0, y = 0.0, text = "ABCD", height = 1.0),
@@ -109,7 +109,10 @@ class DxfOverlapAnalyzerTest {
             setOf(pair.textId, pair.otherId) == setOf("text:0:ABCD", "text:1:EFGH"),
             "ペアの両端が 2 テキストの id のはず: $pair",
         )
-        assertEquals(0.5, pair.depthMm, 1e-3, "y 方向の食い込み 1.0-0.5=0.5 が最小のはず: $pair")
+        assertEquals(
+            LabelMetrics.Approximate.DIGIT_INK_PER_CAP - 0.5, pair.depthMm, 1e-3,
+            "y 方向の食い込み (インク高 - 0.5) が最小のはず: $pair",
+        )
     }
 
     @Test
@@ -270,7 +273,12 @@ class DxfOverlapAnalyzerTest {
         val (id, box) = boxes.single()
         assertEquals("text:0:ABCD", id)
         assertEquals(5.196, box.widthMm, 1e-3, "半角 4 文字 × 0.5 × height 2 × em/cap 1.299 = 5.196")
-        assertEquals(2.0, box.heightMm, 1e-3, "インク高 = height × 1.0")
+        // インク高 = height × DIGIT_INK_PER_CAP (実 MS Gothic のインク実測に較正した係数)。
+        // 数値を直書きすると較正のたびに意味なく落ちるので、定数から導く
+        assertEquals(
+            2.0 * LabelMetrics.Approximate.DIGIT_INK_PER_CAP, box.heightMm, 1e-3,
+            "インク高 = height × DIGIT_INK_PER_CAP",
+        )
         assertEquals(0.0, box.center.x, 1e-3, "中央寄せはアンカーが中心")
         assertEquals(0.0, box.center.y, 1e-3)
     }

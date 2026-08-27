@@ -36,8 +36,18 @@ interface LabelMetrics {
          */
         const val EM_PER_CAP: Double = 1.299
 
-        /** 数字インク実高 / 較正基準高。較正基準が 'A' インク実高そのものなので 1.0 (数字の見え高 = DXF height)。 */
-        const val DIGIT_INK_PER_CAP: Double = 1.0
+        /**
+         * 数字インク実高 / 較正基準高。
+         *
+         * 2026-08-27 較正: 実際に図面へ描かれる MS Gothic のインク実測と突き合わせたところ、
+         * 数字の見え高は DXF height の **1.0146 倍**だった (desktop の MeasuredLabelMetrics と
+         * 比較、LabelMetricsDivergenceTest)。1.0 のままだと近似の箱が実物より低く、
+         * **縦方向の当たりを見逃す**危険側にずれる。実測に合わせて安全側へ寄せる。
+         *
+         * 幅は逆に近似の方が広め (実測/近似 = 0.95、文字送り基準 vs インク基準の差) で
+         * 安全側なので、そのままにしてある。
+         */
+        const val DIGIT_INK_PER_CAP: Double = 1.0146
 
         override fun inkBoxLocal(text: String, heightMm: Double, alignH: Int, alignV: Int): InkBox {
             val units = text.sumOf { ch -> if (ch.code <= 0xFF) 0.5 else 1.0 }
