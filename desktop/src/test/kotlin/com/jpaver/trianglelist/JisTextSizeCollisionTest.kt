@@ -56,6 +56,13 @@ class JisTextSizeCollisionTest {
             val labelN = kinds.count { it.value == ObstacleKind.LABEL }
             val circleN = kinds.count { it.value == ObstacleKind.CIRCLE }
             println("$label size=$size → 全${report.totalTexts}寸法中 文字どうし=$labelN 円=$circleN 計=${kinds.size}")
+            // どの図形の話かを id で出す (dim:<図形番号>:<辺 0=A/1=B/2=C>)
+            kinds.entries.sortedBy { it.key }.forEach { (id, kind) ->
+                val partner = report.pairs.firstOrNull {
+                    (it.textId == id || it.otherId == id) && it.otherKind == kind
+                }
+                println("   $id ← $kind (相手 ${partner?.let { if (it.textId == id) it.otherId else it.textId }})")
+            }
         }
 
         // 可読サイズに乗せると衝突が出る = 旗揚げによる解決が必要になる、が出発点の事実。

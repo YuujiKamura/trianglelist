@@ -1,6 +1,7 @@
 package com.jpaver.trianglelist.web
 
 import com.jpaver.trianglelist.datamanager.CsvCodec
+import com.jpaver.trianglelist.label.NumberCircleEscape
 import com.jpaver.trianglelist.scale.TextSizePolicy
 import com.jpaver.trianglelist.datamanager.DxfFileWriter
 import com.jpaver.trianglelist.datamanager.SfcWriter
@@ -143,7 +144,21 @@ object WebDrawingExport {
      * 自動退避が入ってから ── 今切り替えると重なったままの図面が出るだけになる
      * (実データ 8.25 は JIS サイズで 57 寸法中 16 件が衝突)。
      */
-    fun buildDxfText(csv: String, overridesJson: String, numReverse: Boolean, dimTextPaperMm: Float?): String {
+    fun buildDxfText(csv: String, overridesJson: String, numReverse: Boolean, dimTextPaperMm: Float?): String =
+        buildDxfText(csv, overridesJson, numReverse, dimTextPaperMm, false)
+
+    /**
+     * escapeNumbers=true で番号サークルの自動退避を掛ける (NumberCircleEscape)。
+     * 可読サイズにすると寸法値が番号に乗るため、番号を辺方向へ少しスライドさせて
+     * 寸法値の居場所を空ける (2026-08-27 user)。既定 false = 従来出力そのまま。
+     */
+    fun buildDxfText(
+        csv: String,
+        overridesJson: String,
+        numReverse: Boolean,
+        dimTextPaperMm: Float?,
+        escapeNumbers: Boolean,
+    ): String {
         val header = parseHeader(csv)
         val doc = CsvCodec.parse(csv)
         val trilist = readForExport(csv)
@@ -155,6 +170,16 @@ object WebDrawingExport {
             viewscale_ = 1f // web の ded はビュー倍率 1 (アプリ既定 47.6 のままだと座標が 1/47.6 に縮む)
             startTriNumber_ = 1
             isReverse_ = numReverse
+        }
+        if (escapeNumbers) {
+            // arrangePointNumbers (既定位置の決定) の後に掛ける。退避は「既定位置で
+            // 衝突している時だけ」動くので、既定位置が確定していないと判定できない
+            val dimModelSize = dimTextPaperMm?.let {
+                TextSizePolicy.paperToModel(it, trilist.getPrintScale(1f) * 100f) /
+                    TextSizePolicy.MM_PER_MODEL_UNIT
+            } ?: trilist.getPrintTextScale(1f, "dxf")
+            val moves = NumberCircleEscape.solve(mixedDxf, textSize = dimModelSize)
+            NumberCircleEscape.apply(mixedDxf, moves)
         }
         if (dimTextPaperMm != null && dimTextPaperMm > 0f) {
             // 縮尺分母 = getPrintScale の倍率 × 100 (0.5 → 1/50、1.5 → 1/150。

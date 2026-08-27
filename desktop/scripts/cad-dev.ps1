@@ -14,6 +14,7 @@ param(
     [string]$Capture = "",                              # 起動後にスクショを撮る出力先
     [string]$View = "",                                 # 「<scale> <ox> <oy>」で視点指定
     [double]$TextMm = 0,                                # CSV から起こす時の寸法値サイズ (紙 mm)。JIS は 3.5
+    [switch]$Escape,                                    # 番号サークルの自動退避を掛ける
     [switch]$NoBuild,                                   # コンパイルを飛ばす (実行中の再起動だけ)
     [int]$CpPort = 9876,
     [int]$TimeoutSec = 90
@@ -53,6 +54,7 @@ if ($File) {
     $argList += (Resolve-Path -LiteralPath $target).Path
 }
 if ($TextMm -gt 0) { $argList += "--textmm=$TextMm" }
+if ($Escape) { $argList += "--escape" }
 # PATH の java は古いことがある (実測: class file 60.0 までしか読めない JRE)。
 # gradle と同じ JDK を使う - JAVA_HOME 優先、無ければ PATH の java
 $javaExe = if ($env:JAVA_HOME -and (Test-Path (Join-Path $env:JAVA_HOME "bin/java.exe"))) {

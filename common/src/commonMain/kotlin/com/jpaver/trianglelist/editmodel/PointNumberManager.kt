@@ -3,7 +3,20 @@ package com.jpaver.trianglelist.editmodel
 // java.lang.Cloneable は JVM 専用のため、wasmJs 追加に伴い PointXY と同じ
 // com.example.trilib.Cloneable<T> へ切替 (clone() の型・呼び出し形は不変)
 class PointNumberManager( ): com.example.trilib.Cloneable<PointNumberManager> {
-    data class Flags( var isMovedByUser: Boolean = false, var isAutoAligned: Boolean = false )
+    /**
+     * isMovedByUser  … user が指でつまんで動かした
+     * isAutoAligned  … autoAlign (面積・辺長の閾値) が既定位置を寄せた
+     * isEscaped      … 自動退避 (NumberCircleEscape) が寸法値を避けて動かした (2026-08-27)
+     *
+     * isEscaped を分けている理由: 退避位置は calcPoints の「既定位置へ戻す」対象から
+     * 外す必要があるが、それを isMovedByUser で代用すると「user が動かした」という
+     * 別の意味 (CSV 永続化・アプリの手動配置判定) と混ざる。
+     */
+    data class Flags(
+        var isMovedByUser: Boolean = false,
+        var isAutoAligned: Boolean = false,
+        var isEscaped: Boolean = false,
+    )
     var flag = Flags()
 
     public override fun clone(): PointNumberManager {
@@ -33,7 +46,7 @@ class PointNumberManager( ): com.example.trilib.Cloneable<PointNumberManager> {
     val BORDER_AREA = 3f
     val BORDER_LENGTH = 0.5f
     fun autoAlign(triangle: Triangle, outlineList: OutlineList? = null) : com.example.trilib.PointXY {
-        if(flag.isMovedByUser || flag.isAutoAligned ) return triangle.pointnumber
+        if(flag.isMovedByUser || flag.isAutoAligned || flag.isEscaped ) return triangle.pointnumber
 
         val length = arrayOf(triangle.lengthAforce, triangle.lengthBforce, triangle.lengthCforce)
         // lengthのどれかがBORDERよりも少ない場合にtrueを返す
