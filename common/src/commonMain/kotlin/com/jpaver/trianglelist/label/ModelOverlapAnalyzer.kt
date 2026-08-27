@@ -19,7 +19,7 @@ import com.jpaver.trianglelist.editmodel.EditList
 object ModelOverlapAnalyzer {
 
     fun analyze(
-        list: EditList<CycleShape>,
+        list: EditList<out CycleShape>,
         textSize: Float,
         scale: Float = 1f,
         sokutenListVector: Int = 0,
@@ -62,7 +62,7 @@ object ModelOverlapAnalyzer {
      * 教訓 ── web-js 側が dblclick 編集用の textScreenBox を流用していたのが原因だった)。
      */
     fun boxes(
-        list: EditList<CycleShape>,
+        list: EditList<out CycleShape>,
         textSize: Float,
         scale: Float = 1f,
         sokutenListVector: Int = 0,
@@ -77,12 +77,33 @@ object ModelOverlapAnalyzer {
         }
         val entries = mutableListOf<Pair<String, LabelBox>>()
         list.forEachItemIndexed { num, obj ->
-            for (spec in obj.emitDimensionSpecs(if (scale > 0f) scale else 1f, sokutenListVector)) {
-                entries.add("dim:$num:${spec.side}" to toLabelBox(spec, textSize.toDouble(), metrics))
-            }
+            entries.addAll(boxesOf(obj, num, textSize, scale, sokutenListVector, metrics))
         }
         return entries
     }
+
+    /**
+     * 図形 1 つ分の (id, LabelBox)。配置の探索 (寸法値の退避) が「1 本だけ動かして
+     * 試す」ときに、全件を作り直さないための入口。
+     *
+     * 1 本の寸法値の配置は**その図形の形と自分の horizontal コードだけ**で決まる
+     * (emitDimensionSpecs は他図形を見ない) ので、動かした図形の分だけ作り直せば足りる。
+     * 全件再計算だと 1 候補あたり 57 本 × メトリクス計算が走り、実データで探索が
+     * 134ms かかっていた (2026-08-27 実測) ── モデルの更新ごとに走らせられる速さではない。
+     *
+     * 注意: applyDimTextSize / dimThresholdAngle の配布は呼び出し側の責任 (boxes() は
+     * 先頭でやっている)。
+     */
+    fun boxesOf(
+        shape: CycleShape,
+        num: Int,
+        textSize: Float,
+        scale: Float = 1f,
+        sokutenListVector: Int = 0,
+        metrics: LabelMetrics = LabelMetrics.Approximate,
+    ): List<Pair<String, LabelBox>> =
+        shape.emitDimensionSpecs(if (scale > 0f) scale else 1f, sokutenListVector)
+            .map { spec -> "dim:$num:${spec.side}" to toLabelBox(spec, textSize.toDouble(), metrics) }
 
     /**
      * DimensionSpec → LabelBox 変換。DxfOverlapAnalyzer.toLabelBox の模写だが、
