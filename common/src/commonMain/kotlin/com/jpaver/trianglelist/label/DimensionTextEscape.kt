@@ -2,6 +2,7 @@ package com.jpaver.trianglelist.label
 
 import com.jpaver.trianglelist.editmodel.CycleShape
 import com.jpaver.trianglelist.editmodel.EditList
+import com.jpaver.trianglelist.editmodel.Triangle
 
 /**
  * 寸法値の自動退避 (2026-08-27 user 指示)。番号サークルを逃がしても残る
@@ -53,6 +54,23 @@ object DimensionTextEscape {
 
     /** 測点名は左右の 2 択しか無い (Dims.controlHorizontal の cycleIncrement(.., 1) と対)。 */
     private fun sokutenLadder(current: Int): List<Int> = listOf(0, 1).filter { it != current }
+
+    /**
+     * user が自分で配置を動かした辺か (W キーの手動サイクル = Dims.controlHorizontal が
+     * isMovedByUser を立てる)。動かしていたらそちらを優先し、自動退避は触らない
+     * (2026-08-27 user「ユーザーが旗揚げを動かした場合はそっちを優先するっていう、
+     * 従来のポリシー」)。自動補正は図形の繋がり方によっては逆に重なる向きへ出すことが
+     * あり完全ではない ── 人が直した結果を上書きするのが一番damageが大きい。
+     * 既存の Dims.autoDimHorizontalByAngle も同じ条件で降りている。
+     */
+    private fun isMovedByUser(shape: CycleShape, side: Int): Boolean {
+        if (shape !is Triangle) return false
+        return when (side) {
+            0, 1, 2 -> shape.dim.flag.getOrNull(side)?.isMovedByUser == true
+            SIDE_SOKUTEN -> shape.dim.flagS.isMovedByUser
+            else -> false
+        }
+    }
 
     private fun horizontalOf(shape: CycleShape, side: Int): Int? = when (side) {
         0 -> shape.dimHorizontal.a
@@ -107,7 +125,7 @@ object DimensionTextEscape {
     }
 
     fun solve(
-        list: EditList<CycleShape>,
+        list: EditList<out CycleShape>,
         textSize: Float,
         scale: Float = 1f,
         sokutenListVector: Int = 0,
@@ -115,9 +133,13 @@ object DimensionTextEscape {
         metrics: LabelMetrics = LabelMetrics.Approximate,
         maxPasses: Int = 3,
         allowFlagOut: Boolean = true,
+        clearance: Float = NumberCircleEscape.DEFAULT_CLEARANCE,
     ): List<Move> {
+        // 判定だけ少し大きい文字で行う (余白 + 近似メトリクスと実測の差の吸収)。
+        // 詳細は NumberCircleEscape.DEFAULT_CLEARANCE
+        val judgeSize = textSize * (1f + clearance)
         fun collisions(): Map<String, ObstacleKind> =
-            ModelOverlapAnalyzer.analyze(list, textSize, scale, sokutenListVector, thresholdAngle, metrics)
+            ModelOverlapAnalyzer.analyze(list, judgeSize, scale, sokutenListVector, thresholdAngle, metrics)
                 .collisionKindByText
 
         val shapes = mutableMapOf<Int, CycleShape>()
@@ -137,6 +159,7 @@ object DimensionTextEscape {
             for (id in targets) {
                 val (num, side) = parseId(id) ?: continue
                 val shape = shapes[num] ?: continue
+                if (isMovedByUser(shape, side)) continue
                 val current = horizontalOf(shape, side) ?: continue
                 val ladder = if (side == SIDE_SOKUTEN) {
                     sokutenLadder(current)
@@ -173,7 +196,7 @@ object DimensionTextEscape {
             .sortedWith(compareBy({ it.shapeNumber }, { it.side }))
     }
 
-    fun apply(list: EditList<CycleShape>, moves: List<Move>) {
+    fun apply(list: EditList<out CycleShape>, moves: List<Move>) {
         val byKey = moves.associateBy { it.shapeNumber to it.side }
         list.forEachItemIndexed { num, shape ->
             for (side in listOf(0, 1, 2, SIDE_SOKUTEN)) {

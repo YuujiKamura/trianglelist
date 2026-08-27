@@ -44,20 +44,40 @@ object NumberCircleEscape {
     /** スライド距離の梯子 (円半径の倍数)。小さい方から試す = 動かす量は少ないほどよい。 */
     private val STEPS = listOf(0.5, 1.0, 1.5, 2.0, 2.5, 3.0)
 
+    /**
+     * 判定に持たせる余白の比率 (2026-08-27 user「⑪みたいなのも厳密に言うと番号を
+     * すこしスライドさせてやると寸法が見やすくなる」)。
+     *
+     * 「重なっていない」= 見やすい、ではない。境界すれすれで避けた文字は詰まって読みにくい。
+     * さらに判定と描画のメトリクスには実測差がある (common の近似は desktop の実測
+     * MS Gothic より 4〜9% 細い ── 実データ 8.25 の box 実測比 1.04〜1.09)。
+     * どちらも「判定を少し大きめの文字で行う」ことで同時に吸収できる。
+     */
+    const val DEFAULT_CLEARANCE: Float = 0.10f
+
     fun solve(
-        list: EditList<CycleShape>,
+        list: EditList<out CycleShape>,
         textSize: Float,
         scale: Float = 1f,
         sokutenListVector: Int = 0,
         thresholdAngle: Float = 125f,
         metrics: LabelMetrics = LabelMetrics.Approximate,
         allowFlagOut: Boolean = false,
+        clearance: Float = DEFAULT_CLEARANCE,
     ): List<Move> {
-        val boxes = ModelOverlapAnalyzer.boxes(list, textSize, scale, sokutenListVector, thresholdAngle, metrics)
-        val radius = circleRadius(textSize)
+        // 判定だけ少し大きい文字で行う (余白 + メトリクス差の吸収)。図面に描かれる
+        // 文字の大きさは変わらない ── 変えるのは「どこまで近付いたら駄目とするか」だけ
+        val judgeSize = textSize * (1f + clearance)
+        val boxes = ModelOverlapAnalyzer.boxes(list, judgeSize, scale, sokutenListVector, thresholdAngle, metrics)
+        val radius = circleRadius(judgeSize)
         val moves = mutableListOf<Move>()
 
         list.forEachItemIndexed { num, shape ->
+            // user が自分で動かした番号は触らない (2026-08-27 user「ユーザーが旗揚げを
+            // 動かした場合はそっちを優先するっていう、従来のポリシー」)。自動補正は
+            // 繋がり方によっては逆に重なる向きへ出すことがあり、完全ではない ──
+            // 人が直した結果を自動で上書きするのが一番damageが大きい
+            if (shape is Triangle && shape.pointNumber.flag.isMovedByUser) return@forEachItemIndexed
             val anchor = shape.pointNumberAnchor()
             val hits = boxes.filter { (_, box) -> box.penetrationDepthCircle(anchor, radius) != null }
             if (hits.isEmpty()) return@forEachItemIndexed
@@ -109,7 +129,7 @@ object NumberCircleEscape {
      * (autoAlign は先頭で isMovedByUser || isAutoAligned なら現在値を返す)。
      * isMovedByUser は立てない ── 動かしたのは自動処理であって user ではない。
      */
-    fun apply(list: EditList<CycleShape>, moves: List<Move>) {
+    fun apply(list: EditList<out CycleShape>, moves: List<Move>) {
         val byNumber = moves.associateBy { it.shapeNumber }
         list.forEachItemIndexed { num, shape ->
             val move = byNumber[num] ?: return@forEachItemIndexed
