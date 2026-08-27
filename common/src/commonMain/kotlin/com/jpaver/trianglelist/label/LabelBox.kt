@@ -50,6 +50,15 @@ class LabelBox(
     }
 
     /**
+     * 外接 AABB の半径 (中心から角までの距離)。回転に依らない上限なので、
+     * 「中心間距離がこれの和より遠ければ絶対に当たらない」の粗判定に使える。
+     * 総当たりの前段でここを見るだけで、判定の大半 (遠い相手) を SAT に入れずに捨てられる。
+     */
+    val boundingRadiusMm: Double by lazy {
+        kotlin.math.sqrt(widthMm * widthMm + heightMm * heightMm) / 2.0
+    }
+
+    /**
      * OBB 同士の交差判定 (分離軸定理)。
      * 境界接触 (面積ゼロのかすめ) は交差として扱う ── 重なりリスクを保守側に検出する。
      */

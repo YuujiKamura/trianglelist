@@ -79,7 +79,16 @@ object NumberCircleEscape {
             // 人が直した結果を自動で上書きするのが一番damageが大きい
             if (shape is Triangle && shape.pointNumber.flag.isMovedByUser) return@forEachItemIndexed
             val anchor = shape.pointNumberAnchor()
-            val hits = boxes.filter { (_, box) -> box.penetrationDepthCircle(anchor, radius) != null }
+            // 粗判定 (外接半径 + 円半径より遠ければ当たらない) で落としてから精密判定
+            fun near(box: LabelBox, at: PointXY): Boolean {
+                val limit = box.boundingRadiusMm + radius + LabelBox.EPS
+                val dx = box.center.x - at.x
+                val dy = box.center.y - at.y
+                return dx * dx + dy * dy <= limit * limit
+            }
+            val hits = boxes.filter { (_, box) ->
+                near(box, anchor) && box.penetrationDepthCircle(anchor, radius) != null
+            }
             if (hits.isEmpty()) return@forEachItemIndexed
 
             // 逃げる向きの基準: ぶつかっている寸法値の平均位置から見て反対側
@@ -109,7 +118,9 @@ object NumberCircleEscape {
                     val candidate = PointXY(anchor.x + dir.x * distance, anchor.y + dir.y * distance)
                     val inside = shape.containsPoint(candidate)
                     if (!inside && !allowFlagOut) continue
-                    val clear = boxes.none { (_, box) -> box.penetrationDepthCircle(candidate, radius) != null }
+                    val clear = boxes.none { (_, box) ->
+                        near(box, candidate) && box.penetrationDepthCircle(candidate, radius) != null
+                    }
                     if (!clear) continue
                     found = Move(num, anchor, candidate, isFlagOut = !inside)
                     break@outer
