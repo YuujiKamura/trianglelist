@@ -78,6 +78,8 @@ import com.jpaver.trianglelist.viewmodel.EditTextViewLine
 import com.jpaver.trianglelist.viewmodel.EditorTable
 import com.jpaver.trianglelist.viewmodel.InputParameter
 import com.jpaver.trianglelist.viewmodel.LocalFileViewer
+import androidx.activity.viewModels
+import com.jpaver.trianglelist.viewmodel.DrawingSessionViewModel
 import com.jpaver.trianglelist.viewmodel.MainViewModel
 import com.jpaver.trianglelist.viewmodel.TitleParamStr
 import com.jpaver.trianglelist.viewmodel.TitleParams
@@ -195,8 +197,16 @@ class MainActivity : AppCompatActivity(),
     private lateinit var titleTriStr : TitleParamStr
     private lateinit var titleDedStr : TitleParamStr
 
-    private lateinit var trianglelist: TriangleList //= TriangleList(Triangle(0f,0f,0f,PointXY(0f,0f),180f))
-    private lateinit var myDeductionList: DeductionList
+    // モデルの所有者は ViewModel (DrawingSessionViewModel)。Activity / View の
+    // ライフサイクルでは死なず、プロセスと一緒に死ぬ = 「CSV から復元すべき唯一の瞬間」と一致する。
+    // 既存の呼び出し (数百箇所) をそのまま生かすため、この 2 つは委譲プロパティにしてある。
+    private val session: DrawingSessionViewModel by viewModels()
+    private var trianglelist: TriangleList
+        get() = session.trilist
+        set(value) { session.trilist = value }
+    private var myDeductionList: DeductionList
+        get() = session.dedlist
+        set(value) { session.dedlist = value }
 
     private var trilistUndo: TriangleList = TriangleList()
 
@@ -644,6 +654,10 @@ class MainActivity : AppCompatActivity(),
     }
 
     override fun onStop(){
+        // 「この後プロセスが殺されうる」ことが保証された唯一の点。保存はここに置く。
+        // 操作ごとの配線 (setCommonFabListener の autosave) はラッパを通らない操作
+        // (MyView のピンチ回転など) が漏れるので、最後の砦としてここで 1 回保存する。
+        autosave()
         super.onStop()
     }
 
@@ -657,9 +671,12 @@ class MainActivity : AppCompatActivity(),
         Log.d("MainActivityLifeCycle", "OnResume")
         adMobDisable()
 
-        loadTitleParameters()
-
-        resumeCSV()
+        // ここで CSV から復元してはいけない。onResume は共有チューザーやファイルピッカー
+        // 等の別 Activity から戻るたびに走るので、生きているモデル (= 正) を
+        // ディスクの内容で毎回上書きすることになり、未保存の操作 (ピンチ回転など) が
+        // 巻き戻る。復元が要るのは「メモリにモデルが無いとき」= プロセス再生成のときだけで、
+        // それは onAttachedToWindow の resumeCSV() が担当する。
+        // (2025-04-22 7f204c15 がここに復元をコピーしたのが原因。2026-08-27 実機報告で発覚)
 
         loadEditTable()
         colorMovementFabs()
@@ -1619,6 +1636,10 @@ class MainActivity : AppCompatActivity(),
 
         myview.invalidate()
     }
+
+    /** 計測用: 現在のリスト回転角。androidTest から読む (モデルは private のため) */
+    @androidx.annotation.VisibleForTesting
+    fun currentListAngleForTest(): Float = trianglelist.angle
 
     fun fabRotate(degrees: Float, bSeparateFreeMode: Boolean, isRotateDedBoxShape: Boolean = true ){
         if(!deductionMode) {
@@ -2908,6 +2929,10 @@ class MainActivity : AppCompatActivity(),
         findViewById<EditText>(R.id.rosenname).setText(rosenname)
     }
 
+    /**
+     * CSV から読み込んだリストを採用する。recoverState (リスト回転の復元) を含むので
+     * **読み込み直後にだけ**呼ぶこと。既にメモリにあるモデルへ呼ぶと二重回転になる。
+     */
     private fun setEditLists(trilist: TriangleList, dedlist: DeductionList){
         trianglelist = trilist
         myDeductionList = dedlist
@@ -2915,8 +2940,17 @@ class MainActivity : AppCompatActivity(),
 
         trilist.recoverState(PointXY(0f, 0f))
 
-        myview.setDeductionList(dedlist, viewscale)
-        myview.setTriangleList(trilist, viewscale)
+        bindListsToView()
+    }
+
+    /**
+     * 保持しているモデルを View と編集テーブルへ流し込むだけ。モデルは一切変更しない。
+     * View が作り直された時 (端末回転など) はこちらだけを呼ぶ ── 復元も recoverState も不要で、
+     * 何回呼んでも同じ結果になる (冪等)。
+     */
+    private fun bindListsToView(){
+        myview.setDeductionList(myDeductionList, viewscale)
+        myview.setTriangleList(trianglelist, viewscale)
         myview.resetViewToLastTapTriangle()
 
         Log.d( "FileLoader", "my_view.setTriangleList: " + myview.trianglelist.size() )
@@ -2930,7 +2964,21 @@ class MainActivity : AppCompatActivity(),
         myview.setAllTextSize(textsize)
     }
 
+    /**
+     * private CSV からの復元。**1 プロセスにつき 1 回だけ**走る。
+     *
+     * 2 回目以降 (端末回転で Activity が作り直された等) は ViewModel が保持している
+     * モデルが正なので、読み直さず View へのバインドだけ行う。ディスクの内容で
+     * 生きたモデルを上書きしないことがこの関数の一番大事な性質。
+     */
     private fun resumeCSV() {
+        if (session.isRestored) {
+            Log.d("CSVLoad", "resumeCSV: skip (already restored in this process)")
+            bindListsToView()
+            return
+        }
+        session.isRestored = true
+
         val filepath = this.filesDir.absolutePath + "/" + PrivateCSVFileName
         val file = File(filepath)
         if( !file.exists() ) {

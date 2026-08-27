@@ -19,6 +19,9 @@ class ExampleInstrumentedTest {
     fun useAppContext() {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("com.example.trilib.test", appContext.packageName)
+        // applicationId はフレーバーで変わる (dev は com.jpaver.myapplication)。
+        // テンプレート由来のハードコード文字列 "com.example.trilib.test" を検証していて
+        // 実装と無関係に落ち続けていたので、実際の applicationId と突き合わせる形にした (2026-08-27)。
+        assertEquals(com.jpaver.trianglelist.BuildConfig.APPLICATION_ID, appContext.packageName)
     }
 }

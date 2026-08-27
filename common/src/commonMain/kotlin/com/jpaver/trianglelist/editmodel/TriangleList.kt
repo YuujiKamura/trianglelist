@@ -25,9 +25,6 @@ fun print_trilist(tl: TriangleList, callername:String = "undefined caller") {
     TriLog.d("TriangleList", "") // To add the newline effect, although Logcat naturally separates logs
 }
 
-class LastTapNumberValidationException(message: String) : Exception(message)
-class EmptyTriListException(message: String) : Exception(message)
-
 open class TriangleList : EditList<Triangle> {
 
     fun rotate(
@@ -686,23 +683,20 @@ open class TriangleList : EditList<Triangle> {
         else trilist[number - 1]
     }
 
-    fun getLastTriangle(): Triangle {
-        // リストが空の場合は、即座に例外をスローする
-        if (trilist.isEmpty()) {
-            throw EmptyTriListException("trilist is empty")
-        }
-
-        // lastTapNumber が 0 以下の場合、リストの最後の要素を返す
-        if (lastTapNumber <= 0) {
-            return trilist.last()
-        }
-
-        // lastTapNumber がリストのサイズを超える場合は、例外をスローする
-        if (lastTapNumber > trilist.size) {
-            throw LastTapNumberValidationException("lastTapNumber is out of range ($lastTapNumber > ${trilist.size})")
-        }
-
-        // lastTapNumber が有効な範囲内にある場合、対応する要素を返す
+    /**
+     * 最後にタップされた三角形。無ければ null。
+     *
+     * 呼び出し元は描画側の「画面の中心をどこに据えるか」だけ (MyView.kt:472,495)。
+     * 「リストが空」「lastTapNumber が削除等で陳腐化して範囲外」はどちらも異常ではなく
+     * 「中心に据える三角形が無い」という正当な状態なので、例外ではなく null で表す。
+     * ここを例外にしていたために View 初期化順のズレがそのまま落ち、その回避として
+     * onResume に復元処理をコピーする変更 (7f204c15, 2025-04-22) が入り、
+     * 「resume のたびに生きたモデルを CSV で上書きする」二次被害を生んでいた。
+     */
+    fun lastTriangleOrNull(): Triangle? {
+        if (trilist.isEmpty()) return null
+        if (lastTapNumber <= 0) return trilist.last()
+        if (lastTapNumber > trilist.size) return null
         return trilist[lastTapNumber - 1]
     }
 
