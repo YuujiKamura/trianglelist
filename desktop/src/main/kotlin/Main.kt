@@ -455,8 +455,39 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                     }
                                 }
                             }
+                            line.startsWith("sendto") -> {
+                                // 現在開いているファイルを外部アプリで開く (2026-08-12 user 指示
+                                // 「デスクトップ操作するんじゃなくてビューワ上から dxf を外部アプリに
+                                // センドできるようにしろ」「エクスプローラーのプログラムで開く相当」)。
+                                // 「sendto」(引数無し) = OS 既定の関連付け (java.awt.Desktop.open、
+                                // エクスプローラーでファイルをダブルクリックするのと同じ経路)。
+                                // 「sendto <実行ファイルパス>」= そのプログラムを直接起動して引数に
+                                // ファイルパスを渡す (エクスプローラーの「プログラムから開く」相当、
+                                // 既定アプリが違っても狙ったアプリを明示できる)。UI 操作の自動化 (メニュー
+                                // クリック連打) より、こちらの方が確実で再現性がある。
+                                val arg = line.removePrefix("sendto").trim()
+                                val file = currentFile
+                                if (file == null || !file.exists()) {
+                                    out.write("error: no file open (open a file first)\n".toByteArray())
+                                } else {
+                                    try {
+                                        if (arg.isEmpty()) {
+                                            java.awt.Desktop.getDesktop().open(file)
+                                            out.write("ok opened via OS default association: ${file.absolutePath}\n".toByteArray())
+                                            println("CP sendto: OS 既定アプリで開いた ${file.absolutePath}")
+                                        } else {
+                                            ProcessBuilder(arg, file.absolutePath).start()
+                                            out.write("ok launched \"$arg\" ${file.absolutePath}\n".toByteArray())
+                                            println("CP sendto: $arg で開いた ${file.absolutePath}")
+                                        }
+                                    } catch (e: Exception) {
+                                        out.write("error: ${e.message}\n".toByteArray())
+                                        println("CP sendto error: ${e.message}")
+                                    }
+                                }
+                            }
                             else -> {
-                                out.write("error: unknown command (open|zoom|pan|view|fit|state|capture|renderbuffer)\n".toByteArray())
+                                out.write("error: unknown command (open|zoom|pan|view|fit|state|capture|renderbuffer|sendto)\n".toByteArray())
                             }
                         }
                     } catch (e: Exception) {
