@@ -340,10 +340,10 @@ open class TriangleList : EditList<Triangle> {
         }
 
         //全体のスケールが終わってから一度だけ呼ぶ
-        if(isArrangePointNumbers) {
-            arrangePointNumbers()
-            arrangeLabelsWithoutCollision(ts)
-        }
+        // 衝突を避けた配置はここでは決めない。画面用の文字サイズ (px) で決めると
+        // 同じ図面が画面と DXF で違う配置になるため ── 配置の正は
+        // arrangeLabelsForDrawing (図面の文字サイズ) 側に一本化した (2026-08-27)
+        if(isArrangePointNumbers) arrangePointNumbers()
 
         return this
     }
@@ -364,6 +364,24 @@ open class TriangleList : EditList<Triangle> {
      * 避けたはずの所が重なるので、呼び出し側が渡している値をそのまま使う。
      * 衝突が無ければ検出だけで終わる (実データ 図形25 で約 5ms、EscapeCostTest)。
      */
+    /**
+     * 図面 (書き出し) の文字サイズで配置を確定する。**これが配置の正**。
+     *
+     * 画面と図面で配置が違うのはバグ (2026-08-27 user「基本アプリと図面が食い違うのは
+     * バグだと思っていい。期待値と違うわけだから」)。画面用の文字サイズ (px) で画面の
+     * コピーだけを別に整えると、同じ図面が画面と DXF で違う配置になる。
+     *
+     * 紙を正にする理由: 成果物は図面であり、画面はそのプレビュー。文字と図形の比は
+     * 画面と紙で違う (実測: 画面は紙の約 2.5 倍で文字が大きい) ため、どちらかを正に
+     * 決めるしかない。
+     *
+     * サイズは呼び出し側から受け取らない ── モデルが自分の縮尺から決める
+     * (getPrintTextScale は DxfFileWriter.textscale_ と同じ経路)。
+     */
+    fun arrangeLabelsForDrawing() {
+        arrangeLabelsWithoutCollision(getPrintTextScale(1f, "dxf"))
+    }
+
     fun arrangeLabelsWithoutCollision(ts: Float) {
         if (ts <= 0f) return
         val numberMoves = com.jpaver.trianglelist.label.NumberCircleEscape.solve(this, ts)
