@@ -439,6 +439,11 @@ class MyView(context: Context, attrs: AttributeSet?) :
         //if( myTriangleList.size() > 0 ) trilistStored_ = myTriangleList.clone()
         (editlist as TriangleList)
         myScale = setscale    // 描画倍率は外から指定する
+        // 配置 (番号の退避 / 寸法の旗揚げ) は**元モデル側で図面の文字サイズ**で確定させる。
+        // 画面用のコピーに画面サイズで別途掛けると、同じ図面が画面と DXF で違う配置になる
+        // (2026-08-27 user「アプリと図面が食い違うのはバグ」)。ここが唯一の確定点なので、
+        // 画面も書き出しも同じ結果を読む。ピンチ操作中は isArrange=false で飛ばす
+        if (isArrange) editlist.arrangeLabelsForDrawing()
         trianglelist = editlist.clone()
         trianglelist.attachToTheView(
             PointXY(

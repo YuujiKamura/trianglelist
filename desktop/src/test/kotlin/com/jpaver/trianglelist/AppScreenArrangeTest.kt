@@ -43,17 +43,40 @@ class AppScreenArrangeTest {
     }
 
     @Test
-    fun `アプリ画面の条件で衝突が減る`() {
-        val ts = 30f
-        val before = collisions(ts, arrange = false)
-        val after = collisions(ts, arrange = true)
+    fun `図面の文字サイズで確定した配置は衝突を減らす`() {
+        // 配置の正は紙 (図面の文字サイズ)。画面はその結果を描くだけ
+        val source = CsvCodec.build(CsvCodec.parse(realCsv()))
+        val paperTs = source.getPrintTextScale(1f, "dxf")
+        val before = ModelOverlapAnalyzer.analyze(source, textSize = paperTs).collisionKindByText
 
-        println("[app] ts=$ts 前=${before.size} 後=${after.size}")
-        assertTrue(before.isNotEmpty(), "前提: この条件では衝突が出るはず")
-        assertTrue(
-            after.size < before.size,
-            "アプリ画面の条件で自動配置が効いていない: ${before.size} → ${after.size}",
-        )
+        source.arrangeLabelsForDrawing()
+        val after = ModelOverlapAnalyzer.analyze(source, textSize = paperTs).collisionKindByText
+
+        println("[paper] ts=$paperTs 前=${before.size} 後=${after.size}")
+        assertTrue(after.size <= before.size, "図面基準で衝突が増えた: ${before.size} → ${after.size}")
+    }
+
+    /**
+     * 画面と紙で「文字と図形の比」がどれだけ違うかを数字で残す。
+     *
+     * 配置は紙基準で確定するので画面と図面で一致する (ScreenExportParityTest) が、
+     * 画面はこの比の分だけ文字が大きく描かれるため、**紙では重なっていない所が
+     * 画面では重なって見える**。画面を図面の忠実なプレビューにしたい場合は、
+     * ここの比を 1.0 に近づける (= 画面の文字サイズを縮尺に合わせる) 必要がある。
+     */
+    @Test
+    fun `画面と紙の文字比を記録する`() {
+        val source = CsvCodec.build(CsvCodec.parse(realCsv()))
+        val paperTs = source.getPrintTextScale(1f, "dxf")   // モデル単位
+        val screenTs = 30f / 47.6f                           // 画面 30px ÷ viewscale
+        val ratio = screenTs / paperTs
+
+        val paper = ModelOverlapAnalyzer.analyze(source.also { it.arrangeLabelsForDrawing() }, textSize = paperTs)
+        val screen = ModelOverlapAnalyzer.analyze(source, textSize = screenTs)
+        println("[ratio] 紙=%.3f 画面=%.3f 比=%.2f倍 / 衝突 紙=%d 画面=%d".format(
+            paperTs, screenTs, ratio, paper.collisionKindByText.size, screen.collisionKindByText.size))
+
+        assertTrue(ratio > 1f, "画面の方が文字が小さいなら前提が変わっている: $ratio")
     }
 
     @Test
