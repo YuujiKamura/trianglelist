@@ -298,6 +298,10 @@ class MyView(context: Context, attrs: AttributeSet?) :
             isScaleBegin = false
             isViewScaling = false
             isViewScrolling = false
+            // 指を離した所で保存要求を出す。ピンチ回転/ズーム・タップ選択など
+            // setCommonFabListener を通らない操作をここで拾う。実際に書くかは
+            // 内容比較が決めるので、view 操作だけで何も変わっていなければ書かれない。
+            (context as? MainActivity)?.requestAutosave()
         }
 
         return true

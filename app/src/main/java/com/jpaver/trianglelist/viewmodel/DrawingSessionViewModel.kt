@@ -29,4 +29,15 @@ class DrawingSessionViewModel : ViewModel() {
      * 復元は走らない (= メモリ上のモデルがそのまま使われる)。
      */
     var isRestored: Boolean = false
+
+    /**
+     * private CSV へ最後に書いた本文。自動保存の「内容が変わったか」判定の基準。
+     *
+     * 「どの操作が保存を要するか」を操作ごとに配線する方式 (setCommonFabListener の
+     * isSaveCSV 引数) は、人間が全ての変更経路を正しく判断し続ける前提で、実際
+     * ピンチ回転が漏れていた。焼いた本文をここと比べれば、変更経路を知らなくても
+     * 「変わっていれば書く / 同じなら書かない」が成立する。
+     * Activity より寿命が長いので端末回転をまたいでも基準が失われない。
+     */
+    var lastSavedCsv: String? = null
 }
