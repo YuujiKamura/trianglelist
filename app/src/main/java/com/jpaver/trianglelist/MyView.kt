@@ -23,8 +23,6 @@ import com.jpaver.trianglelist.datamanager.PdfWriter
 import com.jpaver.trianglelist.editmodel.Deduction
 import com.jpaver.trianglelist.editmodel.DeductionList
 import com.jpaver.trianglelist.editmodel.EditList
-import com.jpaver.trianglelist.editmodel.EmptyTriListException
-import com.jpaver.trianglelist.editmodel.LastTapNumberValidationException
 import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
 import com.jpaver.trianglelist.editmodel.isCollide
@@ -468,13 +466,8 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
 // region resetview
     fun setCenterInModelToLastTappedTriNumber() {
-        try {
-            centerInModel = trianglelist.getLastTriangle().pointcenter
-        } catch (e: EmptyTriListException) {
-            //なにもしません～♪
-        } catch (e: LastTapNumberValidationException){
-            //なにもしません～♪
-        }
+        // 中心に据える三角形が無ければ現在の中心を保つ
+        trianglelist.lastTriangleOrNull()?.let { centerInModel = it.pointcenter }
     }
 
     fun resetView( pt: PointXY){
@@ -491,15 +484,8 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
     val INDEXCENTER = 3
     fun toLastTapTriangle(sideIndex: Int=INDEXCENTER): PointXY {
-        val triangle = try {
-            trianglelist.getLastTriangle()
-        } catch (e: EmptyTriListException) {
-            Log.d("MyView", "EmptyTriListException" )
-            return PointXY(0f,0f)
-        } catch (e: LastTapNumberValidationException){
-            Log.d("MyView", "LastTapNumberValidationException" )
-            return PointXY(0f,0f)
-        }
+        // 図形がまだ無い / 番号が陳腐化している間は原点を中心にする (正常系)
+        val triangle = trianglelist.lastTriangleOrNull() ?: return PointXY(0f, 0f)
 
         when(sideIndex){
             0 -> return triangle.dimpoint.a
