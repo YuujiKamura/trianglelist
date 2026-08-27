@@ -64,6 +64,21 @@ object TextSizePolicy {
         if (drawingScaleDenominator == 0f) 0f
         else modelToPaper(modelSize * MM_PER_MODEL_UNIT, drawingScaleDenominator)
 
+    /**
+     * JIS Z 8313-0 / 国土交通省 CAD 製図基準の文字呼び寸法階段 (paper mm)。
+     * 選択肢を画面ごとに手書きすると増減時にずれるので、階段は policy が持つ。
+     */
+    val PAPER_MM_LADDER: List<Float> = listOf(2.5f, 3.5f, 5f, 7f, 10f, 14f, 20f)
+
+    /**
+     * 紙 mm から model 単位の文字サイズへ。modelSizeToPaperMm の逆演算。
+     * 「紙で 3.5mm にする」を画面から選べるようにするための口 (2026-08-27 user
+     * 「スイートスポットである3.5mmとかが設定できるようにしたほうが良い」)。
+     */
+    fun paperMmToModelSize(paperMm: Float, drawingScaleDenominator: Float): Float =
+        if (drawingScaleDenominator == 0f) 0f
+        else paperToModel(paperMm, drawingScaleDenominator) / MM_PER_MODEL_UNIT
+
     /** paper mm を model mm に換算。drawingScaleDenominator は 1/50 図面なら 50f。 */
     fun paperToModel(paperMm: Float, drawingScaleDenominator: Float): Float =
         paperMm * drawingScaleDenominator

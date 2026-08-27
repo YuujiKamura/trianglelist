@@ -66,4 +66,30 @@ class TextSizePolicyDimensionTest {
             )
         }
     }
+
+    @Test
+    fun `紙 mm から model 単位への逆換算`() {
+        // 2026-08-27 user「スイートスポットである3.5mmとかが設定できるようにしたほうが良い」。
+        // 画面から「紙で 3.5mm」を選べるようにするための逆演算。往復で戻ることを固定する
+        for (denominator in kotlin.collections.listOf(50f, 150f, 300f, 600f)) {
+            for (paperMm in kotlin.collections.listOf(2.5f, 3.5f, 5f, 7f, 10f)) {
+                val model = TextSizePolicy.paperMmToModelSize(paperMm, denominator)
+                assertEquals(
+                    paperMm, TextSizePolicy.modelSizeToPaperMm(model, denominator), 1e-3f,
+                    "1/$denominator の $paperMm mm で往復しない",
+                )
+            }
+        }
+        assertEquals(0f, TextSizePolicy.paperMmToModelSize(3.5f, 0f), 1e-6f)
+    }
+
+    @Test
+    fun `JIS の呼び寸法階段を持っている`() {
+        // 選択肢を各画面で手書きすると増減時にずれる。階段は policy が持つ
+        assertEquals(
+            kotlin.collections.listOf(2.5f, 3.5f, 5f, 7f, 10f, 14f, 20f),
+            TextSizePolicy.PAPER_MM_LADDER,
+        )
+        assertEquals(true, TextSizePolicy.DIMENSION_PAPER_MM in TextSizePolicy.PAPER_MM_LADDER)
+    }
 }

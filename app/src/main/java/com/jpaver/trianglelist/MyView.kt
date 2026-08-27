@@ -946,6 +946,12 @@ class MyView(context: Context, attrs: AttributeSet?) :
      */
     fun drawingTextScale(): Float = textSize * 0.016f
 
+    /** 図面文字サイズ (model 単位) を指定して、画面の文字サイズをその値に合わせる。 */
+    fun setDrawingTextScale(modelSize: Float) {
+        if (modelSize <= 0f) return
+        setAllTextSize(modelSize / 0.016f)
+    }
+
     fun adjustTextSize(ts: Float): Float = when {
         ts <= 5f -> 8f
         ts >= 80f -> 80f
