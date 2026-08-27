@@ -2686,6 +2686,11 @@ class MainActivity : AppCompatActivity(),
 
     //region File saving
     private fun saveDXF(bWriter: BufferedWriter) :BufferedWriter{
+        // 書き出す前にモデルの配置を確定させる (冪等)。画面 (MyView.setTriangleList) が
+        // 既に確定させているのが通常だが、**画面を経由せずに書き出す経路があっても
+        // 図面が崩れない**ようにここでも呼ぶ ── 配置が view 側の呼び出しに依存したままだと、
+        // 画面更新のタイミング次第で書き出しの中身が変わる (2026-08-27)
+        trianglelist.arrangeLabelsForDrawing()
 
         //想定と違う結果になりえる
         //trianglelist.arrangePointNumbers()
@@ -2713,6 +2718,11 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun saveSFC(out: BufferedOutputStream) {
+        // 書き出す前にモデルの配置を確定させる (冪等)。画面 (MyView.setTriangleList) が
+        // 既に確定させているのが通常だが、**画面を経由せずに書き出す経路があっても
+        // 図面が崩れない**ようにここでも呼ぶ ── 配置が view 側の呼び出しに依存したままだと、
+        // 画面更新のタイミング次第で書き出しの中身が変わる (2026-08-27)
+        trianglelist.arrangeLabelsForDrawing()
 
         val writer = SfcWriter(trianglelist.clone(), myDeductionList.clone(), filename, drawingStartNumber, 47.6f)
         writer.setNames(koujiname, rosenname, gyousyaname, zumennum)
@@ -2732,6 +2742,11 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun savePDF(out: OutputStream){
+        // 書き出す前にモデルの配置を確定させる (冪等)。画面 (MyView.setTriangleList) が
+        // 既に確定させているのが通常だが、**画面を経由せずに書き出す経路があっても
+        // 図面が崩れない**ようにここでも呼ぶ ── 配置が view 側の呼び出しに依存したままだと、
+        // 画面更新のタイミング次第で書き出しの中身が変わる (2026-08-27)
+        trianglelist.arrangeLabelsForDrawing()
         val writer = PdfWriter(
                 trianglelist.getPrintScale(1f),
                 trianglelist
