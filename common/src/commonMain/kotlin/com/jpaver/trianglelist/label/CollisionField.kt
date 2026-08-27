@@ -59,20 +59,30 @@ class CollisionField {
      */
     fun query(box: LabelBox, excludeId: String? = null): List<Hit> {
         val hits = mutableListOf<Hit>()
+        // 粗判定 (broad phase): 中心間距離が外接半径の和を超えていれば、回転に関わらず
+        // 絶対に当たらない。SAT / 線分距離の計算はその後だけに掛ける。
+        // 総当たりのままだと 100 図形 (寸法 300 本) で自動配置が 281ms かかっていた
+        // (2026-08-27 実測)。判定結果は変えず、遠い相手を数回の乗算で捨てるだけ。
+        val reach = box.boundingRadiusMm
         for (edge in edges) {
             if (edge.id == excludeId) continue
+            if (distancePointToSegment(box.center, edge.start, edge.end) > reach + LabelBox.EPS) continue
             box.penetrationDepthSegment(edge.start, edge.end)?.let {
                 hits.add(Hit(edge.id, ObstacleKind.EDGE, it))
             }
         }
         for (entry in boxes) {
             if (entry.id == excludeId) continue
+            val limit = reach + entry.box.boundingRadiusMm + LabelBox.EPS
+            if (hypot(box.center.x - entry.box.center.x, box.center.y - entry.box.center.y) > limit) continue
             box.penetrationDepth(entry.box)?.let {
                 hits.add(Hit(entry.id, ObstacleKind.LABEL, it))
             }
         }
         for (circle in circles) {
             if (circle.id == excludeId) continue
+            val limit = reach + circle.radiusMm + LabelBox.EPS
+            if (hypot(box.center.x - circle.center.x, box.center.y - circle.center.y) > limit) continue
             box.penetrationDepthCircle(circle.center, circle.radiusMm)?.let {
                 hits.add(Hit(circle.id, ObstacleKind.CIRCLE, it))
             }

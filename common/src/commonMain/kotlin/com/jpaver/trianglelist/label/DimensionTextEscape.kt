@@ -162,8 +162,18 @@ object DimensionTextEscape {
         val circleHit = boxById.keys.associateWithTo(mutableMapOf()) { false }
 
         fun hitsOf(id: String, box: LabelBox): Pair<Set<String>, Boolean> {
+            // 粗判定で遠い相手を落としてから SAT (CollisionField.query と同じ足切り)。
+            // これが無いと 300 本 × 300 本の総当たりになる
+            val reach = box.boundingRadiusMm
             val labelHits = boxById.entries
-                .filter { it.key != id && box.penetrationDepth(it.value) != null }
+                .filter { other ->
+                    if (other.key == id) return@filter false
+                    val limit = reach + other.value.boundingRadiusMm + LabelBox.EPS
+                    val dx = box.center.x - other.value.center.x
+                    val dy = box.center.y - other.value.center.y
+                    if (dx * dx + dy * dy > limit * limit) return@filter false
+                    box.penetrationDepth(other.value) != null
+                }
                 .map { it.key }.toSet()
             val circle = obstacles.query(box, excludeId = id).any { it.kind == ObstacleKind.CIRCLE }
             return labelHits to circle
