@@ -404,11 +404,6 @@ open class TriangleList : EditList<Triangle> {
 
     fun arrangeLabelsWithoutCollision(ts: Float) {
         if (ts <= 0f) return
-        // まず番号を「収まる範囲で鋭角の反対側へ」寄り切らせる (2026-08-28)。
-        // 衝突の有無と無関係に走るのがポイント ── 細長い三角形では番号が内寄りに
-        // 留まっているせいで寸法値が旗揚げに追い込まれる。先に番号を外周へ退けておくと
-        // 寸法値が図形内に収まる。正三角形など鋭角が決まらない形は内心のまま動かない
-        com.jpaver.trianglelist.label.NumberCircleEscape.slideToOuter(this, ts)
         val numberMoves = com.jpaver.trianglelist.label.NumberCircleEscape.solve(this, ts)
         com.jpaver.trianglelist.label.NumberCircleEscape.apply(this, numberMoves)
         val dimMoves = com.jpaver.trianglelist.label.DimensionTextEscape.solve(this, ts)
