@@ -61,7 +61,7 @@ object NumberCircleEscape {
      * サークルが内接円より大きい (どこにも収まらない) 三角形は内心を返す。図形外へ出すかは
      * 退避側の判断で、ここは「図形内での最善」だけを返す。
      */
-    fun farthestFromSharpestVertex(shape: CycleShape, textSize: Float): PointXY {
+    fun placeAwayFromSharpestVertex(shape: CycleShape, textSize: Float): PointXY {
         val incenter = incenterOf(shape) ?: return shape.pointNumberAnchor()
         val triangle = shape as? Triangle ?: return incenter
         val radius = circleRadius(textSize)
@@ -84,13 +84,25 @@ object NumberCircleEscape {
         val ux = dx / len
         val uy = dy / len
 
+        // **限界まで押し込まない** (2026-08-28 user「極端にやると今みたいな形だな。でもまだ
+        // スペースに余裕があるだろこの面積だと。そっちも観るって事なんだよ」)。クリアランスが
+        // サークル半径ちょうどになる所まで寄せると、サークルが辺に接して角へ押し込まれた絵に
+        // なる ── 面積に余裕がある三角形でそれをやる理由がない。
+        //
+        // 止める基準はクリアランス = (内接円半径 R + サークル半径 r) / 2。内心にいる時の
+        // クリアランスが R (最大)、限界が r なので、その中点 = 「まだ寄れる余地」と
+        // 「辺からの余白」を半分ずつ分ける配分。R が大きい (面積に余裕がある) ほど止まる位置は
+        // 内心寄りになる = 面積を観ていることになる。
+        val inradius = clearanceOf(triangle, incenter)
+        val target = (inradius + radius) / 2.0
+
         // 図形の外に出ると「辺までの距離」はまた増えていく (頂点を通り過ぎた先は遠い) ので、
         // 内外判定を必ず併せる。これが無いと二分探索が図形外の遠い点を掴む
         fun fits(t: Double): Boolean {
             val p = PointXY(incenter.x + ux * t, incenter.y + uy * t)
-            return triangle.containsPoint(p) && clearanceOf(triangle, p) >= radius
+            return triangle.containsPoint(p) && clearanceOf(triangle, p) >= target
         }
-        if (!fits(0.0)) return incenter // 内心でも収まらない = どこにも入らない
+        if (clearanceOf(triangle, incenter) < radius) return incenter // どこにも入らない
 
         // 上限は三角形の外接的な大きさ (必ず収まらなくなる距離) から始める
         var lo = 0.0
@@ -115,7 +127,7 @@ object NumberCircleEscape {
         list.forEachItem { shape ->
             if (shape !is Triangle) return@forEachItem
             if (shape.pointNumber.flag.isMovedByUser) return@forEachItem
-            val to = farthestFromSharpestVertex(shape, textSize)
+            val to = placeAwayFromSharpestVertex(shape, textSize)
             if (!to.x.isFinite() || !to.y.isFinite()) return@forEachItem
             shape.pointnumber = to
             shape.pointNumber.flag.isEscaped = true

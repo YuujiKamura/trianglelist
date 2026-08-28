@@ -15,15 +15,21 @@ import kotlin.test.assertTrue
  *
  * 内心 (= その三角形に描ける最大の円の中心) は「一番余裕のある点」ではあるが、
  * **サークルが行ける限界ではない**。3,3,1 の三角形で内接円半径は 0.42m あるのに、
- * 番号サークルの半径は 1:50 の JIS 3.5mm で 0.149m しかない ── その差だけ、まだ
- * 短辺側へ寄れる (頂点から 85.7% → 94.9%)。寄り切って初めて、細長い三角形の
- * 内側に寸法値を置く余地が空く = 旗揚げ (辺の延長線上に飛ぶ、細長い figure では
- * 引出線が図形の数倍になる) を避けられる。
+ * 番号サークルの半径は 1:50 の JIS 3.5mm で 0.149m しかない ── その差だけ短辺側へ寄れる。
  *
- * 置き場所の定義: **サークルが収まる領域の中で、一番鋭い頂点から最も遠い点**。
- *   - 3,3,1 のような細い三角形 → 鋭い頂点は 3 と 3 が合う所、遠い点は短辺 (1) 側
- *   - 正三角形 → どの頂点も同じ鋭さなので退化し、内心 (= 重心) に戻る
- * magic number を持たない (寄せる量は文字サイズと形から一意に決まる)。
+ * ただし**限界まで押し込んではいけない** (2026-08-28 user「極端にやると今みたいな形だな。
+ * でもまだスペースに余裕があるだろこの面積だと。そっちも観るって事なんだよ」)。
+ * 限界 (クリアランス = サークル半径) まで寄せると、サークルが辺に接して角へ押し込まれた
+ * 絵になる ── 面積に余裕がある三角形でそれをやる理由がない。
+ *
+ * 置き場所の定義: 内心から鋭角の反対向きへ進み、**クリアランスが
+ * (内接円半径 + サークル半径) / 2 になった所で止める**。
+ *   - 内心にいる時のクリアランス = 内接円半径 R (最大)、限界のクリアランス = サークル半径 r
+ *   - その中点 (R + r) / 2 = 「まだ寄れる余地」と「辺からの余白」を半分ずつ分ける
+ *   - 3,3,1 では 内心 85.7% / 限界 94.9% に対し 90.3%
+ *   - 余裕 (R) が大きいほど止まる位置は内心寄りになる = 面積を観ている
+ *   - 正三角形は「一番鋭い頂点」が決まらず退化して内心 (= 重心) のまま動かない
+ * 定数は「半分ずつ」という配分の宣言だけで、形状や文字サイズに対する magic number は無い。
  */
 class NumberFarthestSlideTest {
 
@@ -67,30 +73,31 @@ class NumberFarthestSlideTest {
     }
 
     @Test
-    fun `3-3-1 では番号が短辺側へ寄り切る`() {
+    fun `3-3-1 では番号が短辺側へ寄るが限界までは押し込まない`() {
         val t = triangleOf("1,3.0,3.0,1.0,-1,-1" + NL)
-        val p = NumberCircleEscape.farthestFromSharpestVertex(t, ts)
+        val p = NumberCircleEscape.placeAwayFromSharpestVertex(t, ts)
         val ratio = ratioFromApex(t, p.x, p.y)
-        assertTrue(ratio > 0.93, "短辺側へ寄り切っていない (頂点から ${ratio * 100}%)")
-        assertTrue(ratio < 1.0, "底辺を越えて図形の外へ出た (頂点から ${ratio * 100}%)")
+        // 内心 85.7% と 限界 94.9% の間で止まる
+        assertTrue(ratio > 0.857, "内心より短辺側へ寄っていない (頂点から ${ratio * 100}%)")
+        assertTrue(ratio < 0.949, "限界まで押し込んだ (頂点から ${ratio * 100}%)")
+        assertEquals(0.903, ratio, 0.005, "余裕の半分ずつ配分になっていない (頂点から ${ratio * 100}%)")
     }
 
     @Test
-    fun `寄り切った先でもサークルは図形内に収まる`() {
+    fun `止まる位置のクリアランスが内接円半径とサークル半径の中点になる`() {
         val t = triangleOf("1,3.0,3.0,1.0,-1,-1" + NL)
-        val p = NumberCircleEscape.farthestFromSharpestVertex(t, ts)
+        val p = NumberCircleEscape.placeAwayFromSharpestVertex(t, ts)
+        val inradius = PointNumberManager().inradius(t).toDouble()
         val radius = NumberCircleEscape.circleRadius(ts)
-        assertTrue(
-            clearance(t, p.x, p.y) >= radius - 1e-6,
-            "サークルが辺からはみ出した (余裕=${clearance(t, p.x, p.y)} 半径=$radius)",
-        )
+        assertEquals((inradius + radius) / 2.0, clearance(t, p.x, p.y), 1e-3, "配分が半分ずつでない")
+        assertTrue(clearance(t, p.x, p.y) > radius, "辺からの余白が残っていない")
     }
 
     @Test
     fun `正三角形では退化して内心のまま動かない`() {
         // 「寄せる」が普通の三角形まで動かすと、巻き込みのために全図面が壊れる
         val t = triangleOf("1,4.0,4.0,4.0,-1,-1" + NL)
-        val p = NumberCircleEscape.farthestFromSharpestVertex(t, ts)
+        val p = NumberCircleEscape.placeAwayFromSharpestVertex(t, ts)
         val inc = PointNumberManager().incenter(t)
         assertEquals(inc.x, p.x, 1e-3, "正三角形で番号が内心から動いた")
         assertEquals(inc.y, p.y, 1e-3, "正三角形で番号が内心から動いた")
@@ -101,10 +108,10 @@ class NumberFarthestSlideTest {
         // 寄せ量は magic number ではなく「サークルが収まるか」で決まる。
         // 文字を大きくすれば収まる領域が狭まり、寄り切った位置は内心へ戻っていく
         val t = triangleOf("1,3.0,3.0,1.0,-1,-1" + NL)
-        val small = ratioFromApex(t, NumberCircleEscape.farthestFromSharpestVertex(t, 0.125f).let { it.x }.toDouble(),
-            NumberCircleEscape.farthestFromSharpestVertex(t, 0.125f).y.toDouble())
-        val large = ratioFromApex(t, NumberCircleEscape.farthestFromSharpestVertex(t, 0.5f).let { it.x }.toDouble(),
-            NumberCircleEscape.farthestFromSharpestVertex(t, 0.5f).y.toDouble())
+        val small = ratioFromApex(t, NumberCircleEscape.placeAwayFromSharpestVertex(t, 0.125f).let { it.x }.toDouble(),
+            NumberCircleEscape.placeAwayFromSharpestVertex(t, 0.125f).y.toDouble())
+        val large = ratioFromApex(t, NumberCircleEscape.placeAwayFromSharpestVertex(t, 0.5f).let { it.x }.toDouble(),
+            NumberCircleEscape.placeAwayFromSharpestVertex(t, 0.5f).y.toDouble())
         assertTrue(small > large, "文字を大きくしても寄せ量が変わらない (小=$small 大=$large)")
     }
 
@@ -113,7 +120,7 @@ class NumberFarthestSlideTest {
         // 内接円半径 < サークル半径 = どこにも収まらない。無理に寄せず内心 (一番マシ) に置く。
         // 「図形外へ出す」判断は別 (退避の担当)
         val t = triangleOf("1,3.0,3.0,0.10,-1,-1" + NL)
-        val p = NumberCircleEscape.farthestFromSharpestVertex(t, ts)
+        val p = NumberCircleEscape.placeAwayFromSharpestVertex(t, ts)
         val inc = PointNumberManager().incenter(t)
         assertEquals(inc.x, p.x, 1e-3, "収まらない三角形で内心に落ちていない")
         assertEquals(inc.y, p.y, 1e-3, "収まらない三角形で内心に落ちていない")
