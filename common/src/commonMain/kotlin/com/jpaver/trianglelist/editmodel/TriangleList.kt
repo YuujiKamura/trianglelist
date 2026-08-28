@@ -404,6 +404,9 @@ open class TriangleList : EditList<Triangle> {
 
     fun arrangeLabelsWithoutCollision(ts: Float) {
         if (ts <= 0f) return
+        // 前回の自動配置を巻き戻してから決め直す。これが無いと配置が前回結果に依存し、
+        // 保存 → 開き直しで別の解に落ちる (LabelArrangeReset 参照)
+        com.jpaver.trianglelist.label.LabelArrangeReset.reset(this)
         val numberMoves = com.jpaver.trianglelist.label.NumberCircleEscape.solve(this, ts)
         com.jpaver.trianglelist.label.NumberCircleEscape.apply(this, numberMoves)
         val dimMoves = com.jpaver.trianglelist.label.DimensionTextEscape.solve(this, ts)

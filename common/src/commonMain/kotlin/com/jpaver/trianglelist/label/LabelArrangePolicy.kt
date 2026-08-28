@@ -18,3 +18,38 @@ package com.jpaver.trianglelist.label
 object LabelArrangePolicy {
     var enabled: Boolean = true
 }
+
+/**
+ * 自動配置を「毎回、既定から決め直す」ための巻き戻し (2026-08-28)。
+ *
+ * これが無いと配置が**前回の結果に依存する**。自動配置の結果は pointnumber / dimHorizontal
+ * という CSV に載るフィールドに入るので、保存 → 開き直しの後は「既に退避済みの状態」から
+ * 探索が始まり、別の解に落ちる ── 「保存して開き直すたびに寸法の位置が変わる」。
+ * 実際 AutoArrangeRoundTripTest が往復後の番号位置のずれとして検出した。
+ *
+ * 巻き戻すのは**自動処理が置いた分だけ**。user が手で動かした配置 (isMovedByUser) は
+ * 不可侵なので触らない。これで配置は (図形 + user の手動配置 + 文字サイズ) の純関数になり、
+ * 冪等性と往復不変が構造的に保証される (探索側の努力ではなく前提として)。
+ *
+ * 巻き戻し先:
+ *   - dimHorizontal → 0 (中央)。horizontal を自動で入れるのは退避だけ (Dims.controlHorizontal は
+ *     user 操作で isMovedByUser を立てる、autoDimHorizontalByAngle は封印済み)
+ *   - 番号 → isEscaped を落として既定位置 (autoAlign = 内心) を計算し直す
+ */
+object LabelArrangeReset {
+
+    fun reset(list: com.jpaver.trianglelist.editmodel.EditList<out com.jpaver.trianglelist.editmodel.CycleShape>) {
+        list.forEachItem { shape ->
+            val tri = shape as? com.jpaver.trianglelist.editmodel.Triangle ?: return@forEachItem
+            if (!tri.dim.flag.getOrNull(0)?.isMovedByUser.let { it == true }) tri.dimHorizontal.a = 0
+            if (!tri.dim.flag.getOrNull(1)?.isMovedByUser.let { it == true }) tri.dimHorizontal.b = 0
+            if (!tri.dim.flag.getOrNull(2)?.isMovedByUser.let { it == true }) tri.dimHorizontal.c = 0
+            if (!tri.dim.flagS.isMovedByUser) tri.dimHorizontal.s = 0
+            if (!tri.pointNumber.flag.isMovedByUser && tri.pointNumber.flag.isEscaped) {
+                tri.pointNumber.flag.isEscaped = false
+                tri.pointNumber.flag.isAutoAligned = false
+                tri.pointnumber = tri.pointNumber.autoAlign(tri)
+            }
+        }
+    }
+}
