@@ -73,17 +73,43 @@ class NumberEscapeRealDataTest {
         // 子がいる辺の旗揚げは回転順で右の端へ出す = 実装コードでは OUTER_LEFT(4)
         // (2026-08-27 user「４だとC辺に子がいて…左に出してる。これを右に変えればそれでいい」)。
         // コード名と実際に出る側が逆になっているので、名前ではなくこの対応を pin する。
+        //
+        // ただし**収束点 (4 図形以上が放射状に集まる頂点) に触れる辺は対象外** (2026-08-28
+        // user「１３，１４のような放射図形だと、旗揚げを収束点側にするとどの辺に対応してるのか
+        // みづらくなったりする」)。8.25 の #13 辺2 はまさにその頂点 (6 図形が集まる要) に
+        // 触れており、子の有無で決めると要の側へ出て帰属が読めなくなる。
+        // 昨日の指示は #4 / #6 についてのもので、放射の要は別の話 ── 収束点ルールが優先。
+        // 判定は DimensionFlagAwayFromHubTest が実データで持つ。
         val shapes = mutableMapOf<Int, com.jpaver.trianglelist.editmodel.CycleShape>()
         list.forEachItemIndexed { num, sh -> shapes[num] = sh }
         fun childOf(num: Int, side: Int) = shapes[num]?.node?.let {
             when (side) { 0 -> it.a; 1 -> it.b; 2 -> it.c; else -> null }
         }
+        // 収束点 (端点の出現数 >= 8 = 4 図形以上) に触れる辺の一覧
+        val incidence = mutableMapOf<Pair<Long, Long>, Int>()
+        list.forEachItem { sh ->
+            for (e in sh.edges()) for (p in kotlin.collections.listOf(e.left, e.right)) {
+                val k = (p.x * 1e3).toLong() to (p.y * 1e3).toLong()
+                incidence[k] = (incidence[k] ?: 0) + 1
+            }
+        }
+        val hubSides = mutableSetOf<Pair<Int, Int>>()
+        list.forEachItemIndexed { num, sh ->
+            sh.edges().forEachIndexed { side, e ->
+                val touches = kotlin.collections.listOf(e.left, e.right).any {
+                    (incidence[(it.x * 1e3).toLong() to (it.y * 1e3).toLong()] ?: 0) >= 8
+                }
+                if (touches) hubSides.add(num to side)
+            }
+        }
+
         val flagged = dimMoves.filter { it.to == 3 || it.to == 4 }
         println("旗揚げ ${flagged.size} 件")
         for (m in flagged) {
             val hasChild = childOf(m.shapeNumber, m.side) != null
             println("  #${m.shapeNumber}辺${m.side} → ${m.to} (子あり=$hasChild)")
-            if (hasChild) {
+            val touchesHub = hubSides.contains(m.shapeNumber to m.side)
+            if (hasChild && !touchesHub) {
                 assertEquals(4, m.to, "子がいる辺の旗揚げが右端 (コード 4) でない: #${m.shapeNumber}辺${m.side}")
             }
         }
