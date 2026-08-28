@@ -58,7 +58,48 @@ class PointNumberManager( ): com.example.trilib.Cloneable<PointNumberManager> {
             return pointUnconnectedSide( triangle, outlineList )
         }
 
-        return weightedMidpoint(triangle, WEIGHT)
+        return incenter(triangle)
+    }
+
+    /**
+     * 番号サークルの既定位置 = 内心 (2026-08-28 user「最初にすべきは三角形の重心比重と
+     * 面積に沿って番号サークルを寄せる処理」)。
+     *
+     * 内心は 3 辺からの最短距離が最大になる点 = **その三角形に描ける最大の円の中心**。
+     * 「番号という円を置くのに一番余裕がある所」という要求と定義が一対一で対応する。
+     * 位置は辺長比重で、収まるかどうかは [inradius] (面積 / 半周長) で出る ── 位置と可否が
+     * 同じ 1 つの幾何から出るのが、従来の [weightedMidpoint] (角度 + magic number 35) との差。
+     *
+     * 頂点と対辺の対応: pointAB は辺 C の対、pointBC は辺 A の対、pointCA は辺 B の対。
+     *
+     * 実害の出どころは歩道の巻き込み (samples/makikomi_r3.csv)。半径 3m の扇を細い三角形で
+     * 割った形では番号が内寄りに留まり、寸法値が旗揚げに追い込まれる。旗揚げは辺の延長線上へ
+     * 出るので細長い三角形では引出線が図形の数倍に伸び、図面が引出線の束に埋もれる
+     * (2026-08-28 実測: 10 分割版で衝突が 1 → 3 と悪化)。番号が先に一番広い所へ退けば、
+     * 寸法値は図形の中に収まる。
+     *
+     * 退化 (周長 0) は重心を返す ── NaN 座標を図面に撒かないため。
+     */
+    fun incenter(triangle: Triangle): com.example.trilib.PointXY {
+        val wApex = triangle.lengthC
+        val wBC = triangle.lengthA
+        val wCA = triangle.lengthB
+        val total = wApex + wBC + wCA
+        if (total <= 0f || !total.isFinite()) return triangle.pointcenter
+        val x = (triangle.pointAB.x * wApex + triangle.pointBC.x * wBC + triangle.pointCA.x * wCA) / total
+        val y = (triangle.pointAB.y * wApex + triangle.pointBC.y * wBC + triangle.pointCA.y * wCA) / total
+        return com.example.trilib.PointXY(x, y)
+    }
+
+    /**
+     * 内接円半径 r = 面積 / 半周長。番号サークルの半径がこれを超える三角形には、
+     * どこに置いても番号が図形内に収まらない ── 自動退避が図形内を探しても解けないことを
+     * 探索の前に判定できる (NumberCircleEscape の「図形外へ出すか」の分岐材料)。
+     */
+    fun inradius(triangle: Triangle): Float {
+        val s = (triangle.lengthA + triangle.lengthB + triangle.lengthC) / 2f
+        if (s <= 0f || !s.isFinite()) return 0f
+        return triangle.getArea() / s
     }
 
     //pointNumberだけ使う
@@ -81,7 +122,7 @@ class PointNumberManager( ): com.example.trilib.Cloneable<PointNumberManager> {
             return resultC
         }
 
-        return weightedMidpoint(triangle, WEIGHT)
+        return incenter(triangle)
     }
 
     fun getPointByOuterAngle(triangle: Triangle, angle1:Float, angle2:Float, point1: com.example.trilib.PointXY, point2: com.example.trilib.PointXY, outlineList: OutlineList? ): com.example.trilib.PointXY {
