@@ -1,5 +1,6 @@
 package com.jpaver.trianglelist.label
 
+import com.example.trilib.PointXY
 import com.jpaver.trianglelist.editmodel.CycleShape
 import com.jpaver.trianglelist.editmodel.EditList
 import com.jpaver.trianglelist.editmodel.Triangle
@@ -70,6 +71,27 @@ object DimensionTextEscape {
             SIDE_SOKUTEN -> shape.dim.flagS.isMovedByUser
             else -> false
         }
+    }
+
+    /**
+     * その図形で**一番短い辺**か (2026-08-28 user「三辺の中のもっとも狭い辺って、単純に
+     * 横スライドしても見づらくなるケースが結構ある。５，６とか、８とか、むしろ動かさない
+     * ほうが良い」)。
+     *
+     * 短い辺の寸法値は動かす余地そのものが無い。スライド (habayose = 辺長の 10%) は
+     * 辺が短いほど効かず、旗揚げは辺の延長線上へ出るので短辺では文字が辺から離れすぎて
+     * どの辺の寸法か読めなくなる ── 衝突は減っても図面としては悪化する。
+     * 実データ 8.25 では #5 が 3 辺とも、#6 / #8 も動かされていた。
+     *
+     * 「衝突数が減れば良い」という探索の目的関数だけでは、この悪化を検出できない
+     * (機械の数字は減っている)。動かしてはいけない対象を先に外す。
+     */
+    private fun isShortestSide(shape: CycleShape, side: Int): Boolean {
+        if (shape !is Triangle) return false
+        if (side !in 0..2) return false
+        val lengths = listOf(shape.lengthA, shape.lengthB, shape.lengthC)
+        val shortest = lengths.min()
+        return lengths[side] <= shortest + 1e-6f
     }
 
     private fun horizontalOf(shape: CycleShape, side: Int): Int? = when (side) {
@@ -148,11 +170,39 @@ object DimensionTextEscape {
         // 1 本動かして変わるのは「その 1 本の当たり」と「相手側の当たり」だけなので、
         // 動かした box だけ再クエリして差分を反映する。
         //
-        // 図形の辺 (EDGE) は判定に入れない ── 判定 box は縦アライメントのパディング分
-        // グリフより大きく、辺沿いの寸法値はほぼ必ず辺に当たる (OverlapReport 参照)。
+        // 図形の辺 (EDGE) のうち、**その寸法値が乗っている辺 (自分の基線) 以外**は判定に入れる
+        // (2026-08-28 user「6番の3.9とか、15番の5.32とか、自分の基線以外と接触してるケースが
+        // あって、こういう場合も本来出したほうが良い」)。
+        //
+        // 従来は EDGE を丸ごと外していた。理由は「判定 box は縦アライメントのパディング分
+        // グリフより大きく、辺沿いの寸法値はほぼ必ず**自分の辺**に当たる」(OverlapReport) で、
+        // これは自分の基線にしか当てはまらない。他の辺に食い込んでいるのは本物の可読性問題で、
+        // 実データ 8.25 でも 5.32 が 249.7mm、3.9 が 180.6mm 食い込んでいた。
+        //
+        // 共有辺 (親の B 辺 = 子の A 辺) は同じ幾何が 2 つの id で登録されるので、
+        // 端点が一致する辺も「自分の基線」として一緒に除外する ── 片方だけ除外すると
+        // 双子の側で必ず当たり、全寸法値が対象になってしまう。
         val obstacles = CollisionField()
+        val ownEdgeIds = mutableMapOf<String, MutableSet<String>>()
+        val edgeSegments = mutableListOf<Triple<String, PointXY, PointXY>>()
         list.forEachItemIndexed { num, obj ->
             obstacles.addCircle("circle:$num", obj.pointNumberAnchor(), (judgeSize * 0.85f).toDouble())
+            obj.edges().forEachIndexed { side, line ->
+                val id = "edge:$num:$side"
+                obstacles.addEdge(id, line.left, line.right)
+                edgeSegments.add(Triple(id, line.left, line.right))
+            }
+        }
+        fun sameSegment(a1: PointXY, a2: PointXY, b1: PointXY, b2: PointXY): Boolean {
+            val e = LabelBox.EPS
+            fun near(p: PointXY, q: PointXY) = kotlin.math.abs(p.x - q.x) <= e && kotlin.math.abs(p.y - q.y) <= e
+            return (near(a1, b1) && near(a2, b2)) || (near(a1, b2) && near(a2, b1))
+        }
+        for ((id, a, b) in edgeSegments) {
+            val set = ownEdgeIds.getOrPut(id) { mutableSetOf(id) }
+            for ((other, c, d) in edgeSegments) {
+                if (other != id && sameSegment(a, b, c, d)) set.add(other)
+            }
         }
         val boxById = linkedMapOf<String, LabelBox>()
         for ((id, box) in ModelOverlapAnalyzer.boxes(list, judgeSize, scale, sokutenListVector, thresholdAngle, metrics)) {
@@ -175,8 +225,12 @@ object DimensionTextEscape {
                     box.penetrationDepth(other.value) != null
                 }
                 .map { it.key }.toSet()
-            val circle = obstacles.query(box, excludeId = id).any { it.kind == ObstacleKind.CIRCLE }
-            return labelHits to circle
+            // 自分の基線 (と共有辺の双子) だけ外して、円と他の辺を見る
+            val own = parseId(id)?.let { (num, side) -> ownEdgeIds["edge:$num:$side"] } ?: emptySet<String>()
+            val blocked = obstacles.query(box, excludeId = id).any { hit ->
+                hit.kind == ObstacleKind.CIRCLE || (hit.kind == ObstacleKind.EDGE && hit.id !in own)
+            }
+            return labelHits to blocked
         }
         for ((id, box) in boxById) {
             val (labelHits, circle) = hitsOf(id, box)
@@ -214,11 +268,17 @@ object DimensionTextEscape {
 
             // 対象は「文字どうし」で衝突している寸法値のみ。番号サークルとの衝突は
             // NumberCircleEscape の担当 (自由に動ける方を先に動かす)
-            val targets = boxById.keys.filter { partners.getValue(it).isNotEmpty() }.sorted()
+            // 対象は「文字どうし」に加えて「番号サークル / 自分以外の辺」に当たっている寸法値。
+            // 番号側が動けなかった時の二段目がここ ── 円だけを NumberCircleEscape に任せて
+            // いると、番号が図形内に逃げ場を持たない図形で誰も動かさないまま残る
+            val targets = boxById.keys
+                .filter { partners.getValue(it).isNotEmpty() || circleHit.getValue(it) }
+                .sortedWith(compareBy({ parseId(it)?.first ?: 0 }, { parseId(it)?.second ?: 0 }))
             for (id in targets) {
                 val (num, side) = parseId(id) ?: continue
                 val shape = shapes[num] ?: continue
                 if (isMovedByUser(shape, side)) continue
+                if (isShortestSide(shape, side)) continue
                 val current = horizontalOf(shape, side) ?: continue
                 val ladder = if (side == SIDE_SOKUTEN) {
                     sokutenLadder(current)
