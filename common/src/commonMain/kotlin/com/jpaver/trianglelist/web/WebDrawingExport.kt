@@ -181,6 +181,9 @@ object WebDrawingExport {
                 TextSizePolicy.paperToModel(it, trilist.getPrintScale(1f) * 100f) /
                     TextSizePolicy.MM_PER_MODEL_UNIT
             } ?: trilist.getPrintTextScale(1f, "dxf")
+            // 先に番号を「収まる範囲で鋭角の反対側へ」寄り切らせる (2026-08-28)。
+            // アプリ経路 (TriangleList.arrangeLabelsWithoutCollision) と同じ順序に揃える
+            NumberCircleEscape.slideToOuter(mixedDxf, textSize = dimModelSize)
             val numberMoves = NumberCircleEscape.solve(mixedDxf, textSize = dimModelSize)
             NumberCircleEscape.apply(mixedDxf, numberMoves)
             val dimMoves = DimensionTextEscape.solve(mixedDxf, textSize = dimModelSize)
