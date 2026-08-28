@@ -112,6 +112,22 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
     var currentFile by remember { mutableStateOf<File?>(null) }
     var lastModified by remember { mutableStateOf(0L) }
 
+    // サンプル切替 (2026-08-28 user「そのつど作り直すよりビューワーにリスト UI を持たせて
+    // 切り替えられるようにしたほうが良い」)。自動配置の効き目は「同じ図面を ON/OFF で
+    // 見比べる」ことでしか判断できないのに、毎回 gradle 経由で DXF を作り直していた。
+    // samples/*.csv を一覧し、紙面 mm と自動配置 ON/OFF を掛けた組を即座に開く。
+    val sampleFiles = remember {
+        val root = generateSequence(File(System.getProperty("user.dir")).absoluteFile) { it.parentFile }
+            .firstOrNull { File(it, "settings.gradle.kts").exists() }
+        root?.let { File(it, "samples").listFiles { f -> f.extension.equals("csv", true) } }
+            ?.sortedBy { it.name } ?: emptyList()
+    }
+    var sampleMenuOpen by remember { mutableStateOf(false) }
+    var mmMenuOpen by remember { mutableStateOf(false) }
+    var currentSample by remember { mutableStateOf<File?>(null) }
+    var arrangeOn by remember { mutableStateOf(false) }
+    var paperMm by remember { mutableStateOf(com.jpaver.trianglelist.scale.TextSizePolicy.DIMENSION_PAPER_MM) }
+
     // ビューステート管理
     val viewStateManager = remember { ViewStateManager() }
     var initialScale by remember { mutableStateOf<Float?>(null) }
@@ -167,6 +183,27 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
         } catch (e: Exception) {
             println("Error loading CAD file: ${e.message}")
             null
+        }
+    }
+
+    /**
+     * サンプル CSV を「今の紙面 mm / 自動配置 ON-OFF」で DXF に焼き直して開く。
+     * 出力先は組合せごとに別名 (build/viewer-dxf/<name>_3p5mm[_esc].dxf) なので、
+     * ON/OFF を往復してもキャッシュが効き、CADView の key も切り替わる。
+     * view state は毎回リセットする ── 別図形を前の倍率で開くと枠外に飛ぶため。
+     */
+    fun openSample(csv: File, mm: Float, escape: Boolean) {
+        val dxfPath = csvToDxfForViewer(csv.absolutePath, mm, escape) ?: return
+        val dxf = File(dxfPath)
+        loadCadFile(dxf)?.let { result ->
+            parseResult = result
+            currentFile = dxf
+            currentSample = csv
+            lastModified = dxf.lastModified()
+            initialScale = null
+            initialOffset = null
+            currentScale = null
+            currentOffset = null
         }
     }
 
@@ -280,6 +317,29 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                     out.write("ok\n".toByteArray())
                                 } else {
                                     out.write("error: file not found\n".toByteArray())
+                                }
+                            }
+                            line == "samples" -> {
+                                out.write((sampleFiles.joinToString(",") { it.nameWithoutExtension } + "\n").toByteArray())
+                            }
+                            line.startsWith("sample ") -> {
+                                // 「sample <名前> [紙面mm] [on|off]」── UI のドロップダウンと同じ経路を
+                                // CP から叩く。ON/OFF の見比べを人手のクリックなしで回せるようにする
+                                val a = line.removePrefix("sample ").trim().split(" ").filter { it.isNotEmpty() }
+                                val target = sampleFiles.firstOrNull { it.nameWithoutExtension == a.getOrNull(0) }
+                                if (target == null) {
+                                    out.write("error: unknown sample (see 'samples')\n".toByteArray())
+                                } else {
+                                    val mm = a.getOrNull(1)?.toFloatOrNull() ?: paperMm
+                                    val esc = when (a.getOrNull(2)?.lowercase()) {
+                                        "on", "true" -> true
+                                        "off", "false" -> false
+                                        else -> arrangeOn
+                                    }
+                                    paperMm = mm
+                                    arrangeOn = esc
+                                    openSample(target, mm, esc)
+                                    out.write("ok sample=${target.nameWithoutExtension} mm=$mm arrange=${if (esc) "on" else "off"}\n".toByteArray())
                                 }
                             }
                             line.startsWith("zoom ") -> {
@@ -524,7 +584,7 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                 }
                             }
                             else -> {
-                                out.write("error: unknown command (open|zoom|pan|view|fit|state|capture|renderbuffer|sendto)\n".toByteArray())
+                                out.write("error: unknown command (open|samples|sample|zoom|pan|view|fit|state|overlaps|boxes|capture|renderbuffer|sendto)\n".toByteArray())
                             }
                         }
                     } catch (e: Exception) {
@@ -650,6 +710,63 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                 }
             ) {
                 Text(if (hotReload) "自動更新ON" else "自動更新OFF")
+            }
+        }
+
+        // サンプル切替バー: 展開図サンプル × 紙面 mm × 自動配置 ON/OFF
+        Row(
+            modifier = Modifier.padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box {
+                Button(onClick = { sampleMenuOpen = true }) {
+                    Text(currentSample?.nameWithoutExtension ?: "サンプル選択")
+                }
+                DropdownMenu(expanded = sampleMenuOpen, onDismissRequest = { sampleMenuOpen = false }) {
+                    if (sampleFiles.isEmpty()) {
+                        DropdownMenuItem(onClick = { sampleMenuOpen = false }) { Text("samples/ に CSV がありません") }
+                    }
+                    sampleFiles.forEach { f ->
+                        DropdownMenuItem(onClick = {
+                            sampleMenuOpen = false
+                            openSample(f, paperMm, arrangeOn)
+                        }) { Text(f.nameWithoutExtension) }
+                    }
+                }
+            }
+
+            Box {
+                Button(onClick = { mmMenuOpen = true }) { Text("紙面 ${paperMm}mm") }
+                DropdownMenu(expanded = mmMenuOpen, onDismissRequest = { mmMenuOpen = false }) {
+                    com.jpaver.trianglelist.scale.TextSizePolicy.PAPER_MM_LADDER.forEach { mm ->
+                        DropdownMenuItem(onClick = {
+                            mmMenuOpen = false
+                            paperMm = mm
+                            currentSample?.let { openSample(it, mm, arrangeOn) }
+                        }) {
+                            Text("${mm}mm" + if (mm == com.jpaver.trianglelist.scale.TextSizePolicy.DIMENSION_PAPER_MM) "  (JIS)" else "")
+                        }
+                    }
+                }
+            }
+
+            Button(
+                onClick = {
+                    arrangeOn = !arrangeOn
+                    currentSample?.let { openSample(it, paperMm, arrangeOn) }
+                },
+                colors = if (arrangeOn) {
+                    ButtonDefaults.buttonColors(backgroundColor = androidx.compose.ui.graphics.Color(0xFF43A047))
+                } else {
+                    ButtonDefaults.buttonColors()
+                }
+            ) {
+                Text(if (arrangeOn) "自動配置 ON" else "自動配置 OFF")
+            }
+
+            Button(onClick = { showLabelBoxes = !showLabelBoxes }) {
+                Text(if (showLabelBoxes) "判定枠 ON" else "判定枠 OFF")
             }
         }
 
