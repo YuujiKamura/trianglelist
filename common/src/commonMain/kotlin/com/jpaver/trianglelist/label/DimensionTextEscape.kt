@@ -133,9 +133,31 @@ object DimensionTextEscape {
      *
      * 子がいない辺は従来どおり 3 を先に試す (どちらでも成立するので既定を変えない)。
      */
-    private fun outerOrder(shape: CycleShape, side: Int): List<Int> =
+    private fun outerOrderByChild(shape: CycleShape, side: Int): List<Int> =
         if (childOf(shape, side) != null) listOf(OUTER_LEFT, OUTER_RIGHT)
         else listOf(OUTER_RIGHT, OUTER_LEFT)
+
+    /**
+     * **4 図形以上が放射状に集まっている頂点 (収束点)**。三角形の 1 頂点は自分の辺 2 本の
+     * 端点なので、N 図形が共有する頂点の端点出現数は 2N ── 閾値 8 で N>=4。
+     *
+     * 3 図形 (= 出現数 6) を収束点に含めてはいけない。実データ 8.25 の頂点分布は
+     * {2:6 個, 4:10 個, 6:13 個, 8:1 個, 12:1 個} で、6 は**普通の連結節点**が 13 箇所。
+     * ここまで拾うとほぼ全頂点が収束点になり判定が意味を失う (2026-08-28 実測)。
+     * 12 (= 6 図形) が #12-#16 の要で、user の言う「１３，１４のような放射図形」はこれ。
+     */
+    private fun hubsOf(list: EditList<out CycleShape>): List<PointXY> {
+        val counts = mutableMapOf<Pair<Long, Long>, Int>()
+        list.forEachItem { s ->
+            for (e in s.edges()) {
+                for (p in listOf(e.left, e.right)) {
+                    val k = (p.x * 1e3).toLong() to (p.y * 1e3).toLong()
+                    counts[k] = (counts[k] ?: 0) + 1
+                }
+            }
+        }
+        return counts.filter { it.value >= 8 }.map { PointXY(it.key.first / 1e3, it.key.second / 1e3) }
+    }
 
     /** "dim:<図形番号>:<辺>" を分解する。ModelOverlapAnalyzer.boxes が作る id 形式と対。 */
     private fun parseId(id: String): Pair<Int, Int>? {
@@ -258,6 +280,55 @@ object DimensionTextEscape {
             }
         }
 
+        // 旗揚げの左右は、**収束点から遠い側**を先に試す (2026-08-28 user「１３，１４のような
+        // 放射図形だと、旗揚げを収束点側にするとどの辺に対応してるのかみづらくなったりする」)。
+        // 収束点側へ出すと全部の辺の寸法値が要に集まり、引出線を辿らないと帰属が読めない。
+        //
+        // 衝突数では守れない ── 収束点の外側は図形が無いので box は空いており、機械的には
+        // 「衝突ゼロの良い解」に見える。悪いのは読みやすさなので候補の**順序**で守る。
+        //
+        // 左右コード (3/4) と実際に出る側の対応は DimensionLayout.pointsOuter が引数を
+        // 入れ替えて呼ぶため名前から判断すると取り違える。名前を使わず、実際に生成された
+        // box の位置を測って遠い方を先にする。
+        val hubs = hubsOf(list)
+        fun outerCenter(shape: CycleShape, num: Int, side: Int, h: Int): PointXY? {
+            val keep = horizontalOf(shape, side) ?: return null
+            setHorizontal(shape, side, h)
+            val box = ModelOverlapAnalyzer
+                .boxesOf(shape, num, judgeSize, scale, sokutenListVector, metrics)
+                .firstOrNull { it.first == "dim:$num:$side" }?.second
+            setHorizontal(shape, side, keep)
+            return box?.center
+        }
+        fun outerOrderFor(shape: CycleShape, num: Int, side: Int): List<Int> {
+            if (hubs.isEmpty()) return outerOrderByChild(shape, side)
+            // その辺の端点が収束点かどうかで判断する。全体で一番近い収束点を見ると、
+            // 連結が密な図面では無関係な頂点を拾って判定が濁る
+            val edge = shape.edges().getOrNull(side) ?: return outerOrderByChild(shape, side)
+            val touching = hubs.filter { hub ->
+                listOf(edge.left, edge.right).any { p ->
+                    kotlin.math.abs(p.x - hub.x) < 1e-2 && kotlin.math.abs(p.y - hub.y) < 1e-2
+                }
+            }
+            if (touching.isEmpty()) return outerOrderByChild(shape, side)
+
+            val scored = listOf(OUTER_RIGHT, OUTER_LEFT).mapNotNull { h ->
+                val c = outerCenter(shape, num, side, h) ?: return@mapNotNull null
+                h to touching.minOf { hub ->
+                    val dx = c.x - hub.x
+                    val dy = c.y - hub.y
+                    dx * dx + dy * dy
+                }
+            }
+            if (scored.size < 2) return outerOrderByChild(shape, side)
+
+            // 順序を付けるだけでは足りない: 収束点側は衝突数を減らすので、遠い側が解に
+            // ならないと結局そちらが採用される。**収束点側は候補から外す** (最短辺と同じ扱い)。
+            // 解けずに残ることはあるが、読めない場所へ出すよりまし ── user の判断も
+            // 「むしろ動かさないほうが良い」側にある
+            return listOf(scored.maxByOrNull { it.second }!!.first)
+        }
+
         val originals = mutableMapOf<Pair<Int, Int>, Int>()
         val applied = mutableMapOf<Pair<Int, Int>, Int>()
 
@@ -284,7 +355,7 @@ object DimensionTextEscape {
                     sokutenLadder(current)
                 } else {
                     val slide = listOf(IN_RIGHT, IN_LEFT)
-                    val outer = if (allowFlagOut) outerOrder(shape, side) else emptyList()
+                    val outer = if (allowFlagOut) outerOrderFor(shape, num, side) else emptyList()
                     (slide + outer).filter { it != current }
                 }
 
