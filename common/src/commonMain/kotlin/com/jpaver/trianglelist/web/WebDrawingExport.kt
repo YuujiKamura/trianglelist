@@ -181,12 +181,8 @@ object WebDrawingExport {
                 TextSizePolicy.paperToModel(it, trilist.getPrintScale(1f) * 100f) /
                     TextSizePolicy.MM_PER_MODEL_UNIT
             } ?: trilist.getPrintTextScale(1f, "dxf")
-            // アプリ経路と同じく、前回の自動配置を巻き戻してから決め直す
-            com.jpaver.trianglelist.label.LabelArrangeReset.reset(mixedDxf)
-            val numberMoves = NumberCircleEscape.solve(mixedDxf, textSize = dimModelSize)
-            NumberCircleEscape.apply(mixedDxf, numberMoves)
-            val dimMoves = DimensionTextEscape.solve(mixedDxf, textSize = dimModelSize)
-            DimensionTextEscape.apply(mixedDxf, dimMoves)
+            // アプリ経路と同じ入口を通す (手順と設定判定は LabelArrange が持つ)
+            com.jpaver.trianglelist.label.LabelArrange.run(mixedDxf, dimModelSize)
         }
         if (dimTextPaperMm != null && dimTextPaperMm > 0f) {
             // 縮尺分母 = getPrintScale の倍率 × 100 (0.5 → 1/50、1.5 → 1/150。

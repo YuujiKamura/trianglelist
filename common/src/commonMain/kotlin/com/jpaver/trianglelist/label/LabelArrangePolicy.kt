@@ -53,3 +53,31 @@ object LabelArrangeReset {
         }
     }
 }
+
+
+/**
+ * 自動配置の入口 (2026-08-28)。**手順を 1 箇所に集約する**。
+ *
+ * これまでアプリ経路 (TriangleList.arrangeLabelsWithoutCollision) と書き出し経路
+ * (WebDrawingExport.buildDxfText) に同じ順番が別々に書かれていた。片方だけ直すと
+ * 「画面と図面で配置が違う」が起きる ── 2026-08-27 に user が「基本アプリと図面が
+ * 食い違うのはバグだと思っていい。期待値と違うわけだから」と言った類の事故が、
+ * 手順の写し間違いという形でいつでも入り得る状態だった。
+ *
+ * 順番: 巻き戻し → 番号 (自由に動ける方が先) → 寸法 (辺に紐づいた離散スロット)。
+ * 設定 (LabelArrangePolicy.enabled) の判定もここに置く ── 書き出し側が policy を見て
+ * いなかったので、アプリでトグルを切っても書き出しには効いていなかった。
+ */
+object LabelArrange {
+
+    fun run(
+        list: com.jpaver.trianglelist.editmodel.EditList<out com.jpaver.trianglelist.editmodel.CycleShape>,
+        textSize: Float,
+    ) {
+        if (textSize <= 0f) return
+        if (!LabelArrangePolicy.enabled) return
+        LabelArrangeReset.reset(list)
+        NumberCircleEscape.apply(list, NumberCircleEscape.solve(list, textSize))
+        DimensionTextEscape.apply(list, DimensionTextEscape.solve(list, textSize))
+    }
+}
