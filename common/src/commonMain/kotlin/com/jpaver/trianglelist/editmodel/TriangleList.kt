@@ -404,13 +404,9 @@ open class TriangleList : EditList<Triangle> {
 
     fun arrangeLabelsWithoutCollision(ts: Float) {
         if (ts <= 0f) return
-        // 前回の自動配置を巻き戻してから決め直す。これが無いと配置が前回結果に依存し、
-        // 保存 → 開き直しで別の解に落ちる (LabelArrangeReset 参照)
-        com.jpaver.trianglelist.label.LabelArrangeReset.reset(this)
-        val numberMoves = com.jpaver.trianglelist.label.NumberCircleEscape.solve(this, ts)
-        com.jpaver.trianglelist.label.NumberCircleEscape.apply(this, numberMoves)
-        val dimMoves = com.jpaver.trianglelist.label.DimensionTextEscape.solve(this, ts)
-        com.jpaver.trianglelist.label.DimensionTextEscape.apply(this, dimMoves)
+        // 手順は LabelArrange が持つ (巻き戻し → 番号 → 寸法)。書き出し経路と同じ入口を
+        // 通すことで「画面と図面で配置が違う」を構造で防ぐ
+        com.jpaver.trianglelist.label.LabelArrange.run(this, ts)
 
         // 判定は余白込みの少し大きい文字で行う (NumberCircleEscape.DEFAULT_CLEARANCE) ため、
         // その過程で dimHeight が判定用サイズのまま残る。画面は tri.dimHeight を使って
