@@ -116,12 +116,15 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
     // 切り替えられるようにしたほうが良い」)。自動配置の効き目は「同じ図面を ON/OFF で
     // 見比べる」ことでしか判断できないのに、毎回 gradle 経由で DXF を作り直していた。
     // samples/*.csv を一覧し、紙面 mm と自動配置 ON/OFF を掛けた組を即座に開く。
-    val sampleFiles = remember {
+    // 一覧は開くたびに読み直す。サンプルは検討しながら足していくものなので、
+    // 起動時に固定すると「今作った CSV が出てこない」で毎回再起動になる
+    fun scanSamples(): List<File> {
         val root = generateSequence(File(System.getProperty("user.dir")).absoluteFile) { it.parentFile }
             .firstOrNull { File(it, "settings.gradle.kts").exists() }
-        root?.let { File(it, "samples").listFiles { f -> f.extension.equals("csv", true) } }
+        return root?.let { File(it, "samples").listFiles { f -> f.extension.equals("csv", true) } }
             ?.sortedBy { it.name } ?: emptyList()
     }
+    var sampleFiles by remember { mutableStateOf(scanSamples()) }
     var sampleMenuOpen by remember { mutableStateOf(false) }
     var mmMenuOpen by remember { mutableStateOf(false) }
     var currentSample by remember { mutableStateOf<File?>(null) }
@@ -320,12 +323,14 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                 }
                             }
                             line == "samples" -> {
+                                sampleFiles = scanSamples()
                                 out.write((sampleFiles.joinToString(",") { it.nameWithoutExtension } + "\n").toByteArray())
                             }
                             line.startsWith("sample ") -> {
                                 // 「sample <名前> [紙面mm] [on|off]」── UI のドロップダウンと同じ経路を
                                 // CP から叩く。ON/OFF の見比べを人手のクリックなしで回せるようにする
                                 val a = line.removePrefix("sample ").trim().split(" ").filter { it.isNotEmpty() }
+                                sampleFiles = scanSamples()
                                 val target = sampleFiles.firstOrNull { it.nameWithoutExtension == a.getOrNull(0) }
                                 if (target == null) {
                                     out.write("error: unknown sample (see 'samples')\n".toByteArray())
@@ -720,7 +725,7 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box {
-                Button(onClick = { sampleMenuOpen = true }) {
+                Button(onClick = { sampleFiles = scanSamples(); sampleMenuOpen = true }) {
                     Text(currentSample?.nameWithoutExtension ?: "サンプル選択")
                 }
                 DropdownMenu(expanded = sampleMenuOpen, onDismissRequest = { sampleMenuOpen = false }) {

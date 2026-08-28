@@ -104,6 +104,30 @@ class PointNumberIncenterTest {
     }
 
     @Test
+    fun `3-3-1 の三角形では番号が短い辺 (1) の側へ寄る`() {
+        // user が仕様の確認に出した形 (2026-08-28「たとえば３，３，１の三角形の時は
+        // １の方にサークルが寄っていくっていう事だが」)。頂点 (3 と 3 が合う所) から
+        // 底辺 (1) の中点までを 1.0 とした位置で固定する。
+        //   単純重心 66.7% / 従来 (角度 + 35) 81.0% / 内心 85.7%
+        // 「短い辺の側へ寄る」だけなら従来も満たしていた ── 内心はその中で
+        // 最大クリアランスの点まで行く、が今回の差。
+        val t = triangleOf("1,3.0,3.0,1.0,-1,-1" + NL)
+        val apex = t.pointAB
+        val baseMid = t.pointBC.calcMidPoint(t.pointCA)
+        val height = sqrt(
+            ((baseMid.x - apex.x) * (baseMid.x - apex.x) +
+                (baseMid.y - apex.y) * (baseMid.y - apex.y)).toDouble()
+        )
+        val ratio = sqrt(
+            ((t.pointnumber.x - apex.x) * (t.pointnumber.x - apex.x) +
+                (t.pointnumber.y - apex.y) * (t.pointnumber.y - apex.y)).toDouble()
+        ) / height
+
+        assertEquals(0.857, ratio, 0.005, "3,3,1 で番号が 1 の側へ寄っていない (頂点から ${ratio * 100}%)")
+        assertTrue(ratio > 2.0 / 3.0, "単純重心より短辺側に無い")
+    }
+
+    @Test
     fun `細い三角形では従来の角度重み付けより外周側へ寄る`() {
         // 従来 (角度 + 35) でも広い角の方へは寄るが足りない。巻き込みで詰まる原因なので、
         // 「内心の方が頂点から遠い」ことを不等式で固定する (数値そのものは形状依存)

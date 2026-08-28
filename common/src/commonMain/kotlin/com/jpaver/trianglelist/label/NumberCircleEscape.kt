@@ -41,6 +41,109 @@ object NumberCircleEscape {
     /** 番号サークルの半径。ModelOverlapAnalyzer が判定に使う値と同一でなければ意味がない。 */
     fun circleRadius(textSize: Float): Double = (textSize * 0.85f).toDouble()
 
+    /**
+     * **サークルが収まる領域の中で、一番鋭い頂点から最も遠い点** (2026-08-28 user
+     * 「番号をもっと外周側に目一杯スライドさせれば 3m を旗揚げしなくても中に置く
+     * スペースがあったりする」「ビューワに出てるサンプルだと寄せてるように見えない」)。
+     *
+     * 内心 (= その三角形に描ける最大の円の中心) は「一番余裕のある点」だが、
+     * **サークルが行ける限界ではない**。3,3,1 の三角形なら内接円半径 0.42m に対し
+     * 番号サークルは 1:50 の JIS 3.5mm で半径 0.149m ── 差の分だけ短辺側へまだ寄れる
+     * (頂点から 85.7% → 94.9%)。寄り切って初めて細長い三角形の内側に寸法値を置く余地が
+     * 空き、旗揚げ (辺の延長線上へ飛ぶので細長い figure では引出線が図形の数倍になる) を
+     * 避けられる。
+     *
+     * 「鋭い頂点から遠ざかる」を基準にする理由: 細長い三角形の余地は必ず鋭角の反対側にある。
+     * 正三角形ではどの頂点も同じ鋭さなので退化し、内心 (= 重心) のまま動かない ──
+     * 普通の三角形を動かさずに済むのは、寄せ量を magic number ではなく
+     * 「サークルが収まるか」だけで決めているため。
+     *
+     * サークルが内接円より大きい (どこにも収まらない) 三角形は内心を返す。図形外へ出すかは
+     * 退避側の判断で、ここは「図形内での最善」だけを返す。
+     */
+    fun farthestFromSharpestVertex(shape: CycleShape, textSize: Float): PointXY {
+        val incenter = incenterOf(shape) ?: return shape.pointNumberAnchor()
+        val triangle = shape as? Triangle ?: return incenter
+        val radius = circleRadius(textSize)
+
+        // 一番鋭い頂点 = 対辺が最も短い頂点 (辺長だけで決まるので角度計算に依存しない)
+        val vertices = listOf(triangle.pointAB, triangle.pointBC, triangle.pointCA)
+        val opposite = listOf(triangle.lengthC, triangle.lengthA, triangle.lengthB)
+        val sharpest = vertices[opposite.indexOf(opposite.min())]
+
+        // 正三角形 (対辺が全部同じ) は「一番鋭い頂点」が決まらないので内心のまま
+        if (opposite.max() - opposite.min() <= 1e-6f) return incenter
+
+        // 内心から「鋭い頂点の反対向き」へ、サークルが収まる限り進む。
+        // 内心は最大クリアランス点なので、そこから離れるほど余裕は単調に減る ──
+        // 二分探索で「収まる最遠点」が一意に決まる (刻み幅の magic number が要らない)
+        val dx = incenter.x - sharpest.x
+        val dy = incenter.y - sharpest.y
+        val len = kotlin.math.sqrt(dx * dx + dy * dy)
+        if (len <= 0.0 || !len.isFinite()) return incenter
+        val ux = dx / len
+        val uy = dy / len
+
+        // 図形の外に出ると「辺までの距離」はまた増えていく (頂点を通り過ぎた先は遠い) ので、
+        // 内外判定を必ず併せる。これが無いと二分探索が図形外の遠い点を掴む
+        fun fits(t: Double): Boolean {
+            val p = PointXY(incenter.x + ux * t, incenter.y + uy * t)
+            return triangle.containsPoint(p) && clearanceOf(triangle, p) >= radius
+        }
+        if (!fits(0.0)) return incenter // 内心でも収まらない = どこにも入らない
+
+        // 上限は三角形の外接的な大きさ (必ず収まらなくなる距離) から始める
+        var lo = 0.0
+        var hi = (triangle.lengthA + triangle.lengthB + triangle.lengthC).toDouble()
+        repeat(40) {
+            val mid = (lo + hi) / 2.0
+            if (fits(mid)) lo = mid else hi = mid
+        }
+        return PointXY(incenter.x + ux * lo, incenter.y + uy * lo)
+    }
+
+    /**
+     * リスト全体の番号を「収まる範囲で鋭角の反対側へ寄り切った位置」に置く。
+     * 衝突の有無に関係なく走る ── 目的は番号の衝突を直すことではなく、
+     * **細長い三角形の内側に寸法値を置く余地を空ける**こと (寄せてから退避を掛ける)。
+     *
+     * user が動かした番号は触らない。isEscaped を立てるのは calcPoints の
+     * 「既定位置へ戻す」対象から外すため (isMovedByUser は立てない ── 動かしたのは自動処理)。
+     */
+    fun slideToOuter(list: EditList<out CycleShape>, textSize: Float) {
+        if (textSize <= 0f) return
+        list.forEachItem { shape ->
+            if (shape !is Triangle) return@forEachItem
+            if (shape.pointNumber.flag.isMovedByUser) return@forEachItem
+            val to = farthestFromSharpestVertex(shape, textSize)
+            if (!to.x.isFinite() || !to.y.isFinite()) return@forEachItem
+            shape.pointnumber = to
+            shape.pointNumber.flag.isEscaped = true
+        }
+    }
+
+    private fun incenterOf(shape: CycleShape): PointXY? =
+        (shape as? Triangle)?.let { com.jpaver.trianglelist.editmodel.PointNumberManager().incenter(it) }
+
+    /** 点から 3 辺までの最短距離 (= そこに置ける円の半径)。 */
+    private fun clearanceOf(triangle: Triangle, p: PointXY): Double {
+        val v = listOf(triangle.pointAB, triangle.pointBC, triangle.pointCA)
+        var min = Double.MAX_VALUE
+        for (i in 0..2) {
+            val a = v[i]
+            val b = v[(i + 1) % 3]
+            val dx = b.x - a.x
+            val dy = b.y - a.y
+            val len2 = dx * dx + dy * dy
+            val t = if (len2 == 0.0) 0.0 else (((p.x - a.x) * dx + (p.y - a.y) * dy) / len2).coerceIn(0.0, 1.0)
+            val cx = a.x + t * dx
+            val cy = a.y + t * dy
+            val d = kotlin.math.sqrt((p.x - cx) * (p.x - cx) + (p.y - cy) * (p.y - cy))
+            if (d < min) min = d
+        }
+        return min
+    }
+
     /** スライド距離の梯子 (円半径の倍数)。小さい方から試す = 動かす量は少ないほどよい。 */
     private val STEPS = listOf(0.5, 1.0, 1.5, 2.0, 2.5, 3.0)
 
