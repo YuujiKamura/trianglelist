@@ -1,3 +1,4 @@
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -9,6 +10,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.application
+import androidx.compose.ui.window.MenuBar
+import androidx.compose.ui.window.FrameWindowScope
 import androidx.compose.ui.window.rememberWindowState
 import com.jpaver.trianglelist.cadview.CADView
 import com.jpaver.trianglelist.cadview.CADViewAwt
@@ -107,7 +110,7 @@ private fun csvToDxfForViewer(
 }
 
 @Composable
-private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Boolean = false, useAwtViewer: Boolean = false, awtWindow: java.awt.Window? = null) {
+private fun androidx.compose.ui.window.FrameWindowScope.CADViewerApp(initialFilePath: String? = null, initialDebugMode: Boolean = false, useAwtViewer: Boolean = false, awtWindow: java.awt.Window? = null) {
     var parseResult by remember { mutableStateOf<DxfParseResult?>(null) }
     // エージェント作図の下敷き (ファイル由来の解析結果)。part/clear の度にこれへ重ねて parseResult を作る。
     var baseParseResult by remember { mutableStateOf<DxfParseResult?>(null) }
@@ -116,7 +119,10 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
     var agentRev by remember { mutableStateOf(0) }
     // 編集モード: エージェント図形を掴んで動かす / 文字を書き換える (2026-08-30 user 要望)
     var editMode by remember { mutableStateOf(true) }
-    var selectedIndex by remember { mutableStateOf<Int?>(null) }
+    var selectedIndices by remember { mutableStateOf<Set<Int>>(emptySet()) }
+    var rubberBand by remember { mutableStateOf(false) }
+    // 全体フィットの要求カウンタ (CADView の LaunchedEffect を発火させる)
+    var fitRequest by remember { mutableStateOf(0) }
     var editText by remember { mutableStateOf("") }
     var showDialog by remember { mutableStateOf(false) }
     var debugMode by remember { mutableStateOf(initialDebugMode) }
@@ -464,8 +470,8 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                 out.write(((if (sb.isEmpty()) "(none)" else sb.toString()) + "\n").toByteArray(Charsets.UTF_8))
                             }
                             line == "sel" -> {
-                                val s = selectedIndex
-                                out.write(((if (s == null) "none" else AgentEdit.describe(s)) + "\n").toByteArray(Charsets.UTF_8))
+                                out.write(((if (selectedIndices.isEmpty()) "none"
+                                            else AgentEdit.describeMany(selectedIndices)) + "\n").toByteArray(Charsets.UTF_8))
                             }
                             line.startsWith("pickat ") -> {
                                 val p = line.removePrefix("pickat ").trim().split(Regex("\\s+"))
@@ -476,9 +482,8 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                     out.write("error: usage: pickat x y tol\n".toByteArray(Charsets.UTF_8))
                                 } else {
                                     val idx = AgentEdit.hitTest(mx, my, tol)
-                                    selectedIndex = idx
+                                    selectedIndices = if (idx == null) emptySet() else setOf(idx)
                                     editText = if (idx != null) (AgentEdit.textOf(idx) ?: "") else ""
-                                    agentRev++
                                     out.write(((if (idx == null) "none" else "ok " + AgentEdit.describe(idx)) + "\n").toByteArray(Charsets.UTF_8))
                                 }
                             }
@@ -487,9 +492,8 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                 if (i == null || i < 0 || i >= AgentLayers.flat().size) {
                                     out.write("error: index out of range\n".toByteArray(Charsets.UTF_8))
                                 } else {
-                                    selectedIndex = i
+                                    selectedIndices = setOf(i)
                                     editText = AgentEdit.textOf(i) ?: ""
-                                    agentRev++
                                     out.write(("ok " + AgentEdit.describe(i) + "\n").toByteArray(Charsets.UTF_8))
                                 }
                             }
@@ -533,7 +537,7 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                 } else {
                                     val s = sp.getOrNull(1) ?: ""
                                     AgentEdit.setText(i, s)
-                                    if (selectedIndex == i) editText = s
+                                    if (selectedIndices == setOf(i)) editText = s
                                     parseResult = AgentLayers.merge(baseParseResult)
                                     agentRev++
                                     out.write(("ok settext " + i + "\n").toByteArray(Charsets.UTF_8))
@@ -545,7 +549,7 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                     out.write("error: index out of range\n".toByteArray(Charsets.UTF_8))
                                 } else {
                                     AgentEdit.deleteAt(i)
-                                    if (selectedIndex == i) { selectedIndex = null; editText = "" }
+                                    if (i in selectedIndices) { selectedIndices = emptySet(); editText = "" }
                                     parseResult = AgentLayers.merge(baseParseResult)
                                     agentRev++
                                     out.write(("ok delete " + i + "\n").toByteArray(Charsets.UTF_8))
@@ -578,6 +582,7 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                     initialOffset = null
                                     currentScale = null
                                     currentOffset = null
+                                    fitRequest++
                                 }
                                 out.write("ok fit\n".toByteArray(Charsets.UTF_8))
                             }
@@ -863,101 +868,79 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
         }
     }
 
+    // ===== メニューバー (2026-08-30) =====
+    // 画面上部に並べていたボタン群を、Windows 標準のメニューへ移した。
+    // 図面を出す道具なので、描画領域を潰さないことを優先する。
+    MenuBar {
+        Menu("ファイル(F)", mnemonic = 'F') {
+            Item("CADファイルを開く...", onClick = { showDialog = true })
+            Separator()
+            Menu("サンプルを開く") {
+                sampleFiles.forEach { f ->
+                    Item(f.nameWithoutExtension, onClick = { openSample(f, paperMm, arrangeOn) })
+                }
+            }
+            Separator()
+            Item("DXFに保存...", onClick = {
+                val dlg = FileDialog(null as Frame?, "DXFに保存", FileDialog.SAVE)
+                dlg.file = "kisei.dxf"
+                dlg.isVisible = true
+                val d = dlg.directory; val fn = dlg.file
+                val r = parseResult
+                if (d != null && fn != null && r != null) {
+                    File(d, fn).writeText(exportDxf(r), java.nio.charset.Charset.forName("MS932"))
+                }
+            })
+            Separator()
+            Item("終了(X)", onClick = { kotlin.system.exitProcess(0) })
+        }
+        Menu("編集(E)", mnemonic = 'E') {
+            CheckboxItem("編集モード", checked = editMode, onCheckedChange = {
+                editMode = it
+                if (!it) selectedIndices = emptySet()
+            })
+            CheckboxItem("範囲選択", checked = rubberBand, onCheckedChange = { rubberBand = it })
+            Separator()
+            Item("選択を解除", enabled = selectedIndices.isNotEmpty(), onClick = {
+                selectedIndices = emptySet(); editText = ""
+            })
+            Item("選択を削除", enabled = selectedIndices.isNotEmpty(), onClick = {
+                AgentEdit.deleteMany(selectedIndices)
+                selectedIndices = emptySet(); editText = ""
+                parseResult = AgentLayers.merge(baseParseResult)
+                agentRev++
+            })
+        }
+        Menu("表示(V)", mnemonic = 'V') {
+            Item("全体フィット", onClick = {
+                initialScale = null; initialOffset = null
+                currentScale = null; currentOffset = null
+                fitRequest++
+            })
+            Separator()
+            CheckboxItem("デバッグ表示", checked = debugMode, onCheckedChange = { debugMode = it })
+            CheckboxItem("自動更新", checked = hotReload, onCheckedChange = { hotReload = it })
+            CheckboxItem("判定枠", checked = showLabelBoxes, onCheckedChange = { showLabelBoxes = it })
+            CheckboxItem("自動配置", checked = arrangeOn, onCheckedChange = {
+                arrangeOn = it
+                currentSample?.let { s -> openSample(s, paperMm, arrangeOn) }
+            })
+            Separator()
+            Menu("紙面 文字高") {
+                listOf(2.5f, 3.0f, 3.5f, 4.0f, 5.0f).forEach { mm ->
+                    RadioButtonItem(mm.toString() + " mm", selected = paperMm == mm, onClick = {
+                        paperMm = mm
+                        currentSample?.let { s -> openSample(s, paperMm, arrangeOn) }
+                    })
+                }
+            }
+        }
+    }
+
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Button(onClick = { showDialog = true }) {
-                Text("CADファイルを開く")
-            }
-
-            Button(
-                onClick = { debugMode = !debugMode },
-                colors = if (debugMode) {
-                    ButtonDefaults.buttonColors(backgroundColor = androidx.compose.ui.graphics.Color.Red)
-                } else {
-                    ButtonDefaults.buttonColors()
-                }
-            ) {
-                Text(if (debugMode) "デバッグOFF" else "デバッグON")
-            }
-
-            Button(
-                onClick = { hotReload = !hotReload },
-                colors = if (hotReload) {
-                    ButtonDefaults.buttonColors(backgroundColor = androidx.compose.ui.graphics.Color.Green)
-                } else {
-                    ButtonDefaults.buttonColors()
-                }
-            ) {
-                Text(if (hotReload) "自動更新ON" else "自動更新OFF")
-            }
-        }
-
-        // サンプル切替バー: 展開図サンプル × 紙面 mm × 自動配置 ON/OFF
-        Row(
-            modifier = Modifier.padding(bottom = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box {
-                Button(onClick = { sampleFiles = scanSamples(); sampleMenuOpen = true }) {
-                    Text(currentSample?.nameWithoutExtension ?: "サンプル選択")
-                }
-                DropdownMenu(expanded = sampleMenuOpen, onDismissRequest = { sampleMenuOpen = false }) {
-                    if (sampleFiles.isEmpty()) {
-                        DropdownMenuItem(onClick = { sampleMenuOpen = false }) { Text("samples/ に CSV がありません") }
-                    }
-                    sampleFiles.forEach { f ->
-                        DropdownMenuItem(onClick = {
-                            sampleMenuOpen = false
-                            openSample(f, paperMm, arrangeOn)
-                        }) { Text(f.nameWithoutExtension) }
-                    }
-                }
-            }
-
-            Box {
-                Button(onClick = { mmMenuOpen = true }) { Text("紙面 ${paperMm}mm") }
-                DropdownMenu(expanded = mmMenuOpen, onDismissRequest = { mmMenuOpen = false }) {
-                    com.jpaver.trianglelist.scale.TextSizePolicy.PAPER_MM_LADDER.forEach { mm ->
-                        DropdownMenuItem(onClick = {
-                            mmMenuOpen = false
-                            paperMm = mm
-                            currentSample?.let { openSample(it, mm, arrangeOn) }
-                        }) {
-                            Text("${mm}mm" + if (mm == com.jpaver.trianglelist.scale.TextSizePolicy.DIMENSION_PAPER_MM) "  (JIS)" else "")
-                        }
-                    }
-                }
-            }
-
-            Button(
-                onClick = {
-                    arrangeOn = !arrangeOn
-                    currentSample?.let { openSample(it, paperMm, arrangeOn) }
-                },
-                colors = if (arrangeOn) {
-                    ButtonDefaults.buttonColors(backgroundColor = androidx.compose.ui.graphics.Color(0xFF43A047))
-                } else {
-                    ButtonDefaults.buttonColors()
-                }
-            ) {
-                Text(if (arrangeOn) "自動配置 ON" else "自動配置 OFF")
-            }
-
-            Button(onClick = { showLabelBoxes = !showLabelBoxes }) {
-                Text(if (showLabelBoxes) "判定枠 ON" else "判定枠 OFF")
-            }
-
-            Button(onClick = { editMode = !editMode; if (!editMode) selectedIndex = null }) {
-                Text(if (editMode) "編集 ON" else "編集 OFF")
-            }
-        }
 
         // 編集バー: 選択中のエージェント図形を表示し、文字の書き換えと削除を行う。
         // 移動は画面上のドラッグ (CADView 側)。
@@ -966,76 +949,33 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(bottom = 8.dp)
             ) {
-                val sel = selectedIndex
-                Text(
-                    text = if (sel == null) "未選択（図形をクリックで選択、ドラッグで移動）"
-                           else AgentEdit.describe(sel),
-                    style = MaterialTheme.typography.caption
-                )
-                Spacer(Modifier.width(12.dp))
-                if (sel != null) {
-                    OutlinedTextField(
-                        value = editText,
-                        onValueChange = { v ->
-                            editText = v
-                            AgentEdit.setText(sel, v)
-                            parseResult = AgentLayers.merge(baseParseResult)
-                            agentRev++
-                        },
-                        label = { Text("文字") },
-                        singleLine = true,
-                        modifier = Modifier.width(380.dp)
-                    )
-                    Spacer(Modifier.width(8.dp))
+                val sel = selectedIndices.singleOrNull()
+                if (selectedIndices.isNotEmpty()) {
+                    if (sel != null && AgentEdit.textOf(sel) != null) {
+                        OutlinedTextField(
+                            value = editText,
+                            onValueChange = { v ->
+                                editText = v
+                                AgentEdit.setText(sel, v)
+                                parseResult = AgentLayers.merge(baseParseResult)
+                                agentRev++
+                            },
+                            label = { Text("文字") },
+                            singleLine = true,
+                            modifier = Modifier.width(360.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                    }
                     Button(onClick = {
-                        AgentEdit.deleteAt(sel)
-                        selectedIndex = null
+                        AgentEdit.deleteMany(selectedIndices)
+                        selectedIndices = emptySet()
                         editText = ""
                         parseResult = AgentLayers.merge(baseParseResult)
                         agentRev++
                     }) { Text("削除") }
                     Spacer(Modifier.width(8.dp))
-                    Button(onClick = { selectedIndex = null; editText = "" }) { Text("選択解除") }
+                    Button(onClick = { selectedIndices = emptySet(); editText = "" }) { Text("選択解除") }
                 }
-            }
-        }
-
-        currentFile?.let { file ->
-            Text(
-                text = file.name,
-                modifier = Modifier.padding(bottom = 8.dp),
-                style = MaterialTheme.typography.caption
-            )
-        }
-
-        // Inspector: DXF の TEXT 群を paper-mm に逆算して JIS との乖離を表示。
-        // drawingScale は DxfParser が TEXT 内の「1/N (A3)」表記から確実に抽出する。
-        // ファイル名 hint なし、DIMSCALE 等の壊れた variable にも依存しない。
-        parseResult?.let { result ->
-            if (result.texts.isNotEmpty()) {
-                val heights = result.texts.map { it.height }
-                val avgModelMm = heights.average().toFloat()
-                val minModelMm = heights.min().toFloat()
-                val maxModelMm = heights.max().toFloat()
-                val drawingScaleDenominator = result.drawingScaleDenominator
-                val scaleLabel = drawingScaleDenominator?.let { "1/${it.toInt()}" } ?: "?"
-                val avgPaperMm = drawingScaleDenominator?.let {
-                    com.jpaver.trianglelist.scale.TextSizePolicy.modelToPaper(avgModelMm, it)
-                }
-                val jisDimensionMm = com.jpaver.trianglelist.scale.TextSizePolicy.DIMENSION_PAPER_MM
-                val paperAvgLabel = avgPaperMm?.let { "${"%.4f".format(it)} mm" } ?: "縮尺不明"
-                val gapLabel = if (avgPaperMm != null && avgPaperMm > 0f) {
-                    "${"%.1f".format(jisDimensionMm / avgPaperMm)} 倍小"
-                } else "─"
-                Text(
-                    text = "[Inspector] DXF TEXT 個数=${result.texts.size}, " +
-                        "model height min=${"%.2f".format(minModelMm)} / avg=${"%.2f".format(avgModelMm)} / max=${"%.2f".format(maxModelMm)}  |  " +
-                        "drawingScale=$scaleLabel → paper avg=$paperAvgLabel  |  " +
-                        "JIS 寸法値想定 ${jisDimensionMm} mm との乖離 $gapLabel",
-                    modifier = Modifier.padding(bottom = 4.dp),
-                    style = MaterialTheme.typography.caption,
-                    color = androidx.compose.ui.graphics.Color(0xFFFF6600)
-                )
             }
         }
 
@@ -1078,11 +1018,13 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
             }
         }
 
+        // 図面領域は残り全部を取る (weight)。こうしないと下のステータスバーが画面外へ出る。
+        Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
         parseResult?.let { result ->
             // ファイル名を key にして CADView を再生成。
             // CADView 内部の isInitialized が remember に抱えられているため、
             // 別ファイルを CP 越しに open しても fit が再計算されないバグへの対処。
-            androidx.compose.runtime.key(currentFile?.absolutePath, agentRev) {
+            androidx.compose.runtime.key(currentFile?.absolutePath) {
                 if (useAwtViewer) {
                     CADViewAwt(
                         parseResult = result,
@@ -1100,10 +1042,17 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                             currentOffset = offset
                         },
                         editable = editMode,
-                        selectedIndex = selectedIndex,
+                        selectedIndices = selectedIndices,
+                        rubberBand = rubberBand,
+                        rev = agentRev,
+                        fitRequest = fitRequest,
                         onPick = { idx ->
-                            selectedIndex = idx
+                            selectedIndices = if (idx == null) emptySet() else setOf(idx)
                             editText = if (idx != null) (AgentEdit.textOf(idx) ?: "") else ""
+                        },
+                        onRectSelect = { x1, y1, x2, y2 ->
+                            selectedIndices = AgentEdit.hitTestRect(x1, y1, x2, y2).toSet()
+                            editText = ""
                         },
                         onEdited = {
                             parseResult = AgentLayers.merge(baseParseResult)
@@ -1112,6 +1061,47 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                     )
                 }
             }
+        }
+
+        }
+
+        // ===== ステータスバー (2026-08-30) =====
+        // ファイル名・図形数・選択状態・視点・Inspector を下部1本に集約する。
+        Row(
+            modifier = Modifier.fillMaxWidth()
+                .background(androidx.compose.ui.graphics.Color(0xFFEEEEEE))
+                .padding(horizontal = 8.dp, vertical = 3.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            val r = parseResult
+            val ents = if (r == null) 0
+                       else r.lines.size + r.circles.size + r.arcs.size + r.lwPolylines.size + r.texts.size
+            val selLabel = if (!editMode) "編集OFF"
+                           else if (selectedIndices.isEmpty())
+                               (if (rubberBand) "範囲選択: ドラッグで矩形" else "未選択")
+                           else AgentEdit.describeMany(selectedIndices)
+            val viewLabel = currentScale?.let {
+                "×" + "%.3f".format(it)
+            } ?: "─"
+            // Inspector: TEXT の高さを紙面mmへ逆算して JIS 3.5mm との乖離を出す
+            val insp = if (r == null || r.texts.isEmpty()) "TEXT なし" else {
+                val hs = r.texts.map { it.height }
+                val avg = hs.average().toFloat()
+                val ds = r.drawingScaleDenominator
+                val paper = ds?.let {
+                    com.jpaver.trianglelist.scale.TextSizePolicy.modelToPaper(avg, it)
+                }
+                "TEXT " + r.texts.size + " 件 / 高さ " +
+                    "%.2f".format(hs.min().toFloat()) + "〜" + "%.2f".format(hs.max().toFloat()) +
+                    " (平均 " + "%.2f".format(avg) + ") / 縮尺 " +
+                    (ds?.let { "1:" + it.toInt() } ?: "不明") +
+                    (paper?.let { " → 紙面 " + "%.2f".format(it) + "mm" } ?: "")
+            }
+            Text(
+                text = (currentFile?.name ?: "(ファイルなし)") + "  │  図形 " + ents + " 個  │  " +
+                    selLabel + "  │  倍率 " + viewLabel + "  │  " + insp,
+                style = MaterialTheme.typography.caption
+            )
         }
     }
 }
