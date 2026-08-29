@@ -4,6 +4,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -35,7 +36,14 @@ fun CADView(
     showLabelBoxes: Boolean = false,
     initialScale: Float? = null,
     initialOffset: Offset? = null,
-    onViewStateChanged: ((Float, Offset) -> Unit)? = null
+    onViewStateChanged: ((Float, Offset) -> Unit)? = null,
+    // --- 編集モード (2026-08-30) ---
+    // エージェントが置いた図形だけを掴んで動かす / 文字を書き換える。
+    // ファイル由来の図形は触らない = 「誰が置いたか」が曖昧にならない。
+    editable: Boolean = false,
+    selectedIndex: Int? = null,
+    onPick: ((Int?) -> Unit)? = null,
+    onEdited: (() -> Unit)? = null
 ) {
     var scale by remember { mutableStateOf(initialScale ?: 1f) }
     var offset by remember { mutableStateOf(initialOffset ?: Offset.Zero) }
@@ -185,10 +193,32 @@ fun CADView(
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(Unit) {
+                .pointerInput(editable, selectedIndex) {
                     detectDragGestures { change, dragAmount ->
                         change.consume()
-                        offset += dragAmount
+                        val sel = selectedIndex
+                        if (editable && sel != null) {
+                            // 画面の移動量をモデル座標へ。Y は反転している。
+                            com.jpaver.trianglelist.agent.AgentEdit.move(
+                                sel,
+                                (dragAmount.x / scale).toDouble(),
+                                (-dragAmount.y / scale).toDouble()
+                            )
+                            onEdited?.invoke()
+                        } else {
+                            offset += dragAmount
+                        }
+                    }
+                }
+                .pointerInput(editable) {
+                    if (editable) {
+                        detectTapGestures { pos ->
+                            // 画面 -> モデル (Y 反転)
+                            val mx = ((pos.x - offset.x) / scale).toDouble()
+                            val my = (-(pos.y - offset.y) / scale).toDouble()
+                            val tol = (12f / scale).toDouble()
+                            onPick?.invoke(com.jpaver.trianglelist.agent.AgentEdit.hitTest(mx, my, tol))
+                        }
                     }
                 }
                 .onPointerEvent(PointerEventType.Scroll) {
@@ -247,6 +277,20 @@ fun CADView(
             while (gy <= worldMaxY) {
                 drawLine(gridColor, Offset(worldMinX, gy), Offset(worldMaxX, gy), 1f / scale)
                 gy += gridSpacing
+            }
+
+            // 選択中の図形にマーカーを出す (モデル座標系。canvas は Y 反転で描いている)
+            if (editable && selectedIndex != null) {
+                val anc = com.jpaver.trianglelist.agent.AgentEdit.anchorOf(selectedIndex)
+                if (anc != null) {
+                    val r = 8f / scale
+                    drawCircle(
+                        color = Color(0xFF1565C0),
+                        radius = r,
+                        center = Offset(anc.first.toFloat(), (-anc.second).toFloat()),
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2f / scale)
+                    )
+                }
             }
 
             val crossSize = 100f / scale

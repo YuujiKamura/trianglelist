@@ -14,6 +14,11 @@ import com.jpaver.trianglelist.cadview.CADView
 import com.jpaver.trianglelist.cadview.CADViewAwt
 import com.jpaver.trianglelist.cadview.ViewStateManager
 import com.jpaver.trianglelist.dxf.DxfParseResult
+import com.jpaver.trianglelist.agent.AgentLayers
+import com.jpaver.trianglelist.agent.AgentEdit
+import com.jpaver.trianglelist.agent.Parts
+import com.jpaver.trianglelist.agent.parseArgs
+import com.jpaver.trianglelist.agent.exportDxf
 import com.jpaver.trianglelist.dxf.DxfParser
 import com.jpaver.trianglelist.dxf.SfcParser
 import com.jpaver.trianglelist.dxf.CrosswalkGenerator
@@ -104,6 +109,15 @@ private fun csvToDxfForViewer(
 @Composable
 private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Boolean = false, useAwtViewer: Boolean = false, awtWindow: java.awt.Window? = null) {
     var parseResult by remember { mutableStateOf<DxfParseResult?>(null) }
+    // エージェント作図の下敷き (ファイル由来の解析結果)。part/clear の度にこれへ重ねて parseResult を作る。
+    var baseParseResult by remember { mutableStateOf<DxfParseResult?>(null) }
+    // エージェント作図のリビジョン。CADView は key() で再生成されないと
+    // 内部の isInitialized を抱えたままなので、part/clear の度にこれを進めて key に混ぜる。
+    var agentRev by remember { mutableStateOf(0) }
+    // 編集モード: エージェント図形を掴んで動かす / 文字を書き換える (2026-08-30 user 要望)
+    var editMode by remember { mutableStateOf(true) }
+    var selectedIndex by remember { mutableStateOf<Int?>(null) }
+    var editText by remember { mutableStateOf("") }
     var showDialog by remember { mutableStateOf(false) }
     var debugMode by remember { mutableStateOf(initialDebugMode) }
     var hotReload by remember { mutableStateOf(true) }
@@ -200,6 +214,7 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
         val dxf = File(dxfPath)
         loadCadFile(dxf)?.let { result ->
             parseResult = result
+            baseParseResult = result
             currentFile = dxf
             currentSample = csv
             lastModified = dxf.lastModified()
@@ -225,6 +240,7 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
 
                 loadCadFile(file)?.let { result ->
                     parseResult = result
+                    baseParseResult = result
                     currentFile = file
                     lastModified = file.lastModified()
                     // 最後に開いたファイルを保存
@@ -247,6 +263,7 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                             println("File changed, reloading...")
                             loadCadFile(file)?.let { result ->
                                 parseResult = result
+                                baseParseResult = result
                                 lastModified = newModified
                             }
                         }
@@ -304,6 +321,7 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                     run {
                                         loadCadFile(target)?.let { result ->
                                             parseResult = result
+                                            baseParseResult = result
                                             currentFile = target
                                             lastModified = target.lastModified()
                                             // 別ファイルを開く ── 保存された view state を復元、
@@ -317,14 +335,14 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                             viewStateManager.saveLastOpenedFile(target.absolutePath)
                                         }
                                     }
-                                    out.write("ok\n".toByteArray())
+                                    out.write("ok\n".toByteArray(Charsets.UTF_8))
                                 } else {
-                                    out.write("error: file not found\n".toByteArray())
+                                    out.write("error: file not found\n".toByteArray(Charsets.UTF_8))
                                 }
                             }
                             line == "samples" -> {
                                 sampleFiles = scanSamples()
-                                out.write((sampleFiles.joinToString(",") { it.nameWithoutExtension } + "\n").toByteArray())
+                                out.write((sampleFiles.joinToString(",") { it.nameWithoutExtension } + "\n").toByteArray(Charsets.UTF_8))
                             }
                             line.startsWith("sample ") -> {
                                 // 「sample <名前> [紙面mm] [on|off]」── UI のドロップダウンと同じ経路を
@@ -333,7 +351,7 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                 sampleFiles = scanSamples()
                                 val target = sampleFiles.firstOrNull { it.nameWithoutExtension == a.getOrNull(0) }
                                 if (target == null) {
-                                    out.write("error: unknown sample (see 'samples')\n".toByteArray())
+                                    out.write("error: unknown sample (see 'samples')\n".toByteArray(Charsets.UTF_8))
                                 } else {
                                     val mm = a.getOrNull(1)?.toFloatOrNull() ?: paperMm
                                     val esc = when (a.getOrNull(2)?.lowercase()) {
@@ -344,7 +362,7 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                     paperMm = mm
                                     arrangeOn = esc
                                     openSample(target, mm, esc)
-                                    out.write("ok sample=${target.nameWithoutExtension} mm=$mm arrange=${if (esc) "on" else "off"}\n".toByteArray())
+                                    out.write("ok sample=${target.nameWithoutExtension} mm=$mm arrange=${if (esc) "on" else "off"}\n".toByteArray(Charsets.UTF_8))
                                 }
                             }
                             line.startsWith("zoom ") -> {
@@ -357,9 +375,9 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                         initialScale = ns
                                         currentScale = ns
                                     }
-                                    out.write("ok scale=${currentScale}\n".toByteArray())
+                                    out.write("ok scale=${currentScale}\n".toByteArray(Charsets.UTF_8))
                                 } else {
-                                    out.write("error: invalid factor\n".toByteArray())
+                                    out.write("error: invalid factor\n".toByteArray(Charsets.UTF_8))
                                 }
                             }
                             line.startsWith("pan ") -> {
@@ -372,9 +390,9 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                         initialOffset = no
                                         currentOffset = no
                                     }
-                                    out.write("ok offset=${currentOffset}\n".toByteArray())
+                                    out.write("ok offset=${currentOffset}\n".toByteArray(Charsets.UTF_8))
                                 } else {
-                                    out.write("error: pan needs <dx> <dy>\n".toByteArray())
+                                    out.write("error: pan needs <dx> <dy>\n".toByteArray(Charsets.UTF_8))
                                 }
                             }
                             line.startsWith("view ") -> {
@@ -387,9 +405,170 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                         currentScale = parts[0]
                                         currentOffset = Offset(parts[1], parts[2])
                                     }
-                                    out.write("ok scale=${parts[0]} offset=(${parts[1]},${parts[2]})\n".toByteArray())
+                                    out.write("ok scale=${parts[0]} offset=(${parts[1]},${parts[2]})\n".toByteArray(Charsets.UTF_8))
                                 } else {
-                                    out.write("error: view needs <scale> <ox> <oy>\n".toByteArray())
+                                    out.write("error: view needs <scale> <ox> <oy>\n".toByteArray(Charsets.UTF_8))
+                                }
+                            }
+                            // ===== エージェント作図機構 (2026-08-29) =====
+                            // 1 エージェント = 1 レイヤ。書き込みは自分のレイヤに限定され、
+                            // peer 同士が互いの成果物を壊せない (AgentParts.kt 参照)。
+                            line.startsWith("part ") -> {
+                                val rest = line.removePrefix("part ").trim()
+                                val sp = rest.split(" ", limit = 3)
+                                if (sp.size < 2) {
+                                    out.write("error: usage: part <layer> <kind> k=v...\n".toByteArray(Charsets.UTF_8))
+                                } else {
+                                    val layer = sp[0]
+                                    val kind = sp[1]
+                                    val args = parseArgs(if (sp.size > 2) sp[2] else "")
+                                    val agent = args["agent"] ?: "-"
+                                    if (!AgentLayers.claim(layer, agent)) {
+                                        out.write("error: layer is owned by another agent\n".toByteArray(Charsets.UTF_8))
+                                    } else {
+                                        val ents = Parts.build(kind, args, layer)
+                                        if (ents == null) {
+                                            out.write(("error: unknown kind " + kind + " of " + Parts.kinds.joinToString(",") + "\n").toByteArray(Charsets.UTF_8))
+                                        } else {
+                                            AgentLayers.add(layer, ents)
+                                            parseResult = AgentLayers.merge(baseParseResult)
+                                            agentRev++
+                                            out.write(("ok part " + kind + " n=" + ents.size + " layer=" + layer + "\n").toByteArray(Charsets.UTF_8))
+                                        }
+                                    }
+                                }
+                            }
+                            line.startsWith("clear") -> {
+                                val lay = line.removePrefix("clear").trim()
+                                if (lay.isEmpty() || lay == "*") AgentLayers.clearAll() else AgentLayers.clear(lay)
+                                parseResult = AgentLayers.merge(baseParseResult)
+                                            agentRev++
+                                out.write(("ok clear " + (if (lay.isEmpty()) "*" else lay) + "\n").toByteArray(Charsets.UTF_8))
+                            }
+                            // ===== 編集操作 (CP 経由) 2026-08-30 =====
+                            // 画面のマウス操作と同じことを CP から行う。
+                            // エージェントが「自分が置いた図形を後から直す」経路になる。
+                            line == "list" || line.startsWith("list ") -> {
+                                val filt = line.removePrefix("list").trim()
+                                val sb = StringBuilder()
+                                AgentLayers.flat().forEachIndexed { i, pair ->
+                                    if (filt.isEmpty() || pair.first == filt) {
+                                        val a = AgentEdit.anchorOf(i)
+                                        val tx = AgentEdit.textOf(i)
+                                        sb.append(AgentEdit.describe(i))
+                                        if (a != null) sb.append(" @").append(Math.round(a.first)).append(",").append(Math.round(a.second))
+                                        if (tx != null) sb.append(" t=").append(tx)
+                                        sb.append(" | ")
+                                    }
+                                }
+                                out.write(((if (sb.isEmpty()) "(none)" else sb.toString()) + "\n").toByteArray(Charsets.UTF_8))
+                            }
+                            line == "sel" -> {
+                                val s = selectedIndex
+                                out.write(((if (s == null) "none" else AgentEdit.describe(s)) + "\n").toByteArray(Charsets.UTF_8))
+                            }
+                            line.startsWith("pickat ") -> {
+                                val p = line.removePrefix("pickat ").trim().split(Regex("\\s+"))
+                                val mx = p.getOrNull(0)?.toDoubleOrNull()
+                                val my = p.getOrNull(1)?.toDoubleOrNull()
+                                val tol = p.getOrNull(2)?.toDoubleOrNull() ?: 5.0
+                                if (mx == null || my == null) {
+                                    out.write("error: usage: pickat x y tol\n".toByteArray(Charsets.UTF_8))
+                                } else {
+                                    val idx = AgentEdit.hitTest(mx, my, tol)
+                                    selectedIndex = idx
+                                    editText = if (idx != null) (AgentEdit.textOf(idx) ?: "") else ""
+                                    agentRev++
+                                    out.write(((if (idx == null) "none" else "ok " + AgentEdit.describe(idx)) + "\n").toByteArray(Charsets.UTF_8))
+                                }
+                            }
+                            line.startsWith("pick ") -> {
+                                val i = line.removePrefix("pick ").trim().toIntOrNull()
+                                if (i == null || i < 0 || i >= AgentLayers.flat().size) {
+                                    out.write("error: index out of range\n".toByteArray(Charsets.UTF_8))
+                                } else {
+                                    selectedIndex = i
+                                    editText = AgentEdit.textOf(i) ?: ""
+                                    agentRev++
+                                    out.write(("ok " + AgentEdit.describe(i) + "\n").toByteArray(Charsets.UTF_8))
+                                }
+                            }
+                            line.startsWith("move ") -> {
+                                val p = line.removePrefix("move ").trim().split(Regex("\\s+"))
+                                val i = p.getOrNull(0)?.toIntOrNull()
+                                val dx = p.getOrNull(1)?.toDoubleOrNull()
+                                val dy = p.getOrNull(2)?.toDoubleOrNull()
+                                if (i == null || dx == null || dy == null || i < 0 || i >= AgentLayers.flat().size) {
+                                    out.write("error: usage: move index dx dy\n".toByteArray(Charsets.UTF_8))
+                                } else {
+                                    AgentEdit.move(i, dx, dy)
+                                    parseResult = AgentLayers.merge(baseParseResult)
+                                    agentRev++
+                                    out.write(("ok move " + i + "\n").toByteArray(Charsets.UTF_8))
+                                }
+                            }
+                            line.startsWith("moveto ") -> {
+                                val p = line.removePrefix("moveto ").trim().split(Regex("\\s+"))
+                                val i = p.getOrNull(0)?.toIntOrNull()
+                                val x = p.getOrNull(1)?.toDoubleOrNull()
+                                val y = p.getOrNull(2)?.toDoubleOrNull()
+                                val anc = if (i == null) null else AgentEdit.anchorOf(i)
+                                if (i == null || x == null || y == null || anc == null) {
+                                    out.write("error: usage: moveto index x y\n".toByteArray(Charsets.UTF_8))
+                                } else {
+                                    AgentEdit.move(i, x - anc.first, y - anc.second)
+                                    parseResult = AgentLayers.merge(baseParseResult)
+                                    agentRev++
+                                    out.write(("ok moveto " + i + "\n").toByteArray(Charsets.UTF_8))
+                                }
+                            }
+                            line.startsWith("settext ") -> {
+                                val rest = line.removePrefix("settext ").trim()
+                                val sp = rest.split(" ", limit = 2)
+                                val i = sp.getOrNull(0)?.toIntOrNull()
+                                if (i == null || i < 0 || i >= AgentLayers.flat().size) {
+                                    out.write("error: usage: settext index text\n".toByteArray(Charsets.UTF_8))
+                                } else if (AgentEdit.textOf(i) == null) {
+                                    out.write("error: not a TEXT entity\n".toByteArray(Charsets.UTF_8))
+                                } else {
+                                    val s = sp.getOrNull(1) ?: ""
+                                    AgentEdit.setText(i, s)
+                                    if (selectedIndex == i) editText = s
+                                    parseResult = AgentLayers.merge(baseParseResult)
+                                    agentRev++
+                                    out.write(("ok settext " + i + "\n").toByteArray(Charsets.UTF_8))
+                                }
+                            }
+                            line.startsWith("delete ") -> {
+                                val i = line.removePrefix("delete ").trim().toIntOrNull()
+                                if (i == null || i < 0 || i >= AgentLayers.flat().size) {
+                                    out.write("error: index out of range\n".toByteArray(Charsets.UTF_8))
+                                } else {
+                                    AgentEdit.deleteAt(i)
+                                    if (selectedIndex == i) { selectedIndex = null; editText = "" }
+                                    parseResult = AgentLayers.merge(baseParseResult)
+                                    agentRev++
+                                    out.write(("ok delete " + i + "\n").toByteArray(Charsets.UTF_8))
+                                }
+                            }
+                            line == "layers" -> {
+                                out.write((AgentLayers.listing() + "\n").toByteArray(Charsets.UTF_8))
+                            }
+                            line == "kinds" -> {
+                                out.write((Parts.kinds.joinToString(",") + "\n").toByteArray(Charsets.UTF_8))
+                            }
+                            line.startsWith("save ") -> {
+                                val path = line.removePrefix("save ").trim()
+                                val r = parseResult
+                                if (r == null) {
+                                    out.write("error: nothing to save\n".toByteArray(Charsets.UTF_8))
+                                } else {
+                                    try {
+                                        java.io.File(path).writeText(exportDxf(r), java.nio.charset.Charset.forName("MS932"))
+                                        out.write(("ok save " + path + "\n").toByteArray(Charsets.UTF_8))
+                                    } catch (e: Exception) {
+                                        out.write(("error: " + e.message + "\n").toByteArray(Charsets.UTF_8))
+                                    }
                                 }
                             }
                             line == "fit" -> {
@@ -400,10 +579,10 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                     currentScale = null
                                     currentOffset = null
                                 }
-                                out.write("ok fit\n".toByteArray())
+                                out.write("ok fit\n".toByteArray(Charsets.UTF_8))
                             }
                             line == "state" -> {
-                                out.write("scale=${currentScale ?: initialScale} offset=${currentOffset ?: initialOffset}\n".toByteArray())
+                                out.write("scale=${currentScale ?: initialScale} offset=${currentOffset ?: initialOffset}\n".toByteArray(Charsets.UTF_8))
                             }
                             line == "inspector" -> {
                                 // 画面に頼らず Inspector 数値を CP 越しに text で取る。
@@ -411,7 +590,7 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                 // viewer 内部状態から数値で観測できる経路。
                                 val r = parseResult
                                 if (r == null || r.texts.isEmpty()) {
-                                    out.write("error: no parseResult or no texts\n".toByteArray())
+                                    out.write("error: no parseResult or no texts\n".toByteArray(Charsets.UTF_8))
                                 } else {
                                     val heights = r.texts.map { it.height }
                                     val minH = heights.min().toFloat()
@@ -442,9 +621,9 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                 val factor = if (argStr.isEmpty()) 1.0f else argStr.toFloatOrNull()
                                 val r = parseResult
                                 if (factor == null) {
-                                    out.write("error: invalid factor\n".toByteArray())
+                                    out.write("error: invalid factor\n".toByteArray(Charsets.UTF_8))
                                 } else if (r == null || r.texts.isEmpty()) {
-                                    out.write("error: no parseResult or no texts\n".toByteArray())
+                                    out.write("error: no parseResult or no texts\n".toByteArray(Charsets.UTF_8))
                                 } else {
                                     // rev5 確定: 描画と同一の実測メトリクス (MS Gothic + cap 補正) で判定
                                     val report = com.jpaver.trianglelist.label.DxfOverlapAnalyzer.analyze(r, factor, cpLabelMetrics)
@@ -465,7 +644,7 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                             line == "boxes on" || line == "boxes off" -> {
                                 // LabelBox overlay の表示トグル (rev2)。判定が見ている box を目で確認する
                                 showLabelBoxes = line.endsWith("on")
-                                out.write("ok boxes=${if (showLabelBoxes) "on" else "off"}\n".toByteArray())
+                                out.write("ok boxes=${if (showLabelBoxes) "on" else "off"}\n".toByteArray(Charsets.UTF_8))
                             }
                             line.startsWith("capture ") -> {
                                 // viewer 窓を AlwaysOnTop で一瞬前面に出して Robot で撮る。
@@ -474,7 +653,7 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                 val path = line.removePrefix("capture ").trim()
                                 val win = awtWindow
                                 if (win == null) {
-                                    out.write("error: no awt window\n".toByteArray())
+                                    out.write("error: no awt window\n".toByteArray(Charsets.UTF_8))
                                 } else {
                                     try {
                                         javax.swing.SwingUtilities.invokeAndWait {
@@ -491,10 +670,10 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                         val outFile = java.io.File(path)
                                         outFile.parentFile?.mkdirs()
                                         javax.imageio.ImageIO.write(img, "png", outFile)
-                                        out.write("ok ${outFile.absolutePath}\n".toByteArray())
+                                        out.write("ok ${outFile.absolutePath}\n".toByteArray(Charsets.UTF_8))
                                         println("CP capture: ${outFile.absolutePath} (${bounds.width}x${bounds.height} at ${bounds.x},${bounds.y})")
                                     } catch (e: Exception) {
-                                        out.write("error: ${e.message}\n".toByteArray())
+                                        out.write("error: ${e.message}\n".toByteArray(Charsets.UTF_8))
                                         println("CP capture error: ${e.message}")
                                     }
                                 }
@@ -506,11 +685,11 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                 val filter = line.removePrefix("dumptexts").trim()
                                 val r = parseResult
                                 if (r == null) {
-                                    out.write("error: no parseResult\n".toByteArray())
+                                    out.write("error: no parseResult\n".toByteArray(Charsets.UTF_8))
                                 } else {
                                     val matched = if (filter.isEmpty()) r.texts else r.texts.filter { it.text.contains(filter) }
                                     if (matched.isEmpty()) {
-                                        out.write("error: no texts matched '$filter'\n".toByteArray())
+                                        out.write("error: no texts matched '$filter'\n".toByteArray(Charsets.UTF_8))
                                     } else {
                                         val lines = matched.joinToString("\n") { t ->
                                             "text=\"${t.text}\" x=%.4f y=%.4f height=%.4f alignH=${t.alignH} alignV=${t.alignV}".format(t.x, t.y, t.height)
@@ -532,9 +711,9 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                 val h = args.getOrNull(2)?.toIntOrNull() ?: 1200
                                 val r = parseResult
                                 if (path == null) {
-                                    out.write("error: renderbuffer needs <path> [w] [h]\n".toByteArray())
+                                    out.write("error: renderbuffer needs <path> [w] [h]\n".toByteArray(Charsets.UTF_8))
                                 } else if (r == null) {
-                                    out.write("error: no parseResult (open a file first)\n".toByteArray())
+                                    out.write("error: no parseResult (open a file first)\n".toByteArray(Charsets.UTF_8))
                                 } else {
                                     try {
                                         // AWT の TextLayout は空文字で例外を投げる (図枠の空欄セル由来)。
@@ -549,10 +728,10 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                         val outFile = java.io.File(path)
                                         outFile.parentFile?.mkdirs()
                                         javax.imageio.ImageIO.write(img, "png", outFile)
-                                        out.write("ok ${outFile.absolutePath} ${w}x${h}\n".toByteArray())
+                                        out.write("ok ${outFile.absolutePath} ${w}x${h}\n".toByteArray(Charsets.UTF_8))
                                         println("CP renderbuffer: ${outFile.absolutePath} (${w}x${h}, no screenshot)")
                                     } catch (e: Exception) {
-                                        out.write("error: ${e.message}\n".toByteArray())
+                                        out.write("error: ${e.message}\n".toByteArray(Charsets.UTF_8))
                                         println("CP renderbuffer error: ${e.message}")
                                     }
                                 }
@@ -570,26 +749,26 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                                 val arg = line.removePrefix("sendto").trim()
                                 val file = currentFile
                                 if (file == null || !file.exists()) {
-                                    out.write("error: no file open (open a file first)\n".toByteArray())
+                                    out.write("error: no file open (open a file first)\n".toByteArray(Charsets.UTF_8))
                                 } else {
                                     try {
                                         if (arg.isEmpty()) {
                                             java.awt.Desktop.getDesktop().open(file)
-                                            out.write("ok opened via OS default association: ${file.absolutePath}\n".toByteArray())
+                                            out.write("ok opened via OS default association: ${file.absolutePath}\n".toByteArray(Charsets.UTF_8))
                                             println("CP sendto: OS 既定アプリで開いた ${file.absolutePath}")
                                         } else {
                                             ProcessBuilder(arg, file.absolutePath).start()
-                                            out.write("ok launched \"$arg\" ${file.absolutePath}\n".toByteArray())
+                                            out.write("ok launched \"$arg\" ${file.absolutePath}\n".toByteArray(Charsets.UTF_8))
                                             println("CP sendto: $arg で開いた ${file.absolutePath}")
                                         }
                                     } catch (e: Exception) {
-                                        out.write("error: ${e.message}\n".toByteArray())
+                                        out.write("error: ${e.message}\n".toByteArray(Charsets.UTF_8))
                                         println("CP sendto error: ${e.message}")
                                     }
                                 }
                             }
                             else -> {
-                                out.write("error: unknown command (open|samples|sample|zoom|pan|view|fit|state|overlaps|boxes|capture|renderbuffer|sendto)\n".toByteArray())
+                                out.write("error: unknown command (open|samples|sample|zoom|pan|view|fit|state|overlaps|boxes|capture|renderbuffer|sendto)\n".toByteArray(Charsets.UTF_8))
                             }
                         }
                     } catch (e: Exception) {
@@ -671,6 +850,7 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
 
                 loadCadFile(selectedFile)?.let { result ->
                     parseResult = result
+                    baseParseResult = result
                     currentFile = selectedFile
                     lastModified = selectedFile.lastModified()
                     // 最後に開いたファイルを保存
@@ -773,6 +953,51 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
             Button(onClick = { showLabelBoxes = !showLabelBoxes }) {
                 Text(if (showLabelBoxes) "判定枠 ON" else "判定枠 OFF")
             }
+
+            Button(onClick = { editMode = !editMode; if (!editMode) selectedIndex = null }) {
+                Text(if (editMode) "編集 ON" else "編集 OFF")
+            }
+        }
+
+        // 編集バー: 選択中のエージェント図形を表示し、文字の書き換えと削除を行う。
+        // 移動は画面上のドラッグ (CADView 側)。
+        if (editMode) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 8.dp)
+            ) {
+                val sel = selectedIndex
+                Text(
+                    text = if (sel == null) "未選択（図形をクリックで選択、ドラッグで移動）"
+                           else AgentEdit.describe(sel),
+                    style = MaterialTheme.typography.caption
+                )
+                Spacer(Modifier.width(12.dp))
+                if (sel != null) {
+                    OutlinedTextField(
+                        value = editText,
+                        onValueChange = { v ->
+                            editText = v
+                            AgentEdit.setText(sel, v)
+                            parseResult = AgentLayers.merge(baseParseResult)
+                            agentRev++
+                        },
+                        label = { Text("文字") },
+                        singleLine = true,
+                        modifier = Modifier.width(380.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Button(onClick = {
+                        AgentEdit.deleteAt(sel)
+                        selectedIndex = null
+                        editText = ""
+                        parseResult = AgentLayers.merge(baseParseResult)
+                        agentRev++
+                    }) { Text("削除") }
+                    Spacer(Modifier.width(8.dp))
+                    Button(onClick = { selectedIndex = null; editText = "" }) { Text("選択解除") }
+                }
+            }
         }
 
         currentFile?.let { file ->
@@ -857,7 +1082,7 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
             // ファイル名を key にして CADView を再生成。
             // CADView 内部の isInitialized が remember に抱えられているため、
             // 別ファイルを CP 越しに open しても fit が再計算されないバグへの対処。
-            androidx.compose.runtime.key(currentFile?.absolutePath) {
+            androidx.compose.runtime.key(currentFile?.absolutePath, agentRev) {
                 if (useAwtViewer) {
                     CADViewAwt(
                         parseResult = result,
@@ -873,6 +1098,16 @@ private fun CADViewerApp(initialFilePath: String? = null, initialDebugMode: Bool
                         onViewStateChanged = { scale, offset ->
                             currentScale = scale
                             currentOffset = offset
+                        },
+                        editable = editMode,
+                        selectedIndex = selectedIndex,
+                        onPick = { idx ->
+                            selectedIndex = idx
+                            editText = if (idx != null) (AgentEdit.textOf(idx) ?: "") else ""
+                        },
+                        onEdited = {
+                            parseResult = AgentLayers.merge(baseParseResult)
+                            agentRev++
                         }
                     )
                 }

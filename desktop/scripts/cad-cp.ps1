@@ -28,8 +28,8 @@ $message = ($Args -join " ").Trim()
 $client = New-Object System.Net.Sockets.TcpClient
 $client.Connect($CpHost, $CpPort)
 $stream = $client.GetStream()
-$writer = New-Object System.IO.StreamWriter $stream
-$reader = New-Object System.IO.StreamReader $stream
+$writer = New-Object System.IO.StreamWriter($stream, [System.Text.UTF8Encoding]::new($false))
+$reader = New-Object System.IO.StreamReader($stream, [System.Text.UTF8Encoding]::new($false))
 $writer.WriteLine($message)
 $writer.Flush()
 $response = $reader.ReadLine()
