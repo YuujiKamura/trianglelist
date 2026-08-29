@@ -101,4 +101,44 @@ object AgentEdit {
     }
 
     fun deleteAt(index: Int) = AgentLayers.deleteAt(index)
+
+    /** 矩形範囲に代表点が入る図形の flat index を全部返す。 */
+    fun hitTestRect(x1: Double, y1: Double, x2: Double, y2: Double): List<Int> {
+        val lo = minOf(x1, x2); val hi = maxOf(x1, x2)
+        val bo = minOf(y1, y2); val to = maxOf(y1, y2)
+        val out = mutableListOf<Int>()
+        AgentLayers.flat().forEachIndexed { i, _ ->
+            val a = anchorOf(i) ?: return@forEachIndexed
+            if (a.first in lo..hi && a.second in bo..to) out += i
+        }
+        return out
+    }
+
+    /** 複数の図形をまとめて平行移動する。index のずれを避けるため降順に処理する。 */
+    fun moveMany(indices: Collection<Int>, dx: Double, dy: Double) {
+        indices.sortedDescending().forEach { move(it, dx, dy) }
+    }
+
+    /** 複数の図形をまとめて削除する。降順に消すので index がずれない。 */
+    fun deleteMany(indices: Collection<Int>) {
+        indices.sortedDescending().forEach { deleteAt(it) }
+    }
+
+    /** 選択集合の説明 (UI 表示用)。 */
+    fun describeMany(indices: Collection<Int>): String = when (indices.size) {
+        0 -> "未選択"
+        1 -> describe(indices.first())
+        else -> {
+            val kinds = indices.mapNotNull { AgentLayers.flat().getOrNull(it)?.second }
+                .groupingBy {
+                    when (it) {
+                        is DxfLine -> "LINE"; is DxfCircle -> "CIRCLE"
+                        is DxfLwPolyline -> "POLYLINE"; is DxfText -> "TEXT"; else -> "?"
+                    }
+                }.eachCount()
+            indices.size.toString() + "個選択 (" +
+                kinds.entries.joinToString(",") { it.key + ":" + it.value } + ")"
+        }
+    }
+
 }

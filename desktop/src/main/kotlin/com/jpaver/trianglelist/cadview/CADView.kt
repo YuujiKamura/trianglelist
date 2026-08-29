@@ -41,13 +41,24 @@ fun CADView(
     // エージェントが置いた図形だけを掴んで動かす / 文字を書き換える。
     // ファイル由来の図形は触らない = 「誰が置いたか」が曖昧にならない。
     editable: Boolean = false,
-    selectedIndex: Int? = null,
+    selectedIndices: Set<Int> = emptySet(),
+    rubberBand: Boolean = false,
     onPick: ((Int?) -> Unit)? = null,
-    onEdited: (() -> Unit)? = null
+    onRectSelect: ((Double, Double, Double, Double) -> Unit)? = null,
+    onEdited: (() -> Unit)? = null,
+    // 幾何が変わった回数。値が変わると再コンポーズされるだけで、
+    // CADView 自体は作り直されない = 選択や編集で視点がリセットされない。
+    rev: Int = 0,
+    // 全体フィットの要求カウンタ。増えるたびに fitToView() を呼ぶ。
+    // key での作り直しに頼らず、明示的に発火させるための経路。
+    fitRequest: Int = 0
 ) {
     var scale by remember { mutableStateOf(initialScale ?: 1f) }
     var offset by remember { mutableStateOf(initialOffset ?: Offset.Zero) }
     var isInitialized by remember { mutableStateOf(initialScale != null && initialOffset != null) }
+    // 範囲選択の帯 (画面座標)
+    var bandStart by remember { mutableStateOf<Offset?>(null) }
+    var bandNow by remember { mutableStateOf<Offset?>(null) }
     val textMeasurer = rememberTextMeasurer()
     val renderer = remember { CADViewRenderer() }
     val overlayDensity = LocalDensity.current
@@ -185,22 +196,44 @@ fun CADView(
             if (isInitialized) return@LaunchedEffect
             fitToView()
         }
-        // CP 「fit」= initialScale/initialOffset を両方 null にする合図 → 全体フィットへ戻す
-        LaunchedEffect(initialScale, initialOffset, maxWidth, maxHeight) {
-            if (initialScale == null && initialOffset == null) fitToView()
+        // CP 「fit」/ メニュー「全体フィット」= fitRequest が増えたら再計算する。
+        // initialScale/Offset をキーにすると、もともと null の時に再発火しない。
+        LaunchedEffect(fitRequest, maxWidth, maxHeight) {
+            if (fitRequest > 0) fitToView()
         }
 
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(editable, selectedIndex) {
-                    detectDragGestures { change, dragAmount ->
+                .pointerInput(editable, rubberBand, selectedIndices) {
+                    detectDragGestures(
+                        onDragStart = { pos ->
+                            if (editable && rubberBand) {
+                                bandStart = pos
+                                bandNow = pos
+                            }
+                        },
+                        onDragEnd = {
+                            val s = bandStart; val e = bandNow
+                            if (editable && rubberBand && s != null && e != null) {
+                                val mx1 = ((s.x - offset.x) / scale).toDouble()
+                                val my1 = (-(s.y - offset.y) / scale).toDouble()
+                                val mx2 = ((e.x - offset.x) / scale).toDouble()
+                                val my2 = (-(e.y - offset.y) / scale).toDouble()
+                                onRectSelect?.invoke(mx1, my1, mx2, my2)
+                            }
+                            bandStart = null; bandNow = null
+                        },
+                        onDragCancel = { bandStart = null; bandNow = null }
+                    ) { change, dragAmount ->
                         change.consume()
-                        val sel = selectedIndex
-                        if (editable && sel != null) {
-                            // 画面の移動量をモデル座標へ。Y は反転している。
-                            com.jpaver.trianglelist.agent.AgentEdit.move(
-                                sel,
+                        if (editable && rubberBand) {
+                            // 範囲選択中: 帯を伸ばすだけ。図面は動かさない
+                            bandNow = (bandNow ?: change.position) + dragAmount
+                        } else if (editable && selectedIndices.isNotEmpty()) {
+                            // 選択中の図形をまとめて移動 (画面 -> モデル、Y は反転)
+                            com.jpaver.trianglelist.agent.AgentEdit.moveMany(
+                                selectedIndices,
                                 (dragAmount.x / scale).toDouble(),
                                 (-dragAmount.y / scale).toDouble()
                             )
@@ -210,10 +243,9 @@ fun CADView(
                         }
                     }
                 }
-                .pointerInput(editable) {
-                    if (editable) {
+                .pointerInput(editable, rubberBand) {
+                    if (editable && !rubberBand) {
                         detectTapGestures { pos ->
-                            // 画面 -> モデル (Y 反転)
                             val mx = ((pos.x - offset.x) / scale).toDouble()
                             val my = (-(pos.y - offset.y) / scale).toDouble()
                             val tol = (12f / scale).toDouble()
@@ -280,15 +312,27 @@ fun CADView(
             }
 
             // 選択中の図形にマーカーを出す (モデル座標系。canvas は Y 反転で描いている)
-            if (editable && selectedIndex != null) {
-                val anc = com.jpaver.trianglelist.agent.AgentEdit.anchorOf(selectedIndex)
-                if (anc != null) {
-                    val r = 8f / scale
+            if (editable) {
+                for (si in selectedIndices) {
+                    val anc = com.jpaver.trianglelist.agent.AgentEdit.anchorOf(si) ?: continue
                     drawCircle(
                         color = Color(0xFF1565C0),
-                        radius = r,
+                        radius = 8f / scale,
                         center = Offset(anc.first.toFloat(), (-anc.second).toFloat()),
                         style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2f / scale)
+                    )
+                }
+                val s = bandStart; val e = bandNow
+                if (s != null && e != null) {
+                    // 帯は画面座標なのでモデル座標へ戻して描く
+                    val mx1 = (s.x - offset.x) / scale; val my1 = (s.y - offset.y) / scale
+                    val mx2 = (e.x - offset.x) / scale; val my2 = (e.y - offset.y) / scale
+                    drawRect(
+                        color = Color(0xFF1565C0),
+                        topLeft = Offset(minOf(mx1, mx2), minOf(my1, my2)),
+                        size = androidx.compose.ui.geometry.Size(
+                            kotlin.math.abs(mx2 - mx1), kotlin.math.abs(my2 - my1)),
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5f / scale)
                     )
                 }
             }
