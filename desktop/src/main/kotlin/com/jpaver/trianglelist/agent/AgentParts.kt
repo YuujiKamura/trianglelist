@@ -199,7 +199,9 @@ object Parts {
 
 /**
  * DxfParseResult を DXF テキストへ書き出す (最小構成)。
- * viewer は MS932 固定で読むので、呼び出し側で MS932 で書くこと。
+ * 呼び出し側は MS932 で書く (trianglelist の従来出力に合わせる)。
+ * viewer 側は 2026-08-30 から UTF-8/MS932 を自動判定して読むので、他社 CAD が
+ * UTF-8 (DXF R2007 以降) で保存し直したファイルも開ける。
  */
 fun exportDxf(r: DxfParseResult): String {
     val sb = StringBuilder()
