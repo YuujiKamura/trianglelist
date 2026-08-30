@@ -178,11 +178,30 @@ private fun androidx.compose.ui.window.FrameWindowScope.CADViewerApp(initialFile
         }
     }
 
+    /**
+     * DXF/SFC の文字コードを判定して読む。
+     *
+     * trianglelist 自身の出力と Jw_cad 等の旧版 DXF は MS932。
+     * 一方 DXF R2007 (AC1021) 以降は仕様上 UTF-8 で、他社 CAD で保存し直すと UTF-8 で返ってくる。
+     * MS932 固定で読むと後者が全部文字化けするので、厳密 UTF-8 でデコードできるかどうかで振り分ける。
+     * (cp932 の日本語バイト列は厳密 UTF-8 デコードでほぼ確実に失敗するため、この判定で足りる)
+     */
+    fun readCadText(file: File): String {
+        val bytes = file.readBytes()
+        return try {
+            java.nio.charset.StandardCharsets.UTF_8.newDecoder()
+                .onMalformedInput(java.nio.charset.CodingErrorAction.REPORT)
+                .onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPORT)
+                .decode(java.nio.ByteBuffer.wrap(bytes))
+                .toString()
+        } catch (e: java.nio.charset.CharacterCodingException) {
+            String(bytes, java.nio.charset.Charset.forName("MS932"))
+        }
+    }
+
     fun loadCadFile(file: File): DxfParseResult? {
         return try {
-            // trianglelist 出力の DXF/SFC は MS932 固定。
-            // UTF-8 default で読むと日本語が壊れる。
-            val content = file.readText(java.nio.charset.Charset.forName("MS932"))
+            val content = readCadText(file)
             val result = if (file.extension.equals("sfc", ignoreCase = true)) {
                 SfcParser().parse(content)
             } else {
