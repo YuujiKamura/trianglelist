@@ -126,8 +126,25 @@ class TriangleListTest {
         trilist.remove(4)
         assertEquals(null, trilist.get(3).nodeB)
         print_trilist(trilist)
+    }
 
+    @Test
+    fun testRemoveBranchThenRemoveRemaining() {
+        val trilist = TriangleList()
+        trilist.add(Triangle(5f, 8f, 5f), true) // 1
+        trilist.add(1, 1, 8f, 8f) // 2: parent 1
+        trilist.add(1, 2, 5f, 5f) // 3: parent 1
 
+        trilist.remove(3)
+        assertEquals(2, trilist.size())
+        assertEquals(2, trilist.get(2).mynumber)
+        assertEquals(1, trilist.get(2).parentnumber)
+        assertEquals(null, trilist.get(1).nodeC)
+
+        trilist.remove(2)
+        assertEquals(1, trilist.size())
+        assertEquals(1, trilist.get(1).mynumber)
+        assertEquals(null, trilist.get(1).nodeB)
     }
 
     @Test

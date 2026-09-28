@@ -589,7 +589,7 @@ open class TriangleList : EditList<Triangle> {
             try {
                 val pnForMe = trilist[i].parentnumber
                 val me = trilist[i]
-                if (pnForMe > -1) {
+                if (pnForMe in 1..trilist.size) {
                     // 改善版
                     val parent = trilist[pnForMe - 1]
                     // 親に対して、
@@ -624,25 +624,26 @@ open class TriangleList : EditList<Triangle> {
 
     override fun remove(num: Int) {
         //トップ以外は消せないことにする
-        if ( num != trilist.size || num < 2 ) return
-        val index = num-1
+        if (num != trilist.size || num < 2) return
+        val index = num - 1
 
         val target = trilist[index] //コピーを作る。内部参照は元の対象を指す
 
         trilist.removeAt(index)
 
-        if( target.nodeA == null ) return
+        // 親ノードの参照を切断
+        val parentTriangle = target.nodeA ?: if (target.parentnumber in 1..trilist.size) trilist[target.parentnumber - 1] else null
+        parentTriangle?.removeNode(target)
+        target.node.a?.let { (it as? Triangle)?.removeNode(target) }
         target.nodeA = null
+        target.node.a = null
 
-        //ひとつ前の三角形を基準にして
-        val parentTriangle = trilist[target.parentnumber -1]//trilist_[number - 2]
-        //次以降の三角形の親番号を全部書き換える
-        rewriteAllNodeFrom(parentTriangle, -1)
-        resetTriangles(parentTriangle.mynumber, parentTriangle)
+        if (parentTriangle != null) {
+            resetTriangles(parentTriangle.mynumber, parentTriangle)
+        }
         selectedNumber = num - 1
         lastTapNumber = num - 1
         lastTapSide = -1
-
     }
 
     fun rotateCurrentTriLCR(): ConnParam? {
@@ -705,7 +706,7 @@ open class TriangleList : EditList<Triangle> {
         curtri.mynumber = number //useless?
 
         // 親がいるときは、子接続を書き換える
-        if (curtri.parentnumber > 0 && number - 2 >= 0) {
+        if (curtri.parentnumber in 1..trilist.size && number - 2 >= 0) {
             val parent = trilist[curtri.parentnumber - 1]
             parent.childSide_ = curtri.connectionSide
             curtri.nodeA = parent //再リンクしないと位置と角度が連動しない。
@@ -764,7 +765,7 @@ open class TriangleList : EditList<Triangle> {
                 parent = target
             } else { //連番でないとき
                 //親を番号で参照する
-                if( target.parentnumber < 1 ) return
+                if (target.parentnumber !in 1..trilist.size) return
                 val recent_parent = trilist[target.parentnumber - 1]
 
                 if (target.resetByParent(recent_parent, target.connectionSide)) return
