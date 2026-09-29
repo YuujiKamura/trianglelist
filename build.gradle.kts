@@ -39,9 +39,10 @@ plugins.withType(org.jetbrains.kotlin.gradle.targets.wasm.yarn.WasmYarnPlugin::c
     // 単一系統: 最小パッチ版以上に上げるだけ
     yarn.resolution("**/body-parser", ">=1.20.6 <2.0.0")
     yarn.resolution("**/diff", ">=8.0.3 <9.0.0")
-    yarn.resolution("**/fast-uri", ">=3.1.5 <4.0.0")
+    yarn.resolution("**/fast-uri", ">=3.1.6 <4.0.0")
     yarn.resolution("**/http-proxy-middleware", ">=2.0.10 <3.0.0")
-    yarn.resolution("**/js-yaml", ">=4.3.1 <5.0.0")
+    yarn.resolution("**/js-yaml", ">=4.3.2 <5.0.0")
+    yarn.resolution("**/qs", ">=6.16.0 <7.0.0")
     // serialize-javascript: 6.x に修正版が無く (advisory の範囲が >=5.0.0 <7.0.5)、
     // 唯一の patched version が 7.0.5 なので major を跨ぐ
     yarn.resolution("**/serialize-javascript", ">=7.0.5 <8.0.0")

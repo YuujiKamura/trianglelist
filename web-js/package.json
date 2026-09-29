@@ -17,14 +17,14 @@
   },
   "devDependencies": {
     "@types/encoding-japanese": "^2.2.1",
+    "@types/pixelmatch": "^5.2.6",
+    "@types/pngjs": "^6.0.5",
+    "pixelmatch": "^6.0.0",
     "playwright": "^1.60.0",
+    "pngjs": "^7.0.0",
     "typescript": "^5.6.0",
     "vite": "^6.0.0",
-    "vitest": "^4.1.8",
-    "pixelmatch": "^6.0.0",
-    "pngjs": "^7.0.0",
-    "@types/pngjs": "^6.0.5",
-    "@types/pixelmatch": "^5.2.6"
+    "vitest": "^4.1.11"
   },
   "dependencies": {
     "@zumer/snapdom": "^2.12.8",
