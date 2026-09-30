@@ -29,7 +29,7 @@ class LabelArrangeEntryPointTest {
 
     @AfterTest
     fun restore() {
-        LabelArrangePolicy.enabled = true
+        LabelArrangePolicy.enabled = false
     }
 
     @Test
