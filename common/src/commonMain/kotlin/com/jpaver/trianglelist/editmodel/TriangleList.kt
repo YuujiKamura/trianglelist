@@ -1180,4 +1180,28 @@ open class TriangleList : EditList<Triangle> {
         }
         return rev
     }
+
+    /**
+     * クラッシュ診断用の内部状態ダンプ (2026-10-01)。
+     * 例外発生時やログに含められるよう、現在の全要素の番号・親番号・接続辺・3辺長をコンパクトな1行に要約する。
+     */
+    fun dumpState(): String = buildString {
+        append("TriangleList(size=").append(trilist.size)
+        append(", sel=").append(selectedNumber)
+        append(", lastTap=").append(lastTapNumber)
+        append(", items=[")
+        for (i in 0 until trilist.size) {
+            if (i > 0) append("; ")
+            val t = trilist[i]
+            append("#").append(t.mynumber)
+            append("(p=").append(t.parentnumber)
+            append(",side=").append(t.connectionSide)
+            append(",a=").append(t.length.getOrNull(0))
+            append(",b=").append(t.length.getOrNull(1))
+            append(",c=").append(t.length.getOrNull(2))
+            append(",h=[").append(t.dimHorizontal.a).append(",").append(t.dimHorizontal.b).append(",").append(t.dimHorizontal.c).append("]")
+            append(")")
+        }
+        append("])")
+    }
 } // end of class

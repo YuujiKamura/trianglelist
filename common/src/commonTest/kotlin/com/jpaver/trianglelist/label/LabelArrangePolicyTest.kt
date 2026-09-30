@@ -20,7 +20,7 @@ class LabelArrangePolicyTest {
 
     @AfterTest
     fun restore() {
-        LabelArrangePolicy.enabled = true
+        LabelArrangePolicy.enabled = false
     }
 
     private fun chain(): TriangleList = CsvCodec.build(
@@ -41,14 +41,14 @@ class LabelArrangePolicyTest {
     }
 
     @Test
-    fun `既定は ON で配置が動く`() {
+    fun `ON で配置が動く`() {
         val list = chain()
         val before = placement(list)
 
         LabelArrangePolicy.enabled = true
         list.arrangeLabelsForDrawing()
 
-        assertNotEquals(before, placement(list), "既定 ON なのに何も動いていない (前提が変わった)")
+        assertNotEquals(before, placement(list), "ON なのに何も動いていない")
     }
 
     @Test

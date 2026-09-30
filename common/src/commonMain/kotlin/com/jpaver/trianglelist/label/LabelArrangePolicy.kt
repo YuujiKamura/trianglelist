@@ -16,7 +16,7 @@ package com.jpaver.trianglelist.label
  * どれか 1 つ書き換え忘れて「画面だけ効いている」ような食い違いが生まれる。
  */
 object LabelArrangePolicy {
-    var enabled: Boolean = true
+    var enabled: Boolean = false
 }
 
 /**

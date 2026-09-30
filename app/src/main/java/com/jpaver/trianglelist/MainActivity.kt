@@ -453,6 +453,16 @@ class MainActivity : AppCompatActivity(),
     override fun onCreate(savedInstanceState: Bundle?) {
         Log.d("MainActivityLifeCycle", "onCreate")
 
+        // クラッシュ診断情報収集の初期化 (2026-10-01)
+        CrashDiagnostics.install()
+        CrashDiagnostics.setStateProvider {
+            val tri = trianglelist.dumpState()
+            val ded = if (myDeductionList.size() > 0) "Deduction(size=${myDeductionList.size()})" else "Deduction(empty)"
+            val autoArrange = com.jpaver.trianglelist.label.LabelArrangePolicy.enabled
+            "Mode: deductionMode=$deductionMode, autoArrange=$autoArrange\n$tri\n$ded"
+        }
+        CrashDiagnostics.log("onCreate")
+
         super.onCreate(savedInstanceState)
         setTheme(R.style.AppTheme_NoActionBar) //Note that this should be called before any views are instantiated in the Context (for example before calling Activity.setContentView(View) or LayoutInflater.inflate(int, ViewGroup)).
 
@@ -497,11 +507,10 @@ class MainActivity : AppCompatActivity(),
         adMobInit()
 
         prefSetting = PreferenceManager.getDefaultSharedPreferences(this)
-        // 寸法の自動配置 ON/OFF (2026-08-27 user 要望)。プロセス全体で 1 つの設定なので
-        // 起動時に model 層の policy へ流し込む ── 呼び出し側が個別に判定を持つと
-        // 「画面だけ効いている」ような食い違いが生まれる
+        // 寸法の自動配置 ON/OFF (2026-08-27 user 要望、2026-10-01 デフォルトOFFに変更)。
+        // 専業実務ツールとして勝手な配置退避を抑止し、必要なユーザーのみメニューからONにする。
         com.jpaver.trianglelist.label.LabelArrangePolicy.enabled =
-            prefSetting.getBoolean(PREF_AUTO_ARRANGE, true)
+            prefSetting.getBoolean(PREF_AUTO_ARRANGE, false)
 
         myDeductionList = DeductionList()
 
@@ -1473,6 +1482,8 @@ class MainActivity : AppCompatActivity(),
             var eraseNum = listLength
             if(!deductionMode) eraseNum = trianglelist.lastTapNumber
 
+            CrashDiagnostics.log("performDelete: deductionMode=$deductionMode, size=$listLength, eraseNum=$eraseNum")
+
             getList(deductionMode).remove(eraseNum)
 
             myview.setDeductionList(myDeductionList, viewscale)
@@ -1544,6 +1555,7 @@ class MainActivity : AppCompatActivity(),
 
         setCommonFabListener(fab_undo){
             if( trilistUndo.size() > 0 ){
+                CrashDiagnostics.log("undo: restore previous state (size=${trilistUndo.size()})")
                 trianglelist = trilistUndo.clone()
                 //my_view.undo()
                 myview.setTriangleList(trilistUndo, viewscale)
@@ -1826,6 +1838,7 @@ class MainActivity : AppCompatActivity(),
     fun fabReplace(forceParameter: InputParameter? = null ){
         trilistSaving(trianglelist)
         val editmode = deductionMode
+        CrashDiagnostics.log("fabReplace: editmode=$editmode, triSize=${trianglelist.size()}, dedSize=${myDeductionList.size()}")
 
         val inputLines = preloadInputLines( forceParameter )
 
@@ -2886,6 +2899,7 @@ class MainActivity : AppCompatActivity(),
 
     //region File Private Save and Load
     private fun createNew(){
+        CrashDiagnostics.log("createNew: resetting to initial triangle")
         val tri = Triangle(5f, 5f, 5f,
             PointXY(0f, 0f), 0f)
 
@@ -3159,6 +3173,7 @@ class MainActivity : AppCompatActivity(),
             return
         }
         session.isRestored = true
+        CrashDiagnostics.log("resumeCSV: restoring from $PrivateCSVFileName")
 
         val filepath = this.filesDir.absolutePath + "/" + PrivateCSVFileName
         val file = File(filepath)

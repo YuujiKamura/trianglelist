@@ -23,6 +23,7 @@ import com.jpaver.trianglelist.editmodel.setNumber
 import com.jpaver.trianglelist.editmodel.setOn
 import com.jpaver.trianglelist.viewmodel.InputParameter
 import junit.framework.Assert.assertEquals
+import junit.framework.Assert.assertTrue
 import org.junit.Assert
 import org.junit.Test
 
@@ -145,6 +146,19 @@ class TriangleListTest {
         assertEquals(1, trilist.size())
         assertEquals(1, trilist.get(1).mynumber)
         assertEquals(null, trilist.get(1).nodeB)
+    }
+
+    @Test
+    fun testDumpState() {
+        val trilist = TriangleList()
+        trilist.add(Triangle(5f, 8f, 5f), true)
+        trilist.add(1, 1, 8f, 8f)
+        val dump = trilist.dumpState()
+        assertTrue(dump.contains("size=2"))
+        assertTrue(dump.contains("#1"))
+        assertTrue(dump.contains("#2"))
+        assertTrue(dump.contains("p=1"))
+        assertTrue(dump.contains("h=["))
     }
 
     @Test
