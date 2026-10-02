@@ -1,12 +1,7 @@
 package com.jpaver.trianglelist.viewmodel
 
-import android.view.View
-import com.google.android.gms.ads.AdView
-
+/**
+ * 広告機能廃止に伴い非推奨
+ */
 class AdManager {
-
-    fun disableAd( adView: AdView ){
-        adView.visibility = View.INVISIBLE
-    }
-
 }

@@ -27,8 +27,8 @@ android {
         applicationId = "com.jpaver.myapplication"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1362
-        versionName = "7.73"
+        versionCode = 1363
+        versionName = "7.74"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled = true
     }
@@ -117,7 +117,6 @@ dependencies {
     implementation("androidx.navigation:navigation-ui-ktx:2.9.6")
     implementation("androidx.constraintlayout:constraintlayout:2.2.1")
     implementation("com.google.android.material:material:1.14.0-alpha08")
-    implementation("com.google.android.gms:play-services-ads:24.8.0")
     implementation("androidx.preference:preference-ktx:1.2.1")
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar", "*.jar"))))
     implementation("org.apache.poi:poi-ooxml:5.4.1")

@@ -46,14 +46,6 @@ import androidx.core.net.toUri
 import androidx.fragment.app.DialogFragment
 import androidx.preference.PreferenceManager
 import com.example.trilib.PointXY
-import com.google.android.gms.ads.AdListener
-import com.google.android.gms.ads.AdRequest
-import com.google.android.gms.ads.AdView
-import com.google.android.gms.ads.LoadAdError
-import com.google.android.gms.ads.MobileAds
-import com.google.android.gms.ads.RequestConfiguration
-import com.google.android.gms.ads.interstitial.InterstitialAd
-import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.jpaver.trianglelist.databinding.ActivityMainBinding
 import com.jpaver.trianglelist.datamanager.CsvCodec
@@ -71,7 +63,6 @@ import com.jpaver.trianglelist.editmodel.Triangle
 import com.jpaver.trianglelist.editmodel.TriangleList
 import com.jpaver.trianglelist.editmodel.ZumenInfo
 import com.jpaver.trianglelist.fragment.MyDialogFragment
-import com.jpaver.trianglelist.viewmodel.AdManager
 import com.jpaver.trianglelist.viewmodel.CustomTextWatcher
 import com.jpaver.trianglelist.viewmodel.DeductionNameTextWatcher
 import com.jpaver.trianglelist.viewmodel.EditTextViewLine
@@ -344,109 +335,6 @@ class MainActivity : AppCompatActivity(),
 
     // endregion
 
-//region adMob loading
-    private lateinit var mAdView : AdView
-    val adManager = AdManager()
-    private var mInterstitialAd: InterstitialAd? = null
-
-    val USEADMOB = false
-    private fun adMobInit() {
-
-        if ( !USEADMOB ){
-            Log.d("AdMob", "adMobInit() cancelled.")
-            return
-        }
-
-        // AdView の参照を取得
-        mAdView = findViewById(R.id.adView)
-
-        // Mobile Ads SDK の初期化
-        MobileAds.initialize(this)
-
-        // デバッグモードの場合、テストデバイスを設定
-        if (BuildConfig.DEBUG) {
-            val testDeviceIds = listOf("TEST_EMULATOR") // エミュレーターをテストデバイスとして使用
-            val configuration = RequestConfiguration.Builder().setTestDeviceIds(testDeviceIds).build()
-            MobileAds.setRequestConfiguration(configuration)
-        }
-
-        // 広告リクエストの作成
-        val adRequest = AdRequest.Builder().build()
-
-        // AdListener をセットして広告のロード状態を監視
-        mAdView.adListener = object : AdListener() {
-            override fun onAdLoaded() {
-                // 広告が正常にロードされたときの処理
-                Log.d("AdMob", "Ad loaded successfully.")
-            }
-
-            override fun onAdFailedToLoad(adError: LoadAdError) {
-                // 広告のロードに失敗したときの処理
-                Log.d("AdMob", "Failed to load ad: ${adError.message}")
-            }
-
-            override fun onAdOpened() {
-                // 広告が画面いっぱいに表示されたときの処理（インタースティシャル広告など）
-                Log.d("AdMob", "Ad opened.")
-            }
-
-            override fun onAdClicked() {
-                // 広告がクリックされたときの処理
-                Log.d("AdMob", "Ad clicked.")
-            }
-
-            override fun onAdClosed() {
-                // 広告が閉じられたときの処理（インタースティシャル広告が閉じられたときなど）
-                Log.d("AdMob", "Ad closed.")
-            }
-        }
-
-        // 広告のロードを開始
-        mAdView.loadAd(adRequest)
-    }
-
-    private fun adMobDisable() {
-
-        if ( !USEADMOB ){
-            Log.d("AdMob", "adMobDisable() cancelled.")
-            return
-        }
-        // 広告の非表示
-        //if( BuildConfig.FLAVOR == "free" ){
-
-        adManager.disableAd(mAdView)
-        //findViewById<EditText>(R.id.editLengthC1).requestFocus()
-        //mAdView.visibility = VISIBLE
-        //}
-    }
-
-    private fun adShowInterStitial() {
-
-        if ( !USEADMOB ){
-            Log.d("AdMob", "adShowInterStitial() cancelled.")
-            return
-        }
-        val adRequest = AdRequest.Builder().build()
-
-        InterstitialAd.load(
-            this,"ca-app-pub-3940256099942544/1033173712",
-            adRequest,
-            object : InterstitialAdLoadCallback() {
-                override fun onAdFailedToLoad(adError: LoadAdError) {
-                    Log.d(TAG, adError.message)
-                    mInterstitialAd = null
-                }
-
-                override fun onAdLoaded(interstitialAd: InterstitialAd) {
-                    Log.d("AdMob", "InterAd was loaded.")
-                    mInterstitialAd = interstitialAd
-                    // 広告がロードされたら、ここで広告を表示
-                    mInterstitialAd?.show(this@MainActivity)
-                }
-            }
-        )
-    }
-//endregion
 
     //region ActivityLifeCycle
 
@@ -504,8 +392,6 @@ class MainActivity : AppCompatActivity(),
         loadContent =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult(), ::handleLoadContentResult)
 
-        adMobInit()
-
         prefSetting = PreferenceManager.getDefaultSharedPreferences(this)
         // 寸法の自動配置 ON/OFF (2026-08-27 user 要望、2026-10-01 デフォルトOFFに変更)。
         // 専業実務ツールとして勝手な配置退避を抑止し、必要なユーザーのみメニューからONにする。
@@ -536,8 +422,6 @@ class MainActivity : AppCompatActivity(),
 
         isViewAttached = true
         Log.d("MainActivity", "OnAttachedToWindow Process Done.")
-
-        adShowInterStitial()
 
         val tArray = resources.getStringArray(R.array.ParentList)
         initSpinner(tArray)
@@ -687,7 +571,6 @@ class MainActivity : AppCompatActivity(),
         super.onResume()
         isViewAttached = true
         Log.d("MainActivityLifeCycle", "OnResume")
-        adMobDisable()
 
         // ここで CSV から復元してはいけない。onResume は共有チューザーやファイルピッカー
         // 等の別 Activity から戻るたびに走るので、生きているモデル (= 正) を
