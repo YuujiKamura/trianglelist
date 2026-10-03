@@ -28,7 +28,13 @@ internal fun Triangle.calculatePointBC(basepoint: PointXY): PointXY {
     val powA = length[0].pow(2.0f).toDouble()
     val powB = length[1].pow(2.0f).toDouble()
     val powC = length[2].pow(2.0f).toDouble()
-    val alpha = acos((powA + powB - powC) / (2 * length[0] * length[1]))
+    val denom = 2 * length[0] * length[1]
+    val cosAlpha = if (denom != 0f) {
+        ((powA + powB - powC) / denom).coerceIn(-1.0, 1.0)
+    } else {
+        1.0
+    }
+    val alpha = acos(cosAlpha)
     val angle = theta + alpha
     val offsetX = length[1] * cos(angle)
     val offsetY = length[1] * sin(angle)
@@ -49,7 +55,10 @@ fun Triangle.getVertexAngles(): Triple<Float, Float, Float> {
 internal fun calculateInternalAngle(p1: PointXY, p2: PointXY, p3: PointXY): Double {
     val v1 = p1.subtract(p2)
     val v2 = p3.subtract(p2)
-    val angleRadian = acos(v1.innerProduct(v2) / (v1.magnitude() * v2.magnitude()))
+    val denom = v1.magnitude() * v2.magnitude()
+    if (denom == 0.0) return 0.0
+    val cosVal = (v1.innerProduct(v2) / denom).coerceIn(-1.0, 1.0)
+    val angleRadian = acos(cosVal)
     return angleRadian * 180 / PI
 }
 
