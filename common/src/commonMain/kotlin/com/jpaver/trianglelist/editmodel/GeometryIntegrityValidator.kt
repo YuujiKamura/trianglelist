@@ -62,6 +62,7 @@ object GeometryIntegrityValidator {
         }
 
         // 2. 三角形ペア間の総当たり当たり判定（衝突・重複検出）
+        // 土木測量展開図では地形や作業途中により重なりが意図的・実測上に生じ得るため WARNING とする
         for (i in 1..size) {
             val t1 = list.getBy(i)
             for (j in (i + 1)..size) {
@@ -69,7 +70,7 @@ object GeometryIntegrityValidator {
                 if (TriangleCollisionDetector.doShapesOverlap(t1, t2)) {
                     issues.add(
                         IntegrityIssue(
-                            severity = Severity.ERROR,
+                            severity = Severity.WARNING,
                             type = IssueType.OVERLAP,
                             triangleNumber = t1.mynumber,
                             relatedTriangleNumber = t2.mynumber,
@@ -174,6 +175,11 @@ object GeometryIntegrityValidator {
     /**
      * 【基線一致判定】
      * 子三角形 t が親図形 parent の接続辺に対して幾何学的に正しく合致しているか判定する。
+     *
+     * 接続種別 (ConnectionSide):
+     * - 通常直接接続: B(1), C(2)
+     * - 二重断面接続: BR(3), BL(4), CR(5), CL(6), BC(7), CC(8)
+     * - フロート接続: FB(9), FC(10)
      */
     fun validateBaselineConnection(child: Triangle, parent: Triangle): List<IntegrityIssue> {
         val issues = mutableListOf<IntegrityIssue>()
@@ -181,22 +187,29 @@ object GeometryIntegrityValidator {
         val cNum = child.mynumber
         val pNum = parent.mynumber
 
-        if (side !in 1..2) {
+        if (side !in 1..10) {
             issues.add(
                 IntegrityIssue(
                     severity = Severity.ERROR,
                     type = IssueType.INVALID_PARENT,
                     triangleNumber = cNum,
                     relatedTriangleNumber = pNum,
-                    message = "Invalid connection side $side on parent #$pNum (must be 1 for B or 2 for C)"
+                    message = "Invalid connection side $side on parent #$pNum (must be 1..10)"
                 )
             )
             return issues
         }
 
-        // 通常接続 (connectionType_ == 0) の場合、A辺長は親の接続辺長と厳密一致しなければならない
-        if (child.connectionType_ == 0) {
-            val parentSideLen = parent.length[side]
+        // 二重断面 (codes 3..8 または connectionType_ == 2)
+        // フロート接続 (codes 9..10 または connectionType_ == 1)
+        val isFloat = side in 9..10 || child.connectionType_ == 1
+        val isDoubleSection = side in 3..8 || child.connectionType_ == 2
+        val isNormalDirect = !isFloat && !isDoubleSection
+
+        // 通常接続 (B=1, C=2 かつ connectionType_ == 0) の場合のみ、A辺長と親接続辺の厳密一致を検証する
+        if (isNormalDirect) {
+            val parentSide = side
+            val parentSideLen = parent.length[parentSide]
             val childSideALen = child.lengthA_
             val diffLen = abs(childSideALen - parentSideLen)
 
@@ -207,13 +220,13 @@ object GeometryIntegrityValidator {
                         type = IssueType.BASELINE_LENGTH_MISMATCH,
                         triangleNumber = cNum,
                         relatedTriangleNumber = pNum,
-                        message = "Baseline length mismatch: child #$cNum side A ($childSideALen) != parent #$pNum side $side ($parentSideLen), diff=$diffLen"
+                        message = "Baseline length mismatch: child #$cNum side A ($childSideALen) != parent #$pNum side $parentSide ($parentSideLen), diff=$diffLen"
                     )
                 )
             }
 
             // 基線端点の座標一致判定 (時計回り展開: 親の終端 -> 始端)
-            val parentLine = parent.getLine(side)
+            val parentLine = parent.getLine(parentSide)
             val expectedStart = parentLine.right
             val expectedEnd = parentLine.left
 
@@ -230,16 +243,16 @@ object GeometryIntegrityValidator {
                         type = IssueType.BASELINE_GAP,
                         triangleNumber = cNum,
                         relatedTriangleNumber = pNum,
-                        message = "Baseline gap detected: child #$cNum is detached from parent #$pNum edge $side (startGap=$distStart, endGap=$distEnd)"
+                        message = "Baseline gap detected: child #$cNum is detached from parent #$pNum edge $parentSide (startGap=$distStart, endGap=$distEnd)"
                     )
                 )
             }
 
-            // 内向き折り返しの判定
+            // 内向き折り返しの判定（重なり警告）
             if (TriangleCollisionDetector.isChildFoldingInward(child, parent)) {
                 issues.add(
                     IntegrityIssue(
-                        severity = Severity.ERROR,
+                        severity = Severity.WARNING,
                         type = IssueType.INWARD_FOLD,
                         triangleNumber = cNum,
                         relatedTriangleNumber = pNum,
@@ -289,13 +302,14 @@ object GeometryIntegrityValidator {
         }
 
         // 3. 既存の全三角形との当たり判定（衝突チェック）
+        // 測量展開図の意図的重なりや作業途中の重なりを拒絶してしまわないよう WARNING とする
         if (checkOverlap) {
             for (i in 1..list.size()) {
                 val existing = list.getBy(i)
                 if (TriangleCollisionDetector.doShapesOverlap(candidate, existing)) {
                     issues.add(
                         IntegrityIssue(
-                            severity = Severity.ERROR,
+                            severity = Severity.WARNING,
                             type = IssueType.OVERLAP,
                             triangleNumber = nextNumber,
                             relatedTriangleNumber = existing.mynumber,
