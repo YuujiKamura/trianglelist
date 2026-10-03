@@ -60,8 +60,8 @@ plugins.withType(org.jetbrains.kotlin.gradle.targets.wasm.yarn.WasmYarnPlugin::c
     // (include/exclude で ">=1.1.18 <2.0.0 || >=2.1.4" を渡すと両方 5.0.9 に畳まれた)。
     // さらに brace-expansion 5.x は `exports.expand` 形式で default export が無く、
     // minimatch@3 (`require(...)` を関数として呼ぶ) / minimatch@9 (default import) の
-    // 両方が壊れる。よって両 advisory を同時に満たす最小の単一系統 = 2.1.4 系に寄せる。
-    yarn.resolution("**/brace-expansion", ">=2.1.4 <3.0.0")
+    // 両方が壊れる。よって両 advisory を同時に満たす最小の単一系統 = 2.1.5 系に寄せる。
+    yarn.resolution("**/brace-expansion", ">=2.1.5 <3.0.0")
 }
 
 // 一括ビルド＆テストタスク
