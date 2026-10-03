@@ -59,9 +59,8 @@ class RegressionHarness(
         connectionSide: Int
     ): RegressionHarness {
         logAction("addConnectedTriangle(a=$a, b=$b, c=$c, parent=$parentNumber, side=$connectionSide)")
-        val child = Triangle(a, b, c)
-        child.parentnumber = parentNumber
-        child.connectionSide = connectionSide
+        val parent = triangleList.getBy(parentNumber)
+        val child = Triangle(parent, connectionSide, a, b, c)
         triangleList.add(child, true)
         verifyInvariants("addConnectedTriangle")
         return this
@@ -176,5 +175,32 @@ class RegressionHarness(
             assertFalse(pt.x.isNaN() || pt.y.isNaN(), "[$stepContext] Triangle $i pointnumber is NaN: (${pt.x}, ${pt.y})")
             assertFalse(pt.x.isInfinite() || pt.y.isInfinite(), "[$stepContext] Triangle $i pointnumber is Infinite")
         }
+
+        // 7. 基線接続の整合性検証 (基線一致判定)
+        verifyBaselineIntegrity(stepContext)
+    }
+
+    /** 基線長・接続座標の幾何的一致を検証 */
+    fun verifyBaselineIntegrity(stepContext: String) {
+        val issues = com.jpaver.trianglelist.editmodel.GeometryIntegrityValidator.validateList(triangleList)
+        val errors = issues.filter {
+            it.severity == com.jpaver.trianglelist.editmodel.GeometryIntegrityValidator.Severity.ERROR &&
+            (it.type == com.jpaver.trianglelist.editmodel.GeometryIntegrityValidator.IssueType.BASELINE_LENGTH_MISMATCH ||
+             it.type == com.jpaver.trianglelist.editmodel.GeometryIntegrityValidator.IssueType.BASELINE_GAP ||
+             it.type == com.jpaver.trianglelist.editmodel.GeometryIntegrityValidator.IssueType.INVALID_PARENT ||
+             it.type == com.jpaver.trianglelist.editmodel.GeometryIntegrityValidator.IssueType.TOPOLOGY_CYCLE)
+        }
+        assertTrue(errors.isEmpty(), "[$stepContext] Baseline integrity failed: ${errors.joinToString("; ")}. Breadcrumbs: $breadcrumbs")
+    }
+
+    /** 衝突・重複が存在しないことを検証 */
+    fun verifyNoOverlaps(stepContext: String) {
+        val issues = com.jpaver.trianglelist.editmodel.GeometryIntegrityValidator.validateList(triangleList)
+        val errors = issues.filter {
+            it.severity == com.jpaver.trianglelist.editmodel.GeometryIntegrityValidator.Severity.ERROR &&
+            (it.type == com.jpaver.trianglelist.editmodel.GeometryIntegrityValidator.IssueType.OVERLAP ||
+             it.type == com.jpaver.trianglelist.editmodel.GeometryIntegrityValidator.IssueType.INWARD_FOLD)
+        }
+        assertTrue(errors.isEmpty(), "[$stepContext] Overlap detected: ${errors.joinToString("; ")}. Breadcrumbs: $breadcrumbs")
     }
 }

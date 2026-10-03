@@ -5,6 +5,7 @@ package com.jpaver.trianglelist.editmodel
 object TriLog {
     var sink: ((tag: String, msg: String) -> Unit)? = null
     fun d(tag: String, msg: String) { sink?.invoke(tag, msg) }
+    fun w(tag: String, msg: String) { sink?.invoke(tag, msg) }
     fun e(tag: String, msg: String, tr: Throwable? = null) {
         sink?.invoke(tag, if (tr != null) "$msg: $tr" else msg)
     }

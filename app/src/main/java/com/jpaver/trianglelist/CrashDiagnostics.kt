@@ -116,6 +116,14 @@ object CrashDiagnostics {
             }
         }
 
+        // 幾何学的完全性・当たり判定・基線一致の検証
+        val integrityIssues = com.jpaver.trianglelist.editmodel.GeometryIntegrityValidator.validateList(list)
+        for (issue in integrityIssues) {
+            if (issue.severity == com.jpaver.trianglelist.editmodel.GeometryIntegrityValidator.Severity.ERROR) {
+                errors.add(issue.toString())
+            }
+        }
+
         if (errors.isNotEmpty()) {
             recordInvariantViolation("Invariants", errors.joinToString("; "))
         }

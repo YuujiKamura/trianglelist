@@ -528,6 +528,27 @@ open class TriangleList : EditList<Triangle> {
                 !(tri.length[2] + tri.length[0] <= tri.length[1])
     }
 
+    /**
+     * リスト全体の幾何学的・接続的不変条件の違反を検出する。
+     */
+    fun findIntegrityIssues(): List<GeometryIntegrityValidator.IntegrityIssue> =
+        GeometryIntegrityValidator.validateList(this)
+
+    /**
+     * 重なり（自己交差・内向き折り返し）が存在するか判定する。
+     */
+    fun hasOverlaps(): Boolean =
+        findIntegrityIssues().any {
+            it.type == GeometryIntegrityValidator.IssueType.OVERLAP ||
+            it.type == GeometryIntegrityValidator.IssueType.INWARD_FOLD
+        }
+
+    /**
+     * 指定した三角形を追加可能か検査する（問題があれば違反リストを返す）。
+     */
+    fun canAdd(nextTriangle: Triangle, checkOverlap: Boolean = true): List<GeometryIntegrityValidator.IntegrityIssue> =
+        GeometryIntegrityValidator.checkCanAdd(this, nextTriangle, checkOverlap)
+
     fun add(pnum: Int, pbc: Int, A: Float, B: Float, C: Float): Boolean {
         return add(Triangle(get(pnum), pbc, A, B, C), true)
     }
@@ -536,8 +557,23 @@ open class TriangleList : EditList<Triangle> {
         return add(Triangle(get(pnum), pbc, B, C), true)
     }
 
-    fun add(nextTriangle: Triangle, numbering: Boolean= true): Boolean {
+    /**
+     * ガード付き追加。幾何破壊や当たり判定、基線不一致がある場合は追加を拒絶して false を返す。
+     */
+    fun addGuarded(nextTriangle: Triangle, numbering: Boolean = true): Boolean =
+        add(nextTriangle, numbering = numbering, guard = true)
+
+    fun add(nextTriangle: Triangle, numbering: Boolean = true, guard: Boolean = false): Boolean {
         if (!validTriangle(nextTriangle)) return false
+
+        if (guard) {
+            val issues = canAdd(nextTriangle, checkOverlap = true)
+            val hasErrors = issues.any { it.severity == GeometryIntegrityValidator.Severity.ERROR }
+            if (hasErrors) {
+                TriLog.w("TriangleList", "add guarded rejected: ${issues.joinToString("; ")}")
+                return false
+            }
+        }
 
         // 番号を受け取る
         if (numbering) nextTriangle.mynumber = trilist.size + 1
