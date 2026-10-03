@@ -12,6 +12,8 @@ import kotlin.math.*
  */
 
 fun Triangle.calcPoints(basepoint: PointXY = this.point[0], _angle: Float = this.angle, isArrangeDims: Boolean = false) {
+    this.point[0] = basepoint
+    this.angle = _angle
     pointAB = basepoint.offset(length[0].toDouble(), _angle.toDouble())
     pointBC = calculatePointBC(basepoint)
     calculateInternalAngles()
