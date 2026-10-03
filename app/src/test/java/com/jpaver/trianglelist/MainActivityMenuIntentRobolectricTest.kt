@@ -122,4 +122,21 @@ class MainActivityMenuIntentRobolectricTest {
             }
         }
     }
+
+    @Test
+    fun quickGuideMenuItem_showsDialog() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                val menu = org.robolectric.fakes.RoboMenu(activity)
+                activity.onCreateOptionsMenu(menu)
+                val item = menu.findItem(R.id.action_quick_guide)
+                org.junit.Assert.assertNotNull("action_quick_guide メニューが存在すること", item)
+                val handled = activity.onOptionsItemSelected(item)
+                assertTrue("onOptionsItemSelected で action_quick_guide が処理されること", handled)
+                val dialog = org.robolectric.shadows.ShadowDialog.getLatestDialog()
+                org.junit.Assert.assertNotNull("操作ガイドダイアログが表示されること", dialog)
+                assertTrue(dialog.isShowing)
+            }
+        }
+    }
 }
