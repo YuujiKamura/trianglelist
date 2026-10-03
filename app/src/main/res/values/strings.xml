@@ -129,6 +129,7 @@
 
     <!-- かんたん操作ガイド・成功体験の誘導 -->
     <string name="action_quick_guide">操作ガイド</string>
+    <string name="guide_initial_hint">💡 辺（BまたはC）をタップしてみよう</string>
     <string name="guide_connect_hint">辺%sに接続: BとCを入力し、緑の鉛筆(✎)で追加</string>
     <string name="guide_first_success">🎉 三角形が接続されました！この調子で続けて追加できます</string>
     <string name="quick_guide_title">ヘロンの三角形のかんたん使い方</string>

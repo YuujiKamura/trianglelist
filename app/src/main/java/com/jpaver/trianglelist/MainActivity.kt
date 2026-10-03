@@ -425,6 +425,22 @@ class MainActivity : AppCompatActivity(),
 
         val tArray = resources.getStringArray(R.array.ParentList)
         initSpinner(tArray)
+
+        checkInitialAffordance()
+    }
+
+    /**
+     * 初回起動または三角形1個の初期状態で、未接続のユーザーに視覚的アフォーダンス
+     * （B/C辺のパルス発光 ＋ 一言トースト）を提供する。
+     */
+    private fun checkInitialAffordance() {
+        val hasAddedFirst = prefSetting.getBoolean("has_added_first_triangle", false)
+        if (trianglelist.size() == 1 && !hasAddedFirst) {
+            myview.startEdgePulse()
+            showToast(getString(R.string.guide_initial_hint))
+        } else {
+            myview.stopEdgePulse()
+        }
     }
 
     /** かんたん操作ガイドダイアログ（外部ブラウザに飛ばずアプリ内で3ステップがわかる） */
@@ -1803,6 +1819,7 @@ class MainActivity : AppCompatActivity(),
                 val wasInitial = trianglelist.size() == 1
                 addTriangleBy( inputLineAdd )
                 if (wasInitial) {
+                    myview.stopEdgePulse()
                     showToast(getString(R.string.guide_first_success))
                     prefSetting.edit { putBoolean("has_added_first_triangle", true) }
                 } else {
@@ -2086,6 +2103,7 @@ class MainActivity : AppCompatActivity(),
     }
 
     fun connectTriangle(sideindex: Int ){
+        myview.stopEdgePulse()
         var focusTo = editorline1_lengthB
 
         if( isDoubleTap() ){
@@ -2849,6 +2867,7 @@ class MainActivity : AppCompatActivity(),
 
         editorResetBy(getList(deductionMode))
 
+        checkInitialAffordance()
     }
 
     private fun savePdfToPrivate(filename: String = "privateTrilist.pdf"){

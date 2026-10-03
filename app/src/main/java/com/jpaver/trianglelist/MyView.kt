@@ -1,6 +1,7 @@
 
 package com.jpaver.trianglelist
 
+import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Canvas
@@ -64,6 +65,56 @@ class MyView(context: Context, attrs: AttributeSet?) :
     var paintRed: Paint = Paint()
     var paintBlue: Paint = Paint()
     var paintGray: Paint = Paint()
+
+    // 初回アフォーダンス用パルス点滅
+    private var pulseAnimator: ValueAnimator? = null
+    var edgePulseAlpha: Float = 0f
+        private set
+    var isEdgePulseActive: Boolean = false
+        private set
+    val paintPulse: Paint = Paint().apply {
+        isAntiAlias = true
+        style = Paint.Style.STROKE
+        strokeCap = Paint.Cap.ROUND
+    }
+
+    fun startEdgePulse() {
+        if (isEdgePulseActive) return
+        isEdgePulseActive = true
+        post {
+            if (!isEdgePulseActive) return@post
+            try {
+                pulseAnimator?.cancel()
+                val animator = ValueAnimator.ofFloat(0.25f, 1.0f).apply {
+                    duration = 850L
+                    repeatMode = ValueAnimator.REVERSE
+                    repeatCount = ValueAnimator.INFINITE
+                    addUpdateListener { va ->
+                        edgePulseAlpha = va.animatedValue as? Float ?: 0.5f
+                        invalidate()
+                    }
+                }
+                pulseAnimator = animator
+                animator.start()
+            } catch (e: Exception) {
+                edgePulseAlpha = 0.8f
+                invalidate()
+            }
+        }
+    }
+
+    fun stopEdgePulse() {
+        if (!isEdgePulseActive && pulseAnimator == null) return
+        isEdgePulseActive = false
+        try {
+            pulseAnimator?.cancel()
+        } catch (e: Exception) {
+            // ignore
+        }
+        pulseAnimator = null
+        edgePulseAlpha = 0f
+        invalidate()
+    }
 
     var paintFill: Paint = Paint()
     val DarkPink_ = Color.argb(255, 128, 40, 75)
@@ -235,6 +286,11 @@ class MyView(context: Context, attrs: AttributeSet?) :
         Log.d("MyViewLifeCycle", "OnAttachedToWindow Process Done.")
 
     } // end onAttachedToWindow
+
+    override fun onDetachedFromWindow() {
+        stopEdgePulse()
+        super.onDetachedFromWindow()
+    }
 
     fun setScreenSize() {
         screen_width = this.width
@@ -596,6 +652,9 @@ class MyView(context: Context, attrs: AttributeSet?) :
 
         //選択三角形の辺と番号サークルの強調表示
         drawBlinkLine( canvas, myTriangleList )
+
+        // 初回アフォーダンス: B/C辺のパルス点滅
+        drawInitialAffordancePulse( canvas, myTriangleList )
     }
 
     fun drawTriangle(
@@ -814,6 +873,27 @@ class MyView(context: Context, attrs: AttributeSet?) :
         )
         paintYellow.style = Paint.Style.FILL
 
+    }
+
+    /**
+     * 初回起動・三角形1個の新規作成時における視覚的アフォーダンス。
+     * 親三角形のB辺・C辺をパルス発光（呼吸明滅）させ、「ここをタップできる」ことを直感させる。
+     */
+    fun drawInitialAffordancePulse(canvas: Canvas, myTriangleList: TriangleList) {
+        if (!isEdgePulseActive || isPrintPDF_ || myTriangleList.size() != 1) return
+        if (myTriangleList.lastTapSide > 0) return
+
+        val tri = myTriangleList.get(1) ?: return
+        val alphaInt = (edgePulseAlpha * 255).toInt().coerceIn(0, 255)
+        if (alphaInt <= 0) return
+
+        paintPulse.color = Color.argb(alphaInt, 0, 229, 255)
+        paintPulse.strokeWidth = 4.0f
+
+        // B辺: pointAB -> pointBC
+        drawLine(tri.pointAB, tri.pointBC, paintPulse, canvas)
+        // C辺: pointBC -> pointCA
+        drawLine(tri.pointBC, tri.pointCA, paintPulse, canvas)
     }
 
     fun drawLine(canvas: Canvas, p1: PointXY, p2: PointXY, sx: Float, sy: Float, paint: Paint){
