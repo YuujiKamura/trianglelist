@@ -40,4 +40,31 @@ class MainActivityLaunchRobolectricTest {
             }
         }
     }
+
+    @Test
+    fun initialLaunch_startsEdgePulseAffordance_whenSingleTriangle() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                val myView = activity.findViewById<MyView>(R.id.my_view)
+                // 三角形1個の初期状態ではパルス点滅が有効化されている
+                assertTrue("Initial edge pulse should be active for onboarding affordance", myView.isEdgePulseActive)
+            }
+        }
+    }
+
+    @Test
+    fun connectTriangle_stopsEdgePulseAffordance() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                val myView = activity.findViewById<MyView>(R.id.my_view)
+                assertTrue("Pulse initially active", myView.isEdgePulseActive)
+
+                // 辺Bをタップしたときの処理
+                activity.connectTriangle(1)
+
+                // 辺をタップしたらアフォーダンス点滅は直ちに停止する
+                org.junit.Assert.assertFalse("Pulse should stop once user taps an edge", myView.isEdgePulseActive)
+            }
+        }
+    }
 }
