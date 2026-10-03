@@ -129,11 +129,9 @@
 
     <!-- かんたん操作ガイド・成功体験の誘導 -->
     <string name="action_quick_guide">操作ガイド</string>
-    <string name="guide_initial_hint">💡 辺（BまたはC）をタップすると、次の三角形を追加できます</string>
     <string name="guide_connect_hint">辺%sに接続: BとCを入力し、緑の鉛筆(✎)で追加</string>
     <string name="guide_first_success">🎉 三角形が接続されました！この調子で続けて追加できます</string>
-    <string name="guide_view_guide">使い方</string>
     <string name="quick_guide_title">ヘロンの三角形のかんたん使い方</string>
     <string name="quick_guide_message">【基本の3ステップ】\n\n1. 辺をタップ\n   親三角形の「B」または「C」の辺をタップして接続先を選択します。\n\n2. 寸法を入力\n   上部の表組みに辺長（B, C）を入力します。\n\n3. 鉛筆ボタンで追加\n   右上の緑の鉛筆ボタン（✎）をタップして三角形を接続します。\n\n【便利な操作】\n・辺をダブルタップ: 既存の三角形を再編集\n・右下の[控]ボタン: マンホール・桝の面積控除を追加\n・スワイプ/ピンチ: 画面の移動・拡大縮小</string>
-    <string name="quick_guide_start">始める</string>
+    <string name="quick_guide_start">閉じる</string>
 </resources>

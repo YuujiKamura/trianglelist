@@ -425,41 +425,6 @@ class MainActivity : AppCompatActivity(),
 
         val tArray = resources.getStringArray(R.array.ParentList)
         initSpinner(tArray)
-
-        showInitialGuideIfNeeded()
-    }
-
-    private var initialGuideSnackbar: com.google.android.material.snackbar.Snackbar? = null
-
-    /** 初回起動時や新規作成直後の最小限の成功体験誘導 */
-    fun showInitialGuideIfNeeded() {
-        if (isFinishing || isDestroyed) return
-        val hasCompleted = prefSetting.getBoolean("has_added_first_triangle", false)
-        if (!hasCompleted && trianglelist.size() == 1 && !deductionMode) {
-            try {
-                findViewById<View>(android.R.id.content)?.let { root ->
-                    initialGuideSnackbar = com.google.android.material.snackbar.Snackbar.make(
-                        root,
-                        R.string.guide_initial_hint,
-                        com.google.android.material.snackbar.Snackbar.LENGTH_INDEFINITE
-                    ).apply {
-                        setAction(R.string.guide_view_guide) {
-                            showQuickGuideDialog()
-                        }
-                        show()
-                    }
-                }
-            } catch (e: Exception) {
-                Log.w("MainActivity", "Failed to show initial guide snackbar", e)
-            }
-        }
-    }
-
-    fun dismissInitialGuideSnackbar() {
-        try {
-            initialGuideSnackbar?.dismiss()
-            initialGuideSnackbar = null
-        } catch (_: Exception) {}
     }
 
     /** かんたん操作ガイドダイアログ（外部ブラウザに飛ばずアプリ内で3ステップがわかる） */
@@ -1837,7 +1802,6 @@ class MainActivity : AppCompatActivity(),
             else -> {
                 val wasInitial = trianglelist.size() == 1
                 addTriangleBy( inputLineAdd )
-                dismissInitialGuideSnackbar()
                 if (wasInitial) {
                     showToast(getString(R.string.guide_first_success))
                     prefSetting.edit { putBoolean("has_added_first_triangle", true) }
@@ -2137,7 +2101,6 @@ class MainActivity : AppCompatActivity(),
                 2 to "C"
                 // 他の数値と文字の対応を追加可能
             )
-            dismissInitialGuideSnackbar()
             val targetLetter = numToLetterMap[sideindex] ?: ""
             if (isDoubleTap()) {
                 showToast("Edit - length $targetLetter")
@@ -2885,7 +2848,6 @@ class MainActivity : AppCompatActivity(),
         fab_fillcolor.backgroundTintList = getColorStateList(resColors[colorindex])
 
         editorResetBy(getList(deductionMode))
-        showInitialGuideIfNeeded()
 
     }
 
