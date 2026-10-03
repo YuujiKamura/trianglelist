@@ -39,6 +39,7 @@ plugins.withType(org.jetbrains.kotlin.gradle.targets.wasm.yarn.WasmYarnPlugin::c
     // 単一系統: 最小パッチ版以上に上げるだけ
     yarn.resolution("**/body-parser", ">=1.20.6 <2.0.0")
     yarn.resolution("**/diff", ">=8.0.3 <9.0.0")
+    yarn.resolution("**/engine.io", ">=6.6.10 <7.0.0")
     yarn.resolution("**/fast-uri", ">=3.1.6 <4.0.0")
     yarn.resolution("**/http-proxy-middleware", ">=2.0.10 <3.0.0")
     yarn.resolution("**/js-yaml", ">=4.3.2 <5.0.0")
