@@ -342,7 +342,7 @@ class MainActivity : AppCompatActivity(),
         Log.d("MainActivityLifeCycle", "onCreate")
 
         // クラッシュ診断情報収集の初期化 (2026-10-01)
-        CrashDiagnostics.install()
+        CrashDiagnostics.install(applicationContext)
         CrashDiagnostics.setStateProvider {
             val tri = trianglelist.dumpState()
             val ded = if (myDeductionList.size() > 0) "Deduction(size=${myDeductionList.size()})" else "Deduction(empty)"
@@ -655,14 +655,28 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun openContactMail() {
+        val report = CrashDiagnostics.buildReport(this)
+        val body = buildString {
+            appendLine("【お問い合わせ・不具合報告】")
+            appendLine()
+            appendLine("※ 不具合の場合は、お気づきの点や発生した状況（直前に行った操作など）をお書き添えください。")
+            appendLine()
+            appendLine("----------------------------------------")
+            appendLine("■ アプリ診断情報（調査用・削除しても送信可能です）")
+            append(report)
+            appendLine("----------------------------------------")
+        }
         val intent = Intent(Intent.ACTION_SENDTO, "mailto:".toUri()).apply {
             putExtra(Intent.EXTRA_EMAIL, arrayOf("yuujikamura@gmail.com"))
             putExtra(Intent.EXTRA_SUBJECT, "【問い合わせ】ヘロンの面積展開図：TriangleList")
+            putExtra(Intent.EXTRA_TEXT, body)
         }
         if (intent.resolveActivity(packageManager) != null) {
             startActivity(intent)
         } else {
-            Toast.makeText(this, "No email app installed.", Toast.LENGTH_LONG).show()
+            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
+            clipboard?.setPrimaryClip(android.content.ClipData.newPlainText("TriangleList Diagnostics", body))
+            Toast.makeText(this, "メールアプリが見つかりません。診断情報をクリップボードにコピーしました。", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -2919,6 +2933,7 @@ class MainActivity : AppCompatActivity(),
         // 数 KB の書き込みを惜しんで内容の正しさを失う取引なので、常に書く。
 
         try {
+            CrashDiagnostics.checkInvariants(trianglelist)
             setTitles()
             BufferedWriter(OutputStreamWriter(openFileOutput(filename, MODE_PRIVATE), "windows-31j")).use { writer ->
                 val isSaved = writeCSV(writer)
@@ -3075,6 +3090,7 @@ class MainActivity : AppCompatActivity(),
 
             val parseResult = reader?.let { parseCSV(it) }  // parseCSVの結果を一時変数に格納
             if (parseResult == false) createNew()  // 結果がfalseの場合はcreateNewを呼び出す
+            CrashDiagnostics.checkInvariants(trianglelist)
 
             // 結果をログに出力
             if(myview.isDebug_)logFilePreview(PrivateCSVFileName, "resumeCSV")
