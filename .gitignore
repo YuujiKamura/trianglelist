@@ -74,3 +74,7 @@ __pycache__/
 # 設計 brief は ~/.agents/scratch/<project>/briefs-archive/ に書く運用、 repo 内には置かない
 # (CLAUDE.md「scratch を repo に置くな」を物理層へ)
 /*_BRIEF.md
+
+.env
+app/google-services.json
+doc/development.db
